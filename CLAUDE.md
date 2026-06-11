@@ -1,0 +1,224 @@
+# CLAUDE.md — FORGE agent entry point
+
+> **Start here.** This file is the single source of truth for *how to work in this
+> repository*. Read it top to bottom before touching anything. Every working session —
+> human or AI agent — ends by appending an entry to [`CHANGELOG.md`](CHANGELOG.md) and
+> updating any roadmap/TODO checkboxes the session affected. **No exceptions.**
+
+---
+
+## 1. What this project is
+
+**FORGE** (working codename — *Fabricate · Operate · Rehearse · Generate · Export*; the
+repository name `TTC` = text-to-CAD) is a browser-first robotics studio that closes the
+loop:
+
+> **describe → assemble → verify → rehearse → deploy → evolve**
+
+A user describes a machine in natural language; Claude (Anthropic API) generates a
+schema-constrained, physically parameterized, animated 3D model; the user swaps in real
+purchasable components with exact geometry, mass, and electrical properties; the studio
+verifies the build (compatibility, thrust-to-weight, hover throttle, endurance — all
+derived, never decorative) and simulates it; reinforcement-learning policies train
+against the digital twin under domain randomization; the BOM and the trained behavior
+deploy to the physical machine through a safety-gated ladder — and real telemetry flows
+back to tighten the twin.
+
+**Governing doctrine — "not a toy":** SI units everywhere; masses computed or sourced,
+never invented; compatibility checked, not assumed; every HUD claim derived from an
+inspectable model; manufacturability as an export target; a **sovereign validator**
+that gates every artifact; provenance on everything. The full doctrine is binding — see
+[`docs/BEST-PRACTICES.md`](docs/BEST-PRACTICES.md) §1.
+
+## 2. Project status
+
+| Fact | State |
+|---|---|
+| Lifecycle | **Planning complete — implementation not started (pre-P0)** |
+| Binding plan | [`docs/FORGE-plan.md`](docs/FORGE-plan.md) (v2.0, decisions-complete) |
+| Current phase | **Pre-P0** — live status in [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| Code in repo | None yet — documentation only |
+| Critical blocker | The prototype **`cad-object-studio.html`** is the executable specification (P0 requires byte-equivalent part/face counts against it) but is **not in this repository**. It must be obtained from the project owner and committed before P0 can close. Tracked as `PRE-002` in [`docs/TODO.md`](docs/TODO.md). |
+
+## 3. Source-of-truth hierarchy
+
+When documents disagree, this is the order of authority:
+
+1. **[`docs/DECISIONS.md`](docs/DECISIONS.md)** — the binding decision record (D1–D16+).
+   Decisions are only changed by recording a superseding decision, never by silent edits.
+2. **[`docs/FORGE-plan.md`](docs/FORGE-plan.md)** — the v2.0 plan: vision, strategy,
+   architecture, roadmap, risk register, appendices (schema sketch, validation suite,
+   algorithms).
+3. **`docs/systems/*.md`** — implementation-level docs per system. These *expand* the
+   plan into engineering detail; where they go beyond it they are marked *(proposed)*.
+4. **[`docs/ROADMAP.md`](docs/ROADMAP.md) / [`docs/TODO.md`](docs/TODO.md)** — live
+   execution state.
+5. [`docs/FORGE-vision-and-architecture.md`](docs/FORGE-vision-and-architecture.md) —
+   **v1.0, historical**. Superseded by the v2.0 plan; consult only for background.
+
+## 4. Repository map
+
+```
+TTC/
+├── CLAUDE.md                          ← you are here (agent entry point)
+├── CHANGELOG.md                       ← session-by-session progress log (mandatory)
+└── docs/
+    ├── README.md                      ← documentation index & reading order
+    ├── FORGE-plan.md                  ← THE PLAN (v2.0, binding)
+    ├── FORGE-vision-and-architecture.md  ← v1.0 (historical)
+    ├── ROADMAP.md                     ← phases P0–P12, exit criteria, live status
+    ├── TODO.md                        ← every open task, all surfaces, with IDs
+    ├── DECISIONS.md                   ← decision record + how to add decisions
+    ├── BEST-PRACTICES.md              ← doctrine, conventions, code & test standards
+    ├── GLOSSARY.md                    ← project vocabulary
+    ├── architecture.md                ← five planes, monorepo layout, stack, budgets
+    ├── security-safety-legal.md       ← security model, legal gates, license matrix
+    ├── risk-register.md               ← risks, mitigations, monitoring triggers
+    └── systems/                       ← implementation-level docs (one per system)
+        ├── model-contract.md          ← Contract v2.1 schema (the heart of the system)
+        ├── validation-harness.md      ← gatekeeper: check catalog, diagnostics, runner
+        ├── geometry-engine.md         ├── render-engine.md
+        ├── motion-engine.md           ├── simulation-engine.md
+        ├── learning-engine.md         ├── generation-pipeline.md
+        ├── component-database.md      ├── studio-ui.md
+        ├── gateway-and-data.md        ├── compute-workers.md
+        ├── hardware-bridge.md         ├── co-design.md
+        ├── environments-courses.md    └── platform.md
+```
+
+Planned code layout (monorepo, not yet scaffolded): `packages/{contract, geometry,
+engines/*, studio, gateway, harness, link}` + `workers/` (Python). See
+[`docs/architecture.md`](docs/architecture.md) §3.
+
+## 5. Session protocol — how to pick up work
+
+Follow this every session, in order:
+
+1. **Read this file** (you are doing it).
+2. **Read the top of [`CHANGELOG.md`](CHANGELOG.md)** — the most recent entries tell
+   you exactly where the last session stopped, what is in flight, and any blockers.
+3. **Check [`docs/ROADMAP.md`](docs/ROADMAP.md)** — identify the current phase and its
+   unmet exit criteria.
+4. **Pick work from [`docs/TODO.md`](docs/TODO.md)** — prefer the current phase's open
+   items and anything marked **blocker**. Mark the item `[~]` (in progress) with the
+   date when you start.
+5. **Read the relevant `docs/systems/*.md`** before writing code in that area, plus
+   [`docs/BEST-PRACTICES.md`](docs/BEST-PRACTICES.md) once per session.
+6. **Do the work.** Keep changes scoped; follow conventions; tests and harness checks
+   accompany features, not follow them.
+7. **Update the docs you invalidated** — system docs, ROADMAP checkboxes, TODO states.
+   If you made a decision of consequence, record it in `docs/DECISIONS.md`.
+8. **Append a `CHANGELOG.md` entry** (format in §6 below).
+9. **Commit and push** with a clear message (conventions in BEST-PRACTICES §9).
+
+If you are blocked, *say so in the changelog entry* — the next agent inherits your
+state, not your context window.
+
+## 6. Changelog discipline (mandatory)
+
+`CHANGELOG.md` is the project's memory between sessions. Append a new entry at the
+**top** of the log section at the end of every working session, even for small or
+failed sessions ("attempted X, abandoned because Y" is valuable). Format:
+
+```markdown
+## 2026-06-12 — Short imperative title
+**Session:** <agent/human name or branch> · **Phase:** <e.g. P0> · **TODO items:** <IDs>
+**Done:** What was actually completed (verified, not intended).
+**Changed:** Files/areas touched.
+**Decisions:** Any new/changed DECISIONS.md entries, or "none".
+**Next:** The single most useful next step for whoever picks this up.
+**Blockers:** Anything stopping progress, or "none".
+```
+
+Rules: newest first; never rewrite or delete prior entries (append corrections
+instead); reference TODO IDs so state is traceable; keep it factual — the changelog
+records what *is*, the TODO records what *should be*.
+
+## 7. Non-negotiables
+
+These come from the plan's doctrine and decision record. Violating them is never a
+judgment call:
+
+1. **SI units everywhere** — meters, kilograms (grams at schema surface), newtons,
+   volts, ampere-hours, radians, seconds. Y-up, right-handed, meters internally.
+2. **No invented physics** — mass/inertia from geometry × density or from datasheets,
+   with citations. HUD numbers are derived from stated models.
+3. **The validator is sovereign** — nothing enters the registry, marketplace, or
+   training queue without passing the harness. Agents do not bypass, weaken, or
+   special-case gatekeeper checks to make work pass; fix the work.
+4. **No code in contracts** (D15) — models are JSON documents;
+   behavior comes from versioned engine libraries parameterized by data. The only
+   future exception is the sandboxed-WASM controller path, post-P7, design-reviewed.
+5. **No weapons** — no targeting systems, munition payloads, or interdiction modules
+   in catalog, generation, or marketplace. Briefs in that direction are refused and
+   the refusal is logged.
+6. **Provenance everywhere** — generated artifacts carry model versions, prompt
+   hashes, seeds, validator reports; policies carry training lineage.
+7. **Decisions are recorded, not drifted** — deviating from `docs/DECISIONS.md` or the
+   plan requires a new decision entry with rationale, ideally confirmed with the
+   project owner.
+8. **Licenses are honored** — every catalog asset carries a license class; the export
+   matrix (security doc §4) is enforced by construction.
+9. **The deployment ladder is never skipped** — SITL → HITL → constrained reality →
+   free operation; the bridge never auto-arms anything.
+10. **Pin volatile externals at implementation time** — Anthropic model strings,
+    limits, and pricing from https://docs.claude.com/en/api/overview; do not hardcode
+    from memory or from the plan.
+
+## 8. Engineering quick reference
+
+- **Stack:** TypeScript (strict) end-to-end client/gateway; Python 3.12 compute
+  workers; React 19 + Zustand; Three.js (WebGL2 baseline); Rapier WASM (client
+  physics); MuJoCo/MJX (training); Postgres 16 + pgvector + graphile-worker (the one
+  stateful service) + S3-compatible object storage; Fastify + TypeBox; Vite + pnpm +
+  Turborepo. Full table with rationale: [`docs/architecture.md`](docs/architecture.md) §4.
+- **Two physics engines is intentional** (Rapier interactive, MuJoCo canonical for
+  training); parity suite required on every engine/exporter upgrade.
+- **Browser floor:** Chromium-first, declared (D11). Firefox/Safari viewer-grade; iOS
+  viewer only.
+- **Performance budgets** are binding acceptance criteria, not aspirations:
+  [`docs/architecture.md`](docs/architecture.md) §6.
+- **Validation:** check IDs and diagnostic format in
+  [`docs/systems/validation-harness.md`](docs/systems/validation-harness.md).
+
+## 9. Roadmap at a glance
+
+Live status and full exit criteria: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+| Phase | One-liner | Status |
+|---|---|---|
+| Pre-P0 | Repo hygiene, prototype committed, scaffold prerequisites | ◑ in progress |
+| P0 | Freeze monolith as reference; contract schema v2.1; translate both models to JSON; monorepo scaffold | ○ |
+| P1 | Three.js studio + motion port; **shimmer gone**; 60 fps | ○ |
+| P2 | Validation service productized; driver library; quadruped generator | ○ |
+| P3 | Component DB, compatibility, proof pair, reference rigs | ○ |
+| P4 | Text-to-CAD GA: orchestrator, drafts, share URLs, BYO key, Brief-25 | ○ |
+| P5 | Image → 3D: TRELLIS workers, primitive refit, alignment UI | ○ |
+| P6 | Simulation depth; MJCF/URDF exporters **and importer**; parity suite | ○ |
+| P7 | Training service: tasks, PPO/SAC, scorecards, in-browser playback | ○ |
+| P8 | Hardware bridge + flight recorder + ghost; ToS review gate | ○ |
+| P9 | Co-design optimizer (CMA-ES/BO, multi-fidelity, Pareto front) | ○ |
+| P10 | Environments, courses, leaderboards | ○ |
+| P11 | Platform: marketplace, skills, classroom, print ordering | ○ |
+| P12 | Maintenance twin: wear, crash forensics, repair sheets | ○ |
+
+Legend: ○ not started · ◑ in progress · ● done. **Phases close only when every exit
+criterion is checked in ROADMAP.md and the changelog records it.**
+
+## 10. What NOT to do
+
+- Do not start coding a phase before its predecessor's exit criteria are met (or the
+  owner explicitly re-orders — record it as a decision).
+- Do not edit `docs/FORGE-plan.md` or `docs/FORGE-vision-and-architecture.md` — they
+  are frozen planning papers. Changes of substance go through `docs/DECISIONS.md` and
+  the living docs.
+- Do not duplicate content across docs — link to the owning doc instead. One fact,
+  one home.
+- Do not leave a session without a changelog entry, even for exploratory or failed
+  work.
+- Do not invent component data, masses, thrust figures, or prices — datasheets and
+  citations or nothing (placeholder values must be marked `TODO` and gated from
+  admission).
+- Do not weaken a failing validator check to green a build.
+- Do not add a dependency, service, or language outside the decided stack without a
+  decision entry (the stack is deliberately boring — that is a feature).

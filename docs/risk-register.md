@@ -1,0 +1,25 @@
+# RISK REGISTER
+
+Source: plan §20 (binding), extended with watch triggers — the observable signal that
+says a mitigation is failing and the risk needs active management. Review at every
+phase close; note material changes in the changelog.
+
+| # | Risk | L | I | Mitigation | Watch trigger |
+|---|---|---|---|---|---|
+| R1 | Sim-to-real gap (especially legged) | High | High | archetype gradient (quads/rovers first); estimator-in-sim (D8); randomization + system ID as product rituals; ladder gating; honest scorecards | ghost divergence stays large after system-ID fit on the reference quad (P8) |
+| R2 | LLM emits plausible-but-invalid geometry | High | Med | schema-constrained output; bounded self-repair on machine diagnostics; pattern grounding; draft fallback (D14); Brief-25 as CI | Brief-25 admission < 20/25 or repair iterations trending up |
+| R3 | CAD/license entanglement | Med | High | license ledger from day one; export matrix (D10); derived-LOD serving; link-out fallback; legal review before marketplace | any ingested asset found without a ledger entry; takedown request received |
+| R4 | Open-core commoditization (fork + clone) | Med | Med | the moat is the data, not the code (D2): catalog + ledger, pattern corpus, provenance graph, community courses/skills | a fork ships a competing catalog of comparable quality |
+| R5 | Generation-eval drift (model bumps silently degrade quality) | Med | Med | Brief-25 re-runs on every prompt/schema/pattern/model change with tracked metrics | dashboard regression after any model-version bump |
+| R6 | GPU cost creep (photoscan/training/co-design) | Med | Med | burst-only GPUs; permanent caching; Batch API ETL; multi-fidelity ladder; MJX only when CPU saturates (P7-010) | monthly GPU spend exceeding credit revenue two months running |
+| R7 | Print/build liability | Low–Med | High | DfM diagnostics framed as checks not guarantees; service/user own outcomes; ToS review gates P8; supervisor disclaimers | any incident report involving a printed structural part |
+| R8 | Scope gravity — it wants to be five products | High | High | the loop is the spine; every phase has exit criteria; platform phases deliberately last | work started on a phase whose predecessor has unmet exit criteria |
+| R9 | Two-engine physics divergence | Med | Med | one compiled source of truth; parity suite on every upgrade; training side canonical; server scorecards (D6) | parity suite tolerance failures after an engine/exporter bump |
+| R10 | Solo-builder bus factor | High | Med | boring stack; monorepo; validator-enforced invariants; this documentation system + changelog discipline | sessions ending without changelog entries; docs drifting from code |
+| R11 | Browser API churn (WebSerial/WebGPU) | Low | Med | WebGL2 baseline; Chromium floor declared (D11); FORGE Link fallback for the bridge | a Chromium release breaking WebSerial/SAB behavior |
+
+L = likelihood, I = impact.
+
+**Adding a risk:** append a row (next free R-number), set L/I, name a real mitigation
+and an observable trigger, and reference it from the changelog entry that introduced
+the concern.
