@@ -1,25 +1,28 @@
-# Simulation Engine — implementation doc
+# Simulation Engine (`forge-sim`) — implementation doc
 
-**Status:** not started · **Phases:** P1 (worker skeleton), P6 (depth) · **Package:**
-`packages/engines/sim` *(proposed)* · **Plan refs:** §7.4, Appendix C · **Decisions:**
-D6, D7, D8, D16
+**Status:** not started · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
+**Home:** `crates/forge-sim` *(proposed)* · **Plan refs:** §7.4, Appendix C (v3.0) ·
+**Decisions:** D7, D8, D16, D17, D20
 
 ## 1. Purpose
 
-Client-side physical truth-enough (Rapier WASM in a worker) plus the compilers that
-make training-grade truth possible (MJCF/URDF export), held to the training side by a
-parity suite. Every HUD number — AUW, TWR, hover throttle, instantaneous current,
-endurance — is a closed-form consequence of models defined here, with assumptions
-inspectable.
+Client-side physical truth-enough plus the compilers that make training-grade truth
+possible (MJCF/URDF export), held to the training side by a parity suite. Under D16
+the Rapier story simplifies structurally: **Rapier is a Rust crate — natively the
+boundary disappears, and in the browser it remains the same library**, driven from
+`forge-sim` either way. Every HUD number — AUW, TWR, hover throttle, instantaneous
+current, endurance — is a closed-form consequence of models defined here, with
+assumptions inspectable.
 
 ## 2. Client physics (Rapier)
 
 - Bodies compiled from the contract; **per-node compound colliders within D7 budgets**
-  (≤ 8 convex pieces/node, ≤ 24/model) via the geometry engine's auto-fitter (XC-10).
+  (≤ 8 convex pieces/node, ≤ 24/model) via `forge-geometry`'s auto-fitter (XC-10).
 - Revolute joints with motors honoring contract `maxTorqueNm`/`maxVelRad`.
 - Friction-materialed ground; slopes/steps native — legged contact runs here.
-- Fixed 240 Hz substeps; 120 Hz driver tick; render-interpolated; SharedArrayBuffer
-  mirror; zero per-frame allocation. Budget: ≤ 4 ms amortized.
+- Fixed 240 Hz substeps; 120 Hz driver tick; render-interpolated; shared-memory
+  state mirror; zero per-frame allocation. Budget: ≤ 4 ms amortized (worker), inside
+  the ≤ 1.5 ms core-tick share for the models themselves.
 
 ## 3. Propulsion & battery models (the HUD's source of truth)
 
@@ -46,13 +49,14 @@ The contract's estimator block (complementary filter
 actually observe (XC-08). Ground truth is never exposed to the policy path —
 enforced downstream by SIM-004.
 
-## 5. Disturbances & replay
+## 5. Disturbances & replay (D17)
 
 Disturbance injectors: gusts, payload shifts, sensor dropout — serving play and
 pre-training sanity. **Replay (P6-011):** every session serializes to
-`{contractHash + lockfile, env, seed, input tape}`. Client replay is
-tolerance-banded with drift detection; **bit-exact replay and official scorecards are
-server-side only** (D6).
+`{contractHash + lockfile, env, seed, input tape}` — and because the same bits run
+on every target, a tape **verifies anywhere**: in the browser, in CI, on the
+gateway. Official leaderboard runs are re-verified server-side as anti-cheat hygiene
+only (D17, superseding D6's client/server split).
 
 ## 6. Exporters & importer
 
@@ -62,35 +66,37 @@ server-side only** (D6).
 - **Importer (P6-009):** the same mapping reversed; imported models are slot-less
   until carved in the editor. Fixture corpus from common public robots (XC-05).
 
-## 7. The parity discipline (D16)
+## 7. The parity discipline (D20)
 
 Rapier and MuJoCo consume the **same compiled MJCF from the same contract**. Parity
 suite — drop tests, pendulum periods, hover trim, gait CoM trajectories — asserts
 agreement within stated tolerances and runs on **every engine or exporter upgrade**
 (P6-010). Where they disagree, the training side is truth and the client side is
-presentation.
+presentation. (Distinct from the golden-number suite, which asserts *our own* code
+is bit-identical across targets — XT-001.)
 
 ## 8. Dependencies
 
-`contract`, `geometry` (colliders, mass props), `engines/motion` (driver coupling).
-Server twin: the training worker consumes the MJCF this package compiles.
+`forge-contract`, `forge-geometry` (colliders, mass props), `forge-motion` (driver
+coupling). Server twin: the training worker consumes the MJCF this crate compiles.
 
 ## 9. Testing
 
-SIM-001..003 harness checks; battery/propulsion unit tests vs bench math; parity
-suite (canonical scenes, tolerance bands — these are also the physics-regression
-gates for engine bumps); replay determinism tests (client tolerance bands, server
-bit-exact); exporter goldens; importer round-trip (external URDF → contract →
-driveable, P6 exit criterion).
+SIM-001..003 harness checks; battery/propulsion unit tests vs bench math;
+differential tests vs the JS oracle during the port; parity suite (canonical scenes,
+tolerance bands — also the physics-regression gates for engine bumps); replay
+determinism via the golden-number suite (bit-exact, any target); exporter goldens;
+importer round-trip (external URDF → contract → driveable, P6 exit criterion).
 
 ## 10. Phase mapping & backlog
 
-P1: Rapier worker skeleton (P1-009). P3: thrust-table module lands with catalog data
-(P3-010/XC-06). P6: everything else (P6-001..011). P8: replay format carries real
-telemetry (recorder).
+P1: port of model stubs + Rapier worker wiring (P1-003). P3: thrust-table module
+lands with catalog data (P3-010/XC-06). P6: everything else (P6-001..011). P8: replay
+format carries real telemetry (recorder).
 
 ## 11. Open questions
 
 Tolerance numbers for parity (set empirically at P6, then frozen); ESC modeling depth
 (currently lumped into R_total — revisit with system-ID data at P8); whether
-disturbance injectors are contract-side (EnvSpec) or scene-side (lean EnvSpec, P10).
+disturbance injectors are contract-side (EnvSpec) or scene-side (lean EnvSpec, P10);
+Rapier version-pinning policy across native/WASM (must match exactly per D17).

@@ -2,7 +2,8 @@
 
 **Status:** not started · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers *(proposed)* · **Plan refs:** §12
-· **Decisions:** D16 (training-side canonical), validator-as-oracle
+(v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
+validator-as-oracle
 
 ## 1. Purpose
 
@@ -36,12 +37,12 @@ Gradient-free, because the landscape is a constraint oracle:
 
 | Tier | Evaluation | Cost |
 |---|---|---|
-| 0 | schema + compatibility + static physics (mass, TWR, hover trim closed-form) | ms |
+| 0 | schema + compatibility + static physics (mass, TWR, hover trim closed-form) — **native via the core binary** | **< 50 ms** |
 | 1 | Rapier smoke runs (hover hold, short maneuvers) | seconds |
 | 2 | short MuJoCo rollouts with a frozen or lightly tuned policy | minutes, batched |
 | 3 | full training — **finalists only** | hours |
 
-Budgets (binding): tier-0/1 candidate evaluation < 5 s; a 200-candidate CMA-ES
+Budgets (binding): tier-0 candidate < 50 ms native; a 200-candidate CMA-ES
 generation overnight at tier 2. MJX batch parallelism is what makes tiers 2/3
 feasible at scale — adopt per the P7-010 benchmark.
 
@@ -53,9 +54,9 @@ run (objectives, seed, generations) like any generation lineage.
 
 ## 6. Dependencies
 
-Validation service (oracle), `contract` (surgery + lockfiles), `engines/sim`
-(tier 0/1), training workers (tier 2/3), component DB (categorical domains), studio
-(front explorer).
+`forge-validate` binary (oracle, native-fast), `forge-contract` (surgery +
+lockfiles), `forge-sim` (tier 0/1), training workers (tier 2/3), component DB
+(categorical domains), studio (front explorer).
 
 ## 7. Testing
 

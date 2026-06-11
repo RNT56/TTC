@@ -1,31 +1,37 @@
-# Validation harness — implementation doc
+# Validation harness (`forge-validate`) — implementation doc
 
-**Status:** not started · **Phases:** P0 (embryo), P2 (productized), evolves always ·
-**Package:** `packages/harness` *(proposed)* · **Plan refs:** §10, Appendix B ·
-**Decisions:** D5, D7, D8, D14, D-evals
+**Status:** not started · **Phases:** P0 (embryo), P1 (Rust assembly), P2
+(productized), evolves always · **Home:** `crates/forge-validate` *(proposed)* ·
+**Plan refs:** §10, Appendix B (v3.0) · **Decisions:** D2, D5, D7, D8, D14, D17,
+D-evals
 
 ## 1. Purpose
 
-The **sovereign gatekeeper**: a deterministic headless runner (Node + engine
-libraries, render stubbed) executing the full check suite on every contract write.
-Nothing — human-authored, parametric, LLM-generated, or community-submitted — enters
-the registry, marketplace, or training queue without passing. The same machine that
-admits first-party content admits everyone's; the validator report ships with every
-listing. It is also the **repair oracle**: generation self-repair (P4) and co-design
-(P9) consume its machine-readable diagnostics.
+The **sovereign gatekeeper** — and, under D17, **the same bits everywhere**: in-studio
+WASM for instant feedback as users edit, a static binary in gateway admission and CI,
+a crates.io crate (plus npm package) for anyone embedding it. Nothing —
+human-authored, parametric, LLM-generated, or community-submitted — enters the
+registry, marketplace, or training queue without passing. At the R2 rung of the
+success ladder, *this distribution is the strategy* (D2): any lab, classroom, or CI
+pipeline can run the exact gatekeeper FORGE runs. It is also the **repair oracle**:
+generation self-repair (P4) and co-design (P9) consume its machine-readable
+diagnostics.
 
 ## 2. Where it runs
 
-| Trigger | Mode |
-|---|---|
-| CI on every PR | full suite over all first-party contracts |
-| Generation pipeline | per-pass incremental + full suite before admission; failures → diagnostics → bounded self-repair → draft (D14) |
-| Marketplace publish | full suite; report attached to listing |
-| Lockfile upgrade | re-validation + consequence diff (D5) |
-| Co-design | tier-0 oracle (schema/compat/static) per candidate |
+| Trigger | Form | Mode |
+|---|---|---|
+| In-studio, as the user edits | WASM (facade `validate`) | incremental checks, < 150 ms |
+| CI on every PR | static binary | full suite over all first-party contracts |
+| Generation pipeline | WASM per-pass + binary at admission (same bits, D17) | failures → diagnostics → bounded self-repair → draft (D14) |
+| Marketplace publish | binary | full suite; report attached to listing |
+| Lockfile upgrade | binary | re-validation + consequence diff (D5) |
+| Co-design | binary (native, tier-0 oracle) | < 50 ms per candidate |
+| Third parties (R2) | binary / crate / npm | their CI, their rules, our checks |
 
-Budget: **< 10 s full suite per model** (headless, parallel checks, BVH reuse).
-Determinism: simulated clock, seeded synthetic input, fixed dt, no real render.
+Budgets: **full suite < 10 s per model (binary); incremental < 150 ms (WASM)**.
+Determinism: simulated clock, seeded synthetic input, fixed dt, no real render; **no
+fast-math (D17)** — binary and WASM must be bit-identical (P1 exit criterion).
 
 ## 3. Check catalog *(proposed IDs — stabilize at P2-001; IDs are append-only once stable)*
 
@@ -78,6 +84,8 @@ Severity: `error` blocks admission; `warn` admits with notice.
 
 **RND — render** · RND-001 golden-image perceptual diff (canonical cameras) ·
 RND-002 blueprint pass renders cleanly.
+**XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
+bit-identical native↔WASM (detail: [`core-runtime.md`](core-runtime.md) §5).
 **LIF — lifecycle** · LIF-001 upgrade re-validation when lockfiles move (D5).
 **PRV — provenance** · PRV-001 prompt/seed hashes present on generated content ·
 PRV-002 training lineage present on policies/skills.
@@ -100,47 +108,65 @@ Failures are data, designed for the LLM repair loop and the UI alike:
 }
 ```
 
-Report envelope: `{contractHash, lockfileHash, schemaVersion, harnessVersion, seed,
-startedAt, durationMs, results[], verdict: "admitted" | "draft" | "rejected"}`.
-Verdict `draft` = D14 semantics (renders/edits; no train/export/share). Reports are
-stored with the artifact and are part of provenance.
+Report envelope: `{contractHash, lockfileHash, schemaVersion, validatorVersion, seed,
+target: "native" | "wasm", startedAt, durationMs, results[], verdict: "admitted" |
+"draft" | "rejected"}`. Verdict `draft` = D14 semantics (renders/edits; no
+train/export/share). Reports are stored with the artifact and are part of provenance.
+Because the bits are identical across targets (D17), a report is trustworthy
+wherever it was produced; official marketplace/leaderboard admission re-runs
+server-side as anti-cheat hygiene only.
 
-## 5. Runner & module layout *(proposed)*
+## 5. Crate & module layout *(proposed)*
 
 ```
-packages/harness/
-├── src/runner.ts        # orchestration, parallelism, seeding, report assembly
-├── src/checks/{geo,ctr,beh,sim,mfg,rnd,lif,prv,env}/...   # one module per check
-├── src/registry.ts      # check catalog: id, severity, phase-applicability, deps
-└── cli.ts               # `harness run <contract.json> [--checks GEO,CTR] [--report out.json]`
+crates/forge-validate/
+├── src/runner.rs        # orchestration, parallelism, seeding, report assembly
+├── src/checks/{geo,ctr,beh,sim,mfg,rnd,lif,prv,env}/...   # one module per check family
+├── src/registry.rs      # check catalog: id, severity, phase-applicability, deps
+└── src/bin/forge-validate.rs   # CLI: `forge-validate run <contract.json>
+                                #       [--checks GEO,CTR] [--report out.json]`
 ```
 
 Checks declare dependencies (e.g. BEH-* needs CTR-001 pass) so the runner can
-short-circuit and parallelize. Render checks stub the GPU (rasterize via the
-geometry layer or run in CI with headless GL — decide at P2).
+short-circuit and parallelize. Render checks (RND-*) need pixels: they run via the
+studio's golden-image harness in CI rather than inside the crate *(proposed — the
+crate exposes the pass/fail contract; the pixel diff is a CI sibling)*.
 
-## 6. Dependencies
+## 6. Distribution (D2, D17)
 
-`contract` (shapes), `geometry` (BVH, mass props, builds), `engines/motion` +
-`engines/sim` (smoke tests). The gateway wraps it as the validation service; CI
-invokes the CLI.
+Three artifacts from one crate, published at P2-001: **static binary** (CLI; the
+gateway spawns it — process isolation + bit-equality with CI), **npm WASM package**
+(via the facade), **crates.io crate** (for embedders). Versioned together; a report
+names its `validatorVersion` and `target`.
 
-## 7. Quality machinery around the harness (platform scale, plan §10)
+## 7. Dependencies
+
+`forge-contract` (shapes), `forge-geometry` (BVH, mass props, bake), `forge-motion` +
+`forge-sim` (smoke tests). The gateway wraps the binary as the validation service;
+the studio calls the facade; CI invokes the CLI.
+
+## 8. Quality machinery around the harness (platform scale, plan §10)
 
 Golden-image render tests; physics regression with trajectory tolerance bands per
-canonical scene; schema compatibility matrix; **generator fuzzing** with every
-failure minimized into a permanent regression case (XC-24); **Brief-25** generation
-suite with dashboard (D-evals — lives with the generation pipeline but is enforced
-here as a CI gate).
+canonical scene; the **golden-number suite** (XT-001) guarding native↔WASM
+exactness; schema compatibility matrix; **generator fuzzing** with every failure
+minimized into a permanent regression case (XC-24); **Brief-25** generation suite
+with dashboard (D-evals — lives with the generation pipeline but is enforced here as
+a CI gate).
 
-## 8. Phase mapping
+## 9. Phase mapping
 
-- **P0:** embryo — schema validity + part/face byte-equivalence vs the monolith (P0-008/009).
-- **P2:** productized — full catalog with stable IDs, diagnostic format, draft semantics (P2-001/002).
+- **P0:** embryo — schema validity + part/face byte-equivalence vs the monolith
+  (P0-004/008).
+- **P1:** full Rust assembly over the ported crates; binary = WASM bit-identical
+  (P1-004/007).
+- **P2:** productized — stable check IDs, diagnostic format, draft semantics,
+  binary/npm/crate publication (P2-001/002).
 - Grows a row whenever a feature introduces an invariant (BEST-PRACTICES §4).
 
-## 9. Open questions
+## 10. Open questions
 
-Headless render strategy for RND checks (software rasterize vs headless GL); whether
-warn-level findings surface in share-view UI; per-tier face budgets (numbers TBD with
-P1 profiling).
+Pixel-diff harness placement for RND checks (CI sibling assumed *(proposed)*);
+whether warn-level findings surface in share-view UI; per-tier face budgets (numbers
+TBD with P1 profiling); report signing for third-party-produced reports (post-R2
+question).

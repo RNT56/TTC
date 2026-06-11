@@ -1,6 +1,6 @@
 # TODO — every open task, all surfaces
 
-The single consolidated backlog. Sources: the v2.0 plan's phase scopes (§19), its
+The single consolidated backlog. Sources: the v3.0 plan's phase scopes (§19), its
 cross-cutting backlog, its open items (§22), and repository housekeeping. Phase-level
 *status* lives in [`ROADMAP.md`](ROADMAP.md); this file holds task-level detail.
 
@@ -18,55 +18,65 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 ## 0. Critical blockers
 
 - [!] **PRE-002 — Commit the prototype.** `cad-object-studio.html` (~83 KB single-file
-  studio) is the executable specification; P0's byte-equivalence criterion is
-  unverifiable without it. Blocked on: file lives only with the project owner —
-  request and commit it (suggested path `prototype/cad-object-studio.html`), then tag
-  `prototype-final`. **Blocks all of P0.**
+  studio) is the executable specification **and the parity oracle for the Rust port**
+  (P0 byte-equivalence, P1 golden numbers); neither criterion is verifiable without
+  it. Blocked on: file lives only with the project owner — request and commit it
+  (suggested path `prototype/cad-object-studio.html`), then tag `prototype-final`.
+  **Blocks all of P0.**
 
 ## 1. Pre-P0 housekeeping (PRE)
 
 - [x] PRE-001 — Documentation system: `CLAUDE.md`, `CHANGELOG.md`, `docs/` suite *(2026-06-11)*
 - [!] PRE-002 — Prototype committed + tagged (see Critical blockers)
-- [ ] PRE-003 — Licensing per D2: `LICENSE` (Apache-2.0) scoped to `packages/{contract,geometry,engines,harness}`, proprietary notice for the rest; confirm exact mechanics with owner before first code commit
-- [ ] PRE-004 — Repo hygiene: Node/TS `.gitignore`, `.editorconfig`, branch protection on `main`
+- [ ] PRE-003 — Licensing per D2: `LICENSE` (Apache-2.0) scoped to the `forge-core` crates + schema; proprietary notice for the rest; confirm exact mechanics with owner before first code commit
+- [ ] PRE-004 — Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, branch protection on `main`
 - [ ] PRE-005 — Naming: trademark scan for FORGE or a successor name (OD-01; non-blocking until public artifacts ship at P3/P4)
+- [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
 ## 2. Phase task breakdowns
 
 ### P0 — Freeze & extract
-- [ ] P0-001 — Author contract JSON Schema v2.1 (meta, env, skeleton, parts, slots, ports, chains, driver, materials, sim incl. colliders/estimator, lockfile) per [`systems/model-contract.md`](systems/model-contract.md)
-- [ ] P0-002 — TypeBox codegen: schema ↔ TS types in `packages/contract` (= XC-01)
-- [ ] P0-003 — Monorepo scaffold: pnpm + Turborepo + Vite; packages `contract`, `geometry`, `engines/*`, `studio`, `gateway`, `harness`, `link`; CI bootstrap (lint, typecheck, test)
-- [ ] P0-004 — Port primitive builders to TS (`box/cbox/taper/cyl/lathe/squircle/loft`) with smoothing-group normals, byte-stable output
-- [ ] P0-005 — Mechanical translation: humanoid model → `ModelSpec` JSON (skeleton, parts, 11 slots/variant share, ports, chains, driver params)
+- [ ] P0-001 — Author contract schema v2.1 **as Rust types in `forge-contract`** (serde + schemars: meta, env, skeleton, parts, slots, ports, chains, driver, materials, sim incl. colliders/estimator, lockfile) per [`systems/model-contract.md`](systems/model-contract.md)
+- [ ] P0-002 — schemars → TypeScript codegen pipeline: emitted JSON Schema → TS types for studio/gateway (= XC-01)
+- [ ] P0-003 — Monorepo scaffold: cargo workspace (`crates/forge-*`) + pnpm/Turborepo (`packages/studio`, `packages/gateway`) + `workers/`; CI bootstrap (clippy, fmt, cargo test, tsc, lint)
+- [ ] P0-004 — First-cut bake/count runner: load contract → build parts → count parts/faces → compare byte-equivalent against monolith extraction (existing JS math is an acceptable first cut pre-P1; it becomes the oracle)
+- [ ] P0-005 — Mechanical translation: humanoid model → `ModelSpec` JSON (skeleton, parts, slots, ports, chains, driver params)
 - [ ] P0-006 — Mechanical translation: VX-2 quad → `ModelSpec` JSON
 - [ ] P0-007 — Translate all 31 slot variants; verify slot/variant counts match prototype registry
-- [ ] P0-008 — Headless Node runner: load contract → build parts → count parts/faces → compare byte-equivalent against monolith extraction
-- [ ] P0-009 — Extraction harness for the monolith (instrument it read-only to dump part/face counts as the comparison fixture)
+- [ ] P0-008 — Extraction harness for the monolith (instrument read-only to dump part/face counts + recorded trajectories as comparison fixtures — these become P1's golden numbers)
+- [ ] P0-009 — **Freeze the core boundary API** (bake / tick / validate / patch — plan §5.3); document signatures in [`systems/core-runtime.md`](systems/core-runtime.md)
 - [ ] P0-010 — Tag monolith `prototype-final`; record freeze in changelog
 
-### P1 — Render & core port
-- [ ] P1-001 — Three.js scene graph mirroring skeleton nodes; per-material-class BatchedMesh (≤ 40 draw calls/model)
-- [ ] P1-002 — PBR material classes (gloss/metal/satin/matte/rubber) per mapping table; three-point IBL-lite rig, PCF shadows
-- [ ] P1-003 — Blueprint mode: normal/depth edge post pass + grid shader
-- [ ] P1-004 — Explode: chain/window math on instance matrices; leader lines (Line2 dashed + datum dots)
-- [ ] P1-005 — Selection: stencil outline; component-scoped picking
-- [ ] P1-006 — Jog teach-pendant, pause/frame-step, orbit + follow camera
-- [ ] P1-007 — Configurator pane: variant cards, rebuild-in-place preserving explode/jog state
-- [ ] P1-008 — Motion engine port: phase gait + 2-bone IK, planted-feet idle, heading spring, arrive; quad mixer; servo layer (ω, ζ per joint class); 120 Hz fixed-step worker
-- [ ] P1-009 — Rapier worker skeleton: world, fixed 240 Hz substeps, SharedArrayBuffer state mirror, zero per-frame allocation
-- [ ] P1-010 — Golden-scene parity gallery vs monolith (canonical cameras, perceptual diff harness) (= XC-04 foundations)
-- [ ] P1-011 — N8AO ambient occlusion + quality-tier scaffolding
-- [ ] P1-012 — Performance pass: 60 fps on mid hardware; budget instrumentation overlay
-- [ ] P1-013 — Profiling review: React vs Solid (OD-02) — record outcome in DECISIONS
+### P1 — Core & studio
+Rust port (landing order per risk mitigation: contract → motion → geometry → sim → validate; the JS implementations remain the oracle):
+- [ ] P1-001 — `forge-motion` port: phase gait + 2-bone IK, planted-feet idle, heading spring, arrive; quad mixer; servo layer (ω, ζ per joint class); constraint layer; 120 Hz fixed-step tick
+- [ ] P1-002 — `forge-geometry` port: primitive builders (`box/cbox/taper/cyl/lathe/squircle/loft`) with smoothing-group normals, **byte-stable bake** to flat buffers; mass properties (signed tetrahedra); per-part BVH + interference queries (= XC-09)
+- [ ] P1-003 — `forge-sim` port: propulsion/battery/estimator model stubs + Rapier integration (world, 240 Hz substeps, joint motors); worker wiring with shared-memory state mirror
+- [ ] P1-004 — `forge-validate` first full assembly: schema validity + geometry/behavior checks wired to the ported crates; CLI skeleton
+- [ ] P1-005 — WASM facade crate: bake/tick/validate/patch over wasm-pack; zero-copy buffer views; **≤ 2 MB gz**; humanoid bake ≤ 60 ms; patch re-bake ≤ 10 ms
+- [ ] P1-006 — **Golden-number suite harness** (= XC-26): canonical scenes + monolith-recorded trajectories; exact native↔WASM comparison in CI
+- [ ] P1-007 — Bit-identical verification: `forge-validate` binary vs WASM on both translated contracts (P1 exit criterion)
+
+Studio (TypeScript face):
+- [ ] P1-008 — Three.js scene graph mirroring skeleton nodes; per-material-class BatchedMesh consuming core-baked buffers (≤ 40 draw calls/model)
+- [ ] P1-009 — PBR material classes (gloss/metal/satin/matte/rubber) per mapping table; three-point IBL-lite rig, PCF shadows
+- [ ] P1-010 — Blueprint mode: normal/depth edge post pass + grid shader
+- [ ] P1-011 — Explode: chain/window math on instance matrices; leader lines (Line2 dashed + datum dots)
+- [ ] P1-012 — Selection: stencil outline; component-scoped picking
+- [ ] P1-013 — Jog teach-pendant, pause/frame-step, orbit + follow camera
+- [ ] P1-014 — Configurator pane: variant cards, rebuild-in-place preserving explode/jog state (via core patch/re-bake)
+- [ ] P1-015 — Golden-scene parity gallery vs monolith (canonical cameras, perceptual diff harness)
+- [ ] P1-016 — N8AO ambient occlusion + quality-tier scaffolding (= XC-22 foundations)
+- [ ] P1-017 — Performance pass: 60 fps on mid hardware; budget instrumentation overlay (frame, core tick, Rapier, UI)
 
 ### P2 — Data-driven models
-- [ ] P2-001 — Validation service: implement check catalog with stable IDs + diagnostic JSON per [`systems/validation-harness.md`](systems/validation-harness.md) (= XC-02)
+- [ ] P2-001 — Validator productized: check catalog with stable IDs + diagnostic JSON per [`systems/validation-harness.md`](systems/validation-harness.md) (= XC-02); npm WASM package + crates.io publication plumbing
 - [ ] P2-002 — Draft semantics (D14): failed contracts persist as editable drafts carrying diagnostics; drafts cannot train/export/share
 - [ ] P2-003 — Archetype driver library formalized: `biped`, `multirotor`, `rover`, `arm`, `quadruped` with parameter schemas
 - [ ] P2-004 — Quadruped driver: trot/walk generator, per-leg 3-DOF IK
 - [ ] P2-005 — Parametric family #1: quadruped generator (leg-count/wheelbase/mass sliders) emitting valid contracts
 - [ ] P2-006 — CI: full validation suite green on every PR for all first-party contracts
+- [ ] P2-007 — Measure napi-rs hot-path vs binary-spawn in the gateway; record decision (OD-08)
 
 ### P3 — Component DB + proof pair + reference rigs
 - [ ] P3-001 — Postgres schema: `components`, `connector_types`, `licenses`, `thrust_tables`, `prices`, `provenance`, `component_revisions` (DDL in [`systems/component-database.md`](systems/component-database.md))
@@ -74,18 +84,18 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P3-003 — Compatibility rule engine: mount-pattern equality, voltage-window intersection, current budget ×1.2, prop tip-circle clearance, TWR floors, connector matching — each violation with an explanation string
 - [ ] P3-004 — ETL worker v1: fetch → Claude extraction with per-field citations → OCCT tessellation → LOD chain → dedupe → license ledger entry → human review queue
 - [ ] P3-005 — License ledger + classes (`open/attribution/no-redistribution/view-only`) populated at ingestion, non-optional (D10)
-- [ ] P3-006 — Lockfile resolver: semver-pinned `componentRef`s against immutable `component_revisions`; upgrade flow re-validates and diffs mass/hover/price (D5) (= XC-03)
+- [ ] P3-006 — Lockfile resolver (in `forge-contract`): semver-pinned `componentRef`s against immutable `component_revisions`; upgrade flow re-validates and diffs mass/hover/price (D5) (= XC-03)
 - [ ] P3-007 — Proof pair: ingest one real 2207-class motor + one 4S 1500 mAh pack from datasheets; convert VX-2 `rotors` + `battery` slots to `componentRef`
 - [ ] P3-008 — Reference rigs (D12): select + pin ArduPilot-capable 5″ quad and Pi-class rover SKUs; record in DECISIONS
 - [ ] P3-009 — BOM exporter v1: CSV/JSON with SKUs, prices, links
 - [ ] P3-010 — Thrust-table interpolation module with published bench data for the proof motor (= XC-06)
 
 ### P4 — Text-to-CAD GA
-- [ ] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations) → admission/draft
-- [ ] P4-002 — Prompt-cache prefix builder: schema + engine docs + pattern exemplars (= XC-14)
+- [ ] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft
+- [ ] P4-002 — Prompt-cache prefix builder: schemars-emitted schema + engine docs + pattern exemplars (= XC-14)
 - [ ] P4-003 — Retrieval: pgvector over catalog + pattern library; schema-true few-shot exemplars
 - [ ] P4-004 — Pattern-library harvester with consent flags (§2.2 terms) (= XC-13)
-- [ ] P4-005 — Conversational editing: NL → JSON-Patch, incremental validation, rebuild-in-place, < 3 s
+- [ ] P4-005 — Conversational editing: NL → JSON-Patch → core patch/re-bake path, incremental validation, < 3 s
 - [ ] P4-006 — Provenance stamps: model version, prompt hash, seed, validator report on every generated artifact
 - [ ] P4-007 — Share URLs (D4): read-only contract viewer, no account required
 - [ ] P4-008 — BYO Anthropic key + metered credits plumbing (D3); studio-free tier boundaries
@@ -103,7 +113,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P5-005 — Photoscan admission path with `source: photoscan` provenance; optional datasheet merge
 - [ ] P5-006 — Burst-GPU integration (Modal/RunPod) + permanent result cache; 5-min SLO
 
-### P6 — Simulation depth + interop
+### P6 — Sim depth + interop
 - [ ] P6-001 — Contract→Rapier compiler: per-node compound colliders within D7 budgets; joint motors honoring torque/velocity limits
 - [ ] P6-002 — Collider-compound auto-fitter (hulls/primitives per node) (= XC-10)
 - [ ] P6-003 — Propulsion model: motor n ≈ Kv·V_eff·u, T = C_T·ρ·n²·D⁴, Q = C_Q·ρ·n²·D⁵; thrust-table interpolation; blade-element-lite fallback
@@ -114,7 +124,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P6-008 — MJCF exporter + URDF exporter (+ ros2_control) with golden fixtures (= XC-04)
 - [ ] P6-009 — URDF/MJCF importer: links→nodes, visual geoms→mesh parts, collision→compounds, joints→joint blocks; importer fixtures (= XC-05)
 - [ ] P6-010 — Rapier↔MuJoCo parity suite: drop tests, pendulum periods, hover trim, gait CoM trajectories; runs on every engine/exporter upgrade
-- [ ] P6-011 — Replay format v1: {contract hash + lockfile, env, seed, input tape}; client tolerance-band drift detection (D6)
+- [ ] P6-011 — Replay format v1: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
 
 ### P7 — Training service
 - [ ] P7-001 — Task suite v1 (versioned env definitions): hover-hold, waypoint chain, gate slalom, velocity tracking; walk-to-target, rough-terrain, push recovery; line-follow, obstacle course; reach/track
@@ -128,7 +138,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P7-009 — Behavior cloning + offline RL ingestion seam for telemetry logs (full pipeline lands P8+)
 - [ ] P7-010 — MJX benchmark: measure CPU-MuJoCo PPO saturation on our morphologies before adopting (claims hedged until benchmarked)
 
-### P8 — Hardware bridge + recorder
+### P8 — Bridge + Desktop
 - [ ] P8-000 — **Entry gate:** ToS/liability legal review (ladder UX, supervisor disclaimers, telemetry consent) — see [`security-safety-legal.md`](security-safety-legal.md)
 - [ ] P8-001 — WebSerial FC configuration writer (Betaflight-configurator pattern; config diffs compiled from contract)
 - [ ] P8-002 — Telemetry ingest over WebSerial/WebUSB into the recorder
@@ -140,11 +150,15 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P8-008 — Safety supervisor: geofence, attitude/rate envelopes, battery floor, kill switch, fallback controller; policy advisory at ~50 Hz, supervisor ≥ 200 Hz
 - [ ] P8-009 — Pilot: reference quad SITL→HITL→tethered, documented
 - [ ] P8-010 — Pilot: reference rover deployment via ROS 2 path, documented
+- [ ] P8-011 — **FORGE Desktop (Tauri) shell**: same web bundle in webview; build + signing + update pipeline for the three desktop OSes (D15)
+- [ ] P8-012 — Desktop serial plugin (serialport-rs): bridge beyond Chromium (= XC-27 part 1)
+- [ ] P8-013 — Desktop background recorder + real-filesystem log archives (= XC-27 part 2)
+- [ ] P8-014 — Field demo: a log captured by Desktop replays with visible ghost divergence (P8 exit criterion)
 
 ### P9 — Co-design optimizer
 - [ ] P9-001 — Parameter-manifold encoding: slot choices categorical, dims/driver params continuous, validator bounds
 - [ ] P9-002 — CMA-ES orchestrator + Optuna TPE for categorical-heavy spaces
-- [ ] P9-003 — Multi-fidelity ladder: tier 0 (schema/compat/static, ms) → tier 1 (Rapier smoke, s) → tier 2 (short MuJoCo rollouts) → tier 3 (full training, finalists only)
+- [ ] P9-003 — Multi-fidelity ladder: tier 0 (schema/compat/static — native via core binary, < 50 ms) → tier 1 (Rapier smoke, s) → tier 2 (short MuJoCo rollouts) → tier 3 (full training, finalists only)
 - [ ] P9-004 — Pareto-front UI: each point an admitted, openable contract
 - [ ] P9-005 — MJX batching for tier 2/3 if P7-010 benchmark demands
 
@@ -153,7 +167,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P10-002 — Env gatekeeper checks: reachability, bounds sanity, spawn validity, collider sanity
 - [ ] P10-003 — Environment generation through the P4 pipeline
 - [ ] P10-004 — Course sharing by URL; courses as community objects
-- [ ] P10-005 — Leaderboards: per-course/archetype/class; server-side bit-exact replay verification (D6) (= XC-25)
+- [ ] P10-005 — Leaderboards: per-course/archetype/class; replay verification — universally checkable (D17), server re-verified as anti-cheat hygiene (= XC-25)
 - [ ] P10-006 — Course→RL-task adapter (popular courses become training curricula)
 
 ### P11 — Platform
@@ -161,7 +175,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [ ] P11-001 — Accounts (Auth.js; anonymous-local mode remains first-class)
 - [ ] P11-002 — Marketplace: model listings with gatekeeper-stamped validator reports
 - [ ] P11-003 — Skills marketplace: ONNX + I/O header + scorecard + training lineage; fine-tune-against-buyer's-twin offer for non-matching morphologies
-- [ ] P11-004 — Classroom mode: briefs as assignments, rubric = validator config + scorecard thresholds, auto-grading
+- [ ] P11-004 — Classroom mode: briefs as assignments, rubric = validator config + scorecard thresholds, auto-grading; `forge-validate` free binary as the institutional on-ramp
 - [ ] P11-005 — BOM agent: live vendor offers for catalog slots
 - [ ] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency)
 - [ ] P11-007 — UGC moderation policy live: report flow, takedown SLA, repeat-infringer rule
@@ -176,11 +190,12 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 
 ## 3. Cross-cutting backlog (XC) — tracked from day one
 
-From the plan §19. Each lands no later than its phase; build earlier when touched.
+From the plan §19 (v3.0). Each lands no later than its phase; build earlier when
+touched.
 
 | ID | Item | Earliest | Owning doc |
 |---|---|---|---|
-| XC-01 | Contract JSON-Schema with TypeBox codegen | P0 | systems/model-contract.md |
+| XC-01 | schemars → TypeScript codegen pipeline (Rust schema is the single source) | P0 | systems/model-contract.md |
 | XC-02 | Harness check IDs + diagnostic format | P2 | systems/validation-harness.md |
 | XC-03 | Lockfile resolver + upgrade-diff UI | P3 | systems/component-database.md |
 | XC-04 | MJCF/URDF exporter goldens | P6 | systems/simulation-engine.md |
@@ -205,17 +220,20 @@ From the plan §19. Each lands no later than its phase; build earlier when touch
 | XC-23 | Schema migration runner | P2 | systems/model-contract.md |
 | XC-24 | Fuzz corpus seed set | P4 | systems/validation-harness.md |
 | XC-25 | Leaderboard replay verifier | P10 | systems/environments-courses.md |
+| XC-26 | Golden-number suite harness (cross-target exactness, D17) | P1 | systems/core-runtime.md |
+| XC-27 | Tauri serial + background-recorder plugins | P8 | systems/hardware-bridge.md |
 
 ## 4. Open decisions (OD) — non-blocking, from plan §22
 
 | ID | Question | Decide by |
 |---|---|---|
 | OD-01 | Product name (FORGE pending trademark scan) | before public launch (P3/P4 marketing) |
-| OD-02 | React vs Solid | after P1 profiling (P1-013) |
+| OD-02 | ~~React vs Solid~~ — **resolved by D16** (the face stays React/TS; v3.0) | — |
 | OD-03 | Left/right asymmetric slot UX (contract already supports) | when a build needs it |
 | OD-04 | WASM user-controller sandbox design | post-P7 design review |
 | OD-05 | Marketplace economics (revenue share, skill pricing) | inside P11 with usage data |
 | OD-06 | Fixed-wing archetype priority | when demand signals |
 | OD-07 | Photoscan alignment UI: before or with P5 GA | during P5 |
+| OD-08 | napi-rs hot-path bindings vs binary-spawn in the gateway | measure in P2 (P2-007) |
 
 Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.

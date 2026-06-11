@@ -1,8 +1,8 @@
 # Compute Workers (Python plane) — implementation doc
 
 **Status:** not started · **Phases:** P3 (ETL), P5 (photoscan), P6 (OCCT full), P7
-(training) · **Home:** `workers/` *(proposed)* · **Plan refs:** §5, §6, §8.3, §8.4 ·
-**Decisions:** D13 (refit acceptance)
+(training) · **Home:** `workers/` *(proposed)* · **Plan refs:** §5.2, §6, §8.3
+(v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved)
 
 ## 1. Purpose
 
@@ -47,9 +47,11 @@ rights only (privacy rules in [`security-safety-legal.md`](../security-safety-le
 `train.policy` (MJCF → SB3 PPO/SAC → ONNX + scorecard — details in
 [`learning-engine.md`](learning-engine.md)); `train.sysid-fit` (bench pulls/logs/step
 responses → fitted Kv/R_int/time-constants/friction → sim-block update proposal);
-`replay.verify` (bit-exact server replay for scorecards/leaderboards, D6);
+`replay.verify` (server re-verification of replay tapes for official
+scorecards/leaderboards — anti-cheat hygiene under D17);
 `codesign.evaluate` (tier-2/3 rollouts for P9; MJX batching when the P7-010
-benchmark demands).
+benchmark demands; tier-0 runs in the gateway via the native `forge-validate`
+binary, not here).
 
 ## 4. GPU burst policy
 
@@ -60,7 +62,7 @@ content hash of inputs (photos / contract+lockfile+task+seed).
 ## 5. Dependencies
 
 Postgres (queue + rows), object storage, published contract JSON Schema, Anthropic
-API (ETL), the MJCF compiler output from `engines/sim`.
+API (ETL), the MJCF compiler output from `forge-sim`.
 
 ## 6. Testing
 

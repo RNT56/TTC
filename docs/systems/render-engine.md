@@ -1,26 +1,32 @@
 # Render Engine — implementation doc
 
-**Status:** not started · **Phases:** P1 · **Package:** `packages/engines/render`
-*(proposed)* · **Plan refs:** §7.2 · **Decisions:** D11
+**Status:** not started · **Phases:** P1 · **Home:** `packages/studio` render layer
+**(TypeScript, deliberately — D16)** · **Plan refs:** §7.2, §5.2 (v3.0) ·
+**Decisions:** D15, D16
 
 ## 1. Purpose
 
-The Three.js studio layer that replaces the prototype's CPU painter's-algorithm
-rasterizer. The headline deliverable is structural: **the shimmer dies by
-construction** — a z-buffer resolves deliberately interpenetrating solids (shells,
-boots, struts) per pixel, which no per-face sort can ever do. P1's exit criteria are
-a golden-scene parity gallery versus the monolith, shimmer gone, and 60 fps on mid
-hardware.
+The Three.js layer that replaces the prototype's CPU painter's-algorithm rasterizer.
+Under the runtime split it is **a thin consumer of core-baked buffers**: rendering is
+presentation, not truth, so it stays web by design — rebuilding rendering in wgpu was
+always the expensive, non-differentiating rewrite. The headline deliverable is
+structural: **the shimmer dies by construction** — a z-buffer resolves deliberately
+interpenetrating solids (shells, boots, struts) per pixel, which no per-face sort can
+ever do. P1's exit criteria include a golden-scene parity gallery versus the
+monolith, shimmer gone, and 60 fps on mid hardware.
 
 ## 2. Architecture
 
-- **Scene graph** mirrors the contract's skeleton nodes; parts become indexed
-  `BufferGeometry` records batched per material class (`BatchedMesh`) — a whole model
-  is a handful of draw calls (budget: ≤ 40/model).
+- **Input is the core boundary's bake output** (architecture §2): zero-copy views
+  over WASM linear memory (`Float32Array` positions/normals, `Uint32Array` indices,
+  material ids) wrapped directly as Three.js BufferAttributes. No per-frame JSON; no
+  geometry math in TS.
+- **Scene graph** mirrors the contract's skeleton nodes; parts batch per material
+  class (`BatchedMesh`) — a whole model is a handful of draw calls (budget:
+  ≤ 40/model). Pose matrices come from the core `tick`'s shared region,
+  render-interpolated.
 - **WebGL2 baseline**, `WebGPURenderer` behind a flag (TSL gives the path without a
-  rewrite). Chromium floor declared (D11).
-- The part format from the prototype (vertices, faces, per-face normals, materials)
-  maps directly to GPU buffers — the model layer survives the renderer swap untouched.
+  rewrite). Full studio targets the Chromium floor; viewer-grade elsewhere (D15).
 
 ## 3. Materials & lighting
 
@@ -53,29 +59,29 @@ becomes physically consistent for free. AO via N8AO at quality tiers.
 ## 5. Budgets (binding)
 
 ≤ 6 ms render inside the 16.6 ms frame; ≤ 40 draw calls/model; 150 k-tri scene cap
-before tiers engage; cold load < 2.5 s to interactive (code-split, lazy OCCT/ONNX,
+before tiers engage; cold load < 2.5 s to interactive (code-split, lazy ONNX/CSG,
 streaming WASM compile).
 
 ## 6. Dependencies
 
-`contract`, `geometry` (mesh buffers). Hosts: `studio`. The motion engine feeds node
-transforms (interpolated from the 120 Hz worker tick); the recorder feeds ghost
-overlay geometry (P8).
+The core facade (bake buffers + tick shared region); `forge-contract` types via
+codegen. Hosts: `packages/studio`. The recorder feeds ghost overlay geometry (P8).
 
 ## 7. Testing
 
 Golden-image perceptual diffs on the canonical camera set (RND-001) — built at P1 as
 the parity gallery vs the monolith, then kept forever as regression; blueprint render
 check (RND-002); draw-call and frame-budget assertions in a perf harness on
-representative scenes.
+representative scenes; zero-copy discipline test (no buffer cloning on the bake
+path *(proposed: allocation assertions in the perf harness)*).
 
 ## 8. Phase mapping & backlog
 
-P1: P1-001..007, P1-010..012; XC-22. P8 adds the ghost overlay consumer
+P1: P1-008..017 studio tasks; XC-22 foundations. P8 adds the ghost overlay consumer
 ([`hardware-bridge.md`](hardware-bridge.md)).
 
 ## 9. Open questions
 
 N8AO vs alternative AO at low tier; whether the parity gallery diffs against
 prototype *screenshots* or re-rendered references (prototype screenshots are the
-honest baseline — decide tooling at P1-010); WebGPU flag timing.
+honest baseline — decide tooling at P1-015); WebGPU flag timing.

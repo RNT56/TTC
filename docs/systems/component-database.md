@@ -1,8 +1,9 @@
 # Component Database & Compatibility Engine — implementation doc
 
 **Status:** not started · **Phases:** P3 · **Home:** Postgres (data plane) +
-`packages/gateway` (compatibility rules) + `workers/etl` *(proposed)* · **Plan
-refs:** §9 · **Decisions:** D1, D5, D10, D12
+`packages/gateway` (compatibility rules) + `workers/etl`; lockfile resolution in
+`crates/forge-contract` *(proposed)* · **Plan refs:** §9 (v3.0) · **Decisions:** D1,
+D5, D10, D12
 
 ## 1. Purpose
 

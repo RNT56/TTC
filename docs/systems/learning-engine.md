@@ -1,8 +1,9 @@
 # Learning Engine — implementation doc
 
 **Status:** not started · **Phases:** P7 (service), P8+ (curricula from reality) ·
-**Home:** `workers/training` + `packages/engines/policy` *(proposed)* · **Plan
-refs:** §7.5, §11, Appendix C · **Decisions:** D6, D8, D-evals (adjacent)
+**Home:** `workers/training` (+ ONNX playback in `packages/studio`) *(proposed)* ·
+**Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D-evals
+(adjacent)
 
 ## 1. Purpose
 
@@ -49,7 +50,9 @@ randomization grid doubles as the **robustness axis of the scorecard**.
 ## 6. Scorecards (the gate)
 
 `{successRate, robustness: grid results, energy, taskVersion, randomizationConfig,
-lineage}`. Computed **server-side** (D6). Gates: sub-threshold → no export;
+lineage}`. Computed by the training service; under D17 the evaluation replays are
+verifiable on any surface, with server re-verification as anti-cheat hygiene for
+marketplace/leaderboard use. Gates: sub-threshold → no export;
 **estimator smoke (SIM-004/D8)** — a policy whose performance collapses when run on
 estimator output (i.e., trained on ground truth) is rejected at scorecard time.
 Renderer in studio: XC-21.
@@ -63,9 +66,10 @@ playback through ONNX Runtime Web (P7-008).
 
 ## 8. Dependencies
 
-`engines/sim` (MJCF compiler, estimator spec), `contract`, MuJoCo/SB3/PyTorch in
-`workers/training`; `engines/policy` for the browser side. Co-design (P9) calls
-tier-2/3 evaluations through this service.
+`forge-sim` (MJCF compiler, estimator spec), `forge-contract` (schema for
+obs/action derivation), MuJoCo/SB3/PyTorch in `workers/training`; ONNX Runtime Web
+in the studio for playback. Co-design (P9) calls tier-2/3 evaluations through this
+service.
 
 ## 9. Testing
 

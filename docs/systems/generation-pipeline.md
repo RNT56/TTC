@@ -1,8 +1,8 @@
 # Generation Pipeline (Text-to-CAD) — implementation doc
 
 **Status:** not started · **Phases:** P4 (GA), P10 (environments) · **Home:**
-`packages/gateway` (orchestrator) *(proposed)* · **Plan refs:** §8 · **Decisions:**
-D3, D14, D-evals
+`packages/gateway` (orchestrator) *(proposed)* · **Plan refs:** §8 (v3.0) ·
+**Decisions:** D3, D14, D16, D17, D-evals
 
 ## 1. Purpose
 
@@ -17,13 +17,15 @@ Generation quality is an engineering quantity with CI and a dashboard (Brief-25)
 2. **Retrieval** — pgvector over the component catalog and the **pattern library**
    (validated part-group idioms harvested from admitted models under the D2 consent
    terms, XC-13); retrieved exemplars ride along as schema-true few-shot context; the
-   schema + engine docs sit in a **prompt-cached prefix** (XC-14).
+   **schemars-emitted schema** + engine docs sit in a **prompt-cached prefix**
+   (XC-14) — the same schema artifact `forge-contract` is built from (D16).
 3. **Constrained synthesis** — Claude emits *only* contract JSON via tool use with
    the JSON Schema enforced. **Multi-pass emission order:** skeleton + slots + ports
    + driver params first; per-slot parts second; materials/explode/sim third. Small
    emissions are checkable and cheap to repair; slots stream into the viewport as
    they validate (60 s budget).
-4. **Validator in the loop** — every pass runs the harness; failures return as
+4. **Validator in the loop** — every pass runs `forge-validate` (in-process WASM for
+   instant feedback, the binary in CI — **same bits, D17**); failures return as
    machine-readable diagnostics (the [`validation-harness.md`](validation-harness.md)
    §4 format: `ground_penetration: an1 −4.2 mm @ phase 0.31`,
    `port_unresolved: XT60@batt`, `collider_budget: 31 > 24`); the model self-repairs,
@@ -37,7 +39,8 @@ Generation quality is an engineering quantity with CI and a dashboard (Brief-25)
 
 "Make the arms 20 % longer" / "swap to ducted props" compile to **JSON-Patch
 operations** against the live contract, validated incrementally, applied with
-rebuild-in-place (explode/jog state preserved). Budget: < 3 s.
+rebuild-in-place via the core's patch/re-bake path (explode/jog state preserved;
+re-bake ≤ 10 ms). Budget: < 3 s end to end.
 
 ## 4. Cost & model discipline (D3)
 
@@ -72,9 +75,9 @@ resolution, wire list from electrical ports.
 
 ## 8. Dependencies
 
-`contract` (schema + types), validation service (the repair oracle), component DB
-(retrieval + componentRefs), Anthropic API, `studio` (streaming viewport, draft UX
-XC-16).
+`forge-contract` (schemars schema + types), `forge-validate` (the repair oracle —
+WASM + binary), component DB (retrieval + componentRefs), Anthropic API, `studio`
+(streaming viewport, draft UX XC-16).
 
 ## 9. Testing
 

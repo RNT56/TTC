@@ -1,9 +1,15 @@
 # ROADMAP — phases, exit criteria, live status
 
-Source: [`FORGE-plan.md`](FORGE-plan.md) §19 (binding scope) expanded with tracking
-state. **A phase closes only when every exit criterion below is checked, the docs it
-invalidates are updated, and the changelog records the close.** Estimates assume a
-solo builder pairing with AI agents.
+Source: [`FORGE-plan.md`](FORGE-plan.md) §19 (v3.0, binding scope) expanded with
+tracking state. **A phase closes only when every exit criterion below is checked, the
+docs it invalidates are updated, and the changelog records the close.** Estimates
+assume a solo builder pairing with AI agents.
+
+**Schedule honesty (v3.0):** the Rust core moves the wedge (end of P4) from roughly
+13–16 weeks (v2) to roughly **16–21 weeks** — the price of one-implementation-
+everywhere, paid once, at the start, with the oracle watching. Every later phase is
+cheaper for it: P2's validator productization is mostly packaging an existing binary,
+and D17 deletes an entire class of client/server consistency work.
 
 **Status legend:** ○ not started · ◑ in progress · ● done · ⛔ blocked
 **Task detail** lives in [`TODO.md`](TODO.md) (IDs `P0-…`, `XC-…`); this file tracks
@@ -12,23 +18,24 @@ phase-level state only.
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ | days |
-| P0 Freeze & extract | ⛔ (needs PRE-002, the prototype file) | 1–2 wk |
-| P1 Render & core port | ○ | 3–4 wk |
+| P0 Freeze & extract | ⛔ (needs PRE-002, the prototype file) | 1.5–2.5 wk |
+| P1 Core & studio | ○ | 6–8 wk |
 | P2 Data-driven models | ○ | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ○ | 2–3 wk |
 | P4 Text-to-CAD GA | ○ | 3–4 wk |
 | P5 Image → 3D | ○ | 3 wk |
-| P6 Simulation depth + interop | ○ | 3–4 wk |
+| P6 Sim depth + interop | ○ | 3–4 wk |
 | P7 Training service | ○ | 4 wk |
-| P8 Hardware bridge + recorder | ○ | 4–6 wk |
-| P9 Co-design optimizer | ○ | 4 wk |
+| P8 Bridge + Desktop | ○ | 5–7 wk |
+| P9 Co-design | ○ | 4 wk |
 | P10 Environments & courses | ○ | 3–4 wk |
 | P11 Platform | ○ | open |
 | P12 Maintenance twin | ○ | 3 wk |
 
-Sequencing rationale (decisions D1–D4): verify-first means P3 (catalog truth) ships
-and gets attention before P4 (generation GA); sharing arrives at P4, not the platform
-phase; the marketplace is deliberately last.
+Sequencing rationale (D1–D4): verify-first means P3 (catalog truth) ships and gets
+attention before P4 (generation GA); sharing arrives at P4; the marketplace is
+deliberately last. The success ladder (plan §1.3) maps rungs to phases: R1 = P1–P4,
+R2 = P5–P7, R3 = P7–P9, R4 = P10–P12.
 
 ---
 
@@ -38,47 +45,55 @@ Scope: make the repository workable — documentation system, the prototype comm
 licensing groundwork.
 
 - [x] Documentation system in place (`CLAUDE.md`, `CHANGELOG.md`, `docs/` suite)
-- [ ] **`cad-object-studio.html` prototype committed** as the executable reference (PRE-002 — blocks P0)
-- [ ] License files reflecting open-core split (D2): Apache-2.0 for schema/engines/harness; proprietary notice for the rest (PRE-003)
-- [ ] Repo hygiene: Node/TS `.gitignore`, `.editorconfig`, default-branch protection (PRE-004)
+- [x] Plan v3.0 adopted as binding; v2.0 archived as historical (2026-06-11)
+- [ ] **`cad-object-studio.html` prototype committed** as executable reference + parity oracle (PRE-002 — blocks P0)
+- [ ] License files reflecting open-core split (D2): Apache-2.0 for the core crates + schema; proprietary notice for the rest (PRE-003)
+- [ ] Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, default-branch protection (PRE-004)
 
 ## P0 — Freeze & extract
 
-**Scope:** Monolith tagged as the executable reference; contract schema v2.1 written
-(env, estimator, lockfile, license classes, collider compounds); mechanical
-translation of both prototype models (humanoid + VX-2 quad) and all 31 variants to
-JSON; monorepo scaffold.
-**Owning docs:** [`systems/model-contract.md`](systems/model-contract.md),
-[`systems/validation-harness.md`](systems/validation-harness.md),
+**Scope:** Monolith tagged as executable reference; contract schema v2.1 (env,
+estimator, lockfile, license classes, collider compounds) **authored in
+`forge-contract` with schemars emission**; mechanical translation of both prototype
+models (humanoid + VX-2) and all 31 variants to JSON; **cargo + pnpm monorepo
+scaffold**; **core boundary API frozen** (plan §5.3).
+**Owning docs:** [`systems/core-runtime.md`](systems/core-runtime.md),
+[`systems/model-contract.md`](systems/model-contract.md),
 [`architecture.md`](architecture.md) §3.
 
 Exit criteria:
-- [ ] Both contracts validate in a Node runner
-- [ ] Part/face counts **byte-equivalent** to the monolith for both models across all 31 variants
-- [ ] Contract JSON Schema v2.1 published in `packages/contract` with TypeBox codegen
-- [ ] Monorepo scaffold builds green in CI (pnpm + Turborepo + Vite)
+- [ ] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith across all 31 variants
+- [ ] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars
+- [ ] TS types codegen from the Rust schema (schemars → TS pipeline working in CI)
+- [ ] Cargo workspace + pnpm/Turborepo scaffold builds green in CI
+- [ ] Core boundary API (bake / tick / validate / patch) frozen and documented
 - [ ] Prototype tagged (e.g. `prototype-final`) and never modified after
 
-## P1 — Render & core port
+## P1 — Core & studio
 
-**Scope:** Three.js studio (scene graph, PBR materials, blueprint, explode + leader
-lines, selection, jog, configurator pane, orbit); motion-engine port (gait/IK, mixer,
-servos); Rapier worker skeleton.
-**Owning docs:** [`systems/render-engine.md`](systems/render-engine.md),
+**Scope:** `forge-core` crates ported from the proven JS with the **harness as parity
+oracle** (plan §5.4), landing order contract → motion → geometry → sim → validate;
+WASM facade crate; Three.js studio (scene graph, PBR, blueprint, explode + leaders,
+selection, jog, configurator pane, orbit) **consuming core-baked buffers**; Rapier
+worker driven from `forge-sim`.
+**Owning docs:** [`systems/core-runtime.md`](systems/core-runtime.md),
+[`systems/render-engine.md`](systems/render-engine.md),
 [`systems/motion-engine.md`](systems/motion-engine.md),
 [`systems/studio-ui.md`](systems/studio-ui.md).
 
 Exit criteria:
+- [ ] **Golden-number suite green native↔WASM** (canonical scenes, bit-identical trajectories)
 - [ ] Golden-scene parity gallery versus the monolith (canonical cameras, perceptual diff)
 - [ ] **Shimmer gone** — z-buffer renderer resolves all deliberately overlapping solids
-- [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 3 ms motion / ≤ 4 ms physics / ≤ 2 ms UI)
-- [ ] React-vs-Solid decision revisited with profiling data (OD-02; expected outcome: stay)
+- [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI)
+- [ ] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts
+- [ ] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms
 
 ## P2 — Data-driven models
 
-**Scope:** Validation service productized (check IDs, diagnostic format, draft
-semantics); archetype driver library formalized; parametric family #1 — quadruped
-generator with leg-count/wheelbase/mass sliders.
+**Scope:** Validator productized (check IDs, diagnostic format, draft semantics) —
+mostly packaging the existing binary; archetype driver library formalized; parametric
+family #1 — quadruped generator with leg-count/wheelbase/mass sliders.
 **Owning docs:** [`systems/validation-harness.md`](systems/validation-harness.md),
 [`systems/motion-engine.md`](systems/motion-engine.md).
 
@@ -86,6 +101,7 @@ Exit criteria:
 - [ ] A quadruped spec becomes a valid walking model with **zero hand-written code**
 - [ ] CI green on the full validation suite
 - [ ] Diagnostic format stable and machine-readable (consumed later by generation repair, P4)
+- [ ] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08)
 
 ## P3 — Component DB + proof pair + reference rigs
 
@@ -105,8 +121,9 @@ Exit criteria:
 ## P4 — Text-to-CAD GA
 
 **Scope:** Generation orchestrator (retrieval, multi-pass constrained synthesis,
-validator-in-loop repair, draft fallback D14, JSON-Patch editing, provenance stamps);
-share URLs (D4); BYO key + metered credits (D3); Brief-25 suite live (D-evals).
+validator-in-loop repair via in-process WASM, draft fallback D14, JSON-Patch editing
+through the core patch/re-bake path, provenance stamps); share URLs (D4); BYO key +
+metered credits (D3); Brief-25 suite live (D-evals).
 **Owning docs:** [`systems/generation-pipeline.md`](systems/generation-pipeline.md),
 [`systems/platform.md`](systems/platform.md) §2.
 
@@ -121,26 +138,26 @@ Exit criteria:
 
 **Scope:** TRELLIS/photogrammetry workers, primitive refit with the D13 acceptance
 metric, browser alignment UI, photoscan admission path.
-**Owning docs:** [`systems/compute-workers.md`](systems/compute-workers.md) §4,
-[`systems/geometry-engine.md`](systems/geometry-engine.md) §refit.
+**Owning docs:** [`systems/compute-workers.md`](systems/compute-workers.md) §3.3,
+[`systems/geometry-engine.md`](systems/geometry-engine.md).
 
 Exit criteria:
 - [ ] A photographed motor becomes an equipable parametric component end to end
 - [ ] D13 acceptance enforced (≥ 70 % fit coverage, Hausdorff ≤ 1.5 % of bounding diagonal, else mesh-class)
 - [ ] Photo→part job under the 5-minute SLO on burst GPU; results cached permanently
 
-## P6 — Simulation depth + interop out/in
+## P6 — Sim depth + interop out/in
 
 **Scope:** Full Rapier coupling, propulsion/battery/estimator models, HUD analytics,
 disturbance injectors; MJCF/URDF exporters with parity suite; URDF/MJCF **importer**.
 **Owning docs:** [`systems/simulation-engine.md`](systems/simulation-engine.md),
-[`systems/model-contract.md`](systems/model-contract.md) §compile-targets.
+[`systems/model-contract.md`](systems/model-contract.md) §6.
 
 Exit criteria:
 - [ ] Hover trim agrees across Rapier and MuJoCo within tolerance (parity suite green)
 - [ ] An external URDF round-trips into a driveable contract
 - [ ] Endurance estimate within stated error of bench math; assumptions inspectable in HUD
-- [ ] Replay format stable: {contract hash + lockfile, env, seed, input tape}
+- [ ] Replay format stable: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
 
 ## P7 — Training service
 
@@ -154,11 +171,12 @@ Exit criteria:
 - [ ] Hover-class task to passing scorecard overnight on one consumer GPU
 - [ ] Scorecard schema final: success rate, robustness grid, energy; sub-threshold policies do not export
 
-## P8 — Hardware bridge + recorder
+## P8 — Bridge + Desktop
 
 **Scope:** WebSerial config writer, telemetry ingest, system-ID fitting, flight
-recorder + ghost overlay, FORGE Link companion image, deployment-ladder UX with the
-safety supervisor and control-rate contract (D9); pilots on both reference rigs.
+recorder + ghost overlay, **FORGE Desktop (Tauri): serial plugin, fs, background
+recorder (D15)**, FORGE Link companion image, deployment-ladder UX with the safety
+supervisor and control-rate contract (D9); pilots on both reference rigs.
 **Entry gate (hard):** ToS/liability legal review complete
 ([`security-safety-legal.md`](security-safety-legal.md) §3).
 **Owning docs:** [`systems/hardware-bridge.md`](systems/hardware-bridge.md).
@@ -167,28 +185,30 @@ Exit criteria:
 - [ ] Legal review of ladder UX, supervisor disclaimers, telemetry consent — **before any deployment feature ships**
 - [ ] A real quad configured from its contract via WebSerial
 - [ ] SITL → HITL → tethered demonstrated and documented on the reference quad
-- [ ] A real log replayed with ghost divergence visible
+- [ ] **A field log captured by FORGE Desktop replays with visible ghost divergence**
 - [ ] System-ID fit updates the contract's sim block from bench/flight telemetry
 
 ## P9 — Co-design optimizer
 
 **Scope:** CMA-ES/Bayesian-optimization orchestrator, multi-fidelity evaluation
-ladder, Pareto-front UI; MJX batching as needed.
+ladder (tier 0 native-fast via the core binary), Pareto-front UI; MJX batching as
+needed.
 **Owning docs:** [`systems/co-design.md`](systems/co-design.md).
 
 Exit criteria:
 - [ ] "Lightest quad for this course under constraints" returns ≥ 3 admitted Pareto points overnight
-- [ ] Tier-0/1 candidate evaluation < 5 s; 200-candidate CMA-ES generation overnight at tier 2
+- [ ] Tier-0 candidate evaluation < 50 ms native; 200-candidate CMA-ES generation overnight at tier 2
 - [ ] Every returned point is a fully admitted contract (validator as constraint oracle)
 
 ## P10 — Environments & courses
 
 **Scope:** EnvSpec schema + gatekeeper, environment generation, course sharing,
-leaderboards with server-replayed verification (D6).
+leaderboards with replay verification (universally checkable under D17; server
+re-verification as anti-cheat hygiene).
 **Owning docs:** [`systems/environments-courses.md`](systems/environments-courses.md).
 
 Exit criteria:
-- [ ] A community course races with a verified leaderboard (server-side bit-exact replay)
+- [ ] A community course races with a verified leaderboard
 - [ ] A popular course doubles as an RL task without conversion work
 
 ## P11 — Platform

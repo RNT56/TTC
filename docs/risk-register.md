@@ -1,8 +1,8 @@
 # RISK REGISTER
 
-Source: plan §20 (binding), extended with watch triggers — the observable signal that
-says a mitigation is failing and the risk needs active management. Review at every
-phase close; note material changes in the changelog.
+Source: plan §20 (v3.0, binding), extended with watch triggers — the observable
+signal that says a mitigation is failing and the risk needs active management. Review
+at every phase close; note material changes in the changelog.
 
 | # | Risk | L | I | Mitigation | Watch trigger |
 |---|---|---|---|---|---|
@@ -13,10 +13,12 @@ phase close; note material changes in the changelog.
 | R5 | Generation-eval drift (model bumps silently degrade quality) | Med | Med | Brief-25 re-runs on every prompt/schema/pattern/model change with tracked metrics | dashboard regression after any model-version bump |
 | R6 | GPU cost creep (photoscan/training/co-design) | Med | Med | burst-only GPUs; permanent caching; Batch API ETL; multi-fidelity ladder; MJX only when CPU saturates (P7-010) | monthly GPU spend exceeding credit revenue two months running |
 | R7 | Print/build liability | Low–Med | High | DfM diagnostics framed as checks not guarantees; service/user own outcomes; ToS review gates P8; supervisor disclaimers | any incident report involving a printed structural part |
-| R8 | Scope gravity — it wants to be five products | High | High | the loop is the spine; every phase has exit criteria; platform phases deliberately last | work started on a phase whose predecessor has unmet exit criteria |
-| R9 | Two-engine physics divergence | Med | Med | one compiled source of truth; parity suite on every upgrade; training side canonical; server scorecards (D6) | parity suite tolerance failures after an engine/exporter bump |
-| R10 | Solo-builder bus factor | High | Med | boring stack; monorepo; validator-enforced invariants; this documentation system + changelog discipline | sessions ending without changelog entries; docs drifting from code |
-| R11 | Browser API churn (WebSerial/WebGPU) | Low | Med | WebGL2 baseline; Chromium floor declared (D11); FORGE Link fallback for the bridge | a Chromium release breaking WebSerial/SAB behavior |
+| R8 | Scope gravity — it wants to be five products | High | High | the loop is the spine; the success ladder (plan §1.3) names the rungs; every phase has exit criteria; platform phases deliberately last | work started on a phase whose predecessor has unmet exit criteria |
+| R9 | Two-engine physics divergence | Med | Med | one compiled source of truth; parity suite on every upgrade; training side canonical (D20) | parity suite tolerance failures after an engine/exporter bump |
+| R10 | Solo-builder bus factor | High | Med | boring choices everywhere but one — and the one (the Rust core) is the most documentable, testable part; validator-enforced invariants; this documentation system + changelog discipline | sessions ending without changelog entries; docs drifting from code |
+| R11 | Browser API churn (WebSerial/WebGPU) | Low | Med | WebGL2 baseline; Chromium floor declared for the full web studio; **FORGE Desktop carries the bridge past the browser (D15)** | a Chromium release breaking WebSerial/SAB behavior |
+| R12 | **Rust port costs more than estimated** (solo, TS-native builder) | Med–High | Med | core is math-not-frameworks Rust; harness-as-oracle makes "done" objective; per-crate landing order (contract → motion → geometry → sim → validate); AI pair; sanctioned fallback: ship a lagging crate as TS behind the frozen boundary (with a DECISIONS entry) | a crate not green against its oracle after its scheduled slice of the P1 window |
+| R13 | **Cross-target float divergence breaks D17** | Low–Med | Med | no fast-math anywhere in core; golden-number suite in CI on every core change; declared ULP-tolerance degradation per offending platform | any golden-number failure that cannot be traced to an intentional change |
 
 L = likelihood, I = impact.
 

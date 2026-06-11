@@ -10,8 +10,7 @@
 ## 1. What this project is
 
 **FORGE** (working codename — *Fabricate · Operate · Rehearse · Generate · Export*; the
-repository name `TTC` = text-to-CAD) is a browser-first robotics studio that closes the
-loop:
+repository name `TTC` = text-to-CAD) is a robotics studio that closes the loop:
 
 > **describe → assemble → verify → rehearse → deploy → evolve**
 
@@ -24,6 +23,17 @@ against the digital twin under domain randomization; the BOM and the trained beh
 deploy to the physical machine through a safety-gated ladder — and real telemetry flows
 back to tighten the twin.
 
+**Positioning (D18): upstream of CAD.** FORGE is not mechanical CAD and does not
+compete with geometry kernels. Its bar is **mass-properties-correct over
+surface-exact**; STEP export is first-class so mechanical CAD consumes FORGE's output.
+Non-goals: GD&T, surfacing, tooling, certified-aerospace workflows.
+
+**Runtime (D16): Rust core, web face.** Everything that must be *correct* — contract,
+geometry, motion, sim models, validator — is Rust (`forge-core` crates), dual-compiled
+to native and WASM so the same bits judge a model everywhere (D17). Everything that
+must be *seen* — React UI, Three.js render layer, gateway — is TypeScript. Everything
+that must be *trained* is Python.
+
 **Governing doctrine — "not a toy":** SI units everywhere; masses computed or sourced,
 never invented; compatibility checked, not assumed; every HUD claim derived from an
 inspectable model; manufacturability as an export target; a **sovereign validator**
@@ -35,26 +45,26 @@ that gates every artifact; provenance on everything. The full doctrine is bindin
 | Fact | State |
 |---|---|
 | Lifecycle | **Planning complete — implementation not started (pre-P0)** |
-| Binding plan | [`docs/FORGE-plan.md`](docs/FORGE-plan.md) (v2.0, decisions-complete) |
+| Binding plan | [`docs/FORGE-plan.md`](docs/FORGE-plan.md) (**v3.0, definitive**) |
 | Current phase | **Pre-P0** — live status in [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | Code in repo | None yet — documentation only |
-| Critical blocker | The prototype **`cad-object-studio.html`** is the executable specification (P0 requires byte-equivalent part/face counts against it) but is **not in this repository**. It must be obtained from the project owner and committed before P0 can close. Tracked as `PRE-002` in [`docs/TODO.md`](docs/TODO.md). |
+| Critical blocker | The prototype **`cad-object-studio.html`** is the executable specification **and the parity oracle for the Rust port** (P0 byte-equivalence, P1 golden numbers) but is **not in this repository**. It must be obtained from the project owner and committed before P0 can close. Tracked as `PRE-002` in [`docs/TODO.md`](docs/TODO.md). |
 
 ## 3. Source-of-truth hierarchy
 
 When documents disagree, this is the order of authority:
 
-1. **[`docs/DECISIONS.md`](docs/DECISIONS.md)** — the binding decision record (D1–D16+).
+1. **[`docs/DECISIONS.md`](docs/DECISIONS.md)** — the binding decision record (D1–D20+).
    Decisions are only changed by recording a superseding decision, never by silent edits.
-2. **[`docs/FORGE-plan.md`](docs/FORGE-plan.md)** — the v2.0 plan: vision, strategy,
-   architecture, roadmap, risk register, appendices (schema sketch, validation suite,
-   algorithms).
+2. **[`docs/FORGE-plan.md`](docs/FORGE-plan.md)** — the v3.0 plan: positioning, runtime
+   architecture, strategy, engines, roadmap, risk register, appendices.
 3. **`docs/systems/*.md`** — implementation-level docs per system. These *expand* the
    plan into engineering detail; where they go beyond it they are marked *(proposed)*.
 4. **[`docs/ROADMAP.md`](docs/ROADMAP.md) / [`docs/TODO.md`](docs/TODO.md)** — live
    execution state.
-5. [`docs/FORGE-vision-and-architecture.md`](docs/FORGE-vision-and-architecture.md) —
-   **v1.0, historical**. Superseded by the v2.0 plan; consult only for background.
+5. [`docs/FORGE-plan-v2.md`](docs/FORGE-plan-v2.md) and
+   [`docs/FORGE-vision-and-architecture.md`](docs/FORGE-vision-and-architecture.md) —
+   **v2.0 and v1.0, historical**. Superseded by v3.0; consult only for background.
 
 ## 4. Repository map
 
@@ -64,31 +74,34 @@ TTC/
 ├── CHANGELOG.md                       ← session-by-session progress log (mandatory)
 └── docs/
     ├── README.md                      ← documentation index & reading order
-    ├── FORGE-plan.md                  ← THE PLAN (v2.0, binding)
-    ├── FORGE-vision-and-architecture.md  ← v1.0 (historical)
+    ├── FORGE-plan.md                  ← THE PLAN (v3.0, definitive, binding)
+    ├── FORGE-plan-v2.md               ← v2.0 (frozen, historical)
+    ├── FORGE-vision-and-architecture.md  ← v1.0 (frozen, historical)
     ├── ROADMAP.md                     ← phases P0–P12, exit criteria, live status
     ├── TODO.md                        ← every open task, all surfaces, with IDs
     ├── DECISIONS.md                   ← decision record + how to add decisions
     ├── BEST-PRACTICES.md              ← doctrine, conventions, code & test standards
     ├── GLOSSARY.md                    ← project vocabulary
-    ├── architecture.md                ← five planes, monorepo layout, stack, budgets
+    ├── architecture.md                ← runtime split, repo layout, stack, budgets
     ├── security-safety-legal.md       ← security model, legal gates, license matrix
     ├── risk-register.md               ← risks, mitigations, monitoring triggers
     └── systems/                       ← implementation-level docs (one per system)
+        ├── core-runtime.md            ← forge-core: boundary API, port plan, golden numbers
         ├── model-contract.md          ← Contract v2.1 schema (the heart of the system)
-        ├── validation-harness.md      ← gatekeeper: check catalog, diagnostics, runner
+        ├── validation-harness.md      ← forge-validate: check catalog, diagnostics
         ├── geometry-engine.md         ├── render-engine.md
         ├── motion-engine.md           ├── simulation-engine.md
-        ├── learning-engine.md         ├── generation-pipeline.md
+        ├── learning-engine.md        ├── generation-pipeline.md
         ├── component-database.md      ├── studio-ui.md
         ├── gateway-and-data.md        ├── compute-workers.md
         ├── hardware-bridge.md         ├── co-design.md
         ├── environments-courses.md    └── platform.md
 ```
 
-Planned code layout (monorepo, not yet scaffolded): `packages/{contract, geometry,
-engines/*, studio, gateway, harness, link}` + `workers/` (Python). See
-[`docs/architecture.md`](docs/architecture.md) §3.
+Planned code layout (not yet scaffolded): cargo workspace `crates/{forge-contract,
+forge-geometry, forge-motion, forge-sim, forge-validate}` (+ WASM facade crate) beside
+pnpm packages `packages/{studio, gateway}`, Python `workers/`, and `desktop/` (Tauri,
+P8). See [`docs/architecture.md`](docs/architecture.md) §3.
 
 ## 5. Session protocol — how to pick up work
 
@@ -144,40 +157,50 @@ judgment call:
 2. **No invented physics** — mass/inertia from geometry × density or from datasheets,
    with citations. HUD numbers are derived from stated models.
 3. **The validator is sovereign** — nothing enters the registry, marketplace, or
-   training queue without passing the harness. Agents do not bypass, weaken, or
+   training queue without passing `forge-validate`. Agents do not bypass, weaken, or
    special-case gatekeeper checks to make work pass; fix the work.
-4. **No code in contracts** (D15) — models are JSON documents;
+4. **No code in contracts** (D19) — models are JSON documents;
    behavior comes from versioned engine libraries parameterized by data. The only
    future exception is the sandboxed-WASM controller path, post-P7, design-reviewed.
-5. **No weapons** — no targeting systems, munition payloads, or interdiction modules
+5. **Truth lives in the core** (D16/D17) — physics, geometry, motion, and validation
+   logic belong in the Rust core crates, never re-implemented in TypeScript; no
+   fast-math in core; cross-target bit-exactness is guarded by the golden-number
+   suite.
+6. **No weapons** — no targeting systems, munition payloads, or interdiction modules
    in catalog, generation, or marketplace. Briefs in that direction are refused and
    the refusal is logged.
-6. **Provenance everywhere** — generated artifacts carry model versions, prompt
+7. **Provenance everywhere** — generated artifacts carry model versions, prompt
    hashes, seeds, validator reports; policies carry training lineage.
-7. **Decisions are recorded, not drifted** — deviating from `docs/DECISIONS.md` or the
+8. **Decisions are recorded, not drifted** — deviating from `docs/DECISIONS.md` or the
    plan requires a new decision entry with rationale, ideally confirmed with the
    project owner.
-8. **Licenses are honored** — every catalog asset carries a license class; the export
+9. **Licenses are honored** — every catalog asset carries a license class; the export
    matrix (security doc §4) is enforced by construction.
-9. **The deployment ladder is never skipped** — SITL → HITL → constrained reality →
-   free operation; the bridge never auto-arms anything.
-10. **Pin volatile externals at implementation time** — Anthropic model strings,
+10. **The deployment ladder is never skipped** — SITL → HITL → constrained reality →
+    free operation; the bridge never auto-arms anything.
+11. **Pin volatile externals at implementation time** — Anthropic model strings,
     limits, and pricing from https://docs.claude.com/en/api/overview; do not hardcode
     from memory or from the plan.
 
 ## 8. Engineering quick reference
 
-- **Stack:** TypeScript (strict) end-to-end client/gateway; Python 3.12 compute
-  workers; React 19 + Zustand; Three.js (WebGL2 baseline); Rapier WASM (client
-  physics); MuJoCo/MJX (training); Postgres 16 + pgvector + graphile-worker (the one
-  stateful service) + S3-compatible object storage; Fastify + TypeBox; Vite + pnpm +
-  Turborepo. Full table with rationale: [`docs/architecture.md`](docs/architecture.md) §4.
-- **Two physics engines is intentional** (Rapier interactive, MuJoCo canonical for
-  training); parity suite required on every engine/exporter upgrade.
-- **Browser floor:** Chromium-first, declared (D11). Firefox/Safari viewer-grade; iOS
-  viewer only.
+- **Runtime split (D16):** Rust `forge-core` workspace (`forge-contract`,
+  `forge-geometry`, `forge-motion`, `forge-sim`, `forge-validate`) dual-targeted
+  native + WASM (facade ≤ 2 MB gz); TypeScript face (React 19 + Zustand, Three.js as
+  a thin consumer of core-baked buffers, Fastify gateway that spawns the
+  `forge-validate` binary); Python 3.12 compute workers (MuJoCo/MJX, SB3, TRELLIS,
+  OCCT, ETL); Postgres 16 + pgvector + graphile-worker; S3-compatible storage.
+  Full table: [`docs/architecture.md`](docs/architecture.md) §4.
+- **The schema's single source is Rust** — `forge-contract` emits JSON Schema via
+  schemars; TS types are codegen'd from it. Never hand-mirror types.
+- **One validator everywhere (D17):** static binary + npm WASM + crate, bit-exact;
+  golden-number suite in CI on every core change.
+- **Two physics engines is intentional (D20):** Rapier interactive, MuJoCo canonical
+  for training; parity suite on every engine/exporter upgrade.
+- **Surfaces (D15):** browser is primary, permanently; **FORGE Desktop (Tauri) ships
+  at P8** as the bridge/power surface; Firefox/Safari/iOS viewer-grade by declaration.
 - **Performance budgets** are binding acceptance criteria, not aspirations:
-  [`docs/architecture.md`](docs/architecture.md) §6.
+  [`docs/architecture.md`](docs/architecture.md) §7.
 - **Validation:** check IDs and diagnostic format in
   [`docs/systems/validation-harness.md`](docs/systems/validation-harness.md).
 
@@ -188,30 +211,37 @@ Live status and full exit criteria: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 | Phase | One-liner | Status |
 |---|---|---|
 | Pre-P0 | Repo hygiene, prototype committed, scaffold prerequisites | ◑ in progress |
-| P0 | Freeze monolith as reference; contract schema v2.1; translate both models to JSON; monorepo scaffold | ○ |
-| P1 | Three.js studio + motion port; **shimmer gone**; 60 fps | ○ |
-| P2 | Validation service productized; driver library; quadruped generator | ○ |
+| P0 | Freeze monolith; contract schema in `forge-contract` (schemars); translate both models; cargo+pnpm scaffold; core boundary frozen | ○ |
+| P1 | **Core & studio**: Rust port with harness as parity oracle; WASM facade; Three.js studio; **shimmer gone**; golden numbers green | ○ |
+| P2 | Validator productized; driver library; quadruped generator | ○ |
 | P3 | Component DB, compatibility, proof pair, reference rigs | ○ |
 | P4 | Text-to-CAD GA: orchestrator, drafts, share URLs, BYO key, Brief-25 | ○ |
 | P5 | Image → 3D: TRELLIS workers, primitive refit, alignment UI | ○ |
 | P6 | Simulation depth; MJCF/URDF exporters **and importer**; parity suite | ○ |
 | P7 | Training service: tasks, PPO/SAC, scorecards, in-browser playback | ○ |
-| P8 | Hardware bridge + flight recorder + ghost; ToS review gate | ○ |
+| P8 | **Bridge + Desktop**: WebSerial, recorder + ghost, FORGE Desktop (Tauri), FORGE Link; ToS review gate | ○ |
 | P9 | Co-design optimizer (CMA-ES/BO, multi-fidelity, Pareto front) | ○ |
 | P10 | Environments, courses, leaderboards | ○ |
 | P11 | Platform: marketplace, skills, classroom, print ordering | ○ |
 | P12 | Maintenance twin: wear, crash forensics, repair sheets | ○ |
 
 Legend: ○ not started · ◑ in progress · ● done. **Phases close only when every exit
-criterion is checked in ROADMAP.md and the changelog records it.**
+criterion is checked in ROADMAP.md and the changelog records it.** Schedule honesty
+(v3.0): the Rust core moves the wedge (end of P4) to ~16–21 weeks — paid once, with
+the oracle watching; later phases get cheaper for it.
 
 ## 10. What NOT to do
 
 - Do not start coding a phase before its predecessor's exit criteria are met (or the
   owner explicitly re-orders — record it as a decision).
-- Do not edit `docs/FORGE-plan.md` or `docs/FORGE-vision-and-architecture.md` — they
-  are frozen planning papers. Changes of substance go through `docs/DECISIONS.md` and
-  the living docs.
+- Do not edit the frozen planning papers — `docs/FORGE-plan.md` (v3.0),
+  `docs/FORGE-plan-v2.md`, `docs/FORGE-vision-and-architecture.md`. Changes of
+  substance go through `docs/DECISIONS.md` and the living docs.
+- Do not re-implement core-crate logic in TypeScript or Python "temporarily" — the
+  core boundary (architecture §2) is where truth lives; the sanctioned fallback for a
+  lagging crate is a decision entry, not a quiet shadow implementation.
+- Do not introduce fast-math, platform-specific float paths, or non-determinism into
+  core crates (D17).
 - Do not duplicate content across docs — link to the owning doc instead. One fact,
   one home.
 - Do not leave a session without a changelog entry, even for exploratory or failed
@@ -221,4 +251,5 @@ criterion is checked in ROADMAP.md and the changelog records it.**
   admission).
 - Do not weaken a failing validator check to green a build.
 - Do not add a dependency, service, or language outside the decided stack without a
-  decision entry (the stack is deliberately boring — that is a feature).
+  decision entry (the stack is deliberately boring everywhere but one place — and
+  that one, the Rust core, is decided).

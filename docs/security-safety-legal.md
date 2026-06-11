@@ -6,7 +6,7 @@ this document.
 
 ## 1. Security model
 
-**No code in contracts (D15).** The central decision: a model is data; drivers are
+**No code in contracts (D19).** The central decision: a model is data; drivers are
 parameterized references into versioned engine libraries. The future user-controller
 path is sandboxed WASM — no I/O, fuel-metered, capability-limited API (read
 joints/sensors, write joint targets), version-pinned, marketplace-reviewed — and is

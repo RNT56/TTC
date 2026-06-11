@@ -1,8 +1,8 @@
 # Platform — sharing, marketplace, classroom, maintenance twin
 
 **Status:** not started · **Phases:** P4 (sharing), P11 (platform), P12 (maintenance
-twin) · **Home:** gateway + studio *(proposed)* · **Plan refs:** §2, §14.2, §16 ·
-**Decisions:** D2, D3, D4, D10, D12-adjacent
+twin) · **Home:** gateway + studio *(proposed)* · **Plan refs:** §2, §14.2, §16
+(v3.0) · **Decisions:** D2, D3, D4, D10, D15, D12-adjacent
 
 ## 1. Purpose
 
@@ -15,8 +15,9 @@ ship when the loop beneath them is real.
 
 Read-only contract URLs: any model renders for anyone with the link — orbit, explode,
 blueprint, drive demo — **no account required**, viewer-grade on every browser
-(D11). Implementation: public share id → contract snapshot (hash-pinned + lockfile)
-→ the studio's viewer mode. Drafts cannot be shared (D14).
+(D15; sharing is the standing argument for the web face). Implementation: public
+share id → contract snapshot (hash-pinned + lockfile) → the studio's viewer mode.
+Drafts cannot be shared (D14).
 
 ## 3. Marketplace (P11)
 
@@ -38,7 +39,9 @@ blueprint, drive demo — **no account required**, viewer-grade on every browser
 Briefs become assignments; **the gatekeeper becomes the grader**: an instructor
 authors a brief + rubric (validator config + scorecard thresholds); students submit
 contracts and policies; grading is automatic, explainable, and **identical to
-production admission**. Education is a sim-only-safe beachhead with real budgets.
+production admission**. Education is a sim-only-safe beachhead with real budgets —
+and **`forge-validate` as a free binary makes institutional adoption frictionless**
+(D2/D17): a classroom can run the exact grader locally, no account needed.
 
 ## 5. BOM agent & print ordering (P11-005/006)
 
