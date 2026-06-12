@@ -69,6 +69,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "forge-gen"
+version = "0.1.0"
+dependencies = [
+ "forge-contract",
+ "forge-validate",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "forge-geometry"
 version = "0.1.0"
 dependencies = [
@@ -82,6 +93,7 @@ name = "forge-motion"
 version = "0.1.0"
 dependencies = [
  "forge-contract",
+ "schemars",
  "serde",
  "serde_json",
 ]
@@ -115,6 +127,7 @@ version = "0.1.0"
 dependencies = [
  "forge-contract",
  "forge-geometry",
+ "forge-motion",
  "forge-sim",
  "forge-validate",
  "js-sys",

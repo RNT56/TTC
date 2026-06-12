@@ -64,3 +64,30 @@ test(
     await app.close();
   },
 );
+
+test(
+  "bake returns buffers and counts",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const contract = JSON.parse(readFileSync(demoPath, "utf8")) as unknown;
+    const res = await app.inject({ method: "POST", url: "/v1/bake", payload: { contract } });
+    assert.equal(res.statusCode, 200, res.body);
+    const artifact = res.json() as { counts: { parts: number; faces: number } };
+    assert.equal(artifact.counts.parts, 16);
+    assert.ok(artifact.counts.faces > 0);
+    await app.close();
+  },
+);
+
+test(
+  "schema endpoint serves the emitted JSON Schema",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const res = await app.inject({ method: "GET", url: "/v1/schema" });
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.body.includes("ModelSpec") || res.body.includes("skeleton"));
+    await app.close();
+  },
+);

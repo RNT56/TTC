@@ -5,6 +5,7 @@ members = [
     "crates/forge-geometry",
     "crates/forge-motion",
     "crates/forge-sim",
+    "crates/forge-gen",
     "crates/forge-validate",
     "crates/forge-wasm",
 ]

@@ -44,7 +44,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [!] P0-006 — Mechanical translation: VX-2 quad → `ModelSpec` JSON — blocked on PRE-002 (`examples/vx2-mini.forge.json` is a synthetic fixture, not this)
 - [!] P0-007 — Translate all 31 slot variants — blocked on PRE-002
 - [!] P0-008 — Extraction harness for the monolith — blocked on PRE-002
-- [~] P0-009 — **Freeze the core boundary API** (bake / tick / validate / patch — plan §5.3): bake + validate implemented (binary + WASM facade, JSON envelope v0); tick + patch and the zero-copy view discipline pending; freeze after those land
+- [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
 - [!] P0-010 — Tag monolith `prototype-final` — blocked on PRE-002
 
 ### P1 — Core & studio
@@ -54,29 +54,29 @@ recordings remain the completion criterion):
 - [~] P1-001 — `forge-motion`: 2-bone IK (FK-verified) ✓, quad mixer ✓, servo layer ✓, constraint clamps ✓, multirotor/rover drivers ✓; **phase gait + planted-feet idle + arrive pending** (needs prototype fixtures)
 - [~] P1-002 — `forge-geometry`: all 7 primitive builders ✓ (byte-stable, analytic-solid mass-property tests), signed-tetrahedra massprops ✓, AABB interference v0 ✓; **per-part BVH + tri-tri sweep pending** (= XC-09)
 - [~] P1-003 — `forge-sim`: propulsion/battery/estimator models ✓ (HUD derivations tested); **Rapier world integration + shared-memory worker wiring pending** (P6-001 scope pulled forward only when needed)
-- [~] P1-004 — `forge-validate`: 14 checks live (CTR-001..007, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/schema) ✓; remaining catalog rows land per phase
-- [~] P1-005 — WASM facade crate: validate/bake/schema compile to wasm32 ✓ (JSON envelope v0); **zero-copy buffer views, tick/patch, ≤ 2 MB gz release budget pending**
+- [~] P1-004 — `forge-validate`: 15 checks live (CTR-001..008, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/bom/schema) ✓; remaining catalog rows land per phase
+- [~] P1-005 — WASM facade: validate/bake/schema/**tick (Session)**/**patch** live **in the browser** (wasm-pack, committed pkg, **275 KB gz ≤ 2 MB budget ✓**); zero-copy buffer views + bake ≤ 60 ms / patch ≤ 10 ms measurements pending
 - [!] P1-006 — **Golden-number suite harness** (= XC-26) — needs monolith-recorded trajectories (PRE-002)
 - [!] P1-007 — Bit-identical verification binary↔WASM on both translated contracts — needs P0-005/006
 
 Studio (TypeScript face):
 - [~] P1-008 — Three.js scene graph consuming core-baked buffers ✓ (per-part BufferGeometry; **BatchedMesh per material class pending**)
 - [x] P1-009 — PBR material classes per mapping table ✓; three-point IBL-lite rig + PCF shadows ✓ *(2026-06-12)*
-- [ ] P1-010 — Blueprint mode: normal/depth edge post pass + grid shader
-- [~] P1-011 — Explode: per-part windows on instance matrices ✓ (slider); **leader lines (Line2 + datum dots) pending**
-- [ ] P1-012 — Selection: stencil outline; component-scoped picking
+- [~] P1-010 — Blueprint mode v0 ✓ (EdgesGeometry overlay + flat pass + blueprint background); the plan's normal/depth edge **post pass** is the P1 finisher
+- [x] P1-011 — Explode: per-part windows ✓ + dashed leader lines on leader-flagged parts ✓ *(2026-06-12; Line2 fat-line upgrade cosmetic)*
+- [~] P1-012 — Selection: component-scoped raycast picking + emissive highlight + info panel ✓; stencil outline pending
 - [~] P1-013 — Orbit camera ✓; jog teach-pendant, pause/frame-step, follow camera pending
 - [ ] P1-014 — Configurator pane: variant cards, rebuild-in-place preserving explode/jog state (via core patch/re-bake)
 - [!] P1-015 — Golden-scene parity gallery vs monolith — needs PRE-002
 - [ ] P1-016 — N8AO ambient occlusion + quality-tier scaffolding (= XC-22 foundations)
-- [ ] P1-017 — Performance pass: 60 fps on mid hardware; budget instrumentation overlay (frame, core tick, Rapier, UI)
+- [~] P1-017 — Perf: fps + frame-ms overlay ✓; full budget instrumentation (core tick / Rapier / UI splits) pending
 
 ### P2 — Data-driven models
-- [ ] P2-001 — Validator productized: check catalog with stable IDs + diagnostic JSON per [`systems/validation-harness.md`](systems/validation-harness.md) (= XC-02); npm WASM package + crates.io publication plumbing
+- [~] P2-001 — Validator productized: check catalog (CTR-001..008, GEO, SIM, BEH, PRV) + diagnostic JSON stable ✓; in-studio WASM validation live ✓; npm + crates.io publication plumbing pending
 - [ ] P2-002 — Draft semantics (D14): failed contracts persist as editable drafts carrying diagnostics; drafts cannot train/export/share
-- [ ] P2-003 — Archetype driver library formalized: `biped`, `multirotor`, `rover`, `arm`, `quadruped` with parameter schemas
-- [ ] P2-004 — Quadruped driver: trot/walk generator, per-leg 3-DOF IK
-- [ ] P2-005 — Parametric family #1: quadruped generator (leg-count/wheelbase/mass sliders) emitting valid contracts
+- [~] P2-003 — Driver library: multirotor/rover/quadruped with schemars param schemas + CTR-008 enforcement ✓; biped/arm pending (prototype fixtures, PRE-002)
+- [x] P2-004 — Quadruped driver: trot phase gait, per-leg IK, diagonal pairing, validator smoke ✓ *(2026-06-12)*
+- [x] P2-005 — `forge-gen quadruped`: leg-pairs/wheelbase/track/stand/mass sliders → **admitted, walking contracts with zero hand-written code** (grid-tested 2/3/4 pairs) *(2026-06-12)*
 - [ ] P2-006 — CI: full validation suite green on every PR for all first-party contracts
 - [ ] P2-007 — Measure napi-rs hot-path vs binary-spawn in the gateway; record decision (OD-08)
 
@@ -89,15 +89,15 @@ Studio (TypeScript face):
 - [ ] P3-006 — Lockfile resolver (in `forge-contract`): semver-pinned `componentRef`s against immutable `component_revisions`; upgrade flow re-validates and diffs mass/hover/price (D5) (= XC-03)
 - [ ] P3-007 — Proof pair: ingest one real 2207-class motor + one 4S 1500 mAh pack from datasheets; convert VX-2 `rotors` + `battery` slots to `componentRef`
 - [ ] P3-008 — Reference rigs (D12): select + pin ArduPilot-capable 5″ quad and Pi-class rover SKUs; record in DECISIONS
-- [ ] P3-009 — BOM exporter v1: CSV/JSON with SKUs, prices, links
-- [ ] P3-010 — Thrust-table interpolation module with published bench data for the proof motor (= XC-06)
+- [~] P3-009 — BOM v0 ✓ (`forge-validate bom`: parts + masses + componentRef rows); SKUs/prices/links resolve when the catalog lands
+- [~] P3-010 — Thrust-table interpolation module ✓ (bilinear grid, sag fixed point, table-over-estimate precedence — XC-06); real proof-motor bench data lands with P3 ingestion
 
 ### P4 — Text-to-CAD GA
 - [ ] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft
 - [ ] P4-002 — Prompt-cache prefix builder: schemars-emitted schema + engine docs + pattern exemplars (= XC-14)
 - [ ] P4-003 — Retrieval: pgvector over catalog + pattern library; schema-true few-shot exemplars
 - [ ] P4-004 — Pattern-library harvester with consent flags (§2.2 terms) (= XC-13)
-- [ ] P4-005 — Conversational editing: NL → JSON-Patch → core patch/re-bake path, incremental validation, < 3 s
+- [ ] P4-005 — Conversational editing: NL → JSON-Patch (LLM side); **core patch path ✓** (RFC-6902 subset + shape gate, in facade); incremental validation + < 3 s budget pending
 - [ ] P4-006 — Provenance stamps: model version, prompt hash, seed, validator report on every generated artifact
 - [ ] P4-007 — Share URLs (D4): read-only contract viewer, no account required
 - [ ] P4-008 — BYO Anthropic key + metered credits plumbing (D3); studio-free tier boundaries
@@ -123,7 +123,7 @@ Studio (TypeScript face):
 - [ ] P6-005 — Estimator module (complementary + EKF upgrade path) with noise/bias/latency injection (D8) (= XC-08)
 - [ ] P6-006 — HUD analytics: AUW, TWR, hover throttle, instantaneous current, endurance — derived, assumptions inspectable
 - [ ] P6-007 — Disturbance injectors: gusts, payload shifts, sensor dropout
-- [ ] P6-008 — MJCF exporter + URDF exporter (+ ros2_control) with golden fixtures (= XC-04)
+- [~] P6-008 — MJCF + URDF exporters v0 ✓ (per-node mass/COM/inertia from baked meshes, Y-up→Z-up, joints/limits/actuators, golden fixtures = XC-04 ✓); ros2_control block + mesh visuals pending
 - [ ] P6-009 — URDF/MJCF importer: links→nodes, visual geoms→mesh parts, collision→compounds, joints→joint blocks; importer fixtures (= XC-05)
 - [ ] P6-010 — Rapier↔MuJoCo parity suite: drop tests, pendulum periods, hover trim, gait CoM trajectories; runs on every engine/exporter upgrade
 - [ ] P6-011 — Replay format v1: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
@@ -200,9 +200,9 @@ touched.
 | XC-01 | schemars → TypeScript codegen pipeline (Rust schema is the single source) | P0 | systems/model-contract.md |
 | XC-02 | Harness check IDs + diagnostic format | P2 | systems/validation-harness.md |
 | XC-03 | Lockfile resolver + upgrade-diff UI | P3 | systems/component-database.md |
-| XC-04 | MJCF/URDF exporter goldens | P6 | systems/simulation-engine.md |
+| XC-04 | MJCF/URDF exporter goldens — **done 2026-06-12** (`crates/forge-sim/tests/fixtures`) | P6 | systems/simulation-engine.md |
 | XC-05 | URDF importer fixtures | P6 | systems/model-contract.md |
-| XC-06 | Thrust-table interpolation module | P3 | systems/simulation-engine.md |
+| XC-06 | Thrust-table interpolation module — **done 2026-06-12** | P3 | systems/simulation-engine.md |
 | XC-07 | Battery-sag unit tests | P6 | systems/simulation-engine.md |
 | XC-08 | Estimator (complementary/EKF) module with noise injection | P6 | systems/simulation-engine.md |
 | XC-09 | BVH interference service | P1 | systems/geometry-engine.md |

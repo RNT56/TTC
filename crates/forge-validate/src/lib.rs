@@ -350,6 +350,15 @@ fn run_checks(
         );
     }
 
+    // ---- CTR-008 (provisional v0): driver params validate against the
+    // archetype's schema (P2-003)
+    if let Err(e) = forge_motion::params::check_driver_params(spec) {
+        d.push(
+            Diagnostic::error("CTR-008", format!("driver_params: {e}"))
+                .hint("archetype param schemas live in forge-motion::params"),
+        );
+    }
+
     // ---- PRV-001 provenance on generated content
     if matches!(spec.meta.provenance.kind, ProvenanceKind::LlmGeneration)
         && (spec.meta.provenance.prompt_hash.is_none()
@@ -569,6 +578,56 @@ fn run_checks(
                 );
             }
         }
+        Archetype::Quadruped => {
+            let mut driver = forge_motion::quadruped::QuadrupedDriver::new(spec);
+            if driver.legs.len() < 4 {
+                d.push(
+                    Diagnostic::error(
+                        "BEH-001",
+                        format!(
+                            "quadruped_smoke: {} legs found; need ≥ 4 via the hip_/knee_/foot_ chain convention",
+                            driver.legs.len()
+                        ),
+                    )
+                    .hint("name leg chains hip_<id> → knee_<id> → foot_<id>"),
+                );
+            } else {
+                let input = forge_motion::InputFrame {
+                    drive: 1.0,
+                    ..Default::default()
+                };
+                let v = driver.params.stride_m * driver.params.cadence_hz;
+                let steps = (1.0 / v.max(1e-6) / forge_motion::DT).ceil() as usize;
+                let mut finite = true;
+                for _ in 0..steps.min(100_000) {
+                    let out = driver.tick(&input, forge_motion::DT);
+                    if out
+                        .joint_targets
+                        .iter()
+                        .any(|(_, angle)| !angle.is_finite())
+                    {
+                        finite = false;
+                        break;
+                    }
+                }
+                let dist = (out_pose(&driver)[0].powi(2) + out_pose(&driver)[1].powi(2)).sqrt();
+                if !finite {
+                    d.push(Diagnostic::error(
+                        "BEH-001",
+                        "quadruped_smoke: non-finite joint target during 1 m walk",
+                    ));
+                } else if (dist - 1.0).abs() > 0.05 {
+                    d.push(
+                        Diagnostic::error(
+                            "BEH-001",
+                            format!("quadruped_smoke: walked {dist:.3} m, expected 1 m ± 0.05"),
+                        )
+                        .observed(dist)
+                        .units("m"),
+                    );
+                }
+            }
+        }
         _ => d.push(
             Diagnostic::warn(
                 "BEH-001",
@@ -577,7 +636,7 @@ fn run_checks(
                     spec.meta.archetype
                 ),
             )
-            .hint("biped/quadruped/arm drivers arrive with the P2 driver library"),
+            .hint("biped/arm drivers arrive with the P2+ driver library"),
         ),
     }
 
@@ -600,6 +659,82 @@ fn run_checks(
     }
 
     (d, Some(baked))
+}
+
+// ---------------------------------------------------------------------------
+// BOM v0 (P3-009): parts list with masses; catalog-backed slots resolve to
+// SKUs/prices/links once the catalog lands (P3).
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BomRow {
+    pub item: String,
+    pub node: String,
+    pub material: String,
+    pub mass_g: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub component_ref: Option<String>,
+    pub source: String,
+}
+
+pub fn bom_rows(spec: &ModelSpec, baked: &BakedModel) -> Vec<BomRow> {
+    let mut rows: Vec<BomRow> = baked
+        .parts
+        .iter()
+        .map(|bp| {
+            let part = &spec.parts[bp.part_index];
+            BomRow {
+                item: part
+                    .comp
+                    .clone()
+                    .unwrap_or_else(|| format!("part-{}", bp.part_index)),
+                node: part.node.clone(),
+                material: format!("{:?}", part.material).to_lowercase(),
+                mass_g: forge_geometry::part_mass_g(&part.mass, part.material, &bp.mesh),
+                component_ref: None,
+                source: "inline".to_string(),
+            }
+        })
+        .collect();
+    for slot in &spec.slots {
+        for v in &slot.variants {
+            if let Some(r) = &v.component_ref {
+                rows.push(BomRow {
+                    item: format!("{}/{}", slot.id, v.id),
+                    node: slot.mount_nodes.first().cloned().unwrap_or_default(),
+                    material: String::new(),
+                    mass_g: 0.0,
+                    component_ref: Some(r.clone()),
+                    source: "catalog (resolves at P3)".to_string(),
+                });
+            }
+        }
+    }
+    rows
+}
+
+pub fn bom_csv(rows: &[BomRow]) -> String {
+    let mut out = String::from("item,node,material,mass_g,componentRef,source\n");
+    for r in rows {
+        out.push_str(&format!(
+            "{},{},{},{:.1},{},{}\n",
+            r.item,
+            r.node,
+            r.material,
+            r.mass_g,
+            r.component_ref.as_deref().unwrap_or(""),
+            r.source
+        ));
+    }
+    out
+}
+
+fn out_pose(driver: &forge_motion::quadruped::QuadrupedDriver) -> [f64; 3] {
+    // the driver's last outputs carry the body pose; a zero-dt tick re-reads it
+    // without advancing the gait
+    let mut probe = driver.clone();
+    probe.tick(&forge_motion::InputFrame::default(), 0.0).body
 }
 
 fn valid_hex_color(c: &str) -> bool {
@@ -721,6 +856,18 @@ mod tests {
             .results
             .iter()
             .any(|d| d.check == "CTR-007" && d.severity == Severity::Error));
+    }
+
+    #[test]
+    fn bom_lists_every_part_with_mass() {
+        let spec = forge_contract::validate_shape(GOOD).unwrap();
+        let baked = forge_geometry::bake(&spec).unwrap();
+        let rows = bom_rows(&spec, &baked);
+        assert_eq!(rows.len(), 16);
+        let total: f64 = rows.iter().map(|r| r.mass_g).sum();
+        assert!((total - 479.0).abs() < 1e-6, "Σ {total}");
+        let csv = bom_csv(&rows);
+        assert_eq!(csv.lines().count(), 17, "header + 16 rows");
     }
 
     #[test]

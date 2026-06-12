@@ -6,6 +6,8 @@
 //! refinement: positions/normals/indices become views over linear memory once
 //! the studio consumes the facade directly (tracked in TODO P1-005).
 
+pub mod session;
+
 use forge_validate::{run_full, EmptyCatalog, Options};
 
 /// Run the full validation suite; returns the report JSON (`target: "wasm"`).
@@ -59,6 +61,61 @@ mod wasm_bindings {
     #[wasm_bindgen]
     pub fn schema() -> String {
         super::schema_json()
+    }
+
+    /// JSON-Patch application with shape re-check (the `patch` boundary call).
+    #[wasm_bindgen]
+    pub fn patch(contract_json: &str, patch_json: &str) -> Result<String, JsValue> {
+        forge_contract::patch::apply_patch(contract_json, patch_json)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    /// The `tick` boundary call as a stateful session.
+    #[wasm_bindgen]
+    pub struct Session {
+        inner: super::session::CoreSession,
+    }
+
+    #[wasm_bindgen]
+    impl Session {
+        #[wasm_bindgen(constructor)]
+        pub fn new(contract_json: &str) -> Result<Session, JsValue> {
+            super::session::CoreSession::new(contract_json)
+                .map(|inner| Session { inner })
+                .map_err(|e| JsValue::from_str(&e))
+        }
+
+        pub fn node_names(&self) -> Vec<String> {
+            self.inner.node_names().to_vec()
+        }
+
+        /// Advance and return the pose buffer (16 f32 per node, column-major).
+        /// v0 copies out; zero-copy views over linear memory are the P1-005
+        /// refinement.
+        #[allow(clippy::too_many_arguments)]
+        pub fn step(
+            &mut self,
+            dt: f64,
+            throttle: f64,
+            pitch: f64,
+            roll: f64,
+            yaw: f64,
+            drive: f64,
+            turn: f64,
+        ) -> Result<Vec<f32>, JsValue> {
+            let input = forge_motion::InputFrame {
+                throttle,
+                pitch,
+                roll,
+                yaw,
+                drive,
+                turn,
+            };
+            self.inner
+                .step(dt, &input)
+                .map_err(|e| JsValue::from_str(&e))?;
+            Ok(self.inner.pose_buffer().to_vec())
+        }
     }
 }
 

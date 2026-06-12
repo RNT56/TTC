@@ -19,16 +19,20 @@ export function validatorBin(): string {
   );
 }
 
-export async function runValidator(contractJson: string): Promise<ValidateResult> {
+async function runSubcommand(
+  subcommand: "run" | "bake",
+  contractJson: string,
+): Promise<ValidateResult> {
   const dir = await mkdtemp(join(tmpdir(), "forge-validate-"));
   const contractPath = join(dir, "contract.json");
   const reportPath = join(dir, "report.json");
   try {
     await writeFile(contractPath, contractJson, "utf8");
+    const outFlag = subcommand === "run" ? "--report" : "--out";
     const { code, stderr } = await new Promise<{ code: number; stderr: string }>((resolve) => {
       execFile(
         validatorBin(),
-        ["run", contractPath, "--report", reportPath],
+        [subcommand, contractPath, outFlag, reportPath],
         { timeout: 30_000 },
         (error, _stdout, stderrBuf) => {
           const code =
@@ -49,4 +53,13 @@ export async function runValidator(contractJson: string): Promise<ValidateResult
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+export function runValidator(contractJson: string): Promise<ValidateResult> {
+  return runSubcommand("run", contractJson);
+}
+
+/** Server-side bake for viewer-grade clients without the WASM facade (D15). */
+export function runBake(contractJson: string): Promise<ValidateResult> {
+  return runSubcommand("bake", contractJson);
 }

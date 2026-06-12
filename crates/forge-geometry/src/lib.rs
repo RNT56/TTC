@@ -179,6 +179,94 @@ pub fn node_world_transforms(spec: &ModelSpec) -> Result<BTreeMap<String, Mat4>,
     Ok(world)
 }
 
+/// World transforms with per-node joint angles applied (the `tick` path):
+/// local = T(pos)·R(rot)·R(axis, angle). Root nodes are pre-multiplied by
+/// `root_offset` when given (driver body pose).
+pub fn node_world_with_joints(
+    spec: &ModelSpec,
+    joint_angles: &BTreeMap<String, f64>,
+    root_offset: Option<&Mat4>,
+) -> Result<BTreeMap<String, Mat4>, BakeError> {
+    let mut world: BTreeMap<String, Mat4> = BTreeMap::new();
+    let mut remaining: Vec<&forge_contract::Node> = spec.skeleton.iter().collect();
+    let mut progress = true;
+    while !remaining.is_empty() && progress {
+        progress = false;
+        remaining.retain(|n| {
+            let parent_m = match &n.parent {
+                None => Some(match root_offset {
+                    Some(off) => *off,
+                    None => identity(),
+                }),
+                Some(p) => world.get(p).copied(),
+            };
+            match parent_m {
+                None => true,
+                Some(pm) => {
+                    let mut local = trs(n.pos, n.rot);
+                    if let Some(angle) = joint_angles.get(&n.name) {
+                        let axis = n
+                            .joint
+                            .as_ref()
+                            .and_then(|j| j.axis)
+                            .unwrap_or([0.0, 1.0, 0.0]);
+                        local = mul(local, axis_angle(axis, *angle));
+                    }
+                    world.insert(n.name.clone(), mul(pm, local));
+                    progress = true;
+                    false
+                }
+            }
+        });
+    }
+    if let Some(stuck) = remaining.first() {
+        return Err(BakeError::SkeletonCycle {
+            node: stuck.name.clone(),
+        });
+    }
+    Ok(world)
+}
+
+/// Rodrigues rotation about a (normalized) axis, column-major Mat4.
+pub fn axis_angle(axis: [f64; 3], angle: f64) -> Mat4 {
+    let len = (axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]).sqrt();
+    if len < 1e-12 {
+        return identity();
+    }
+    let (x, y, z) = (axis[0] / len, axis[1] / len, axis[2] / len);
+    let (s, c) = angle.sin_cos();
+    let t = 1.0 - c;
+    [
+        t * x * x + c,
+        t * x * y + s * z,
+        t * x * z - s * y,
+        0.0,
+        t * x * y - s * z,
+        t * y * y + c,
+        t * y * z + s * x,
+        0.0,
+        t * x * z + s * y,
+        t * y * z - s * x,
+        t * z * z + c,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    ]
+}
+
+/// Translation+heading (rotation about +Y) as a Mat4 — driver body poses.
+pub fn body_offset(x: f64, z: f64, heading: f64) -> Mat4 {
+    let (s, c) = heading.sin_cos();
+    [
+        c, 0.0, -s, 0.0, //
+        0.0, 1.0, 0.0, 0.0, //
+        s, 0.0, c, 0.0, //
+        x, 0.0, z, 1.0,
+    ]
+}
+
 pub fn identity() -> Mat4 {
     let mut m = [0.0; 16];
     m[0] = 1.0;

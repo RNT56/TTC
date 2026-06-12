@@ -15,10 +15,11 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("run") => cmd_run(&args[1..]),
         Some("bake") => cmd_bake(&args[1..]),
+        Some("bom") => cmd_bom(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json]\n       forge-validate bom <contract.json> [--out bom.csv]\n       forge-validate schema [--out schema.json]"
             );
             ExitCode::from(1)
         }
@@ -167,6 +168,48 @@ fn cmd_bake(args: &[String]) -> ExitCode {
                 "{}",
                 serde_json::to_string(&artifact).expect("artifact serializes")
             );
+            ExitCode::SUCCESS
+        }
+    }
+}
+
+fn cmd_bom(args: &[String]) -> ExitCode {
+    let Some(path) = args.first().filter(|a| !a.starts_with("--")) else {
+        eprintln!("bom: missing <contract.json>");
+        return ExitCode::from(1);
+    };
+    let doc = match std::fs::read_to_string(path) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("bom: cannot read {path}: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let spec = match forge_contract::validate_shape(&doc) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("bom: CTR-001 schema_invalid: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let baked = match forge_geometry::bake(&spec) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("bom: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let csv = forge_validate::bom_csv(&forge_validate::bom_rows(&spec, &baked));
+    match flag_value(args, "--out") {
+        Some(out) => match std::fs::write(&out, csv) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("bom: cannot write {out}: {e}");
+                ExitCode::from(1)
+            }
+        },
+        None => {
+            print!("{csv}");
             ExitCode::SUCCESS
         }
     }

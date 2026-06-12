@@ -15,6 +15,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+pub mod patch;
+
 /// Contract schema version carried by `meta.version`-bearing documents.
 pub const SCHEMA_VERSION: &str = "2.1.0";
 

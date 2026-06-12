@@ -7,6 +7,9 @@
 
 #![forbid(unsafe_code)]
 
+pub mod params;
+pub mod quadruped;
+
 use forge_contract::{Archetype, ModelSpec};
 
 /// The canonical fixed timestep (s): 120 Hz driver tick.
@@ -340,9 +343,12 @@ impl RoverDriver {
     }
 }
 
-/// Smoke-level driver dispatch used by BEH-001 (full archetype set lands P2).
+/// Smoke-level driver dispatch used by BEH-001.
 pub fn supported_archetype(a: &Archetype) -> bool {
-    matches!(a, Archetype::Multirotor | Archetype::Rover)
+    matches!(
+        a,
+        Archetype::Multirotor | Archetype::Rover | Archetype::Quadruped
+    )
 }
 
 #[cfg(test)]

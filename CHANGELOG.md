@@ -18,6 +18,41 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Boundary frozen; P2 quadruped family; in-browser core; exporters
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1/P2 interleaved (D21) · **TODO items:** P0-009, P1-004/005/009/010/011/012/017, P2-001/003/004/005, P3-009/010, P4-005 (core path), P6-008, XC-04, XC-06
+**Done (all verified: 66 Rust tests, clippy -D clean, studio+gateway builds, 6
+gateway tests, 12 worker tests):**
+**Core boundary FROZEN v1 (P0-009)** — all four calls live: `patch` (RFC-6902
+subset with shape gate, in `forge-contract`), `tick` (`CoreSession`: fixed-step
+120 Hz accumulator, multirotor spinner kinematics, rover/quadruped body+joint
+poses, bit-deterministic under uneven dts — tested), alongside bake/validate.
+**P2 substantially delivered** — quadruped driver (trot phase gait, per-leg IK,
+diagonal pairing, hip_/knee_/foot_ chain discovery); typed driver-param schemas
+(schemars) for multirotor/rover/quadruped with new check CTR-008; **`forge-gen
+quadruped`**: slider params → admitted, walking contracts with zero hand-written
+code, grid-tested at 2/3/4 leg pairs (P2 exit criterion); demo committed as
+`examples/qd-mini.forge.json` (Admitted, 0/0).
+**In-browser core (D17 made real)** — wasm-pack builds the facade into the studio
+(committed pkg, **275 KB gz vs ≤ 2 MB budget**); the studio now validates and
+bakes dropped `.forge.json` files locally (same bits as CI), and **Drive mode
+ticks the core in-browser** (spinners spin, the quadruped walks). Studio also
+gained: blueprint mode v0, raycast selection + info panel, explode leader lines,
+model picker, fps overlay.
+**Pull-forwards** — MJCF/URDF exporters v0 with per-node mass/COM/inertia from
+baked meshes, Y-up→Z-up conversion, joints/limits/actuators + golden fixtures
+(XC-04); thrust-table bilinear interpolation with table-over-estimate precedence
+(XC-06); BOM v0 (`forge-validate bom`); gateway `/v1/bake` + `/v1/schema`.
+**Changed:** `crates/*` (patch.rs, session.rs, quadruped.rs, params.rs,
+thrust_table.rs, export.rs, forge-gen new), `packages/studio/*` (wasm.ts,
+scene/store/App rewrites, wasm-pkg committed), `packages/gateway/*`,
+`examples/qd-mini.forge.json` + demo artifacts, `scripts/build-wasm.sh`,
+docs/TODO/ROADMAP/validation-harness/core-runtime.
+**Decisions:** none new (all under D21's recorded scope).
+**Next:** PRE-002 still the highest-value unlock. Independent: P1-014 configurator
+pane via the patch path; P1-016 AO/quality tiers; P2-002 draft persistence;
+P2-007 napi-rs measurement; zero-copy facade views.
+**Blockers:** PRE-002 (unchanged).
+
 ## 2026-06-12 — Fix PR #1 CI: pnpm version double-pin
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1 (D21) · **TODO items:** none
 **Done:** PR #1's "studio + gateway" check failed in setup: `pnpm/action-setup@v4`

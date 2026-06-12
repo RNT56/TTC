@@ -67,7 +67,7 @@ Exit criteria:
 - [x] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars *(2026-06-12)*
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*
-- [ ] Core boundary API (bake / tick / validate / patch) frozen and documented *(bake/validate live; tick/patch + zero-copy pending)*
+- [x] Core boundary API (bake / tick / validate / patch) frozen and documented *(2026-06-12 — v1; zero-copy refinement cannot change call shapes)*
 - [ ] Prototype tagged (e.g. `prototype-final`) and never modified after *(blocked on PRE-002)*
 
 ## P1 — Core & studio
@@ -99,9 +99,9 @@ family #1 — quadruped generator with leg-count/wheelbase/mass sliders.
 [`systems/motion-engine.md`](systems/motion-engine.md).
 
 Exit criteria:
-- [ ] A quadruped spec becomes a valid walking model with **zero hand-written code**
-- [ ] CI green on the full validation suite
-- [ ] Diagnostic format stable and machine-readable (consumed later by generation repair, P4)
+- [x] A quadruped spec becomes a valid walking model with **zero hand-written code** *(2026-06-12: `forge-gen quadruped` → admitted + BEH-001 walking smoke, grid-tested)*
+- [ ] CI green on the full validation suite *(local ✓; confirms on next CI run)*
+- [x] Diagnostic format stable and machine-readable *(2026-06-12: check IDs + diagnostic JSON + CTR-008)*
 - [ ] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08)
 
 ## P3 — Component DB + proof pair + reference rigs

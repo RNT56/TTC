@@ -35,7 +35,14 @@ Crate rules: **no DOM, no I/O** (only `forge-validate`'s CLI does I/O, native-on
 deterministic iteration order everywhere (no HashMap iteration into output paths);
 `#![forbid(unsafe_code)]` except in the facade's view plumbing *(proposed)*.
 
-## 3. The core boundary (frozen at P0-009)
+## 3. The core boundary (FROZEN v1 — P0-009, 2026-06-12)
+
+All four calls are live: **bake** and **validate** in the facade + binary;
+**tick** as `CoreSession` (fixed-step 120 Hz accumulator, bit-deterministic —
+tested); **patch** as RFC-6902-subset JSON-Patch with the shape gate. v1 carries
+JSON/copy envelopes; the zero-copy linear-memory views and the ≤ 60 ms bake /
+≤ 10 ms patch budget measurements are the P1-005 refinement and may not change
+the call shapes.
 
 Four calls, allocation-disciplined, identical across facade (WASM), napi-rs, and the
 in-crate API:

@@ -1,0 +1,23 @@
+{
+  "contractHash": "579765f4216e11f673e79ced4a8292cc3ec2c29d608c461992e45079f6aad037",
+  "lockfileHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "schemaVersion": "2.1.0",
+  "validatorVersion": "0.1.0",
+  "seed": 0,
+  "target": "native",
+  "startedAt": 1781259637,
+  "durationMs": 3,
+  "results": [],
+  "verdict": "admitted",
+  "hud": {
+    "auwG": 2499.7999999999997,
+    "assumptions": [
+      "masses: geometry × material-class density unless a part states valueG/densityKgm3"
+    ]
+  },
+  "counts": {
+    "parts": 13,
+    "faces": 928,
+    "vertices": 1888
+  }
+}

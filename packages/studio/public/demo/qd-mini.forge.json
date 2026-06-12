@@ -1,0 +1,777 @@
+{
+  "meta": {
+    "id": "qd-2x2-w040-m2500",
+    "name": "Generated quadruped — 4 legs, 40 cm wheelbase, 2500 g",
+    "version": "0.1.0",
+    "archetype": "quadruped",
+    "provenance": {
+      "kind": "parametric-generator",
+      "modelVersion": "forge-gen 0.1.0"
+    },
+    "license": "CC0"
+  },
+  "env": {
+    "gravity": 9.80665,
+    "airDensity": 1.225,
+    "wind": {
+      "mean": 0.0,
+      "gust": 0.0
+    }
+  },
+  "skeleton": [
+    {
+      "name": "root",
+      "parent": null,
+      "pos": [
+        0.0,
+        0.26666666666666666,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "hip_0l",
+      "parent": "root",
+      "pos": [
+        0.12,
+        0.0,
+        0.2
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          -1.4,
+          1.4
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "knee_0l",
+      "parent": "hip_0l",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          0.0,
+          2.6
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "foot_0l",
+      "parent": "knee_0l",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "hip_0r",
+      "parent": "root",
+      "pos": [
+        -0.12,
+        0.0,
+        0.2
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          -1.4,
+          1.4
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "knee_0r",
+      "parent": "hip_0r",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          0.0,
+          2.6
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "foot_0r",
+      "parent": "knee_0r",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "hip_1l",
+      "parent": "root",
+      "pos": [
+        0.12,
+        0.0,
+        -0.2
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          -1.4,
+          1.4
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "knee_1l",
+      "parent": "hip_1l",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          0.0,
+          2.6
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "foot_1l",
+      "parent": "knee_1l",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "hip_1r",
+      "parent": "root",
+      "pos": [
+        -0.12,
+        0.0,
+        -0.2
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          -1.4,
+          1.4
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "knee_1r",
+      "parent": "hip_1r",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "limits": [
+        [
+          0.0,
+          2.6
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "joint": {
+        "type": "revolute",
+        "axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "maxVelRad": 12.0
+      }
+    },
+    {
+      "name": "foot_1r",
+      "parent": "knee_1r",
+      "pos": [
+        0.0,
+        -0.13333333333333333,
+        0.0
+      ],
+      "rot": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "node": "root",
+      "geom": {
+        "kind": "cbox",
+        "w": 0.3,
+        "h": 0.06,
+        "d": 0.48000000000000004,
+        "ch": 0.02
+      },
+      "material": "matte",
+      "color": "#2b2f36",
+      "explode": {
+        "dir": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "mag": 0.1,
+        "t0": 0.85,
+        "t1": 1.0,
+        "leader": "body"
+      },
+      "comp": "body",
+      "mass": {
+        "valueG": 1375.0
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "knee_0l",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.018,
+        "r1": 0.014,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.06,
+        "t0": 0.05,
+        "t1": 0.35,
+        "leader": "thigh"
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 154.7
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "foot_0l",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.013,
+        "r1": 0.01,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.1,
+        "t0": 0.35,
+        "t1": 0.65
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 98.4
+      },
+      "collision": "none"
+    },
+    {
+      "node": "foot_0l",
+      "geom": {
+        "kind": "squircle",
+        "rx": 0.022,
+        "rz": 0.028,
+        "h": 0.012,
+        "e": 3.0,
+        "n": 6
+      },
+      "material": "satin",
+      "color": "#15171a",
+      "explode": {
+        "dir": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "mag": 0.05,
+        "t0": 0.65,
+        "t1": 0.85
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 28.1
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "knee_0r",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.018,
+        "r1": 0.014,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.06,
+        "t0": 0.060000000000000005,
+        "t1": 0.36
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 154.7
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "foot_0r",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.013,
+        "r1": 0.01,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.1,
+        "t0": 0.36,
+        "t1": 0.66
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 98.4
+      },
+      "collision": "none"
+    },
+    {
+      "node": "foot_0r",
+      "geom": {
+        "kind": "squircle",
+        "rx": 0.022,
+        "rz": 0.028,
+        "h": 0.012,
+        "e": 3.0,
+        "n": 6
+      },
+      "material": "satin",
+      "color": "#15171a",
+      "explode": {
+        "dir": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "mag": 0.05,
+        "t0": 0.66,
+        "t1": 0.86
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 28.1
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "knee_1l",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.018,
+        "r1": 0.014,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.06,
+        "t0": 0.07,
+        "t1": 0.37
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 154.7
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "foot_1l",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.013,
+        "r1": 0.01,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.1,
+        "t0": 0.37,
+        "t1": 0.67
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 98.4
+      },
+      "collision": "none"
+    },
+    {
+      "node": "foot_1l",
+      "geom": {
+        "kind": "squircle",
+        "rx": 0.022,
+        "rz": 0.028,
+        "h": 0.012,
+        "e": 3.0,
+        "n": 6
+      },
+      "material": "satin",
+      "color": "#15171a",
+      "explode": {
+        "dir": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "mag": 0.05,
+        "t0": 0.67,
+        "t1": 0.87
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 28.1
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "knee_1r",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.018,
+        "r1": 0.014,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.06,
+        "t0": 0.08,
+        "t1": 0.38
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 154.7
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "foot_1r",
+      "geom": {
+        "kind": "cyl",
+        "r0": 0.013,
+        "r1": 0.01,
+        "h": 0.13333333333333333,
+        "n": 16
+      },
+      "material": "satin",
+      "color": "#3a4048",
+      "explode": {
+        "dir": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "mag": 0.1,
+        "t0": 0.38,
+        "t1": 0.68
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 98.4
+      },
+      "collision": "none"
+    },
+    {
+      "node": "foot_1r",
+      "geom": {
+        "kind": "squircle",
+        "rx": 0.022,
+        "rz": 0.028,
+        "h": 0.012,
+        "e": 3.0,
+        "n": 6
+      },
+      "material": "satin",
+      "color": "#15171a",
+      "explode": {
+        "dir": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "mag": 0.05,
+        "t0": 0.68,
+        "t1": 0.88
+      },
+      "comp": "leg",
+      "mass": {
+        "valueG": 28.1
+      },
+      "collision": "primitive"
+    }
+  ],
+  "chains": [
+    {
+      "id": "teardown",
+      "stage": 0,
+      "nodes": [
+        "root"
+      ]
+    }
+  ],
+  "driver": {
+    "archetype": "quadruped",
+    "params": {
+      "cadenceHz": 2.0,
+      "duty": 0.5,
+      "liftM": 0.048,
+      "standHeightM": 0.22799999999999998,
+      "strideM": 0.18
+    }
+  },
+  "sim": {
+    "colliders": {
+      "policy": "per-node-compound",
+      "budget": {
+        "perNode": 8,
+        "perModel": 24
+      }
+    },
+    "aggregateMassG": 2499.8
+  }
+}

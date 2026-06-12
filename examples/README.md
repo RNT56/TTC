@@ -20,3 +20,17 @@ pnpm --filter @forge/studio dev                                    # orbit it in
 
 Current verdict: **Admitted** — 0 errors, 0 warnings; AUW 479 g, TWR 4.70,
 hover 43 %, endurance 21.8 min (assumptions listed in the report).
+
+## `qd-mini.forge.json` — generated quadruped (zero hand-written code)
+
+Produced entirely by the parametric generator (P2-005):
+
+```sh
+cargo run -p forge-gen -- quadruped --out examples/qd-mini.forge.json
+cargo run -p forge-validate -- run examples/qd-mini.forge.json
+```
+
+13 parts, 2.5 kg budget closing exactly, trot gait passing the BEH-001 walking
+smoke. Regenerate with different sliders (`--leg-pairs 3 --wheelbase 0.6 …`) —
+every grid point admits. In the studio, enable **drive** to watch the core tick
+walk it in-browser.

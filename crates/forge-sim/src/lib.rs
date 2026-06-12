@@ -12,9 +12,13 @@
 
 #![forbid(unsafe_code)]
 
+pub mod export;
+pub mod thrust_table;
+
 use forge_contract::{Archetype, Estimator, ModelSpec};
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
+use thrust_table::ThrustTable;
 
 /// Nominal LiPo cell voltage (stated assumption, surfaced in the HUD).
 pub const NOMINAL_CELL_V: f64 = 3.7;
@@ -54,6 +58,9 @@ pub struct Powertrain {
     pub ct: f64,
     pub n_motors: usize,
     pub air_density: f64,
+    /// Published bench data (XC-06): when present, the table is truth and the
+    /// C_T estimate path retires.
+    pub table: Option<ThrustTable>,
 }
 
 impl Powertrain {
@@ -62,6 +69,9 @@ impl Powertrain {
     /// configurations).
     pub fn at_throttle(&self, u: f64) -> PowertrainPoint {
         let u = u.clamp(0.0, 1.0);
+        if let Some(table) = &self.table {
+            return self.at_throttle_table(u, table);
+        }
         let disc_area = std::f64::consts::PI * self.prop_d_m * self.prop_d_m / 4.0;
         let mut v_eff = self.battery_v0;
         let mut point = PowertrainPoint {
@@ -85,6 +95,37 @@ impl Powertrain {
             let next_v =
                 (self.battery_v0 - i_total * self.battery_r_ohm - i_motor * self.motor_r_ohm)
                     .max(0.5 * self.battery_v0);
+            point = PowertrainPoint {
+                thrust_n: thrust,
+                current_a: i_motor,
+                v_eff: next_v,
+                n_rev_s,
+            };
+            if (next_v - v_eff).abs() < 1e-6 {
+                break;
+            }
+            v_eff = next_v;
+        }
+        point
+    }
+
+    /// Table-driven evaluation: thrust and current come from bench data at
+    /// (V_eff, u); sag still resolves by fixed point on V_eff.
+    fn at_throttle_table(&self, u: f64, table: &ThrustTable) -> PowertrainPoint {
+        let mut v_eff = self.battery_v0;
+        let mut point = PowertrainPoint {
+            thrust_n: 0.0,
+            current_a: 0.0,
+            v_eff,
+            n_rev_s: 0.0,
+        };
+        for _ in 0..12 {
+            let (thrust, i_motor) = table.lookup(v_eff, u);
+            let i_total = i_motor * self.n_motors as f64;
+            let next_v =
+                (self.battery_v0 - i_total * self.battery_r_ohm - i_motor * self.motor_r_ohm)
+                    .max(0.5 * self.battery_v0);
+            let n_rev_s = (self.motor_kv * next_v * u / 60.0).max(0.0);
             point = PowertrainPoint {
                 thrust_n: thrust,
                 current_a: i_motor,
@@ -270,6 +311,9 @@ pub fn derive_hud(spec: &ModelSpec, baked: &BakedModel) -> Result<Hud, HudError>
         ct: DEFAULT_CT,
         n_motors: spec.sim.motors.len(),
         air_density: spec.env.air_density,
+        // catalog-backed thrust tables resolve through the lockfile at P3;
+        // inline contracts carry no bench data yet (XC-06).
+        table: None,
     };
 
     assumptions.push(format!(
@@ -402,6 +446,7 @@ mod tests {
             ct: DEFAULT_CT,
             n_motors: 4,
             air_density: 1.225,
+            table: None,
         };
         let mut last = -1.0;
         for k in 0..=10 {
@@ -478,6 +523,56 @@ mod tests {
             last2.to_bits(),
             "bit-identical with same seed"
         );
+    }
+
+    #[test]
+    fn table_overrides_estimate_and_hover_matches_closed_form() {
+        use crate::thrust_table::{ThrustPoint, ThrustTable};
+        // bench data: thrust = 8·u N per motor (voltage-independent), I = 10·u A
+        let mut pts = Vec::new();
+        for v in [12.0, 16.8] {
+            for k in 0..=10 {
+                let u = k as f64 / 10.0;
+                pts.push(ThrustPoint {
+                    voltage: v,
+                    throttle: u,
+                    thrust_n: 8.0 * u,
+                    current_a: 10.0 * u,
+                });
+            }
+        }
+        let pt = Powertrain {
+            motor_kv: 1750.0,
+            motor_r_ohm: 0.0,
+            battery_v0: 14.8,
+            battery_r_ohm: 0.0,
+            prop_d_m: 0.127,
+            ct: DEFAULT_CT,
+            n_motors: 4,
+            air_density: 1.225,
+            table: Some(ThrustTable::from_points(&pts).unwrap()),
+        };
+        // hover for 1.2 kg at g=9.80665: per-motor T = 2.94 N → u = T/8 = 0.3678
+        let weight_n: f64 = 1.2 * 9.80665;
+        let per_motor = weight_n / 4.0;
+        let (mut lo, mut hi) = (0.0f64, 1.0f64);
+        for _ in 0..50 {
+            let mid = 0.5 * (lo + hi);
+            if pt.at_throttle(mid).thrust_n < per_motor {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        let u = 0.5 * (lo + hi);
+        assert!(
+            (u - per_motor / 8.0).abs() < 1e-3,
+            "u {u} vs {}",
+            per_motor / 8.0
+        );
+        // current comes from the table, not the momentum-theory estimate
+        let p = pt.at_throttle(u);
+        assert!((p.current_a - 10.0 * u).abs() < 1e-6);
     }
 
     #[test]
