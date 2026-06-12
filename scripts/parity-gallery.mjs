@@ -304,10 +304,11 @@ async function captureStudio(browser, baseUrl, scene, view) {
     [scene.studio, view, scene.ty, FOV_DEG],
   );
   await page.waitForTimeout(300);
+  const stats = await page.evaluate(() => window.__forgeParity.stats());
   const canvas = page.locator("canvas");
   const buf = await canvas.screenshot();
   await page.close();
-  return PNG.sync.read(buf);
+  return { png: PNG.sync.read(buf), stats };
 }
 
 // --- main ----------------------------------------------------------------------
@@ -336,7 +337,7 @@ for (const scene of SCENES) {
   for (const view of scene.views) {
     const id = `${scene.studio}-${view.name}`;
     const mono = await captureMonolith(browser, baseUrl, scene, view);
-    const studio = await captureStudio(browser, baseUrl, scene, view);
+    const { png: studio, stats } = await captureStudio(browser, baseUrl, scene, view);
 
     const lumM = downscale(mono, DOWN.width, DOWN.height);
     const lumS = downscale(studio, DOWN.width, DOWN.height);
@@ -350,17 +351,18 @@ for (const scene of SCENES) {
     writeFileSync(join(OUT, `${id}.monolith.png`), PNG.sync.write(mono));
     writeFileSync(join(OUT, `${id}.studio.png`), PNG.sync.write(studio));
 
-    const pass = f1 >= EDGE_F1_GATE;
+    // P1-008 budget: ≤ 40 draw calls per model (architecture §7, binding)
+    const pass = f1 >= EDGE_F1_GATE && stats.drawCalls <= 40;
     if (!pass) failures++;
-    metrics.push({ id, edgeF1: f1, precision, recall, lumRms, pass });
+    metrics.push({ id, edgeF1: f1, precision, recall, lumRms, ...stats, pass });
     rows.push(
       `<tr><td>${id}</td><td>${f1.toFixed(3)}</td><td>${precision.toFixed(3)}</td>` +
-        `<td>${recall.toFixed(3)}</td><td>${lumRms.toFixed(1)}</td>` +
+        `<td>${recall.toFixed(3)}</td><td>${lumRms.toFixed(1)}</td><td>${stats.drawCalls}</td>` +
         `<td>${pass ? "✅" : "❌"}</td></tr>` +
-        `<tr><td colspan="6"><img src="${id}.png" style="width:100%"></td></tr>`,
+        `<tr><td colspan="7"><img src="${id}.png" style="width:100%"></td></tr>`,
     );
     console.log(
-      `${pass ? "ok  " : "FAIL"} ${id}: edgeF1 ${f1.toFixed(3)} (p ${precision.toFixed(3)} r ${recall.toFixed(3)}) lumRMS ${lumRms.toFixed(1)}`,
+      `${pass ? "ok  " : "FAIL"} ${id}: edgeF1 ${f1.toFixed(3)} (p ${precision.toFixed(3)} r ${recall.toFixed(3)}) lumRMS ${lumRms.toFixed(1)} · ${stats.drawCalls} draws`,
     );
   }
 }
@@ -372,7 +374,7 @@ writeFileSync(
 <style>body{background:#111;color:#cfd6df;font:13px system-ui}table{width:100%;border-collapse:collapse}td{padding:4px;border-bottom:1px solid #333}</style>
 <h1>Golden-scene parity gallery (P1-015)</h1>
 <p>monolith | studio | edge overlay (green matched · red monolith-only · blue studio-only) — gate: edge F1 ≥ ${EDGE_F1_GATE}</p>
-<table><tr><th>scene</th><th>edgeF1</th><th>precision</th><th>recall</th><th>lumRMS</th><th>pass</th></tr>${rows.join("")}</table>`,
+<table><tr><th>scene</th><th>edgeF1</th><th>precision</th><th>recall</th><th>lumRMS</th><th>draws</th><th>pass</th></tr>${rows.join("")}</table>`,
 );
 
 await browser.close();

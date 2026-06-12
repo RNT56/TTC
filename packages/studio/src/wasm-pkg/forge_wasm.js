@@ -154,6 +154,9 @@ export class Session {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_session_free(ptr, 0);
     }
+    clear_jog() {
+        wasm.session_clear_jog(this.__wbg_ptr);
+    }
     /**
      * Drive-mode camera focus (x, y, z) — the driver's body position at
      * its natural viewing height.
@@ -197,6 +200,18 @@ export class Session {
     pose_view() {
         const ret = wasm.session_pose_view(this.__wbg_ptr);
         return ret;
+    }
+    /**
+     * Teach-pendant jog (P1-013): per-node euler offset over the pose
+     * layers; zeros clear the node.
+     * @param {string} node
+     * @param {number} rx
+     * @param {number} ry
+     */
+    set_jog(node, rx, ry) {
+        const ptr0 = passStringToWasm0(node, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.session_set_jog(this.__wbg_ptr, ptr0, len0, rx, ry);
     }
     /**
      * Advance the fixed-step clock; returns the number of 120 Hz steps

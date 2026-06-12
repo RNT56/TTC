@@ -265,6 +265,16 @@ mod wasm_bindings {
             self.inner.focus().to_vec()
         }
 
+        /// Teach-pendant jog (P1-013): per-node euler offset over the pose
+        /// layers; zeros clear the node.
+        pub fn set_jog(&mut self, node: &str, rx: f64, ry: f64) {
+            self.inner.set_jog(node, rx, ry);
+        }
+
+        pub fn clear_jog(&mut self) {
+            self.inner.clear_jog();
+        }
+
         /// Zero-copy pose view (16 f32 per node, column-major, `node_names`
         /// order). Valid only until the next wasm memory growth — read it
         /// synchronously every frame, never hold it.

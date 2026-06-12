@@ -50,6 +50,7 @@ export class Bake {
 export class Session {
     free(): void;
     [Symbol.dispose](): void;
+    clear_jog(): void;
     /**
      * Drive-mode camera focus (x, y, z) — the driver's body position at
      * its natural viewing height.
@@ -63,6 +64,11 @@ export class Session {
      * synchronously every frame, never hold it.
      */
     pose_view(): Float32Array;
+    /**
+     * Teach-pendant jog (P1-013): per-node euler offset over the pose
+     * layers; zeros clear the node.
+     */
+    set_jog(node: string, rx: number, ry: number): void;
     /**
      * Advance the fixed-step clock; returns the number of 120 Hz steps
      * executed. Read the result through `pose_view` (P1-005 zero-copy).
@@ -105,10 +111,12 @@ export interface InitOutput {
     readonly golden: (a: number, b: number) => [number, number, number, number];
     readonly patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly schema: () => [number, number];
+    readonly session_clear_jog: (a: number) => void;
     readonly session_focus: (a: number) => [number, number];
     readonly session_new: (a: number, b: number) => [number, number, number];
     readonly session_node_names: (a: number) => [number, number];
     readonly session_pose_view: (a: number) => any;
+    readonly session_set_jog: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
     readonly validate: (a: number, b: number) => [number, number];
     readonly __wbindgen_externrefs: WebAssembly.Table;

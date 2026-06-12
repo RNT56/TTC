@@ -2,10 +2,16 @@
 // No geometry math here: buffers and node transforms come from the core's bake;
 // pose updates come from the core's tick; this file uploads, composes explode
 // offsets, and draws.
+//
+// P1-008: parts are batched into ONE BatchedMesh per material class (≤ 5
+// batches per model — hrx7 draws in ~8 calls instead of ~130), per-instance
+// color + matrix. P1-010: blueprint line work is a full-screen normal/depth
+// edge pass over the flat render (no per-part edge objects). P1-012: the
+// selection outline is an inverted-hull ghost of the picked part's geometry.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { materialFor } from "./materials";
-import type { BakeArtifact, BakedPart } from "./types";
+import { classMaterialFor } from "./materials";
+import type { BakeArtifact, BakedPart, MaterialClass } from "./types";
 
 export interface PartPick {
   partIndex: number;
@@ -15,8 +21,8 @@ export interface PartPick {
 }
 
 interface PartHandle {
-  mesh: THREE.Mesh;
-  edges: THREE.LineSegments;
+  batch: THREE.BatchedMesh;
+  instanceId: number;
   node: string;
   partIndex: number;
   material: string;
@@ -25,12 +31,53 @@ interface PartHandle {
   /** current node transform (bake static or live tick pose) */
   nodeWorld: THREE.Matrix4;
   nodeRotation: THREE.Matrix4;
-  baseMaterial: THREE.Material;
-  leaderLine?: THREE.Line;
+  /** retained for the outline ghost (the batch owns the GPU copy) */
+  geometry: THREE.BufferGeometry;
+  /** final composed matrix (explode × pose), what the batch draws */
+  finalMatrix: THREE.Matrix4;
 }
 
 const BLUEPRINT_BG = new THREE.Color(0x0a1a2f);
 const NORMAL_BG = new THREE.Color(0x0d0f12);
+
+/** Full-screen edge overlay (P1-010): Sobel-ish discontinuity detection over
+ * a view-normal + depth target, drawn as transparent line work. */
+const EDGE_VERT = /* glsl */ `
+  varying vec2 vUv;
+  void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
+`;
+const EDGE_FRAG = /* glsl */ `
+  uniform sampler2D tNormal;
+  uniform sampler2D tDepth;
+  uniform vec2 resolution;
+  uniform float cameraNear;
+  uniform float cameraFar;
+  uniform vec3 lineColor;
+  varying vec2 vUv;
+
+  float viewZ(vec2 uv) {
+    float d = texture2D(tDepth, uv).x;
+    return (cameraNear * cameraFar) / ((cameraFar - cameraNear) * d - cameraFar);
+  }
+
+  void main() {
+    vec2 px = 1.0 / resolution;
+    vec3 n0 = texture2D(tNormal, vUv).xyz;
+    vec3 nx = texture2D(tNormal, vUv + vec2(px.x, 0.0)).xyz;
+    vec3 ny = texture2D(tNormal, vUv + vec2(0.0, px.y)).xyz;
+    float nEdge = length(n0 - nx) + length(n0 - ny);
+
+    float z0 = viewZ(vUv);
+    float zx = viewZ(vUv + vec2(px.x, 0.0));
+    float zy = viewZ(vUv + vec2(0.0, px.y));
+    // depth discontinuity relative to distance (silhouettes at any range)
+    float dEdge = (abs(z0 - zx) + abs(z0 - zy)) / max(abs(z0), 1e-4);
+
+    float edge = max(step(0.45, nEdge), step(0.02, dEdge));
+    if (edge < 0.5) discard;
+    gl_FragColor = vec4(lineColor, 0.9);
+  }
+`;
 
 export class StudioScene {
   private renderer: THREE.WebGLRenderer;
@@ -38,6 +85,7 @@ export class StudioScene {
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
   private parts: PartHandle[] = [];
+  private batches: THREE.BatchedMesh[] = [];
   private raycaster = new THREE.Raycaster();
   private disposed = false;
   private explodeT = 0;
@@ -45,6 +93,17 @@ export class StudioScene {
   private blueprintMat = new THREE.MeshBasicMaterial({ color: 0x10263f });
   private grid: THREE.GridHelper;
   private ground: THREE.Mesh;
+  private leaders!: THREE.LineSegments;
+  private selected: number | null = null;
+  private outline: THREE.Mesh;
+  private outlineMaterial!: THREE.ShaderMaterial;
+  // blueprint post pass
+  private normalTarget: THREE.WebGLRenderTarget | null = null;
+  private normalOverride = new THREE.MeshNormalMaterial();
+  private edgeQuad: THREE.Mesh;
+  private edgeMaterial: THREE.ShaderMaterial;
+  private edgeScene = new THREE.Scene();
+  private edgeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   /** last render frame duration, ms (perf overlay, P1-017) */
   lastFrameMs = 0;
   onFrame?: (dt: number) => void;
@@ -56,7 +115,9 @@ export class StudioScene {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene.background = NORMAL_BG;
 
-    this.camera = new THREE.PerspectiveCamera(45, 1, 0.001, 50);
+    // near plane 0.01 (was 0.001): the models live at 0.4–5 m — this buys
+    // 10× depth precision, the z-buffer half of "shimmer gone"
+    this.camera = new THREE.PerspectiveCamera(45, 1, 0.01, 50);
     this.camera.position.set(0.45, 0.35, 0.55);
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.target.set(0, 0.1, 0);
@@ -83,57 +144,134 @@ export class StudioScene {
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.receiveShadow = true;
     this.scene.add(this.ground);
+
+    // ALL leader lines live in one LineSegments (P1-011 under the P1-008
+    // draw-call budget): pairs rebuilt whenever explode/pose changes
+    this.leaders = new THREE.LineSegments(
+      new THREE.BufferGeometry(),
+      new THREE.LineDashedMaterial({ color: 0x8fa3bf, dashSize: 0.01, gapSize: 0.006 }),
+    );
+    this.leaders.frustumCulled = false;
+    this.leaders.visible = false;
+    this.scene.add(this.leaders);
+
+    // info accounting is per-frame (multiple passes in blueprint mode)
+    this.renderer.info.autoReset = false;
+
+    // selection outline: inverted hull — the picked part's geometry, back
+    // faces only, inflated along the normal in the vertex stage; the inflate
+    // distance scales with camera range so the rim stays ~2 px
+    this.outlineMaterial = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: {
+        inflate: { value: 0.002 },
+        color: { value: new THREE.Color(0x39c8ff) },
+      },
+      vertexShader: /* glsl */ `
+        uniform float inflate;
+        void main() {
+          vec3 p = position + normalize(normal) * inflate;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform vec3 color;
+        void main() { gl_FragColor = vec4(color, 1.0); }
+      `,
+    });
+    this.outline = new THREE.Mesh(new THREE.BufferGeometry(), this.outlineMaterial);
+    this.outline.matrixAutoUpdate = false;
+    this.outline.visible = false;
+    this.scene.add(this.outline);
+
+    this.edgeMaterial = new THREE.ShaderMaterial({
+      vertexShader: EDGE_VERT,
+      fragmentShader: EDGE_FRAG,
+      uniforms: {
+        tNormal: { value: null },
+        tDepth: { value: null },
+        resolution: { value: new THREE.Vector2(1, 1) },
+        cameraNear: { value: this.camera.near },
+        cameraFar: { value: this.camera.far },
+        lineColor: { value: new THREE.Color(0x9fd4ff) },
+      },
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.edgeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.edgeMaterial);
+    this.edgeScene.add(this.edgeQuad);
   }
 
   /** Upload the core's bake artifact. Zero client-side geometry computation. */
   load(artifact: BakeArtifact): void {
     for (const h of this.parts) {
-      h.mesh.geometry.dispose();
-      h.edges.geometry.dispose();
-      this.scene.remove(h.mesh, h.edges);
-      if (h.leaderLine) this.scene.remove(h.leaderLine);
+      h.geometry.dispose();
+    }
+    for (const b of this.batches) {
+      this.scene.remove(b);
+      b.dispose();
     }
     this.parts = [];
+    this.batches = [];
+    this.selected = null;
+    this.outline.visible = false;
+    this.leaders.visible = false;
 
+    // group parts by material class → one BatchedMesh per class (P1-008)
+    const byClass = new Map<MaterialClass, BakedPart[]>();
     for (const part of artifact.baked.parts) {
-      const geometry = new THREE.BufferGeometry();
-      // typed arrays straight from the facade handle (P1-005) — no copies
-      geometry.setAttribute("position", new THREE.BufferAttribute(part.mesh.positions, 3));
-      geometry.setAttribute("normal", new THREE.BufferAttribute(part.mesh.normals, 3));
-      geometry.setIndex(new THREE.BufferAttribute(part.mesh.indices, 1));
-
-      const baseMaterial = materialFor(part.material, part.color);
-      const mesh = new THREE.Mesh(geometry, baseMaterial);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.matrixAutoUpdate = false;
-      mesh.userData.partIndex = part.part_index;
-
-      const edges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(geometry, 25),
-        new THREE.LineBasicMaterial({ color: 0x9fd4ff }),
-      );
-      edges.matrixAutoUpdate = false;
-      edges.visible = false;
-
-      const world = artifact.baked.node_world[part.node];
-      const nodeWorld = new THREE.Matrix4();
-      if (world && world.length === 16) nodeWorld.fromArray(world);
-
-      this.scene.add(mesh, edges);
-      this.parts.push({
-        mesh,
-        edges,
-        node: part.node,
-        partIndex: part.part_index,
-        material: part.material,
-        color: part.color,
-        explode: part.explode,
-        nodeWorld,
-        nodeRotation: new THREE.Matrix4().extractRotation(nodeWorld),
-        baseMaterial,
-      });
+      const list = byClass.get(part.material) ?? [];
+      list.push(part);
+      byClass.set(part.material, list);
     }
+
+    for (const [cls, list] of byClass) {
+      let maxVerts = 0;
+      let maxIndices = 0;
+      for (const p of list) {
+        maxVerts += p.mesh.positions.length / 3;
+        maxIndices += p.mesh.indices.length;
+      }
+      const batch = new THREE.BatchedMesh(list.length, maxVerts, maxIndices, classMaterialFor(cls));
+      batch.castShadow = true;
+      batch.receiveShadow = true;
+      batch.userData.blueprintHidden = false;
+      this.scene.add(batch);
+      this.batches.push(batch);
+
+      const color = new THREE.Color();
+      for (const part of list) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(part.mesh.positions, 3));
+        geometry.setAttribute("normal", new THREE.BufferAttribute(part.mesh.normals, 3));
+        geometry.setIndex(new THREE.BufferAttribute(part.mesh.indices, 1));
+
+        const geometryId = batch.addGeometry(geometry);
+        const instanceId = batch.addInstance(geometryId);
+        batch.setColorAt(instanceId, color.set(part.color));
+
+        const world = artifact.baked.node_world[part.node];
+        const nodeWorld = new THREE.Matrix4();
+        if (world && world.length === 16) nodeWorld.fromArray(world);
+
+        const handle: PartHandle = {
+          batch,
+          instanceId,
+          node: part.node,
+          partIndex: part.part_index,
+          material: part.material,
+          color: part.color,
+          explode: part.explode,
+          nodeWorld,
+          nodeRotation: new THREE.Matrix4().extractRotation(nodeWorld),
+          geometry,
+          finalMatrix: new THREE.Matrix4().copy(nodeWorld),
+        };
+        this.parts.push(handle);
+      }
+    }
+    this.parts.sort((a, b) => a.partIndex - b.partIndex);
     this.applyBlueprint();
     this.updateMatrices();
   }
@@ -164,80 +302,88 @@ export class StudioScene {
 
   private applyBlueprint(): void {
     this.scene.background = this.blueprint ? BLUEPRINT_BG : NORMAL_BG;
-    for (const h of this.parts) {
-      h.mesh.material = this.blueprint ? this.blueprintMat : h.baseMaterial;
-      h.edges.visible = this.blueprint;
-      h.mesh.castShadow = !this.blueprint;
+    for (const b of this.batches) {
+      if (this.blueprint) {
+        b.userData.shadedMaterial = b.material;
+        b.material = this.blueprintMat;
+        b.castShadow = false;
+      } else if (b.userData.shadedMaterial) {
+        b.material = b.userData.shadedMaterial as THREE.Material;
+        b.castShadow = true;
+      }
     }
   }
 
   private updateMatrices(): void {
     const dir = new THREE.Vector3();
     const offset = new THREE.Matrix4();
-    const basePos = new THREE.Vector3();
-    const explodedPos = new THREE.Vector3();
+    const leaderPoints: THREE.Vector3[] = [];
     for (const h of this.parts) {
       if (!h.explode || this.explodeT <= 0) {
-        h.mesh.matrix.copy(h.nodeWorld);
-        h.edges.matrix.copy(h.nodeWorld);
-        if (h.leaderLine) h.leaderLine.visible = false;
+        h.finalMatrix.copy(h.nodeWorld);
+        h.batch.setMatrixAt(h.instanceId, h.finalMatrix);
         continue;
       }
       const { dir: d, mag, t0, t1, leader } = h.explode;
       const f = Math.min(Math.max((this.explodeT - t0) / Math.max(t1 - t0, 1e-6), 0), 1);
       dir.set(d[0], d[1], d[2]).applyMatrix4(h.nodeRotation).normalize();
       offset.makeTranslation(dir.x * mag * f, dir.y * mag * f, dir.z * mag * f);
-      h.mesh.matrix.multiplyMatrices(offset, h.nodeWorld);
-      h.edges.matrix.copy(h.mesh.matrix);
+      h.finalMatrix.multiplyMatrices(offset, h.nodeWorld);
+      h.batch.setMatrixAt(h.instanceId, h.finalMatrix);
 
       // leader lines (P1-011): flagged subassemblies draw base→exploded ties
       if (leader && f > 0.02) {
-        basePos.setFromMatrixPosition(h.nodeWorld);
-        explodedPos.setFromMatrixPosition(h.mesh.matrix);
-        if (!h.leaderLine) {
-          const g = new THREE.BufferGeometry().setFromPoints([basePos, explodedPos]);
-          h.leaderLine = new THREE.Line(
-            g,
-            new THREE.LineDashedMaterial({ color: 0x8fa3bf, dashSize: 0.01, gapSize: 0.006 }),
-          );
-          this.scene.add(h.leaderLine);
-        } else {
-          h.leaderLine.geometry.setFromPoints([basePos, explodedPos]);
-        }
-        h.leaderLine.computeLineDistances();
-        h.leaderLine.visible = true;
-      } else if (h.leaderLine) {
-        h.leaderLine.visible = false;
+        leaderPoints.push(
+          new THREE.Vector3().setFromMatrixPosition(h.nodeWorld),
+          new THREE.Vector3().setFromMatrixPosition(h.finalMatrix),
+        );
       }
     }
+    if (leaderPoints.length > 0) {
+      this.leaders.geometry.setFromPoints(leaderPoints);
+      this.leaders.computeLineDistances();
+      this.leaders.visible = true;
+    } else {
+      this.leaders.visible = false;
+    }
+    this.syncOutline();
   }
 
   /** Component-scoped picking (BEH-004 alignment): click → part identity. */
   pick(ndcX: number, ndcY: number): PartPick | null {
     this.raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.camera);
-    const meshes = this.parts.map((h) => h.mesh);
-    const hit = this.raycaster.intersectObjects(meshes, false)[0];
-    if (!hit) {
-      this.highlight(null);
+    const hit = this.raycaster.intersectObjects(this.batches, false)[0] as
+      | (THREE.Intersection & { batchId?: number })
+      | undefined;
+    if (!hit || hit.batchId === undefined) {
+      this.setSelected(null);
       return null;
     }
-    const h = this.parts.find((p) => p.mesh === hit.object);
+    const h = this.parts.find((p) => p.batch === hit.object && p.instanceId === hit.batchId);
     if (!h) return null;
-    this.highlight(h.partIndex);
+    this.setSelected(h.partIndex);
     return { partIndex: h.partIndex, node: h.node, material: h.material, color: h.color };
   }
 
-  private highlight(partIndex: number | null): void {
-    for (const h of this.parts) {
-      if (h.partIndex === partIndex && !this.blueprint) {
-        const m = (h.baseMaterial as THREE.MeshStandardMaterial).clone();
-        m.emissive = new THREE.Color(0x2f5d8a);
-        m.emissiveIntensity = 1.0;
-        h.mesh.material = m;
-      } else if (!this.blueprint) {
-        h.mesh.material = h.baseMaterial;
-      }
+  /** Outline the part (inverted hull, P1-012); null clears. */
+  setSelected(partIndex: number | null): void {
+    this.selected = partIndex;
+    this.syncOutline();
+  }
+
+  private syncOutline(): void {
+    const h = this.selected === null ? null : this.parts.find((p) => p.partIndex === this.selected);
+    if (!h || this.blueprint) {
+      this.outline.visible = false;
+      return;
     }
+    this.outline.geometry = h.geometry;
+    this.outline.matrix.copy(h.finalMatrix);
+    // keep the rim ~2 px regardless of range
+    const pos = new THREE.Vector3().setFromMatrixPosition(h.finalMatrix);
+    const dist = pos.distanceTo(this.camera.position);
+    this.outlineMaterial.uniforms.inflate.value = dist * 0.002;
+    this.outline.visible = true;
   }
 
   /** Pin the camera exactly — parity gallery & tests (P1-015). Same orbit
@@ -269,6 +415,11 @@ export class StudioScene {
     this.grid.visible = visible;
   }
 
+  /** Disable orbit while a jog drag owns the pointer (P1-013). */
+  setControlsEnabled(enabled: boolean): void {
+    this.controls.enabled = enabled;
+  }
+
   setShadowsVisible(visible: boolean): void {
     this.renderer.shadowMap.enabled = visible;
     this.ground.visible = visible;
@@ -292,10 +443,66 @@ export class StudioScene {
     this.controls.update();
   }
 
+  /** Render-side numbers for the perf overlay (P1-017). */
+  stats(): { drawCalls: number; triangles: number; frameMs: number } {
+    return {
+      drawCalls: this.renderer.info.render.calls,
+      triangles: this.renderer.info.render.triangles,
+      frameMs: this.lastFrameMs,
+    };
+  }
+
   resize(width: number, height: number): void {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    this.normalTarget?.dispose();
+    this.normalTarget = null; // lazily rebuilt at the new size
+  }
+
+  private ensureNormalTarget(): THREE.WebGLRenderTarget {
+    if (!this.normalTarget) {
+      const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+      const depthTexture = new THREE.DepthTexture(size.x, size.y);
+      this.normalTarget = new THREE.WebGLRenderTarget(size.x, size.y, { depthTexture });
+      this.edgeMaterial.uniforms.resolution.value.set(size.x, size.y);
+    }
+    return this.normalTarget;
+  }
+
+  private renderFrame(): void {
+    this.renderer.info.reset();
+    if (!this.blueprint) {
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+    // blueprint (P1-010): flat fill on screen, then a normal/depth edge pass
+    this.renderer.render(this.scene, this.camera);
+
+    const target = this.ensureNormalTarget();
+    const gridWas = this.grid.visible;
+    const groundWas = this.ground.visible;
+    this.grid.visible = false;
+    this.ground.visible = false;
+    const bg = this.scene.background;
+    this.scene.background = null;
+    this.scene.overrideMaterial = this.normalOverride;
+    this.renderer.setRenderTarget(target);
+    this.renderer.clear();
+    this.renderer.render(this.scene, this.camera);
+    this.renderer.setRenderTarget(null);
+    this.scene.overrideMaterial = null;
+    this.scene.background = bg;
+    this.grid.visible = gridWas;
+    this.ground.visible = groundWas;
+
+    this.edgeMaterial.uniforms.tNormal.value = target.texture;
+    this.edgeMaterial.uniforms.tDepth.value = target.depthTexture;
+    this.edgeMaterial.uniforms.cameraNear.value = this.camera.near;
+    this.edgeMaterial.uniforms.cameraFar.value = this.camera.far;
+    this.renderer.autoClear = false;
+    this.renderer.render(this.edgeScene, this.edgeCamera);
+    this.renderer.autoClear = true;
   }
 
   start(): void {
@@ -307,7 +514,7 @@ export class StudioScene {
       last = now;
       this.onFrame?.(Math.min(dt, 0.1));
       this.controls.update();
-      this.renderer.render(this.scene, this.camera);
+      this.renderFrame();
       this.lastFrameMs = performance.now() - now;
       requestAnimationFrame(tick);
     };
@@ -316,6 +523,7 @@ export class StudioScene {
 
   dispose(): void {
     this.disposed = true;
+    this.normalTarget?.dispose();
     this.renderer.dispose();
   }
 }

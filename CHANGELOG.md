@@ -18,6 +18,53 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Studio P1 finishers: BatchedMesh, blueprint post pass, outline, jog, configurator
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-008 [x], P1-010 [x], P1-012 [x], P1-013 [x], P1-014 [~ mechanics], P1-017 [~]
+**Done:** The render layer is rebuilt around **one BatchedMesh per material
+class** (per-instance color + matrix, batchId raycast picking, merged
+single-LineSegments leaders, camera near 0.01 for depth precision): hrx7
+draws in **8 calls shaded / 9 blueprint / 9 exploded** vs ~260 before; the
+≤ 40 budget is now gated inside the parity gallery (which re-ran with
+IDENTICAL edge-F1s 0.95–0.995 at 3 draws/scene — the batch refactor is
+pixel-equivalent). **Blueprint post pass** (P1-010): view-normal + depth RT →
+full-screen discontinuity shader over the flat pass; the 125 per-part
+EdgesGeometry objects are deleted; verified by headless screenshot.
+**Selection outline** (P1-012): inverted hull (back-face shell inflated along
+normals, rim distance-scaled ~2 px) — chosen over stencil for 1 draw call,
+no postprocess dep, depth-correct occlusion; first attempt via
+MeshBasicMaterial onBeforeCompile silently failed (no objectNormal in
+unlit shaders) — replaced with an explicit ShaderMaterial. **Jog + pause +
+frame-step** (P1-013 close): `CoreSession.set_jog` applies per-node euler
+over the pose layers (the monolith's `nodes[k].rot += jog[k]`), zeros clear;
+test proves jog moves the head and clearing restores the bit-identical
+stream; studio drags the selected node (orbit suspended during the drag),
+pause freezes the drive clock, step advances exactly 1/120 s.
+**Configurator mechanics** (P1-014): the selection pane patches
+color/material through the live CoreBake handle — JSON-Patch → re-bake in
+place; the validator re-judges every patched document; explode/camera/
+drive/jog/selection survive (browser-verified: head visor patched to
+#39c8ff, material to gloss, verdict honestly stays REJECTED on the
+historical hrx7). Variant cards stay gated on slots (P0-007/P3).
+**Perf overlay** (P1-017): fps + render ms + draw calls + core-tick ms with
+honest multi-pass accounting (`info.autoReset` off); SwiftShader software
+floor: render 0.5 ms · core ≤ 0.05 ms · 9 draws — ROADMAP frame-budget
+criterion annotated, "shimmer gone" checked (no painter sort exists to
+flicker; z-buffer + near-plane fix; gallery is the record). Verified: 89
+Rust tests, clippy -D clean, golden + report equality, budgets, gateway 6/6,
+gallery green with draw-call gate, wasm-pkg rebuilt (301 KB gz).
+**Changed:** `packages/studio/src/{scene.ts (rewrite), App.tsx (rewrite),
+store.ts, wasm.ts, materials.ts}`, `crates/forge-wasm/src/{session.rs (jog),
+lib.rs (set_jog/clear_jog)}`, `crates/forge-motion/src/quadruped.rs (body
+getter)`, `scripts/parity-gallery.mjs` (stats + ≤ 40 gate), wasm-pkg,
+`docs/assets/parity/` (refreshed with draw-call metrics), docs (TODO,
+ROADMAP, render-engine).
+**Decisions:** outline = inverted hull, not stencil (recorded at P1-012 —
+implementation-level, system doc updated); jog scope = posed driver paths.
+**Next:** P1-016 N8AO + quality tiers (the last open studio finisher), then
+P2 remainder (P2-002 drafts, P2-006 CI on all first-party contracts, OD-08
+napi-rs measurement).
+**Blockers:** none.
+
 ## 2026-06-12 — P1-013 (follow half): drive-mode follow camera through the boundary
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-013 [~] (follow camera ✓; jog + pause/frame-step remain)
 **Done:** `CoreSession::focus()` (driver body at natural viewing height —

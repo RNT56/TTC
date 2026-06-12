@@ -85,8 +85,8 @@ worker driven from `forge-sim`.
 Exit criteria:
 - [x] **Golden-number suite green native↔WASM** *(2026-06-12: 4 canonical scenes, bake + 600-step tick streams bit-identical; forge-num/libm determinism fix; CI-gated)*
 - [x] Golden-scene parity gallery versus the monolith *(2026-06-12: 6 canonical scenes — 2 models × 3 cameras, shared FOV/orbit — Sobel-edge F1 0.95–0.995 vs gate 0.85; evidence in `docs/assets/parity/`, regenerate via `pnpm parity`)*
-- [ ] **Shimmer gone** — z-buffer renderer resolves all deliberately overlapping solids
-- [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI)
+- [x] **Shimmer gone** — z-buffer renderer resolves all deliberately overlapping solids *(2026-06-12: depth-tested BatchedMesh render, camera near 0.01 for depth precision; the GEO-003-flagged interpenetrations resolve per-pixel by construction — no painter sort exists to flicker; parity gallery is the visual record)*
+- [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI) *(software-renderer floor measured 2026-06-12: render 0.5 ms · core ≤ 0.05 ms · 9 draw calls on SwiftShader — budgets hold with huge margin even without a GPU; the 60 fps claim still wants a real-mid-hardware run, owner-verifiable via the perf overlay)*
 - [x] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts *(2026-06-12 — golden-compare on hrx7 + vx2-hornet)*
 - [x] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms *(2026-06-12: 298 KB gz · bake 2.0 ms · patch→re-bake 2.8 ms through the typed `Bake` handle; CI-gated via `scripts/budgets.mjs`)*
 

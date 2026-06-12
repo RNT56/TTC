@@ -22,7 +22,8 @@ monolith, shimmer gone, and 60 fps on mid hardware.
   material ids) wrapped directly as Three.js BufferAttributes. No per-frame JSON; no
   geometry math in TS.
 - **Scene graph** mirrors the contract's skeleton nodes; parts batch per material
-  class (`BatchedMesh`) — a whole model is a handful of draw calls (budget:
+  class (`BatchedMesh`, *live 2026-06-12: hrx7 = 8 calls shaded / 9 blueprint,
+  gallery-gated ≤ 40*) — a whole model is a handful of draw calls (budget:
   ≤ 40/model). Pose matrices come from the core `tick`'s shared region,
   render-interpolated.
 - **WebGL2 baseline**, `WebGPURenderer` behind a flag (TSL gives the path without a
@@ -47,10 +48,16 @@ becomes physically consistent for free. AO via N8AO at quality tiers.
 ## 4. Studio features
 
 - **Blueprint mode:** post pass — normal/depth edge detection composited over a flat
-  pass with the grid shader.
+  pass with the grid shader. *Live 2026-06-12 (P1-010): view-normal + depth RT,
+  full-screen discontinuity shader; replaced the per-part EdgesGeometry objects.*
 - **Explode:** the prototype's chain/window math verbatim, driving per-part instance
-  matrices; leader lines as dashed `Line2` with datum dots.
-- **Selection:** stencil outline; component-scoped picking (must satisfy BEH-004).
+  matrices; leader lines as dashed `Line2` with datum dots. *Live: all leaders
+  merge into ONE LineSegments under the draw-call budget; Line2 fat lines remain
+  a cosmetic upgrade.*
+- **Selection:** component-scoped picking (must satisfy BEH-004) — *live via
+  BatchedMesh batchId raycast*. Outline shipped as an **inverted hull** (back-face
+  shell inflated along normals, distance-scaled rim) instead of stencil — one draw
+  call, no postprocess dependency, depth-correct; decision recorded at P1-012.
 - **`renderBias`** survives only as a polygon-offset hint for true coplanar decals —
   not as a sorting crutch.
 - **Quality-tier autoswitcher (XC-22):** degradation ladder AO off → shadow

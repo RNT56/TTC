@@ -4,10 +4,13 @@
   "scenes": [
     {
       "id": "hrx7-threequarter",
-      "edgeF1": 0.9927704686636034,
-      "precision": 0.9979646156254893,
+      "edgeF1": 0.9926935005959561,
+      "precision": 0.9978090766823161,
       "recall": 0.9876301101221904,
-      "lumRms": 9.630146583907566,
+      "lumRms": 9.67231852188161,
+      "drawCalls": 3,
+      "triangles": 4662,
+      "frameMs": 0.6000000000931323,
       "pass": true
     },
     {
@@ -15,7 +18,10 @@
       "edgeF1": 0.9522811617701918,
       "precision": 0.987411487018096,
       "recall": 0.9195647030991246,
-      "lumRms": 6.179282241733973,
+      "lumRms": 6.184750565574084,
+      "drawCalls": 3,
+      "triangles": 4662,
+      "frameMs": 0.39999999990686774,
       "pass": true
     },
     {
@@ -23,7 +29,10 @@
       "edgeF1": 0.988315481986368,
       "precision": 1,
       "recall": 0.9769008662175168,
-      "lumRms": 8.122161664933998,
+      "lumRms": 8.153812425269214,
+      "drawCalls": 3,
+      "triangles": 4662,
+      "frameMs": 0.5,
       "pass": true
     },
     {
@@ -31,15 +40,21 @@
       "edgeF1": 0.9846629720324784,
       "precision": 1,
       "recall": 0.9697892866209697,
-      "lumRms": 4.806907724400694,
+      "lumRms": 5.1058324234304235,
+      "drawCalls": 3,
+      "triangles": 2208,
+      "frameMs": 0.39999999990686774,
       "pass": true
     },
     {
       "id": "vx2-hornet-profile",
-      "edgeF1": 0.978529854096684,
-      "precision": 0.9934225980737609,
+      "edgeF1": 0.9754072592698733,
+      "precision": 0.9870069605568446,
       "recall": 0.9640770396018178,
-      "lumRms": 5.50768149888145,
+      "lumRms": 5.9171805600947485,
+      "drawCalls": 3,
+      "triangles": 2208,
+      "frameMs": 0.39999999990686774,
       "pass": true
     },
     {
@@ -47,7 +62,10 @@
       "edgeF1": 0.9947105495151338,
       "precision": 1,
       "recall": 0.9894767611809413,
-      "lumRms": 4.368379240426153,
+      "lumRms": 4.974502457416028,
+      "drawCalls": 3,
+      "triangles": 2208,
+      "frameMs": 0.39999999990686774,
       "pass": true
     }
   ]

@@ -39,6 +39,10 @@ pub struct CoreSession {
     accumulator: f64,
     /// 16 f32 per node, column-major, written every completed fixed step.
     pose: Vec<f32>,
+    /// Teach-pendant jog offsets (P1-013): per-node euler [rx, ry] added over
+    /// the driver's pose layers — the monolith's jog semantics. Inspection
+    /// state, never part of the golden corpus (the scripted input sets none).
+    jog: BTreeMap<String, [f64; 2]>,
     pub ticks: u64,
 }
 
@@ -64,6 +68,7 @@ impl CoreSession {
             spec,
             driver,
             accumulator: 0.0,
+            jog: BTreeMap::new(),
             ticks: 0,
         };
         session.write_pose(None, &BTreeMap::new())?;
@@ -72,6 +77,20 @@ impl CoreSession {
 
     pub fn node_names(&self) -> &[String] {
         &self.node_names
+    }
+
+    /// Set a teach-pendant jog offset on a node (zeros clear it). Applied on
+    /// the posed driver paths (biped/multirotor) over the pose layers.
+    pub fn set_jog(&mut self, node: &str, rx: f64, ry: f64) {
+        if rx == 0.0 && ry == 0.0 {
+            self.jog.remove(node);
+        } else {
+            self.jog.insert(node.to_string(), [rx, ry]);
+        }
+    }
+
+    pub fn clear_jog(&mut self) {
+        self.jog.clear();
     }
 
     /// Camera focus point for drive mode (the prototype's drvFocus): the
@@ -126,8 +145,9 @@ impl CoreSession {
                     run: false,
                 };
                 driver.tick(&stick, DT, t);
-                let world = node_world_posed(&self.spec, &Self::pose_map(&driver.poses))
-                    .map_err(|e| e.to_string())?;
+                let mut poses = Self::pose_map(&driver.poses);
+                Self::apply_jog(&self.jog, &mut poses);
+                let world = node_world_posed(&self.spec, &poses).map_err(|e| e.to_string())?;
                 self.write_world(&world);
                 Ok(())
             }
@@ -141,8 +161,9 @@ impl CoreSession {
                     run: false,
                 };
                 driver.tick(&stick, CAM_FORWARD, DT, t);
-                let world = node_world_posed(&self.spec, &Self::pose_map(&driver.poses))
-                    .map_err(|e| e.to_string())?;
+                let mut poses = Self::pose_map(&driver.poses);
+                Self::apply_jog(&self.jog, &mut poses);
+                let world = node_world_posed(&self.spec, &poses).map_err(|e| e.to_string())?;
                 self.write_world(&world);
                 Ok(())
             }
@@ -172,6 +193,19 @@ impl CoreSession {
             .cloned()
             .zip(poses.poses().iter().map(|p| (p.rot, p.off)))
             .collect()
+    }
+
+    /// Jog over the pose layers (the monolith's `nodes[k].rot += jog[k]`).
+    fn apply_jog(
+        jog: &BTreeMap<String, [f64; 2]>,
+        poses: &mut BTreeMap<String, ([f64; 3], [f64; 3])>,
+    ) {
+        for (node, j) in jog {
+            if let Some((rot, _)) = poses.get_mut(node) {
+                rot[0] += j[0];
+                rot[1] += j[1];
+            }
+        }
     }
 
     fn write_pose(
@@ -270,6 +304,37 @@ mod tests {
         let hip = idx(&s, "hip_0l") * 16;
         let m = &s.pose_buffer()[hip..hip + 16];
         assert!(m.iter().all(|v| v.is_finite()));
+    }
+
+    #[test]
+    fn jog_offsets_compose_over_the_pose_layers() {
+        let hrx7 = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../examples/hrx7.forge.json"
+        ))
+        .unwrap();
+        let run = |jog: Option<(&str, f64, f64)>| {
+            let mut s = CoreSession::new(&hrx7).unwrap();
+            if let Some((node, rx, ry)) = jog {
+                s.set_jog(node, rx, ry);
+            }
+            s.step(0.5, &InputFrame::default()).unwrap();
+            s.pose_buffer().to_vec()
+        };
+        let plain = run(None);
+        let jogged = run(Some(("head", 0.0, 0.6)));
+        let head = |buf: &[f32], s: &CoreSession| {
+            let i = s.node_names().iter().position(|n| n == "head").unwrap();
+            buf[i * 16..i * 16 + 16].to_vec()
+        };
+        let s = CoreSession::new(&hrx7).unwrap();
+        assert_ne!(head(&plain, &s), head(&jogged, &s), "jog moved the head");
+        // clearing restores the un-jogged stream
+        let mut s2 = CoreSession::new(&hrx7).unwrap();
+        s2.set_jog("head", 0.0, 0.6);
+        s2.set_jog("head", 0.0, 0.0); // zeros clear
+        s2.step(0.5, &InputFrame::default()).unwrap();
+        assert_eq!(plain, s2.pose_buffer().to_vec());
     }
 
     #[test]

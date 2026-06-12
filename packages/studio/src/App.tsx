@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import { StudioScene } from "./scene";
 import { DEMO_MODELS, useStudio } from "./store";
-import type { BakeArtifact, Report } from "./types";
-import { coreBake, CoreSession, coreValidate } from "./wasm";
+import type { MaterialClass } from "./types";
+import { CoreBake, CoreSession, coreValidate } from "./wasm";
 
 const panel: React.CSSProperties = {
   position: "absolute",
@@ -14,42 +14,98 @@ const panel: React.CSSProperties = {
   lineHeight: 1.5,
 };
 
+const DT = 1 / 120;
+/** configurator palette (P1-014) — patch-applied through the live handle */
+const SWATCHES = [
+  "#d8dde3",
+  "#8fa3bf",
+  "#39c8ff",
+  "#e6a23c",
+  "#7dd87d",
+  "#1d222c",
+  "#6e4a3a",
+  "#3a4a6e",
+];
+const MATERIAL_CLASSES: MaterialClass[] = ["gloss", "metal", "satin", "matte", "rubber"];
+
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<StudioScene | null>(null);
   const sessionRef = useRef<CoreSession | null>(null);
+  /** long-lived bake handle — the patch → re-bake loop (P1-005/P1-014) */
+  const bakeRef = useRef<CoreBake | null>(null);
+  const stepOnceRef = useRef(false);
+  const jogDrag = useRef<{ node: string; rx: number; ry: number } | null>(null);
+  const jogTotals = useRef(new Map<string, { rx: number; ry: number }>());
   const s = useStudio();
 
-  const loadModel = useCallback(
-    async (artifact: BakeArtifact, report: Report | null, contractJson: string | null) => {
-      sceneRef.current?.load(artifact);
-      sessionRef.current?.dispose();
-      sessionRef.current = null;
-      if (contractJson) {
-        try {
-          sessionRef.current = await CoreSession.create(contractJson);
-        } catch {
-          sessionRef.current = null; // archetypes without a v0 driver stay static
-        }
-      }
-      useStudio.getState().setLoaded(artifact, report, contractJson);
-    },
-    [],
-  );
+  /** Load a contract end to end: bake handle + scene + session + report. */
+  const loadContract = useCallback(async (contract: string) => {
+    const handle = await CoreBake.create(contract);
+    bakeRef.current?.dispose();
+    bakeRef.current = handle;
+    const artifact = handle.artifact();
+    sceneRef.current?.load(artifact);
+    sessionRef.current?.dispose();
+    sessionRef.current = null;
+    jogTotals.current.clear();
+    try {
+      sessionRef.current = await CoreSession.create(contract);
+    } catch {
+      sessionRef.current = null; // archetypes without a v0 driver stay static
+    }
+    const report = await coreValidate(contract);
+    useStudio.getState().setLoaded(artifact, report, contract);
+    useStudio.getState().setSelected(null);
+  }, []);
 
   const loadDemo = useCallback(
     async (id: string) => {
       // fetch only the CONTRACT; bake + validate happen in-browser through
       // the wasm core — the same bits CI runs (D17), no payload duplication
       const contract = await fetch(`/demo/${id}.forge.json`).then((r) => r.text());
-      const [artifact, report] = await Promise.all([
-        coreBake(contract),
-        coreValidate(contract),
-      ]);
-      await loadModel(artifact, report, contract);
+      await loadContract(contract);
     },
-    [loadModel],
+    [loadContract],
   );
+
+  /** Configurator (P1-014): JSON-Patch the live handle, re-bake in place —
+   * explode, camera, drive state and selection all survive the rebuild. */
+  const applyPatch = useCallback(async (ops: { op: string; path: string; value: unknown }[]) => {
+    const handle = bakeRef.current;
+    const scene = sceneRef.current;
+    if (!handle || !scene) return;
+    const st = useStudio.getState();
+    const selected = st.selected;
+    const artifact = handle.patch(JSON.stringify(ops));
+    const contract = handle.contract();
+    scene.load(artifact);
+    // the validator is sovereign: every patched document is re-judged
+    const report = await coreValidate(contract);
+    st.setLoaded(artifact, report, contract);
+    // session follows the patched contract; jog offsets re-apply
+    sessionRef.current?.dispose();
+    try {
+      sessionRef.current = await CoreSession.create(contract);
+      for (const [node, j] of jogTotals.current) {
+        sessionRef.current.setJog(node, j.rx, j.ry);
+      }
+    } catch {
+      sessionRef.current = null;
+    }
+    if (selected) {
+      const part = artifact.baked.parts[selected.partIndex];
+      if (part) {
+        scene.setSelected(selected.partIndex);
+        st.setSelected({
+          partIndex: selected.partIndex,
+          node: part.node,
+          material: part.material,
+          color: part.color,
+        });
+      }
+    }
+  }, []);
 
   // boot
   useEffect(() => {
@@ -65,28 +121,42 @@ export default function App() {
     // the core tick drives poses when Drive is on (truth in core, D16)
     let fpsAccum = 0;
     let fpsCount = 0;
+    let coreAccum = 0;
     scene.onFrame = (dt) => {
       const st = useStudio.getState();
       fpsAccum += dt;
       fpsCount += 1;
-      if (fpsAccum >= 0.5) {
-        st.setFps(Math.round(fpsCount / fpsAccum));
-        fpsAccum = 0;
-        fpsCount = 0;
-      }
       if (st.driving && sessionRef.current) {
-        sessionRef.current.step(dt, {
-          throttle: st.throttle,
-          pitch: 0,
-          roll: 0,
-          yaw: 0,
-          drive: st.drive,
-          turn: 0,
-        });
+        const stepDt = st.paused ? (stepOnceRef.current ? DT : 0) : dt;
+        stepOnceRef.current = false;
+        const t0 = performance.now();
+        if (stepDt > 0) {
+          sessionRef.current.step(stepDt, {
+            throttle: st.throttle,
+            pitch: 0,
+            roll: 0,
+            yaw: 0,
+            drive: st.drive,
+            turn: 0,
+          });
+        }
         // zero-copy view, consumed synchronously (P1-005)
         scene.setPose(sessionRef.current.nodeNames, sessionRef.current.poseView());
+        coreAccum += performance.now() - t0;
         // follow camera (P1-013): orbit target eases toward the driver
-        scene.followFocus(sessionRef.current.focus(), dt);
+        if (!st.paused) scene.followFocus(sessionRef.current.focus(), dt);
+      }
+      if (fpsAccum >= 0.5) {
+        const stats = scene.stats();
+        st.setPerf({
+          fps: Math.round(fpsCount / fpsAccum),
+          frameMs: stats.frameMs,
+          drawCalls: stats.drawCalls,
+          coreMs: coreAccum / fpsCount,
+        });
+        fpsAccum = 0;
+        fpsCount = 0;
+        coreAccum = 0;
       }
     };
     scene.start();
@@ -104,12 +174,17 @@ export default function App() {
       }) => scene.setCameraPose(p),
       setGrid: (visible: boolean) => scene.setGridVisible(visible),
       setShadows: (visible: boolean) => scene.setShadowsVisible(visible),
+      setBlueprint: (on: boolean) => scene.setBlueprint(on),
+      setExplode: (t: number) => scene.setExplode(t),
+      select: (partIndex: number | null) => scene.setSelected(partIndex),
+      stats: () => scene.stats(),
       loaded: () => Boolean(useStudio.getState().artifact),
     };
 
     return () => {
       window.removeEventListener("resize", onResize);
       sessionRef.current?.dispose();
+      bakeRef.current?.dispose();
       scene.dispose();
     };
   }, [loadDemo]);
@@ -123,14 +198,10 @@ export default function App() {
       const text = await file.text();
       const report = await coreValidate(text);
       if (report.verdict === "admitted") {
-        const artifact = await coreBake(text);
-        await loadModel(artifact, report, text);
+        await loadContract(text);
       } else {
-        useStudio.getState().setLoaded(
-          useStudio.getState().artifact ?? ({} as BakeArtifact),
-          report,
-          null,
-        );
+        const st = useStudio.getState();
+        if (st.artifact) st.setLoaded(st.artifact, report, st.contractJson);
       }
     };
     const onDrag = (e: DragEvent) => e.preventDefault();
@@ -140,7 +211,7 @@ export default function App() {
       window.removeEventListener("drop", onDrop);
       window.removeEventListener("dragover", onDrag);
     };
-  }, [loadModel]);
+  }, [loadContract]);
 
   useEffect(() => {
     sceneRef.current?.setExplode(s.explode);
@@ -150,12 +221,45 @@ export default function App() {
   }, [s.blueprint]);
 
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (jogDrag.current) return; // a jog drag ate this gesture
     const rect = e.currentTarget.getBoundingClientRect();
     const pick = sceneRef.current?.pick(
       ((e.clientX - rect.left) / rect.width) * 2 - 1,
       -((e.clientY - rect.top) / rect.height) * 2 + 1,
     );
     s.setSelected(pick ?? null);
+  };
+
+  // teach-pendant jog (P1-013): drag the selected node, X→yaw, Y→pitch
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const st = useStudio.getState();
+    if (!st.jogging || !st.selected || !sessionRef.current) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    sceneRef.current?.setControlsEnabled(false);
+    const node = st.selected.node;
+    const j = jogTotals.current.get(node) ?? { rx: 0, ry: 0 };
+    jogDrag.current = { node, ...j };
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const drag = jogDrag.current;
+    if (!drag || !sessionRef.current) return;
+    drag.ry += e.movementX * 0.008;
+    drag.rx += e.movementY * 0.008;
+    jogTotals.current.set(drag.node, { rx: drag.rx, ry: drag.ry });
+    sessionRef.current.setJog(drag.node, drag.rx, drag.ry);
+  };
+  const onPointerUp = () => {
+    if (!jogDrag.current) return;
+    // let the click handler see the drag before clearing it
+    setTimeout(() => {
+      jogDrag.current = null;
+    }, 0);
+    sceneRef.current?.setControlsEnabled(true);
+  };
+
+  const clearJog = () => {
+    jogTotals.current.clear();
+    sessionRef.current?.clearJog();
   };
 
   const hud = s.artifact?.hud;
@@ -165,6 +269,9 @@ export default function App() {
       <canvas
         ref={canvasRef}
         onClick={onCanvasClick}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
         style={{ width: "100%", height: "100%", display: "block" }}
       />
 
@@ -208,17 +315,52 @@ export default function App() {
           drive (core tick)
         </label>
         {s.driving && (
-          <label style={{ display: "block", marginTop: 6 }}>
-            {isMultirotor ? "throttle" : "drive"}
-            <input
-              type="range" min={0} max={1} step={0.01}
-              value={isMultirotor ? s.throttle : s.drive}
-              onChange={(e) =>
-                isMultirotor ? s.setThrottle(Number(e.target.value)) : s.setDrive(Number(e.target.value))
-              }
-              style={{ width: "100%", display: "block" }}
-            />
-          </label>
+          <>
+            <label style={{ display: "block", marginTop: 6 }}>
+              {isMultirotor ? "throttle" : "drive"}
+              <input
+                type="range" min={0} max={1} step={0.01}
+                value={isMultirotor ? s.throttle : s.drive}
+                onChange={(e) =>
+                  isMultirotor ? s.setThrottle(Number(e.target.value)) : s.setDrive(Number(e.target.value))
+                }
+                style={{ width: "100%", display: "block" }}
+              />
+            </label>
+            <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+              <label style={{ display: "inline-flex", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={s.paused}
+                  onChange={(e) => s.setPaused(e.target.checked)}
+                />
+                pause
+              </label>
+              {s.paused && (
+                <button onClick={() => (stepOnceRef.current = true)} style={btn}>
+                  step ⏯ 1/120 s
+                </button>
+              )}
+              <label style={{ display: "inline-flex", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={s.jogging}
+                  onChange={(e) => s.setJogging(e.target.checked)}
+                />
+                jog
+              </label>
+              {s.jogging && (
+                <button onClick={clearJog} style={btn}>
+                  zero
+                </button>
+              )}
+            </div>
+            {s.jogging && (
+              <div style={{ color: "#6b7686", marginTop: 4 }}>
+                {s.selected ? `drag to jog ${s.selected.node}` : "select a part to jog its node"}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -244,12 +386,55 @@ export default function App() {
       )}
 
       {s.selected && (
-        <div style={{ ...panel, top: 220, right: 12, minWidth: 180 }}>
+        <div style={{ ...panel, top: 220, right: 12, minWidth: 200 }}>
           <div style={{ color: "#8fa3bf" }}>selection</div>
           <Row k="part" v={`#${s.selected.partIndex}`} />
           <Row k="node" v={s.selected.node} />
           <Row k="material" v={s.selected.material} />
           <Row k="color" v={s.selected.color} />
+          {/* configurator (P1-014): patch → re-bake in place via the handle */}
+          <div style={{ color: "#8fa3bf", marginTop: 8 }}>configure (patch + re-bake)</div>
+          <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+            {SWATCHES.map((c) => (
+              <button
+                key={c}
+                title={c}
+                onClick={() =>
+                  void applyPatch([
+                    { op: "replace", path: `/parts/${s.selected!.partIndex}/color`, value: c },
+                  ])
+                }
+                style={{
+                  width: 18,
+                  height: 18,
+                  background: c,
+                  border: c === s.selected!.color ? "2px solid #fff" : "1px solid #2a2f38",
+                  cursor: "pointer",
+                }}
+              />
+            ))}
+          </div>
+          <select
+            value={s.selected.material}
+            onChange={(e) =>
+              void applyPatch([
+                { op: "replace", path: `/parts/${s.selected!.partIndex}/material`, value: e.target.value },
+              ])
+            }
+            style={{
+              width: "100%",
+              marginTop: 6,
+              background: "#16181c",
+              color: "#cfd6df",
+              border: "1px solid #2a2f38",
+            }}
+          >
+            {MATERIAL_CLASSES.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
@@ -278,14 +463,29 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ ...panel, bottom: 12, right: 12, color: "#6b7686" }}>{s.fps} fps</div>
+      {/* perf overlay (P1-017): budgets are binding — render ≤ 6 ms · core
+          tick ≤ 1.5 ms · ≤ 40 draw calls/model (architecture §7) */}
+      <div style={{ ...panel, bottom: 12, right: 12, color: "#6b7686", textAlign: "right" }}>
+        <div>{s.perf.fps} fps</div>
+        <div>render {s.perf.frameMs.toFixed(1)} ms · core {s.perf.coreMs.toFixed(2)} ms</div>
+        <div>{s.perf.drawCalls} draw calls</div>
+      </div>
     </div>
   );
 }
 
+const btn: React.CSSProperties = {
+  background: "#16181c",
+  color: "#cfd6df",
+  border: "1px solid #2a2f38",
+  borderRadius: 4,
+  fontSize: 11,
+  cursor: "pointer",
+};
+
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
       <span style={{ color: "#6b7686" }}>{k}</span>
       <span>{v}</span>
     </div>

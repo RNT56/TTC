@@ -133,6 +133,15 @@ export class CoreSession {
     return [f[0], f[1], f[2]];
   }
 
+  /** Teach-pendant jog (P1-013): euler offset over the pose layers. */
+  setJog(node: string, rx: number, ry: number): void {
+    this.session.set_jog(node, rx, ry);
+  }
+
+  clearJog(): void {
+    this.session.clear_jog();
+  }
+
   dispose(): void {
     this.session.free();
   }
