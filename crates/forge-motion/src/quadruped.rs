@@ -116,6 +116,11 @@ impl QuadrupedDriver {
         }
     }
 
+    /// Body pose (x, z, heading) without advancing the gait.
+    pub fn body(&self) -> [f64; 3] {
+        self.pose
+    }
+
     /// Foot target in the hip frame at gait phase p ∈ [0,1):
     /// stance sweeps the foot backward on the ground; swing returns it forward
     /// with a sinusoidal lift.

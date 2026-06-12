@@ -259,6 +259,12 @@ mod wasm_bindings {
                 .map_err(|e| JsValue::from_str(&e))
         }
 
+        /// Drive-mode camera focus (x, y, z) — the driver's body position at
+        /// its natural viewing height.
+        pub fn focus(&self) -> Vec<f64> {
+            self.inner.focus().to_vec()
+        }
+
         /// Zero-copy pose view (16 f32 per node, column-major, `node_names`
         /// order). Valid only until the next wasm memory growth — read it
         /// synchronously every frame, never hold it.

@@ -74,6 +74,22 @@ impl CoreSession {
         &self.node_names
     }
 
+    /// Camera focus point for drive mode (the prototype's drvFocus): the
+    /// driver's body position at its natural viewing height, or the origin
+    /// for static archetypes.
+    pub fn focus(&self) -> [f64; 3] {
+        match &self.driver {
+            DriverState::Multirotor(d) => d.focus(),
+            DriverState::Biped(d) => d.focus(),
+            DriverState::Rover(d) => [d.pose[0], 0.0, d.pose[1]],
+            DriverState::Quadruped { driver, .. } => {
+                let b = driver.body();
+                [b[0], 0.0, b[1]]
+            }
+            DriverState::Static => [0.0; 3],
+        }
+    }
+
     /// Pose buffer: `node_names().len() × 16` f32, column-major per node.
     pub fn pose_buffer(&self) -> &[f32] {
         &self.pose

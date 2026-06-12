@@ -15,6 +15,7 @@ export const bake_positions: (a: number, b: number) => [number, number, number];
 export const golden: (a: number, b: number) => [number, number, number, number];
 export const patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const schema: () => [number, number];
+export const session_focus: (a: number) => [number, number];
 export const session_new: (a: number, b: number) => [number, number, number];
 export const session_node_names: (a: number) => [number, number];
 export const session_pose_view: (a: number) => any;

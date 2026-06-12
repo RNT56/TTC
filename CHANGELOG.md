@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P1-013 (follow half): drive-mode follow camera through the boundary
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-013 [~] (follow camera ✓; jog + pause/frame-step remain)
+**Done:** `CoreSession::focus()` (driver body at natural viewing height —
+biped/fpv use the ported drvFocus, rover/quadruped their body pose) exported
+through the wasm `Session`; the studio's drive loop eases orbit target AND
+eye toward it at the monolith's smoothing (min(1, dt·5)), preserving the
+user's orbit offset. Verified: 88 tests, clippy clean, golden-compare green
+(focus is not part of the hashed streams), budgets hold, builds green.
+**Changed:** `crates/forge-wasm/src/{session.rs,lib.rs}`,
+`crates/forge-motion/src/quadruped.rs` (body() getter),
+`packages/studio/src/{scene.ts,wasm.ts,App.tsx}`, wasm-pkg rebuilt, TODO.
+**Decisions:** none. **Next:** P1-014 configurator pane (CoreBake.patch
+ready), P1-008 BatchedMesh, P1-010/012 render finishers, P1-013 jog half.
+**Blockers:** none.
+
 ## 2026-06-12 — P1-005 closed: typed facade boundary, budgets gated; wasm validate trap found+fixed
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-005 [x]
 **Done:** The zero-copy boundary is real. Facade grows a stateful `Bake`

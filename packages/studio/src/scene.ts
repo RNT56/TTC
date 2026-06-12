@@ -274,6 +274,24 @@ export class StudioScene {
     this.ground.visible = visible;
   }
 
+  /** Follow camera (drive mode): ease the orbit target toward the driver's
+   * focus — the monolith's smoothing, ck = min(1, dt·5). The eye moves with
+   * the target so orbit offset is preserved. */
+  followFocus(focus: [number, number, number], dt: number): void {
+    const k = Math.min(1, dt * 5);
+    const t = this.controls.target;
+    const dx = (focus[0] - t.x) * k;
+    const dy = (focus[1] - t.y) * k;
+    const dz = (focus[2] - t.z) * k;
+    t.x += dx;
+    t.y += dy;
+    t.z += dz;
+    this.camera.position.x += dx;
+    this.camera.position.y += dy;
+    this.camera.position.z += dz;
+    this.controls.update();
+  }
+
   resize(width: number, height: number): void {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;

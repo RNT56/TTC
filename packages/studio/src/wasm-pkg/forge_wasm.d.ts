@@ -50,6 +50,11 @@ export class Bake {
 export class Session {
     free(): void;
     [Symbol.dispose](): void;
+    /**
+     * Drive-mode camera focus (x, y, z) — the driver's body position at
+     * its natural viewing height.
+     */
+    focus(): Float64Array;
     constructor(contract_json: string);
     node_names(): string[];
     /**
@@ -100,6 +105,7 @@ export interface InitOutput {
     readonly golden: (a: number, b: number) => [number, number, number, number];
     readonly patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly schema: () => [number, number];
+    readonly session_focus: (a: number) => [number, number];
     readonly session_new: (a: number, b: number) => [number, number, number];
     readonly session_node_names: (a: number) => [number, number];
     readonly session_pose_view: (a: number) => any;

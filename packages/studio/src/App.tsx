@@ -85,6 +85,8 @@ export default function App() {
         });
         // zero-copy view, consumed synchronously (P1-005)
         scene.setPose(sessionRef.current.nodeNames, sessionRef.current.poseView());
+        // follow camera (P1-013): orbit target eases toward the driver
+        scene.followFocus(sessionRef.current.focus(), dt);
       }
     };
     scene.start();

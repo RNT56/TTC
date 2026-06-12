@@ -127,6 +127,12 @@ export class CoreSession {
     return this.session.pose_view();
   }
 
+  /** Drive-mode camera focus: driver body position at viewing height. */
+  focus(): [number, number, number] {
+    const f = this.session.focus();
+    return [f[0], f[1], f[2]];
+  }
+
   dispose(): void {
     this.session.free();
   }
