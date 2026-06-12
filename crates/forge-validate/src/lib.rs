@@ -20,6 +20,8 @@ use std::collections::BTreeMap;
 // ---------------------------------------------------------------------------
 
 pub mod compat;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod file_catalog;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod clock {

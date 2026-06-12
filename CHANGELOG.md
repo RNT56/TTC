@@ -18,6 +18,47 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P3-007 proof pair: cited catalog rows, file-backed resolution, dims within 1 %
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P3 · **TODO items:** P3-007 [x], P3-004 [~ format], P3-001 [~ DDL]
+**Done:** The proof pair is real and gated. **Rows:** EMAX ECO II 2207 1900KV
+(31.5 g w/o wire · Ø27.45×32.6 mm · 16×16 M3 · M5 shaft · 3–6S · 40.6 A ·
+2020 g max thrust @ 5×4.6/25.2 V) and CNHL Black Series 4S 1500 mAh 100C
+(183 g · 75×35×37 mm · 14.8–16.8 V window · 150 A = 100C×1.5 Ah · XT60) as
+`catalog/components/*.json` with **per-field citations** (value-as-printed,
+source URLs, accessed date, derivation/discrepancy notes — incl. the
+31.5-vs-33.5 g with/without-wire discrepancy). **Provenance stated honestly:**
+this environment's egress allowlist blocks direct datasheet fetch (every
+storefront/manufacturer/archive fetch 403s; only package registries pass),
+so values are transcribed from search-result quotations of the cited pages —
+rows carry confidence 0.7 + a mandatory review note (P3-004 review-queue
+semantics, loader-enforced: confidence < 1 without a review note is a load
+error). **Plumbing:** `FileCatalog` (native-only `CatalogSource` +
+`RevisionSource` over `catalog/components/`), CLI `--catalog <dir>`.
+**Proof body:** `examples/vx2-proof.forge.json` — VX-2 Mini with
+rotors+battery slots as semver refs and a pinned lockfile: **Admitted with
+the catalog, CTR-006-rejected without it**; the verdict matrix now runs with
+`--catalog` (5 contracts green). **Exit-criterion evidence**
+(`tests/proof_pair.rs`): baked AABB within 1 % of cited dims (cylinder/box
+from the row envelopes; masses carried from datasheets, never derived from
+the primitive approximation), resolver pins both refs, CAT engine finds the
+pair compatible (4S window ⊂ 3–6S rating), citation+review enforcement over
+every row. ROADMAP P3 → ◑ with the dims criterion checked (owner
+verification of citations noted).
+**Changed:** `catalog/{README.md, components/*.json}` (new),
+`crates/forge-validate/{src/file_catalog.rs (new), src/lib.rs, src/main.rs
+(--catalog), tests/proof_pair.rs (new)}`, `examples/{vx2-proof.forge.json
+(new), expected-verdicts.json, README.md}`, `scripts/validate-all.mjs`
+(runs with the catalog), docs (TODO P3-001/004/007, ROADMAP).
+**Decisions:** none (the review-queue gate at confidence < 1 implements
+P3-004's stated semantics).
+**Next:** P3-008 reference rigs (SKU selection — owner sign-off needed for
+D12), P3-001 migration runner against a live Postgres, P3-004 fetch→extract
+pipeline (needs API keys + unblocked egress), license-export filter (XC-17).
+Owner items: verify the two rows against their citations; prototype-final
+tag; P0-007 build question; PRE-003/004/005; mid-hardware fps reading.
+**Blockers:** direct datasheet fetch blocked by the environment's egress
+policy — recorded on the rows themselves, not worked around.
+
 ## 2026-06-12 — P3 core logic: compat rule engine, lockfile resolver, connector taxonomy
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P3 · **TODO items:** P3-002 [x], P3-003 [x], P3-006 [x]
 **Done:** The data-layer-independent half of P3. **P3-003 compatibility rule

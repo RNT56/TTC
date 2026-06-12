@@ -1,0 +1,62 @@
+{
+  "id": "cmp_batt_cnhl-black-4s-1500",
+  "brand": "CNHL",
+  "model": "Black Series 1500mAh 14.8V 4S 100C",
+  "category": "battery",
+  "massG": 183.0,
+  "dims": { "lengthMm": 75.0, "widthMm": 35.0, "heightMm": 37.0 },
+  "elec": { "vMin": 14.8, "vMax": 16.8, "maxDischargeA": 150.0, "connectors": ["XT60"] },
+  "mech": {},
+  "licenseClass": "open",
+  "source": "datasheet",
+  "confidence": 0.7,
+  "review": "REQUIRED before marketplace exposure: values transcribed from search-result quotations of the cited pages (manufacturer + retailers republishing the CNHL spec table); direct page fetch is blocked by this build environment's egress allowlist. Verify each field against the citations.",
+  "citations": {
+    "massG": {
+      "value": "Approx Weight: 183g (6.45oz)",
+      "sources": [
+        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "dims": {
+      "value": "Dimensions: 75*35*37mm (2.95*1.38*1.46 inches)",
+      "sources": [
+        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "elec.vMin": {
+      "value": "Battery voltage: 14.8V (4S1P nominal; cell 3.7~4.2V)",
+      "sources": [
+        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-12",
+      "note": "window recorded as nominal→max from the cited cell range"
+    },
+    "elec.vMax": {
+      "value": "cell voltage 3.7~4.2V → 4 × 4.2 = 16.8 V",
+      "sources": [
+        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-12",
+      "note": "derived from the cited per-cell maximum"
+    },
+    "elec.maxDischargeA": {
+      "value": "Discharge: 100C (burst 200C) × 1.5 Ah = 150 A continuous",
+      "sources": [
+        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-12",
+      "note": "derived: C-rating × capacity, the rating's own definition"
+    },
+    "elec.connectors": {
+      "value": "Plug: XT60 (balance lead JST-XH)",
+      "sources": [
+        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-12"
+    }
+  },
+  "revisions": [{ "version": "1.0.0", "yanked": false }]
+}

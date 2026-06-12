@@ -5,6 +5,9 @@
 // quietly-weakened gate, or an undeclared new contract all fail CI.
 //
 //   node scripts/validate-all.mjs [--bin target/debug/forge-validate]
+//
+// Runs WITH the file-backed catalog (catalog/) so componentRef contracts
+// (the proof pair) resolve — contracts without refs are unaffected.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -34,7 +37,7 @@ for (const file of contracts) {
   }
   const out = join(tmp, "report.json");
   try {
-    execFileSync(bin, ["run", join("examples", file), "--report", out], { stdio: "pipe" });
+    execFileSync(bin, ["run", join("examples", file), "--report", out, "--catalog", "catalog"], { stdio: "pipe" });
   } catch {
     // rejection exits nonzero by design; the report is still written
   }

@@ -1,0 +1,881 @@
+{
+ "meta": {
+  "id": "vx2-proof",
+  "name": "VX-2 Mini (proof pair: catalog-backed rotors + battery)",
+  "version": "0.1.0",
+  "archetype": "multirotor",
+  "provenance": {
+   "kind": "human"
+  },
+  "license": "CC0"
+ },
+ "env": {
+  "gravity": 9.80665,
+  "airDensity": 1.225,
+  "wind": {
+   "mean": 0,
+   "gust": 0
+  }
+ },
+ "skeleton": [
+  {
+   "name": "root",
+   "parent": null,
+   "pos": [
+    0,
+    0.05,
+    0
+   ]
+  },
+  {
+   "name": "top",
+   "parent": "root",
+   "pos": [
+    0,
+    0.03,
+    0
+   ]
+  },
+  {
+   "name": "stack",
+   "parent": "root",
+   "pos": [
+    0,
+    0.013,
+    0
+   ]
+  },
+  {
+   "name": "batt",
+   "parent": "root",
+   "pos": [
+    0,
+    0.034,
+    0
+   ]
+  },
+  {
+   "name": "a0",
+   "parent": "root",
+   "pos": [
+    0.062,
+    0.005,
+    0.062
+   ],
+   "rot": [
+    0,
+    0.7853981633974483,
+    0
+   ]
+  },
+  {
+   "name": "a1",
+   "parent": "root",
+   "pos": [
+    -0.062,
+    0.005,
+    0.062
+   ],
+   "rot": [
+    0,
+    -0.7853981633974483,
+    0
+   ]
+  },
+  {
+   "name": "a2",
+   "parent": "root",
+   "pos": [
+    -0.062,
+    0.005,
+    -0.062
+   ],
+   "rot": [
+    0,
+    -2.356194490192345,
+    0
+   ]
+  },
+  {
+   "name": "a3",
+   "parent": "root",
+   "pos": [
+    0.062,
+    0.005,
+    -0.062
+   ],
+   "rot": [
+    0,
+    2.356194490192345,
+    0
+   ]
+  },
+  {
+   "name": "m0",
+   "parent": "root",
+   "pos": [
+    0.106,
+    0.012,
+    0.106
+   ],
+   "joint": {
+    "type": "fixed"
+   }
+  },
+  {
+   "name": "m1",
+   "parent": "root",
+   "pos": [
+    -0.106,
+    0.012,
+    0.106
+   ],
+   "joint": {
+    "type": "fixed"
+   }
+  },
+  {
+   "name": "m2",
+   "parent": "root",
+   "pos": [
+    -0.106,
+    0.012,
+    -0.106
+   ],
+   "joint": {
+    "type": "fixed"
+   }
+  },
+  {
+   "name": "m3",
+   "parent": "root",
+   "pos": [
+    0.106,
+    0.012,
+    -0.106
+   ],
+   "joint": {
+    "type": "fixed"
+   }
+  },
+  {
+   "name": "s0",
+   "parent": "m0",
+   "pos": [
+    0,
+    0.022,
+    0
+   ],
+   "joint": {
+    "type": "revolute",
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "maxVelRad": 3000
+   }
+  },
+  {
+   "name": "s1",
+   "parent": "m1",
+   "pos": [
+    0,
+    0.022,
+    0
+   ],
+   "joint": {
+    "type": "revolute",
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "maxVelRad": 3000
+   }
+  },
+  {
+   "name": "s2",
+   "parent": "m2",
+   "pos": [
+    0,
+    0.022,
+    0
+   ],
+   "joint": {
+    "type": "revolute",
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "maxVelRad": 3000
+   }
+  },
+  {
+   "name": "s3",
+   "parent": "m3",
+   "pos": [
+    0,
+    0.022,
+    0
+   ],
+   "joint": {
+    "type": "revolute",
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "maxVelRad": 3000
+   }
+  }
+ ],
+ "parts": [
+  {
+   "node": "root",
+   "geom": {
+    "kind": "cbox",
+    "w": 0.16,
+    "h": 0.004,
+    "d": 0.16,
+    "ch": 0.02
+   },
+   "material": "matte",
+   "color": "#23262c",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 55
+   },
+   "explode": {
+    "dir": [
+     0,
+     -1,
+     0
+    ],
+    "mag": 0.05,
+    "t0": 0.9,
+    "t1": 1.0,
+    "leader": "frame"
+   },
+   "pose": {
+    "p": [
+     0,
+     0.002,
+     0
+    ]
+   }
+  },
+  {
+   "node": "top",
+   "geom": {
+    "kind": "cbox",
+    "w": 0.14,
+    "h": 0.003,
+    "d": 0.1,
+    "ch": 0.015
+   },
+   "material": "matte",
+   "color": "#2a2d33",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 35
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.07,
+    "t0": 0.45,
+    "t1": 0.6,
+    "leader": "top plate"
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0015,
+     0
+    ]
+   }
+  },
+  {
+   "node": "stack",
+   "geom": {
+    "kind": "box",
+    "w": 0.024,
+    "h": 0.012,
+    "d": 0.024
+   },
+   "material": "gloss",
+   "color": "#16181c",
+   "collision": "hull",
+   "mass": {
+    "valueG": 12
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.055,
+    "t0": 0.6,
+    "t1": 0.75,
+    "leader": "FC stack"
+   },
+   "pose": {
+    "p": [
+     0,
+     0.006,
+     0
+    ]
+   }
+  },
+  {
+   "node": "a0",
+   "geom": {
+    "kind": "box",
+    "w": 0.03,
+    "h": 0.006,
+    "d": 0.11
+   },
+   "material": "matte",
+   "color": "#23262c",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 12
+   },
+   "explode": {
+    "dir": [
+     0,
+     0,
+     1
+    ],
+    "mag": 0.05,
+    "t0": 0.75,
+    "t1": 0.9
+   },
+   "pose": {
+    "p": [
+     0,
+     0.003,
+     0
+    ]
+   }
+  },
+  {
+   "node": "a1",
+   "geom": {
+    "kind": "box",
+    "w": 0.03,
+    "h": 0.006,
+    "d": 0.11
+   },
+   "material": "matte",
+   "color": "#23262c",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 12
+   },
+   "explode": {
+    "dir": [
+     0,
+     0,
+     1
+    ],
+    "mag": 0.05,
+    "t0": 0.75,
+    "t1": 0.9
+   },
+   "pose": {
+    "p": [
+     0,
+     0.003,
+     0
+    ]
+   }
+  },
+  {
+   "node": "a2",
+   "geom": {
+    "kind": "box",
+    "w": 0.03,
+    "h": 0.006,
+    "d": 0.11
+   },
+   "material": "matte",
+   "color": "#23262c",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 12
+   },
+   "explode": {
+    "dir": [
+     0,
+     0,
+     1
+    ],
+    "mag": 0.05,
+    "t0": 0.75,
+    "t1": 0.9
+   },
+   "pose": {
+    "p": [
+     0,
+     0.003,
+     0
+    ]
+   }
+  },
+  {
+   "node": "a3",
+   "geom": {
+    "kind": "box",
+    "w": 0.03,
+    "h": 0.006,
+    "d": 0.11
+   },
+   "material": "matte",
+   "color": "#23262c",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 12
+   },
+   "explode": {
+    "dir": [
+     0,
+     0,
+     1
+    ],
+    "mag": 0.05,
+    "t0": 0.75,
+    "t1": 0.9
+   },
+   "pose": {
+    "p": [
+     0,
+     0.003,
+     0
+    ]
+   }
+  },
+  {
+   "node": "m0",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.014,
+    "h": 0.019,
+    "n": 24
+   },
+   "material": "metal",
+   "color": "#9aa3ad",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 32
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.04,
+    "t0": 0.15,
+    "t1": 0.35,
+    "leader": "motor"
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0095,
+     0
+    ]
+   }
+  },
+  {
+   "node": "m1",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.014,
+    "h": 0.019,
+    "n": 24
+   },
+   "material": "metal",
+   "color": "#9aa3ad",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 32
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.04,
+    "t0": 0.15,
+    "t1": 0.35
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0095,
+     0
+    ]
+   }
+  },
+  {
+   "node": "m2",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.014,
+    "h": 0.019,
+    "n": 24
+   },
+   "material": "metal",
+   "color": "#9aa3ad",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 32
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.04,
+    "t0": 0.15,
+    "t1": 0.35
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0095,
+     0
+    ]
+   }
+  },
+  {
+   "node": "m3",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.014,
+    "h": 0.019,
+    "n": 24
+   },
+   "material": "metal",
+   "color": "#9aa3ad",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 32
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.04,
+    "t0": 0.15,
+    "t1": 0.35
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0095,
+     0
+    ]
+   }
+  },
+  {
+   "node": "s0",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.0635,
+    "h": 0.003,
+    "n": 32
+   },
+   "material": "satin",
+   "color": "#14161a",
+   "collision": "none",
+   "mass": {
+    "valueG": 4
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.06,
+    "t0": 0.0,
+    "t1": 0.15,
+    "leader": "prop"
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0015,
+     0
+    ]
+   }
+  },
+  {
+   "node": "s1",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.0635,
+    "h": 0.003,
+    "n": 32
+   },
+   "material": "satin",
+   "color": "#14161a",
+   "collision": "none",
+   "mass": {
+    "valueG": 4
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.06,
+    "t0": 0.0,
+    "t1": 0.15
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0015,
+     0
+    ]
+   }
+  },
+  {
+   "node": "s2",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.0635,
+    "h": 0.003,
+    "n": 32
+   },
+   "material": "satin",
+   "color": "#14161a",
+   "collision": "none",
+   "mass": {
+    "valueG": 4
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.06,
+    "t0": 0.0,
+    "t1": 0.15
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0015,
+     0
+    ]
+   }
+  },
+  {
+   "node": "s3",
+   "geom": {
+    "kind": "cyl",
+    "r0": 0.0635,
+    "h": 0.003,
+    "n": 32
+   },
+   "material": "satin",
+   "color": "#14161a",
+   "collision": "none",
+   "mass": {
+    "valueG": 4
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.06,
+    "t0": 0.0,
+    "t1": 0.15
+   },
+   "pose": {
+    "p": [
+     0,
+     0.0015,
+     0
+    ]
+   }
+  },
+  {
+   "node": "batt",
+   "geom": {
+    "kind": "box",
+    "w": 0.035,
+    "h": 0.03,
+    "d": 0.075
+   },
+   "material": "rubber",
+   "color": "#1d1f24",
+   "collision": "primitive",
+   "mass": {
+    "valueG": 185
+   },
+   "explode": {
+    "dir": [
+     0,
+     1,
+     0
+    ],
+    "mag": 0.09,
+    "t0": 0.2,
+    "t1": 0.45,
+    "leader": "battery"
+   },
+   "pose": {
+    "p": [
+     0,
+     0.015,
+     0
+    ]
+   }
+  }
+ ],
+ "ports": [
+  {
+   "id": "batt-out",
+   "node": "batt",
+   "type": "XT60",
+   "frame": [
+    [
+     0,
+     0.015,
+     0.04
+    ],
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   "capped": true
+  }
+ ],
+ "driver": {
+  "archetype": "multirotor",
+  "params": {
+   "tiltMaxRad": 0.4,
+   "yawRate": 2.4,
+   "mixer": "x4"
+  }
+ },
+ "sim": {
+  "battery": {
+   "cells": 4,
+   "capacity_mAh": 1500,
+   "cRating": 100,
+   "r_int_mohm": 18
+  },
+  "motors": [
+   {
+    "kv": 1750,
+    "r_int_mohm": 60,
+    "maxCurrentA": 30,
+    "mount": "m0",
+    "dir": 1
+   },
+   {
+    "kv": 1750,
+    "r_int_mohm": 60,
+    "maxCurrentA": 30,
+    "mount": "m1",
+    "dir": -1
+   },
+   {
+    "kv": 1750,
+    "r_int_mohm": 60,
+    "maxCurrentA": 30,
+    "mount": "m2",
+    "dir": 1
+   },
+   {
+    "kv": 1750,
+    "r_int_mohm": 60,
+    "maxCurrentA": 30,
+    "mount": "m3",
+    "dir": -1
+   }
+  ],
+  "props": [
+   {
+    "diameterIn": 5.0,
+    "pitchIn": 4.3,
+    "blades": 3
+   }
+  ],
+  "colliders": {
+   "policy": "per-node-compound",
+   "budget": {
+    "perNode": 8,
+    "perModel": 24
+   }
+  },
+  "estimator": {
+   "kind": "complementary",
+   "gyroNoise": 0.02,
+   "accelNoise": 0.08,
+   "bias": 0.01,
+   "latency_ms": 8
+  },
+  "aggregateMassG": 479
+ },
+ "slots": [
+  {
+   "id": "rotors",
+   "label": "Rotors",
+   "mountNodes": [
+    "m0",
+    "m1",
+    "m2",
+    "m3"
+   ],
+   "variants": [
+    {
+     "id": "eco2-2207-1900",
+     "name": "EMAX ECO II 2207 1900KV",
+     "componentRef": "cmp_motor_emax-eco2-2207-1900kv@^1.0.0"
+    }
+   ]
+  },
+  {
+   "id": "battery",
+   "label": "Battery",
+   "mountNodes": [
+    "batt"
+   ],
+   "variants": [
+    {
+     "id": "cnhl-4s-1500",
+     "name": "CNHL Black Series 4S 1500 mAh 100C",
+     "componentRef": "cmp_batt_cnhl-black-4s-1500@^1.0.0"
+    }
+   ]
+  }
+ ],
+ "lockfile": {
+  "cmp_motor_emax-eco2-2207-1900kv@^1.0.0": "cmp_motor_emax-eco2-2207-1900kv@1.0.0",
+  "cmp_batt_cnhl-black-4s-1500@^1.0.0": "cmp_batt_cnhl-black-4s-1500@1.0.0"
+ }
+}

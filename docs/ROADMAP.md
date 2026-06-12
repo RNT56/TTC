@@ -21,7 +21,7 @@ phase-level state only.
 | P0 Freeze & extract | ● for the delivered vintage *(2026-06-12; P0-007 variants gated on the later build or a re-scope decision; remote tag = owner push)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
-| P3 Component DB + proof pair + reference rigs | ○ | 2–3 wk |
+| P3 Component DB + proof pair + reference rigs | ◑ *(2026-06-12: compat engine, lockfile resolver, taxonomy, proof pair done; open — Postgres runner, ETL pipeline, license-export filter, reference-rig SKUs D12)* | 2–3 wk |
 | P4 Text-to-CAD GA | ○ | 3–4 wk |
 | P5 Image → 3D | ○ | 3 wk |
 | P6 Sim depth + interop | ○ | 3–4 wk |
@@ -113,7 +113,7 @@ component-backed; reference quad and rover SKUs pinned at ingestion (D12).
 [`systems/compute-workers.md`](systems/compute-workers.md).
 
 Exit criteria:
-- [ ] Proof pair renders to datasheet dimensions within tolerance
+- [x] Proof pair renders to datasheet dimensions within tolerance *(2026-06-12: EMAX ECO II 2207 + CNHL 4S 1500 — baked AABB within 1 % of cited dims, masses carried from datasheets; `tests/proof_pair.rs`, CI-run; rows at confidence 0.7 pending owner verification of citations)*
 - [ ] HUD physics responds to the pack swap (hover throttle, endurance change)
 - [ ] BOM exports purchasable SKUs
 - [ ] Reference rigs (ArduPilot-capable 5″ quad + Pi-class rover) selected, SKUs pinned, recorded in DECISIONS

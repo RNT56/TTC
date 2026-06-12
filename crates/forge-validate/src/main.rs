@@ -48,7 +48,25 @@ fn cmd_run(args: &[String]) -> ExitCode {
         as_draft: args.iter().any(|a| a == "--as-draft"),
         ..Default::default()
     };
-    let report = run_full(&doc, &EmptyCatalog, &opts);
+    // --catalog <dir>: resolve componentRefs against file-backed rows
+    // (P3-007a); without it every ref is unresolved (EmptyCatalog).
+    let file_catalog = match flag_value(args, "--catalog") {
+        Some(dir) => {
+            match forge_validate::file_catalog::FileCatalog::load(std::path::Path::new(&dir)) {
+                Ok(c) => Some(c),
+                Err(e) => {
+                    eprintln!("run: catalog load failed: {e}");
+                    return ExitCode::from(1);
+                }
+            }
+        }
+        None => None,
+    };
+    let catalog: &dyn forge_contract::CatalogSource = match &file_catalog {
+        Some(c) => c,
+        None => &EmptyCatalog,
+    };
+    let report = run_full(&doc, catalog, &opts);
 
     let errors = report
         .results

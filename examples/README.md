@@ -58,3 +58,12 @@ Both **drive** in the studio through the ported oracle pipelines (P1-001):
 hrx7 walks its phase gait (drive slider = forward stick), vx2-hornet flies the
 angle-mode flight model (throttle slider) — the same code the trajectory tapes
 pin at ULP level (`crates/forge-motion/tests/tape_parity.rs`).
+
+## `vx2-proof.forge.json` — the proof pair (P3-007)
+
+VX-2 Mini with `rotors` + `battery` slots as **semver componentRefs** pinned
+through the lockfile against `catalog/` (EMAX ECO II 2207 1900KV + CNHL Black
+4S 1500 — per-field citations, review-gated at confidence 0.7).
+**Admitted with `--catalog catalog`, CTR-006-rejected without it** — the
+resolution chain is the point. Dimension/compat evidence:
+`crates/forge-validate/tests/proof_pair.rs`.
