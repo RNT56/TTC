@@ -34,3 +34,22 @@ cargo run -p forge-validate -- run examples/qd-mini.forge.json
 smoke. Regenerate with different sliders (`--leg-pairs 3 --wheelbase 0.6 …`) —
 every grid point admits. In the studio, enable **drive** to watch the core tick
 walk it in-browser.
+
+## `hrx7.forge.json` + `vx2-hornet.forge.json` — the prototype translations (P0-005/006)
+
+**Mechanically translated** from the frozen monolith: `scripts/
+translate-monolith.mjs` instruments the prototype's own `N()`/`P()` calls in a
+vm sandbox and emits the contracts — no hand transcription. **Byte-equivalent**
+to the oracle (`prototype/extracted-counts.json`): hrx7 125 parts · 2195 faces ·
+2581 vertices; vx2-hornet 73 · 924 · 1250 — enforced in CI.
+
+```sh
+node scripts/translate-monolith.mjs       # regenerate (CI fails on drift)
+cargo run -p forge-validate -- bake examples/hrx7.forge.json
+node scripts/compare-counts.mjs prototype/extracted-counts.json <bakes…>
+```
+
+Known finding: both fail CTR-004 (explode coverage 69 %/42 % < 80 %) — the
+historical models predate the v2.1 completeness gates. The gates stand; the
+translations document the spec as it was. The drone's "combat" naming did not
+survive translation (plan §17.2).

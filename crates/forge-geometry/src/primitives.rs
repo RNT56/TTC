@@ -1,13 +1,15 @@
-//! Primitive builders: `Geom` → flat mesh buffers.
+//! Primitive builders: `Geom` → prototype-exact polygon meshes (PRE-002),
+//! plus the bake step (pose → orientation fix → fan triangulation) that turns
+//! them into flat GPU buffers.
 //!
-//! Conventions *(proposed pending PRE-002 reconciliation)*: solids grow from
-//! y = 0 to y = h, centered in XZ. Curved sides share vertices with accumulated
-//! (smooth) normals; flat sides and caps duplicate vertices for hard edges.
-//! Ring orientation: parameter t increases from +X toward +Z; windings below are
-//! chosen so triangles face outward (signed volume positive — tested).
+//! Conventions (reconciled to the frozen monolith): taper/box/cbox/cyl are
+//! **origin-centered** (y ∈ [−h/2, +h/2]); lathe profiles carry absolute y.
+//! squircle/loft are not in the delivered vintage — they keep *(proposed)*
+//! parameterizations, centered for consistency, pending the later build.
 
+use crate::polymesh::{self, PolyMesh};
 use crate::MeshBuffers;
-use forge_contract::{Geom, LoftProfile};
+use forge_contract::{Geom, LoftProfile, PartPose};
 
 #[derive(Debug)]
 pub enum BuildError {
@@ -15,33 +17,31 @@ pub enum BuildError {
     Degenerate(String),
 }
 
-pub fn build(geom: &Geom) -> Result<MeshBuffers, BuildError> {
+/// Polygon-level counts — the P0-004 byte-equivalence quantities.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PolyCounts {
+    pub verts: usize,
+    pub polys: usize,
+}
+
+pub fn build(geom: &Geom) -> Result<PolyMesh, BuildError> {
     match geom {
         Geom::Box { w, h, d } => {
             check_pos(&[("w", *w), ("h", *h), ("d", *d)])?;
-            Ok(prism_flat(&rect(*w, *d), &rect(*w, *d), 0.0, *h))
+            Ok(polymesh::cuboid(*w, *h, *d))
         }
         Geom::Cbox { w, h, d, ch } => {
             check_pos(&[("w", *w), ("h", *h), ("d", *d)])?;
-            let ch = ch.clamp(0.0, 0.5 * w.min(*d) - f64::EPSILON);
-            let poly = chamfered_rect(*w, *d, ch);
-            Ok(prism_flat(&poly, &poly, 0.0, *h))
+            Ok(polymesh::cbox(*w, *h, *d, *ch))
         }
         Geom::Taper { w0, d0, w1, d1, h } => {
             check_pos(&[("w0", *w0), ("d0", *d0), ("h", *h)])?;
-            Ok(prism_flat(
-                &rect(*w0, *d0),
-                &rect(w1.max(1e-9), d1.max(1e-9)),
-                0.0,
-                *h,
-            ))
+            Ok(polymesh::taper(*w0, *d0, w1.max(1e-9), d1.max(1e-9), *h))
         }
         Geom::Cyl { r0, r1, h, n } => {
             check_pos(&[("r0", *r0), ("h", *h)])?;
             let n = n.unwrap_or(24).max(3) as usize;
-            let r1 = r1.unwrap_or(*r0);
-            let rings = vec![(circle(*r0, n), 0.0), (circle(r1.max(0.0), n), *h)];
-            Ok(ring_solid(&rings))
+            Ok(polymesh::cyl(*r0, r1.unwrap_or(*r0).max(0.0), *h, n))
         }
         Geom::Lathe { profile, n } => {
             if profile.len() < 2 {
@@ -50,18 +50,12 @@ pub fn build(geom: &Geom) -> Result<MeshBuffers, BuildError> {
                 ));
             }
             let n = n.unwrap_or(24).max(3) as usize;
-            let rings: Vec<(Vec<[f64; 2]>, f64)> = profile
-                .iter()
-                .map(|[r, y]| (circle(r.max(0.0), n), *y))
-                .collect();
-            Ok(ring_solid(&rings))
+            Ok(polymesh::lathe(profile, n))
         }
         Geom::Squircle { rx, rz, h, e, n } => {
             check_pos(&[("rx", *rx), ("rz", *rz), ("h", *h)])?;
             let n = n.unwrap_or(8).max(2) as usize;
-            let poly = superellipse(*rx, *rz, e.max(0.5), n);
-            let rings = vec![(poly.clone(), 0.0), (poly, *h)];
-            Ok(ring_solid(&rings))
+            Ok(prism(&superellipse(*rx, *rz, e.max(0.5), n), *h))
         }
         Geom::Loft { profile, stations } => {
             if stations.len() < 2 {
@@ -76,7 +70,6 @@ pub fn build(geom: &Geom) -> Result<MeshBuffers, BuildError> {
             let rings: Vec<(Vec<[f64; 2]>, f64)> = sorted
                 .iter()
                 .map(|st| {
-                    // r ∈ (0,1]: 1 → ellipse (p = 2), → 0 → boxy. *(proposed)*
                     let p = match st.r {
                         Some(r) => 2.0 / r.clamp(0.05, 1.0),
                         None => default_e,
@@ -84,10 +77,122 @@ pub fn build(geom: &Geom) -> Result<MeshBuffers, BuildError> {
                     (superellipse(st.sx.max(1e-9), st.sz.max(1e-9), p, n), st.y)
                 })
                 .collect();
-            Ok(ring_solid(&rings))
+            Ok(loft_rings(&rings))
         }
         Geom::Mesh { asset_ref } => Err(BuildError::MeshRef(asset_ref.clone())),
     }
+}
+
+/// Bake one part: pose → outward orientation (the monolith `P()` rule) →
+/// fan triangulation with flat normals. Returns GPU buffers + polygon counts.
+pub fn bake_part(
+    geom: &Geom,
+    pose: Option<&PartPose>,
+) -> Result<(MeshBuffers, PolyCounts), BuildError> {
+    let mesh = build(geom)?;
+    let counts = PolyCounts {
+        verts: mesh.v.len(),
+        polys: mesh.f.len(),
+    };
+
+    // L = T·Ry·Rx·Rz·S, exactly the monolith's part transform
+    let default_pose = PartPose::default();
+    let pose = pose.unwrap_or(&default_pose);
+    let l = part_matrix(pose);
+    let verts: Vec<[f64; 3]> = mesh.v.iter().map(|q| apply(&l, *q)).collect();
+
+    // part centroid for the outward-orientation rule
+    let mut c = [0.0f64; 3];
+    for v in &verts {
+        c[0] += v[0];
+        c[1] += v[1];
+        c[2] += v[2];
+    }
+    let inv = 1.0 / verts.len().max(1) as f64;
+    c = [c[0] * inv, c[1] * inv, c[2] * inv];
+
+    let mut out = MeshBuffers::default();
+    for face in &mesh.f {
+        if face.len() < 3 {
+            continue;
+        }
+        let (a, b, d) = (
+            verts[face[0] as usize],
+            verts[face[1] as usize],
+            verts[face[2] as usize],
+        );
+        let u = sub(b, a);
+        let w = sub(d, a);
+        let mut n = cross(u, w);
+        // face centroid
+        let mut fc = [0.0f64; 3];
+        for &k in face {
+            let p = verts[k as usize];
+            fc[0] += p[0];
+            fc[1] += p[1];
+            fc[2] += p[2];
+        }
+        let fi = 1.0 / face.len() as f64;
+        fc = [fc[0] * fi, fc[1] * fi, fc[2] * fi];
+        let mut indices: Vec<u32> = face.clone();
+        if n[0] * (fc[0] - c[0]) + n[1] * (fc[1] - c[1]) + n[2] * (fc[2] - c[2]) < 0.0 {
+            indices.reverse();
+            n = [-n[0], -n[1], -n[2]];
+        }
+        let n = normalize(n);
+        // fan triangulation, duplicated verts, flat normal
+        let base = verts[indices[0] as usize];
+        for k in 1..indices.len() - 1 {
+            push_tri(
+                &mut out,
+                base,
+                verts[indices[k] as usize],
+                verts[indices[k + 1] as usize],
+                n,
+            );
+        }
+    }
+    Ok((out, counts))
+}
+
+fn part_matrix(pose: &PartPose) -> [f64; 16] {
+    use crate::{mul, Mat4};
+    let t: Mat4 = {
+        let mut m = crate::identity();
+        m[12] = pose.p[0];
+        m[13] = pose.p[1];
+        m[14] = pose.p[2];
+        m
+    };
+    let s: Mat4 = {
+        let mut m = crate::identity();
+        m[0] = pose.s[0];
+        m[5] = pose.s[1];
+        m[10] = pose.s[2];
+        m
+    };
+    mul(
+        t,
+        mul(
+            crate::rot_y(pose.r[1]),
+            mul(crate::rot_x(pose.r[0]), mul(crate::rot_z(pose.r[2]), s)),
+        ),
+    )
+}
+
+fn apply(m: &[f64; 16], p: [f64; 3]) -> [f64; 3] {
+    crate::transform_point(m, p)
+}
+
+fn push_tri(out: &mut MeshBuffers, a: [f64; 3], b: [f64; 3], c: [f64; 3], n: [f64; 3]) {
+    let base = (out.positions.len() / 3) as u32;
+    for p in [a, b, c] {
+        out.positions
+            .extend_from_slice(&[p[0] as f32, p[1] as f32, p[2] as f32]);
+        out.normals
+            .extend_from_slice(&[n[0] as f32, n[1] as f32, n[2] as f32]);
+    }
+    out.indices.extend_from_slice(&[base, base + 1, base + 2]);
 }
 
 fn check_pos(dims: &[(&str, f64)]) -> Result<(), BuildError> {
@@ -102,41 +207,9 @@ fn check_pos(dims: &[(&str, f64)]) -> Result<(), BuildError> {
 }
 
 // ---------------------------------------------------------------------------
-// 2D profiles, ordered with t increasing from +X toward +Z
+// squircle/loft helpers *(proposed — not in the delivered vintage)*
 // ---------------------------------------------------------------------------
 
-fn rect(w: f64, d: f64) -> Vec<[f64; 2]> {
-    let (hw, hd) = (w / 2.0, d / 2.0);
-    vec![[hw, -hd], [hw, hd], [-hw, hd], [-hw, -hd]]
-}
-
-fn chamfered_rect(w: f64, d: f64, ch: f64) -> Vec<[f64; 2]> {
-    if ch <= 0.0 {
-        return rect(w, d);
-    }
-    let (hw, hd) = (w / 2.0, d / 2.0);
-    vec![
-        [hw, -hd + ch],
-        [hw, hd - ch],
-        [hw - ch, hd],
-        [-hw + ch, hd],
-        [-hw, hd - ch],
-        [-hw, -hd + ch],
-        [-hw + ch, -hd],
-        [hw - ch, -hd],
-    ]
-}
-
-fn circle(r: f64, n: usize) -> Vec<[f64; 2]> {
-    (0..n)
-        .map(|i| {
-            let t = (i as f64) / (n as f64) * std::f64::consts::TAU;
-            [r * t.cos(), r * t.sin()]
-        })
-        .collect()
-}
-
-/// Superellipse |x/rx|^p + |z/rz|^p = 1, sampled 4·n points.
 fn superellipse(rx: f64, rz: f64, p: f64, n_per_quadrant: usize) -> Vec<[f64; 2]> {
     let n = 4 * n_per_quadrant;
     let k = 2.0 / p;
@@ -152,165 +225,48 @@ fn superellipse(rx: f64, rz: f64, p: f64, n_per_quadrant: usize) -> Vec<[f64; 2]
         .collect()
 }
 
-// ---------------------------------------------------------------------------
-// solid builders
-// ---------------------------------------------------------------------------
-
-struct Builder {
-    m: MeshBuffers,
-}
-
-impl Builder {
-    fn new() -> Self {
-        Builder {
-            m: MeshBuffers::default(),
-        }
+/// Centered prism: n side quads + 2 n-gon caps (polygon counting like cyl).
+fn prism(poly: &[[f64; 2]], h: f64) -> PolyMesh {
+    let n = poly.len();
+    let y = h / 2.0;
+    let mut v = Vec::with_capacity(2 * n);
+    for p in poly {
+        v.push([p[0], -y, p[1]]);
     }
-
-    fn push_vert(&mut self, p: [f64; 3], n: [f64; 3]) -> u32 {
-        let i = (self.m.positions.len() / 3) as u32;
-        self.m
-            .positions
-            .extend_from_slice(&[p[0] as f32, p[1] as f32, p[2] as f32]);
-        self.m
-            .normals
-            .extend_from_slice(&[n[0] as f32, n[1] as f32, n[2] as f32]);
-        i
+    for p in poly {
+        v.push([p[0], y, p[1]]);
     }
-
-    /// Flat triangle: duplicated vertices, face normal.
-    fn tri_flat(&mut self, a: [f64; 3], b: [f64; 3], c: [f64; 3]) {
-        let n = normalize(cross(sub(b, a), sub(c, a)));
-        let ia = self.push_vert(a, n);
-        let ib = self.push_vert(b, n);
-        let ic = self.push_vert(c, n);
-        self.m.indices.extend_from_slice(&[ia, ib, ic]);
-    }
-
-    fn quad_flat(&mut self, a: [f64; 3], b: [f64; 3], c: [f64; 3], d: [f64; 3]) {
-        self.tri_flat(a, b, c);
-        self.tri_flat(a, c, d);
-    }
-}
-
-/// Prism/frustum between two same-count convex polygons (flat sides + flat caps).
-fn prism_flat(bottom: &[[f64; 2]], top: &[[f64; 2]], y0: f64, y1: f64) -> MeshBuffers {
-    debug_assert_eq!(bottom.len(), top.len());
-    let n = bottom.len();
-    let b3: Vec<[f64; 3]> = bottom.iter().map(|p| [p[0], y0, p[1]]).collect();
-    let t3: Vec<[f64; 3]> = top.iter().map(|p| [p[0], y1, p[1]]).collect();
-    let mut bld = Builder::new();
-    // sides: outward winding (b[i+1], b[i], t[i], t[i+1])
+    let mut f: Vec<Vec<u32>> = Vec::with_capacity(n + 2);
     for i in 0..n {
         let j = (i + 1) % n;
-        bld.quad_flat(b3[j], b3[i], t3[i], t3[j]);
+        f.push(vec![i as u32, j as u32, (n + j) as u32, (n + i) as u32]);
     }
-    // caps (convex fan)
-    let bc = centroid(&b3);
-    let tc = centroid(&t3);
-    for i in 0..n {
-        let j = (i + 1) % n;
-        bld.tri_flat(bc, b3[i], b3[j]); // bottom, faces -Y
-        bld.tri_flat(tc, t3[j], t3[i]); // top, faces +Y
-    }
-    bld.m
+    f.push((0..n as u32).collect());
+    f.push((n as u32..2 * n as u32).collect());
+    PolyMesh { v, f }
 }
 
-/// Solid of stacked rings (same point count), smooth sides via accumulated
-/// normals, flat caps at the first/last ring when non-degenerate.
-fn ring_solid(rings: &[(Vec<[f64; 2]>, f64)]) -> MeshBuffers {
+/// Stacked rings (same count) with quads between and n-gon caps.
+fn loft_rings(rings: &[(Vec<[f64; 2]>, f64)]) -> PolyMesh {
     let n = rings[0].0.len();
-    let mut m = MeshBuffers::default();
-    // shared side vertices
+    let mut v = Vec::new();
     for (ring, y) in rings {
         for p in ring {
-            m.positions
-                .extend_from_slice(&[p[0] as f32, *y as f32, p[1] as f32]);
-            m.normals.extend_from_slice(&[0.0, 0.0, 0.0]);
+            v.push([p[0], *y, p[1]]);
         }
     }
-    let idx = |ring: usize, i: usize| (ring * n + i) as u32;
-    let mut acc: Vec<[f64; 3]> = vec![[0.0; 3]; m.positions.len() / 3];
+    let mut f: Vec<Vec<u32>> = Vec::new();
     for r in 0..rings.len() - 1 {
-        for i in 0..n {
-            let j = (i + 1) % n;
-            // outward winding (b[j], b[i], t[i]) + (b[j], t[i], t[j])
-            let quads = [
-                [idx(r, j), idx(r, i), idx(r + 1, i)],
-                [idx(r, j), idx(r + 1, i), idx(r + 1, j)],
-            ];
-            for tri in quads {
-                let pa = vert(&m, tri[0]);
-                let pb = vert(&m, tri[1]);
-                let pc = vert(&m, tri[2]);
-                let fnorm = cross(sub(pb, pa), sub(pc, pa));
-                if len(fnorm) < 1e-18 {
-                    continue; // degenerate (e.g. cone apex ring) — skip, keep determinism
-                }
-                m.indices.extend_from_slice(&tri);
-                for k in tri {
-                    let a = &mut acc[k as usize];
-                    a[0] += fnorm[0];
-                    a[1] += fnorm[1];
-                    a[2] += fnorm[2];
-                }
-            }
+        let (a, b) = ((r * n) as u32, ((r + 1) * n) as u32);
+        for i in 0..n as u32 {
+            let j = (i + 1) % n as u32;
+            f.push(vec![a + i, a + j, b + j, b + i]);
         }
     }
-    for (i, a) in acc.iter().enumerate() {
-        let nrm = normalize(*a);
-        m.normals[i * 3] = nrm[0] as f32;
-        m.normals[i * 3 + 1] = nrm[1] as f32;
-        m.normals[i * 3 + 2] = nrm[2] as f32;
-    }
-    // caps (flat, duplicated verts)
-    let mut bld = Builder { m };
-    let cap = |bld: &mut Builder, ring: &[[f64; 2]], y: f64, top: bool| {
-        let pts: Vec<[f64; 3]> = ring.iter().map(|p| [p[0], y, p[1]]).collect();
-        if ring_radius(ring) < 1e-9 {
-            return;
-        }
-        let c = centroid(&pts);
-        for i in 0..pts.len() {
-            let j = (i + 1) % pts.len();
-            if top {
-                bld.tri_flat(c, pts[j], pts[i]);
-            } else {
-                bld.tri_flat(c, pts[i], pts[j]);
-            }
-        }
-    };
-    let (first_ring, first_y) = &rings[0];
-    let (last_ring, last_y) = &rings[rings.len() - 1];
-    cap(&mut bld, first_ring, *first_y, false);
-    cap(&mut bld, last_ring, *last_y, true);
-    bld.m
-}
-
-fn ring_radius(ring: &[[f64; 2]]) -> f64 {
-    ring.iter()
-        .map(|p| (p[0] * p[0] + p[1] * p[1]).sqrt())
-        .fold(0.0, f64::max)
-}
-
-fn vert(m: &MeshBuffers, i: u32) -> [f64; 3] {
-    let i = i as usize * 3;
-    [
-        m.positions[i] as f64,
-        m.positions[i + 1] as f64,
-        m.positions[i + 2] as f64,
-    ]
-}
-
-fn centroid(pts: &[[f64; 3]]) -> [f64; 3] {
-    let mut c = [0.0; 3];
-    for p in pts {
-        c[0] += p[0];
-        c[1] += p[1];
-        c[2] += p[2];
-    }
-    let n = pts.len() as f64;
-    [c[0] / n, c[1] / n, c[2] / n]
+    f.push((0..n as u32).collect());
+    let last = ((rings.len() - 1) * n) as u32;
+    f.push((0..n as u32).map(|i| last + i).collect());
+    PolyMesh { v, f }
 }
 
 fn sub(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
@@ -325,12 +281,8 @@ fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
     ]
 }
 
-fn len(a: [f64; 3]) -> f64 {
-    (a[0] * a[0] + a[1] * a[1] + a[2] * a[2]).sqrt()
-}
-
 fn normalize(a: [f64; 3]) -> [f64; 3] {
-    let l = len(a);
+    let l = (a[0] * a[0] + a[1] * a[1] + a[2] * a[2]).sqrt();
     if l < 1e-18 {
         return [0.0, 1.0, 0.0];
     }
@@ -343,7 +295,7 @@ mod tests {
     use crate::massprops;
 
     fn volume_of(geom: &Geom) -> f64 {
-        massprops::compute(&build(geom).unwrap()).volume
+        massprops::compute(&bake_part(geom, None).unwrap().0).volume
     }
 
     #[test]
@@ -375,7 +327,7 @@ mod tests {
     fn cone_volume_close() {
         let v = volume_of(&Geom::Cyl {
             r0: 0.5,
-            r1: Some(0.0),
+            r1: Some(1e-9),
             h: 1.0,
             n: Some(256),
         });
@@ -388,7 +340,6 @@ mod tests {
 
     #[test]
     fn taper_volume_exact_frustum() {
-        // rectangular frustum: V = h/3 (A0 + A1 + sqrt(A0 A1))
         let v = volume_of(&Geom::Taper {
             w0: 1.0,
             d0: 1.0,
@@ -418,12 +369,11 @@ mod tests {
 
     #[test]
     fn lathe_sphere_volume_close() {
-        // approximate a unit sphere via a lathe profile
         let k = 64;
         let profile: Vec<[f64; 2]> = (0..=k)
             .map(|i| {
                 let phi = std::f64::consts::PI * (i as f64) / (k as f64);
-                [phi.sin(), 1.0 - phi.cos()] // r, y ∈ [0,2]
+                [phi.sin(), 1.0 - phi.cos()]
             })
             .collect();
         let v = volume_of(&Geom::Lathe {
@@ -435,6 +385,34 @@ mod tests {
             (v - exact).abs() / exact < 0.01,
             "sphere volume {v} vs {exact}"
         );
+    }
+
+    #[test]
+    fn pose_translates_scales_and_rotates() {
+        let pose = PartPose {
+            p: [0.0, 1.0, 0.0],
+            r: [0.0, 0.0, 0.0],
+            s: [2.0, 1.0, 1.0],
+        };
+        let (m, _) = bake_part(
+            &Geom::Box {
+                w: 1.0,
+                h: 1.0,
+                d: 1.0,
+            },
+            Some(&pose),
+        )
+        .unwrap();
+        let xs: Vec<f32> = m.positions.chunks_exact(3).map(|p| p[0]).collect();
+        let ys: Vec<f32> = m.positions.chunks_exact(3).map(|p| p[1]).collect();
+        assert!(
+            xs.iter().cloned().fold(f32::MIN, f32::max) > 0.99,
+            "scaled to ±1"
+        );
+        let ymid = (ys.iter().cloned().fold(f32::MAX, f32::min)
+            + ys.iter().cloned().fold(f32::MIN, f32::max))
+            / 2.0;
+        assert!((ymid - 1.0).abs() < 1e-6, "translated up by 1, mid {ymid}");
     }
 
     #[test]
@@ -460,7 +438,7 @@ mod tests {
                 n: Some(8),
             },
         ] {
-            let m = build(&geom).unwrap();
+            let (m, _) = bake_part(&geom, None).unwrap();
             for n in m.normals.chunks_exact(3) {
                 let l = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
                 assert!(l.is_finite() && (l - 1.0).abs() < 1e-3, "normal len {l}");

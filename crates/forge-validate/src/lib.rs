@@ -127,8 +127,12 @@ pub struct Report {
 #[serde(rename_all = "camelCase")]
 pub struct Counts {
     pub parts: usize,
+    /// Polygon faces — the monolith's counting (P0-004 equivalence quantity).
     pub faces: usize,
+    /// Polygon-mesh vertices (P0-004 equivalence quantity).
     pub vertices: usize,
+    /// Render triangles (GEO-004 budget quantity).
+    pub triangles: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -190,8 +194,9 @@ pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Repor
             if let Some(b) = &baked {
                 counts = Counts {
                     parts: b.parts.len(),
-                    faces: b.total_faces,
+                    faces: b.total_polygons,
                     vertices: b.total_vertices,
+                    triangles: b.total_faces,
                 };
                 match forge_sim::derive_hud(&spec, b) {
                     Ok(h) => hud = Some(h),
@@ -841,6 +846,7 @@ mod tests {
                     h: 0.01,
                     d: 0.01,
                 },
+                pose: None,
                 material: forge_contract::MaterialClass::Matte,
                 color: "#111111".into(),
                 explode: None,

@@ -145,8 +145,9 @@ fn cmd_bake(args: &[String]) -> ExitCode {
         schema_version: forge_contract::SCHEMA_VERSION.to_string(),
         counts: forge_validate::Counts {
             parts: baked.parts.len(),
-            faces: baked.total_faces,
+            faces: baked.total_polygons,
             vertices: baked.total_vertices,
+            triangles: baked.total_faces,
         },
         hud: forge_sim::derive_hud(&spec, &baked).ok(),
         baked,

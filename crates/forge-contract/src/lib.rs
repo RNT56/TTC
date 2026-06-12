@@ -309,12 +309,43 @@ pub struct Explode {
     pub leader: Option<String>,
 }
 
+/// Part-local pose applied before node placement (prototype `P(node, mesh,
+/// {p, r, s})` — the executable spec). Rotation composes T·Ry·Rx·Rz·S.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PartPose {
+    #[serde(default)]
+    pub p: [f64; 3],
+    #[serde(default)]
+    pub r: [f64; 3],
+    #[serde(default = "PartPose::unit_scale")]
+    pub s: [f64; 3],
+}
+
+impl PartPose {
+    fn unit_scale() -> [f64; 3] {
+        [1.0, 1.0, 1.0]
+    }
+}
+
+impl Default for PartPose {
+    fn default() -> Self {
+        PartPose {
+            p: [0.0; 3],
+            r: [0.0; 3],
+            s: [1.0, 1.0, 1.0],
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Part {
     /// Skeleton node this part attaches to.
     pub node: String,
     pub geom: Geom,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pose: Option<PartPose>,
     pub material: MaterialClass,
     /// Hex color, e.g. "#23262c".
     pub color: String,
@@ -382,13 +413,25 @@ pub struct Port {
     pub capped: bool,
 }
 
-/// Staged disassembly grouping *(proposed shape pending PRE-002)*.
+/// Staged disassembly: one row per kinematic-chain node, reconciled to the
+/// prototype's chains table `[node, dir, dist, t0, t1]` (PRE-002).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Chain {
     pub id: String,
     pub stage: u32,
     pub nodes: Vec<String>,
+    /// Node-local explode direction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dir: Option<[f64; 3]>,
+    /// Travel distance, meters.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mag: Option<f64>,
+    /// Window within the global explode phase.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub t0: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub t1: Option<f64>,
 }
 
 // ---------------------------------------------------------------------------

@@ -12,6 +12,7 @@
 #![forbid(unsafe_code)]
 
 pub mod massprops;
+pub mod polymesh;
 pub mod primitives;
 
 use forge_contract::{CollisionPolicy, Explode, MassSpec, MaterialClass, ModelSpec};
@@ -44,6 +45,9 @@ pub struct BakedPart {
     pub collision: CollisionPolicy,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub explode: Option<Explode>,
+    /// Polygon-mesh counts (the prototype's quantities — P0-004 equivalence).
+    pub poly_verts: usize,
+    pub poly_faces: usize,
     pub mesh: MeshBuffers,
 }
 
@@ -55,8 +59,12 @@ pub struct BakedModel {
     pub parts: Vec<BakedPart>,
     /// node name → world transform (column-major 4×4).
     pub node_world: BTreeMap<String, Mat4>,
-    pub total_faces: usize,
+    /// Polygon faces — the monolith's `faceTotal` (P0-004 equivalence).
+    pub total_polygons: usize,
+    /// Polygon-mesh vertices — the monolith's Σ`v.length` (P0-004 equivalence).
     pub total_vertices: usize,
+    /// Render triangles (GEO-004 budget quantity).
+    pub total_faces: usize,
 }
 
 #[derive(Debug)]
@@ -110,6 +118,7 @@ pub fn bake(spec: &ModelSpec) -> Result<BakedModel, BakeError> {
     let mut parts = Vec::with_capacity(spec.parts.len());
     let mut total_faces = 0usize;
     let mut total_vertices = 0usize;
+    let mut total_polygons = 0usize;
     for (i, part) in spec.parts.iter().enumerate() {
         if !node_world.contains_key(&part.node) {
             return Err(BakeError::UnknownNode {
@@ -117,18 +126,20 @@ pub fn bake(spec: &ModelSpec) -> Result<BakedModel, BakeError> {
                 node: part.node.clone(),
             });
         }
-        let mesh = primitives::build(&part.geom).map_err(|e| match e {
-            primitives::BuildError::MeshRef(asset_ref) => BakeError::MeshRefUnsupported {
-                part_index: i,
-                asset_ref,
-            },
-            primitives::BuildError::Degenerate(message) => BakeError::BadGeom {
-                part_index: i,
-                message,
-            },
-        })?;
+        let (mesh, counts) =
+            primitives::bake_part(&part.geom, part.pose.as_ref()).map_err(|e| match e {
+                primitives::BuildError::MeshRef(asset_ref) => BakeError::MeshRefUnsupported {
+                    part_index: i,
+                    asset_ref,
+                },
+                primitives::BuildError::Degenerate(message) => BakeError::BadGeom {
+                    part_index: i,
+                    message,
+                },
+            })?;
         total_faces += mesh.face_count();
-        total_vertices += mesh.vertex_count();
+        total_vertices += counts.verts;
+        total_polygons += counts.polys;
         parts.push(BakedPart {
             part_index: i,
             node: part.node.clone(),
@@ -136,14 +147,17 @@ pub fn bake(spec: &ModelSpec) -> Result<BakedModel, BakeError> {
             color: part.color.clone(),
             collision: part.collision,
             explode: part.explode.clone(),
+            poly_verts: counts.verts,
+            poly_faces: counts.polys,
             mesh,
         });
     }
     Ok(BakedModel {
         parts,
         node_world,
-        total_faces,
+        total_polygons,
         total_vertices,
+        total_faces,
     })
 }
 
@@ -291,28 +305,34 @@ pub fn mul(a: Mat4, b: Mat4) -> Mat4 {
     o
 }
 
+/// Node-local transform, reconciled to the monolith's `nm()`: T·Ry·Rx·Rz.
 fn trs(pos: [f64; 3], rot: [f64; 3]) -> Mat4 {
-    let (sx, cx) = rot[0].sin_cos();
-    let (sy, cy) = rot[1].sin_cos();
-    let (sz, cz) = rot[2].sin_cos();
-    // R = Rz·Ry·Rx, column-major; translation in the parent frame.
+    let mut t = identity();
+    t[12] = pos[0];
+    t[13] = pos[1];
+    t[14] = pos[2];
+    mul(t, mul(rot_y(rot[1]), mul(rot_x(rot[0]), rot_z(rot[2]))))
+}
+
+/// Single-axis rotations (column-major), shared with the part-pose path.
+pub fn rot_x(a: f64) -> Mat4 {
+    let (s, c) = a.sin_cos();
     [
-        cy * cz,
-        cy * sz,
-        -sy,
-        0.0,
-        sx * sy * cz - cx * sz,
-        sx * sy * sz + cx * cz,
-        sx * cy,
-        0.0,
-        cx * sy * cz + sx * sz,
-        cx * sy * sz - sx * cz,
-        cx * cy,
-        0.0,
-        pos[0],
-        pos[1],
-        pos[2],
-        1.0,
+        1.0, 0.0, 0.0, 0.0, 0.0, c, s, 0.0, 0.0, -s, c, 0.0, 0.0, 0.0, 0.0, 1.0,
+    ]
+}
+
+pub fn rot_y(a: f64) -> Mat4 {
+    let (s, c) = a.sin_cos();
+    [
+        c, 0.0, -s, 0.0, 0.0, 1.0, 0.0, 0.0, s, 0.0, c, 0.0, 0.0, 0.0, 0.0, 1.0,
+    ]
+}
+
+pub fn rot_z(a: f64) -> Mat4 {
+    let (s, c) = a.sin_cos();
+    [
+        c, s, 0.0, 0.0, -s, c, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     ]
 }
 

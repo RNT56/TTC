@@ -242,11 +242,17 @@ export default function App() {
             <div style={{ color: "#6b7686" }}>0 errors · 0 warnings — gatekeeper clean</div>
           ) : (
             <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
-              {s.report.results.map((d, i) => (
-                <li key={i} style={{ color: d.severity === "error" ? "#e66" : "#e6a23c" }}>
-                  {d.check} — {d.message}
-                </li>
-              ))}
+              {[...s.report.results]
+                .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1))
+                .slice(0, 8)
+                .map((d, i) => (
+                  <li key={i} style={{ color: d.severity === "error" ? "#e66" : "#e6a23c" }}>
+                    {d.check} — {d.message}
+                  </li>
+                ))}
+              {s.report.results.length > 8 && (
+                <li style={{ color: "#6b7686" }}>… +{s.report.results.length - 8} more</li>
+              )}
             </ul>
           )}
         </div>

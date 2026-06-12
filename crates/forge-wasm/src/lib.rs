@@ -30,8 +30,9 @@ pub fn bake_json(contract_json: &str) -> Result<String, String> {
         "schemaVersion": forge_contract::SCHEMA_VERSION,
         "counts": {
             "parts": baked.parts.len(),
-            "faces": baked.total_faces,
+            "faces": baked.total_polygons,
             "vertices": baked.total_vertices,
+            "triangles": baked.total_faces,
         },
         "hud": hud,
         "baked": baked,

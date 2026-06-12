@@ -1,0 +1,570 @@
+{
+  "contractHash": "8433af752aac4d99ed7281b22a3017186937b8b4cc9349df930adbfdae807d21",
+  "lockfileHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "schemaVersion": "2.1.0",
+  "validatorVersion": "0.1.0",
+  "seed": 0,
+  "target": "native",
+  "startedAt": 1781264101,
+  "durationMs": 19,
+  "results": [
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 9 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 10 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 11 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 85 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 86 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 103 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "0"
+      },
+      "message": "aabb_overlap: parts 0 and 104 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "1"
+      },
+      "message": "aabb_overlap: parts 1 and 9 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "1"
+      },
+      "message": "aabb_overlap: parts 1 and 10 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "1"
+      },
+      "message": "aabb_overlap: parts 1 and 11 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "2"
+      },
+      "message": "aabb_overlap: parts 2 and 9 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "2"
+      },
+      "message": "aabb_overlap: parts 2 and 10 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "2"
+      },
+      "message": "aabb_overlap: parts 2 and 11 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "2"
+      },
+      "message": "aabb_overlap: parts 2 and 12 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "2"
+      },
+      "message": "aabb_overlap: parts 2 and 13 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "2"
+      },
+      "message": "aabb_overlap: parts 2 and 14 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "5"
+      },
+      "message": "aabb_overlap: parts 5 and 85 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "5"
+      },
+      "message": "aabb_overlap: parts 5 and 86 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "6"
+      },
+      "message": "aabb_overlap: parts 6 and 103 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "6"
+      },
+      "message": "aabb_overlap: parts 6 and 104 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 85 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 86 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 87 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 88 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 89 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 103 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 104 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 105 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 106 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "8"
+      },
+      "message": "aabb_overlap: parts 8 and 107 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "15"
+      },
+      "message": "aabb_overlap: parts 15 and 30 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "15"
+      },
+      "message": "aabb_overlap: parts 15 and 41 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "15"
+      },
+      "message": "aabb_overlap: parts 15 and 63 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "19"
+      },
+      "message": "aabb_overlap: parts 19 and 30 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "20"
+      },
+      "message": "aabb_overlap: parts 20 and 30 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "26"
+      },
+      "message": "aabb_overlap: parts 26 and 41 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "27"
+      },
+      "message": "aabb_overlap: parts 27 and 63 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "28"
+      },
+      "message": "aabb_overlap: parts 28 and 41 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "28"
+      },
+      "message": "aabb_overlap: parts 28 and 44 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "29"
+      },
+      "message": "aabb_overlap: parts 29 and 63 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "29"
+      },
+      "message": "aabb_overlap: parts 29 and 66 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "44"
+      },
+      "message": "aabb_overlap: parts 44 and 46 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "44"
+      },
+      "message": "aabb_overlap: parts 44 and 47 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "47"
+      },
+      "message": "aabb_overlap: parts 47 and 122 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "48"
+      },
+      "message": "aabb_overlap: parts 48 and 51 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "66"
+      },
+      "message": "aabb_overlap: parts 66 and 68 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "66"
+      },
+      "message": "aabb_overlap: parts 66 and 69 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "69"
+      },
+      "message": "aabb_overlap: parts 69 and 124 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "70"
+      },
+      "message": "aabb_overlap: parts 70 and 73 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "87"
+      },
+      "message": "aabb_overlap: parts 87 and 91 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "87"
+      },
+      "message": "aabb_overlap: parts 87 and 93 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "105"
+      },
+      "message": "aabb_overlap: parts 105 and 109 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "GEO-003",
+      "severity": "warn",
+      "subject": {
+        "kind": "part",
+        "id": "105"
+      },
+      "message": "aabb_overlap: parts 105 and 111 interpenetrate (static pose)",
+      "hint": "v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"
+    },
+    {
+      "check": "BEH-001",
+      "severity": "warn",
+      "message": "archetype_smoke skipped: Biped driver lands P2",
+      "hint": "biped/arm drivers arrive with the P2+ driver library"
+    },
+    {
+      "check": "CTR-004",
+      "severity": "error",
+      "observed": 68.8,
+      "limit": 80.0,
+      "units": "%",
+      "message": "explode_coverage: 69 % < 80 %",
+      "hint": "add explode windows to parts (leader-flag rule lands with slots/equip)"
+    }
+  ],
+  "verdict": "rejected",
+  "hud": {
+    "auwG": 92966.57105883845,
+    "assumptions": [
+      "masses: geometry × material-class density unless a part states valueG/densityKgm3"
+    ]
+  },
+  "counts": {
+    "parts": 125,
+    "faces": 2195,
+    "vertices": 2581,
+    "triangles": 4662
+  }
+}

@@ -10,7 +10,9 @@ export interface DemoModel {
 }
 
 export const DEMO_MODELS: DemoModel[] = [
-  { id: "vx2-mini", label: "VX-2 Mini (multirotor)" },
+  { id: "hrx7", label: "HRX-7 Mk II (prototype translation)" },
+  { id: "vx2-hornet", label: "VX-2 Hornet (prototype translation)" },
+  { id: "vx2-mini", label: "VX-2 Mini (synthetic multirotor)" },
   { id: "qd-mini", label: "QD Mini (generated quadruped)" },
 ];
 

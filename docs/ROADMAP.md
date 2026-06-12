@@ -18,7 +18,7 @@ phase-level state only.
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ | days |
-| P0 Freeze & extract | ◑ (prototype landed 2026-06-12; translations next) | 1.5–2.5 wk |
+| P0 Freeze & extract | ● for the delivered vintage *(2026-06-12; P0-007 variants gated on the later build or a re-scope decision; remote tag = owner push)* | 1.5–2.5 wk |
 | P1 Core & studio | ○ | 6–8 wk |
 | P2 Data-driven models | ○ | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ○ | 2–3 wk |
@@ -63,7 +63,7 @@ scaffold**; **core boundary API frozen** (plan §5.3).
 [`architecture.md`](architecture.md) §3.
 
 Exit criteria:
-- [ ] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(oracle extracted: hrx7 125/2195, fpv 73/924; "all 31 variants" applies only if the later configurator build is delivered — see P0-007)*
+- [x] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(2026-06-12: hrx7 125/2195/2581 ✓, vx2-hornet 73/924/1250 ✓, CI-guarded; "all 31 variants" applies only if the later configurator build is delivered — see P0-007)*
 - [x] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars *(2026-06-12)*
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*

@@ -96,6 +96,11 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
             d: body_d,
             ch: 0.02,
         },
+        // primitives are origin-centered (PRE-002); lift so the body sits on the hips
+        pose: Some(forge_contract::PartPose {
+            p: [0.0, body_h / 2.0, 0.0],
+            ..Default::default()
+        }),
         material: MaterialClass::Matte,
         color: "#2b2f36".into(),
         explode: Some(Explode {
@@ -171,6 +176,7 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
                     h: l1,
                     n: Some(16),
                 },
+                l1 / 2.0,
                 "#3a4048",
                 round_g(upper_mass),
                 CollisionPolicy::Primitive,
@@ -190,6 +196,7 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
                     h: l2,
                     n: Some(16),
                 },
+                l2 / 2.0,
                 "#3a4048",
                 round_g(lower_mass),
                 CollisionPolicy::None,
@@ -210,6 +217,7 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
                     e: 3.0,
                     n: Some(6),
                 },
+                0.006,
                 "#15171a",
                 round_g(pad_mass),
                 CollisionPolicy::Primitive,
@@ -265,6 +273,10 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
             id: "teardown".into(),
             stage: 0,
             nodes: vec!["root".into()],
+            dir: None,
+            mag: None,
+            t0: None,
+            t1: None,
         }],
         driver: Driver {
             archetype: Archetype::Quadruped,
@@ -288,6 +300,7 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
 fn leg_part(
     node: &str,
     geom: Geom,
+    y_offset: f64,
     color: &str,
     mass_g: f64,
     collision: CollisionPolicy,
@@ -296,6 +309,10 @@ fn leg_part(
     Part {
         node: node.into(),
         geom,
+        pose: Some(forge_contract::PartPose {
+            p: [0.0, y_offset, 0.0],
+            ..Default::default()
+        }),
         material: MaterialClass::Satin,
         color: color.into(),
         explode: Some(explode),

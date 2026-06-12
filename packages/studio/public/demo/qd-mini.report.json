@@ -1,12 +1,12 @@
 {
-  "contractHash": "579765f4216e11f673e79ced4a8292cc3ec2c29d608c461992e45079f6aad037",
+  "contractHash": "e592baa2e8fa4c0f538b0955352f3b5b481d15ec104c34e8c2fd4cd224228b5f",
   "lockfileHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
   "schemaVersion": "2.1.0",
   "validatorVersion": "0.1.0",
   "seed": 0,
   "target": "native",
-  "startedAt": 1781259637,
-  "durationMs": 3,
+  "startedAt": 1781263889,
+  "durationMs": 4,
   "results": [],
   "verdict": "admitted",
   "hud": {
@@ -17,7 +17,7 @@
   },
   "counts": {
     "parts": 13,
-    "faces": 928,
-    "vertices": 1888
+    "faces": 892,
+    "vertices": 472
   }
 }

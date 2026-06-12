@@ -194,30 +194,31 @@ enum Shape {
 
 fn map_shape(geom: &Geom) -> Shape {
     match geom {
+        // taper/box/cbox/cyl are origin-centered (PRE-002 reconciliation)
         Geom::Box { w, h, d } => Shape::Box {
             size: [*w, *d, *h],
-            zc: h / 2.0,
+            zc: 0.0,
             note: None,
         },
         Geom::Cbox { w, h, d, .. } => Shape::Box {
             size: [*w, *d, *h],
-            zc: h / 2.0,
+            zc: 0.0,
             note: Some("cbox chamfer dropped (box approximation)"),
         },
         Geom::Taper { w0, d0, w1, d1, h } => Shape::Box {
             size: [(w0 + w1) / 2.0, (d0 + d1) / 2.0, *h],
-            zc: h / 2.0,
+            zc: 0.0,
             note: Some("taper averaged to a box"),
         },
         Geom::Cyl { r0, r1, h, .. } => Shape::Cylinder {
             radius: (r0 + r1.unwrap_or(*r0)) / 2.0,
             length: *h,
-            zc: h / 2.0,
+            zc: 0.0,
             note: r1.map(|_| "tapered cylinder averaged"),
         },
         Geom::Squircle { rx, rz, h, .. } => Shape::Box {
             size: [2.0 * rx, 2.0 * rz, *h],
-            zc: h / 2.0,
+            zc: 0.0,
             note: Some("squircle boxed"),
         },
         Geom::Lathe { profile, .. } => {
