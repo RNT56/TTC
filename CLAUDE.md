@@ -48,7 +48,7 @@ that gates every artifact; provenance on everything. The full doctrine is bindin
 | Binding plan | [`docs/FORGE-plan.md`](docs/FORGE-plan.md) (**v3.0, definitive**) |
 | Current phase | **P0/P1 (interleaved under D21)** — live status in [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 | Code in repo | Rust core (`crates/forge-*`: contract, geometry, motion, sim, validate, wasm facade — 40 tests), studio + gateway (`packages/*`), Python workers (`workers/`, 12 tests), CI, catalog migration. Demo: `examples/vx2-mini.forge.json` (admitted; AUW 479 g · TWR 4.70 · hover 43 %). Quickstart: `cargo run -p forge-validate -- run examples/vx2-mini.forge.json` |
-| Critical blocker | The prototype **`cad-object-studio.html`** is the executable specification **and the parity oracle** (P0 byte-equivalence, P1 golden numbers) but is **not in this repository**. P0-005..008/010, P1-006/007/015 stay blocked until it is committed. Tracked as `PRE-002` in [`docs/TODO.md`](docs/TODO.md). |
+| Prototype | **Delivered + frozen 2026-06-12**: `prototype/cad-object-studio.html` (tag `prototype-final`), oracle counts extracted (`prototype/extracted-counts.json`). Pre-configurator vintage — P0-007 (31 variants) stays gated on the later build or a re-scope decision; see `prototype/README.md`. |
 
 ## 3. Source-of-truth hierarchy
 

@@ -18,6 +18,36 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — PRE-002 executed: prototype delivered, frozen, oracle extracted
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** pre-P0/P0 · **TODO items:** PRE-002, P0-004 (oracle side), P0-008 (counts), P0-010
+**Done:** The owner delivered `cad-object-studio.html` (50,967 bytes, sha256
+`ca93489e…`). Searched first (TTC refs/tags, all 45 owner repos by name and code
+content — zero hits; recorded). Committed **byte-exact** at
+`prototype/cad-object-studio.html`, tagged **`prototype-final`**. Built the
+extraction harness (`scripts/extract-counts.mjs`): slices the monolith's pure
+builder segment into a Node vm sandbox (read-only) and replicates `loadModel`'s
+reset+build+count core. **Oracle numbers extracted** →
+`prototype/extracted-counts.json`: hrx7 humanoid **125 parts · 2195 faces ·
+2581 vertices · 20 nodes · 15 chains**; fpv VX-2 **73 parts · 924 faces · 1250
+vertices · 14 nodes · 13 chains**. Byte-equivalence comparator ready
+(`scripts/compare-counts.mjs`). **Vintage finding (recorded in
+prototype/README.md):** this is the pre-configurator build — N/P registry,
+chains, gait+IK (L1=L2=0.39, Appendix-C verbatim), FPV mixer, servos (ω 14–16,
+ζ 0.8–0.85), blueprint/jog/click-to-move are all present; slots/variants/ports/
+bellows/squircle/harness (the plan's ~83 KB audit) are not. P0-007 (31 variants)
+stays gated on the later build or a re-scope decision; everything else
+prototype-gated is now **unblocked** (P0-005/006 translations, P1-006/007/015).
+**Changed:** `prototype/` (monolith + README + extracted-counts.json),
+`scripts/extract-counts.mjs`, `scripts/compare-counts.mjs`, CLAUDE.md §2,
+TODO (blocker resolved; P0 items re-stated), ROADMAP (P0 ⛔→◑).
+**Decisions:** none new (vintage re-scope of P0-007 awaits the owner's answer on
+whether the configurator build exists).
+**Next:** P0-005/006 — translate hrx7 + fpv from the frozen source into
+`ModelSpec` JSON and drive `compare-counts` to byte-equivalence; then extend
+extraction to record gait/flight trajectories (golden-number corpus, P1-006).
+**Blockers:** none critical. Open question to the owner: does the later ~83 KB
+configurator monolith (31 variants/11 slots/harness) exist?
+
 ## 2026-06-12 — Boundary frozen; P2 quadruped family; in-browser core; exporters
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1/P2 interleaved (D21) · **TODO items:** P0-009, P1-004/005/009/010/011/012/017, P2-001/003/004/005, P3-009/010, P4-005 (core path), P6-008, XC-04, XC-06
 **Done (all verified: 66 Rust tests, clippy -D clean, studio+gateway builds, 6

@@ -18,7 +18,7 @@ phase-level state only.
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ | days |
-| P0 Freeze & extract | ⛔ (needs PRE-002, the prototype file) | 1.5–2.5 wk |
+| P0 Freeze & extract | ◑ (prototype landed 2026-06-12; translations next) | 1.5–2.5 wk |
 | P1 Core & studio | ○ | 6–8 wk |
 | P2 Data-driven models | ○ | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ○ | 2–3 wk |
@@ -47,7 +47,7 @@ licensing groundwork.
 - [x] Documentation system in place (`CLAUDE.md`, `CHANGELOG.md`, `docs/` suite)
 - [x] Plan v3.0 adopted as binding; v2.0 archived as historical (2026-06-11)
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
-- [ ] **`cad-object-studio.html` prototype committed** as executable reference + parity oracle (PRE-002 — blocks P0)
+- [x] **`cad-object-studio.html` prototype committed** byte-exact + tagged `prototype-final` *(2026-06-12; pre-configurator vintage — see prototype/README.md)*
 - [ ] License files reflecting open-core split (D2): Apache-2.0 for the core crates + schema; proprietary notice for the rest (PRE-003)
 - [ ] Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, default-branch protection (PRE-004)
 
@@ -63,12 +63,12 @@ scaffold**; **core boundary API frozen** (plan §5.3).
 [`architecture.md`](architecture.md) §3.
 
 Exit criteria:
-- [ ] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith across all 31 variants *(runner exists — `forge-validate bake`; comparison blocked on PRE-002)*
+- [ ] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(oracle extracted: hrx7 125/2195, fpv 73/924; "all 31 variants" applies only if the later configurator build is delivered — see P0-007)*
 - [x] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars *(2026-06-12)*
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*
 - [x] Core boundary API (bake / tick / validate / patch) frozen and documented *(2026-06-12 — v1; zero-copy refinement cannot change call shapes)*
-- [ ] Prototype tagged (e.g. `prototype-final`) and never modified after *(blocked on PRE-002)*
+- [x] Prototype tagged `prototype-final` and never modified after *(2026-06-12)*
 
 ## P1 — Core & studio
 

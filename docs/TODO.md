@@ -17,17 +17,16 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 
 ## 0. Critical blockers
 
-- [!] **PRE-002 — Commit the prototype.** `cad-object-studio.html` (~83 KB single-file
-  studio) is the executable specification **and the parity oracle for the Rust port**
-  (P0 byte-equivalence, P1 golden numbers); neither criterion is verifiable without
-  it. Blocked on: file lives only with the project owner — request and commit it
-  (suggested path `prototype/cad-object-studio.html`), then tag `prototype-final`.
-  **Blocks all of P0.**
+- **RESOLVED 2026-06-12** — PRE-002: the owner delivered the prototype; committed
+  byte-exact at `prototype/cad-object-studio.html`, tagged `prototype-final`.
+  **Vintage caveat:** it is the pre-configurator build (no slots/variants/ports/
+  harness — see `prototype/README.md`); P0-007 stays gated on the later ~83 KB
+  build or a re-scoping decision. No critical blockers remain open.
 
 ## 1. Pre-P0 housekeeping (PRE)
 
 - [x] PRE-001 — Documentation system: `CLAUDE.md`, `CHANGELOG.md`, `docs/` suite *(2026-06-11)*
-- [!] PRE-002 — Prototype committed + tagged (see Critical blockers)
+- [x] PRE-002 — Prototype committed byte-exact + tagged `prototype-final` *(2026-06-12; sha256 ca93489e… — pre-configurator vintage, see prototype/README.md)*
 - [ ] PRE-003 — Licensing per D2: `LICENSE` (Apache-2.0) scoped to the `forge-core` crates + schema; proprietary notice for the rest; confirm exact mechanics with owner before first code commit
 - [ ] PRE-004 — Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, branch protection on `main`
 - [ ] PRE-005 — Naming: trademark scan for FORGE or a successor name (OD-01; non-blocking until public artifacts ship at P3/P4)
@@ -39,13 +38,13 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] P0-001 — Author contract schema v2.1 **as Rust types in `forge-contract`** (serde + schemars: meta, env, skeleton, parts, slots, ports, chains, driver, materials, sim incl. colliders/estimator, lockfile) per [`systems/model-contract.md`](systems/model-contract.md) *(2026-06-12, D21 session; Appendix-A round-trip tested)*
 - [x] P0-002 — schemars → TypeScript codegen pipeline: emitted JSON Schema → TS types for studio/gateway (= XC-01) *(2026-06-12: `pnpm codegen:contract` → `contract.gen.ts`; CI guards schema drift)*
 - [x] P0-003 — Monorepo scaffold: cargo workspace (`crates/forge-*`) + pnpm (`packages/studio`, `packages/gateway`) + `workers/`; CI bootstrap (fmt, clippy -D warnings, cargo test, wasm build, tsc, pytest) *(2026-06-12; Turborepo deferred until >2 TS packages)*
-- [~] P0-004 — First-cut bake/count runner: **runner exists** (`forge-validate bake` emits part/face/vertex counts); byte-equivalence comparison **blocked on PRE-002** (no monolith to extract against)
-- [!] P0-005 — Mechanical translation: humanoid model → `ModelSpec` JSON — blocked on PRE-002
-- [!] P0-006 — Mechanical translation: VX-2 quad → `ModelSpec` JSON — blocked on PRE-002 (`examples/vx2-mini.forge.json` is a synthetic fixture, not this)
-- [!] P0-007 — Translate all 31 slot variants — blocked on PRE-002
-- [!] P0-008 — Extraction harness for the monolith — blocked on PRE-002
+- [~] P0-004 — Byte-equivalence: runner ✓ (`forge-validate bake`), comparator ✓ (`scripts/compare-counts.mjs`), **oracle numbers ✓** (hrx7 125/2195/2581, fpv 73/924/1250); awaiting the P0-005/006 translations to compare against
+- [ ] P0-005 — Mechanical translation: hrx7 humanoid → `ModelSpec` JSON (125 parts, 20 nodes, 15 chains — source now in `prototype/`)
+- [ ] P0-006 — Mechanical translation: fpv VX-2 → `ModelSpec` JSON (73 parts, 14 nodes — `examples/vx2-mini.forge.json` remains a separate synthetic fixture; combat naming flavor does not survive translation, §17.2)
+- [!] P0-007 — Translate all 31 slot variants — **the delivered vintage has no slot/variant system**; gated on the later ~83 KB configurator build (owner) or a re-scoping decision
+- [~] P0-008 — Extraction harness: **counts done** (`scripts/extract-counts.mjs` → `prototype/extracted-counts.json`, vm-sandboxed read-only); trajectory recording (gait/flight tapes for P1 golden numbers) open
 - [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
-- [!] P0-010 — Tag monolith `prototype-final` — blocked on PRE-002
+- [x] P0-010 — Monolith tagged `prototype-final` *(2026-06-12)*
 
 ### P1 — Core & studio
 Rust core (D21 note: v0 implemented directly in Rust on 2026-06-12; "done" for
@@ -56,8 +55,8 @@ recordings remain the completion criterion):
 - [~] P1-003 — `forge-sim`: propulsion/battery/estimator models ✓ (HUD derivations tested); **Rapier world integration + shared-memory worker wiring pending** (P6-001 scope pulled forward only when needed)
 - [~] P1-004 — `forge-validate`: 15 checks live (CTR-001..008, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/bom/schema) ✓; remaining catalog rows land per phase
 - [~] P1-005 — WASM facade: validate/bake/schema/**tick (Session)**/**patch** live **in the browser** (wasm-pack, committed pkg, **275 KB gz ≤ 2 MB budget ✓**); zero-copy buffer views + bake ≤ 60 ms / patch ≤ 10 ms measurements pending
-- [!] P1-006 — **Golden-number suite harness** (= XC-26) — needs monolith-recorded trajectories (PRE-002)
-- [!] P1-007 — Bit-identical verification binary↔WASM on both translated contracts — needs P0-005/006
+- [ ] P1-006 — **Golden-number suite harness** (= XC-26) — unblocked; needs trajectory recording via the extraction sandbox (extend P0-008)
+- [ ] P1-007 — Bit-identical verification binary↔WASM on both translated contracts — needs P0-005/006 (now unblocked)
 
 Studio (TypeScript face):
 - [~] P1-008 — Three.js scene graph consuming core-baked buffers ✓ (per-part BufferGeometry; **BatchedMesh per material class pending**)
@@ -67,7 +66,7 @@ Studio (TypeScript face):
 - [~] P1-012 — Selection: component-scoped raycast picking + emissive highlight + info panel ✓; stencil outline pending
 - [~] P1-013 — Orbit camera ✓; jog teach-pendant, pause/frame-step, follow camera pending
 - [ ] P1-014 — Configurator pane: variant cards, rebuild-in-place preserving explode/jog state (via core patch/re-bake)
-- [!] P1-015 — Golden-scene parity gallery vs monolith — needs PRE-002
+- [ ] P1-015 — Golden-scene parity gallery vs monolith — unblocked (canonical cameras vs the committed prototype)
 - [ ] P1-016 — N8AO ambient occlusion + quality-tier scaffolding (= XC-22 foundations)
 - [~] P1-017 — Perf: fps + frame-ms overlay ✓; full budget instrumentation (core tick / Rapier / UI splits) pending
 
