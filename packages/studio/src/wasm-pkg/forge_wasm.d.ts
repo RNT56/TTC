@@ -2,6 +2,49 @@
 /* eslint-disable */
 
 /**
+ * Stateful bake handle (P1-005): meta crosses as JSON once; mesh buffers
+ * cross as typed-array views over wasm linear memory — geometry never
+ * round-trips through JSON. Re-bake in place via `patch` (the
+ * configurator loop primitive).
+ */
+export class Bake {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * The current (possibly patched) contract document.
+     */
+    contract(): string;
+    /**
+     * Zero-copy triangle index view for one part; same lifetime rule as
+     * `positions`.
+     */
+    indices(part: number): Uint32Array;
+    /**
+     * Counts, HUD, node transforms, part table — everything but buffers.
+     */
+    meta(): string;
+    constructor(contract_json: string);
+    /**
+     * Zero-copy normal view for one part (3 f32 per vertex); same
+     * lifetime rule as `positions`.
+     */
+    normals(part: number): Float32Array;
+    part_count(): number;
+    /**
+     * Apply a JSON-Patch to the contract and re-bake in place; returns
+     * fresh meta. Full re-bake v0 — measured inside the ≤ 10 ms budget;
+     * per-part incremental re-bake is the recorded refinement if a
+     * future model class outgrows it.
+     */
+    patch(patch_json: string): string;
+    /**
+     * Zero-copy position view for one part (3 f32 per vertex). Valid only
+     * until the next wasm memory growth — consume synchronously.
+     */
+    positions(part: number): Float32Array;
+}
+
+/**
  * The `tick` boundary call as a stateful session.
  */
 export class Session {
@@ -10,11 +53,16 @@ export class Session {
     constructor(contract_json: string);
     node_names(): string[];
     /**
-     * Advance and return the pose buffer (16 f32 per node, column-major).
-     * v0 copies out; zero-copy views over linear memory are the P1-005
-     * refinement.
+     * Zero-copy pose view (16 f32 per node, column-major, `node_names`
+     * order). Valid only until the next wasm memory growth — read it
+     * synchronously every frame, never hold it.
      */
-    step(dt: number, throttle: number, pitch: number, roll: number, yaw: number, drive: number, turn: number): Float32Array;
+    pose_view(): Float32Array;
+    /**
+     * Advance the fixed-step clock; returns the number of 120 Hz steps
+     * executed. Read the result through `pose_view` (P1-005 zero-copy).
+     */
+    step(dt: number, throttle: number, pitch: number, roll: number, yaw: number, drive: number, turn: number): number;
 }
 
 export function bake(contract_json: string): string;
@@ -38,14 +86,24 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly __wbg_bake_free: (a: number, b: number) => void;
     readonly __wbg_session_free: (a: number, b: number) => void;
     readonly bake: (a: number, b: number) => [number, number, number, number];
+    readonly bake_contract: (a: number) => [number, number];
+    readonly bake_indices: (a: number, b: number) => [number, number, number];
+    readonly bake_meta: (a: number) => [number, number];
+    readonly bake_new: (a: number, b: number) => [number, number, number];
+    readonly bake_normals: (a: number, b: number) => [number, number, number];
+    readonly bake_part_count: (a: number) => number;
+    readonly bake_patch: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly bake_positions: (a: number, b: number) => [number, number, number];
     readonly golden: (a: number, b: number) => [number, number, number, number];
     readonly patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly schema: () => [number, number];
     readonly session_new: (a: number, b: number) => [number, number, number];
     readonly session_node_names: (a: number) => [number, number];
-    readonly session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+    readonly session_pose_view: (a: number) => any;
+    readonly session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
     readonly validate: (a: number, b: number) => [number, number];
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;

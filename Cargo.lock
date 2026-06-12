@@ -126,6 +126,7 @@ dependencies = [
  "forge-geometry",
  "forge-motion",
  "forge-sim",
+ "js-sys",
  "serde",
  "serde_json",
  "sha2",

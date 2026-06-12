@@ -19,7 +19,10 @@ export interface BakedPart {
   color: string;
   collision: "auto" | "hull" | "primitive" | "none";
   explode?: ExplodeWindow;
-  mesh: { positions: number[]; normals: number[]; indices: number[] };
+  /** per-part summary (meta side; buffers cross as typed arrays, P1-005) */
+  vertices?: number;
+  triangles?: number;
+  mesh: { positions: Float32Array; normals: Float32Array; indices: Uint32Array };
 }
 
 export interface BakeArtifact {
@@ -30,8 +33,6 @@ export interface BakeArtifact {
   baked: {
     parts: BakedPart[];
     node_world: Record<string, number[]>;
-    total_faces: number;
-    total_vertices: number;
   };
 }
 

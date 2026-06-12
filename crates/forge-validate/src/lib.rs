@@ -12,7 +12,51 @@ use forge_contract::{Archetype, CatalogSource, CollisionPolicy, ModelSpec, Prove
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::time::{SystemTime, UNIX_EPOCH};
+// ---------------------------------------------------------------------------
+// report clock — provenance metadata only; judgment NEVER depends on it (D17).
+// std::time::{SystemTime, Instant} trap (`unreachable`) on
+// wasm32-unknown-unknown, so the facade target reads the host clock through
+// js-sys — the same glue the facade already requires.
+// ---------------------------------------------------------------------------
+
+#[cfg(not(target_arch = "wasm32"))]
+mod clock {
+    use std::time::{Instant, SystemTime, UNIX_EPOCH};
+
+    pub fn now_unix_s() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    }
+
+    pub struct Stopwatch(Instant);
+    impl Stopwatch {
+        pub fn start() -> Self {
+            Stopwatch(Instant::now())
+        }
+        pub fn elapsed_ms(&self) -> u64 {
+            self.0.elapsed().as_millis() as u64
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+mod clock {
+    pub fn now_unix_s() -> u64 {
+        (js_sys::Date::now() / 1000.0) as u64
+    }
+
+    pub struct Stopwatch(f64);
+    impl Stopwatch {
+        pub fn start() -> Self {
+            Stopwatch(js_sys::Date::now())
+        }
+        pub fn elapsed_ms(&self) -> u64 {
+            (js_sys::Date::now() - self.0).max(0.0) as u64
+        }
+    }
+}
 
 pub const VALIDATOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Per-model face budget (default quality tier) — provisional until P1 profiling.
@@ -165,11 +209,8 @@ impl CatalogSource for EmptyCatalog {
 
 /// Run the full v0 suite over a raw JSON document.
 pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Report {
-    let started_at = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    let t0 = std::time::Instant::now();
+    let started_at = clock::now_unix_s();
+    let t0 = clock::Stopwatch::start();
 
     let mut results: Vec<Diagnostic> = Vec::new();
     let mut hud = None;
@@ -227,7 +268,7 @@ pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Repor
         seed: opts.seed,
         target: opts.target.to_string(),
         started_at,
-        duration_ms: t0.elapsed().as_millis() as u64,
+        duration_ms: t0.elapsed_ms(),
         results,
         verdict,
         hud,

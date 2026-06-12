@@ -88,7 +88,7 @@ Exit criteria:
 - [ ] **Shimmer gone** — z-buffer renderer resolves all deliberately overlapping solids
 - [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI)
 - [x] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts *(2026-06-12 — golden-compare on hrx7 + vx2-hornet)*
-- [ ] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms
+- [x] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms *(2026-06-12: 298 KB gz · bake 2.0 ms · patch→re-bake 2.8 ms through the typed `Bake` handle; CI-gated via `scripts/budgets.mjs`)*
 
 ## P2 — Data-driven models
 

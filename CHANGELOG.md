@@ -18,6 +18,49 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P1-005 closed: typed facade boundary, budgets gated; wasm validate trap found+fixed
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-005 [x]
+**Done:** The zero-copy boundary is real. Facade grows a stateful `Bake`
+handle — meta (counts/HUD/node_world/part table) crosses as JSON once;
+positions/normals/indices cross as **typed-array views over wasm linear
+memory** (consumed synchronously; the sanctioned `unsafe` per BEST-PRACTICES
+§5 lives here with SAFETY notes); `Bake.patch` applies JSON-Patch and
+re-bakes in place (the P1-014 configurator primitive); `Session.step` now
+returns steps and `Session.pose_view` is the zero-copy per-frame pose read.
+Studio: fetches CONTRACTS only and bakes+validates in-browser (demo
+.bake/.report payloads deleted; `pnpm demo:sync` copies contracts; drag-drop
+unchanged); scene consumes typed arrays without copies; drive loop reads
+pose_view. **Budgets measured through the real path and CI-gated as stated —
+no runner fudge** (`scripts/budgets.mjs`): hrx7 bake **2.0 ms** (≤ 60 ms,
+was ~10 via JSON), patch→re-bake **2.8 ms** (≤ 10 ms, was ~10.8 — the JSON
+mesh serialization WAS the budget), facade 298 KB gz (≤ 2 MB). Parity
+gallery re-run on the new load path: identical F1s (0.95–0.995) — the
+in-browser bake renders equivalently to the old prebaked payloads.
+**Finding (D17): wasm `validate` had trapped (`unreachable`) on every
+contract since its first build** — `std::time::{SystemTime,Instant}` panic
+on wasm32-unknown-unknown, and NO gate exercised the path (gateway spawns
+the native binary; the facade test runs the native rlib; the old studio
+fetched prebaked reports). Fixed with a cfg'd `clock` module (js-sys
+Date.now on wasm — report provenance only, judgment never reads it) and the
+gate is closed: golden-compare now ALSO requires native↔wasm
+**validator-report equality** (startedAt/durationMs/target normalized) on
+all four canonical contracts, in CI.
+**Changed:** `crates/forge-wasm/src/lib.rs` (Bake handle, pose_view, bake_meta_json
++ native test), `crates/forge-validate/{src/lib.rs (clock), Cargo.toml (js-sys
+wasm-only)}`, `packages/studio/src/{wasm.ts (CoreBake, artifactFrom, poseView),
+types.ts (typed mesh), scene.ts (typed attrs), App.tsx (in-browser demo bake)}`,
+`packages/studio/public/demo/` (payloads pruned), `scripts/{budgets.mjs (new),
+golden-compare.mjs (report leg), parity-gallery.mjs (contract check)}`,
+`.github/workflows/ci.yml` (budgets step), root `package.json`
+(demo:sync replaces bake:demo), wasm-pkg rebuilt (298 KB gz), docs (TODO,
+ROADMAP P1 budgets criterion, core-runtime §3).
+**Decisions:** none (unsafe-in-facade was already sanctioned *(proposed)* in
+BEST-PRACTICES §5; this makes it real with the documented discipline).
+**Next:** studio P1 finishers — P1-008 BatchedMesh, P1-010 blueprint post
+pass, P1-012 stencil outline, P1-013 jog/follow camera, P1-014 configurator
+pane (CoreBake.patch is ready for it); P1-016/017.
+**Blockers:** none.
+
 ## 2026-06-12 — P1-015 closed: golden-scene parity gallery, monolith vs studio
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-015 [x]
 **Done:** `pnpm parity` (`scripts/parity-gallery.mjs`) renders the SAME models

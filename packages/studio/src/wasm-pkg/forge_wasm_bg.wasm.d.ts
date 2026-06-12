@@ -1,14 +1,24 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export const __wbg_bake_free: (a: number, b: number) => void;
 export const __wbg_session_free: (a: number, b: number) => void;
 export const bake: (a: number, b: number) => [number, number, number, number];
+export const bake_contract: (a: number) => [number, number];
+export const bake_indices: (a: number, b: number) => [number, number, number];
+export const bake_meta: (a: number) => [number, number];
+export const bake_new: (a: number, b: number) => [number, number, number];
+export const bake_normals: (a: number, b: number) => [number, number, number];
+export const bake_part_count: (a: number) => number;
+export const bake_patch: (a: number, b: number, c: number) => [number, number, number, number];
+export const bake_positions: (a: number, b: number) => [number, number, number];
 export const golden: (a: number, b: number) => [number, number, number, number];
 export const patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const schema: () => [number, number];
 export const session_new: (a: number, b: number) => [number, number, number];
 export const session_node_names: (a: number) => [number, number];
-export const session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+export const session_pose_view: (a: number) => any;
+export const session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
 export const validate: (a: number, b: number) => [number, number];
 export const __wbindgen_externrefs: WebAssembly.Table;
 export const __wbindgen_malloc: (a: number, b: number) => number;

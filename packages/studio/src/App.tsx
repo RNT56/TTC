@@ -39,10 +39,12 @@ export default function App() {
 
   const loadDemo = useCallback(
     async (id: string) => {
-      const [artifact, report, contract] = await Promise.all([
-        fetch(`/demo/${id}.bake.json`).then((r) => r.json() as Promise<BakeArtifact>),
-        fetch(`/demo/${id}.report.json`).then((r) => r.json() as Promise<Report>),
-        fetch(`/demo/${id}.forge.json`).then((r) => r.text()),
+      // fetch only the CONTRACT; bake + validate happen in-browser through
+      // the wasm core — the same bits CI runs (D17), no payload duplication
+      const contract = await fetch(`/demo/${id}.forge.json`).then((r) => r.text());
+      const [artifact, report] = await Promise.all([
+        coreBake(contract),
+        coreValidate(contract),
       ]);
       await loadModel(artifact, report, contract);
     },
@@ -73,7 +75,7 @@ export default function App() {
         fpsCount = 0;
       }
       if (st.driving && sessionRef.current) {
-        const buf = sessionRef.current.step(dt, {
+        sessionRef.current.step(dt, {
           throttle: st.throttle,
           pitch: 0,
           roll: 0,
@@ -81,7 +83,8 @@ export default function App() {
           drive: st.drive,
           turn: 0,
         });
-        scene.setPose(sessionRef.current.nodeNames, buf);
+        // zero-copy view, consumed synchronously (P1-005)
+        scene.setPose(sessionRef.current.nodeNames, sessionRef.current.poseView());
       }
     };
     scene.start();

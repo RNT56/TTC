@@ -97,15 +97,10 @@ export class StudioScene {
 
     for (const part of artifact.baked.parts) {
       const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(new Float32Array(part.mesh.positions), 3),
-      );
-      geometry.setAttribute(
-        "normal",
-        new THREE.BufferAttribute(new Float32Array(part.mesh.normals), 3),
-      );
-      geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(part.mesh.indices), 1));
+      // typed arrays straight from the facade handle (P1-005) — no copies
+      geometry.setAttribute("position", new THREE.BufferAttribute(part.mesh.positions, 3));
+      geometry.setAttribute("normal", new THREE.BufferAttribute(part.mesh.normals, 3));
+      geometry.setIndex(new THREE.BufferAttribute(part.mesh.indices, 1));
 
       const baseMaterial = materialFor(part.material, part.color);
       const mesh = new THREE.Mesh(geometry, baseMaterial);

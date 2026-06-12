@@ -39,10 +39,22 @@ deterministic iteration order everywhere (no HashMap iteration into output paths
 
 All four calls are live: **bake** and **validate** in the facade + binary;
 **tick** as `CoreSession` (fixed-step 120 Hz accumulator, bit-deterministic —
-tested); **patch** as RFC-6902-subset JSON-Patch with the shape gate. v1 carries
-JSON/copy envelopes; the zero-copy linear-memory views and the ≤ 60 ms bake /
-≤ 10 ms patch budget measurements are the P1-005 refinement and may not change
-the call shapes.
+tested); **patch** as RFC-6902-subset JSON-Patch with the shape gate.
+
+**P1-005 landed (2026-06-12):** the typed boundary is real — the facade's
+`Bake` handle ships meta as JSON once and exposes positions/normals/indices
+as typed-array **views over wasm linear memory** (geometry never round-trips
+through JSON; views are valid until the next memory growth, consumed
+synchronously); `Bake.patch` re-bakes in place (the configurator primitive);
+`Session.pose_view` is the zero-copy per-frame pose read. Budgets measured
+through this path and CI-gated (`scripts/budgets.mjs`): hrx7 bake 2.0 ms
+(≤ 60), patch→re-bake 2.8 ms (≤ 10), facade 298 KB gz (≤ 2 MB). The JSON
+`bake`/`validate` calls remain for interop. Finding while landing it: wasm
+`validate` had trapped since its first build — `std::time` panics on
+wasm32-unknown-unknown and no gate exercised the path; fixed with a cfg'd
+report clock (js-sys on wasm — provenance metadata only, judgment never
+reads it) and golden-compare now also requires native↔wasm **validator-report
+equality** (volatile fields normalized) on the four canonical contracts.
 
 Four calls, allocation-disciplined, identical across facade (WASM), napi-rs, and the
 in-crate API:

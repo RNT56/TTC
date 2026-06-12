@@ -7,9 +7,9 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
-    "bake:demo": "cargo run -q -p forge-validate -- bake examples/vx2-mini.forge.json --out packages/studio/public/demo/vx2-mini.bake.json && cargo run -q -p forge-validate -- run examples/vx2-mini.forge.json --report packages/studio/public/demo/vx2-mini.report.json",
     "build:wasm": "./scripts/build-wasm.sh",
-    "parity": "node scripts/parity-gallery.mjs"
+    "parity": "node scripts/parity-gallery.mjs",
+    "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/"
   },
   "devDependencies": {
     "json-schema-to-typescript": "^15.0.0",

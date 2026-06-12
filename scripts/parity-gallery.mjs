@@ -316,11 +316,11 @@ if (!existsSync(join(DIST, "index.html"))) {
   console.error("studio dist missing — run `pnpm -r build` first");
   process.exit(1);
 }
-// keep committed demo bakes honest: they must exist for the studio to load
+// the studio bakes in-browser (P1-005); it only needs the contracts
 for (const scene of SCENES) {
-  const demo = join(DIST, "demo", `${scene.studio}.bake.json`);
+  const demo = join(DIST, "demo", `${scene.studio}.forge.json`);
   if (!existsSync(demo)) {
-    console.error(`missing ${demo} — demo payloads not built into dist`);
+    console.error(`missing ${demo} — run pnpm demo:sync && pnpm -r build`);
     process.exit(1);
   }
 }

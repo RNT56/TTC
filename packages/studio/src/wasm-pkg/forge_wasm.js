@@ -1,6 +1,146 @@
 /* @ts-self-types="./forge_wasm.d.ts" */
 
 /**
+ * Stateful bake handle (P1-005): meta crosses as JSON once; mesh buffers
+ * cross as typed-array views over wasm linear memory — geometry never
+ * round-trips through JSON. Re-bake in place via `patch` (the
+ * configurator loop primitive).
+ */
+export class Bake {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        BakeFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_bake_free(ptr, 0);
+    }
+    /**
+     * The current (possibly patched) contract document.
+     * @returns {string}
+     */
+    contract() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.bake_contract(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Zero-copy triangle index view for one part; same lifetime rule as
+     * `positions`.
+     * @param {number} part
+     * @returns {Uint32Array}
+     */
+    indices(part) {
+        const ret = wasm.bake_indices(this.__wbg_ptr, part);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Counts, HUD, node transforms, part table — everything but buffers.
+     * @returns {string}
+     */
+    meta() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.bake_meta(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @param {string} contract_json
+     */
+    constructor(contract_json) {
+        const ptr0 = passStringToWasm0(contract_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.bake_new(ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        BakeFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Zero-copy normal view for one part (3 f32 per vertex); same
+     * lifetime rule as `positions`.
+     * @param {number} part
+     * @returns {Float32Array}
+     */
+    normals(part) {
+        const ret = wasm.bake_normals(this.__wbg_ptr, part);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @returns {number}
+     */
+    part_count() {
+        const ret = wasm.bake_part_count(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * Apply a JSON-Patch to the contract and re-bake in place; returns
+     * fresh meta. Full re-bake v0 — measured inside the ≤ 10 ms budget;
+     * per-part incremental re-bake is the recorded refinement if a
+     * future model class outgrows it.
+     * @param {string} patch_json
+     * @returns {string}
+     */
+    patch(patch_json) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(patch_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.bake_patch(this.__wbg_ptr, ptr0, len0);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    /**
+     * Zero-copy position view for one part (3 f32 per vertex). Valid only
+     * until the next wasm memory growth — consume synchronously.
+     * @param {number} part
+     * @returns {Float32Array}
+     */
+    positions(part) {
+        const ret = wasm.bake_positions(this.__wbg_ptr, part);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+}
+if (Symbol.dispose) Bake.prototype[Symbol.dispose] = Bake.prototype.free;
+
+/**
  * The `tick` boundary call as a stateful session.
  */
 export class Session {
@@ -38,9 +178,18 @@ export class Session {
         return v1;
     }
     /**
-     * Advance and return the pose buffer (16 f32 per node, column-major).
-     * v0 copies out; zero-copy views over linear memory are the P1-005
-     * refinement.
+     * Zero-copy pose view (16 f32 per node, column-major, `node_names`
+     * order). Valid only until the next wasm memory growth — read it
+     * synchronously every frame, never hold it.
+     * @returns {Float32Array}
+     */
+    pose_view() {
+        const ret = wasm.session_pose_view(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * Advance the fixed-step clock; returns the number of 120 Hz steps
+     * executed. Read the result through `pose_view` (P1-005 zero-copy).
      * @param {number} dt
      * @param {number} throttle
      * @param {number} pitch
@@ -48,16 +197,14 @@ export class Session {
      * @param {number} yaw
      * @param {number} drive
      * @param {number} turn
-     * @returns {Float32Array}
+     * @returns {number}
      */
     step(dt, throttle, pitch, roll, yaw, drive, turn) {
         const ret = wasm.session_step(this.__wbg_ptr, dt, throttle, pitch, roll, yaw, drive, turn);
-        if (ret[3]) {
-            throw takeFromExternrefTable0(ret[2]);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
         }
-        var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
-        return v1;
+        return ret[0] >>> 0;
     }
 }
 if (Symbol.dispose) Session.prototype[Symbol.dispose] = Session.prototype.free;
@@ -183,7 +330,21 @@ function __wbg_get_imports() {
         __wbg___wbindgen_throw_bbadd78c1bac3a77: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
+        __wbg_now_bce4dc999095ea77: function() {
+            const ret = Date.now();
+            return ret;
+        },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
+            // Cast intrinsic for `Ref(Slice(F32)) -> NamedExternref("Float32Array")`.
+            const ret = getArrayF32FromWasm0(arg0, arg1);
+            return ret;
+        },
+        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+            // Cast intrinsic for `Ref(Slice(U32)) -> NamedExternref("Uint32Array")`.
+            const ret = getArrayU32FromWasm0(arg0, arg1);
+            return ret;
+        },
+        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;
@@ -204,6 +365,9 @@ function __wbg_get_imports() {
     };
 }
 
+const BakeFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_bake_free(ptr, 1));
 const SessionFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_session_free(ptr, 1));
@@ -224,6 +388,11 @@ function getArrayJsValueFromWasm0(ptr, len) {
     return result;
 }
 
+function getArrayU32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 let cachedDataViewMemory0 = null;
 function getDataViewMemory0() {
     if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer.detached === true || (cachedDataViewMemory0.buffer.detached === undefined && cachedDataViewMemory0.buffer !== wasm.memory.buffer)) {
@@ -242,6 +411,14 @@ function getFloat32ArrayMemory0() {
 
 function getStringFromWasm0(ptr, len) {
     return decodeText(ptr >>> 0, len);
+}
+
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.byteLength === 0) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
 }
 
 let cachedUint8ArrayMemory0 = null;
@@ -331,6 +508,7 @@ function __wbg_finalize_init(instance, module) {
     wasmModule = module;
     cachedDataViewMemory0 = null;
     cachedFloat32ArrayMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();
     return wasm;

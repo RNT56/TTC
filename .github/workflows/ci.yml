@@ -80,6 +80,8 @@ jobs:
           node scripts/golden-compare.mjs --pkg /tmp/wasm-fresh --bin target/debug/forge-golden
           node scripts/golden-compare.mjs --pkg packages/studio/src/wasm-pkg --bin target/debug/forge-golden \
             || { echo "::error::committed wasm-pkg is stale — run pnpm build:wasm and commit"; exit 1; }
+      - name: P1-005 performance budgets — bake ≤ 60 ms, patch ≤ 10 ms (binding)
+        run: node scripts/budgets.mjs --pkg /tmp/wasm-fresh
       - name: trajectory oracle tapes are deterministic and current
         run: |
           node scripts/extract-trajectories.mjs
