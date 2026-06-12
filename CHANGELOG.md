@@ -18,6 +18,31 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P1-016 closed: N8AO + the XC-22 quality ladder
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-016 [x]
+**Done:** Shaded rendering now goes through EffectComposer (Render → N8AO →
+Output; blueprint keeps its dedicated pass; AO is meaningless on a technical
+drawing). `n8ao` is the only new dependency — the package the plan names at
+XC-22; three's own composer avoids pmndrs postprocessing. Tiers: high /
+medium (½-res AO) / low (AO off) over pixel ratio, selectable in the panel;
+the **degradation ladder v0** steps the tier DOWN on sustained < 45 fps for
+3 s and never up (raising is manual). Parity gallery pins tier=low for
+deterministic structural captures — re-ran green (F1 0.957–0.995, precision
+≈ 1.000). Measured on the SwiftShader software floor: high 2.6 ms render /
+25 draws (AO's internal passes), low 0.6 ms / 8 draws — the ≤ 6 ms render
+budget holds with AO on even WITHOUT a GPU. Headless screenshot verifies
+contact shading. All gates green (gateway 6/6, builds, gallery).
+**Changed:** `packages/studio/src/{scene.ts (composer + setTier), App.tsx
+(tier select + auto-degrader), store.ts (tier), n8ao.d.ts (decl shim)}`,
+`packages/studio/package.json` (+n8ao), `scripts/parity-gallery.mjs`
+(tier=low pin), docs (TODO P1-016, render-engine §4).
+**Decisions:** none (N8AO was plan-named; the three-composer-over-pmndrs
+choice is implementation detail recorded here).
+**Next:** P2 remainder — P2-002 draft semantics, P2-006 CI on all
+first-party contracts, OD-08 napi-rs vs binary-spawn measurement, npm/crates
+publication plumbing (P2-001).
+**Blockers:** none.
+
 ## 2026-06-12 — Studio P1 finishers: BatchedMesh, blueprint post pass, outline, jog, configurator
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-008 [x], P1-010 [x], P1-012 [x], P1-013 [x], P1-014 [~ mechanics], P1-017 [~]
 **Done:** The render layer is rebuilt around **one BatchedMesh per material

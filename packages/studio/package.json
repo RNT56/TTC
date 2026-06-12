@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "n8ao": "^1.10.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.170.0",

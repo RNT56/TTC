@@ -1,7 +1,7 @@
 // Document/UI state only — loop and geometry state stays out of React
 // (BEST-PRACTICES §5; the render loop lives in scene.ts, truth in the core).
 import { create } from "zustand";
-import type { PartPick } from "./scene";
+import type { PartPick, QualityTier } from "./scene";
 import type { BakeArtifact, Report } from "./types";
 
 export interface DemoModel {
@@ -40,6 +40,9 @@ interface StudioState {
   drive: number;
   selected: PartPick | null;
   perf: Perf;
+  /** XC-22 quality tier; the auto-degrader only ever steps DOWN */
+  tier: QualityTier;
+  setTier: (t: QualityTier) => void;
   setModelId: (id: string) => void;
   setLoaded: (artifact: BakeArtifact, report: Report | null, contractJson: string | null) => void;
   setExplode: (t: number) => void;
@@ -67,6 +70,8 @@ export const useStudio = create<StudioState>((set) => ({
   drive: 0.8,
   selected: null,
   perf: { fps: 0, frameMs: 0, drawCalls: 0, coreMs: 0 },
+  tier: "high",
+  setTier: (tier) => set({ tier }),
   setModelId: (modelId) => set({ modelId }),
   setLoaded: (artifact, report, contractJson) => set({ artifact, report, contractJson }),
   setExplode: (explode) => set({ explode }),

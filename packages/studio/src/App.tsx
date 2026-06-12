@@ -122,6 +122,7 @@ export default function App() {
     let fpsAccum = 0;
     let fpsCount = 0;
     let coreAccum = 0;
+    let slowFor = 0; // XC-22 auto-degrader: sustained-slow timer
     scene.onFrame = (dt) => {
       const st = useStudio.getState();
       fpsAccum += dt;
@@ -148,12 +149,21 @@ export default function App() {
       }
       if (fpsAccum >= 0.5) {
         const stats = scene.stats();
+        const fps = Math.round(fpsCount / fpsAccum);
         st.setPerf({
-          fps: Math.round(fpsCount / fpsAccum),
+          fps,
           frameMs: stats.frameMs,
           drawCalls: stats.drawCalls,
           coreMs: coreAccum / fpsCount,
         });
+        // XC-22 degradation ladder: only ever steps DOWN; raising is manual
+        slowFor = fps < 45 ? slowFor + fpsAccum : 0;
+        if (slowFor > 3 && st.tier !== "low") {
+          const next = st.tier === "high" ? "medium" : "low";
+          st.setTier(next);
+          scene.setTier(next);
+          slowFor = 0;
+        }
         fpsAccum = 0;
         fpsCount = 0;
         coreAccum = 0;
@@ -177,6 +187,7 @@ export default function App() {
       setBlueprint: (on: boolean) => scene.setBlueprint(on),
       setExplode: (t: number) => scene.setExplode(t),
       select: (partIndex: number | null) => scene.setSelected(partIndex),
+      setTier: (t: "high" | "medium" | "low") => scene.setTier(t),
       stats: () => scene.stats(),
       loaded: () => Boolean(useStudio.getState().artifact),
     };
@@ -305,6 +316,22 @@ export default function App() {
             onChange={(e) => s.setExplode(Number(e.target.value))}
             style={{ width: "100%", display: "block" }}
           />
+        </label>
+        <label style={{ display: "block", marginTop: 6, color: "#6b7686" }}>
+          quality{" "}
+          <select
+            value={s.tier}
+            onChange={(e) => {
+              const t = e.target.value as "high" | "medium" | "low";
+              s.setTier(t);
+              sceneRef.current?.setTier(t);
+            }}
+            style={{ background: "#16181c", color: "#cfd6df", border: "1px solid #2a2f38" }}
+          >
+            <option value="high">high (AO)</option>
+            <option value="medium">medium (AO ½res)</option>
+            <option value="low">low (AO off)</option>
+          </select>
         </label>
         <label style={{ display: "inline-flex", gap: 6, marginTop: 6 }}>
           <input type="checkbox" checked={s.blueprint} onChange={(e) => s.setBlueprint(e.target.checked)} />

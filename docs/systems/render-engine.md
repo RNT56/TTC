@@ -62,6 +62,10 @@ becomes physically consistent for free. AO via N8AO at quality tiers.
   not as a sorting crutch.
 - **Quality-tier autoswitcher (XC-22):** degradation ladder AO off → shadow
   resolution → pixel ratio, engaged at scene-scale thresholds (3 models / 400 k tris).
+  *v0 live 2026-06-12 (P1-016): N8AO through EffectComposer, tiers
+  high/medium(½-res)/low(off) over pixel ratio; the ladder triggers on sustained
+  < 45 fps (3 s) and only ever steps down. Scene-scale thresholds join when
+  multi-model scenes exist (P10).*
 
 ## 5. Budgets (binding)
 

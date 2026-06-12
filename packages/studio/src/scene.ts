@@ -10,8 +10,15 @@
 // selection outline is an inverted-hull ghost of the picked part's geometry.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { N8AOPass } from "n8ao";
 import { classMaterialFor } from "./materials";
 import type { BakeArtifact, BakedPart, MaterialClass } from "./types";
+
+/** XC-22 quality ladder (P1-016): what each tier turns on. */
+export type QualityTier = "high" | "medium" | "low";
 
 export interface PartPick {
   partIndex: number;
@@ -104,6 +111,10 @@ export class StudioScene {
   private edgeMaterial: THREE.ShaderMaterial;
   private edgeScene = new THREE.Scene();
   private edgeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  // AO + quality tiers (P1-016 / XC-22)
+  private composer: EffectComposer;
+  private aoPass: N8AOPass;
+  private tier: QualityTier = "high";
   /** last render frame duration, ms (perf overlay, P1-017) */
   lastFrameMs = 0;
   onFrame?: (dt: number) => void;
@@ -201,6 +212,41 @@ export class StudioScene {
     });
     this.edgeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.edgeMaterial);
     this.edgeScene.add(this.edgeQuad);
+
+    // shaded pipeline: render → N8AO → output (blueprint keeps its own path)
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.aoPass = new N8AOPass(this.scene, this.camera);
+    this.aoPass.configuration.gammaCorrection = false; // OutputPass owns color space
+    this.aoPass.configuration.aoRadius = 0.08; // model scale is 0.4–2 m
+    this.aoPass.configuration.distanceFalloff = 0.4;
+    this.composer.addPass(this.aoPass);
+    this.composer.addPass(new OutputPass());
+  }
+
+  /** XC-22 ladder: AO quality → shadows → pixel ratio. */
+  setTier(tier: QualityTier): void {
+    this.tier = tier;
+    const dpr = window.devicePixelRatio || 1;
+    if (tier === "high") {
+      this.aoPass.enabled = true;
+      this.aoPass.configuration.halfRes = false;
+      this.renderer.setPixelRatio(Math.min(dpr, 2));
+    } else if (tier === "medium") {
+      this.aoPass.enabled = true;
+      this.aoPass.configuration.halfRes = true;
+      this.renderer.setPixelRatio(Math.min(dpr, 1.5));
+    } else {
+      this.aoPass.enabled = false;
+      this.renderer.setPixelRatio(1);
+    }
+    // pixel ratio changes the drawing-buffer size
+    const size = this.renderer.getSize(new THREE.Vector2());
+    this.resize(size.x, size.y);
+  }
+
+  getTier(): QualityTier {
+    return this.tier;
   }
 
   /** Upload the core's bake artifact. Zero client-side geometry computation. */
@@ -456,6 +502,9 @@ export class StudioScene {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    const buf = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+    this.composer.setSize(buf.x, buf.y);
+    this.aoPass.setSize(buf.x, buf.y);
     this.normalTarget?.dispose();
     this.normalTarget = null; // lazily rebuilt at the new size
   }
@@ -473,7 +522,11 @@ export class StudioScene {
   private renderFrame(): void {
     this.renderer.info.reset();
     if (!this.blueprint) {
-      this.renderer.render(this.scene, this.camera);
+      if (this.aoPass.enabled) {
+        this.composer.render();
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
       return;
     }
     // blueprint (P1-010): flat fill on screen, then a normal/depth edge pass

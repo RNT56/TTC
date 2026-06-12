@@ -289,6 +289,8 @@ async function captureStudio(browser, baseUrl, scene, view) {
       await window.__forgeParity.load(id);
       window.__forgeParity.setGrid(false);
       window.__forgeParity.setShadows(false);
+      // structural baseline: AO off (tier low) — deterministic captures
+      window.__forgeParity.setTier("low");
       window.__forgeParity.setCamera({
         yaw: v.yaw,
         el: v.el,
