@@ -7,7 +7,7 @@
 //   node scripts/golden-compare.mjs [--pkg <dir>] [--bin <forge-golden>]
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const args = process.argv.slice(2);
@@ -31,8 +31,8 @@ const nativeLines = execFileSync(nativeBin, EXAMPLES, { encoding: "utf8" })
   .split("\n");
 
 // WASM reports via the facade (web target initialized from bytes — no fetch)
-const glue = await import(pathToFileURL(join(process.cwd(), pkgDir, "forge_wasm.js")).href);
-const wasmBytes = readFileSync(join(pkgDir, "forge_wasm_bg.wasm"));
+const glue = await import(pathToFileURL(resolve(pkgDir, "forge_wasm.js")).href);
+const wasmBytes = readFileSync(resolve(pkgDir, "forge_wasm_bg.wasm"));
 await glue.default({ module_or_path: wasmBytes });
 
 let failures = 0;
