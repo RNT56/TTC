@@ -44,7 +44,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [!] P0-007 — Translate all 31 slot variants — **the delivered vintage has no slot/variant system**; gated on the later ~83 KB configurator build (owner) or a re-scoping decision
 - [~] P0-008 — Extraction harness: **counts done** (`scripts/extract-counts.mjs` → `prototype/extracted-counts.json`, vm-sandboxed read-only); trajectory recording (gait/flight tapes for P1 golden numbers) open
 - [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
-- [x] P0-010 — Monolith tagged `prototype-final` *(2026-06-12)*
+- [~] P0-010 — Freeze recorded (sha256 in prototype/README.md + changelog) and annotated tag `prototype-final` created **locally**; the git proxy 403s tag pushes and no MCP tag tool exists — **owner action:** `git push origin prototype-final` from any clone, or create a GitHub Release named `prototype-final` on commit `0294a9d`
 
 ### P1 — Core & studio
 Rust core (D21 note: v0 implemented directly in Rust on 2026-06-12; "done" for

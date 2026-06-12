@@ -45,8 +45,10 @@ whether the configurator build exists).
 **Next:** P0-005/006 — translate hrx7 + fpv from the frozen source into
 `ModelSpec` JSON and drive `compare-counts` to byte-equivalence; then extend
 extraction to record gait/flight trajectories (golden-number corpus, P1-006).
-**Blockers:** none critical. Open question to the owner: does the later ~83 KB
-configurator monolith (31 variants/11 slots/harness) exist?
+**Blockers:** none critical. Two owner items: (1) the remote tag — the git proxy
+rejects tag pushes (403), so `prototype-final` exists locally only; push it from
+any clone or create a Release on `0294a9d`. (2) Open question: does the later
+~83 KB configurator monolith (31 variants/11 slots/harness) exist?
 
 ## 2026-06-12 — Boundary frozen; P2 quadruped family; in-browser core; exporters
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1/P2 interleaved (D21) · **TODO items:** P0-009, P1-004/005/009/010/011/012/017, P2-001/003/004/005, P3-009/010, P4-005 (core path), P6-008, XC-04, XC-06
