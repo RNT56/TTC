@@ -46,8 +46,57 @@ pub fn pow(x: f64, y: f64) -> f64 {
     libm::pow(x, y)
 }
 
+/// Plain √(x²+y²) — deterministic everywhere because mul/add/sqrt are
+/// IEEE-correctly-rounded. Deliberately NOT the scaled libm hypot: JS
+/// `Math.hypot` may differ from this by ULPs, which the oracle tapes absorb
+/// in their tolerance band; our own targets agree bit-for-bit.
+#[inline]
+pub fn hypot(x: f64, y: f64) -> f64 {
+    sqrt_(x * x + y * y)
+}
+
+#[inline]
+fn sqrt_(x: f64) -> f64 {
+    // no_std: route through libm's sqrt, which is correctly rounded and thus
+    // identical to the std intrinsic on every target.
+    libm::sqrt(x)
+}
+
+/// `Math.round` semantics: nearest integer, ties toward +∞ (JS), where Rust's
+/// `f64::round` ties away from zero. Computed via exact `floor` and an exact
+/// subtraction, avoiding the classic `floor(x + 0.5)` double-rounding bug.
+#[inline]
+pub fn js_round(x: f64) -> f64 {
+    let f = floor_(x);
+    if x - f >= 0.5 {
+        f + 1.0
+    } else {
+        f
+    }
+}
+
+#[inline]
+fn floor_(x: f64) -> f64 {
+    libm::floor(x)
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn js_round_ties_toward_positive_infinity() {
+        assert_eq!(super::js_round(2.5), 3.0);
+        assert_eq!(super::js_round(-2.5), -2.0); // JS Math.round(-2.5) === -2
+        assert_eq!(super::js_round(-2.51), -3.0);
+        assert_eq!(super::js_round(0.4999999999999999), 0.0); // floor(x+0.5) would say 1
+        assert_eq!(super::js_round(7.0), 7.0);
+    }
+
+    #[test]
+    fn hypot_is_plain_sqrt_of_squares() {
+        assert_eq!(super::hypot(3.0, 4.0), 5.0);
+        assert_eq!(super::hypot(0.0, 0.0), 0.0);
+    }
+
     #[test]
     fn matches_std_closely() {
         // sanity: libm agrees with std well within 1 ULP-ish tolerance on a

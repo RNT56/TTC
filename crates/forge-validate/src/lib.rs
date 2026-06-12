@@ -633,6 +633,50 @@ fn run_checks(
                 }
             }
         }
+        Archetype::Biped => {
+            let mut driver = forge_motion::biped::BipedDriver::new(spec);
+            let input = forge_motion::StickInput {
+                mz: 1.0,
+                ..Default::default()
+            };
+            let mut finite = true;
+            for step in 0..240 {
+                driver.tick(
+                    &input,
+                    [0.0, 0.0, 1.0],
+                    forge_motion::DT,
+                    (step + 1) as f64 * forge_motion::DT,
+                );
+                if !driver
+                    .poses
+                    .poses()
+                    .iter()
+                    .all(|p| p.rot.iter().chain(&p.off).all(|v| v.is_finite()))
+                {
+                    finite = false;
+                    break;
+                }
+            }
+            let dist = (driver.pos[0].powi(2) + driver.pos[1].powi(2)).sqrt();
+            if !finite {
+                d.push(Diagnostic::error(
+                    "BEH-001",
+                    "biped_smoke: non-finite pose channel during 2 s walk",
+                ));
+            } else if !(1.3..=1.6).contains(&dist) {
+                d.push(
+                    Diagnostic::error(
+                        "BEH-001",
+                        format!(
+                            "biped_smoke: walked {dist:.3} m in 2 s, expected ≈1.49 m \
+                             (0.85 m/s walk target, 0.25 s speed ramp)"
+                        ),
+                    )
+                    .observed(dist)
+                    .units("m"),
+                );
+            }
+        }
         _ => d.push(
             Diagnostic::warn(
                 "BEH-001",
@@ -641,7 +685,7 @@ fn run_checks(
                     spec.meta.archetype
                 ),
             )
-            .hint("biped/arm drivers arrive with the P2+ driver library"),
+            .hint("arm/fixedwing drivers arrive with the P2+ driver library"),
         ),
     }
 

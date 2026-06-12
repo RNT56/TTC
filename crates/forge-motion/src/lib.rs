@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod biped;
+pub mod fpv;
 pub mod params;
 pub mod quadruped;
 
@@ -14,6 +16,70 @@ use forge_contract::{Archetype, ModelSpec};
 
 /// The canonical fixed timestep (s): 120 Hz driver tick.
 pub const DT: f64 = 1.0 / 120.0;
+
+// ---------------------------------------------------------------------------
+// prototype-convention pose channels (PRE-002 oracle)
+//   Node local matrix = T(pos + off) · Ry · Rx · Rz — the monolith's nm().
+//   Oracle drivers (biped, fpv) write these per tick; the face bakes them.
+// ---------------------------------------------------------------------------
+
+/// Per-node animation channels: intrinsic euler rotation (applied Ry·Rx·Rz)
+/// and a translation offset added to the node's skeleton `pos`.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct NodePose {
+    pub rot: [f64; 3],
+    pub off: [f64; 3],
+}
+
+/// Reusable per-node pose storage in skeleton declaration order. Reset and
+/// rewritten every tick — no allocation in the tick path (D17).
+#[derive(Debug, Clone)]
+pub struct PoseBuffer {
+    names: Vec<String>,
+    poses: Vec<NodePose>,
+}
+
+impl PoseBuffer {
+    pub fn from_spec(spec: &ModelSpec) -> Self {
+        PoseBuffer {
+            names: spec.skeleton.iter().map(|n| n.name.clone()).collect(),
+            poses: vec![NodePose::default(); spec.skeleton.len()],
+        }
+    }
+
+    pub fn names(&self) -> &[String] {
+        &self.names
+    }
+
+    pub fn poses(&self) -> &[NodePose] {
+        &self.poses
+    }
+
+    pub fn get(&self, name: &str) -> Option<&NodePose> {
+        Some(&self.poses[self.idx(name)?])
+    }
+
+    fn idx(&self, name: &str) -> Option<usize> {
+        self.names.iter().position(|n| n == name)
+    }
+
+    fn reset(&mut self) {
+        for p in &mut self.poses {
+            *p = NodePose::default();
+        }
+    }
+}
+
+/// The prototype's input convention (`inp` in the monolith): mx strafe/roll,
+/// mz forward/pitch, yaw rate, thr climb, run gait modifier. All −1..1.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct StickInput {
+    pub mx: f64,
+    pub mz: f64,
+    pub yaw: f64,
+    pub thr: f64,
+    pub run: bool,
+}
 
 // ---------------------------------------------------------------------------
 // servo layer — critically damped second order (Appendix C)
@@ -347,7 +413,7 @@ impl RoverDriver {
 pub fn supported_archetype(a: &Archetype) -> bool {
     matches!(
         a,
-        Archetype::Multirotor | Archetype::Rover | Archetype::Quadruped
+        Archetype::Multirotor | Archetype::Rover | Archetype::Quadruped | Archetype::Biped
     )
 }
 
