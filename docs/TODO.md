@@ -42,7 +42,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] P0-005 — hrx7 → `examples/hrx7.forge.json` *(2026-06-12; mechanical: `scripts/translate-monolith.mjs` instruments the monolith's own N()/P() calls in a vm sandbox — zero hand transcription)*
 - [x] P0-006 — fpv → `examples/vx2-hornet.forge.json` *(2026-06-12; same mechanical path; "combat" naming dropped per §17.2)*. Finding: both translations fail CTR-004 (explode coverage 69 %/42 % vs the later 80 % gate) — historical models predate the completeness gates; gates unchanged, recorded honestly
 - [!] P0-007 — Translate all 31 slot variants — **the delivered vintage has no slot/variant system**; gated on the later ~83 KB configurator build (owner) or a re-scoping decision
-- [~] P0-008 — Extraction harness: **counts done** (`scripts/extract-counts.mjs` → `prototype/extracted-counts.json`, vm-sandboxed read-only); trajectory recording (gait/flight tapes for P1 golden numbers) open
+- [x] P0-008 — Extraction harness complete *(2026-06-12)*: counts (`extract-counts.mjs`) + **trajectory tapes** (`extract-trajectories.mjs` → `prototype/trajectories/`, deterministic, CI re-records on drift)
 - [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
 - [~] P0-010 — Freeze recorded (sha256 in prototype/README.md + changelog) and annotated tag `prototype-final` created **locally**; the git proxy 403s tag pushes and no MCP tag tool exists — **owner action:** `git push origin prototype-final` from any clone, or create a GitHub Release named `prototype-final` on commit `0294a9d`
 
@@ -55,8 +55,8 @@ recordings remain the completion criterion):
 - [~] P1-003 — `forge-sim`: propulsion/battery/estimator models ✓ (HUD derivations tested); **Rapier world integration + shared-memory worker wiring pending** (P6-001 scope pulled forward only when needed)
 - [~] P1-004 — `forge-validate`: 15 checks live (CTR-001..008, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/bom/schema) ✓; remaining catalog rows land per phase
 - [~] P1-005 — WASM facade: validate/bake/schema/**tick (Session)**/**patch** live **in the browser** (wasm-pack, committed pkg, **275 KB gz ≤ 2 MB budget ✓**); zero-copy buffer views + bake ≤ 60 ms / patch ≤ 10 ms measurements pending
-- [ ] P1-006 — **Golden-number suite harness** (= XC-26) — unblocked; needs trajectory recording via the extraction sandbox (extend P0-008)
-- [ ] P1-007 — Bit-identical verification binary↔WASM on both translated contracts — needs P0-005/006 (now unblocked)
+- [x] P1-006 — **Golden-number suite live** *(2026-06-12, XC-26)*: core-side FNV-1a/ULP hashing of bake buffers + 600-step scripted tick streams; `forge-golden` binary ↔ WASM facade byte-identical in CI; hashes pinned in time (`crates/forge-wasm/tests/fixtures/golden.jsonl`). **Found+fixed a real D17 divergence on first run** (native vs wasm libm ULPs) → all core transcendentals route through `forge-num` (pure-Rust libm). Monolith trajectory tapes recorded (`prototype/trajectories/`) as the oracle axis for the driver ports (P0-008 trajectory half also done)
+- [x] P1-007 — **Binary ↔ WASM bit-identical on both translated contracts** *(2026-06-12: hrx7 + vx2-hornet bake/tick hashes equal across targets — golden-compare, CI-gated)*
 
 Studio (TypeScript face):
 - [~] P1-008 — Three.js scene graph consuming core-baked buffers ✓ (per-part BufferGeometry; **BatchedMesh per material class pending**)
