@@ -36,36 +36,38 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 ## 2. Phase task breakdowns
 
 ### P0 — Freeze & extract
-- [ ] P0-001 — Author contract schema v2.1 **as Rust types in `forge-contract`** (serde + schemars: meta, env, skeleton, parts, slots, ports, chains, driver, materials, sim incl. colliders/estimator, lockfile) per [`systems/model-contract.md`](systems/model-contract.md)
-- [ ] P0-002 — schemars → TypeScript codegen pipeline: emitted JSON Schema → TS types for studio/gateway (= XC-01)
-- [ ] P0-003 — Monorepo scaffold: cargo workspace (`crates/forge-*`) + pnpm/Turborepo (`packages/studio`, `packages/gateway`) + `workers/`; CI bootstrap (clippy, fmt, cargo test, tsc, lint)
-- [ ] P0-004 — First-cut bake/count runner: load contract → build parts → count parts/faces → compare byte-equivalent against monolith extraction (existing JS math is an acceptable first cut pre-P1; it becomes the oracle)
-- [ ] P0-005 — Mechanical translation: humanoid model → `ModelSpec` JSON (skeleton, parts, slots, ports, chains, driver params)
-- [ ] P0-006 — Mechanical translation: VX-2 quad → `ModelSpec` JSON
-- [ ] P0-007 — Translate all 31 slot variants; verify slot/variant counts match prototype registry
-- [ ] P0-008 — Extraction harness for the monolith (instrument read-only to dump part/face counts + recorded trajectories as comparison fixtures — these become P1's golden numbers)
-- [ ] P0-009 — **Freeze the core boundary API** (bake / tick / validate / patch — plan §5.3); document signatures in [`systems/core-runtime.md`](systems/core-runtime.md)
-- [ ] P0-010 — Tag monolith `prototype-final`; record freeze in changelog
+- [x] P0-001 — Author contract schema v2.1 **as Rust types in `forge-contract`** (serde + schemars: meta, env, skeleton, parts, slots, ports, chains, driver, materials, sim incl. colliders/estimator, lockfile) per [`systems/model-contract.md`](systems/model-contract.md) *(2026-06-12, D21 session; Appendix-A round-trip tested)*
+- [x] P0-002 — schemars → TypeScript codegen pipeline: emitted JSON Schema → TS types for studio/gateway (= XC-01) *(2026-06-12: `pnpm codegen:contract` → `contract.gen.ts`; CI guards schema drift)*
+- [x] P0-003 — Monorepo scaffold: cargo workspace (`crates/forge-*`) + pnpm (`packages/studio`, `packages/gateway`) + `workers/`; CI bootstrap (fmt, clippy -D warnings, cargo test, wasm build, tsc, pytest) *(2026-06-12; Turborepo deferred until >2 TS packages)*
+- [~] P0-004 — First-cut bake/count runner: **runner exists** (`forge-validate bake` emits part/face/vertex counts); byte-equivalence comparison **blocked on PRE-002** (no monolith to extract against)
+- [!] P0-005 — Mechanical translation: humanoid model → `ModelSpec` JSON — blocked on PRE-002
+- [!] P0-006 — Mechanical translation: VX-2 quad → `ModelSpec` JSON — blocked on PRE-002 (`examples/vx2-mini.forge.json` is a synthetic fixture, not this)
+- [!] P0-007 — Translate all 31 slot variants — blocked on PRE-002
+- [!] P0-008 — Extraction harness for the monolith — blocked on PRE-002
+- [~] P0-009 — **Freeze the core boundary API** (bake / tick / validate / patch — plan §5.3): bake + validate implemented (binary + WASM facade, JSON envelope v0); tick + patch and the zero-copy view discipline pending; freeze after those land
+- [!] P0-010 — Tag monolith `prototype-final` — blocked on PRE-002
 
 ### P1 — Core & studio
-Rust port (landing order per risk mitigation: contract → motion → geometry → sim → validate; the JS implementations remain the oracle):
-- [ ] P1-001 — `forge-motion` port: phase gait + 2-bone IK, planted-feet idle, heading spring, arrive; quad mixer; servo layer (ω, ζ per joint class); constraint layer; 120 Hz fixed-step tick
-- [ ] P1-002 — `forge-geometry` port: primitive builders (`box/cbox/taper/cyl/lathe/squircle/loft`) with smoothing-group normals, **byte-stable bake** to flat buffers; mass properties (signed tetrahedra); per-part BVH + interference queries (= XC-09)
-- [ ] P1-003 — `forge-sim` port: propulsion/battery/estimator model stubs + Rapier integration (world, 240 Hz substeps, joint motors); worker wiring with shared-memory state mirror
-- [ ] P1-004 — `forge-validate` first full assembly: schema validity + geometry/behavior checks wired to the ported crates; CLI skeleton
-- [ ] P1-005 — WASM facade crate: bake/tick/validate/patch over wasm-pack; zero-copy buffer views; **≤ 2 MB gz**; humanoid bake ≤ 60 ms; patch re-bake ≤ 10 ms
-- [ ] P1-006 — **Golden-number suite harness** (= XC-26): canonical scenes + monolith-recorded trajectories; exact native↔WASM comparison in CI
-- [ ] P1-007 — Bit-identical verification: `forge-validate` binary vs WASM on both translated contracts (P1 exit criterion)
+Rust core (D21 note: v0 implemented directly in Rust on 2026-06-12; "done" for
+each item still means **oracle parity** once PRE-002 lands — the JS/prototype
+recordings remain the completion criterion):
+- [~] P1-001 — `forge-motion`: 2-bone IK (FK-verified) ✓, quad mixer ✓, servo layer ✓, constraint clamps ✓, multirotor/rover drivers ✓; **phase gait + planted-feet idle + arrive pending** (needs prototype fixtures)
+- [~] P1-002 — `forge-geometry`: all 7 primitive builders ✓ (byte-stable, analytic-solid mass-property tests), signed-tetrahedra massprops ✓, AABB interference v0 ✓; **per-part BVH + tri-tri sweep pending** (= XC-09)
+- [~] P1-003 — `forge-sim`: propulsion/battery/estimator models ✓ (HUD derivations tested); **Rapier world integration + shared-memory worker wiring pending** (P6-001 scope pulled forward only when needed)
+- [~] P1-004 — `forge-validate`: 14 checks live (CTR-001..007, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/schema) ✓; remaining catalog rows land per phase
+- [~] P1-005 — WASM facade crate: validate/bake/schema compile to wasm32 ✓ (JSON envelope v0); **zero-copy buffer views, tick/patch, ≤ 2 MB gz release budget pending**
+- [!] P1-006 — **Golden-number suite harness** (= XC-26) — needs monolith-recorded trajectories (PRE-002)
+- [!] P1-007 — Bit-identical verification binary↔WASM on both translated contracts — needs P0-005/006
 
 Studio (TypeScript face):
-- [ ] P1-008 — Three.js scene graph mirroring skeleton nodes; per-material-class BatchedMesh consuming core-baked buffers (≤ 40 draw calls/model)
-- [ ] P1-009 — PBR material classes (gloss/metal/satin/matte/rubber) per mapping table; three-point IBL-lite rig, PCF shadows
+- [~] P1-008 — Three.js scene graph consuming core-baked buffers ✓ (per-part BufferGeometry; **BatchedMesh per material class pending**)
+- [x] P1-009 — PBR material classes per mapping table ✓; three-point IBL-lite rig + PCF shadows ✓ *(2026-06-12)*
 - [ ] P1-010 — Blueprint mode: normal/depth edge post pass + grid shader
-- [ ] P1-011 — Explode: chain/window math on instance matrices; leader lines (Line2 dashed + datum dots)
+- [~] P1-011 — Explode: per-part windows on instance matrices ✓ (slider); **leader lines (Line2 + datum dots) pending**
 - [ ] P1-012 — Selection: stencil outline; component-scoped picking
-- [ ] P1-013 — Jog teach-pendant, pause/frame-step, orbit + follow camera
+- [~] P1-013 — Orbit camera ✓; jog teach-pendant, pause/frame-step, follow camera pending
 - [ ] P1-014 — Configurator pane: variant cards, rebuild-in-place preserving explode/jog state (via core patch/re-bake)
-- [ ] P1-015 — Golden-scene parity gallery vs monolith (canonical cameras, perceptual diff harness)
+- [!] P1-015 — Golden-scene parity gallery vs monolith — needs PRE-002
 - [ ] P1-016 — N8AO ambient occlusion + quality-tier scaffolding (= XC-22 foundations)
 - [ ] P1-017 — Performance pass: 60 fps on mid hardware; budget instrumentation overlay (frame, core tick, Rapier, UI)
 

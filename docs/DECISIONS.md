@@ -10,7 +10,7 @@ drifting in code. On any conflict between documents, this file wins
 
 1. Confirm it is genuinely a decision of consequence (architecture, scope, sequencing,
    security, legal, economics, naming) — not routine implementation detail.
-2. Append a row with the next free ID (next regular ID: **D21**), a one-line decision,
+2. Append a row with the next free ID (next regular ID: **D22**), a one-line decision,
    a one-line rationale, and status `active`.
 3. If it supersedes an earlier decision, set the old row's status to
    `superseded by Dnn` — exactly as D6 and D11 were retired by v3.0.
@@ -58,6 +58,12 @@ drifting in code. On any conflict between documents, this file wins
 |---|---|---|---|
 | D19 | **No code in contracts** — models are data; drivers are parameterized references into versioned engine libraries; the only future exception is the sandboxed-WASM controller (post-P7, capability-limited, no I/O, fuel-metered, marketplace-reviewed). *(Recorded as D15 in this file before v3.0 took D15–D18; renumbered.)* | the central security + generability decision (plan §4, §17) | active |
 | D20 | **Two physics engines on one compiled source of truth** — Rapier (client/interactive) + MuJoCo (training/canonical), both consuming the same MJCF from the same contract, parity suite on every upgrade; training side wins disagreements. *(Previously recorded as D16 in this file; renumbered.)* | interactivity and training-grade contact have different needs (plan §6) | active |
+
+## Project-execution decisions
+
+| # | Decision | Rationale | Status |
+|---|---|---|---|
+| D21 | **Implementation started ahead of PRE-002 by owner order** (2026-06-12): the v0 end-to-end build proceeds on all surfaces while the prototype is absent. Consequences, recorded: (a) P0's byte-equivalence and the model translations stay **open** until the monolith lands; (b) the synthetic `examples/vx2-mini.forge.json` is a fixture, never a stand-in for the translations; (c) primitive parameterizations beyond Appendix A are *(proposed)* in code and reconciled at PRE-002; (d) the Rust core was implemented directly rather than ported — oracle parity (P1 golden numbers) still gates P1 close. | the owner explicitly re-ordered ("build the whole project end to end"); CLAUDE.md §10 requires this entry | active |
 
 ## Open decisions
 

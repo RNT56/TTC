@@ -1,0 +1,22 @@
+{
+  "name": "@forge/gateway",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FORGE gateway — thin Fastify API; spawns the forge-validate binary (process isolation + bit-equality with CI, D17).",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/index.ts",
+    "test": "node --import tsx --test test/server.test.ts"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.0",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

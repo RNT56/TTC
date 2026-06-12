@@ -82,8 +82,17 @@ Severity: `error` blocks admission; `warn` admits with notice.
 | MFG-003 | support-volume estimate |
 | MFG-004 | bed fit |
 
+**GEO-007** *(provisional v0 id)* · bake failure — the geometry could not be
+built at all (unknown node, degenerate dims, unsupported mesh ref pre-P5).
 **RND — render** · RND-001 golden-image perceptual diff (canonical cameras) ·
 RND-002 blueprint pass renders cleanly.
+
+> **Implementation state (v0, 2026-06-12 — D21):** live in `crates/forge-validate`:
+> CTR-001..007, GEO-001 (static frame), GEO-003 (AABB proxy, warn), GEO-004..007,
+> SIM-001..003, BEH-001 (multirotor/rover), BEH-002, PRV-001 — with the diagnostic
+> JSON and report envelope below, the CLI (`run`/`bake`/`schema`), and the WASM
+> facade producing `target: "wasm"` reports. Animation-frame scans, the BVH joint
+> sweep, and the remaining rows land with their phases.
 **XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
 bit-identical native↔WASM (detail: [`core-runtime.md`](core-runtime.md) §5).
 **LIF — lifecycle** · LIF-001 upgrade re-validation when lockfiles move (D5).

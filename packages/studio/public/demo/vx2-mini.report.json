@@ -1,0 +1,32 @@
+{
+  "contractHash": "ab7a32af5206127d780d2535ca8a00ca8fc58cc02e1becce74891d488209bc98",
+  "lockfileHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "schemaVersion": "2.1.0",
+  "validatorVersion": "0.1.0",
+  "seed": 0,
+  "target": "native",
+  "startedAt": 1781254104,
+  "durationMs": 2,
+  "results": [],
+  "verdict": "admitted",
+  "hud": {
+    "auwG": 479.0,
+    "twr": 4.697093416779001,
+    "hoverThrottle": 0.42716009952323497,
+    "hoverCurrentA": 3.305649670792809,
+    "enduranceMin": 21.78089246303342,
+    "maxThrustG": 2249.9077466371414,
+    "assumptions": [
+      "masses: geometry × material-class density unless a part states valueG/densityKgm3",
+      "battery V0 = cells × 3.7 V nominal; sag via R_int fixed point",
+      "C_T = 0.11 blade-element-lite default (no thrust table; XC-06 pending)",
+      "power: momentum theory, figure of merit 0.7, electrical η 0.85",
+      "endurance = 0.8·C / I_hover (usable-capacity rule)"
+    ]
+  },
+  "counts": {
+    "parts": 16,
+    "faces": 1056,
+    "vertices": 2272
+  }
+}

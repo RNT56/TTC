@@ -18,6 +18,52 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — v0 end-to-end build: all surfaces implemented and green
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1 interleaved (owner re-order, D21) · **TODO items:** P0-001..004, P0-009, P1-001..005, P1-008/009/011/013, XC-01, PRE-004 (partial)
+**Done:** Implemented the v0 system end to end, all verified locally:
+**Rust core** (40 tests, clippy -D clean, fmt clean) — `forge-contract` (full v2.1
+types, schemars emission, Appendix-A round-trip, contract/lockfile hashing, lockfile
+resolver); `forge-geometry` (all 7 primitive builders with byte-stable bake,
+signed-tetrahedra mass properties verified vs analytic solids ≤0.1%, node world
+transforms, AABB interference v0); `forge-motion` (closed-form 2-bone IK verified by
+FK round-trip, critically damped servos stable at dt=50ms, quad mixer with symmetry
+tests, multirotor/rover drivers, constraint clamps); `forge-sim` (propulsion with
+fixed-point battery sag, momentum-theory power, complementary estimator with
+deterministic seeded noise, HUD derivation with inspectable assumptions, replay
+header); `forge-validate` (14 live checks, machine-readable diagnostics, report
+envelope, CLI run/bake/schema, exit codes, D14 draft flag); `forge-wasm` facade
+(validate/bake/schema; compiles to wasm32-unknown-unknown).
+**TS face** — studio (Vite/React 19/Zustand/Three.js viewer consuming core-baked
+buffers zero-math: PBR five-class mapping, IBL-lite rig, staged explode slider, HUD
+panel with assumptions, validator report panel; tsc+vite build green); gateway
+(Fastify+TypeBox, spawns the validator binary per D17, 4 tests incl. live
+admit/reject round-trips). **XC-01**: `pnpm codegen:contract` generates TS types from
+the emitted schema; CI fails on drift. **Python workers** (12 tests): schema
+validation against the emitted artifact (cross-language contract proven), job
+registry, scorecard gate (estimator smoke D8 + thresholds + PRV-002 lineage), ETL
+citation gate (per-field citations, D10 license non-optional, review queue floor).
+**Infra**: GitHub Actions CI (core/face/workers jobs), docker-compose (pgvector
+Postgres), `infra/migrations/0001_catalog.sql` (full catalog DDL incl. immutable
+`component_revisions`). **Demo**: `examples/vx2-mini.forge.json` (16 parts,
+synthetic, clearly labeled) — **Admitted**, 0 errors/0 warns; HUD: AUW 479 g, TWR
+4.70, hover 43 %, endurance 21.8 min.
+**Changed:** `Cargo.toml`, `crates/*` (6 crates), `package.json`,
+`pnpm-workspace.yaml`, `pnpm-lock.yaml`, `scripts/codegen-contract.mjs`,
+`packages/studio/*`, `packages/gateway/*`, `workers/*`, `schema/`, `examples/*`,
+`infra/*`, `.github/workflows/ci.yml`, `.gitignore`; docs state: CLAUDE.md §2/§4,
+ROADMAP (pre-P0/P0 checks), TODO (P0/P1 states), DECISIONS (D21),
+architecture §3, validation-harness (v0 state note).
+**Decisions:** **D21** — owner-ordered start ahead of PRE-002; consequences recorded
+(synthetic fixture ≠ translation; *(proposed)* parameterizations reconcile at
+PRE-002; oracle parity still gates P1).
+**Next:** PRE-002 remains the single highest-value step — committing the prototype
+unblocks P0-005..008/010 (translations + byte-equivalence) and P1-006/007/015
+(golden numbers, bit-identical verification, parity gallery). Independent of it:
+P1-005 zero-copy facade views + tick/patch, BatchedMesh batching (P1-008), blueprint
+mode (P1-010).
+**Blockers:** PRE-002 (prototype absent). Python here is 3.11 (plan says 3.12 — CI
+uses 3.12; workers require ≥3.11, no code impact).
+
 ## 2026-06-11 — Plan v3.0 adopted: Rust core / web face; docs suite upgraded
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** pre-P0 · **TODO items:** PRE-006
 **Done:** Adopted the owner-provided plan v3.0 as the binding plan and propagated it

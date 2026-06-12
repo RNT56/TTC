@@ -46,6 +46,7 @@ licensing groundwork.
 
 - [x] Documentation system in place (`CLAUDE.md`, `CHANGELOG.md`, `docs/` suite)
 - [x] Plan v3.0 adopted as binding; v2.0 archived as historical (2026-06-11)
+- [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
 - [ ] **`cad-object-studio.html` prototype committed** as executable reference + parity oracle (PRE-002 — blocks P0)
 - [ ] License files reflecting open-core split (D2): Apache-2.0 for the core crates + schema; proprietary notice for the rest (PRE-003)
 - [ ] Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, default-branch protection (PRE-004)
@@ -62,12 +63,12 @@ scaffold**; **core boundary API frozen** (plan §5.3).
 [`architecture.md`](architecture.md) §3.
 
 Exit criteria:
-- [ ] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith across all 31 variants
-- [ ] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars
-- [ ] TS types codegen from the Rust schema (schemars → TS pipeline working in CI)
-- [ ] Cargo workspace + pnpm/Turborepo scaffold builds green in CI
-- [ ] Core boundary API (bake / tick / validate / patch) frozen and documented
-- [ ] Prototype tagged (e.g. `prototype-final`) and never modified after
+- [ ] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith across all 31 variants *(runner exists — `forge-validate bake`; comparison blocked on PRE-002)*
+- [x] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars *(2026-06-12)*
+- [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
+- [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*
+- [ ] Core boundary API (bake / tick / validate / patch) frozen and documented *(bake/validate live; tick/patch + zero-copy pending)*
+- [ ] Prototype tagged (e.g. `prototype-final`) and never modified after *(blocked on PRE-002)*
 
 ## P1 — Core & studio
 

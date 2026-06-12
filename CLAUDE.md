@@ -44,11 +44,11 @@ that gates every artifact; provenance on everything. The full doctrine is bindin
 
 | Fact | State |
 |---|---|
-| Lifecycle | **Planning complete — implementation not started (pre-P0)** |
+| Lifecycle | **v0 implementation live on all surfaces** (owner re-order D21, 2026-06-12); P0/P1 exit criteria partially met — see ROADMAP |
 | Binding plan | [`docs/FORGE-plan.md`](docs/FORGE-plan.md) (**v3.0, definitive**) |
-| Current phase | **Pre-P0** — live status in [`docs/ROADMAP.md`](docs/ROADMAP.md) |
-| Code in repo | None yet — documentation only |
-| Critical blocker | The prototype **`cad-object-studio.html`** is the executable specification **and the parity oracle for the Rust port** (P0 byte-equivalence, P1 golden numbers) but is **not in this repository**. It must be obtained from the project owner and committed before P0 can close. Tracked as `PRE-002` in [`docs/TODO.md`](docs/TODO.md). |
+| Current phase | **P0/P1 (interleaved under D21)** — live status in [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| Code in repo | Rust core (`crates/forge-*`: contract, geometry, motion, sim, validate, wasm facade — 40 tests), studio + gateway (`packages/*`), Python workers (`workers/`, 12 tests), CI, catalog migration. Demo: `examples/vx2-mini.forge.json` (admitted; AUW 479 g · TWR 4.70 · hover 43 %). Quickstart: `cargo run -p forge-validate -- run examples/vx2-mini.forge.json` |
+| Critical blocker | The prototype **`cad-object-studio.html`** is the executable specification **and the parity oracle** (P0 byte-equivalence, P1 golden numbers) but is **not in this repository**. P0-005..008/010, P1-006/007/015 stay blocked until it is committed. Tracked as `PRE-002` in [`docs/TODO.md`](docs/TODO.md). |
 
 ## 3. Source-of-truth hierarchy
 
@@ -98,10 +98,12 @@ TTC/
         ├── environments-courses.md    └── platform.md
 ```
 
-Planned code layout (not yet scaffolded): cargo workspace `crates/{forge-contract,
-forge-geometry, forge-motion, forge-sim, forge-validate}` (+ WASM facade crate) beside
-pnpm packages `packages/{studio, gateway}`, Python `workers/`, and `desktop/` (Tauri,
-P8). See [`docs/architecture.md`](docs/architecture.md) §3.
+Code layout (scaffolded 2026-06-12, D21): cargo workspace `crates/{forge-contract,
+forge-geometry, forge-motion, forge-sim, forge-validate, forge-wasm}` beside pnpm
+packages `packages/{studio, gateway}`, Python `workers/`, `schema/` (emitted JSON
+Schema — the codegen source), `examples/`, `infra/` (compose + migrations), and
+`.github/workflows/ci.yml`. `desktop/` (Tauri) arrives at P8. See
+[`docs/architecture.md`](docs/architecture.md) §3.
 
 ## 5. Session protocol — how to pick up work
 

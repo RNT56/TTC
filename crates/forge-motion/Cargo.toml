@@ -1,0 +1,11 @@
+[package]
+name = "forge-motion"
+description = "FORGE motion: archetype drivers, IK/gait/servos/mixer, constraint layer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+forge-contract = { path = "../forge-contract" }
+serde = { workspace = true }
+serde_json = { workspace = true }

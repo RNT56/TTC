@@ -68,7 +68,7 @@ The same API is exposed natively via napi-rs where the gateway ever needs hot-pa
 calls; the default server integration is spawning the binary (process isolation +
 guaranteed bit-equality with CI).
 
-## 3. Repository layout *(proposed — confirm at P0 scaffold, P0-003)*
+## 3. Repository layout *(scaffolded 2026-06-12 — P0-003; `desktop/` and `crates/forge-wasm` zero-copy refinements arrive per phase; `schema/` and `scripts/codegen-contract.mjs` carry the XC-01 pipeline)*
 
 ```
 TTC/
