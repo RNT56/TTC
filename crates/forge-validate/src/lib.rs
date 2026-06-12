@@ -133,6 +133,10 @@ impl Diagnostic {
         self.limit = Some(v);
         self
     }
+    fn phase(mut self, t: f64) -> Self {
+        self.phase = Some(t);
+        self
+    }
     fn units(mut self, u: &str) -> Self {
         self.units = Some(u.into());
         self
@@ -504,16 +508,161 @@ fn run_checks(
         }
     }
 
-    // ---- GEO-003 (v0 proxy): static-pose AABB interpenetration, warn-level.
-    for (i, j) in forge_geometry::aabb_interferences(&baked, 0.0005) {
-        d.push(
-            Diagnostic::warn(
-                "GEO-003",
-                format!("aabb_overlap: parts {i} and {j} interpenetrate (static pose)"),
-            )
-            .subject("part", i.to_string())
-            .hint("v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"),
-        );
+    // ---- GEO-003 (XC-09): AABB candidacy → BVH tri-tri CONFIRMATION.
+    // Confirmed mesh intersections warn (deliberate interpenetration is the
+    // prototype's design language); AABB-only candidates stay silent now
+    // that real geometry answers. Animation-frame sweep: GEO-008 below.
+    let mut static_pairs: std::collections::BTreeSet<(usize, usize)> =
+        std::collections::BTreeSet::new();
+    {
+        let candidates = forge_geometry::aabb_interferences(&baked, 0.0005);
+        let mut bvhs: BTreeMap<usize, forge_geometry::collide::PartBvh> = BTreeMap::new();
+        for (i, j) in candidates {
+            for k in [i, j] {
+                bvhs.entry(k).or_insert_with(|| {
+                    let p = &baked.parts[k];
+                    let world = baked.node_world.get(&p.node).copied().unwrap_or_else(|| {
+                        let mut m = [0.0; 16];
+                        m[0] = 1.0;
+                        m[5] = 1.0;
+                        m[10] = 1.0;
+                        m[15] = 1.0;
+                        m
+                    });
+                    forge_geometry::collide::PartBvh::build(&p.mesh, &world)
+                });
+            }
+            if bvhs[&i].intersects(&bvhs[&j]) {
+                static_pairs.insert((i, j));
+                d.push(
+                    Diagnostic::warn(
+                        "GEO-003",
+                        format!("mesh_intersect: parts {i} and {j} interpenetrate (static pose, BVH-confirmed)"),
+                    )
+                    .subject("part", i.to_string())
+                    .hint("deliberate overlap is the design language; confirmed by triangle intersection (XC-09)"),
+                );
+            }
+        }
+    }
+
+    // ---- GEO-008 (provisional, XC-09): sampled animation-frame sweep —
+    // tick the real driver, pose the skeleton, and report pairs that begin
+    // to interpenetrate IN MOTION (static pairs are already recorded above).
+    {
+        use forge_motion::{StickInput, DT};
+        type PoseMap = BTreeMap<String, ([f64; 3], [f64; 3])>;
+        let mut frames: Vec<(f64, PoseMap)> = Vec::new();
+        let collect = |poses: &forge_motion::PoseBuffer| {
+            poses
+                .names()
+                .iter()
+                .cloned()
+                .zip(poses.poses().iter().map(|p| (p.rot, p.off)))
+                .collect::<PoseMap>()
+        };
+        match spec.meta.archetype {
+            Archetype::Biped => {
+                let mut drv = forge_motion::biped::BipedDriver::new(spec);
+                let input = StickInput {
+                    mz: 1.0,
+                    ..Default::default()
+                };
+                for step in 0..240u32 {
+                    let t = (step + 1) as f64 * DT;
+                    drv.tick(&input, [0.0, 0.0, 1.0], DT, t);
+                    if (step + 1) % 30 == 0 {
+                        frames.push((t, collect(&drv.poses)));
+                    }
+                }
+            }
+            Archetype::Multirotor => {
+                let mut drv = forge_motion::fpv::FpvDriver::new(spec);
+                let input = StickInput {
+                    mz: 0.5,
+                    thr: 0.3,
+                    ..Default::default()
+                };
+                for step in 0..240u32 {
+                    let t = (step + 1) as f64 * DT;
+                    drv.tick(&input, DT, t);
+                    if (step + 1) % 30 == 0 {
+                        frames.push((t, collect(&drv.poses)));
+                    }
+                }
+            }
+            _ => {}
+        }
+        if !frames.is_empty() {
+            let locals: Vec<([f64; 3], [f64; 3])> = baked
+                .parts
+                .iter()
+                .map(|p| forge_geometry::collide::mesh_local_aabb(&p.mesh))
+                .collect();
+            let mut seen = static_pairs.clone();
+            let mut hits: Vec<(usize, usize, f64)> = Vec::new();
+            for (t, poses) in &frames {
+                let Ok(world) = forge_geometry::node_world_posed(spec, poses) else {
+                    continue;
+                };
+                let mats: Vec<forge_geometry::Mat4> = baked
+                    .parts
+                    .iter()
+                    .map(|p| {
+                        world
+                            .get(&p.node)
+                            .copied()
+                            .unwrap_or_else(forge_geometry::identity)
+                    })
+                    .collect();
+                let boxes: Vec<([f64; 3], [f64; 3])> = (0..baked.parts.len())
+                    .map(|i| forge_geometry::collide::transformed_aabb(locals[i], &mats[i]))
+                    .collect();
+                let mut bvhs: BTreeMap<usize, forge_geometry::collide::PartBvh> = BTreeMap::new();
+                for i in 0..baked.parts.len() {
+                    for j in (i + 1)..baked.parts.len() {
+                        if baked.parts[i].node == baked.parts[j].node
+                            || seen.contains(&(i, j))
+                            || !forge_geometry::collide::aabbs_overlap(boxes[i], boxes[j], 0.0005)
+                        {
+                            continue;
+                        }
+                        for k in [i, j] {
+                            bvhs.entry(k).or_insert_with(|| {
+                                forge_geometry::collide::PartBvh::build(
+                                    &baked.parts[k].mesh,
+                                    &mats[k],
+                                )
+                            });
+                        }
+                        if bvhs[&i].intersects(&bvhs[&j]) {
+                            seen.insert((i, j));
+                            hits.push((i, j, *t));
+                        }
+                    }
+                }
+            }
+            for (i, j, t) in hits.iter().take(8) {
+                d.push(
+                    Diagnostic::warn(
+                        "GEO-008",
+                        format!("anim_intersect: parts {i} and {j} first interpenetrate at t = {t:.2} s (sampled drive sweep)"),
+                    )
+                    .subject("part", i.to_string())
+                    .phase(*t)
+                    .hint("not present at rest — check joint travel / gait extremes"),
+                );
+            }
+            if hits.len() > 8 {
+                d.push(Diagnostic::warn(
+                    "GEO-008",
+                    format!(
+                        "anim_intersect: +{} more moving pairs (showing first 8)",
+                        hits.len() - 8
+                    ),
+                ));
+            }
+        }
     }
 
     // ---- BEH-002 servo stability at dt = 50 ms (library invariant)

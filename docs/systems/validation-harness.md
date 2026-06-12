@@ -37,7 +37,7 @@ fast-math (D17)** — binary and WASM must be bit-identical (P1 exit criterion).
 
 Severity: `error` blocks admission; `warn` admits with notice.
 
-**GEO — geometry**
+**GEO — geometry** *(GEO-003 = BVH-confirmed mesh intersection, GEO-008 = sampled animation-frame sweep — both live 2026-06-12 via XC-09)*
 | ID | Check | Pass condition |
 |---|---|---|
 | GEO-001 | NaN/Inf scan | no NaN/Inf in baked vertices across animation frames |
