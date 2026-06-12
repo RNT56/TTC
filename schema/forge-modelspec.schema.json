@@ -1,0 +1,1207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ModelSpec",
+  "type": "object",
+  "properties": {
+    "chains": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Chain"
+      }
+    },
+    "driver": {
+      "$ref": "#/$defs/Driver"
+    },
+    "env": {
+      "$ref": "#/$defs/EnvBlock",
+      "default": {
+        "airDensity": 1.225,
+        "gravity": 9.80665,
+        "wind": {
+          "gust": 0.0,
+          "mean": 0.0
+        }
+      }
+    },
+    "lockfile": {
+      "description": "componentRef@range → exact immutable revision (D5).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "meta": {
+      "$ref": "#/$defs/Meta"
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Part"
+      }
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Port"
+      }
+    },
+    "sim": {
+      "$ref": "#/$defs/SimBlock",
+      "default": {
+        "colliders": {
+          "budget": {
+            "perModel": 24,
+            "perNode": 8
+          },
+          "policy": "per-node-compound"
+        }
+      }
+    },
+    "skeleton": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Node"
+      }
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Slot"
+      }
+    }
+  },
+  "required": [
+    "meta",
+    "skeleton",
+    "parts",
+    "driver"
+  ],
+  "$defs": {
+    "Archetype": {
+      "type": "string",
+      "enum": [
+        "biped",
+        "multirotor",
+        "rover",
+        "arm",
+        "quadruped",
+        "fixedwing"
+      ]
+    },
+    "Battery": {
+      "type": "object",
+      "properties": {
+        "cRating": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "capacity_mAh": {
+          "type": "number",
+          "format": "double"
+        },
+        "cells": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "r_int_mohm": {
+          "description": "Plan Appendix A spells this snake_case; the appendix is authoritative.",
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "cells",
+        "capacity_mAh",
+        "r_int_mohm"
+      ]
+    },
+    "Chain": {
+      "description": "Staged disassembly grouping *(proposed shape pending PRE-002)*.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stage": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "stage",
+        "nodes"
+      ]
+    },
+    "ColliderBudget": {
+      "type": "object",
+      "properties": {
+        "perModel": {
+          "type": "integer",
+          "format": "uint32",
+          "default": 24,
+          "minimum": 0
+        },
+        "perNode": {
+          "type": "integer",
+          "format": "uint32",
+          "default": 8,
+          "minimum": 0
+        }
+      }
+    },
+    "ColliderPolicy": {
+      "type": "object",
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/ColliderBudget",
+          "default": {
+            "perModel": 24,
+            "perNode": 8
+          }
+        },
+        "policy": {
+          "type": "string",
+          "default": "per-node-compound"
+        }
+      }
+    },
+    "CollisionPolicy": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "hull",
+        "primitive",
+        "none"
+      ]
+    },
+    "Driver": {
+      "type": "object",
+      "properties": {
+        "archetype": {
+          "$ref": "#/$defs/Archetype"
+        },
+        "params": {
+          "description": "Archetype-specific parameter block, validated by the driver library's\nparam schema at admission.",
+          "default": null
+        }
+      },
+      "required": [
+        "archetype"
+      ]
+    },
+    "EnvBlock": {
+      "type": "object",
+      "properties": {
+        "airDensity": {
+          "description": "kg/m³",
+          "type": "number",
+          "format": "double",
+          "default": 1.225
+        },
+        "gravity": {
+          "description": "m/s²",
+          "type": "number",
+          "format": "double",
+          "default": 9.80665
+        },
+        "wind": {
+          "$ref": "#/$defs/Wind",
+          "default": {
+            "gust": 0.0,
+            "mean": 0.0
+          }
+        }
+      }
+    },
+    "Estimator": {
+      "type": "object",
+      "properties": {
+        "accelNoise": {
+          "type": "number",
+          "format": "double"
+        },
+        "bias": {
+          "type": "number",
+          "format": "double"
+        },
+        "gyroNoise": {
+          "type": "number",
+          "format": "double"
+        },
+        "kind": {
+          "$ref": "#/$defs/EstimatorKind"
+        },
+        "latency_ms": {
+          "description": "Plan Appendix A spells this snake_case; the appendix is authoritative.",
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "kind",
+        "gyroNoise",
+        "accelNoise",
+        "bias",
+        "latency_ms"
+      ]
+    },
+    "EstimatorKind": {
+      "type": "string",
+      "enum": [
+        "complementary",
+        "ekf"
+      ]
+    },
+    "Explode": {
+      "type": "object",
+      "properties": {
+        "dir": {
+          "description": "Direction (node-local) the part travels during staged explode.",
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "leader": {
+          "description": "Leader-flagged subassembly label (counts toward CTR-004).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mag": {
+          "description": "Travel magnitude in meters.",
+          "type": "number",
+          "format": "double"
+        },
+        "t0": {
+          "description": "Window within the global explode phase [0,1].",
+          "type": "number",
+          "format": "double"
+        },
+        "t1": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "dir",
+        "mag",
+        "t0",
+        "t1"
+      ]
+    },
+    "Geom": {
+      "description": "The primitive vocabulary (tagged union). Dimension fields are meters.\nExact parameterizations beyond Appendix A are *(proposed)* until reconciled\nagainst the prototype (PRE-002).",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "d": {
+              "type": "number",
+              "format": "double"
+            },
+            "h": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "box"
+            },
+            "w": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "w",
+            "h",
+            "d"
+          ]
+        },
+        {
+          "description": "Chamfered box: vertical edges cut by `ch`.",
+          "type": "object",
+          "properties": {
+            "ch": {
+              "type": "number",
+              "format": "double"
+            },
+            "d": {
+              "type": "number",
+              "format": "double"
+            },
+            "h": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "cbox"
+            },
+            "w": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "w",
+            "h",
+            "d",
+            "ch"
+          ]
+        },
+        {
+          "description": "Rectangular frustum: bottom (w0,d0) to top (w1,d1) over height h.",
+          "type": "object",
+          "properties": {
+            "d0": {
+              "type": "number",
+              "format": "double"
+            },
+            "d1": {
+              "type": "number",
+              "format": "double"
+            },
+            "h": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "taper"
+            },
+            "w0": {
+              "type": "number",
+              "format": "double"
+            },
+            "w1": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "w0",
+            "d0",
+            "w1",
+            "d1",
+            "h"
+          ]
+        },
+        {
+          "description": "Cylinder / cone: bottom radius r0, top radius r1 (defaults to r0), height\nh, n radial segments.",
+          "type": "object",
+          "properties": {
+            "h": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "cyl"
+            },
+            "n": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0
+            },
+            "r0": {
+              "type": "number",
+              "format": "double"
+            },
+            "r1": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "r0",
+            "h"
+          ]
+        },
+        {
+          "description": "Surface of revolution: profile polyline of [radius, y] pairs revolved\naround local Y with n segments.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "lathe"
+            },
+            "n": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0
+            },
+            "profile": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "maxItems": 2,
+                "minItems": 2
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "profile"
+          ]
+        },
+        {
+          "description": "Superellipse prism: half-extents rx/rz, exponent e, height h, n segments\nper quadrant.",
+          "type": "object",
+          "properties": {
+            "e": {
+              "type": "number",
+              "format": "double"
+            },
+            "h": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "squircle"
+            },
+            "n": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0
+            },
+            "rx": {
+              "type": "number",
+              "format": "double"
+            },
+            "rz": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "required": [
+            "kind",
+            "rx",
+            "rz",
+            "h",
+            "e"
+          ]
+        },
+        {
+          "description": "Lofted solid through stations along local Y.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "loft"
+            },
+            "profile": {
+              "$ref": "#/$defs/LoftProfile"
+            },
+            "stations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LoftStation"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "profile",
+            "stations"
+          ]
+        },
+        {
+          "description": "Imported mesh by asset reference (admitted via the P5 pipeline).",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "mesh"
+            },
+            "ref": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "ref"
+          ]
+        }
+      ]
+    },
+    "Joint": {
+      "type": "object",
+      "properties": {
+        "axis": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "maxTorqueNm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "maxVelRad": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "type": {
+          "$ref": "#/$defs/JointKind"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "JointKind": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "revolute",
+        "spherical"
+      ]
+    },
+    "LoftProfile": {
+      "description": "Loft cross-section profile.",
+      "oneOf": [
+        {
+          "description": "Superellipse (\"squircle\") profile: exponent `e`, sampled with `n` segments\nper quadrant.",
+          "type": "object",
+          "properties": {
+            "e": {
+              "type": "number",
+              "format": "double"
+            },
+            "kind": {
+              "type": "string",
+              "const": "sq"
+            },
+            "n": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "kind",
+            "e",
+            "n"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "circle"
+            },
+            "n": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "kind",
+            "n"
+          ]
+        }
+      ]
+    },
+    "LoftStation": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "description": "Corner roundness 0..1 (0 = boxy, 1 = elliptical). Parameterization is\n*(proposed)* pending prototype reconciliation (PRE-002).",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "sx": {
+          "description": "Half-extent scale along X (meters).",
+          "type": "number",
+          "format": "double"
+        },
+        "sz": {
+          "description": "Half-extent scale along Z (meters).",
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "description": "Height of this station along local Y (meters).",
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "y",
+        "sx",
+        "sz"
+      ]
+    },
+    "MassSpec": {
+      "description": "Mass is either stated directly (grams, schema surface) or derived from the\npart's volume × a density override; absent → density from the material class.",
+      "type": "object",
+      "properties": {
+        "densityKgm3": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "valueG": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        }
+      }
+    },
+    "MaterialClass": {
+      "type": "string",
+      "enum": [
+        "gloss",
+        "metal",
+        "satin",
+        "matte",
+        "rubber"
+      ]
+    },
+    "Meta": {
+      "type": "object",
+      "properties": {
+        "archetype": {
+          "$ref": "#/$defs/Archetype"
+        },
+        "id": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "version": {
+          "description": "Semver of this model document.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version",
+        "archetype",
+        "provenance",
+        "license"
+      ]
+    },
+    "MotorSpec": {
+      "type": "object",
+      "properties": {
+        "dir": {
+          "description": "Spin direction: +1 CCW, -1 CW (mixer input). Defaults alternate by index.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int8",
+          "maximum": 127,
+          "minimum": -128
+        },
+        "kv": {
+          "description": "Inline motor constants (synthetic/generated parts) …",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "maxCurrentA": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "mount": {
+          "description": "Mount node (e.g. \"m0\").",
+          "type": "string"
+        },
+        "r_int_mohm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "ref": {
+          "description": "… or a catalog reference (resolved through the lockfile, D5).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "mount"
+      ]
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "joint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Joint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "limits": {
+          "description": "Per-axis [min,max] joint limits in radians: [[minX,maxX],[minY,maxY],[minZ,maxZ]].",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "maxItems": 2,
+            "minItems": 2
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "name": {
+          "type": "string"
+        },
+        "parent": {
+          "description": "`None` for the root node.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pos": {
+          "description": "Meters, parent-local.",
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "rot": {
+          "description": "Radians, XYZ euler, parent-local.",
+          "type": "array",
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        }
+      },
+      "required": [
+        "name",
+        "pos"
+      ]
+    },
+    "Part": {
+      "type": "object",
+      "properties": {
+        "collision": {
+          "$ref": "#/$defs/CollisionPolicy",
+          "default": "auto"
+        },
+        "color": {
+          "description": "Hex color, e.g. \"#23262c\".",
+          "type": "string"
+        },
+        "comp": {
+          "description": "Component tag for pick resolution (BEH-004).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "explode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Explode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "geom": {
+          "$ref": "#/$defs/Geom"
+        },
+        "mass": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MassSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "material": {
+          "$ref": "#/$defs/MaterialClass"
+        },
+        "node": {
+          "description": "Skeleton node this part attaches to.",
+          "type": "string"
+        },
+        "renderBias": {
+          "description": "Polygon-offset hint for true coplanar decals only (plan §7.2).",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        }
+      },
+      "required": [
+        "node",
+        "geom",
+        "material",
+        "color"
+      ]
+    },
+    "Port": {
+      "type": "object",
+      "properties": {
+        "capped": {
+          "description": "Explicitly capped ports count as resolved (CTR-002).",
+          "type": "boolean",
+          "default": false
+        },
+        "frame": {
+          "description": "[[x,y,z],[rx,ry,rz]] node-local frame.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "maxItems": 3,
+            "minItems": 3
+          },
+          "maxItems": 2,
+          "minItems": 2
+        },
+        "id": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        },
+        "type": {
+          "description": "Connector taxonomy type, e.g. \"XT60\", \"stack-30.5x30.5-M3\", \"UART\".",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "node",
+        "type",
+        "frame"
+      ]
+    },
+    "PropSpec": {
+      "type": "object",
+      "properties": {
+        "blades": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "ctTable": {
+          "description": "Optional published thrust table reference (XC-06).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "diameterIn": {
+          "type": "number",
+          "format": "double"
+        },
+        "pitchIn": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "diameterIn",
+        "pitchIn",
+        "blades"
+      ]
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ProvenanceKind"
+        },
+        "modelVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "promptHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "ProvenanceKind": {
+      "type": "string",
+      "enum": [
+        "human",
+        "parametric-generator",
+        "llm-generation"
+      ]
+    },
+    "SimBlock": {
+      "type": "object",
+      "properties": {
+        "aggregateMassG": {
+          "description": "Aggregate mass override in grams; when present, GEO-006 checks closure.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "battery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Battery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "colliders": {
+          "$ref": "#/$defs/ColliderPolicy",
+          "default": {
+            "budget": {
+              "perModel": 24,
+              "perNode": 8
+            },
+            "policy": "per-node-compound"
+          }
+        },
+        "estimator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Estimator"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "motors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MotorSpec"
+          }
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PropSpec"
+          }
+        }
+      }
+    },
+    "Slot": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "joint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Joint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "mountNodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Variant"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "mountNodes",
+        "variants"
+      ]
+    },
+    "Variant": {
+      "type": "object",
+      "properties": {
+        "componentRef": {
+          "description": "Semver-ranged reference into the catalog, e.g. \"cmp_pack_4s1500@^2\" (D5).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "desc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parts": {
+          "description": "Inline parts (exactly one of `parts` / `componentRef` must be present —\nenforced by CTR-003 semantics, not by shape).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/Part"
+          }
+        },
+        "ports": {
+          "description": "Port declarations contributed by this variant (e.g. {\"elec\": \"XT60\"}).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "Wind": {
+      "type": "object",
+      "properties": {
+        "gust": {
+          "type": "number",
+          "format": "double",
+          "default": 0.0
+        },
+        "mean": {
+          "type": "number",
+          "format": "double",
+          "default": 0.0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+[package]
+name = "forge-validate"
+description = "FORGE sovereign validator: check catalog, diagnostics, CLI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+forge-contract = { path = "../forge-contract" }
+forge-geometry = { path = "../forge-geometry" }
+forge-motion = { path = "../forge-motion" }
+forge-sim = { path = "../forge-sim" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+
+[[bin]]
+name = "forge-validate"
+path = "src/main.rs"

@@ -1,0 +1,20 @@
+[package]
+name = "forge-wasm"
+description = "FORGE core WASM facade: bake / tick / validate / patch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+forge-contract = { path = "../forge-contract" }
+forge-geometry = { path = "../forge-geometry" }
+forge-sim = { path = "../forge-sim" }
+forge-validate = { path = "../forge-validate" }
+serde_json = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"

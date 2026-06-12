@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forge-workers"
+version = "0.1.0"
+description = "FORGE compute plane: queue-driven Python workers (ETL, OCCT, photoscan, training). No public network surface."
+requires-python = ">=3.11"
+dependencies = ["jsonschema>=4.21"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+# Heavy runtime stacks are installed per worker family at deployment, never as
+# package deps: mujoco/stable-baselines3 (training), trimesh/occt (geometry),
+# psycopg (queue). Pinned in each family's container image.
+
+[tool.setuptools.packages.find]
+include = ["forge_workers*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
