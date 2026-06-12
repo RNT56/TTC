@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { StudioScene } from "./scene";
 import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass } from "./types";
+import { decodeShareFragment, encodeShareFragment } from "./share";
 import { CoreBake, CoreSession, coreValidate } from "./wasm";
 
 const panel: React.CSSProperties = {
@@ -77,7 +78,23 @@ export default function App() {
     if (!handle || !scene) return;
     const st = useStudio.getState();
     const selected = st.selected;
+    const before = st.artifact?.hud;
     const artifact = handle.patch(JSON.stringify(ops));
+    // consequence diff (D5): show what the change DID to the derived numbers
+    const after = artifact.hud;
+    if (before && after) {
+      const deltas: string[] = [];
+      const d = (k: string, a?: number, b?: number, unit = "", digits = 1) => {
+        if (a !== undefined && b !== undefined && Math.abs(b - a) > 1e-9) {
+          deltas.push(`${k} ${a.toFixed(digits)} → ${b.toFixed(digits)}${unit}`);
+        }
+      };
+      d("AUW", before.auwG, after.auwG, " g", 0);
+      d("TWR", before.twr, after.twr);
+      d("hover", before.hoverThrottle && before.hoverThrottle * 100,
+        after.hoverThrottle && after.hoverThrottle * 100, " %", 0);
+      st.setLastDiff(deltas.length ? deltas.join(" · ") : null);
+    }
     const contract = handle.contract();
     scene.load(artifact);
     // the validator is sovereign: every patched document is re-judged
@@ -130,16 +147,34 @@ export default function App() {
       if (st.driving && sessionRef.current) {
         const stepDt = st.paused ? (stepOnceRef.current ? DT : 0) : dt;
         stepOnceRef.current = false;
+        // gamepad (P1-013 input): left stick = strafe/forward, right stick =
+        // yaw/throttle; deadzone 0.08; sliders stay the fallback
+        let sticks = {
+          throttle: st.throttle,
+          pitch: 0,
+          roll: 0,
+          yaw: 0,
+          drive: st.drive,
+          turn: 0,
+        };
+        const pad = navigator.getGamepads?.()[0];
+        if (pad) {
+          const dz = (v: number) => (Math.abs(v) > 0.08 ? v : 0);
+          const [lx, ly, rx, ry] = [dz(pad.axes[0] ?? 0), dz(pad.axes[1] ?? 0), dz(pad.axes[2] ?? 0), dz(pad.axes[3] ?? 0)];
+          if (lx || ly || rx || ry) {
+            sticks = {
+              throttle: -ry,
+              pitch: -ly,
+              roll: lx,
+              yaw: rx,
+              drive: -ly,
+              turn: rx,
+            };
+          }
+        }
         const t0 = performance.now();
         if (stepDt > 0) {
-          sessionRef.current.step(stepDt, {
-            throttle: st.throttle,
-            pitch: 0,
-            roll: 0,
-            yaw: 0,
-            drive: st.drive,
-            turn: 0,
-          });
+          sessionRef.current.step(stepDt, sticks);
         }
         // zero-copy view, consumed synchronously (P1-005)
         scene.setPose(sessionRef.current.nodeNames, sessionRef.current.poseView());
@@ -170,7 +205,20 @@ export default function App() {
       }
     };
     scene.start();
-    void loadDemo(useStudio.getState().modelId);
+    void (async () => {
+      // a share link carries the whole contract in the fragment (re-judged
+      // locally on arrival — never trusted)
+      const shared = await decodeShareFragment(window.location.hash);
+      if (shared) {
+        try {
+          await loadContract(shared);
+          return;
+        } catch {
+          /* malformed share → fall through to the demo */
+        }
+      }
+      await loadDemo(useStudio.getState().modelId);
+    })();
 
     // parity-gallery / automation hook (P1-015): deterministic captures
     (window as unknown as Record<string, unknown>).__forgeParity = {
@@ -273,6 +321,19 @@ export default function App() {
     sessionRef.current?.clearJog();
   };
 
+  const share = async () => {
+    const contract = useStudio.getState().contractJson;
+    if (!contract) return;
+    const fragment = await encodeShareFragment(contract);
+    const url = `${window.location.origin}${window.location.pathname}#${fragment}`;
+    window.history.replaceState(null, "", `#${fragment}`);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      /* clipboard needs a user gesture/permission; the hash is set anyway */
+    }
+  };
+
   const hud = s.artifact?.hud;
   const isMultirotor = hud?.twr !== undefined;
   return (
@@ -308,6 +369,9 @@ export default function App() {
             : "loading…"}
         </div>
         <div style={{ color: "#6b7686" }}>drop a .forge.json to validate in-browser</div>
+        <button onClick={() => void share()} style={{ ...btn, marginTop: 6 }}>
+          share — contract in the URL
+        </button>
 
         <label style={{ display: "block", marginTop: 8 }}>
           explode
@@ -419,6 +483,9 @@ export default function App() {
           <Row k="node" v={s.selected.node} />
           <Row k="material" v={s.selected.material} />
           <Row k="color" v={s.selected.color} />
+          {s.lastDiff && (
+            <div style={{ color: "#e6a23c", marginTop: 4 }}>Δ {s.lastDiff}</div>
+          )}
           {/* configurator (P1-014): patch → re-bake in place via the handle */}
           <div style={{ color: "#8fa3bf", marginTop: 8 }}>configure (patch + re-bake)</div>
           <div style={{ display: "flex", gap: 4, marginTop: 4 }}>

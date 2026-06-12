@@ -18,6 +18,48 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Execution batch: collision truth (XC-09/GEO-008), SIM-004, share URLs, gamepad, workflows, incremental re-bake
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1/P3 cross-cutting · **TODO items:** §5 batch (9 of 10 closed), P1-002 [x]
+**Done:** The owner-approved improvement list, executed. **XC-09:**
+`forge-geometry::collide` — Möller tri-tri (coplanar = touching, by policy)
++ median-split world-space BVH per part, pure f64, no transcendentals;
+GEO-003 upgraded to BVH-CONFIRMED mesh intersection (hrx7 53 AABB
+candidates → 41 confirmed, 12 false positives silenced). **GEO-008**
+(provisional): the validator ticks the model's real driver and sweeps 8
+sampled frames — hrx7 shows **2 genuine motion-only contacts** (thigh
+shells × pelvis at gait extremes), invisible at rest; whole sweep 127 ms;
+cross-target report equality holds. **SIM-004:** inline-sim vs
+equipped-catalog drift (deduped) — flagged vx2-proof's inline kv 1750 vs
+the cited 1900; reconciled, and the equipped datasheet now flows into the
+physics: **TWR 4.70→5.32, hover 43 %→39 %**; regression test pins both
+directions. **Share URLs:** contract → deflate-raw → base64url fragment
+(`share.ts`); opening re-validates/re-bakes locally (never trusted);
+browser-verified round trip (hrx7 = 5.5 kB fragment boots a fresh page).
+**Gamepad:** stick polling with deadzone in the drive loop (left =
+strafe/forward, right = yaw/throttle); sliders remain fallback. **Patch
+consequence diff:** Δ AUW/TWR/hover line after every configurator patch
+(D5). **Bundle split:** three+n8ao chunk; app js 78 kB gz, warning gone.
+**Workflows:** `nightly.yml` (parity gallery on headless chromium +
+cargo-llvm-cov coverage, artifacts uploaded) and `release.yml` (tag v* →
+static validator binary + wasm facade package). **Incremental re-bake:**
+`bake_incremental` reuses untouched (geom, pose) buffers — a color patch
+re-bakes zero geometry; budgets re-measured and hold. Verified: 106 Rust
+tests, clippy --all-targets -D clean, golden + report equality, verdict
+matrix (5), gateway 7/7, builds green, wasm-pkg rebuilt (320 KB gz).
+**Changed:** `crates/forge-geometry/src/{collide.rs (new), lib.rs}`,
+`crates/forge-validate/src/{lib.rs (GEO-003/008, SIM-004), file_catalog.rs}`,
+`crates/forge-contract/src/lib.rs` (RowSummary on CatalogSource),
+`crates/forge-wasm/src/lib.rs` (incremental patch), catalog battery row
+(+capacityMah, cited), `examples/vx2-proof.forge.json` (kv reconciled),
+`packages/studio/{src/share.ts (new), src/App.tsx, src/store.ts,
+vite.config.ts}`, `.github/workflows/{nightly.yml, release.yml}` (new),
+`tests/proof_pair.rs` (SIM-004), docs (TODO §5 batch, harness GEO note).
+**Decisions:** none new (GEO-008/SIM-004 are provisional check ids per the
+harness doc's convention).
+**Next:** the batch's one open item — proptest property tests for the
+contract round-trip + patch engine; then P3's data-layer remainder.
+**Blockers:** none.
+
 ## 2026-06-12 — Pre-P0 closed: licensing (D24), hygiene, the name is ForgedTTC (D23)
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** Pre-P0 · **TODO items:** PRE-003 [x], PRE-004 [x], PRE-005 [x]
 **Done:** Owner-delegated business calls executed and recorded. **D23 — the

@@ -32,9 +32,9 @@ export class Bake {
     part_count(): number;
     /**
      * Apply a JSON-Patch to the contract and re-bake in place; returns
-     * fresh meta. Full re-bake v0 — measured inside the ≤ 10 ms budget;
-     * per-part incremental re-bake is the recorded refinement if a
-     * future model class outgrows it.
+     * fresh meta. INCREMENTAL: parts whose (geom, pose) are untouched
+     * reuse their buffers — a configurator color patch re-bakes zero
+     * geometry (the ≤ 10 ms budget holds with room for 1000-part models).
      */
     patch(patch_json: string): string;
     /**

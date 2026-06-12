@@ -790,28 +790,28 @@
   },
   "motors": [
    {
-    "kv": 1750,
+    "kv": 1900,
     "r_int_mohm": 60,
     "maxCurrentA": 30,
     "mount": "m0",
     "dir": 1
    },
    {
-    "kv": 1750,
+    "kv": 1900,
     "r_int_mohm": 60,
     "maxCurrentA": 30,
     "mount": "m1",
     "dir": -1
    },
    {
-    "kv": 1750,
+    "kv": 1900,
     "r_int_mohm": 60,
     "maxCurrentA": 30,
     "mount": "m2",
     "dir": 1
    },
    {
-    "kv": 1750,
+    "kv": 1900,
     "r_int_mohm": 60,
     "maxCurrentA": 30,
     "mount": "m3",

@@ -127,3 +127,31 @@ fn proof_pair_resolves_and_is_compatible() {
         assert!(!row.citations.is_empty(), "{} cites nothing", row.id);
     }
 }
+
+#[test]
+fn sim004_flags_inline_vs_equipped_drift_once() {
+    let cat = catalog();
+    let doc = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../examples/vx2-proof.forge.json"
+    ))
+    .unwrap()
+    // de-reconcile: pretend the inline sim still says 1750 — all four motors
+    .replace("\"kv\": 1900", "\"kv\": 1750");
+    let report = forge_validate::run_full(&doc, &cat, &forge_validate::Options::default());
+    let sim004: Vec<_> = report
+        .results
+        .iter()
+        .filter(|d| d.check == "SIM-004")
+        .collect();
+    assert_eq!(sim004.len(), 1, "deduped to one warn per distinct kv");
+    assert!(sim004[0].message.contains("1750") && sim004[0].message.contains("1900"));
+    // and the reconciled contract on disk is clean
+    let clean = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../examples/vx2-proof.forge.json"
+    ))
+    .unwrap();
+    let report = forge_validate::run_full(&clean, &cat, &forge_validate::Options::default());
+    assert!(report.results.iter().all(|d| d.check != "SIM-004"));
+}

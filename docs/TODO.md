@@ -238,3 +238,15 @@ touched.
 | OD-08 | napi-rs hot-path bindings vs binary-spawn in the gateway | measure in P2 (P2-007) |
 
 Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
+
+## 5. Post-P3 execution batch (owner: "execute everything", 2026-06-12)
+- [x] XC-09 — BVH + tri-tri collision truth: GEO-003 BVH-confirmed (53→41 on hrx7), **GEO-008** sampled animation sweep (2 motion-only contacts found on hrx7), 127 ms
+- [x] SIM-004 — inline-sim vs equipped-catalog drift check (deduped warns); vx2-proof reconciled to the cited kv 1900 — **TWR 4.70→5.32, hover 43→39 %** flowed from the datasheet
+- [x] Share URLs — contract deflated into the fragment (`share.ts`), re-judged locally on open; round-trip browser-verified (hrx7 = 5.5 kB fragment)
+- [x] Gamepad input — left/right sticks with deadzone in the drive loop; sliders stay the fallback
+- [x] Patch consequence diff — Δ AUW/TWR/hover line after each configurator patch (D5 diff semantics)
+- [x] Bundle split — three+n8ao chunk (app 78 kB gz; chunk warning gone)
+- [x] Nightly workflow — parity gallery (headless chromium) + cargo-llvm-cov coverage, artifact-uploaded
+- [x] Release workflow — tag v* → static forge-validate binary + wasm facade package
+- [x] Incremental re-bake — `bake_incremental` reuses untouched (geom, pose) buffers in `Bake.patch`
+- [ ] Property-based tests (proptest) for contract round-trip + patch engine — the one batch item still open

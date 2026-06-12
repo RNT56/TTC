@@ -681,6 +681,22 @@ fn hex(bytes: &[u8]) -> String {
 pub trait CatalogSource {
     /// Returns true if `component_id@exact_revision` exists as an immutable revision.
     fn has_revision(&self, component_id: &str, revision: &str) -> bool;
+
+    /// Checked summary of a row for sim-consistency checks (SIM-004): None =
+    /// the source cannot answer (EmptyCatalog, remote stubs).
+    fn row_summary(&self, _component_id: &str) -> Option<RowSummary> {
+        None
+    }
+}
+
+/// The sim-relevant surface of a catalog row (datasheet-sourced).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct RowSummary {
+    pub category: String,
+    pub mass_g: f64,
+    pub kv: Option<f64>,
+    pub capacity_mah: Option<f64>,
+    pub max_thrust_g: Option<f64>,
 }
 
 /// One published immutable revision (P3-006/XC-03).

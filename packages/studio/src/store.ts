@@ -43,6 +43,9 @@ interface StudioState {
   /** XC-22 quality tier; the auto-degrader only ever steps DOWN */
   tier: QualityTier;
   setTier: (t: QualityTier) => void;
+  /** consequence line after a patch/upgrade (D5 diff semantics) */
+  lastDiff: string | null;
+  setLastDiff: (d: string | null) => void;
   setModelId: (id: string) => void;
   setLoaded: (artifact: BakeArtifact, report: Report | null, contractJson: string | null) => void;
   setExplode: (t: number) => void;
@@ -72,6 +75,8 @@ export const useStudio = create<StudioState>((set) => ({
   perf: { fps: 0, frameMs: 0, drawCalls: 0, coreMs: 0 },
   tier: "high",
   setTier: (tier) => set({ tier }),
+  lastDiff: null,
+  setLastDiff: (lastDiff) => set({ lastDiff }),
   setModelId: (modelId) => set({ modelId }),
   setLoaded: (artifact, report, contractJson) => set({ artifact, report, contractJson }),
   setExplode: (explode) => set({ explode }),

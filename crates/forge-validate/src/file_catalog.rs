@@ -53,6 +53,7 @@ pub struct RowElec {
     pub max_current_a: Option<f64>,
     pub max_discharge_a: Option<f64>,
     pub kv: Option<f64>,
+    pub capacity_mah: Option<f64>,
     #[serde(default)]
     pub connectors: Vec<String>,
 }
@@ -179,6 +180,17 @@ impl CatalogSource for FileCatalog {
             .get(component_id)
             .map(|r| r.revisions.iter().any(|v| v.version == revision))
             .unwrap_or(false)
+    }
+
+    fn row_summary(&self, component_id: &str) -> Option<forge_contract::RowSummary> {
+        let row = self.rows.get(component_id)?;
+        Some(forge_contract::RowSummary {
+            category: row.category.clone(),
+            mass_g: row.mass_g,
+            kv: row.elec.kv,
+            capacity_mah: row.elec.capacity_mah,
+            max_thrust_g: row.max_thrust_g,
+        })
     }
 }
 

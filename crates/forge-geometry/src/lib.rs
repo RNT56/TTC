@@ -162,6 +162,80 @@ pub fn bake(spec: &ModelSpec) -> Result<BakedModel, BakeError> {
     })
 }
 
+/// Incremental re-bake (P1-005 refinement): parts whose `(geom, pose)` are
+/// unchanged against `prev_spec` reuse their previous buffers (a memcpy
+/// instead of re-tessellation); node transforms always recompute (cheap).
+/// Color/material/collision/explode changes never touch the mesh, so a
+/// configurator color patch re-bakes zero geometry.
+pub fn bake_incremental(
+    spec: &ModelSpec,
+    prev_spec: &ModelSpec,
+    prev: &BakedModel,
+) -> Result<BakedModel, BakeError> {
+    let node_world = node_world_transforms(spec)?;
+    let mut parts = Vec::with_capacity(spec.parts.len());
+    let mut total_faces = 0usize;
+    let mut total_vertices = 0usize;
+    let mut total_polygons = 0usize;
+    for (i, part) in spec.parts.iter().enumerate() {
+        if !node_world.contains_key(&part.node) {
+            return Err(BakeError::UnknownNode {
+                part_index: i,
+                node: part.node.clone(),
+            });
+        }
+        let reusable = prev_spec
+            .parts
+            .get(i)
+            .filter(|p| p.geom == part.geom && p.pose == part.pose)
+            .and_then(|_| prev.parts.get(i));
+        let (mesh, verts, polys) = match reusable {
+            Some(prev_part) => (
+                prev_part.mesh.clone(),
+                prev_part.poly_verts,
+                prev_part.poly_faces,
+            ),
+            None => {
+                let (mesh, counts) = primitives::bake_part(&part.geom, part.pose.as_ref())
+                    .map_err(|e| match e {
+                        primitives::BuildError::MeshRef(asset_ref) => {
+                            BakeError::MeshRefUnsupported {
+                                part_index: i,
+                                asset_ref,
+                            }
+                        }
+                        primitives::BuildError::Degenerate(message) => BakeError::BadGeom {
+                            part_index: i,
+                            message,
+                        },
+                    })?;
+                (mesh, counts.verts, counts.polys)
+            }
+        };
+        total_faces += mesh.face_count();
+        total_vertices += verts;
+        total_polygons += polys;
+        parts.push(BakedPart {
+            part_index: i,
+            node: part.node.clone(),
+            material: part.material,
+            color: part.color.clone(),
+            collision: part.collision,
+            explode: part.explode.clone(),
+            poly_verts: verts,
+            poly_faces: polys,
+            mesh,
+        });
+    }
+    Ok(BakedModel {
+        parts,
+        node_world,
+        total_polygons,
+        total_vertices,
+        total_faces,
+    })
+}
+
 /// World transforms for every skeleton node. Euler order: rotate X, then Y,
 /// then Z (R = Rz·Ry·Rx), translation applied in the parent frame.
 pub fn node_world_transforms(spec: &ModelSpec) -> Result<BTreeMap<String, Mat4>, BakeError> {

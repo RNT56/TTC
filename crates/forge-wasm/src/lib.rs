@@ -183,14 +183,16 @@ mod wasm_bindings {
         }
 
         /// Apply a JSON-Patch to the contract and re-bake in place; returns
-        /// fresh meta. Full re-bake v0 — measured inside the ≤ 10 ms budget;
-        /// per-part incremental re-bake is the recorded refinement if a
-        /// future model class outgrows it.
+        /// fresh meta. INCREMENTAL: parts whose (geom, pose) are untouched
+        /// reuse their buffers — a configurator color patch re-bakes zero
+        /// geometry (the ≤ 10 ms budget holds with room for 1000-part models).
         pub fn patch(&mut self, patch_json: &str) -> Result<String, JsValue> {
             let next = forge_contract::patch::apply_patch(&self.contract_json, patch_json)
                 .map_err(|e| err(e.to_string()))?;
             let spec = forge_contract::validate_shape(&next).map_err(|e| err(e.to_string()))?;
-            let baked = forge_geometry::bake(&spec).map_err(|e| err(e.to_string()))?;
+            // incremental: untouched (geom, pose) reuse their buffers
+            let baked = forge_geometry::bake_incremental(&spec, &self.spec, &self.baked)
+                .map_err(|e| err(e.to_string()))?;
             self.contract_json = next;
             self.spec = spec;
             self.baked = baked;

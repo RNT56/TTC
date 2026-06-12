@@ -369,6 +369,79 @@ fn run_checks(
         );
     }
 
+    // ---- SIM-004 (provisional): inline sim vs equipped catalog rows —
+    // when a slot pins to a row, the contract's inline sim numbers must
+    // agree with the datasheet (>5 % drift warns; reconciliation is the
+    // configurator equip flow's job, never a silent override).
+    for slot in &spec.slots {
+        for v in &slot.variants {
+            let Some(component_ref) = &v.component_ref else {
+                continue;
+            };
+            let Some(pin) = spec.lockfile.get(component_ref) else {
+                continue;
+            };
+            let Some((id, _)) = pin.rsplit_once('@') else {
+                continue;
+            };
+            let Some(row) = catalog.row_summary(id) else {
+                continue;
+            };
+            let drift = |a: f64, b: f64| (a - b).abs() / b.max(1e-9);
+            match row.category.as_str() {
+                "motor" => {
+                    if let Some(row_kv) = row.kv {
+                        let mut seen_kv: Vec<f64> = Vec::new();
+                        for m in &spec.sim.motors {
+                            if let Some(kv) = m.kv {
+                                if seen_kv.contains(&kv) {
+                                    continue;
+                                }
+                                seen_kv.push(kv);
+                                if drift(kv, row_kv) > 0.05 {
+                                    d.push(
+                                        Diagnostic::warn(
+                                            "SIM-004",
+                                            format!(
+                                                "catalog_drift: inline motor kv {kv:.0} vs equipped '{id}' datasheet {row_kv:.0}",
+                                            ),
+                                        )
+                                        .subject("slot", &slot.id)
+                                        .observed(kv)
+                                        .limit(serde_json::Value::from(row_kv))
+                                        .hint("reconcile via the equip flow — inline sim must match the equipped component"),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                "battery" => {
+                    if let (Some(row_cap), Some(batt)) =
+                        (row.capacity_mah, spec.sim.battery.as_ref())
+                    {
+                        let cap = batt.capacity_mah;
+                        if drift(cap, row_cap) > 0.05 {
+                            d.push(
+                                Diagnostic::warn(
+                                    "SIM-004",
+                                    format!(
+                                        "catalog_drift: inline battery {cap:.0} mAh vs equipped '{id}' datasheet {row_cap:.0} mAh",
+                                    ),
+                                )
+                                .subject("slot", &slot.id)
+                                .observed(cap)
+                                .limit(serde_json::Value::from(row_cap))
+                                .hint("reconcile via the equip flow — inline sim must match the equipped component"),
+                            );
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
     // ---- CTR-007 collider budget (D7)
     let budget = &spec.sim.colliders.budget;
     let mut per_node: BTreeMap<&str, u32> = BTreeMap::new();
