@@ -53,3 +53,8 @@ Known finding: both fail CTR-004 (explode coverage 69 %/42 % < 80 %) — the
 historical models predate the v2.1 completeness gates. The gates stand; the
 translations document the spec as it was. The drone's "combat" naming did not
 survive translation (plan §17.2).
+
+Both **drive** in the studio through the ported oracle pipelines (P1-001):
+hrx7 walks its phase gait (drive slider = forward stick), vx2-hornet flies the
+angle-mode flight model (throttle slider) — the same code the trajectory tapes
+pin at ULP level (`crates/forge-motion/tests/tape_parity.rs`).

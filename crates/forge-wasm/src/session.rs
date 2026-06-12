@@ -4,19 +4,24 @@
 //! bit-identical pose streams (D17; golden-number corpus member).
 
 use forge_contract::ModelSpec;
-use forge_geometry::{body_offset, node_world_with_joints, Mat4};
+use forge_geometry::{body_offset, node_world_posed, node_world_with_joints, Mat4};
+use forge_motion::biped::BipedDriver;
+use forge_motion::fpv::FpvDriver;
 use forge_motion::quadruped::QuadrupedDriver;
-use forge_motion::{clamp_velocity, InputFrame, MultirotorDriver, RoverDriver, DT};
+use forge_motion::{InputFrame, RoverDriver, StickInput, DT};
 use std::collections::BTreeMap;
 
+/// Drive-mode camera-flat forward for stick-to-world mapping; the face owns
+/// camera-relative input later (P1-013) — core pins world +Z, the same basis
+/// the oracle tapes were recorded under.
+const CAM_FORWARD: [f64; 3] = [0.0, 0.0, 1.0];
+
 enum DriverState {
-    Multirotor {
-        driver: MultirotorDriver,
-        motor_out: Vec<f64>,
-        /// (spinner node, spin direction, max rad/s) per motor index.
-        spinners: Vec<(String, f64, f64)>,
-        angles: BTreeMap<String, f64>,
-    },
+    /// Oracle FPV flight (PRE-002 port): drag-limited velocity flight, tilt,
+    /// per-motor mixer spin — full pose channels.
+    Multirotor(FpvDriver),
+    /// Oracle biped gait (PRE-002 port): phase gait + IK + servo settle.
+    Biped(BipedDriver),
     Rover(RoverDriver),
     Quadruped {
         driver: QuadrupedDriver,
@@ -43,42 +48,8 @@ impl CoreSession {
         let node_names: Vec<String> = spec.skeleton.iter().map(|n| n.name.clone()).collect();
 
         let driver = match spec.meta.archetype {
-            forge_contract::Archetype::Multirotor => {
-                let driver = MultirotorDriver::new(&spec);
-                // spinner = revolute child of each motor mount
-                let spinners = spec
-                    .sim
-                    .motors
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, m)| {
-                        let spinner = spec.skeleton.iter().find(|n| {
-                            n.parent.as_deref() == Some(m.mount.as_str())
-                                && n.joint
-                                    .as_ref()
-                                    .map(|j| matches!(j.kind, forge_contract::JointKind::Revolute))
-                                    .unwrap_or(false)
-                        })?;
-                        let max_vel = spinner
-                            .joint
-                            .as_ref()
-                            .and_then(|j| j.max_vel_rad)
-                            .unwrap_or(300.0);
-                        let dir =
-                            m.dir
-                                .map(f64::from)
-                                .unwrap_or(if i % 2 == 0 { 1.0 } else { -1.0 });
-                        Some((spinner.name.clone(), dir, max_vel))
-                    })
-                    .collect::<Vec<_>>();
-                let n = spec.sim.motors.len();
-                DriverState::Multirotor {
-                    driver,
-                    motor_out: vec![0.0; n],
-                    spinners,
-                    angles: BTreeMap::new(),
-                }
-            }
+            forge_contract::Archetype::Multirotor => DriverState::Multirotor(FpvDriver::new(&spec)),
+            forge_contract::Archetype::Biped => DriverState::Biped(BipedDriver::new(&spec)),
             forge_contract::Archetype::Rover => DriverState::Rover(RoverDriver::new(&spec)),
             forge_contract::Archetype::Quadruped => DriverState::Quadruped {
                 driver: QuadrupedDriver::new(&spec),
@@ -126,21 +97,38 @@ impl CoreSession {
     }
 
     fn fixed_step(&mut self, input: &InputFrame) -> Result<(), String> {
+        // absolute driver clock, (tick+1)·DT — the oracle tapes' convention
+        let t = (self.ticks + 1) as f64 * DT;
         match &mut self.driver {
-            DriverState::Multirotor {
-                driver,
-                motor_out,
-                spinners,
-                angles,
-            } => {
-                driver.tick(input, DT, motor_out);
-                for (i, (node, dir, max_vel)) in spinners.iter().enumerate() {
-                    let u = motor_out.get(i).copied().unwrap_or(0.0);
-                    let rate = clamp_velocity(Some(*max_vel), dir * u * max_vel);
-                    *angles.entry(node.clone()).or_insert(0.0) += rate * DT;
-                }
-                let angles = angles.clone();
-                self.write_pose(None, &angles)
+            DriverState::Multirotor(driver) => {
+                // air mapping: pitch = forward, roll = strafe
+                let stick = StickInput {
+                    mx: input.roll,
+                    mz: input.pitch,
+                    yaw: input.yaw,
+                    thr: input.throttle,
+                    run: false,
+                };
+                driver.tick(&stick, DT, t);
+                let world = node_world_posed(&self.spec, &Self::pose_map(&driver.poses))
+                    .map_err(|e| e.to_string())?;
+                self.write_world(&world);
+                Ok(())
+            }
+            DriverState::Biped(driver) => {
+                // ground mapping: drive = forward, turn = heading (like rover)
+                let stick = StickInput {
+                    mx: input.roll,
+                    mz: input.drive,
+                    yaw: input.turn,
+                    thr: 0.0,
+                    run: false,
+                };
+                driver.tick(&stick, CAM_FORWARD, DT, t);
+                let world = node_world_posed(&self.spec, &Self::pose_map(&driver.poses))
+                    .map_err(|e| e.to_string())?;
+                self.write_world(&world);
+                Ok(())
             }
             DriverState::Rover(driver) => {
                 driver.tick(input, DT);
@@ -161,6 +149,15 @@ impl CoreSession {
         }
     }
 
+    fn pose_map(poses: &forge_motion::PoseBuffer) -> BTreeMap<String, ([f64; 3], [f64; 3])> {
+        poses
+            .names()
+            .iter()
+            .cloned()
+            .zip(poses.poses().iter().map(|p| (p.rot, p.off)))
+            .collect()
+    }
+
     fn write_pose(
         &mut self,
         root_offset: Option<Mat4>,
@@ -168,6 +165,11 @@ impl CoreSession {
     ) -> Result<(), String> {
         let world = node_world_with_joints(&self.spec, angles, root_offset.as_ref())
             .map_err(|e| e.to_string())?;
+        self.write_world(&world);
+        Ok(())
+    }
+
+    fn write_world(&mut self, world: &BTreeMap<String, Mat4>) {
         for (i, name) in self.node_names.iter().enumerate() {
             if let Some(m) = world.get(name) {
                 for (k, v) in m.iter().enumerate() {
@@ -175,7 +177,6 @@ impl CoreSession {
                 }
             }
         }
-        Ok(())
     }
 }
 
@@ -191,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn multirotor_spinners_spin_under_throttle() {
+    fn multirotor_flies_and_spins_under_throttle() {
         let mut s = CoreSession::new(QUAD).unwrap();
         let before: Vec<f32> = s.pose_buffer().to_vec();
         let input = InputFrame {
@@ -201,14 +202,41 @@ mod tests {
         let steps = s.step(1.0, &input).unwrap();
         assert_eq!(steps, 120, "one second = 120 fixed steps");
         let i = idx(&s, "s0") * 16;
+        let root = idx(&s, "root") * 16;
         let after = s.pose_buffer();
-        // the spinner's rotation columns moved; its translation did not
+        // the spinner's rotation columns moved under the mixer
         assert!((after[i] - before[i]).abs() > 1e-6, "rotation advanced");
+        // and the oracle flight model climbed the body (throttle → vel.y)
         assert!(
-            (after[i + 12] - before[i + 12]).abs() < 1e-6,
-            "translation fixed"
+            after[root + 13] - before[root + 13] > 0.2,
+            "climbed: Δy = {}",
+            after[root + 13] - before[root + 13]
         );
         assert!(after.iter().all(|v| v.is_finite()));
+    }
+
+    #[test]
+    fn biped_session_walks_with_the_oracle_gait() {
+        let hrx7 = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../examples/hrx7.forge.json"
+        ))
+        .unwrap();
+        let mut s = CoreSession::new(&hrx7).unwrap();
+        let input = InputFrame {
+            drive: 1.0,
+            ..Default::default()
+        };
+        s.step(2.0, &input).unwrap();
+        let root = idx(&s, "root") * 16;
+        let z = s.pose_buffer()[root + 14];
+        // 0.85 m/s walk target with a 0.25 s ramp ≈ 1.49 m in 2 s
+        assert!((1.3..=1.6).contains(&z), "walked z = {z}");
+        // knees articulate: the kn-1 node's rotation differs from rest
+        let kn = idx(&s, "kn-1") * 16;
+        let m = &s.pose_buffer()[kn..kn + 16];
+        assert!(m.iter().all(|v| v.is_finite()));
+        assert!((m[5] - 1.0).abs() > 1e-3, "knee bent (rot. y-col changed)");
     }
 
     #[test]

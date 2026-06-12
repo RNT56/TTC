@@ -241,6 +241,51 @@ pub fn node_world_with_joints(
     Ok(world)
 }
 
+/// World transforms with full per-node animation channels (the oracle-driver
+/// tick path), exactly the monolith's `nm()`: the skeleton `rot` is the BASE
+/// euler and the driver's channels add to it —
+/// local = T(pos + off)·Ry(base+rot)·Rx(base+rot)·Rz(base+rot).
+/// `poses` maps node name → (animated rot euler, off translation); unmapped
+/// nodes keep their rest pose.
+pub fn node_world_posed(
+    spec: &ModelSpec,
+    poses: &BTreeMap<String, ([f64; 3], [f64; 3])>,
+) -> Result<BTreeMap<String, Mat4>, BakeError> {
+    let mut world: BTreeMap<String, Mat4> = BTreeMap::new();
+    let mut remaining: Vec<&forge_contract::Node> = spec.skeleton.iter().collect();
+    let mut progress = true;
+    while !remaining.is_empty() && progress {
+        progress = false;
+        remaining.retain(|n| {
+            let parent_m = match &n.parent {
+                None => Some(identity()),
+                Some(p) => world.get(p).copied(),
+            };
+            match parent_m {
+                None => true,
+                Some(pm) => {
+                    let local = match poses.get(&n.name) {
+                        Some((rot, off)) => trs(
+                            [n.pos[0] + off[0], n.pos[1] + off[1], n.pos[2] + off[2]],
+                            [n.rot[0] + rot[0], n.rot[1] + rot[1], n.rot[2] + rot[2]],
+                        ),
+                        None => trs(n.pos, n.rot),
+                    };
+                    world.insert(n.name.clone(), mul(pm, local));
+                    progress = true;
+                    false
+                }
+            }
+        });
+    }
+    if let Some(stuck) = remaining.first() {
+        return Err(BakeError::SkeletonCycle {
+            node: stuck.name.clone(),
+        });
+    }
+    Ok(world)
+}
+
 /// Rodrigues rotation about a (normalized) axis, column-major Mat4.
 pub fn axis_angle(axis: [f64; 3], angle: f64) -> Mat4 {
     let len = (axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]).sqrt();

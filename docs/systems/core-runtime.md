@@ -94,7 +94,16 @@ on lathe angles and pose rotations) — resolved by routing every
 non-correctly-rounded transcendental in core through **`forge-num`** (the
 pure-Rust `libm` crate: identical bits on every target). IEEE-correctly-rounded
 ops (sqrt, arithmetic) stay on std. This is now core policy: new core math uses
-`forge_num::{sin,cos,sin_cos,acos,asin,atan2,pow}` — never `f64::` trig.
+`forge_num::{sin,cos,sin_cos,acos,asin,atan2,pow}` — never `f64::` trig — plus
+the oracle-compat helpers `forge_num::{hypot,js_round}` (plain-sqrt hypot and
+JS `Math.round` tie semantics, both deterministic everywhere).
+
+**Re-pin 2026-06-12 (P1-001):** the tick corpus now exercises the ported
+oracle drivers — `CoreSession` drives multirotor through `fpv.rs` and biped
+through `biped.rs` with full pose channels (`node_world_posed`). Tick hashes
+for vx2-mini/hrx7/vx2-hornet were re-pinned accordingly (qd-mini and **all
+bake hashes unchanged**); native ↔ WASM stayed bit-identical on first
+comparison after the rewire.
 
 The cross-target exactness gate, run in CI on every core change:
 

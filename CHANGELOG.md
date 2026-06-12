@@ -18,6 +18,50 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P1-001 closed: biped + FPV oracle drivers ported, tape parity at ULP level
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-001 [x]
+**Done:** Line-faithful Rust ports of the monolith's two drive pipelines.
+`forge-motion/src/biped.rs` (HRX-7: idle breathing/scan/sway, arrive
+controller, heading spring, speed ramp, blended phase gait with the monolith's
+legIK variant, world placement, head-scan detents, ω16/ζ0.8 servo settle on
+head+arms, actuator telltales) and `fpv.rs` (VX-2: hover-drift idle,
+drag-limited velocity flight in the bounded arena, tilt servos, per-motor RPM
+mixer with alternating spin, ω14/ζ0.85 camera servo). Expression groupings
+mirror the JS so FP op order is identical; all transcendentals via forge-num
+(D17), which grew `hypot` + `js_round` (JS Math.round tie semantics,
+double-rounding safe). **Tape parity measured: max deviation 4.4e-16 (biped)
+and 7.1e-15 (fpv)** against `prototype/trajectories/` over 300 frames × all
+rot/off channels (`tests/tape_parity.rs`, banded 1e-9, bit-deterministic
+replays; tape pos channels == contract skeleton exactly). Session wiring:
+`node_world_posed` in forge-geometry implements nm() faithfully — skeleton
+`rot` is BASE euler, driver channels ADD to it (hips/shoulders carry base
+splay; replacing instead of adding would silently flatten it). `CoreSession`
+drives multirotor (pitch/roll/yaw/throttle sticks) and biped
+(drive/roll/turn) through the oracle ports with full pose channels; golden
+tick corpus re-pinned for vx2-mini/hrx7/vx2-hornet (qd + ALL bake hashes
+unchanged; native↔WASM stayed bit-identical on first post-rewire comparison —
+forge-num doing its job). BEH-001 biped smoke (2 s walk ≈ 1.49 m) replaces the
+"lands P2" warn; hrx7 report now 1 error (CTR-004, historical) + 53 GEO-003
+warns. wasm-pkg rebuilt (293 KB gz ≤ 2 MB). Earlier in session: fixed CI
+golden-compare path bug (`join(cwd, abs)` → `resolve`) that failed all three
+prior runs in the XT-001 step. Verified: 87 Rust tests, clippy -D clean,
+wasm32 cross-compiles, studio+gateway build, gateway 6/6, tapes re-record
+byte-identical, golden-compare green fresh + committed.
+**Changed:** `crates/forge-motion/{src/biped.rs,src/fpv.rs,src/lib.rs,tests/tape_parity.rs}`,
+`crates/forge-num/src/lib.rs`, `crates/forge-geometry/src/lib.rs` (node_world_posed),
+`crates/forge-wasm/{src/session.rs,tests/fixtures/golden.jsonl}`,
+`crates/forge-validate/src/lib.rs` (BEH-001 biped arm),
+`packages/studio/src/wasm-pkg/` (rebuilt), `scripts/golden-compare.mjs`,
+docs (TODO P1-001, motion-engine, core-runtime §5, examples/README).
+**Decisions:** none (golden re-pin is the documented intended-bump path, not a
+new decision).
+**Next:** P1-015 golden-scene parity gallery vs the monolith (canonical
+cameras, perceptual diff), then the studio P1 finishers (P1-008 BatchedMesh,
+P1-010 blueprint post pass, P1-012 stencil outline, P1-013 jog/follow camera —
+`focus()` is exposed on both drivers for it).
+**Blockers:** none. (Owner actions still open: push `prototype-final` tag
+(P0-010), the later configurator build question (P0-007), PRE-003/004/005.)
+
 ## 2026-06-12 — Golden numbers live: native↔WASM bit-identical; D17 divergence found+fixed
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-006 [x], P1-007 [x], XC-26 [x], P1-001 (oracle ready)
 **Done:** **XT-001 is real and green.** Golden-number suite: FNV-1a hashing of
