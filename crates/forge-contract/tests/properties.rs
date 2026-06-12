@@ -66,12 +66,10 @@ proptest! {
     ) {
         let text = doc("p".into(), w, h, d, "#aabbcc".into(), None);
         let patch = serde_json::json!([{"op": "replace", "path": path, "value": value}]).to_string();
-        match forge_contract::patch::apply_patch(&text, &patch) {
-            Ok(next) => {
-                // the gate's promise: anything that comes back is shape-valid
-                prop_assert!(forge_contract::validate_shape(&next).is_ok());
-            }
-            Err(_) => {} // refusal is always acceptable; panicking is not
+        // refusal is always acceptable; panicking is not — and the gate's
+        // promise is that anything that comes back is shape-valid
+        if let Ok(next) = forge_contract::patch::apply_patch(&text, &patch) {
+            prop_assert!(forge_contract::validate_shape(&next).is_ok());
         }
     }
 }
