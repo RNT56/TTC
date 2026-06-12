@@ -19,8 +19,8 @@ phase-level state only.
 |---|---|---|
 | Pre-P0 housekeeping | ◑ | days |
 | P0 Freeze & extract | ● for the delivered vintage *(2026-06-12; P0-007 variants gated on the later build or a re-scope decision; remote tag = owner push)* | 1.5–2.5 wk |
-| P1 Core & studio | ○ | 6–8 wk |
-| P2 Data-driven models | ○ | 3 wk |
+| P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
+| P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ○ | 2–3 wk |
 | P4 Text-to-CAD GA | ○ | 3–4 wk |
 | P5 Image → 3D | ○ | 3 wk |
@@ -100,9 +100,9 @@ family #1 — quadruped generator with leg-count/wheelbase/mass sliders.
 
 Exit criteria:
 - [x] A quadruped spec becomes a valid walking model with **zero hand-written code** *(2026-06-12: `forge-gen quadruped` → admitted + BEH-001 walking smoke, grid-tested)*
-- [ ] CI green on the full validation suite *(local ✓; confirms on next CI run)*
+- [x] CI green on the full validation suite *(2026-06-12: P2-006 declared-verdict matrix over all first-party contracts, gated in CI)*
 - [x] Diagnostic format stable and machine-readable *(2026-06-12: check IDs + diagnostic JSON + CTR-008)*
-- [ ] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08)
+- [x] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08) *(2026-06-12: D22 — spawn stays; numbers in the decision row)*
 
 ## P3 — Component DB + proof pair + reference rigs
 

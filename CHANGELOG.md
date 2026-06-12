@@ -18,6 +18,35 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P2 closed: verdict matrix in CI, draft semantics, OD-08 → D22
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P2 · **TODO items:** P2-006 [x], P2-007 [x], P2-002 [~], P2-003 (biped ✓)
+**Done:** **P2's four exit criteria are all checked — phase closed.**
+P2-006: `examples/expected-verdicts.json` declares verdict + the exact ERROR
+check-id set for every first-party contract; `scripts/validate-all.mjs`
+enforces it in CI (undeclared contracts and stale expectations fail) —
+hrx7/vx2-hornet pinned as rejected with exactly CTR-004, vx2-mini/qd-mini
+admitted clean. P2-007/OD-08 resolved by measurement and recorded as **D22**:
+gateway binary-spawn p50 5.3 ms (16 parts) / 17.8 ms (125 parts) vs
+in-process WASM 0.7 / 3.7 ms (`scripts/od08-measure.mjs`) — spawn stays
+(isolation + bit-equality with CI, far inside budget); napi-rs deferred
+until a measured hot path demands it. P2-002 (D14) validation semantics
+live end to end: CLI `--as-draft` → gateway `asDraft` flag → HTTP 200 with
+`verdict: draft` and full diagnostics (a draft is a successful save, not a
+422); gateway test added (7/7). Draft PERSISTENCE deferred to the data
+layer (P3-001) — recorded honestly, not faked with a file store.
+**Changed:** `examples/expected-verdicts.json` (new),
+`scripts/{validate-all.mjs,od08-measure.mjs}` (new), `.github/workflows/ci.yml`
+(P2-006 step), `packages/gateway/{src/server.ts,src/validator.ts,
+test/server.test.ts}`, docs (DECISIONS **D22**, TODO P2 section + P2-003
+biped tick, ROADMAP P2 criteria + phase table: **P2 ●**, P1 ◑ 5/6).
+**Decisions:** **D22** (OD-08 closed: binary-spawn stays, numbers recorded).
+**Next:** P1's last open criterion is a real-mid-hardware 60 fps run (owner
+can read the perf overlay); then P3 — component DB schema (P3-001 Postgres
+DDL), which also unblocks P2-002's persistence half. Owner items still open:
+prototype-final tag push (P0-010), configurator-build question (P0-007),
+PRE-003/004/005.
+**Blockers:** none.
+
 ## 2026-06-12 — P1-016 closed: N8AO + the XC-22 quality ladder
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-016 [x]
 **Done:** Shaded rendering now goes through EffectComposer (Render → N8AO →

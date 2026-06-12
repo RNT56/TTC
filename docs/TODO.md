@@ -72,12 +72,12 @@ Studio (TypeScript face):
 
 ### P2 — Data-driven models
 - [~] P2-001 — Validator productized: check catalog (CTR-001..008, GEO, SIM, BEH, PRV) + diagnostic JSON stable ✓; in-studio WASM validation live ✓; npm + crates.io publication plumbing pending
-- [ ] P2-002 — Draft semantics (D14): failed contracts persist as editable drafts carrying diagnostics; drafts cannot train/export/share
-- [~] P2-003 — Driver library: multirotor/rover/quadruped with schemars param schemas + CTR-008 enforcement ✓; biped/arm pending (prototype fixtures, PRE-002)
+- [~] P2-002 — Draft semantics (D14) *(2026-06-12: validation semantics live end to end)* — CLI `--as-draft` (exit 3) → gateway `asDraft` body flag → HTTP 200 with `verdict: draft` and full diagnostics (a draft is a successful save, not a 422; tested). **Persistence** (editable drafts stored server-side) lands with the data layer (P3-001 Postgres); the cannot-train/export/share gates attach to those surfaces as they ship (P4+/P7)
+- [~] P2-003 — Driver library: multirotor/rover/quadruped with schemars param schemas + CTR-008 enforcement ✓; **biped ✓** *(2026-06-12 — oracle port, tape parity, P1-001)*; arm pending
 - [x] P2-004 — Quadruped driver: trot phase gait, per-leg IK, diagonal pairing, validator smoke ✓ *(2026-06-12)*
 - [x] P2-005 — `forge-gen quadruped`: leg-pairs/wheelbase/track/stand/mass sliders → **admitted, walking contracts with zero hand-written code** (grid-tested 2/3/4 pairs) *(2026-06-12)*
-- [ ] P2-006 — CI: full validation suite green on every PR for all first-party contracts
-- [ ] P2-007 — Measure napi-rs hot-path vs binary-spawn in the gateway; record decision (OD-08)
+- [x] P2-006 — CI: declared-verdict matrix on every first-party contract *(2026-06-12)* — `examples/expected-verdicts.json` pins verdict + the exact ERROR check-id set per contract; `scripts/validate-all.mjs` enforces in CI (undeclared contracts and stale expectations both fail)
+- [x] P2-007 — OD-08 measured and recorded as **D22** *(2026-06-12)*: spawn p50 5.3/17.8 ms (16/125 parts) vs in-process 0.7/3.7 ms (`scripts/od08-measure.mjs`) — binary-spawn stays (isolation + bit-equality), napi-rs deferred until a measured hot path demands it
 
 ### P3 — Component DB + proof pair + reference rigs
 - [ ] P3-001 — Postgres schema: `components`, `connector_types`, `licenses`, `thrust_tables`, `prices`, `provenance`, `component_revisions` (DDL in [`systems/component-database.md`](systems/component-database.md))

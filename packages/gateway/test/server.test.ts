@@ -91,3 +91,33 @@ test(
     await app.close();
   },
 );
+
+test(
+  "asDraft turns a failing contract into an editable draft (D14)",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const hrx7 = JSON.parse(
+      readFileSync(join(process.cwd(), "..", "..", "examples", "hrx7.forge.json"), "utf8"),
+    ) as unknown;
+    // without the flag: rejected, 422
+    const rejected = await app.inject({
+      method: "POST",
+      url: "/v1/validate",
+      payload: { contract: hrx7 },
+    });
+    assert.equal(rejected.statusCode, 422);
+    assert.equal((rejected.json() as { verdict: string }).verdict, "rejected");
+    // with it: a successful save-as-draft, diagnostics intact
+    const draft = await app.inject({
+      method: "POST",
+      url: "/v1/validate",
+      payload: { contract: hrx7, asDraft: true },
+    });
+    assert.equal(draft.statusCode, 200, draft.body);
+    const report = draft.json() as { verdict: string; results: { check: string }[] };
+    assert.equal(report.verdict, "draft");
+    assert.ok(report.results.some((d) => d.check === "CTR-004"), "diagnostics carried");
+    await app.close();
+  },
+);

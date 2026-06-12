@@ -64,6 +64,7 @@ drifting in code. On any conflict between documents, this file wins
 | # | Decision | Rationale | Status |
 |---|---|---|---|
 | D21 | **Implementation started ahead of PRE-002 by owner order** (2026-06-12): the v0 end-to-end build proceeds on all surfaces while the prototype is absent. Consequences, recorded: (a) P0's byte-equivalence and the model translations stay **open** until the monolith lands; (b) the synthetic `examples/vx2-mini.forge.json` is a fixture, never a stand-in for the translations; (c) primitive parameterizations beyond Appendix A are *(proposed)* in code and reconciled at PRE-002; (d) the Rust core was implemented directly rather than ported — oracle parity (P1 golden numbers) still gates P1 close. | the owner explicitly re-ordered ("build the whole project end to end"); CLAUDE.md §10 requires this entry | active |
+| D22 | **Gateway keeps binary-spawn; napi-rs deferred (OD-08 resolved by measurement, 2026-06-12).** Measured on the shipping path (temp files + execFile of the debug binary, report parsed): spawn p50 **5.3 ms** (vx2-mini, 16 parts) / **17.8 ms** (hrx7, 125 parts); in-process WASM-in-Node (a conservative napi proxy — napi would only be faster): p50 **0.7 / 3.7 ms** (`scripts/od08-measure.mjs`). Both sit far inside the < 150 ms interactive-validate budget, and spawn buys process isolation plus guaranteed bit-equality with the CI artifact. napi-rs would add a third build artifact to save ~5–15 ms — revisit only when a measured server-side hot path demands it (candidate: the P4 generation orchestrator validating every draft iteration at volume). | measurement over preference; the in-process option already exists (WASM) wherever latency matters | active |
 
 ## Open decisions
 
@@ -74,7 +75,7 @@ OD row. OD-02 (React vs Solid) was resolved by D16: the face stays React/TS.
 
 ## Expected near-term additions
 
-- P2: napi-rs hot-path bindings vs binary-spawn in the gateway — measure, decide (OD-08).
+- ~~P2: napi-rs hot-path bindings vs binary-spawn in the gateway (OD-08)~~ — resolved as D22.
 - P3: reference-rig SKU selection (fulfils D12).
 - P4: pinned Anthropic model strings/limits/pricing (CLAUDE.md non-negotiable #11).
 - P8: legal-review sign-off record (entry gate).

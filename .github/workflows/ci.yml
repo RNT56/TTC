@@ -82,6 +82,8 @@ jobs:
             || { echo "::error::committed wasm-pkg is stale — run pnpm build:wasm and commit"; exit 1; }
       - name: P1-005 performance budgets — bake ≤ 60 ms, patch ≤ 10 ms (binding)
         run: node scripts/budgets.mjs --pkg /tmp/wasm-fresh
+      - name: P2-006 declared verdicts on every first-party contract
+        run: node scripts/validate-all.mjs
       - name: trajectory oracle tapes are deterministic and current
         run: |
           node scripts/extract-trajectories.mjs

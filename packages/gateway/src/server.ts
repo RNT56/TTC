@@ -22,15 +22,15 @@ export function buildServer(): FastifyInstance {
     {
       schema: {
         body: Type.Object(
-          { contract: Type.Unknown() },
+          { contract: Type.Unknown(), asDraft: Type.Optional(Type.Boolean()) },
           { additionalProperties: false },
         ),
       },
     },
     async (request, reply) => {
-      const { contract } = request.body as { contract: unknown };
+      const { contract, asDraft } = request.body as { contract: unknown; asDraft?: boolean };
       const json = typeof contract === "string" ? contract : JSON.stringify(contract);
-      const result = await runValidator(json);
+      const result = await runValidator(json, asDraft ?? false);
       if (result.exitCode === -1 || result.report === null) {
         return reply.status(503).send({
           error: "validator unavailable",
@@ -39,7 +39,10 @@ export function buildServer(): FastifyInstance {
       }
       const verdict = (result.report as { verdict?: string }).verdict;
       // Admission gate: the sovereign validator's verdict drives the status.
-      return reply.status(verdict === "admitted" ? 200 : 422).send(result.report);
+      // A draft is a SUCCESSFUL save-as-draft (D14): the document persists as
+      // editable with its diagnostics, but can never train/export/share —
+      // enforced at those surfaces as they land (P4+/P7).
+      return reply.status(verdict === "rejected" ? 422 : 200).send(result.report);
     },
   );
 
