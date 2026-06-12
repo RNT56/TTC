@@ -152,11 +152,11 @@ pub fn cyl(r_b: f64, r_t: f64, h: f64, n: usize) -> PolyMesh {
     let mut v = Vec::with_capacity(2 * n);
     for i in 0..n {
         let a = i as f64 / n as f64 * tau;
-        v.push([a.cos() * r_b, -y, a.sin() * r_b]);
+        v.push([forge_num::cos(a) * r_b, -y, forge_num::sin(a) * r_b]);
     }
     for i in 0..n {
         let a = i as f64 / n as f64 * tau;
-        v.push([a.cos() * r_t, y, a.sin() * r_t]);
+        v.push([forge_num::cos(a) * r_t, y, forge_num::sin(a) * r_t]);
     }
     let mut f: Vec<Vec<u32>> = Vec::with_capacity(n + 2);
     for i in 0..n {
@@ -194,7 +194,7 @@ pub fn lathe(prof: &[[f64; 2]], n: usize) -> PolyMesh {
             });
             for i in 0..n {
                 let a = i as f64 / n as f64 * tau;
-                v.push([a.cos() * r, y, a.sin() * r]);
+                v.push([forge_num::cos(a) * r, y, forge_num::sin(a) * r]);
             }
         }
     }

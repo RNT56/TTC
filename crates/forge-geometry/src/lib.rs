@@ -248,7 +248,7 @@ pub fn axis_angle(axis: [f64; 3], angle: f64) -> Mat4 {
         return identity();
     }
     let (x, y, z) = (axis[0] / len, axis[1] / len, axis[2] / len);
-    let (s, c) = angle.sin_cos();
+    let (s, c) = forge_num::sin_cos(angle);
     let t = 1.0 - c;
     [
         t * x * x + c,
@@ -272,7 +272,7 @@ pub fn axis_angle(axis: [f64; 3], angle: f64) -> Mat4 {
 
 /// Translation+heading (rotation about +Y) as a Mat4 — driver body poses.
 pub fn body_offset(x: f64, z: f64, heading: f64) -> Mat4 {
-    let (s, c) = heading.sin_cos();
+    let (s, c) = forge_num::sin_cos(heading);
     [
         c, 0.0, -s, 0.0, //
         0.0, 1.0, 0.0, 0.0, //
@@ -316,21 +316,21 @@ fn trs(pos: [f64; 3], rot: [f64; 3]) -> Mat4 {
 
 /// Single-axis rotations (column-major), shared with the part-pose path.
 pub fn rot_x(a: f64) -> Mat4 {
-    let (s, c) = a.sin_cos();
+    let (s, c) = forge_num::sin_cos(a);
     [
         1.0, 0.0, 0.0, 0.0, 0.0, c, s, 0.0, 0.0, -s, c, 0.0, 0.0, 0.0, 0.0, 1.0,
     ]
 }
 
 pub fn rot_y(a: f64) -> Mat4 {
-    let (s, c) = a.sin_cos();
+    let (s, c) = forge_num::sin_cos(a);
     [
         c, 0.0, -s, 0.0, 0.0, 1.0, 0.0, 0.0, s, 0.0, c, 0.0, 0.0, 0.0, 0.0, 1.0,
     ]
 }
 
 pub fn rot_z(a: f64) -> Mat4 {
-    let (s, c) = a.sin_cos();
+    let (s, c) = forge_num::sin_cos(a);
     [
         c, s, 0.0, 0.0, -s, c, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     ]

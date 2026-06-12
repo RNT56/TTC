@@ -20,6 +20,12 @@ export class Session {
 export function bake(contract_json: string): string;
 
 /**
+ * Golden-number report (XT-001): must equal the native binary's output
+ * byte for byte.
+ */
+export function golden(contract_json: string): string;
+
+/**
  * JSON-Patch application with shape re-check (the `patch` boundary call).
  */
 export function patch(contract_json: string, patch_json: string): string;
@@ -34,6 +40,7 @@ export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_session_free: (a: number, b: number) => void;
     readonly bake: (a: number, b: number) => [number, number, number, number];
+    readonly golden: (a: number, b: number) => [number, number, number, number];
     readonly patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly schema: () => [number, number];
     readonly session_new: (a: number, b: number) => [number, number, number];

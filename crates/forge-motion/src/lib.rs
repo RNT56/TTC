@@ -67,9 +67,9 @@ pub fn leg_ik(l1: f64, l2: f64, dy: f64, dz: f64) -> LegPose {
     let reach_max = (l1 + l2) * 0.99999;
     let d = (dy * dy + dz * dz).sqrt().min(reach_max).max(1e-9);
     let cos_beta = ((d * d - l1 * l1 - l2 * l2) / (2.0 * l1 * l2)).clamp(-1.0, 1.0);
-    let beta = cos_beta.acos();
-    let gamma = dz.atan2(-dy);
-    let delta = (l2 * beta.sin()).atan2(l1 + l2 * beta.cos());
+    let beta = forge_num::acos(cos_beta);
+    let gamma = forge_num::atan2(dz, -dy);
+    let delta = forge_num::atan2(l2 * forge_num::sin(beta), l1 + l2 * forge_num::cos(beta));
     let hip = -gamma - delta;
     LegPose {
         hip_pitch: hip,
@@ -85,8 +85,8 @@ pub fn leg_ik(l1: f64, l2: f64, dy: f64, dz: f64) -> LegPose {
 pub fn leg_fk(l1: f64, l2: f64, pose: &LegPose) -> (f64, f64) {
     let t1 = pose.hip_pitch;
     let knee_dir = t1 + pose.knee;
-    let dy = -(l1 * t1.cos() + l2 * knee_dir.cos());
-    let dz = -(l1 * t1.sin() + l2 * knee_dir.sin());
+    let dy = -(l1 * forge_num::cos(t1) + l2 * forge_num::cos(knee_dir));
+    let dz = -(l1 * forge_num::sin(t1) + l2 * forge_num::sin(knee_dir));
     (dy, dz)
 }
 
@@ -337,8 +337,8 @@ impl RoverDriver {
         let left = v - w * self.wheelbase_m / 2.0;
         let right = v + w * self.wheelbase_m / 2.0;
         self.pose[2] += w * dt;
-        self.pose[0] += v * self.pose[2].sin() * dt;
-        self.pose[1] += v * self.pose[2].cos() * dt;
+        self.pose[0] += v * forge_num::sin(self.pose[2]) * dt;
+        self.pose[1] += v * forge_num::cos(self.pose[2]) * dt;
         (left, right)
     }
 }

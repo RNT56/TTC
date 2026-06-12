@@ -44,3 +44,13 @@ rules) and does **not** survive into translations or the product (plan §17.2).
 | P0-005/006 translations — hrx7 + fpv → `ModelSpec` JSON | open (now unblocked) |
 | P0-004 byte-equivalence — `scripts/compare-counts.mjs` extraction vs `forge-validate bake` | runner ready; runs when translations land |
 | P1-006 golden-number corpus | gated on trajectory recording |
+
+## `trajectories/` — the motion oracle (P1-001 / golden numbers)
+
+Deterministic tapes recorded from the monolith's own `drv.update` + `pose` +
+`post` pipeline under scripted inputs (`scripts/extract-trajectories.mjs`):
+300 frames × 9 channels (pos/rot/off) per node at 120 Hz over four input
+phases. These are what the Rust biped/FPV driver ports must reproduce —
+oracle comparison runs at tight tolerance (JS↔Rust libm may differ by ULPs);
+native↔WASM comparison is bit-exact (XT-001, `scripts/golden-compare.mjs`).
+CI re-records and fails on drift.

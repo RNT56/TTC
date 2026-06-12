@@ -7,5 +7,6 @@ license.workspace = true
 
 [dependencies]
 forge-contract = { path = "../forge-contract" }
+forge-num = { path = "../forge-num" }
 serde = { workspace = true }
 serde_json = { workspace = true }

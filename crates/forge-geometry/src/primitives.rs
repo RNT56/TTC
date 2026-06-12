@@ -216,10 +216,10 @@ fn superellipse(rx: f64, rz: f64, p: f64, n_per_quadrant: usize) -> Vec<[f64; 2]
     (0..n)
         .map(|i| {
             let t = (i as f64) / (n as f64) * std::f64::consts::TAU;
-            let (s, c) = t.sin_cos();
+            let (s, c) = forge_num::sin_cos(t);
             [
-                rx * c.abs().powf(k) * c.signum(),
-                rz * s.abs().powf(k) * s.signum(),
+                rx * forge_num::pow(c.abs(), k) * c.signum(),
+                rz * forge_num::pow(s.abs(), k) * s.signum(),
             ]
         })
         .collect()

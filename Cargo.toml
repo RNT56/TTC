@@ -4,6 +4,7 @@ members = [
     "crates/forge-contract",
     "crates/forge-geometry",
     "crates/forge-motion",
+    "crates/forge-num",
     "crates/forge-sim",
     "crates/forge-gen",
     "crates/forge-validate",

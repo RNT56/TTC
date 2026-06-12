@@ -21,9 +21,9 @@ fn to_zup(p: [f64; 3]) -> [f64; 3] {
 /// 3×3 rotation (row-major) for euler XYZ applied X→Y→Z (R = Rz·Ry·Rx),
 /// matching forge-geometry's node convention.
 fn rot_xyz(rot: [f64; 3]) -> [[f64; 3]; 3] {
-    let (sx, cx) = rot[0].sin_cos();
-    let (sy, cy) = rot[1].sin_cos();
-    let (sz, cz) = rot[2].sin_cos();
+    let (sx, cx) = forge_num::sin_cos(rot[0]);
+    let (sy, cy) = forge_num::sin_cos(rot[1]);
+    let (sz, cz) = forge_num::sin_cos(rot[2]);
     [
         [cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz],
         [cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz],
@@ -52,12 +52,16 @@ fn mat_mul(a: [[f64; 3]; 3], b: [[f64; 3]; 3]) -> [[f64; 3]; 3] {
 
 /// Fixed-axis RPY (URDF convention, R = Rz(yaw)·Ry(pitch)·Rx(roll)).
 fn to_rpy(r: [[f64; 3]; 3]) -> [f64; 3] {
-    let pitch = (-r[2][0]).asin();
-    if pitch.cos().abs() < 1e-9 {
+    let pitch = forge_num::asin(-r[2][0]);
+    if forge_num::cos(pitch).abs() < 1e-9 {
         // gimbal edge: fold yaw into roll
-        return [0.0, pitch, (-r[0][1]).atan2(r[1][1])];
+        return [0.0, pitch, forge_num::atan2(-r[0][1], r[1][1])];
     }
-    [r[2][1].atan2(r[2][2]), pitch, r[1][0].atan2(r[0][0])]
+    [
+        forge_num::atan2(r[2][1], r[2][2]),
+        pitch,
+        forge_num::atan2(r[1][0], r[0][0]),
+    ]
 }
 
 /// Quaternion (w, x, y, z) from a rotation matrix (Shepperd's method).

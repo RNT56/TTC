@@ -44,6 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         # version comes from package.json "packageManager" — pinning it here too
@@ -71,6 +73,18 @@ jobs:
           cargo run -q -p forge-validate -- bake examples/hrx7.forge.json --out /tmp/hrx7.bake.json
           cargo run -q -p forge-validate -- bake examples/vx2-hornet.forge.json --out /tmp/vx2.bake.json
           node scripts/compare-counts.mjs prototype/extracted-counts.json /tmp/hrx7.bake.json /tmp/vx2.bake.json
+      - name: XT-001 golden numbers — native ↔ WASM bit-identical (D17)
+        run: |
+          cargo build -p forge-wasm --bin forge-golden
+          pnpm exec wasm-pack build crates/forge-wasm --target web --release --out-dir /tmp/wasm-fresh --out-name forge_wasm
+          node scripts/golden-compare.mjs --pkg /tmp/wasm-fresh --bin target/debug/forge-golden
+          node scripts/golden-compare.mjs --pkg packages/studio/src/wasm-pkg --bin target/debug/forge-golden \
+            || { echo "::error::committed wasm-pkg is stale — run pnpm build:wasm and commit"; exit 1; }
+      - name: trajectory oracle tapes are deterministic and current
+        run: |
+          node scripts/extract-trajectories.mjs
+          git diff --exit-code prototype/trajectories \
+            || { echo "::error::tapes drifted — the recorder or the frozen prototype changed"; exit 1; }
 
   workers:
     name: compute workers (Python)

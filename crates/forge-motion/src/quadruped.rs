@@ -129,7 +129,7 @@ impl QuadrupedDriver {
             let q = (p - d) / (1.0 - d);
             (
                 -s / 2.0 + s * q,
-                self.params.lift_m * (std::f64::consts::PI * q).sin(),
+                self.params.lift_m * forge_num::sin(std::f64::consts::PI * q),
             )
         };
         let dy = -(self.params.stand_height_m - lift);
@@ -158,8 +158,8 @@ impl QuadrupedDriver {
         // body advance: v ≈ stride × cadence at full drive (stated approximation)
         let speed = drive * self.params.stride_m * self.params.cadence_hz;
         self.pose[2] += input.turn.clamp(-1.0, 1.0) * self.params.yaw_rate * dt;
-        self.pose[0] += speed * self.pose[2].sin() * dt;
-        self.pose[1] += speed * self.pose[2].cos() * dt;
+        self.pose[0] += speed * forge_num::sin(self.pose[2]) * dt;
+        self.pose[1] += speed * forge_num::cos(self.pose[2]) * dt;
         self.out.body = self.pose;
         &self.out
     }

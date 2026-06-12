@@ -85,7 +85,7 @@ impl Powertrain {
             let thrust = self.ct * self.air_density * n_rev_s * n_rev_s * self.prop_d_m.powi(4);
             // induced power (momentum theory) → shaft via FM → electrical via η
             let p_ind = if thrust > 0.0 {
-                thrust.powf(1.5) / (2.0 * self.air_density * disc_area).sqrt()
+                forge_num::pow(thrust, 1.5) / (2.0 * self.air_density * disc_area).sqrt()
             } else {
                 0.0
             };

@@ -6,6 +6,7 @@
 //! refinement: positions/normals/indices become views over linear memory once
 //! the studio consumes the facade directly (tracked in TODO P1-005).
 
+pub mod golden;
 pub mod session;
 
 use forge_validate::{run_full, EmptyCatalog, Options};
@@ -62,6 +63,13 @@ mod wasm_bindings {
     #[wasm_bindgen]
     pub fn schema() -> String {
         super::schema_json()
+    }
+
+    /// Golden-number report (XT-001): must equal the native binary's output
+    /// byte for byte.
+    #[wasm_bindgen]
+    pub fn golden(contract_json: &str) -> Result<String, JsValue> {
+        super::golden::golden_report(contract_json).map_err(|e| JsValue::from_str(&e))
     }
 
     /// JSON-Patch application with shape re-check (the `patch` boundary call).
