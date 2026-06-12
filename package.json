@@ -1,7 +1,7 @@
 {
   "name": "forge-monorepo",
   "private": true,
-  "description": "FORGE — Rust core, web face (D16). TS packages live in packages/*; the cargo workspace in crates/*.",
+  "description": "FORGE \u2014 Rust core, web face (D16). TS packages live in packages/*; the cargo workspace in crates/*.",
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
@@ -17,5 +17,6 @@
     "pngjs": "^7.0.0",
     "wasm-pack": "^0.15.0"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.0",
+  "license": "SEE LICENSE IN LICENSE"
 }

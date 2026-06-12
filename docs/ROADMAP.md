@@ -17,7 +17,7 @@ phase-level state only.
 
 | Phase | Status | Est. |
 |---|---|---|
-| Pre-P0 housekeeping | ◑ | days |
+| Pre-P0 housekeeping | ● *(2026-06-12 — licensing D24, hygiene, naming D23; branch protection = owner click)* | days |
 | P0 Freeze & extract | ● for the delivered vintage *(2026-06-12; P0-007 variants gated on the later build or a re-scope decision; remote tag = owner push)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
@@ -48,8 +48,8 @@ licensing groundwork.
 - [x] Plan v3.0 adopted as binding; v2.0 archived as historical (2026-06-11)
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
 - [x] **`cad-object-studio.html` prototype committed** byte-exact + tagged `prototype-final` *(2026-06-12; pre-configurator vintage — see prototype/README.md)*
-- [ ] License files reflecting open-core split (D2): Apache-2.0 for the core crates + schema; proprietary notice for the rest (PRE-003)
-- [ ] Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, default-branch protection (PRE-004)
+- [x] License files reflecting open-core split (D2/D24): Apache-2.0 (© RNT56) for crates/ + schema/ + examples/; proprietary for the rest *(2026-06-12)*
+- [x] Repo hygiene: `.gitignore` + `.editorconfig` *(2026-06-12)*; default-branch protection = one owner click in GitHub settings
 
 ## P0 — Freeze & extract
 

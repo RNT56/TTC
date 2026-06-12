@@ -287,7 +287,7 @@ export default function App() {
       />
 
       <div style={{ ...panel, top: 12, left: 12, minWidth: 230 }}>
-        <div style={{ color: "#8fa3bf", marginBottom: 6 }}>FORGE STUDIO</div>
+        <div style={{ color: "#8fa3bf", marginBottom: 6 }}>ForgedTTC STUDIO</div>
         <select
           value={s.modelId}
           onChange={(e) => {

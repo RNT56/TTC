@@ -1,0 +1,7 @@
+ForgedTTC core
+Copyright 2026 RNT56
+
+This product includes software developed as part of the ForgedTTC project
+(working codename FORGE; repository TTC). The open-core components under
+crates/, schema/ and examples/ are licensed under the Apache License 2.0
+(see LICENSES/Apache-2.0.txt).

@@ -1,0 +1,34 @@
+ForgedTTC — licensing (open-core split, decision D2/D24)
+
+Copyright 2026 RNT56
+
+This repository contains two license zones:
+
+1. THE OPEN CORE — Apache License 2.0
+   Scope:  crates/        (the forge-* core: contract, geometry, motion,
+                           sim, validate, wasm facade, num, gen)
+           schema/        (the emitted JSON Schema — the single source)
+           examples/      (first-party contracts and fixtures)
+   Full license text: LICENSES/Apache-2.0.txt
+   Attribution file:  NOTICE
+
+   These are the bits that judge a model everywhere (D17). Anyone may use,
+   modify, and redistribute them under Apache-2.0, including building
+   their own tools on the contract format and validator.
+
+2. EVERYTHING ELSE — proprietary, all rights reserved
+   Scope:  packages/      (studio, gateway)
+           workers/       (compute workers)
+           prototype/     (the frozen reference implementation)
+           catalog/       (component rows; data provenance per row)
+           docs/, infra/, scripts/ and all other paths
+   Copyright 2026 RNT56. No license is granted. Do not copy, modify, or
+   redistribute without written permission.
+
+Component catalog rows under catalog/ additionally carry their own
+licenseClass field (D10) governing each asset's export and redistribution;
+cited manufacturer specifications remain the property of their publishers.
+
+Contributions: by submitting a contribution to a path in zone 1 you agree
+to license it under Apache-2.0; contributions to zone 2 are accepted only
+under a grant of rights to RNT56.

@@ -27,9 +27,9 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 
 - [x] PRE-001 — Documentation system: `CLAUDE.md`, `CHANGELOG.md`, `docs/` suite *(2026-06-11)*
 - [x] PRE-002 — Prototype committed byte-exact + tagged `prototype-final` *(2026-06-12; sha256 ca93489e… — pre-configurator vintage, see prototype/README.md)*
-- [ ] PRE-003 — Licensing per D2: `LICENSE` (Apache-2.0) scoped to the `forge-core` crates + schema; proprietary notice for the rest; confirm exact mechanics with owner before first code commit
-- [ ] PRE-004 — Repo hygiene: Node/TS + Rust `.gitignore`, `.editorconfig`, branch protection on `main`
-- [ ] PRE-005 — Naming: trademark scan for FORGE or a successor name (OD-01; non-blocking until public artifacts ship at P3/P4)
+- [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
+- [x] PRE-004 — Repo hygiene *(2026-06-12)*: `.gitignore` (rust/node/python + env/coverage/logs), `.editorconfig` (LF, utf-8, 2-space / rust 4 / tabs for Make). **Branch protection on `main` remains the one owner click** (GitHub → Settings → Branches; no API surface in this session's toolset)
+- [x] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC**; `forge-*` code namespaces stay (minimal churn); formal trademark scan recorded as the owner's pre-P4 action
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
 ## 2. Phase task breakdowns

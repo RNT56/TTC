@@ -9,8 +9,9 @@
 
 ## 1. What this project is
 
-**FORGE** (working codename — *Fabricate · Operate · Rehearse · Generate · Export*; the
-repository name `TTC` = text-to-CAD) is a robotics studio that closes the loop:
+**ForgedTTC** (named by D23, 2026-06-12; historical working codename *FORGE* —
+*Fabricate · Operate · Rehearse · Generate · Export*; the repository name `TTC` =
+text-to-CAD; code namespaces stay `forge-*`) is a robotics studio that closes the loop:
 
 > **describe → assemble → verify → rehearse → deploy → evolve**
 

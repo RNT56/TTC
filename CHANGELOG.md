@@ -18,6 +18,37 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Pre-P0 closed: licensing (D24), hygiene, the name is ForgedTTC (D23)
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** Pre-P0 · **TODO items:** PRE-003 [x], PRE-004 [x], PRE-005 [x]
+**Done:** Owner-delegated business calls executed and recorded. **D23 — the
+product name is ForgedTTC** (resolves OD-01/PRE-005): living docs, UI title
+("ForgedTTC STUDIO"), page title, NOTICE updated; `forge-*`/`@forge/*` code
+namespaces deliberately stay (internal prefixes — renaming churns every
+crate/import for zero user value); frozen papers keep the historical FORGE
+codename; trademark scan recorded as the owner's pre-P4 action.
+**D24 — license mechanics** (implements D2, © RNT56): root `LICENSE` states
+the open-core split — Apache-2.0 zone = `crates/` (all forge-* crates incl.
+the wasm facade and forge-gen: everything published must be usable),
+`schema/`, `examples/` (fixtures travel with the validator); everything else
+(studio, gateway, workers, prototype, catalog, docs, infra, scripts)
+proprietary, all rights reserved; `LICENSES/Apache-2.0.txt` is the canonical
+apache.org text (11,358 bytes); `NOTICE` per Apache convention; zone-2
+package.json marked "SEE LICENSE IN"; the cargo workspace already declared
+Apache-2.0 (the wasm-pack missing-LICENSE warning resolves). Contribution
+terms stated in LICENSE. **PRE-004:** `.editorconfig` (LF/utf-8, 2-space,
+rust 4, tabs for Make) + `.gitignore` extended (env/secrets, coverage,
+logs). **Branch protection on `main` is the one remaining owner click**
+(GitHub → Settings → Branches; no API surface in this session's toolset).
+Pre-P0 phase → ● in ROADMAP.
+**Changed:** `LICENSE`, `LICENSES/Apache-2.0.txt`, `NOTICE`, `.editorconfig`,
+`.gitignore`, `package.json` ×3 (license fields), `CLAUDE.md` §1,
+`docs/{DECISIONS.md (D23, D24), GLOSSARY.md, TODO.md, ROADMAP.md}`,
+`packages/studio/{src/App.tsx, index.html}` (ForgedTTC title).
+**Decisions:** D23 (name), D24 (license mechanics).
+**Next:** owner clicks branch protection; then the standing P3 queue
+(Postgres runner, ETL pipeline, license-export filter XC-17, D12 SKUs).
+**Blockers:** none.
+
 ## 2026-06-12 — P3-007 proof pair: cited catalog rows, file-backed resolution, dims within 1 %
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P3 · **TODO items:** P3-007 [x], P3-004 [~ format], P3-001 [~ DDL]
 **Done:** The proof pair is real and gated. **Rows:** EMAX ECO II 2207 1900KV
