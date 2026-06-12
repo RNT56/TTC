@@ -18,6 +18,18 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Fix PR #1 CI: pnpm version double-pin
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1 (D21) · **TODO items:** none
+**Done:** PR #1's "studio + gateway" check failed in setup: `pnpm/action-setup@v4`
+errors when the workflow pins `version: 10` while `package.json` carries
+`packageManager: pnpm@10.33.0`. Removed the workflow pin (packageManager is the
+single source). Rust core and Python workers jobs were already green on the runner.
+**Changed:** `.github/workflows/ci.yml`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Merge PR #1 to `main` once all three checks are green (owner instruction),
+then PRE-002 as before.
+**Blockers:** PRE-002 (unchanged).
+
 ## 2026-06-12 — v0 end-to-end build: all surfaces implemented and green
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1 interleaved (owner re-order, D21) · **TODO items:** P0-001..004, P0-009, P1-001..005, P1-008/009/011/013, XC-01, PRE-004 (partial)
 **Done:** Implemented the v0 system end to end, all verified locally:
