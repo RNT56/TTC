@@ -81,11 +81,11 @@ Studio (TypeScript face):
 
 ### P3 — Component DB + proof pair + reference rigs
 - [ ] P3-001 — Postgres schema: `components`, `connector_types`, `licenses`, `thrust_tables`, `prices`, `provenance`, `component_revisions` (DDL in [`systems/component-database.md`](systems/component-database.md))
-- [ ] P3-002 — Connector taxonomy seed set (stack patterns, motor mounts, prop shafts, XT60/XT30/JST-PH, UART/I2C)
-- [ ] P3-003 — Compatibility rule engine: mount-pattern equality, voltage-window intersection, current budget ×1.2, prop tip-circle clearance, TWR floors, connector matching — each violation with an explanation string
+- [x] P3-002 — Connector taxonomy seed *(2026-06-12)*: `infra/migrations/0002_connector_taxonomy.sql` — stack 30.5/25.5/20 patterns, motor 16/19/12 bases, prop M5/T-mount, XT60/XT30/JST-PH-2, UART/I2C (published ecosystem standards; component rows still cite their own datasheets)
+- [x] P3-003 — Compatibility rule engine *(2026-06-12)*: `forge-validate::compat` (CORE-side, correcting the doc's gateway *(proposed)* placement per D16) — CAT-001..006 with explanation strings on every violation; fixture-tested rule by rule. v0 scope stated: prop clearance is the spacing form (BVH sweep = XC-09); TWR takes thrust/AUW from the caller
 - [ ] P3-004 — ETL worker v1: fetch → Claude extraction with per-field citations → OCCT tessellation → LOD chain → dedupe → license ledger entry → human review queue
 - [ ] P3-005 — License ledger + classes (`open/attribution/no-redistribution/view-only`) populated at ingestion, non-optional (D10)
-- [ ] P3-006 — Lockfile resolver (in `forge-contract`): semver-pinned `componentRef`s against immutable `component_revisions`; upgrade flow re-validates and diffs mass/hover/price (D5) (= XC-03)
+- [x] P3-006 — Lockfile resolver *(2026-06-12)*: `forge-contract::{semver (exact/^/~, no new deps), pin_refs, upgrade_lockfile, RevisionSource}` — pin stability over freshness, yanked revisions verify-but-never-freshly-resolve, upgrades return explicit diffs for LIF-001 re-validation; tested incl. yanked + unsatisfiable-range reasons (= XC-03)
 - [ ] P3-007 — Proof pair: ingest one real 2207-class motor + one 4S 1500 mAh pack from datasheets; convert VX-2 `rotors` + `battery` slots to `componentRef`
 - [ ] P3-008 — Reference rigs (D12): select + pin ArduPilot-capable 5″ quad and Pi-class rover SKUs; record in DECISIONS
 - [~] P3-009 — BOM v0 ✓ (`forge-validate bom`: parts + masses + componentRef rows); SKUs/prices/links resolve when the catalog lands

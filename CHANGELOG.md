@@ -18,6 +18,45 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P3 core logic: compat rule engine, lockfile resolver, connector taxonomy
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P3 · **TODO items:** P3-002 [x], P3-003 [x], P3-006 [x]
+**Done:** The data-layer-independent half of P3. **P3-003 compatibility rule
+engine** in `forge-validate::compat` — CORE-side, correcting the component-db
+doc's gateway *(proposed)* placement per D16 (gateway/studio consume the same
+bits via the facade): CAT-001 mount-pattern equality, CAT-002 voltage-window
+intersection, CAT-003 current budget ×1.2, CAT-004 prop tip clearance (v0
+spacing form; BVH sweep = XC-09), CAT-005 TWR floors per preset (thrust/AUW
+supplied by the caller — never invented), CAT-006 connector matching. Every
+violation carries an explanation string (the reason a configurator card
+greys); fixture-tested rule by rule, with undeclared-field semantics explicit
+(skip when unverifiable, warn when one side declares). **P3-006 lockfile
+resolver** in `forge-contract` — `semver` module (exact/^/~, ~120 lines, no
+new dependency), `pin_refs` (pin STABILITY: existing pins survive catalog
+updates; yanked revisions verify-but-never-freshly-resolve), and
+`upgrade_lockfile` (the explicit mover, returning diffs for LIF-001
+re-validation + consequence diffs); tested incl. yanked and
+unsatisfiable-range reasons. **P3-002 connector taxonomy seed**
+(`infra/migrations/0002_connector_taxonomy.sql`): stack 30.5/25.5/20,
+motor 16/19/12 bases, prop M5/T-mount, XT60/XT30/JST-PH-2, UART/I2C —
+published ecosystem standards; component rows still cite their own
+datasheets (D10). Check catalog gains the CAT block
+(validation-harness.md). Drive-by: clippy now clean under `--all-targets`
+(test-target lints incl. a TAU literal in forge-num's test). Verified: 100
+Rust tests, golden + report equality, verdict matrix, wasm32.
+**Changed:** `crates/forge-validate/src/{compat.rs (new), lib.rs}`,
+`crates/forge-contract/{src/semver.rs (new), src/lib.rs (RevisionSource,
+pin_refs, upgrade_lockfile), tests/lockfile_resolution.rs (new)}`,
+`crates/forge-num/src/lib.rs` (test literal), `infra/migrations/0002…sql`
+(new), docs (validation-harness CAT block, component-database placement +
+status, TODO).
+**Decisions:** compat engine placement = core (recorded in the system doc;
+the prior gateway note was *(proposed)*-level).
+**Next:** P3-007 proof pair — needs (a) a file-backed `RevisionSource` for
+the CLI so admitted contracts can pin against seed rows pre-Postgres, and
+(b) real 2207-motor + 4S-1500 datasheets with per-field citations (web
+research); then P3-001 migration runner + P3-004 ETL worker skeleton.
+**Blockers:** none.
+
 ## 2026-06-12 — P2 closed: verdict matrix in CI, draft semantics, OD-08 → D22
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P2 · **TODO items:** P2-006 [x], P2-007 [x], P2-002 [~], P2-003 (biped ✓)
 **Done:** **P2's four exit criteria are all checked — phase closed.**

@@ -97,6 +97,15 @@ RND-002 blueprint pass renders cleanly.
 > rows land with their phases.
 **XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
 bit-identical native↔WASM (detail: [`core-runtime.md`](core-runtime.md) §5).
+**CAT — catalog compatibility (P3-003; live 2026-06-12 in `forge-validate::compat`)** ·
+CAT-001 mount-pattern equality (stack parts vs frame) · CAT-002 voltage-window
+intersection (battery↔ESC↔motor) · CAT-003 current budget (discharge ≥ Σ motor
+max × 1.2) · CAT-004 prop tip clearance (v0 spacing form; geometric BVH = XC-09) ·
+CAT-005 TWR floors per preset (freestyle: reject < 1.8, warn < 2.5; thrust/AUW
+supplied by the caller from thrust tables) · CAT-006 connector matching
+(battery↔ESC). Every violation carries an explanation string — the reason a
+configurator card greys out. Rules run wherever the core runs (D17); they
+activate against real rows at catalog ingestion (P3-004).
 **LIF — lifecycle** · LIF-001 upgrade re-validation when lockfiles move (D5).
 **PRV — provenance** · PRV-001 prompt/seed hashes present on generated content ·
 PRV-002 training lineage present on policies/skills.

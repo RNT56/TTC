@@ -19,6 +19,8 @@ use std::collections::BTreeMap;
 // js-sys — the same glue the facade already requires.
 // ---------------------------------------------------------------------------
 
+pub mod compat;
+
 #[cfg(not(target_arch = "wasm32"))]
 mod clock {
     use std::time::{Instant, SystemTime, UNIX_EPOCH};

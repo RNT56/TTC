@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub mod patch;
+pub mod semver;
 
 /// Contract schema version carried by `meta.version`-bearing documents.
 pub const SCHEMA_VERSION: &str = "2.1.0";
@@ -680,6 +681,175 @@ fn hex(bytes: &[u8]) -> String {
 pub trait CatalogSource {
     /// Returns true if `component_id@exact_revision` exists as an immutable revision.
     fn has_revision(&self, component_id: &str, revision: &str) -> bool;
+}
+
+/// One published immutable revision (P3-006/XC-03).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Revision {
+    pub version: semver::Version,
+    /// Yanked revisions stay resolvable for EXISTING pins (history is
+    /// immutable) but are never selected by fresh resolution or upgrades.
+    pub yanked: bool,
+}
+
+/// The resolution surface: everything published for a component id.
+pub trait RevisionSource: CatalogSource {
+    fn revisions(&self, component_id: &str) -> Vec<Revision>;
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResolveError {
+    pub component_ref: String,
+    pub reason: String,
+}
+
+/// A lockfile movement proposed by the upgrade flow (D5): the consumer
+/// re-validates (LIF-001) and diffs mass/hover/price before accepting.
+#[derive(Debug, Clone, PartialEq)]
+pub struct UpgradeDiff {
+    pub component_ref: String,
+    pub from: String,
+    pub to: String,
+}
+
+fn ref_parts(component_ref: &str) -> Result<(&str, semver::Range), String> {
+    let (id, range) = component_ref
+        .rsplit_once('@')
+        .ok_or_else(|| "componentRef is not '<id>@<range>'".to_string())?;
+    let range = semver::Range::parse(range)
+        .ok_or_else(|| format!("range '{range}' is not exact/^x.y.z/~x.y.z"))?;
+    Ok((id, range))
+}
+
+fn each_ref(spec: &ModelSpec, mut f: impl FnMut(&str)) {
+    for slot in &spec.slots {
+        for v in &slot.variants {
+            if let Some(r) = &v.component_ref {
+                f(r);
+            }
+        }
+    }
+    for m in &spec.sim.motors {
+        if let Some(r) = &m.component_ref {
+            f(r);
+        }
+    }
+}
+
+/// Resolve every componentRef RANGE to an exact immutable revision (D5),
+/// producing lockfile entries `ref → "<id>@<exact>"`. Existing pins are kept
+/// verbatim while they still satisfy the range — a catalog update never
+/// silently moves a model (moving is `upgrade_lockfile`'s explicit job).
+/// Yanked revisions: kept when already pinned, never freshly selected.
+pub fn pin_refs(
+    spec: &ModelSpec,
+    source: &dyn RevisionSource,
+) -> Result<BTreeMap<String, String>, Vec<ResolveError>> {
+    let mut lockfile = BTreeMap::new();
+    let mut errors = Vec::new();
+    each_ref(spec, |component_ref| {
+        let (id, range) = match ref_parts(component_ref) {
+            Ok(p) => p,
+            Err(reason) => {
+                errors.push(ResolveError {
+                    component_ref: component_ref.to_string(),
+                    reason,
+                });
+                return;
+            }
+        };
+        // keep a still-valid existing pin (stability over freshness)
+        if let Some(pin) = spec.lockfile.get(component_ref) {
+            if let Some((pin_id, pin_rev)) = pin.rsplit_once('@') {
+                if pin_id == id {
+                    if let Some(v) = semver::Version::parse(pin_rev) {
+                        if range.matches(v) && source.has_revision(pin_id, pin_rev) {
+                            lockfile.insert(component_ref.to_string(), pin.clone());
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        match newest_matching(source, id, range) {
+            Some(v) => {
+                lockfile.insert(component_ref.to_string(), format!("{id}@{v}"));
+            }
+            None => errors.push(ResolveError {
+                component_ref: component_ref.to_string(),
+                reason: format!("no published, non-yanked revision of '{id}' satisfies the range"),
+            }),
+        }
+    });
+    if errors.is_empty() {
+        Ok(lockfile)
+    } else {
+        Err(errors)
+    }
+}
+
+/// The upgrade flow's outcome: the fresh lockfile plus every movement.
+pub type UpgradeOutcome = (BTreeMap<String, String>, Vec<UpgradeDiff>);
+
+/// Re-resolve every range to the newest non-yanked revision and report the
+/// movements. The caller re-validates (LIF-001) and shows consequence diffs
+/// (mass, hover, price) before adopting the returned lockfile.
+pub fn upgrade_lockfile(
+    spec: &ModelSpec,
+    source: &dyn RevisionSource,
+) -> Result<UpgradeOutcome, Vec<ResolveError>> {
+    let mut lockfile = BTreeMap::new();
+    let mut diffs = Vec::new();
+    let mut errors = Vec::new();
+    each_ref(spec, |component_ref| {
+        let (id, range) = match ref_parts(component_ref) {
+            Ok(p) => p,
+            Err(reason) => {
+                errors.push(ResolveError {
+                    component_ref: component_ref.to_string(),
+                    reason,
+                });
+                return;
+            }
+        };
+        match newest_matching(source, id, range) {
+            Some(v) => {
+                let pin = format!("{id}@{v}");
+                if let Some(old) = spec.lockfile.get(component_ref) {
+                    if *old != pin {
+                        diffs.push(UpgradeDiff {
+                            component_ref: component_ref.to_string(),
+                            from: old.clone(),
+                            to: pin.clone(),
+                        });
+                    }
+                }
+                lockfile.insert(component_ref.to_string(), pin);
+            }
+            None => errors.push(ResolveError {
+                component_ref: component_ref.to_string(),
+                reason: format!("no published, non-yanked revision of '{id}' satisfies the range"),
+            }),
+        }
+    });
+    if errors.is_empty() {
+        Ok((lockfile, diffs))
+    } else {
+        Err(errors)
+    }
+}
+
+fn newest_matching(
+    source: &dyn RevisionSource,
+    id: &str,
+    range: semver::Range,
+) -> Option<semver::Version> {
+    source
+        .revisions(id)
+        .into_iter()
+        .filter(|r| !r.yanked && range.matches(r.version))
+        .map(|r| r.version)
+        .max()
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,8 +1,7 @@
 # Component Database & Compatibility Engine — implementation doc
 
 **Status:** not started · **Phases:** P3 · **Home:** Postgres (data plane) +
-`packages/gateway` (compatibility rules) + `workers/etl`; lockfile resolution in
-`crates/forge-contract` *(proposed)* · **Plan refs:** §9 (v3.0) · **Decisions:** D1,
+`crates/forge-validate::compat` (compatibility rules — CORE-side per D16, corrected from the earlier gateway *(proposed)* placement; gateway/studio consume) + `workers/etl`; lockfile resolution in `crates/forge-contract` (live) · **Plan refs:** §9 (v3.0) · **Decisions:** D1,
 D5, D10, D12
 
 ## 1. Purpose
@@ -89,7 +88,11 @@ STEP/3MF exports. The filter lives in the exporters; the *data* lives here.
 `componentRef`s are semver ranges; each model's lockfile resolves to immutable
 `component_revisions`. Catalog updates never silently change a model. The upgrade
 flow re-resolves, **re-validates (LIF-001)**, and diffs consequences — mass, hover
-throttle, price — before the user accepts.
+throttle, price — before the user accepts. *Live 2026-06-12 (P3-006/XC-03):
+`forge-contract::{semver, pin_refs, upgrade_lockfile, RevisionSource}` — exact/^/~
+ranges, pin stability (existing pins survive catalog updates), yanked revisions
+verify-but-never-freshly-resolve, upgrade returns explicit diffs; tested incl.
+yanked behavior.*
 
 ## 7. Proof pair & reference rigs (P3-007/008; D12)
 

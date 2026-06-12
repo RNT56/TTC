@@ -102,7 +102,7 @@ mod tests {
         // sanity: libm agrees with std well within 1 ULP-ish tolerance on a
         // few representative values (exact equality is NOT required vs std —
         // only across our own targets, which the golden suite enforces)
-        for x in [0.1f64, 0.5, 1.0, 2.0, 6.2831853 / 22.0 * 7.0] {
+        for x in [0.1f64, 0.5, 1.0, 2.0, core::f64::consts::TAU / 22.0 * 7.0] {
             assert!((super::sin(x) - x.sin()).abs() < 1e-15);
             assert!((super::cos(x) - x.cos()).abs() < 1e-15);
         }
