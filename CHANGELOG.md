@@ -18,6 +18,36 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Golden numbers live: native↔WASM bit-identical; D17 divergence found+fixed
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-006 [x], P1-007 [x], XC-26 [x], P1-001 (oracle ready)
+**Done:** **XT-001 is real and green.** Golden-number suite: FNV-1a hashing of
+exact f32 bit patterns inside the core (bake buffers + 600-step scripted tick
+streams, four canonical scenes); `forge-golden` native binary vs the WASM
+facade in Node, byte-identical required; hashes also pinned in time as a
+fixture test. **First run caught a genuine D17 violation** — hrx7/vx2-hornet
+bake hashes differed native↔wasm (platform libm vs Rust wasm libm, ULP drift
+on lathe angles + pose rotations). Fix: new **`forge-num`** crate routes all
+core transcendentals through pure-Rust `libm` (identical bits on every
+target); sqrt/arithmetic stay std. After the sweep all four scenes are
+bit-identical across targets → **P1-007 met** (binary↔WASM bit-identical on
+both translated contracts). Also rebuilt the stale committed wasm-pkg (it
+predated the polymesh rework); CI now builds a fresh facade, runs
+golden-compare, and fails on committed-pkg staleness. **Oracle axis:**
+deterministic motion tapes recorded from the monolith's own drv/pose/post
+pipeline (`prototype/trajectories/`, 300 frames × 9 ch/node; hrx7 walks
+2.35 m — translation lives in root.off; fpv climbs/banks with spinner
+history); CI re-records and fails on drift.
+**Changed:** `crates/forge-num` (new), transcendental sweep across
+geometry/motion/sim, forge-wasm (golden module + bin + export),
+`scripts/{golden-compare,extract-trajectories}.mjs`, tapes, pinned
+`golden.jsonl`, CI gates, wasm-pkg rebuild, docs state.
+**Decisions:** forge-num/libm adopted as the execution of D17's no-fast-math
+policy (core-runtime §5; no new D-number — it implements D17).
+**Next:** port the biped + FPV drivers against the trajectory tapes (P1-001
+finish) — tolerance-banded vs the JS oracle, bit-exact across our targets;
+then the parity gallery (P1-015) and BatchedMesh/blueprint finishers.
+**Blockers:** none.
+
 ## 2026-06-12 — P0 closed (vintage scope): byte-equivalent translations of both models
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0 · **TODO items:** P0-004 [x], P0-005 [x], P0-006 [x], P1-002 (reconciliation)
 **Done:** **Byte-equivalence MET on first comparison** — hrx7 `125 parts · 2195

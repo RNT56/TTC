@@ -50,7 +50,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 Rust core (D21 note: v0 implemented directly in Rust on 2026-06-12; "done" for
 each item still means **oracle parity** once PRE-002 lands — the JS/prototype
 recordings remain the completion criterion):
-- [~] P1-001 — `forge-motion`: 2-bone IK (FK-verified) ✓, quad mixer ✓, servo layer ✓, constraint clamps ✓, multirotor/rover drivers ✓; **phase gait + planted-feet idle + arrive pending** (needs prototype fixtures)
+- [~] P1-001 — `forge-motion`: 2-bone IK ✓, mixer ✓, servos ✓, clamps ✓, multirotor/rover drivers ✓; **phase gait + planted-feet idle + arrive: oracle tapes now recorded** (`prototype/trajectories/` — hips/knees/arms/off channels, 300 frames, deterministic); the biped/FPV ports against them are the remaining work
 - [~] P1-002 — `forge-geometry`: **prototype-exact polygon builders** ✓ (PRE-002 reconciliation: centered solids, shared-vertex polygon meshes, monolith counts byte-equal, part pose T·Ry·Rx·Rz·S, node order T·Ry·Rx·Rz), massprops ✓, AABB v0 ✓; **per-part BVH + tri-tri sweep pending** (= XC-09)
 - [~] P1-003 — `forge-sim`: propulsion/battery/estimator models ✓ (HUD derivations tested); **Rapier world integration + shared-memory worker wiring pending** (P6-001 scope pulled forward only when needed)
 - [~] P1-004 — `forge-validate`: 15 checks live (CTR-001..008, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/bom/schema) ✓; remaining catalog rows land per phase
@@ -221,7 +221,7 @@ touched.
 | XC-23 | Schema migration runner | P2 | systems/model-contract.md |
 | XC-24 | Fuzz corpus seed set | P4 | systems/validation-harness.md |
 | XC-25 | Leaderboard replay verifier | P10 | systems/environments-courses.md |
-| XC-26 | Golden-number suite harness (cross-target exactness, D17) | P1 | systems/core-runtime.md |
+| XC-26 | Golden-number suite harness — **done 2026-06-12** (XT-001 in CI; forge-num determinism fix) | P1 | systems/core-runtime.md |
 | XC-27 | Tauri serial + background-recorder plugins | P8 | systems/hardware-bridge.md |
 
 ## 4. Open decisions (OD) — non-blocking, from plan §22

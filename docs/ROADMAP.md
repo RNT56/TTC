@@ -83,11 +83,11 @@ worker driven from `forge-sim`.
 [`systems/studio-ui.md`](systems/studio-ui.md).
 
 Exit criteria:
-- [ ] **Golden-number suite green native↔WASM** (canonical scenes, bit-identical trajectories)
+- [x] **Golden-number suite green native↔WASM** *(2026-06-12: 4 canonical scenes, bake + 600-step tick streams bit-identical; forge-num/libm determinism fix; CI-gated)*
 - [ ] Golden-scene parity gallery versus the monolith (canonical cameras, perceptual diff)
 - [ ] **Shimmer gone** — z-buffer renderer resolves all deliberately overlapping solids
 - [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI)
-- [ ] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts
+- [x] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts *(2026-06-12 — golden-compare on hrx7 + vx2-hornet)*
 - [ ] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms
 
 ## P2 — Data-driven models

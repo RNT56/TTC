@@ -84,7 +84,17 @@ A port of *proven* code with the oracle watching:
   arithmetic over flat buffers. CSG sits behind a trait (Manifold native C API /
   Manifold WASM in-browser); OCCT stays server-side.
 
-## 5. The golden-number suite (XC-26, D17)
+## 5. The golden-number suite (XC-26, D17) — LIVE 2026-06-12
+
+Implemented and CI-gated: core-side FNV-1a hashing over exact f32 bit patterns
+(bake buffers + 600-step scripted tick streams), compared byte-identical between
+the native `forge-golden` binary and the WASM facade, plus time-pinned fixture
+hashes. **First run caught a real divergence** (platform libm vs wasm libm ULPs
+on lathe angles and pose rotations) — resolved by routing every
+non-correctly-rounded transcendental in core through **`forge-num`** (the
+pure-Rust `libm` crate: identical bits on every target). IEEE-correctly-rounded
+ops (sqrt, arithmetic) stay on std. This is now core policy: new core math uses
+`forge_num::{sin,cos,sin_cos,acos,asin,atan2,pow}` — never `f64::` trig.
 
 The cross-target exactness gate, run in CI on every core change:
 
