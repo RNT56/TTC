@@ -18,6 +18,40 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P0 closed (vintage scope): byte-equivalent translations of both models
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0 · **TODO items:** P0-004 [x], P0-005 [x], P0-006 [x], P1-002 (reconciliation)
+**Done:** **Byte-equivalence MET on first comparison** — hrx7 `125 parts · 2195
+faces · 2581 vertices`, vx2-hornet `73 · 924 · 1250`, exact against the monolith
+extraction, now CI-guarded (extraction drift + translation drift + compare).
+How: (1) PRE-002 reconciliation of forge-geometry — line-by-line ports of the
+monolith's taper/box/cbox/cyl/lathe as shared-vertex polygon meshes
+(origin-centered), part pose T·Ry·Rx·Rz·S, node composition T·Ry·Rx·Rz, the
+centroid outward-orientation rule, and the monolith's TAU literal (kept under a
+justified clippy allow — position-level golden numbers depend on it); GPU
+buffers via fan triangulation at bake; counts now expose polygons + poly-verts
+(oracle quantities) alongside render triangles. (2) **Mechanical translation**:
+`scripts/translate-monolith.mjs` instruments the monolith's own N()/P() calls
+in a vm sandbox and emits `examples/{hrx7,vx2-hornet}.forge.json` — zero hand
+transcription; semantic rules (material mapping, collision none pre-D7,
+spinner/hip/knee joints, combat naming dropped §17.2) documented in the script.
+Contract gained `Part.pose` and chain explode fields (prototype reconciliation);
+schema/codegen/goldens/demo artifacts regenerated; vx2-mini + qd-mini re-posed
+for centered solids; both translations joined the studio picker. **Findings:**
+both translations fail CTR-004 (explode coverage 69 %/42 % vs the later 80 %
+gate) — historical models predate the completeness gates; gates unchanged.
+hrx7 AUW reads 93 kg from class densities (no masses in the vintage — doctrine
+holds: computed, not invented; real masses arrive with sourcing).
+**Changed:** crates (contract pose/chains, geometry polymesh+primitives rework,
+validate/wasm counts, sim export origins, gen poses), scripts (translate,
+extract --out arg), examples (2 new + 2 re-posed), studio (picker, report
+truncation), CI (equivalence guard), goldens, schema, codegen, docs state.
+**Decisions:** none new (all within PRE-002 reconciliation scope under D21).
+**Next:** extend extraction to record gait/flight trajectories → golden-number
+corpus (P1-006/XC-26) → bit-identical native↔WASM verification (P1-007). P0 is
+now ● for the delivered vintage (P0-007 variants still gated; remote tag still
+an owner push).
+**Blockers:** none.
+
 ## 2026-06-12 — PRE-002 executed: prototype delivered, frozen, oracle extracted
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** pre-P0/P0 · **TODO items:** PRE-002, P0-004 (oracle side), P0-008 (counts), P0-010
 **Done:** The owner delivered `cad-object-studio.html` (50,967 bytes, sha256
