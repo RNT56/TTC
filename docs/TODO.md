@@ -66,7 +66,7 @@ Studio (TypeScript face):
 - [~] P1-012 — Selection: component-scoped raycast picking + emissive highlight + info panel ✓; stencil outline pending
 - [~] P1-013 — Orbit camera ✓; jog teach-pendant, pause/frame-step, follow camera pending
 - [ ] P1-014 — Configurator pane: variant cards, rebuild-in-place preserving explode/jog state (via core patch/re-bake)
-- [ ] P1-015 — Golden-scene parity gallery vs monolith — unblocked (canonical cameras vs the committed prototype)
+- [x] P1-015 — Golden-scene parity gallery vs monolith *(2026-06-12)*: `pnpm parity` (`scripts/parity-gallery.mjs`) renders both — the frozen monolith (bridged copy, rest pose pinned, chrome suppressed) and the built studio (`__forgeParity` hook: camera pose, grid/shadows off) — under 6 canonical cameras (2 models × 3 views, monolith FOV 2·atan(0.3443)), headless chromium + SwiftShader. Structural gate: Sobel-edge F1 with 1-px tolerance ≥ 0.85; **measured 0.95–0.995 on all six** (wrong configs score ≤ 0.4). Evidence committed: `docs/assets/parity/` composites + metrics; full gallery regenerates into `artifacts/parity/` (gitignored). CI integration deliberately deferred (chromium install flake risk) — local tool + committed evidence
 - [ ] P1-016 — N8AO ambient occlusion + quality-tier scaffolding (= XC-22 foundations)
 - [~] P1-017 — Perf: fps + frame-ms overlay ✓; full budget instrumentation (core tick / Rapier / UI splits) pending
 

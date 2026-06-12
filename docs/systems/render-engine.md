@@ -69,11 +69,15 @@ codegen. Hosts: `packages/studio`. The recorder feeds ghost overlay geometry (P8
 
 ## 7. Testing
 
-Golden-image perceptual diffs on the canonical camera set (RND-001) — built at P1 as
-the parity gallery vs the monolith, then kept forever as regression; blueprint render
-check (RND-002); draw-call and frame-budget assertions in a perf harness on
-representative scenes; zero-copy discipline test (no buffer cloning on the bake
-path *(proposed: allocation assertions in the perf harness)*).
+Golden-image perceptual diffs on the canonical camera set (RND-001) — **live
+2026-06-12** as the parity gallery (`pnpm parity`, P1-015): the frozen monolith
+(bridged copy, rest pose pinned, chrome suppressed) vs the built studio under
+6 shared cameras, gated on Sobel-edge F1 ≥ 0.85 with measured 0.95–0.995;
+evidence committed under `docs/assets/parity/`, kept as regression (re-run
+locally; CI integration deferred — headless-chromium install flake). Blueprint
+render check (RND-002); draw-call and frame-budget assertions in a perf
+harness on representative scenes; zero-copy discipline test (no buffer cloning
+on the bake path *(proposed: allocation assertions in the perf harness)*).
 
 ## 8. Phase mapping & backlog
 
@@ -82,6 +86,7 @@ P1: P1-008..017 studio tasks; XC-22 foundations. P8 adds the ghost overlay consu
 
 ## 9. Open questions
 
-N8AO vs alternative AO at low tier; whether the parity gallery diffs against
-prototype *screenshots* or re-rendered references (prototype screenshots are the
-honest baseline — decide tooling at P1-015); WebGPU flag timing.
+N8AO vs alternative AO at low tier; WebGPU flag timing. *(Resolved at P1-015:
+the gallery diffs against the prototype rendering itself live in the same
+headless browser — fresher than stored screenshots and still the honest
+baseline, since the frozen monolith is executed read-only.)*

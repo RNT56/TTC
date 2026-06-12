@@ -18,6 +18,40 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — P1-015 closed: golden-scene parity gallery, monolith vs studio
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-015 [x]
+**Done:** `pnpm parity` (`scripts/parity-gallery.mjs`) renders the SAME models
+under the SAME six canonical cameras (hrx7 + vx2-hornet × three-quarter/
+profile/high-rear, monolith FOV 2·atan(0.3443) ≈ 38°) in two renderers — the
+frozen monolith (served as a bridged in-memory copy because its IIFE hides
+state; pinned: auto-rotate off, clock frozen, pose overridden to pure rest,
+grid/marker/blob-shadow/gizmo/vignette suppressed) and the built studio
+(`window.__forgeParity` hook: load model, pin camera orbit+FOV, grid/shadows
+off) — in headless chromium on SwiftShader (the env pre-provisions build 1194
+under /opt/pw-browsers; the script falls back to playwright's resolution
+elsewhere). Structural metric: Sobel edge maps of downscaled luminance,
+binarized top-8 %, F1 with 1-px dilation tolerance. **Measured 0.95–0.995 on
+all six scenes; gate 0.85** (observed failure modes — overlaid UI chrome,
+background vignette banding, studio ground shadow — scored ≤ 0.4 before they
+were eliminated, so the gate separates regimes with wide margin). Luminance
+RMS reported as informational (PBR vs painter shading differs by design).
+Composites + metrics committed as evidence (`docs/assets/parity/`, ~128 KB);
+full gallery regenerates into `artifacts/parity/` (now gitignored). CI
+integration deliberately deferred (fresh-chromium flake risk) — recorded in
+TODO. ROADMAP P1 "parity gallery" criterion checked.
+**Changed:** `scripts/parity-gallery.mjs` (new), `packages/studio/src/{scene.ts
+(setCameraPose/setGridVisible/setShadowsVisible), App.tsx (__forgeParity hook)}`,
+root `package.json` (parity script; playwright-core+pngjs devDeps — playwright
+moved out of the studio package), `.gitignore` (artifacts/),
+`docs/assets/parity/*` (new evidence), docs (TODO P1-015, ROADMAP P1,
+render-engine §7/§9).
+**Decisions:** none (RND-001's open question — screenshots vs re-render —
+resolved operationally: the frozen monolith renders itself live, read-only).
+**Next:** studio P1 finishers — P1-008 BatchedMesh, P1-010 blueprint post
+pass, P1-012 stencil outline, P1-013 jog/follow camera (drivers expose
+`focus()`), P1-005 zero-copy views + bake/patch timing; then P1-016/017.
+**Blockers:** none.
+
 ## 2026-06-12 — P1-001 closed: biped + FPV oracle drivers ported, tape parity at ULP level
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-001 [x]
 **Done:** Line-faithful Rust ports of the monolith's two drive pipelines.

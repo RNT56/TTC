@@ -87,6 +87,21 @@ export default function App() {
     scene.start();
     void loadDemo(useStudio.getState().modelId);
 
+    // parity-gallery / automation hook (P1-015): deterministic captures
+    (window as unknown as Record<string, unknown>).__forgeParity = {
+      load: (id: string) => loadDemo(id),
+      setCamera: (p: {
+        yaw: number;
+        el: number;
+        dist: number;
+        target: [number, number, number];
+        fovDeg?: number;
+      }) => scene.setCameraPose(p),
+      setGrid: (visible: boolean) => scene.setGridVisible(visible),
+      setShadows: (visible: boolean) => scene.setShadowsVisible(visible),
+      loaded: () => Boolean(useStudio.getState().artifact),
+    };
+
     return () => {
       window.removeEventListener("resize", onResize);
       sessionRef.current?.dispose();

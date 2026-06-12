@@ -1,0 +1,54 @@
+{
+  "gate": 0.85,
+  "fovDeg": 37.997171119519074,
+  "scenes": [
+    {
+      "id": "hrx7-threequarter",
+      "edgeF1": 0.9927704686636034,
+      "precision": 0.9979646156254893,
+      "recall": 0.9876301101221904,
+      "lumRms": 9.630146583907566,
+      "pass": true
+    },
+    {
+      "id": "hrx7-profile",
+      "edgeF1": 0.9522811617701918,
+      "precision": 0.987411487018096,
+      "recall": 0.9195647030991246,
+      "lumRms": 6.179282241733973,
+      "pass": true
+    },
+    {
+      "id": "hrx7-high-rear",
+      "edgeF1": 0.988315481986368,
+      "precision": 1,
+      "recall": 0.9769008662175168,
+      "lumRms": 8.122161664933998,
+      "pass": true
+    },
+    {
+      "id": "vx2-hornet-threequarter",
+      "edgeF1": 0.9846629720324784,
+      "precision": 1,
+      "recall": 0.9697892866209697,
+      "lumRms": 4.806907724400694,
+      "pass": true
+    },
+    {
+      "id": "vx2-hornet-profile",
+      "edgeF1": 0.978529854096684,
+      "precision": 0.9934225980737609,
+      "recall": 0.9640770396018178,
+      "lumRms": 5.50768149888145,
+      "pass": true
+    },
+    {
+      "id": "vx2-hornet-high-rear",
+      "edgeF1": 0.9947105495151338,
+      "precision": 1,
+      "recall": 0.9894767611809413,
+      "lumRms": 4.368379240426153,
+      "pass": true
+    }
+  ]
+}

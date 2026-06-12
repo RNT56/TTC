@@ -1,17 +1,20 @@
 {
   "name": "forge-monorepo",
   "private": true,
-  "description": "FORGE \u2014 Rust core, web face (D16). TS packages live in packages/*; the cargo workspace in crates/*.",
+  "description": "FORGE — Rust core, web face (D16). TS packages live in packages/*; the cargo workspace in crates/*.",
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
     "bake:demo": "cargo run -q -p forge-validate -- bake examples/vx2-mini.forge.json --out packages/studio/public/demo/vx2-mini.bake.json && cargo run -q -p forge-validate -- run examples/vx2-mini.forge.json --report packages/studio/public/demo/vx2-mini.report.json",
-    "build:wasm": "./scripts/build-wasm.sh"
+    "build:wasm": "./scripts/build-wasm.sh",
+    "parity": "node scripts/parity-gallery.mjs"
   },
   "devDependencies": {
     "json-schema-to-typescript": "^15.0.0",
+    "playwright-core": "^1.60.0",
+    "pngjs": "^7.0.0",
     "wasm-pack": "^0.15.0"
   },
   "packageManager": "pnpm@10.33.0"

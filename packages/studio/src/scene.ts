@@ -44,6 +44,7 @@ export class StudioScene {
   private blueprint = false;
   private blueprintMat = new THREE.MeshBasicMaterial({ color: 0x10263f });
   private grid: THREE.GridHelper;
+  private ground: THREE.Mesh;
   /** last render frame duration, ms (perf overlay, P1-017) */
   lastFrameMs = 0;
   onFrame?: (dt: number) => void;
@@ -75,13 +76,13 @@ export class StudioScene {
     this.grid = new THREE.GridHelper(1.6, 32, 0x2a2f38, 0x1a1e24);
     this.scene.add(this.grid);
 
-    const ground = new THREE.Mesh(
+    this.ground = new THREE.Mesh(
       new THREE.PlaneGeometry(3, 3),
       new THREE.ShadowMaterial({ opacity: 0.35 }),
     );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
+    this.ground.rotation.x = -Math.PI / 2;
+    this.ground.receiveShadow = true;
+    this.scene.add(this.ground);
   }
 
   /** Upload the core's bake artifact. Zero client-side geometry computation. */
@@ -242,6 +243,40 @@ export class StudioScene {
         h.mesh.material = h.baseMaterial;
       }
     }
+  }
+
+  /** Pin the camera exactly — parity gallery & tests (P1-015). Same orbit
+   * convention as the monolith: eye = target + dist·(cos el·sin yaw, sin el,
+   * cos el·cos yaw), Y-up. Disables damping so the pose holds. */
+  setCameraPose(p: {
+    yaw: number;
+    el: number;
+    dist: number;
+    target: [number, number, number];
+    fovDeg?: number;
+  }): void {
+    const ce = Math.cos(p.el);
+    this.controls.target.set(p.target[0], p.target[1], p.target[2]);
+    this.camera.position.set(
+      p.target[0] + p.dist * ce * Math.sin(p.yaw),
+      p.target[1] + p.dist * Math.sin(p.el),
+      p.target[2] + p.dist * ce * Math.cos(p.yaw),
+    );
+    if (p.fovDeg) {
+      this.camera.fov = p.fovDeg;
+      this.camera.updateProjectionMatrix();
+    }
+    this.controls.enableDamping = false;
+    this.controls.update();
+  }
+
+  setGridVisible(visible: boolean): void {
+    this.grid.visible = visible;
+  }
+
+  setShadowsVisible(visible: boolean): void {
+    this.renderer.shadowMap.enabled = visible;
+    this.ground.visible = visible;
   }
 
   resize(width: number, height: number): void {
