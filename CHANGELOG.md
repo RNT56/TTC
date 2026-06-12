@@ -56,8 +56,9 @@ vite.config.ts}`, `.github/workflows/{nightly.yml, release.yml}` (new),
 `tests/proof_pair.rs` (SIM-004), docs (TODO §5 batch, harness GEO note).
 **Decisions:** none new (GEO-008/SIM-004 are provisional check ids per the
 harness doc's convention).
-**Next:** the batch's one open item — proptest property tests for the
-contract round-trip + patch engine; then P3's data-layer remainder.
+**Next:** P3's data-layer remainder (Postgres runner, ETL pipeline, XC-17
+export filter, D12 SKUs). *(Addendum, same session: the proptest item also
+closed — see the follow-up commit; the batch is 10/10.)*
 **Blockers:** none.
 
 ## 2026-06-12 — Pre-P0 closed: licensing (D24), hygiene, the name is ForgedTTC (D23)

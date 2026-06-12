@@ -249,4 +249,4 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] Nightly workflow — parity gallery (headless chromium) + cargo-llvm-cov coverage, artifact-uploaded
 - [x] Release workflow — tag v* → static forge-validate binary + wasm facade package
 - [x] Incremental re-bake — `bake_incremental` reuses untouched (geom, pose) buffers in `Bake.patch`
-- [ ] Property-based tests (proptest) for contract round-trip + patch engine — the one batch item still open
+- [x] Property-based tests *(2026-06-12)*: proptest (dev-dep) over the schema heart — parse→serialize fixed point + hash stability across 64 generated docs; patch engine never panics and everything it returns passes the shape gate (incl. bad pointers/out-of-range/odd value types)
