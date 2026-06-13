@@ -105,7 +105,7 @@ Studio (TypeScript face):
 - [ ] P4-011 — Pin Anthropic model strings/limits/pricing from https://docs.claude.com/en/api/overview at implementation; record in DECISIONS
 - [ ] P4-012 — Draft-state UX in studio (= XC-16)
 - [ ] P4-013 — Environment generation reuses the pipeline with EnvSpec schema (delivers with P10; seam designed now)
-- [~] P4-014 — Catalog review operations before live generation (D25): gateway now exposes `GET /v1/reviews` and `PATCH /v1/reviews/:id` over the P3 `review_queue`; studio owner-review UI, auth, audit notes, and export filters remain open.
+- [~] P4-014 — Catalog review operations before live generation (D25): gateway exposes `GET /v1/reviews` and `PATCH /v1/reviews/:id` over the P3 `review_queue`; studio owner-review panel now lists, filters, approves, and rejects rows against the local gateway. Auth, audit notes, and export filters remain open.
 - [ ] P4-015 — Live source-fetch adapter interface: deterministic fixture path stays the test oracle; HTTP/source adapters are injectable, rate-limited, and never required for CI.
 - [ ] P4-016 — Claude extraction adapter behind BYO/API-key plumbing: emits canonical catalog rows, per-field citations, license terms, prices, confidence, and review reasons; no row persists without the P3 validator gates.
 - [ ] P4-017 — OCCT ingestion adapter interface: tessellation/LOD outputs attach to catalog revisions after review; failures degrade to envelope geometry, not uncited mesh truth.

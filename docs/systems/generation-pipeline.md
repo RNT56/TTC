@@ -12,8 +12,8 @@ Generation quality is an engineering quantity with CI and a dashboard (Brief-25)
 
 P4 starts with the catalog review loop (D25): live fetch/Claude/OCCT ingestion may
 draft rows, but generated artifacts can only consume reviewed catalog truth. The
-gateway now exposes the review queue API; the next slice is the studio owner-review
-surface plus injectable live adapters.
+gateway and studio now expose the review queue; the next slice is injectable live
+fetch/Claude/OCCT adapters behind the deterministic fixture oracle.
 
 ## 2. The five stages (P4-001)
 

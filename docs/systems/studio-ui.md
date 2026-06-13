@@ -1,7 +1,7 @@
 # Studio UI — implementation doc
 
-**Status:** not started · **Phases:** P1 shell, grows every phase · **Home:**
-`packages/studio` *(proposed — the only React package)* · **Plan refs:** §5, §6
+**Status:** P1 shell live; P4 review operations started · **Phases:** P1 shell, grows every phase · **Home:**
+`packages/studio` · **Plan refs:** §5, §6
 (v3.0) · **Decisions:** D3, D4, D14, D15, D16
 
 ## 1. Purpose
@@ -29,7 +29,7 @@ geometry math.
 | P1 | viewport (orbit/follow), configurator pane (variant cards, greyed-with-reason), explode/blueprint/selection controls, jog teach-pendant, pause/frame-step, HUD v0, perf overlay (P1-017) |
 | P2 | draft semantics groundwork; validator report viewer (incremental in-WASM checks as you edit) |
 | P3 | compatibility explanations on cards; BOM export; lockfile upgrade diff UI (XC-03) |
-| P4 | generation chat + streaming slots into viewport; draft-state UX (XC-16); share-URL **read-only viewer** (D4: orbit, explode, blueprint, drive demo — no account); BYO-key + credits settings (D3) |
+| P4 | catalog review panel (`GET/PATCH /v1/reviews`) for owner approval before live-ingested rows feed generation; generation chat + streaming slots into viewport; draft-state UX (XC-16); share-URL **read-only viewer** (D4: orbit, explode, blueprint, drive demo — no account); BYO-key + credits settings (D3) |
 | P5 | photoscan alignment UI (known-dimension scale, axis snap, port authoring) |
 | P6 | HUD analytics full (AUW/TWR/hover/current/endurance with inspectable assumptions); disturbance controls |
 | P7 | training tab: task picker, job status, scorecard renderer (XC-21), policy playback toggle |
