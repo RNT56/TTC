@@ -18,6 +18,24 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Post-P3 baseline and P4 review entry slice
+**Session:** Codex agent · branch `codex/post-p3-p4-start` · **Phase:** P3/P4 · **TODO items:** P4-014 [~], P4-015/016/017 [queued]
+**Done:** Marked the merged P3 catalog slice as the `p3-baseline` tag target
+(`6937037`). Removed the hosted CI Node 20 action-runtime warning by opting the
+workflows into GitHub's Node 24 JavaScript action runtime. Started P4 per D25 with
+an executable review-queue API: `GET /v1/reviews` lists P3 `review_queue` records
+and `PATCH /v1/reviews/:id` records approve/reject decisions against pending items;
+database failures return a typed 503 without affecting validator/bake/BOM routes.
+**Changed:** `.github/workflows/{ci,nightly,release}.yml`,
+`packages/gateway/src/{db.ts,reviewQueue.ts,server.ts}`,
+`packages/gateway/test/server.test.ts`, package manifests/lockfile, and P4 docs
+(`DECISIONS`, `ROADMAP`, `TODO`, generation pipeline, gateway/data).
+**Decisions:** D25 — P4 starts with live catalog ingestion/review operations before
+full text-to-CAD generation GA.
+**Next:** Build the studio owner-review surface on top of `/v1/reviews`, then add
+the injectable live fetch/Claude/OCCT adapters behind deterministic fixture tests.
+**Blockers:** none.
+
 ## 2026-06-12 — Execution batch: collision truth (XC-09/GEO-008), SIM-004, share URLs, gamepad, workflows, incremental re-bake
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1/P3 cross-cutting · **TODO items:** §5 batch (9 of 10 closed), P1-002 [x]
 **Done:** The owner-approved improvement list, executed. **XC-09:**

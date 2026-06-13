@@ -1,14 +1,19 @@
 # Generation Pipeline (Text-to-CAD) — implementation doc
 
-**Status:** not started · **Phases:** P4 (GA), P10 (environments) · **Home:**
+**Status:** P4 entry started · **Phases:** P4 (GA), P10 (environments) · **Home:**
 `packages/gateway` (orchestrator) *(proposed)* · **Plan refs:** §8 (v3.0) ·
-**Decisions:** D3, D14, D16, D17, D-evals
+**Decisions:** D3, D14, D16, D17, D25, D-evals
 
 ## 1. Purpose
 
 The loop the studio is named for: natural language → admitted, complete, animated
 contract — as an **orchestrated, validator-gated pipeline**, never a single prompt.
 Generation quality is an engineering quantity with CI and a dashboard (Brief-25).
+
+P4 starts with the catalog review loop (D25): live fetch/Claude/OCCT ingestion may
+draft rows, but generated artifacts can only consume reviewed catalog truth. The
+gateway now exposes the review queue API; the next slice is the studio owner-review
+surface plus injectable live adapters.
 
 ## 2. The five stages (P4-001)
 
@@ -76,8 +81,9 @@ resolution, wire list from electrical ports.
 ## 8. Dependencies
 
 `forge-contract` (schemars schema + types), `forge-validate` (the repair oracle —
-WASM + binary), component DB (retrieval + componentRefs), Anthropic API, `studio`
-(streaming viewport, draft UX XC-16).
+WASM + binary), component DB (retrieval + componentRefs), review queue API
+(`GET /v1/reviews`, `PATCH /v1/reviews/:id`), Anthropic API, `studio` (streaming
+viewport, draft UX XC-16).
 
 ## 9. Testing
 

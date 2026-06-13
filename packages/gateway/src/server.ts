@@ -5,10 +5,37 @@ import { Type } from "@sinclair/typebox";
 import Fastify, { type FastifyInstance } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
+import { gatewayDb, type GatewayDb } from "./db.js";
+import {
+  listReviewQueue,
+  recordReviewDecision,
+  type ReviewDecision,
+  type ReviewStatus,
+} from "./reviewQueue.js";
 import { runBake, runBom, runValidator, validatorBin } from "./validator.js";
 
-export function buildServer(): FastifyInstance {
+export interface ServerOptions {
+  db?: GatewayDb;
+}
+
+const reviewStatusSchema = Type.Union([
+  Type.Literal("needs_review"),
+  Type.Literal("approved"),
+  Type.Literal("rejected"),
+]);
+
+const reviewDecisionSchema = Type.Union([Type.Literal("approved"), Type.Literal("rejected")]);
+
+function unavailable(error: unknown): { error: string; detail: string } {
+  const detail = error instanceof Error ? error.message : String(error);
+  return { error: "catalog database unavailable", detail: detail.slice(0, 500) };
+}
+
+export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const app = Fastify({ logger: false });
+  const db = options.db ?? {
+    query: (text, params) => gatewayDb().query(text, params),
+  } satisfies GatewayDb;
 
   app.get("/healthz", async () => ({
     ok: true,
@@ -85,6 +112,59 @@ export function buildServer(): FastifyInstance {
         });
       }
       return reply.send(result.report);
+    },
+  );
+
+  app.get(
+    "/v1/reviews",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            status: Type.Optional(reviewStatusSchema),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      const query = request.query as { status?: ReviewStatus; limit?: number };
+      try {
+        const items = await listReviewQueue(db, query.status ?? "needs_review", query.limit ?? 50);
+        return reply.send({ items });
+      } catch (error) {
+        return reply.status(503).send(unavailable(error));
+      }
+    },
+  );
+
+  app.patch(
+    "/v1/reviews/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.Integer({ minimum: 1 }) }),
+        body: Type.Object(
+          {
+            status: reviewDecisionSchema,
+            reviewer: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: number };
+      const { status, reviewer } = request.body as { status: ReviewDecision; reviewer?: string };
+      try {
+        const item = await recordReviewDecision(db, id, status, reviewer ?? null);
+        if (item === null) {
+          return reply.status(404).send({ error: "review item not found or already closed" });
+        }
+        return reply.send(item);
+      } catch (error) {
+        return reply.status(503).send(unavailable(error));
+      }
     },
   );
 

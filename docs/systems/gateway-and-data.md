@@ -1,6 +1,6 @@
 # Gateway & Data Plane — implementation doc
 
-**Status:** not started · **Phases:** P2 (validation service), grows through P11 ·
+**Status:** validation/BOM/review APIs live · **Phases:** P2 (validation service), grows through P11 ·
 **Package:** `packages/gateway` + `infra/` *(proposed)* · **Plan refs:** §5, §6
 (v3.0) · **Decisions:** D2, D3, D16, D17
 
@@ -30,7 +30,8 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 | Validation | `POST /v1/validate` (contract → report); `GET /v1/reports/:hash` | P2 |
 | Registry: models | CRUD `/v1/models`, admission-gated; `GET /v1/share/:id` (public read-only, D4) | P2/P4 |
 | Generation | `POST /v1/generate` (brief → SSE stream of passes/diagnostics/slots); `POST /v1/models/:id/edit` (NL → JSON-Patch) | P4 |
-| Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff | P3 |
+| Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
+| Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Jobs | `POST /v1/jobs/{photoscan,train,sysid,export-step}`; `GET /v1/jobs/:id` (status/SSE) | P5+ |
 | Policies | `GET/POST /v1/policies`, scorecards; export gating | P7 |
 | Courses | CRUD + leaderboards + replay verification submit | P10 |
@@ -51,6 +52,11 @@ logs, renders — presigned browser upload, content-addressed keys *(proposed)*.
 
 Migrations: forward-only SQL in `infra/migrations`, run on deploy; schema changes
 reviewed like code.
+
+Review queue operations sit on the P3 `review_queue` table. The gateway treats the
+database as optional for local validator-only use: review routes return 503 when the
+catalog database is unavailable, while validation/bake/BOM routes keep working from
+the binary and file catalog.
 
 ## 5. Job queue taxonomy *(proposed — names final at first implementation)*
 
