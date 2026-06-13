@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Add generation context builder
+**Session:** Codex agent · branch `codex/p4-generation-context` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-002 [x], P4-003 [~]
+**Done:** Added the first executable generation-orchestrator slice:
+`POST /v1/generate/context` builds a deterministic prompt-cache prefix from the
+schemars schema, engine docs, and schema-true contract exemplars, then retrieves
+only catalog components with approved review rows and non-blocked export policy.
+The endpoint is context-only; it deliberately does not call Claude or synthesize
+contracts yet.
+**Changed:** `packages/gateway/src/{generation.ts,server.ts}`,
+`packages/gateway/test/server.test.ts`, and P4 docs.
+**Decisions:** none.
+**Next:** Add the actual constrained-synthesis adapter and validator-in-loop repair
+loop behind this context, then pin current Anthropic model strings/pricing for
+P4-011 before live calls.
+**Blockers:** none.
+
 ## 2026-06-13 — Wire P4 ingestion adapters and review audit policy
 **Session:** Codex agent · branch `codex/p4-ingestion-review-polish` · **Phase:** P4 · **TODO items:** P4-014 [x], P4-015 [x], P4-016 [~], P4-017 [x]
 **Done:** Extended the catalog review path with owner audit notes, review decision

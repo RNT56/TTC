@@ -22,7 +22,7 @@ phase-level state only.
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● *(tag `p3-baseline` → `6937037`, 2026-06-13: Postgres runner/seed/assert, strict catalog rows, fixture ETL/review queue, catalog HUD/BOM, reference rigs pinned)* | 2–3 wk |
-| P4 Text-to-CAD GA | ◑ *(2026-06-13: entry slice live with gateway + studio review queue operations; live-ingestion sequencing per D25)* | 3–4 wk |
+| P4 Text-to-CAD GA | ◑ *(2026-06-13: review loop, fixture ingestion adapters, and generation context/prompt-prefix builder live; synthesis/Brief-25 still pending)* | 3–4 wk |
 | P5 Image → 3D | ○ | 3 wk |
 | P6 Sim depth + interop | ○ | 3–4 wk |
 | P7 Training service | ○ | 4 wk |

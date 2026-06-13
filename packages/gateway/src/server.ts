@@ -7,6 +7,11 @@ import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import {
+  buildGenerationContext,
+  type GenerationArchetype,
+  type GenerationMaterials,
+} from "./generation.js";
+import {
   listReviewQueue,
   recordReviewDecision,
   type ReviewDecision,
@@ -18,6 +23,7 @@ import { runBake, runBom, runValidator, validatorBin } from "./validator.js";
 export interface ServerOptions {
   db?: GatewayDb;
   reviewToken?: string | null;
+  generationMaterials?: GenerationMaterials;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -27,6 +33,14 @@ const reviewStatusSchema = Type.Union([
 ]);
 
 const reviewDecisionSchema = Type.Union([Type.Literal("approved"), Type.Literal("rejected")]);
+const generationArchetypeSchema = Type.Union([
+  Type.Literal("biped"),
+  Type.Literal("multirotor"),
+  Type.Literal("rover"),
+  Type.Literal("arm"),
+  Type.Literal("quadruped"),
+  Type.Literal("fixedwing"),
+]);
 const reviewExportPolicySchema = Type.Union([
   Type.Literal("full-geometry-ok"),
   Type.Literal("attribution-manifest-required"),
@@ -129,6 +143,41 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         });
       }
       return reply.send(result.report);
+    },
+  );
+
+  app.post(
+    "/v1/generate/context",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            prompt: Type.String({ minLength: 1, maxLength: 4000 }),
+            archetype: Type.Optional(generationArchetypeSchema),
+            categories: Type.Optional(
+              Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 16 }),
+            ),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
+            includePrefixText: Type.Optional(Type.Boolean()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      const body = request.body as {
+        prompt: string;
+        archetype?: GenerationArchetype;
+        categories?: string[];
+        limit?: number;
+        includePrefixText?: boolean;
+      };
+      try {
+        const context = await buildGenerationContext(db, body, options.generationMaterials);
+        return reply.send(context);
+      } catch (error) {
+        return reply.status(503).send(unavailable(error));
+      }
     },
   );
 

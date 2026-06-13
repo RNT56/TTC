@@ -1,7 +1,7 @@
 # Generation Pipeline (Text-to-CAD) — implementation doc
 
-**Status:** P4 entry started · **Phases:** P4 (GA), P10 (environments) · **Home:**
-`packages/gateway` (orchestrator) *(proposed)* · **Plan refs:** §8 (v3.0) ·
+**Status:** P4 context builder live · **Phases:** P4 (GA), P10 (environments) · **Home:**
+`packages/gateway` (orchestrator context live; synthesis proposed) · **Plan refs:** §8 (v3.0) ·
 **Decisions:** D3, D14, D16, D17, D25, D-evals
 
 ## 1. Purpose
@@ -41,6 +41,13 @@ transport/executors remain deployment-owned.
    version, prompt hash, seed, validator report) and admitted; exhausted repairs
    persist as **editable drafts** carrying diagnostics — drafts render and edit but
    cannot train, export, or share.
+
+Live 2026-06-13: `POST /v1/generate/context` implements the deterministic stage-2
+context path. It builds a hash-addressed prompt prefix from the emitted schema,
+engine docs, and schema-true examples, and retrieves only catalog components with
+approved review rows plus non-blocked export policies. It returns
+`mode: "context-only"` and blocked reasons when no approved catalog truth matches;
+it does not call Claude or synthesize contracts.
 
 ## 3. Conversational editing (P4-005)
 
@@ -84,13 +91,13 @@ resolution, wire list from electrical ports.
 
 `forge-contract` (schemars schema + types), `forge-validate` (the repair oracle —
 WASM + binary), component DB (retrieval + componentRefs), review queue API
-(`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy), injectable
-source/Claude/OCCT adapters, Anthropic API, `studio` (streaming viewport, draft UX
-XC-16).
+(`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy),
+`POST /v1/generate/context`, injectable source/Claude/OCCT adapters, Anthropic API,
+`studio` (streaming viewport, draft UX XC-16).
 
 ## 9. Testing
 
-Brief-25 (the centerpiece); adapter-fixture ingestion tests; diagnostic-consumption unit tests (every harness check ID
+Brief-25 (the centerpiece); generation context tests; adapter-fixture ingestion tests; diagnostic-consumption unit tests (every harness check ID
 must be repairable-or-surfaced — no diagnostic the orchestrator can't route);
 fuzz briefs (adversarial, dimensional extremes) with failures minimized into
 regression cases (XC-24); patch-editing round-trip tests; provenance completeness

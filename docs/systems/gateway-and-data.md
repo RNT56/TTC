@@ -29,7 +29,7 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 |---|---|---|
 | Validation | `POST /v1/validate` (contract → report); `GET /v1/reports/:hash` | P2 |
 | Registry: models | CRUD `/v1/models`, admission-gated; `GET /v1/share/:id` (public read-only, D4) | P2/P4 |
-| Generation | `POST /v1/generate` (brief → SSE stream of passes/diagnostics/slots); `POST /v1/models/:id/edit` (NL → JSON-Patch) | P4 |
+| Generation | `POST /v1/generate/context` (brief → approved catalog context + prompt-cache prefix) live; `POST /v1/generate` (brief → SSE stream of passes/diagnostics/slots) proposed; `POST /v1/models/:id/edit` (NL → JSON-Patch) proposed | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Jobs | `POST /v1/jobs/{photoscan,train,sysid,export-step}`; `GET /v1/jobs/:id` (status/SSE) | P5+ |

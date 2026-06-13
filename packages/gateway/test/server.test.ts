@@ -3,11 +3,25 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import type { GatewayDb } from "../src/db.js";
+import type { GenerationMaterials } from "../src/generation.js";
 import { buildServer } from "../src/server.js";
 import { validatorBin } from "../src/validator.js";
 
 const demoPath = join(process.cwd(), "..", "..", "examples", "vx2-mini.forge.json");
 const haveBinary = existsSync(validatorBin());
+const generationMaterials: GenerationMaterials = {
+  schemaText: '{"title":"ModelSpec","type":"object"}',
+  engineDocs: "Engine docs: use validator diagnostics and do not invent component truth.",
+  exemplars: [
+    {
+      id: "vx2-proof",
+      name: "VX-2 proof",
+      archetype: "multirotor",
+      source: "fixture",
+      contract: { meta: { id: "vx2-proof", archetype: "multirotor" }, skeleton: [], parts: [] },
+    },
+  ],
+};
 
 test("healthz reports the validator binary", async () => {
   const app = buildServer();
@@ -109,6 +123,103 @@ test(
     await app.close();
   },
 );
+
+test("generate context retrieves only approved catalog rows", async () => {
+  const db: GatewayDb = {
+    async query(text, params) {
+      assert.match(text, /rq\.status = 'approved'/);
+      assert.match(text, /COALESCE\(rq\.export_policy, 'blocked'\) <> 'blocked'/);
+      assert.deepEqual(params, [["motor", "prop"], "5 inch quad motor", 2]);
+      return {
+        rows: [
+          {
+            id: "cmp_motor_emax-eco2-2207-1900kv",
+            brand: "EMAX",
+            model: "ECO II 2207 1900KV",
+            rev: "1.0.0",
+            category: "motor",
+            dims: { diameterMm: 27.9 },
+            mass_g: "33.2",
+            elec: { kv: 1900 },
+            mech: { propShaft: "prop-shaft-M5" },
+            confidence: "0.7",
+            license_class: "open",
+            export_policy: "full-geometry-ok",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "9",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const app = buildServer({ db, generationMaterials });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate/context",
+    payload: {
+      prompt: "5 inch quad motor",
+      archetype: "multirotor",
+      categories: ["prop", "motor", "motor"],
+      limit: 2,
+      includePrefixText: false,
+    },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json() as {
+    mode: string;
+    catalogPolicy: string;
+    brief: { categories: string[] };
+    retrievedComponents: { id: string; exportPolicy: string; priceCount: number }[];
+    promptPrefix: { text: string | null; hash: string; schemaHash: string };
+    blockedReasons: string[];
+  };
+  assert.equal(body.mode, "context-only");
+  assert.equal(body.catalogPolicy, "approved-review-rows-only");
+  assert.deepEqual(body.brief.categories, ["motor", "prop"]);
+  assert.equal(body.retrievedComponents[0].id, "cmp_motor_emax-eco2-2207-1900kv");
+  assert.equal(body.retrievedComponents[0].exportPolicy, "full-geometry-ok");
+  assert.equal(body.retrievedComponents[0].priceCount, 1);
+  assert.equal(body.promptPrefix.text, null);
+  assert.match(body.promptPrefix.hash, /^[a-f0-9]{64}$/);
+  assert.match(body.promptPrefix.schemaHash, /^[a-f0-9]{64}$/);
+  assert.deepEqual(body.blockedReasons, []);
+  await app.close();
+});
+
+test("generate context blocks synthesis when no approved catalog rows match", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [null, "make a rover", 8]);
+      return { rows: [], rowCount: 0 } as never;
+    },
+  };
+  const app = buildServer({ db, generationMaterials });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate/context",
+    payload: { prompt: "make a rover", includePrefixText: false },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json() as { retrievedComponents: unknown[]; blockedReasons: string[] };
+  assert.equal(body.retrievedComponents.length, 0);
+  assert.ok(body.blockedReasons.some((reason) => reason.includes("no approved catalog")));
+  await app.close();
+});
+
+test("generate context rejects malformed bodies at the schema boundary", async () => {
+  const app = buildServer({ generationMaterials });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate/context",
+    payload: { prompt: "" },
+  });
+  assert.equal(res.statusCode, 400);
+  await app.close();
+});
 
 test("review queue lists pending catalog items", async () => {
   const db: GatewayDb = {
