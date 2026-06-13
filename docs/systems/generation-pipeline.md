@@ -12,8 +12,10 @@ Generation quality is an engineering quantity with CI and a dashboard (Brief-25)
 
 P4 starts with the catalog review loop (D25): live fetch/Claude/OCCT ingestion may
 draft rows, but generated artifacts can only consume reviewed catalog truth. The
-gateway and studio now expose the review queue; the next slice is injectable live
-fetch/Claude/OCCT adapters behind the deterministic fixture oracle.
+gateway and studio expose the review queue, audit notes, and export-policy filters.
+Workers expose injectable source-fetch, Claude-style extraction, and OCCT geometry
+adapter seams; fixture adapters are the deterministic CI oracle, while live
+transport/executors remain deployment-owned.
 
 ## 2. The five stages (P4-001)
 
@@ -82,12 +84,13 @@ resolution, wire list from electrical ports.
 
 `forge-contract` (schemars schema + types), `forge-validate` (the repair oracle —
 WASM + binary), component DB (retrieval + componentRefs), review queue API
-(`GET /v1/reviews`, `PATCH /v1/reviews/:id`), Anthropic API, `studio` (streaming
-viewport, draft UX XC-16).
+(`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy), injectable
+source/Claude/OCCT adapters, Anthropic API, `studio` (streaming viewport, draft UX
+XC-16).
 
 ## 9. Testing
 
-Brief-25 (the centerpiece); diagnostic-consumption unit tests (every harness check ID
+Brief-25 (the centerpiece); adapter-fixture ingestion tests; diagnostic-consumption unit tests (every harness check ID
 must be repairable-or-surfaced — no diagnostic the orchestrator can't route);
 fuzz briefs (adversarial, dimensional extremes) with failures minimized into
 regression cases (XC-24); patch-editing round-trip tests; provenance completeness

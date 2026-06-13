@@ -105,10 +105,10 @@ Studio (TypeScript face):
 - [ ] P4-011 — Pin Anthropic model strings/limits/pricing from https://docs.claude.com/en/api/overview at implementation; record in DECISIONS
 - [ ] P4-012 — Draft-state UX in studio (= XC-16)
 - [ ] P4-013 — Environment generation reuses the pipeline with EnvSpec schema (delivers with P10; seam designed now)
-- [~] P4-014 — Catalog review operations before live generation (D25): gateway exposes `GET /v1/reviews` and `PATCH /v1/reviews/:id` over the P3 `review_queue`; studio owner-review panel now lists, filters, approves, and rejects rows against the local gateway. Auth, audit notes, and export filters remain open.
-- [ ] P4-015 — Live source-fetch adapter interface: deterministic fixture path stays the test oracle; HTTP/source adapters are injectable, rate-limited, and never required for CI.
-- [ ] P4-016 — Claude extraction adapter behind BYO/API-key plumbing: emits canonical catalog rows, per-field citations, license terms, prices, confidence, and review reasons; no row persists without the P3 validator gates.
-- [ ] P4-017 — OCCT ingestion adapter interface: tessellation/LOD outputs attach to catalog revisions after review; failures degrade to envelope geometry, not uncited mesh truth.
+- [x] P4-014 — Catalog review operations before live generation (D25) *(2026-06-13)*: gateway exposes `GET /v1/reviews` and `PATCH /v1/reviews/:id` over the P3 `review_queue`; studio owner-review panel lists, filters, approves, and rejects rows against the local gateway. Audit notes, decision payloads, export-policy filters, and local/admin owner-token auth are live; full account Auth.js remains P11 platform scope.
+- [x] P4-015 — Live source-fetch adapter interface *(2026-06-13)*: deterministic fixture path stays the test oracle; HTTP/source adapters are injectable, rate-limited, and never required for CI.
+- [~] P4-016 — Claude extraction adapter behind BYO/API-key plumbing *(2026-06-13: fixture/injected extractor seam live; live Claude transport remains deployment-owned)*: emits canonical catalog rows, per-field citations, license terms, prices, confidence, and review reasons; no row persists without the P3 validator gates.
+- [x] P4-017 — OCCT ingestion adapter interface *(2026-06-13)*: tessellation/LOD outputs attach to catalog revisions after review through an injected executor; missing OCCT degrades to envelope geometry, not uncited mesh truth.
 
 ### P5 — Image → 3D
 - [ ] P5-001 — Photoscan worker: background removal → TRELLIS-class single-image reconstruction → manifold repair → decimation

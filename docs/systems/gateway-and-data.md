@@ -53,10 +53,15 @@ logs, renders — presigned browser upload, content-addressed keys *(proposed)*.
 Migrations: forward-only SQL in `infra/migrations`, run on deploy; schema changes
 reviewed like code.
 
-Review queue operations sit on the P3 `review_queue` table. The gateway treats the
-database as optional for local validator-only use: review routes return 503 when the
-catalog database is unavailable, while validation/bake/BOM routes keep working from
-the binary and file catalog.
+Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
+filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,
+reviewer, audit note, decision payload, reviewed time, and the export policy the
+row may flow through. When `FORGE_REVIEW_TOKEN` is set, review routes require
+`Authorization: Bearer <token>`; when unset, anonymous-local review mode stays
+available for the single-user local slice. The gateway treats the database as
+optional for local validator-only use: review routes return 503 when the catalog
+database is unavailable, while validation/bake/BOM routes keep working from the
+binary and file catalog.
 
 ## 5. Job queue taxonomy *(proposed — names final at first implementation)*
 
