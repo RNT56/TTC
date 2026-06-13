@@ -5,17 +5,12 @@ on:
     branches: [main, "claude/**"]
   pull_request:
 
-env:
-  # GitHub's JavaScript actions are moving from Node 20 to Node 24. Opt in now
-  # so the warning becomes a real compatibility gate before the forced switch.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   core:
     name: forge-core (Rust)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -37,7 +32,7 @@ jobs:
           diff -q /tmp/schema.json schema/forge-modelspec.schema.json \
             || { echo "::error::schema drifted — run: pnpm codegen:contract"; exit 1; }
       - name: upload validator binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: forge-validate
           path: target/debug/forge-validate
@@ -47,15 +42,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         # version comes from package.json "packageManager" — pinning it here too
         # makes the action error out with "Multiple versions of pnpm specified"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -115,9 +110,9 @@ jobs:
     env:
       DATABASE_URL: postgres://forge:forge-dev-only@localhost:5432/forge
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -133,8 +128,8 @@ jobs:
     name: compute workers (Python)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install -e "workers[dev]"

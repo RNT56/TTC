@@ -18,6 +18,19 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Complete Node 24 action migration
+**Session:** Codex agent · branch `codex/node24-action-majors` · **Phase:** CI hygiene · **TODO items:** none
+**Done:** Follow-up to the post-P3 PR: the force-env approach made the hosted run
+green, but GitHub still annotated that Node-20-targeting actions were being forced
+onto Node 24. Upgraded workflow action majors instead: `actions/checkout@v6`,
+`actions/setup-node@v6`, `actions/setup-python@v6`, `pnpm/action-setup@v6`, and
+`actions/upload-artifact@v7`; removed the force env blocks.
+**Changed:** `.github/workflows/{ci,nightly,release}.yml`.
+**Decisions:** none.
+**Next:** Continue P4 with the studio owner-review surface, then live fetch/Claude/
+OCCT adapters behind fixture-backed tests.
+**Blockers:** none.
+
 ## 2026-06-13 — Post-P3 baseline and P4 review entry slice
 **Session:** Codex agent · branch `codex/post-p3-p4-start` · **Phase:** P3/P4 · **TODO items:** P4-014 [~], P4-015/016/017 [queued]
 **Done:** Marked the merged P3 catalog slice as the `p3-baseline` tag target
