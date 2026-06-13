@@ -10,8 +10,10 @@ import {
   ANTHROPIC_MODEL_PINS,
   buildGenerationContext,
   runGeneration,
+  type AnthropicTransport,
   type GenerationArchetype,
   type GenerationMaterials,
+  type GenerationProvider,
   type GenerationRequest,
   type GenerationValidator,
   type SynthesisAdapter,
@@ -31,6 +33,8 @@ export interface ServerOptions {
   generationMaterials?: GenerationMaterials;
   generationAdapter?: SynthesisAdapter;
   generationValidator?: GenerationValidator;
+  anthropicTransport?: AnthropicTransport;
+  anthropicBaseUrl?: string;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -47,6 +51,10 @@ const generationArchetypeSchema = Type.Union([
   Type.Literal("arm"),
   Type.Literal("quadruped"),
   Type.Literal("fixedwing"),
+]);
+const generationProviderSchema = Type.Union([
+  Type.Literal("template"),
+  Type.Literal("anthropic"),
 ]);
 const reviewExportPolicySchema = Type.Union([
   Type.Literal("full-geometry-ok"),
@@ -66,6 +74,11 @@ function unavailable(error: unknown): { error: string; detail: string } {
 function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): boolean {
   if (!reviewToken) return true;
   return request.headers.authorization === `Bearer ${reviewToken}`;
+}
+
+function generationApiKeyHeader(request: FastifyRequest): string | undefined {
+  const value = request.headers["x-forge-anthropic-key"];
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 export function buildServer(options: ServerOptions = {}): FastifyInstance {
@@ -205,8 +218,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             ),
             limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
             includePrefixText: Type.Optional(Type.Boolean()),
+            provider: Type.Optional(generationProviderSchema),
             seed: Type.Optional(Type.Integer({ minimum: 0 })),
             maxRepairIterations: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
+            anthropicApiKey: Type.Optional(Type.String({ minLength: 1, maxLength: 4096 })),
           },
           { additionalProperties: false },
         ),
@@ -214,9 +229,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
     async (request, reply) => {
       try {
-        const result = await runGeneration(db, request.body as GenerationRequest, {
+        const body = request.body as GenerationRequest;
+        const result = await runGeneration(db, {
+          ...body,
+          provider: (body.provider ?? "template") as GenerationProvider,
+          anthropicApiKey: generationApiKeyHeader(request) ?? body.anthropicApiKey,
+        }, {
           materials: options.generationMaterials,
           adapter: options.generationAdapter,
+          anthropicTransport: options.anthropicTransport,
+          anthropicBaseUrl: options.anthropicBaseUrl,
           validator: options.generationValidator,
         });
         return reply.status(result.verdict === "blocked" ? 409 : 200).send(result);

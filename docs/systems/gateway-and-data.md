@@ -29,7 +29,7 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 |---|---|---|
 | Validation | `POST /v1/validate` (contract → report); `GET /v1/reports/:hash` | P2 |
 | Registry: models | CRUD `/v1/models`, admission-gated; `GET /v1/share/:id` (public read-only, D4) | P2/P4 |
-| Generation | `POST /v1/generate/context` (brief → approved catalog context + prompt-cache prefix) live; `POST /v1/generate` (brief → deterministic/injectable synthesis + validator repair loop + D14 draft fallback) live; `GET /v1/generate/models` (D26 model pins) live; SSE stream of passes/diagnostics/slots proposed; `POST /v1/models/:id/edit` (NL → JSON-Patch) proposed | P4 |
+| Generation | `POST /v1/generate/context` (brief → approved catalog context + prompt-cache prefix) live; `POST /v1/generate` (brief → deterministic or opt-in Anthropic tool-pass synthesis + validator repair loop + D14 draft fallback) live; `GET /v1/generate/models` (D26 model pins) live; SSE stream of passes/diagnostics/slots proposed; `POST /v1/models/:id/edit` (NL → JSON-Patch) proposed | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Jobs | `POST /v1/jobs/{photoscan,train,sysid,export-step}`; `GET /v1/jobs/:id` (status/SSE) | P5+ |
@@ -66,8 +66,12 @@ binary and file catalog.
 Generation operations consume only approved review rows with non-blocked export
 policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
 the validator-gated synthesis loop with an injectable adapter and deterministic
-fixture-backed default. A deployment-owned Claude adapter can replace the default
-without changing the route contract. The current non-streaming response returns
+fixture-backed default. Callers can opt into live Anthropic synthesis with
+`provider: "anthropic"` and a per-request `x-forge-anthropic-key` header or
+`anthropicApiKey` body field; deployments may instead provide `ANTHROPIC_API_KEY`
+for managed-key environments. The live path uses a forced client tool call whose
+schema is the emitted ModelSpec JSON Schema, then feeds each candidate through the
+same validator/repair/draft loop. The current non-streaming response returns
 attempt history, diagnostics, the admitted/draft contract, and the validator report;
 SSE progress events remain proposed for the studio streaming UX.
 

@@ -147,9 +147,11 @@ leaderboard runs are re-verified server-side as anti-cheat hygiene only.
   crates.io crate — the R2 rung as an artifact.
 - **Backups/audit:** one stateful service (Postgres) keeps backup and audit surface
   small; object storage is content-addressed where possible *(proposed)*.
-- **Secrets:** API keys server-side only; BYO Anthropic keys held client-side, passed
-  per-request, never persisted server-side *(proposed — verify against the vetted
-  integration pattern at P4)*.
+- **Secrets:** platform API keys stay server-side only; BYO Anthropic keys are held
+  client-side, passed per request to `POST /v1/generate` (`x-forge-anthropic-key` or
+  request body), forwarded to Anthropic for that call, and never persisted
+  server-side. Studio settings and metered-credit account plumbing remain P4/P11
+  surface work.
 
 ## 7. Performance budgets (binding acceptance criteria, plan §18)
 

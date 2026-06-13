@@ -5,6 +5,7 @@ import test from "node:test";
 import type { GatewayDb } from "../src/db.js";
 import {
   ANTHROPIC_MODEL_PINS,
+  type AnthropicTransport,
   type GenerationMaterials,
   type GenerationValidator,
   type SynthesisAdapter,
@@ -413,6 +414,167 @@ test("generate model pins expose the implementation-time Anthropic contract", as
   assert.equal(body.models.find((pin) => pin.role === "synthesis")?.inputUsdPerMTok, 10);
   assert.equal(body.models.find((pin) => pin.role === "synthesis")?.outputUsdPerMTok, 50);
   assert.deepEqual(body.models, ANTHROPIC_MODEL_PINS);
+  await app.close();
+});
+
+test("generate can use the Anthropic tool-pass adapter with a per-request key", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [["motor"], "5 inch quad motor", 1]);
+      return {
+        rows: [
+          {
+            id: "cmp_motor_emax-eco2-2207-1900kv",
+            brand: "EMAX",
+            model: "ECO II 2207 1900KV",
+            rev: "1.0.0",
+            category: "motor",
+            dims: { diameterMm: 27.9 },
+            mass_g: "33.2",
+            elec: { kv: 1900 },
+            mech: { propShaft: "prop-shaft-M5" },
+            confidence: "1",
+            license_class: "open",
+            export_policy: "full-geometry-ok",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "9",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const calls: Parameters<AnthropicTransport>[0][] = [];
+  const transport: AnthropicTransport = async (input) => {
+    calls.push(input);
+    assert.equal(input.apiKey, "sk-byo-test");
+    assert.equal(input.baseUrl, "https://anthropic.test");
+    assert.equal(input.request.tool_choice.name, "forge_emit_modelspec");
+    assert.equal(input.request.tools[0]?.name, "forge_emit_modelspec");
+    assert.equal(input.request.tools[0]?.strict, true);
+    if (input.request.model === "claude-fable-5") {
+      return {
+        model: "claude-fable-5",
+        stop_reason: "tool_use",
+        content: [
+          {
+            type: "tool_use",
+            name: "forge_emit_modelspec",
+            input: { bad: true, meta: { id: "first-pass" } },
+          },
+        ],
+        usage: { input_tokens: 100, output_tokens: 20 },
+      };
+    }
+    assert.equal(input.request.model, "claude-opus-4-8");
+    assert.match(input.request.messages[0]?.content ?? "", /CTR-001/);
+    return {
+      model: "claude-opus-4-8",
+      stop_reason: "tool_use",
+      content: [
+        {
+          type: "tool_use",
+          name: "forge_emit_modelspec",
+          input: { ok: true, meta: { id: "repaired-pass" } },
+        },
+      ],
+      usage: { input_tokens: 120, output_tokens: 30 },
+    };
+  };
+  const validator: GenerationValidator = async (contractJson) => {
+    const contract = JSON.parse(contractJson) as { ok?: boolean };
+    if (contract.ok) {
+      return { exitCode: 0, report: { verdict: "admitted", results: [] }, stderr: "" };
+    }
+    return {
+      exitCode: 1,
+      report: {
+        verdict: "rejected",
+        results: [{ check: "CTR-001", severity: "error", message: "missing fields" }],
+      },
+      stderr: "",
+    };
+  };
+  const app = buildServer({
+    db,
+    generationMaterials,
+    anthropicTransport: transport,
+    anthropicBaseUrl: "https://anthropic.test",
+    generationValidator: validator,
+  });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    headers: { "x-forge-anthropic-key": "sk-byo-test" },
+    payload: {
+      provider: "anthropic",
+      prompt: "5 inch quad motor",
+      categories: ["motor"],
+      limit: 1,
+      maxRepairIterations: 1,
+      seed: 7,
+    },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.equal(calls.length, 2);
+  const body = res.json() as {
+    verdict: string;
+    contract: { ok?: boolean; meta?: { provenance?: { modelVersion?: string; seed?: number } } };
+    attempts: { phase: string; modelId: string; stopReason?: string; usage?: unknown }[];
+  };
+  assert.equal(body.verdict, "admitted");
+  assert.equal(body.contract.ok, true);
+  assert.equal(body.contract.meta?.provenance?.modelVersion, "claude-opus-4-8");
+  assert.equal(body.contract.meta?.provenance?.seed, 7);
+  assert.deepEqual(
+    body.attempts.map((attempt) => `${attempt.phase}:${attempt.modelId}:${attempt.stopReason}`),
+    ["synthesize:claude-fable-5:tool_use", "repair:claude-opus-4-8:tool_use"],
+  );
+  assert.ok(!res.body.includes("sk-byo-test"));
+  await app.close();
+});
+
+test("generate Anthropic provider fails closed without a key", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [null, "make a quad", 8]);
+      return {
+        rows: [
+          {
+            id: "cmp_motor_emax-eco2-2207-1900kv",
+            brand: "EMAX",
+            model: "ECO II 2207 1900KV",
+            rev: "1.0.0",
+            category: "motor",
+            dims: { diameterMm: 27.9 },
+            mass_g: "33.2",
+            elec: { kv: 1900 },
+            mech: { propShaft: "prop-shaft-M5" },
+            confidence: "1",
+            license_class: "open",
+            export_policy: "full-geometry-ok",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "9",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const app = buildServer({ db, generationMaterials });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: { provider: "anthropic", prompt: "make a quad" },
+  });
+  assert.equal(res.statusCode, 503);
+  assert.match(res.body, /Anthropic generation requires/);
   await app.close();
 });
 
