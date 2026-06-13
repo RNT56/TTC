@@ -92,9 +92,9 @@ Studio (TypeScript face):
 - [x] P3-010 — Thrust-table interpolation + proof row: table-over-estimate precedence is wired through catalog-backed HUD; proof motor carries a cited sparse 5x4.6/6S thrust-current table pending owner review.
 
 ### P4 — Text-to-CAD GA
-- [ ] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft
-- [ ] P4-002 — Prompt-cache prefix builder: schemars-emitted schema + engine docs + pattern exemplars (= XC-14)
-- [ ] P4-003 — Retrieval: pgvector over catalog + pattern library; schema-true few-shot exemplars
+- [~] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft *(2026-06-13: context-building gateway endpoint live; synthesis/repair loop still pending)*
+- [x] P4-002 — Prompt-cache prefix builder *(2026-06-13)*: schemars-emitted schema + engine docs + pattern exemplars (= XC-14)
+- [~] P4-003 — Retrieval: pgvector over catalog + pattern library; schema-true few-shot exemplars *(2026-06-13: approved-catalog SQL retrieval live; pgvector ranking + harvested pattern library still pending)*
 - [ ] P4-004 — Pattern-library harvester with consent flags (§2.2 terms) (= XC-13)
 - [ ] P4-005 — Conversational editing: NL → JSON-Patch (LLM side); **core patch path ✓** (RFC-6902 subset + shape gate, in facade); incremental validation + < 3 s budget pending
 - [ ] P4-006 — Provenance stamps: model version, prompt hash, seed, validator report on every generated artifact
