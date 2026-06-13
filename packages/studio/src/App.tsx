@@ -2,7 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { StudioScene } from "./scene";
 import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass } from "./types";
-import { decideReview, listReviews, type ReviewQueueItem, type ReviewStatus } from "./gateway";
+import {
+  decideReview,
+  listReviews,
+  type ReviewExportPolicy,
+  type ReviewQueueItem,
+  type ReviewStatus,
+} from "./gateway";
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { CoreBake, CoreSession, coreValidate } from "./wasm";
 
@@ -29,6 +35,14 @@ const SWATCHES = [
   "#3a4a6e",
 ];
 const MATERIAL_CLASSES: MaterialClass[] = ["gloss", "metal", "satin", "matte", "rubber"];
+const REVIEW_EXPORT_POLICIES: ReviewExportPolicy[] = [
+  "full-geometry-ok",
+  "attribution-manifest-required",
+  "envelope-link-out",
+  "envelope-only",
+  "bom-only",
+  "assembly-policy-derived",
+];
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,6 +58,8 @@ export default function App() {
   const [reviews, setReviews] = useState<ReviewQueueItem[]>([]);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewNotes, setReviewNotes] = useState<Record<number, string>>({});
+  const [reviewExportPolicies, setReviewExportPolicies] = useState<Record<number, ReviewExportPolicy>>({});
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === "undefined" ? 1280 : window.innerWidth,
   );
@@ -70,18 +86,38 @@ export default function App() {
     setReviewBusy(true);
     setReviewError(null);
     try {
-      const item = await decideReview(id, decision);
+      const current = reviews.find((candidate) => candidate.id === id);
+      const note = reviewNotes[id]?.trim();
+      const exportPolicy =
+        decision === "rejected"
+          ? "blocked"
+          : reviewExportPolicies[id] ?? defaultReviewExportPolicy(current);
+      const item = await decideReview(id, decision, {
+        reviewer: "owner",
+        reviewNote: note || undefined,
+        exportPolicy,
+      });
       setReviews((current) =>
         reviewStatus === "needs_review"
           ? current.filter((candidate) => candidate.id !== id)
           : current.map((candidate) => (candidate.id === id ? item : candidate)),
       );
+      setReviewNotes((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      setReviewExportPolicies((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
     } catch (error) {
       setReviewError(error instanceof Error ? error.message : String(error));
     } finally {
       setReviewBusy(false);
     }
-  }, [reviewStatus]);
+  }, [reviewExportPolicies, reviewNotes, reviewStatus, reviews]);
 
   /** Load a contract end to end: bake handle + scene + session + report. */
   const loadContract = useCallback(async (contract: string) => {
@@ -522,6 +558,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ color: "#8fa3bf", flex: 1 }}>catalog review</span>
             <select
+              data-testid="review-status-filter"
               value={reviewStatus}
               onChange={(e) => setReviewFilter(e.target.value as ReviewStatus)}
               style={selectStyle}
@@ -554,6 +591,14 @@ export default function App() {
                   key={item.id}
                   item={item}
                   busy={reviewBusy}
+                  reviewNote={reviewNotes[item.id] ?? ""}
+                  exportPolicy={reviewExportPolicies[item.id] ?? defaultReviewExportPolicy(item)}
+                  onNoteChange={(value) =>
+                    setReviewNotes((current) => ({ ...current, [item.id]: value }))
+                  }
+                  onExportPolicyChange={(value) =>
+                    setReviewExportPolicies((current) => ({ ...current, [item.id]: value }))
+                  }
                   onApprove={() => void recordDecision(item.id, "approved")}
                   onReject={() => void recordDecision(item.id, "rejected")}
                 />
@@ -736,11 +781,19 @@ function Row({ k, v }: { k: string; v: string }) {
 function ReviewItem({
   item,
   busy,
+  reviewNote,
+  exportPolicy,
+  onNoteChange,
+  onExportPolicyChange,
   onApprove,
   onReject,
 }: {
   item: ReviewQueueItem;
   busy: boolean;
+  reviewNote: string;
+  exportPolicy: ReviewExportPolicy;
+  onNoteChange: (value: string) => void;
+  onExportPolicyChange: (value: ReviewExportPolicy) => void;
   onApprove: () => void;
   onReject: () => void;
 }) {
@@ -758,22 +811,68 @@ function ReviewItem({
       </div>
       <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{item.artifactId}</div>
       {item.status === "needs_review" ? (
-        <div style={{ display: "flex", gap: 6, marginTop: 5 }}>
-          <button data-testid={`review-approve-${item.id}`} onClick={onApprove} disabled={busy} style={btn}>
-            approve
-          </button>
-          <button data-testid={`review-reject-${item.id}`} onClick={onReject} disabled={busy} style={dangerBtn}>
-            reject
-          </button>
-        </div>
+        <>
+          <select
+            data-testid={`review-policy-${item.id}`}
+            value={exportPolicy}
+            onChange={(event) => onExportPolicyChange(event.target.value as ReviewExportPolicy)}
+            style={{ ...selectStyle, width: "100%", marginTop: 5 }}
+          >
+            {REVIEW_EXPORT_POLICIES.map((policy) => (
+              <option key={policy} value={policy}>
+                {policy}
+              </option>
+            ))}
+          </select>
+          <textarea
+            data-testid={`review-note-${item.id}`}
+            value={reviewNote}
+            onChange={(event) => onNoteChange(event.target.value)}
+            rows={2}
+            maxLength={2000}
+            placeholder="review note"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              marginTop: 5,
+              resize: "vertical",
+              background: "#16181c",
+              color: "#cfd6df",
+              border: "1px solid #2a2f38",
+              borderRadius: 4,
+              fontSize: 11,
+            }}
+          />
+          <div style={{ display: "flex", gap: 6, marginTop: 5 }}>
+            <button data-testid={`review-approve-${item.id}`} onClick={onApprove} disabled={busy} style={btn}>
+              approve
+            </button>
+            <button data-testid={`review-reject-${item.id}`} onClick={onReject} disabled={busy} style={dangerBtn}>
+              reject
+            </button>
+          </div>
+        </>
       ) : (
         <div style={{ color: "#6b7686", marginTop: 5 }}>
           {item.status}
           {item.reviewer ? ` · ${item.reviewer}` : ""}
+          {item.exportPolicy ? ` · ${item.exportPolicy}` : ""}
+          {item.reviewNote ? <div style={{ wordBreak: "break-word" }}>{item.reviewNote}</div> : null}
         </div>
       )}
     </div>
   );
+}
+
+function defaultReviewExportPolicy(item?: ReviewQueueItem): ReviewExportPolicy {
+  if (item?.payload && typeof item.payload === "object") {
+    const payload = item.payload as { license?: { exportPolicy?: unknown } };
+    const policy = payload.license?.exportPolicy;
+    if (typeof policy === "string" && REVIEW_EXPORT_POLICIES.includes(policy as ReviewExportPolicy)) {
+      return policy as ReviewExportPolicy;
+    }
+  }
+  return item?.artifactKind === "reference-rig" ? "assembly-policy-derived" : "envelope-link-out";
 }
 
 function reviewLabel(item: ReviewQueueItem): string {

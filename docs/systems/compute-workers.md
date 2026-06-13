@@ -1,6 +1,6 @@
 # Compute Workers (Python plane) — implementation doc
 
-**Status:** not started · **Phases:** P3 (ETL), P5 (photoscan), P6 (OCCT full), P7
+**Status:** ETL fixture/adapters live; heavy workers proposed · **Phases:** P3/P4 (ETL), P5 (photoscan), P6 (OCCT full), P7
 (training) · **Home:** `workers/` *(proposed)* · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved)
 
@@ -23,12 +23,17 @@ container image per worker family.
 
 ## 3. Worker families
 
-### 3.1 `workers/etl` — catalog ingestion (P3-004)
+### 3.1 `workers/etl` — catalog ingestion (P3-004, P4-015..017)
 fetch manufacturer pages/datasheets/STEP → Claude extraction against the component
 schema with **per-field source citations** (Batch API for bulk; smaller model tiers) →
 hand off geometry to OCCT jobs → dedupe (brand, model, rev) → license-ledger entry
 (non-optional) → low-confidence rows to the human review queue. **Nothing
 auto-publishes.**
+
+Live 2026-06-13: deterministic fixture ingest plus injectable source-fetch,
+Claude-style extraction, and OCCT geometry adapter protocols. Fixture fetch/extract
+and envelope geometry fallback run in CI; HTTP is rate-limited and injectable;
+Claude/OCCT live transports fail closed unless deployment supplies a key/executor.
 
 ### 3.2 `workers/occt` — B-rep truth (P3 tessellation; P6 DfM/STEP)
 STEP I/O, fillets, exact tessellation → meshoptimizer LOD chain (≤ 800/≤ 150 tris);
@@ -72,7 +77,7 @@ one result); poison-payload handling; cache-hit tests.
 
 ## 7. Phase mapping & backlog
 
-P3: etl + occt tessellation (P3-004, P3-010). P5: photoscan (P5-001..006). P6: DfM +
+P3/P4: etl + adapter seams (P3-004, P3-010, P4-015..017). P5: photoscan (P5-001..006). P6: DfM +
 STEP export (XC-18 integration). P7: training (P7-003+). P8: sysid + replay.verify.
 P9: codesign.evaluate.
 

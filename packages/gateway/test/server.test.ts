@@ -127,6 +127,9 @@ test("review queue lists pending catalog items", async () => {
             created_at: "2026-06-13T18:00:00.000Z",
             reviewed_at: null,
             reviewer: null,
+            review_note: null,
+            export_policy: null,
+            decision_payload: {},
           },
         ],
         rowCount: 1,
@@ -146,7 +149,7 @@ test("review queue lists pending catalog items", async () => {
 test("review queue records an approval decision", async () => {
   const db: GatewayDb = {
     async query(_text, params) {
-      assert.deepEqual(params, [7, "approved", "owner"]);
+      assert.deepEqual(params, [7, "approved", "owner", "datasheet checked", "full-geometry-ok"]);
       return {
         rows: [
           {
@@ -160,6 +163,9 @@ test("review queue records an approval decision", async () => {
             created_at: "2026-06-13T18:00:00.000Z",
             reviewed_at: "2026-06-13T18:05:00.000Z",
             reviewer: "owner",
+            review_note: "datasheet checked",
+            export_policy: "full-geometry-ok",
+            decision_payload: { status: "approved" },
           },
         ],
         rowCount: 1,
@@ -170,12 +176,59 @@ test("review queue records an approval decision", async () => {
   const res = await app.inject({
     method: "PATCH",
     url: "/v1/reviews/7",
-    payload: { status: "approved", reviewer: "owner" },
+    payload: {
+      status: "approved",
+      reviewer: "owner",
+      reviewNote: "datasheet checked",
+      exportPolicy: "full-geometry-ok",
+    },
   });
   assert.equal(res.statusCode, 200, res.body);
-  const item = res.json() as { status: string; reviewer: string };
+  const item = res.json() as {
+    status: string;
+    reviewer: string;
+    reviewNote: string;
+    exportPolicy: string;
+  };
   assert.equal(item.status, "approved");
   assert.equal(item.reviewer, "owner");
+  assert.equal(item.reviewNote, "datasheet checked");
+  assert.equal(item.exportPolicy, "full-geometry-ok");
+  await app.close();
+});
+
+test("review queue filters closed rows by export policy", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, ["approved", 10, "attribution-manifest-required"]);
+      return { rows: [], rowCount: 0 } as never;
+    },
+  };
+  const app = buildServer({ db });
+  const res = await app.inject({
+    method: "GET",
+    url: "/v1/reviews?status=approved&limit=10&exportPolicy=attribution-manifest-required",
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.deepEqual((res.json() as { items: unknown[] }).items, []);
+  await app.close();
+});
+
+test("review queue can be guarded by an owner token", async () => {
+  const db: GatewayDb = {
+    async query() {
+      return { rows: [], rowCount: 0 } as never;
+    },
+  };
+  const app = buildServer({ db, reviewToken: "secret-token" });
+  const denied = await app.inject({ method: "GET", url: "/v1/reviews" });
+  assert.equal(denied.statusCode, 401);
+  const allowed = await app.inject({
+    method: "GET",
+    url: "/v1/reviews",
+    headers: { authorization: "Bearer secret-token" },
+  });
+  assert.equal(allowed.statusCode, 200, allowed.body);
   await app.close();
 });
 

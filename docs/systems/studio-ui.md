@@ -29,7 +29,7 @@ geometry math.
 | P1 | viewport (orbit/follow), configurator pane (variant cards, greyed-with-reason), explode/blueprint/selection controls, jog teach-pendant, pause/frame-step, HUD v0, perf overlay (P1-017) |
 | P2 | draft semantics groundwork; validator report viewer (incremental in-WASM checks as you edit) |
 | P3 | compatibility explanations on cards; BOM export; lockfile upgrade diff UI (XC-03) |
-| P4 | catalog review panel (`GET/PATCH /v1/reviews`) for owner approval before live-ingested rows feed generation; generation chat + streaming slots into viewport; draft-state UX (XC-16); share-URL **read-only viewer** (D4: orbit, explode, blueprint, drive demo — no account); BYO-key + credits settings (D3) |
+| P4 | catalog review panel (`GET/PATCH /v1/reviews`, optional `VITE_FORGE_REVIEW_TOKEN`) for owner approval, audit notes, and export-policy decisions before live-ingested rows feed generation; generation chat + streaming slots into viewport; draft-state UX (XC-16); share-URL **read-only viewer** (D4: orbit, explode, blueprint, drive demo — no account); BYO-key + credits settings (D3) |
 | P5 | photoscan alignment UI (known-dimension scale, axis snap, port authoring) |
 | P6 | HUD analytics full (AUW/TWR/hover/current/endurance with inspectable assumptions); disturbance controls |
 | P7 | training tab: task picker, job status, scorecard renderer (XC-21), policy playback toggle |

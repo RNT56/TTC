@@ -86,8 +86,8 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 
 - [ ] New invariant → harness check with stable ID + doc update
 - [ ] Generated artifact path → provenance fields populated and validated
-- [ ] Export path → license class consulted; envelope fallback works
-- [ ] Catalog ingestion → per-field citations + license ledger entry + review queue
+- [~] Export path → license class/export policy consulted; envelope fallback works in the ingestion/review slice, exporter enforcement still pending
+- [x] Catalog ingestion → per-field citations + license ledger entry + review queue
 - [ ] Bridge/deployment surface → no auto-arm path; physical confirmation; supervisor
       authority preserved; D9 rates stated in UX copy
 - [ ] Generation surface → weapons-brief refusal path intact and logged

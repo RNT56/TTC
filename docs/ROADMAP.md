@@ -129,7 +129,7 @@ metered credits (D3); Brief-25 suite live (D-evals).
 [`systems/platform.md`](systems/platform.md) §2.
 
 Exit criteria:
-- [~] Catalog review loop has an owner-facing API/UI before generated artifacts can consume new live-ingested rows *(2026-06-13: gateway API live; studio UI/auth still open)*
+- [x] Catalog review loop has an owner-facing API/UI before generated artifacts can consume new live-ingested rows *(2026-06-13: API/UI, audit notes, export-policy filters, owner-token auth, and fixture-backed ingestion adapters live)*
 - [ ] ≥ 20/25 Brief-25 briefs admitted without human repair
 - [ ] Conversational edits apply in < 3 s
 - [ ] A shared link renders for a logged-out visitor (orbit, explode, blueprint, drive demo)

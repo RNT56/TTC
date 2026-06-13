@@ -7,9 +7,11 @@ license, and review-queue semantics before any caller persists it.
 
 from __future__ import annotations
 
+import copy
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from forge_workers.etl.adapters import CatalogExtractor, GeometryAdapter, SourceFetcher
 from forge_workers.etl.citations import Citation, IngestVerdict, check_citations
 from forge_workers.queue import Job, registry
 
@@ -52,8 +54,36 @@ def ingest_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(category, str):
         raise ValueError("canonicalRow.category is required")
 
-    verdict = check_citations(category, row, citations_from_row(row))
     conflicts = [str(c) for c in fixture.get("sourceConflicts", [])]
+    return ingest_row(row, conflicts=conflicts)
+
+
+def ingest_with_adapters(
+    source_url: str,
+    *,
+    fetcher: SourceFetcher,
+    extractor: CatalogExtractor,
+    geometry_adapter: GeometryAdapter | None = None,
+) -> dict[str, Any]:
+    bundle = fetcher.fetch(source_url)
+    extraction = extractor.extract(bundle)
+    row = extraction.get("canonicalRow")
+    if not isinstance(row, dict):
+        raise ValueError("extractor output requires canonicalRow")
+    row = copy.deepcopy(row)
+    if geometry_adapter is not None:
+        row = geometry_adapter.attach_geometry(row, bundle)
+    conflicts = [str(c) for c in extraction.get("sourceConflicts", [])]
+    result = ingest_row(row, conflicts=conflicts)
+    result["sourceBundle"] = bundle.to_json()
+    return result
+
+
+def ingest_row(row: dict[str, Any], *, conflicts: list[str] | None = None) -> dict[str, Any]:
+    category = row.get("category")
+    if not isinstance(category, str):
+        raise ValueError("canonicalRow.category is required")
+    verdict = check_citations(category, row, citations_from_row(row))
     records = review_records(row, verdict, conflicts)
     return {
         "row": row,

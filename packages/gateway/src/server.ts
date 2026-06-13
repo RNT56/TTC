@@ -2,7 +2,7 @@
 // (TypeBox); heavy work goes to the queue or the validator binary; compute
 // workers have no public surface.
 import { Type } from "@sinclair/typebox";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { gatewayDb, type GatewayDb } from "./db.js";
@@ -10,12 +10,14 @@ import {
   listReviewQueue,
   recordReviewDecision,
   type ReviewDecision,
+  type ReviewExportPolicy,
   type ReviewStatus,
 } from "./reviewQueue.js";
 import { runBake, runBom, runValidator, validatorBin } from "./validator.js";
 
 export interface ServerOptions {
   db?: GatewayDb;
+  reviewToken?: string | null;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -25,10 +27,24 @@ const reviewStatusSchema = Type.Union([
 ]);
 
 const reviewDecisionSchema = Type.Union([Type.Literal("approved"), Type.Literal("rejected")]);
+const reviewExportPolicySchema = Type.Union([
+  Type.Literal("full-geometry-ok"),
+  Type.Literal("attribution-manifest-required"),
+  Type.Literal("envelope-link-out"),
+  Type.Literal("envelope-only"),
+  Type.Literal("bom-only"),
+  Type.Literal("blocked"),
+  Type.Literal("assembly-policy-derived"),
+]);
 
 function unavailable(error: unknown): { error: string; detail: string } {
   const detail = error instanceof Error ? error.message : String(error);
   return { error: "catalog database unavailable", detail: detail.slice(0, 500) };
+}
+
+function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): boolean {
+  if (!reviewToken) return true;
+  return request.headers.authorization === `Bearer ${reviewToken}`;
 }
 
 export function buildServer(options: ServerOptions = {}): FastifyInstance {
@@ -36,6 +52,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const db = options.db ?? {
     query: (text, params) => gatewayDb().query(text, params),
   } satisfies GatewayDb;
+  const reviewToken = options.reviewToken ?? process.env.FORGE_REVIEW_TOKEN ?? null;
 
   app.get("/healthz", async () => ({
     ok: true,
@@ -123,15 +140,28 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           {
             status: Type.Optional(reviewStatusSchema),
             limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+            exportPolicy: Type.Optional(reviewExportPolicySchema),
           },
           { additionalProperties: false },
         ),
       },
     },
     async (request, reply) => {
-      const query = request.query as { status?: ReviewStatus; limit?: number };
+      if (!reviewAuthorized(request, reviewToken)) {
+        return reply.status(401).send({ error: "review auth required" });
+      }
+      const query = request.query as {
+        status?: ReviewStatus;
+        limit?: number;
+        exportPolicy?: ReviewExportPolicy;
+      };
       try {
-        const items = await listReviewQueue(db, query.status ?? "needs_review", query.limit ?? 50);
+        const items = await listReviewQueue(
+          db,
+          query.status ?? "needs_review",
+          query.limit ?? 50,
+          query.exportPolicy,
+        );
         return reply.send({ items });
       } catch (error) {
         return reply.status(503).send(unavailable(error));
@@ -148,16 +178,31 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           {
             status: reviewDecisionSchema,
             reviewer: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+            reviewNote: Type.Optional(Type.String({ maxLength: 2000 })),
+            exportPolicy: Type.Optional(reviewExportPolicySchema),
           },
           { additionalProperties: false },
         ),
       },
     },
     async (request, reply) => {
+      if (!reviewAuthorized(request, reviewToken)) {
+        return reply.status(401).send({ error: "review auth required" });
+      }
       const { id } = request.params as { id: number };
-      const { status, reviewer } = request.body as { status: ReviewDecision; reviewer?: string };
+      const { status, reviewer, reviewNote, exportPolicy } = request.body as {
+        status: ReviewDecision;
+        reviewer?: string;
+        reviewNote?: string;
+        exportPolicy?: ReviewExportPolicy;
+      };
       try {
-        const item = await recordReviewDecision(db, id, status, reviewer ?? null);
+        const item = await recordReviewDecision(db, id, {
+          status,
+          reviewer: reviewer ?? null,
+          reviewNote: reviewNote ?? null,
+          exportPolicy: exportPolicy ?? null,
+        });
         if (item === null) {
           return reply.status(404).send({ error: "review item not found or already closed" });
         }

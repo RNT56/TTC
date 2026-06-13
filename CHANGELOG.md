@@ -18,6 +18,24 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Wire P4 ingestion adapters and review audit policy
+**Session:** Codex agent · branch `codex/p4-ingestion-review-polish` · **Phase:** P4 · **TODO items:** P4-014 [x], P4-015 [x], P4-016 [~], P4-017 [x]
+**Done:** Extended the catalog review path with owner audit notes, review decision
+payloads, owner-token route auth, and export-policy filtering (`full-geometry-ok`, attribution manifest,
+envelope/link-out, BOM-only, blocked, assembly-derived). Added deterministic ETL
+adapter seams for source fetch, Claude-style extraction, and OCCT geometry attach:
+fixture fetch/extract/envelope adapters are CI-executable; HTTP/source fetching is
+rate-limited and injectable; Claude and OCCT live paths fail closed unless a key or
+executor is supplied by deployment.
+**Changed:** `infra/migrations/0004_review_audit.sql`,
+`packages/gateway/src/{reviewQueue.ts,server.ts}`, `packages/studio/src/{App.tsx,gateway.ts}`,
+`workers/forge_workers/etl/{adapters.py,ingest.py}`, worker/gateway tests, and P4 docs.
+**Decisions:** none.
+**Next:** Start the generation orchestrator/retrieval prefix work against only
+approved catalog truth; live Claude transport remains deployment-owned behind the
+adapter seam.
+**Blockers:** none.
+
 ## 2026-06-13 — Add studio catalog review panel
 **Session:** Codex agent · branch `codex/p4-review-ui-cleanup` · **Phase:** P4 · **TODO items:** P4-014 [~]
 **Done:** Continued the P4 review loop with a real studio surface: typed gateway
