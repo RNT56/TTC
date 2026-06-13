@@ -1,8 +1,8 @@
 # Generation Pipeline (Text-to-CAD) — implementation doc
 
-**Status:** P4 context builder live · **Phases:** P4 (GA), P10 (environments) · **Home:**
-`packages/gateway` (orchestrator context live; synthesis proposed) · **Plan refs:** §8 (v3.0) ·
-**Decisions:** D3, D14, D16, D17, D25, D-evals
+**Status:** P4 context + validator-loop synthesis live · **Phases:** P4 (GA), P10 (environments) · **Home:**
+`packages/gateway` (orchestrator context and deterministic synthesis live; live Claude transport proposed) · **Plan refs:** §8 (v3.0) ·
+**Decisions:** D3, D14, D16, D17, D25, D26, D-evals
 
 ## 1. Purpose
 
@@ -46,8 +46,17 @@ Live 2026-06-13: `POST /v1/generate/context` implements the deterministic stage-
 context path. It builds a hash-addressed prompt prefix from the emitted schema,
 engine docs, and schema-true examples, and retrieves only catalog components with
 approved review rows plus non-blocked export policies. It returns
-`mode: "context-only"` and blocked reasons when no approved catalog truth matches;
-it does not call Claude or synthesize contracts.
+`mode: "context-only"` and blocked reasons when no approved catalog truth matches.
+
+Also live 2026-06-13: `POST /v1/generate` runs the first executable synthesis loop.
+The default adapter is deterministic and exemplar-backed so local/CI behavior does
+not require live Claude keys; deployments can inject a Claude-backed
+`SynthesisAdapter`. Every candidate is run through `forge-validate`; rejected
+contracts may be repaired up to three times; exhausted attempts are re-run with
+D14 draft semantics and returned with diagnostics. The route stamps generated
+contracts with model version, prompt hash, and seed, and returns the validator
+report. Persisted generated-artifact audit rows and SSE/tool-pass streaming remain
+P4 follow-up work.
 
 ## 3. Conversational editing (P4-005)
 
@@ -58,13 +67,14 @@ re-bake ≤ 10 ms). Budget: < 3 s end to end.
 
 ## 4. Cost & model discipline (D3)
 
-Frontier tier (Fable-5 class) for full synthesis and repair reasoning; smaller tiers
-(Sonnet/Haiku class) for edits, classification, ETL extraction; **Batch API** for
-catalog ingestion; **prompt caching** for the schema prefix; **BYO Anthropic key
-honored throughout**, metered credits for keyless users. Model strings, context
-limits, and pricing are **pinned at implementation time** from
-https://docs.claude.com/en/api/overview and recorded in DECISIONS (P4-011) — they
-move faster than any planning document.
+Frontier tier for full synthesis, high-reasoning tier for repair, smaller tiers for
+edits/classification/ETL extraction; **Batch API** for catalog ingestion; **prompt
+caching** for the schema prefix; **BYO Anthropic key honored throughout**, metered
+credits for keyless users. Model strings, context limits, output caps, and pricing
+were pinned on 2026-06-13 from official Anthropic docs and recorded in D26:
+`claude-fable-5` for synthesis, `claude-opus-4-8` for repair,
+`claude-sonnet-4-6` for edits, and `claude-haiku-4-5-20251001` for ETL. The gateway
+exposes the executable pin set at `GET /v1/generate/models`.
 
 ## 5. Brief-25 — generation quality as CI (D-evals, P4-009/010)
 
@@ -92,8 +102,8 @@ resolution, wire list from electrical ports.
 `forge-contract` (schemars schema + types), `forge-validate` (the repair oracle —
 WASM + binary), component DB (retrieval + componentRefs), review queue API
 (`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy),
-`POST /v1/generate/context`, injectable source/Claude/OCCT adapters, Anthropic API,
-`studio` (streaming viewport, draft UX XC-16).
+`POST /v1/generate/context`, `POST /v1/generate`, injectable synthesis/source/
+Claude/OCCT adapters, Anthropic API, `studio` (streaming viewport, draft UX XC-16).
 
 ## 9. Testing
 

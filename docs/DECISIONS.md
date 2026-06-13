@@ -10,7 +10,7 @@ drifting in code. On any conflict between documents, this file wins
 
 1. Confirm it is genuinely a decision of consequence (architecture, scope, sequencing,
    security, legal, economics, naming) — not routine implementation detail.
-2. Append a row with the next free ID (next regular ID: **D26**), a one-line decision,
+2. Append a row with the next free ID (next regular ID: **D27**), a one-line decision,
    a one-line rationale, and status `active`.
 3. If it supersedes an earlier decision, set the old row's status to
    `superseded by Dnn` — exactly as D6 and D11 were retired by v3.0.
@@ -69,6 +69,7 @@ drifting in code. On any conflict between documents, this file wins
 | D23 | **The product name is ForgedTTC** (owner decision, 2026-06-12 — resolves OD-01/PRE-005). "FORGE" remains the historical working codename in frozen papers; living docs and public artifacts say ForgedTTC. **Scope call:** code namespaces stay `forge-*` / `@forge/*` — they are internal artifact prefixes, renaming them churns every crate/package/import for zero user value; public-facing naming (UI title, README, published package descriptions, NOTICE) carries ForgedTTC. A formal trademark scan remains the owner's pre-P4 action (recorded, not blocking). | owner instruction; minimal-churn scoping per "boring everywhere" | active |
 | D24 | **License mechanics (implements D2, owner-delegated business calls, 2026-06-12):** Apache-2.0, copyright RNT56, scoped to the open core = `crates/` (ALL forge-* crates incl. the wasm facade and forge-gen — everything published to crates.io/npm must be usable), `schema/`, and `examples/` (fixtures are unusable if closed). Everything else (studio, gateway, workers, prototype, catalog, docs, infra, scripts) proprietary, all rights reserved. Root `LICENSE` states the split; `LICENSES/Apache-2.0.txt` canonical text; `NOTICE` per Apache convention; zone-2 package.json marked "SEE LICENSE IN". Catalog rows keep their per-row `license` metadata (D10). Contribution terms stated in LICENSE. | open core must cover every published artifact or publication (P2-001) deadlocks; examples/fixtures travel with the validator | active |
 | D25 | **P4 starts with live catalog ingestion and review operations before full text-to-CAD generation GA.** The first P4 slice is the owner-facing review API/UI plus injectable fetch/Claude/OCCT adapters; the generation orchestrator then consumes reviewed catalog truth, not unaudited rows. | generation quality depends on trusted parts/provenance; closing the review loop first avoids building LLM flows on unresolved catalog debt | active |
+| D26 | **P4 Anthropic model pins are fixed from official docs checked 2026-06-13:** synthesis `claude-fable-5` (1M context, 128k max output, $10/$50 per MTok input/output), repair `claude-opus-4-8` (1M, 128k, $5/$25), edit `claude-sonnet-4-6` (1M, 64k, $3/$15), ETL `claude-haiku-4-5-20251001` / alias `claude-haiku-4-5` (200k, 64k, $1/$5). Prompt-cache write/hit prices are recorded in code; `claude-mythos-5` is not used because official docs mark it limited availability. | model IDs, limits, and prices move faster than planning docs; generated artifacts must carry auditable model provenance before live calls | active |
 
 ## Open decisions
 
@@ -81,6 +82,6 @@ OD row. OD-02 (React vs Solid) was resolved by D16: the face stays React/TS.
 
 - ~~P2: napi-rs hot-path bindings vs binary-spawn in the gateway (OD-08)~~ — resolved as D22.
 - P3: reference-rig SKU selection (fulfils D12).
-- P4: pinned Anthropic model strings/limits/pricing (CLAUDE.md non-negotiable #11).
+- ~~P4: pinned Anthropic model strings/limits/pricing (CLAUDE.md non-negotiable #11)~~ — resolved as D26.
 - P8: legal-review sign-off record (entry gate).
 - P11: dual-use check record; marketplace economics (OD-05).

@@ -1,6 +1,6 @@
 # Gateway & Data Plane — implementation doc
 
-**Status:** validation/BOM/review APIs live · **Phases:** P2 (validation service), grows through P11 ·
+**Status:** validation/BOM/review/generation APIs live · **Phases:** P2 (validation service), grows through P11 ·
 **Package:** `packages/gateway` + `infra/` *(proposed)* · **Plan refs:** §5, §6
 (v3.0) · **Decisions:** D2, D3, D16, D17
 
@@ -29,7 +29,7 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 |---|---|---|
 | Validation | `POST /v1/validate` (contract → report); `GET /v1/reports/:hash` | P2 |
 | Registry: models | CRUD `/v1/models`, admission-gated; `GET /v1/share/:id` (public read-only, D4) | P2/P4 |
-| Generation | `POST /v1/generate/context` (brief → approved catalog context + prompt-cache prefix) live; `POST /v1/generate` (brief → SSE stream of passes/diagnostics/slots) proposed; `POST /v1/models/:id/edit` (NL → JSON-Patch) proposed | P4 |
+| Generation | `POST /v1/generate/context` (brief → approved catalog context + prompt-cache prefix) live; `POST /v1/generate` (brief → deterministic/injectable synthesis + validator repair loop + D14 draft fallback) live; `GET /v1/generate/models` (D26 model pins) live; SSE stream of passes/diagnostics/slots proposed; `POST /v1/models/:id/edit` (NL → JSON-Patch) proposed | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Jobs | `POST /v1/jobs/{photoscan,train,sysid,export-step}`; `GET /v1/jobs/:id` (status/SSE) | P5+ |
@@ -62,6 +62,14 @@ available for the single-user local slice. The gateway treats the database as
 optional for local validator-only use: review routes return 503 when the catalog
 database is unavailable, while validation/bake/BOM routes keep working from the
 binary and file catalog.
+
+Generation operations consume only approved review rows with non-blocked export
+policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
+the validator-gated synthesis loop with an injectable adapter and deterministic
+fixture-backed default. A deployment-owned Claude adapter can replace the default
+without changing the route contract. The current non-streaming response returns
+attempt history, diagnostics, the admitted/draft contract, and the validator report;
+SSE progress events remain proposed for the studio streaming UX.
 
 ## 5. Job queue taxonomy *(proposed — names final at first implementation)*
 

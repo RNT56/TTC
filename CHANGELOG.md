@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Add validator-loop generation endpoint
+**Session:** Codex agent · branch `codex/p4-generation-orchestrator` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-006 [~], P4-011 [x]
+**Done:** Added the executable P4 generation loop: `POST /v1/generate` consumes
+approved catalog context, runs an injectable synthesis adapter, validates every
+candidate through `forge-validate`, repairs up to three iterations, and falls back
+to D14 draft diagnostics when repairs are exhausted. Added `GET /v1/generate/models`
+for the D26 Anthropic model/pricing pins and tests for block, repair/admit, draft,
+and model-pin behavior.
+**Changed:** `packages/gateway/src/{generation.ts,server.ts}`,
+`packages/gateway/test/server.test.ts`, and P4 docs.
+**Decisions:** D26 — P4 Anthropic model IDs, token limits, output caps, and pricing
+pinned from official docs checked 2026-06-13.
+**Next:** Replace the default deterministic synthesis adapter with the live
+Claude/tool-pass transport behind BYO/API-key plumbing, then add Brief-25 CI.
+**Blockers:** none.
+
 ## 2026-06-13 — Add generation context builder
 **Session:** Codex agent · branch `codex/p4-generation-context` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-002 [x], P4-003 [~]
 **Done:** Added the first executable generation-orchestrator slice:
