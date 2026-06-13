@@ -15,6 +15,7 @@ const checks = [
   ["licenses", await one("SELECT count(*) AS n FROM licenses"), 8],
   ["prices", await one("SELECT count(*) AS n FROM prices WHERE purchasable"), 8],
   ["review_queue", await one("SELECT count(*) AS n FROM review_queue WHERE status = 'needs_review'"), 1],
+  ["generated_artifacts", await one("SELECT count(*) AS n FROM generated_artifacts"), 0],
   ["reference_rigs", await one("SELECT count(*) AS n FROM reference_rigs"), 2],
   ["reference_rig_items", await one("SELECT count(*) AS n FROM reference_rig_items"), 7],
   ["provenance", await one("SELECT count(*) AS n FROM provenance"), 20],

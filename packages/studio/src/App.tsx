@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StudioScene } from "./scene";
 import { DEMO_MODELS, useStudio } from "./store";
-import type { MaterialClass } from "./types";
+import type { MaterialClass, Report } from "./types";
 import {
   decideReview,
+  generateContract,
+  listGenerationModels,
+  type AnthropicModelPin,
+  type GenerationArchetype,
+  type GenerationAttempt,
+  type GenerationProvider,
+  type GenerationResponse,
   listReviews,
   type ReviewExportPolicy,
   type ReviewQueueItem,
@@ -43,6 +50,24 @@ const REVIEW_EXPORT_POLICIES: ReviewExportPolicy[] = [
   "bom-only",
   "assembly-policy-derived",
 ];
+const GENERATION_ARCHETYPES: GenerationArchetype[] = [
+  "multirotor",
+  "quadruped",
+  "rover",
+  "arm",
+  "biped",
+  "fixedwing",
+];
+const ANTHROPIC_KEY_STORAGE_KEY = "forge.studio.anthropicKey";
+
+function readSessionValue(key: string): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.sessionStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,6 +85,22 @@ export default function App() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState<Record<number, string>>({});
   const [reviewExportPolicies, setReviewExportPolicies] = useState<Record<number, ReviewExportPolicy>>({});
+  const [generationProvider, setGenerationProvider] = useState<GenerationProvider>("template");
+  const [generationPrompt, setGenerationPrompt] = useState(
+    "5 inch freestyle quad with a long-range battery option, under 650 g",
+  );
+  const [generationArchetype, setGenerationArchetype] = useState<GenerationArchetype | "">("multirotor");
+  const [generationCategories, setGenerationCategories] = useState("motor, prop, battery, frame");
+  const [generationLimit, setGenerationLimit] = useState(8);
+  const [generationMaxRepairs, setGenerationMaxRepairs] = useState(3);
+  const [generationSeed, setGenerationSeed] = useState(0);
+  const [anthropicKey, setAnthropicKey] = useState(() => readSessionValue(ANTHROPIC_KEY_STORAGE_KEY));
+  const [generationBusy, setGenerationBusy] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationResult, setGenerationResult] = useState<GenerationResponse | null>(null);
+  const [generationLoadMessage, setGenerationLoadMessage] = useState<string | null>(null);
+  const [generationModels, setGenerationModels] = useState<AnthropicModelPin[]>([]);
+  const [generationModelsError, setGenerationModelsError] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === "undefined" ? 1280 : window.innerWidth,
   );
@@ -120,7 +161,7 @@ export default function App() {
   }, [reviewExportPolicies, reviewNotes, reviewStatus, reviews]);
 
   /** Load a contract end to end: bake handle + scene + session + report. */
-  const loadContract = useCallback(async (contract: string) => {
+  const loadContract = useCallback(async (contract: string, reportOverride?: Report | null) => {
     const handle = await CoreBake.create(contract);
     bakeRef.current?.dispose();
     bakeRef.current = handle;
@@ -134,7 +175,7 @@ export default function App() {
     } catch {
       sessionRef.current = null; // archetypes without a v0 driver stay static
     }
-    const report = await coreValidate(contract);
+    const report = reportOverride?.verdict === "draft" ? reportOverride : await coreValidate(contract);
     useStudio.getState().setLoaded(artifact, report, contract);
     useStudio.getState().setSelected(null);
   }, []);
@@ -148,6 +189,63 @@ export default function App() {
     },
     [loadContract],
   );
+
+  const runGenerate = useCallback(async () => {
+    const prompt = generationPrompt.trim();
+    if (!prompt) {
+      setGenerationError("prompt is required");
+      return;
+    }
+    if (generationProvider === "anthropic" && !anthropicKey.trim()) {
+      setGenerationError("Anthropic provider requires a BYO key");
+      return;
+    }
+    setGenerationBusy(true);
+    setGenerationError(null);
+    setGenerationLoadMessage(null);
+    try {
+      const categories = parseCategories(generationCategories);
+      const result = await generateContract(
+        {
+          prompt,
+          provider: generationProvider,
+          ...(generationArchetype ? { archetype: generationArchetype } : {}),
+          ...(categories.length > 0 ? { categories } : {}),
+          limit: boundedInt(generationLimit, 1, 20),
+          maxRepairIterations: boundedInt(generationMaxRepairs, 0, 3),
+          seed: boundedInt(generationSeed, 0, Number.MAX_SAFE_INTEGER),
+        },
+        { anthropicApiKey: generationProvider === "anthropic" ? anthropicKey : undefined },
+      );
+      setGenerationResult(result);
+      if ((result.verdict === "admitted" || result.verdict === "draft") && result.contract !== null) {
+        try {
+          await loadContract(JSON.stringify(result.contract), result.report);
+          setGenerationLoadMessage(
+            result.verdict === "draft" ? "draft loaded into scene" : "contract loaded into scene",
+          );
+        } catch (error) {
+          setGenerationLoadMessage(
+            `load failed · ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setGenerationBusy(false);
+    }
+  }, [
+    anthropicKey,
+    generationArchetype,
+    generationCategories,
+    generationLimit,
+    generationMaxRepairs,
+    generationPrompt,
+    generationProvider,
+    generationSeed,
+    loadContract,
+  ]);
 
   /** Configurator (P1-014): JSON-Patch the live handle, re-bake in place —
    * explode, camera, drive state and selection all survive the rebuild. */
@@ -322,8 +420,11 @@ export default function App() {
     return () => {
       window.removeEventListener("resize", onResize);
       sessionRef.current?.dispose();
+      sessionRef.current = null;
       bakeRef.current?.dispose();
+      bakeRef.current = null;
       scene.dispose();
+      sceneRef.current = null;
     };
   }, [loadDemo]);
 
@@ -361,6 +462,36 @@ export default function App() {
   useEffect(() => {
     void refreshReviews("needs_review");
   }, [refreshReviews]);
+
+  useEffect(() => {
+    try {
+      if (anthropicKey) {
+        window.sessionStorage.setItem(ANTHROPIC_KEY_STORAGE_KEY, anthropicKey);
+      } else {
+        window.sessionStorage.removeItem(ANTHROPIC_KEY_STORAGE_KEY);
+      }
+    } catch {
+      /* storage can be blocked; local state still works for the session */
+    }
+  }, [anthropicKey]);
+
+  useEffect(() => {
+    let alive = true;
+    void listGenerationModels()
+      .then((models) => {
+        if (!alive) return;
+        setGenerationModels(models);
+        setGenerationModelsError(null);
+      })
+      .catch((error) => {
+        if (!alive) return;
+        setGenerationModels([]);
+        setGenerationModelsError(error instanceof Error ? error.message : String(error));
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -411,8 +542,9 @@ export default function App() {
   };
 
   const share = async () => {
-    const contract = useStudio.getState().contractJson;
-    if (!contract) return;
+    const st = useStudio.getState();
+    const contract = st.contractJson;
+    if (!contract || st.report?.verdict !== "admitted") return;
     const fragment = await encodeShareFragment(contract);
     const url = `${window.location.origin}${window.location.pathname}#${fragment}`;
     window.history.replaceState(null, "", `#${fragment}`);
@@ -426,6 +558,14 @@ export default function App() {
   const hud = s.artifact?.hud;
   const isMultirotor = hud?.twr !== undefined;
   const narrow = viewportWidth < 760;
+  const generationStatus = generationBusy
+    ? "running"
+    : generationError
+      ? "error"
+      : generationResult?.verdict ?? "idle";
+  const synthesisPin = generationModels.find((model) => model.role === "synthesis");
+  const repairPin = generationModels.find((model) => model.role === "repair");
+  const shareDisabled = !s.contractJson || s.report?.verdict !== "admitted";
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <canvas
@@ -444,8 +584,8 @@ export default function App() {
           left: 12,
           width: 360,
           maxWidth: "calc(100vw - 32px)",
-          maxHeight: narrow ? "42vh" : undefined,
-          overflow: narrow ? "auto" : undefined,
+          maxHeight: narrow ? "42vh" : "calc(100vh - 24px)",
+          overflow: "auto",
         }}
       >
         <div style={{ color: "#8fa3bf", marginBottom: 6 }}>ForgedTTC STUDIO</div>
@@ -469,7 +609,12 @@ export default function App() {
             : "loading…"}
         </div>
         <div style={{ color: "#6b7686" }}>drop a .forge.json to validate in-browser</div>
-        <button onClick={() => void share()} style={{ ...btn, marginTop: 6 }}>
+        <button
+          onClick={() => void share()}
+          disabled={shareDisabled}
+          title={shareDisabled ? "only admitted contracts can be shared" : "copy share URL"}
+          style={{ ...btn, marginTop: 6, opacity: shareDisabled ? 0.55 : 1 }}
+        >
           share — contract in the URL
         </button>
 
@@ -553,6 +698,163 @@ export default function App() {
             )}
           </>
         )}
+
+        <div data-testid="generation-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#8fa3bf", flex: 1 }}>generation</span>
+            <GenerationStatusBadge status={generationStatus} />
+            <button
+              data-testid="generation-run"
+              onClick={() => void runGenerate()}
+              disabled={generationBusy || !generationPrompt.trim()}
+              style={{ ...btn, opacity: generationBusy || !generationPrompt.trim() ? 0.55 : 1 }}
+            >
+              generate
+            </button>
+          </div>
+          <textarea
+            data-testid="generation-prompt"
+            value={generationPrompt}
+            onChange={(event) => setGenerationPrompt(event.target.value)}
+            rows={3}
+            maxLength={4000}
+            placeholder="brief"
+            style={textareaStyle}
+          />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 6 }}>
+            <label style={fieldLabel}>
+              provider
+              <select
+                data-testid="generation-provider"
+                value={generationProvider}
+                onChange={(event) => setGenerationProvider(event.target.value as GenerationProvider)}
+                style={{ ...selectStyle, width: "100%" }}
+              >
+                <option value="template">template</option>
+                <option value="anthropic">Anthropic</option>
+              </select>
+            </label>
+            <label style={fieldLabel}>
+              archetype
+              <select
+                data-testid="generation-archetype"
+                value={generationArchetype}
+                onChange={(event) => setGenerationArchetype(event.target.value as GenerationArchetype | "")}
+                style={{ ...selectStyle, width: "100%" }}
+              >
+                <option value="">auto</option>
+                {GENERATION_ARCHETYPES.map((archetype) => (
+                  <option key={archetype} value={archetype}>
+                    {archetype}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ ...fieldLabel, gridColumn: "1 / -1" }}>
+              categories
+              <input
+                data-testid="generation-categories"
+                value={generationCategories}
+                onChange={(event) => setGenerationCategories(event.target.value)}
+                placeholder="motor, prop, battery"
+                style={inputStyle}
+              />
+            </label>
+            <label style={fieldLabel}>
+              limit
+              <input
+                data-testid="generation-limit"
+                type="number"
+                min={1}
+                max={20}
+                value={generationLimit}
+                onChange={(event) => setGenerationLimit(Number(event.target.value))}
+                style={inputStyle}
+              />
+            </label>
+            <label style={fieldLabel}>
+              repairs
+              <input
+                data-testid="generation-repairs"
+                type="number"
+                min={0}
+                max={3}
+                value={generationMaxRepairs}
+                onChange={(event) => setGenerationMaxRepairs(Number(event.target.value))}
+                style={inputStyle}
+              />
+            </label>
+            <label style={fieldLabel}>
+              seed
+              <input
+                data-testid="generation-seed"
+                type="number"
+                min={0}
+                value={generationSeed}
+                onChange={(event) => setGenerationSeed(Number(event.target.value))}
+                style={inputStyle}
+              />
+            </label>
+            {generationProvider === "anthropic" && (
+              <label style={fieldLabel}>
+                BYO key
+                <input
+                  data-testid="generation-anthropic-key"
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={anthropicKey}
+                  onChange={(event) => setAnthropicKey(event.target.value)}
+                  placeholder="sk-ant-..."
+                  style={inputStyle}
+                />
+              </label>
+            )}
+          </div>
+          <div style={{ color: "#6b7686", marginTop: 5, wordBreak: "break-word" }}>
+            {generationProvider === "anthropic"
+              ? generationModelsError
+                ? `models unavailable · ${generationModelsError}`
+                : synthesisPin && repairPin
+                  ? `synth ${synthesisPin.modelId} · repair ${repairPin.modelId}`
+                  : "models loading…"
+              : "template provider · approved catalog context still required"}
+          </div>
+          {generationError && (
+            <div style={{ color: "#e66", marginTop: 5, wordBreak: "break-word" }}>
+              gateway · {generationError}
+            </div>
+          )}
+          {generationLoadMessage && (
+            <div
+              style={{
+                color: generationLoadMessage.startsWith("load failed") ? "#e6a23c" : "#7dd87d",
+                marginTop: 5,
+                wordBreak: "break-word",
+              }}
+            >
+              {generationLoadMessage}
+            </div>
+          )}
+          {generationResult && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ color: "#6b7686" }}>
+                {generationResult.context.retrievedComponents.length} approved rows · prefix{" "}
+                {generationResult.context.promptPrefix.hash.slice(0, 8)}
+              </div>
+              {generationResult.blockedReasons.length > 0 && (
+                <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                  {generationResult.blockedReasons.map((reason) => (
+                    <li key={reason} style={{ color: "#e6a23c" }}>
+                      {reason}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <GenerationAttemptList attempts={generationResult.attempts} />
+            </div>
+          )}
+        </div>
 
         <div data-testid="review-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -697,7 +999,7 @@ export default function App() {
           style={{
             ...panel,
             bottom: 12,
-            left: 12,
+            left: narrow ? 12 : 388,
             right: narrow ? 12 : undefined,
             maxWidth: narrow ? undefined : 460,
             maxHeight: 200,
@@ -769,6 +1071,29 @@ const selectStyle: React.CSSProperties = {
   fontSize: 11,
 };
 
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  background: "#16181c",
+  color: "#cfd6df",
+  border: "1px solid #2a2f38",
+  borderRadius: 4,
+  fontSize: 11,
+};
+
+const textareaStyle: React.CSSProperties = {
+  ...inputStyle,
+  display: "block",
+  marginTop: 6,
+  resize: "vertical",
+  minHeight: 58,
+};
+
+const fieldLabel: React.CSSProperties = {
+  display: "block",
+  color: "#6b7686",
+};
+
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
@@ -776,6 +1101,116 @@ function Row({ k, v }: { k: string; v: string }) {
       <span>{v}</span>
     </div>
   );
+}
+
+type GenerationStatus = GenerationResponse["verdict"] | "idle" | "running" | "error";
+
+function GenerationStatusBadge({ status }: { status: GenerationStatus }) {
+  return (
+    <span
+      data-testid="generation-status"
+      style={{
+        color: verdictColor(status),
+        border: `1px solid ${verdictColor(status)}`,
+        borderRadius: 4,
+        padding: "0 5px",
+        fontSize: 10,
+        lineHeight: "16px",
+        textTransform: "uppercase",
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function GenerationAttemptList({ attempts }: { attempts: GenerationAttempt[] }) {
+  if (attempts.length === 0) {
+    return <div style={{ color: "#6b7686", marginTop: 4 }}>0 attempts</div>;
+  }
+  return (
+    <div style={{ marginTop: 5, maxHeight: 170, overflow: "auto", scrollbarWidth: "thin" }}>
+      {attempts.map((attempt) => {
+        const usage = formatUsage(attempt.usage);
+        return (
+          <details
+            key={`${attempt.index}-${attempt.contractHash}`}
+            open={attempt.index === attempts.length - 1 || attempt.diagnostics.length > 0}
+            style={{ borderTop: "1px solid #242a33", padding: "5px 0" }}
+          >
+            <summary style={{ color: verdictColor(attempt.verdict), cursor: "pointer" }}>
+              #{attempt.index + 1} {attempt.phase} · {attempt.verdict}
+            </summary>
+            <div style={{ color: "#6b7686", wordBreak: "break-word" }}>
+              {attempt.modelId} · {attempt.contractHash.slice(0, 10)}
+              {attempt.stopReason ? ` · ${attempt.stopReason}` : ""}
+            </div>
+            {usage && <div style={{ color: "#6b7686" }}>{usage}</div>}
+            {attempt.diagnostics.length === 0 ? (
+              <div style={{ color: "#6b7686" }}>0 diagnostics</div>
+            ) : (
+              <ul style={{ margin: "3px 0 0 16px", padding: 0 }}>
+                {attempt.diagnostics.slice(0, 4).map((diagnostic, index) => (
+                  <li
+                    key={`${diagnostic.check ?? "diagnostic"}-${index}`}
+                    style={{ color: diagnostic.severity === "error" ? "#e66" : "#e6a23c" }}
+                  >
+                    {diagnostic.check ?? "diagnostic"} — {diagnostic.message ?? diagnostic.severity ?? "reported"}
+                  </li>
+                ))}
+                {attempt.diagnostics.length > 4 && (
+                  <li style={{ color: "#6b7686" }}>… +{attempt.diagnostics.length - 4} more</li>
+                )}
+              </ul>
+            )}
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
+function verdictColor(verdict: string): string {
+  switch (verdict) {
+    case "admitted":
+      return "#7dd87d";
+    case "draft":
+    case "blocked":
+      return "#e6a23c";
+    case "rejected":
+    case "error":
+      return "#e66";
+    case "running":
+      return "#39c8ff";
+    default:
+      return "#6b7686";
+  }
+}
+
+function formatUsage(usage: unknown): string | null {
+  if (!usage || typeof usage !== "object" || Array.isArray(usage)) return null;
+  const record = usage as Record<string, unknown>;
+  const input = record.input_tokens;
+  const output = record.output_tokens;
+  if (typeof input === "number" && typeof output === "number") {
+    return `${input} in · ${output} out tokens`;
+  }
+  const parts = Object.entries(record)
+    .filter((entry): entry is [string, string | number] =>
+      typeof entry[1] === "string" || typeof entry[1] === "number",
+    )
+    .slice(0, 3)
+    .map(([key, value]) => `${key} ${value}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+function parseCategories(value: string): string[] {
+  return [...new Set(value.split(/[,\n]/).map((item) => item.trim()).filter(Boolean))].sort();
+}
+
+function boundedInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.trunc(value)));
 }
 
 function ReviewItem({

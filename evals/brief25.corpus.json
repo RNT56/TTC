@@ -1,0 +1,507 @@
+{
+  "version": "brief25.v1",
+  "name": "Brief-25 canonical generation corpus",
+  "description": "Twenty-five stable P4 generation briefs spanning archetypes, scales, catalog-backed constraints, safety constraints, and manufacturability constraints.",
+  "p4Vocabulary": {
+    "archetypes": ["biped", "multirotor", "rover", "arm", "quadruped", "fixedwing"],
+    "scaleClasses": ["micro", "mini", "bench", "field", "large", "human-scale"],
+    "constraintKinds": [
+      "mass_budget",
+      "envelope",
+      "real_part",
+      "driver",
+      "manufacturing",
+      "repairability",
+      "license",
+      "safety",
+      "endurance",
+      "payload"
+    ],
+    "catalogCategories": ["battery", "esc", "fc", "frame", "motor", "prop", "rover"]
+  },
+  "briefs": [
+    {
+      "id": "b25-01-freestyle-quad-5in",
+      "title": "5-inch freestyle quad with proof-pair electronics",
+      "archetype": "multirotor",
+      "scale": {
+        "class": "mini",
+        "targetEnvelopeMm": { "length": 260, "width": 260, "height": 110 },
+        "massBudgetG": 800
+      },
+      "catalogCategories": ["frame", "motor", "prop", "battery", "fc", "esc"],
+      "catalogComponentRefs": [
+        "cmp_frame_tbs-source-one-v6-5in",
+        "cmp_motor_emax-eco2-2207-1900kv",
+        "cmp_prop_gemfan-hurricane-51466-v2",
+        "cmp_batt_cnhl-black-4s-1500",
+        "cmp_fc_holybro-kakute-h7-v15",
+        "cmp_esc_holybro-tekko32-f4-4in1-50a"
+      ],
+      "constraints": [
+        { "kind": "mass_budget", "value": "All-up weight should stay under 800 g with the selected 4S pack." },
+        { "kind": "real_part", "value": "Use catalog-backed motor, prop, battery, FC, ESC, and frame slots." },
+        { "kind": "driver", "value": "Multirotor angle-mode driver with hover trim reported." },
+        { "kind": "repairability", "value": "Explode arms, stack, props, and battery as separate serviceable groups." }
+      ],
+      "prompt": "Generate a 5-inch freestyle multirotor using the reviewed TBS Source One frame, EMAX ECO II 2207 motors, Gemfan 51466 props, Holybro Kakute H7, Tekko32 4-in-1 ESC, and a CNHL 4S 1500 pack. Keep all-up weight under 800 g, expose stack and arm slots, and include an explode sequence suitable for field repair.",
+      "tags": ["proof-pair", "catalog-backed", "freestyle", "slots"]
+    },
+    {
+      "id": "b25-02-cinewhoop-ducted-250g",
+      "title": "Sub-250 g ducted indoor cinewhoop",
+      "archetype": "multirotor",
+      "scale": {
+        "class": "micro",
+        "targetEnvelopeMm": { "length": 165, "width": 165, "height": 70 },
+        "massBudgetG": 250
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc", "esc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "mass_budget", "value": "Target sub-250 g dry build envelope." },
+        { "kind": "safety", "value": "Ducted or guarded props; no exposed sharp prop perimeter." },
+        { "kind": "driver", "value": "Stable hover and gentle cinematic response." }
+      ],
+      "prompt": "Generate a sub-250 g ducted cinewhoop multirotor for indoor inspection video. Favor guarded props, a compact FC stack, a small 4S pack, quiet thrust, and a gentle cinematic driver tune. The model must show ducts, camera mount, battery strap, and serviceable prop access.",
+      "tags": ["indoor", "safety", "micro", "camera"]
+    },
+    {
+      "id": "b25-03-long-range-quad-7in",
+      "title": "7-inch long-range quad with efficient cruise",
+      "archetype": "multirotor",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 360, "width": 360, "height": 125 },
+        "massBudgetG": 1100
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc", "esc", "frame"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15", "cmp_batt_cnhl-black-4s-1500"],
+      "constraints": [
+        { "kind": "endurance", "value": "Optimize for cruise endurance rather than maximum punch." },
+        { "kind": "envelope", "value": "Use a 7-inch prop clearance envelope with long arms." },
+        { "kind": "safety", "value": "No payload, interdiction, or targeting modules." }
+      ],
+      "prompt": "Generate a 7-inch long-range multirotor optimized for efficient cruise and stable video. Use catalog-backed electronics where available, keep wiring inspectable, show long-arm prop clearance, and include no payload, interdiction, or targeting modules.",
+      "tags": ["long-range", "endurance", "field"]
+    },
+    {
+      "id": "b25-04-quad-training-guarded",
+      "title": "Guarded training quad for classrooms",
+      "archetype": "multirotor",
+      "scale": {
+        "class": "micro",
+        "targetEnvelopeMm": { "length": 130, "width": 130, "height": 65 },
+        "massBudgetG": 180
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "safety", "value": "Continuous prop guard ring and low exposed kinetic energy." },
+        { "kind": "repairability", "value": "Arms and guard hoop should be easy to replace." },
+        { "kind": "manufacturing", "value": "Printable guard and frame parts with conservative wall thickness." }
+      ],
+      "prompt": "Generate a small classroom training multirotor with a continuous prop guard, replaceable printed arms, low exposed kinetic energy, and a visible battery latch. It should be easy to explain in blueprint mode and should not rely on uncited real-part dimensions.",
+      "tags": ["classroom", "guarded", "printable"]
+    },
+    {
+      "id": "b25-05-inspection-quad-quiet",
+      "title": "Quiet indoor inspection quad",
+      "archetype": "multirotor",
+      "scale": {
+        "class": "mini",
+        "targetEnvelopeMm": { "length": 220, "width": 220, "height": 90 },
+        "massBudgetG": 520
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc", "esc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Low-noise, stable hover response." },
+        { "kind": "payload", "value": "Small inspection camera only." },
+        { "kind": "license", "value": "Export only geometry allowed by catalog review policy." }
+      ],
+      "prompt": "Generate a quiet indoor inspection multirotor with a small camera nose, soft-mounted FC, vibration-isolated battery tray, and only catalog-approved components. Keep it serviceable and avoid any payload beyond inspection sensing.",
+      "tags": ["inspection", "quiet", "camera"]
+    },
+    {
+      "id": "b25-06-heavy-lift-mapping-quad",
+      "title": "Heavy-lift mapping quad with honest payload budget",
+      "archetype": "multirotor",
+      "scale": {
+        "class": "large",
+        "targetEnvelopeMm": { "length": 650, "width": 650, "height": 220 },
+        "massBudgetG": 3200
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc", "esc", "frame"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "payload", "value": "Reserve visible payload bay for a passive mapping camera only." },
+        { "kind": "driver", "value": "Multirotor hover trim and TWR must be reported honestly." },
+        { "kind": "safety", "value": "No release, munition, interdiction, or targeting mechanisms." }
+      ],
+      "prompt": "Generate a large mapping multirotor with an honest payload bay for a passive camera, wide landing gear, redundant-looking arm structure, and clear battery access. Report hover/TWR assumptions and include no release, munition, interdiction, or targeting mechanisms.",
+      "tags": ["mapping", "payload-budget", "large"]
+    },
+    {
+      "id": "b25-07-waveshare-rover-pan-tilt",
+      "title": "Catalog-backed Waveshare pan-tilt rover",
+      "archetype": "rover",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 260, "width": 280, "height": 280 },
+        "massBudgetG": 2600
+      },
+      "catalogCategories": ["rover", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_rover_waveshare-ugv-rover-pt-pi5-ros2"],
+      "constraints": [
+        { "kind": "real_part", "value": "Use the reviewed Waveshare rover kit as the base component." },
+        { "kind": "driver", "value": "Rover arc-tracking driver." },
+        { "kind": "repairability", "value": "Explode pan-tilt head, chassis, wheels/tracks, and battery separately." }
+      ],
+      "prompt": "Generate a catalog-backed rover based on the reviewed Waveshare UGV Rover PT PI5 ROS2 kit. Preserve the kit envelope, expose the pan-tilt head and battery access as serviceable groups, and use a rover driver that can track a one-meter arc.",
+      "tags": ["catalog-backed", "rover", "pan-tilt"]
+    },
+    {
+      "id": "b25-08-classroom-rover-micro",
+      "title": "Micro classroom differential-drive rover",
+      "archetype": "rover",
+      "scale": {
+        "class": "micro",
+        "targetEnvelopeMm": { "length": 140, "width": 110, "height": 70 },
+        "massBudgetG": 450
+      },
+      "catalogCategories": ["battery", "fc", "rover"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "manufacturing", "value": "Simple printable chassis with snap-in electronics tray." },
+        { "kind": "driver", "value": "Differential-drive rover driver." },
+        { "kind": "safety", "value": "Low-speed classroom operation only." }
+      ],
+      "prompt": "Generate a micro classroom rover with differential drive, a printable chassis, snap-in electronics tray, protected wheels, and a visible power switch. Keep it low speed and suitable for tabletop lessons.",
+      "tags": ["classroom", "micro", "printable"]
+    },
+    {
+      "id": "b25-09-field-rover-weather",
+      "title": "Weather-resistant field scouting rover",
+      "archetype": "rover",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 520, "width": 380, "height": 260 },
+        "massBudgetG": 6000
+      },
+      "catalogCategories": ["rover", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_rover_waveshare-ugv-rover-pt-pi5-ros2"],
+      "constraints": [
+        { "kind": "envelope", "value": "High-clearance field chassis with protected sensor mast." },
+        { "kind": "repairability", "value": "Wheel modules should be isolated service groups." },
+        { "kind": "safety", "value": "Passive sensors only; no interdiction hardware." }
+      ],
+      "prompt": "Generate a weather-resistant field scouting rover with high clearance, protected sensor mast, isolated wheel modules, sealed electronics bay, and passive sensors only. Make the battery and wheel service groups obvious in the explode chain.",
+      "tags": ["field", "weather", "serviceable"]
+    },
+    {
+      "id": "b25-10-warehouse-rover-low-profile",
+      "title": "Low-profile warehouse inventory rover",
+      "archetype": "rover",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 430, "width": 310, "height": 160 },
+        "massBudgetG": 4200
+      },
+      "catalogCategories": ["rover", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-4s-1500", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "envelope", "value": "Low profile enough to pass under shelving." },
+        { "kind": "payload", "value": "Barcode/RFID sensor mast only." },
+        { "kind": "driver", "value": "Smooth rover arc and stop behavior." }
+      ],
+      "prompt": "Generate a low-profile warehouse inventory rover that can pass under shelving, carry a small barcode or RFID sensor mast, and expose battery and sensor mast modules for service. Use a smooth rover driver and keep the body geometry simple.",
+      "tags": ["warehouse", "low-profile", "inventory"]
+    },
+    {
+      "id": "b25-11-ag-scout-rover",
+      "title": "Agricultural scout rover with swappable sensor rail",
+      "archetype": "rover",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 700, "width": 460, "height": 360 },
+        "massBudgetG": 8500
+      },
+      "catalogCategories": ["rover", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_rover_waveshare-ugv-rover-pt-pi5-ros2"],
+      "constraints": [
+        { "kind": "payload", "value": "Passive crop sensor rail only." },
+        { "kind": "repairability", "value": "Swappable rail and sealed battery drawer." },
+        { "kind": "safety", "value": "No sprayer, dispenser, or harmful payload mechanism." }
+      ],
+      "prompt": "Generate an agricultural scout rover with a swappable passive crop sensor rail, sealed battery drawer, protected wheel modules, and no sprayer, dispenser, or harmful payload mechanism. Make it serviceable and honest about mass budget.",
+      "tags": ["agriculture", "field", "passive-sensing"]
+    },
+    {
+      "id": "b25-12-desk-quadruped-printable",
+      "title": "Printable desk-scale quadruped",
+      "archetype": "quadruped",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 280, "width": 170, "height": 180 },
+        "massBudgetG": 1800
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Quadruped trot driver with planted idle." },
+        { "kind": "manufacturing", "value": "Printable body shells and replaceable legs." },
+        { "kind": "repairability", "value": "Explode hips, thighs, shins, feet, body, and battery." }
+      ],
+      "prompt": "Generate a desk-scale printable quadruped with replaceable legs, visible hip/thigh/shin segments, planted idle pose, and a trot driver. Keep the shell printable, show battery access, and make the explode sequence useful for replacing a leg.",
+      "tags": ["quadruped", "printable", "bench"]
+    },
+    {
+      "id": "b25-13-inspection-quadruped-rugged",
+      "title": "Rugged inspection quadruped",
+      "archetype": "quadruped",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 620, "width": 320, "height": 420 },
+        "massBudgetG": 12000
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "payload", "value": "Passive inspection camera mast only." },
+        { "kind": "driver", "value": "Stable quadruped walk/trot with foot clearance." },
+        { "kind": "safety", "value": "No manipulator, weapon, or interdiction payload." }
+      ],
+      "prompt": "Generate a rugged field inspection quadruped with protected knees, passive camera mast, clear foot pads, and a stable walk/trot driver. It must not include any manipulator, weapon, or interdiction payload.",
+      "tags": ["inspection", "rugged", "field"]
+    },
+    {
+      "id": "b25-14-classroom-quadruped-transparent",
+      "title": "Transparent classroom quadruped",
+      "archetype": "quadruped",
+      "scale": {
+        "class": "mini",
+        "targetEnvelopeMm": { "length": 360, "width": 210, "height": 240 },
+        "massBudgetG": 2600
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300"],
+      "constraints": [
+        { "kind": "manufacturing", "value": "Use simple transparent panels and visible linkages." },
+        { "kind": "driver", "value": "Quadruped gait should be easy to inspect frame-by-frame." },
+        { "kind": "repairability", "value": "Legs and top cover are separate service groups." }
+      ],
+      "prompt": "Generate a classroom quadruped with transparent side panels, visible leg linkages, removable top cover, and a gait that is easy to inspect frame-by-frame. Keep masses and proportions plausible and make each leg a serviceable group.",
+      "tags": ["classroom", "transparent", "gait"]
+    },
+    {
+      "id": "b25-15-quadruped-rescue-scout",
+      "title": "Compact rescue-scout quadruped",
+      "archetype": "quadruped",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 480, "width": 280, "height": 330 },
+        "massBudgetG": 7500
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-4s-1500", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "payload", "value": "Passive thermal/visible inspection sensor only." },
+        { "kind": "envelope", "value": "Compact enough to fit through narrow indoor gaps." },
+        { "kind": "safety", "value": "No harmful payload or actuation beyond locomotion." }
+      ],
+      "prompt": "Generate a compact rescue-scout quadruped that can fit through narrow indoor gaps, carry only passive inspection sensors, and show protected legs and battery access. It needs a stable quadruped driver and no harmful payload or actuation beyond locomotion.",
+      "tags": ["rescue", "compact", "passive-sensing"]
+    },
+    {
+      "id": "b25-16-low-cost-quadruped-kit",
+      "title": "Low-cost quadruped kit with common fasteners",
+      "archetype": "quadruped",
+      "scale": {
+        "class": "mini",
+        "targetEnvelopeMm": { "length": 320, "width": 190, "height": 220 },
+        "massBudgetG": 2200
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300"],
+      "constraints": [
+        { "kind": "manufacturing", "value": "Common fasteners and printable brackets." },
+        { "kind": "repairability", "value": "Single leg module replaceable without opening torso." },
+        { "kind": "license", "value": "Prefer open or attribution-permitted geometry." }
+      ],
+      "prompt": "Generate a low-cost quadruped kit with printable brackets, common fasteners, a replaceable leg module, and a removable battery lid. Prefer open or attribution-permitted geometry and keep the gait driver simple.",
+      "tags": ["kit", "low-cost", "serviceable"]
+    },
+    {
+      "id": "b25-17-desktop-arm-6dof",
+      "title": "Desktop six-axis teaching arm",
+      "archetype": "arm",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 420, "width": 220, "height": 420 },
+        "massBudgetG": 3500
+      },
+      "catalogCategories": ["battery", "fc", "frame"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Arm driver with joint limits and teach-pendant style jog targets." },
+        { "kind": "safety", "value": "Low-force gripper, no cutting, drilling, or harmful end effector." },
+        { "kind": "repairability", "value": "Explode base, shoulder, elbow, wrist, and gripper." }
+      ],
+      "prompt": "Generate a desktop six-axis teaching arm with visible joint limits, low-force gripper, and serviceable base, shoulder, elbow, wrist, and gripper groups. It must not include cutting, drilling, or harmful end effectors.",
+      "tags": ["arm", "teaching", "desktop"]
+    },
+    {
+      "id": "b25-18-scara-pick-place",
+      "title": "Compact SCARA pick-and-place arm",
+      "archetype": "arm",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 520, "width": 320, "height": 360 },
+        "massBudgetG": 5000
+      },
+      "catalogCategories": ["battery", "fc", "frame"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Arm driver with planar reach and vertical Z travel." },
+        { "kind": "payload", "value": "Vacuum-cup or soft gripper for lightweight parts only." },
+        { "kind": "manufacturing", "value": "Rigid printable links with clear belt/cover placeholders." }
+      ],
+      "prompt": "Generate a compact SCARA pick-and-place arm with planar reach, vertical Z travel, a soft lightweight-part gripper, printable rigid links, and clear service covers. It should be suitable for a bench demo, not industrial force.",
+      "tags": ["arm", "scara", "bench"]
+    },
+    {
+      "id": "b25-19-camera-gimbal-arm",
+      "title": "Two-axis camera gimbal arm",
+      "archetype": "arm",
+      "scale": {
+        "class": "mini",
+        "targetEnvelopeMm": { "length": 180, "width": 140, "height": 160 },
+        "massBudgetG": 850
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300"],
+      "constraints": [
+        { "kind": "payload", "value": "Small passive camera only." },
+        { "kind": "driver", "value": "Arm/gimbal driver with damped pan and tilt joints." },
+        { "kind": "repairability", "value": "Explode camera tray, tilt cradle, pan base, and controller cover." }
+      ],
+      "prompt": "Generate a compact two-axis camera gimbal arm with damped pan and tilt joints, a small passive camera tray, protected wiring path, and serviceable pan base, tilt cradle, camera tray, and controller cover.",
+      "tags": ["arm", "gimbal", "camera"]
+    },
+    {
+      "id": "b25-20-tabletop-biped-walker",
+      "title": "Tabletop biped walker",
+      "archetype": "biped",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 160, "width": 120, "height": 320 },
+        "massBudgetG": 1800
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-v2-4s-1300"],
+      "constraints": [
+        { "kind": "driver", "value": "Biped phase gait with planted feet and no NaNs." },
+        { "kind": "manufacturing", "value": "Printable feet, shins, thighs, pelvis, and torso shells." },
+        { "kind": "repairability", "value": "Legs and feet are separate explode groups." }
+      ],
+      "prompt": "Generate a tabletop biped walker with printable feet, shins, thighs, pelvis, and torso shells. Use a biped phase gait with planted feet, make the leg modules serviceable, and keep the proportions stable rather than humanoid-realistic.",
+      "tags": ["biped", "walker", "bench"]
+    },
+    {
+      "id": "b25-21-humanoid-demo-biped",
+      "title": "Small humanoid demo biped",
+      "archetype": "biped",
+      "scale": {
+        "class": "mini",
+        "targetEnvelopeMm": { "length": 220, "width": 150, "height": 520 },
+        "massBudgetG": 4200
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Biped driver with slow stable demo walk." },
+        { "kind": "safety", "value": "No manipulator, weapon, or high-force appendage." },
+        { "kind": "repairability", "value": "Explode head shell, torso, pelvis, legs, and feet." }
+      ],
+      "prompt": "Generate a small humanoid demo biped with a slow stable walk, simple head shell, torso, pelvis, legs, and broad feet. Do not include manipulators, weapons, or high-force appendages; the goal is a walking demo.",
+      "tags": ["biped", "humanoid", "demo"]
+    },
+    {
+      "id": "b25-22-biped-balance-lab",
+      "title": "Biped balance-lab platform",
+      "archetype": "biped",
+      "scale": {
+        "class": "bench",
+        "targetEnvelopeMm": { "length": 180, "width": 140, "height": 360 },
+        "massBudgetG": 2600
+      },
+      "catalogCategories": ["battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-4s-1500", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Biped driver with conservative step height and broad feet." },
+        { "kind": "manufacturing", "value": "Adjustable ballast tray and printable leg shells." },
+        { "kind": "safety", "value": "Tether-friendly lab operation." }
+      ],
+      "prompt": "Generate a biped balance-lab platform with broad feet, adjustable ballast tray, printable leg shells, and conservative step height. It should be tether-friendly for lab use and expose balance-critical masses in the blueprint.",
+      "tags": ["biped", "balance", "lab"]
+    },
+    {
+      "id": "b25-23-fixedwing-park-trainer",
+      "title": "Hand-launch fixed-wing park trainer",
+      "archetype": "fixedwing",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 720, "width": 1100, "height": 180 },
+        "massBudgetG": 950
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_motor_emax-eco2-2207-1900kv", "cmp_prop_gemfan-hurricane-51466-v2", "cmp_batt_cnhl-black-v2-4s-1300"],
+      "constraints": [
+        { "kind": "driver", "value": "Fixed-wing driver with hand-launch trainer behavior." },
+        { "kind": "manufacturing", "value": "Foam-sheet or printable ribs with removable wing." },
+        { "kind": "safety", "value": "Trainer, not high-speed racing." }
+      ],
+      "prompt": "Generate a hand-launch fixed-wing park trainer with removable wing, protected pusher motor, simple fuselage, and trainer-grade flight behavior. Use catalog-backed motor, prop, battery, and FC where available, and avoid high-speed racing geometry.",
+      "tags": ["fixedwing", "trainer", "hand-launch"]
+    },
+    {
+      "id": "b25-24-fixedwing-mapping-glider",
+      "title": "Efficient mapping glider",
+      "archetype": "fixedwing",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 900, "width": 1600, "height": 240 },
+        "massBudgetG": 1600
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc"],
+      "catalogComponentRefs": ["cmp_batt_cnhl-black-4s-1500", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "endurance", "value": "Efficient cruise and long wing, no acrobatic emphasis." },
+        { "kind": "payload", "value": "Passive downward camera only." },
+        { "kind": "safety", "value": "No release, interdiction, or targeting payload." }
+      ],
+      "prompt": "Generate an efficient fixed-wing mapping glider with long removable wing, passive downward camera bay, pusher motor, and honest endurance assumptions. Include no release, interdiction, or targeting payload.",
+      "tags": ["fixedwing", "mapping", "endurance"]
+    },
+    {
+      "id": "b25-25-fixedwing-vtol-transition",
+      "title": "Small VTOL-transition fixed wing",
+      "archetype": "fixedwing",
+      "scale": {
+        "class": "field",
+        "targetEnvelopeMm": { "length": 820, "width": 1250, "height": 260 },
+        "massBudgetG": 1800
+      },
+      "catalogCategories": ["motor", "prop", "battery", "fc", "esc"],
+      "catalogComponentRefs": ["cmp_motor_emax-eco2-2207-1900kv", "cmp_prop_gemfan-hurricane-51466-v2", "cmp_fc_holybro-kakute-h7-v15"],
+      "constraints": [
+        { "kind": "driver", "value": "Fixed-wing primary driver with explicit VTOL-transition draft diagnostics if unsupported." },
+        { "kind": "envelope", "value": "Removable wing and visible tilt/vertical lift pods." },
+        { "kind": "safety", "value": "Benign research demonstrator only." }
+      ],
+      "prompt": "Generate a small fixed-wing VTOL-transition research demonstrator with removable wing, visible lift pods, pusher cruise prop, and benign research-only payload. If VTOL transition is unsupported, persist it as an editable draft with clear diagnostics instead of inventing unsafe behavior.",
+      "tags": ["fixedwing", "vtol", "research"]
+    }
+  ]
+}

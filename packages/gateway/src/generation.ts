@@ -127,6 +127,7 @@ export interface GenerationAttempt {
   index: number;
   phase: "synthesize" | "repair" | "draft";
   modelId: string;
+  promptHash: string;
   contractHash: string;
   verdict: string;
   diagnostics: { check?: string; severity?: string; message?: string }[];
@@ -144,6 +145,7 @@ export interface GenerationResponse {
   contract: unknown | null;
   report: unknown | null;
   blockedReasons: string[];
+  generatedArtifact?: { artifactId: string; status: "admitted" | "draft" | "rejected"; contractHash: string } | null;
 }
 
 interface CatalogComponentRow {
@@ -534,6 +536,7 @@ function pushAttempt(
     index: attempts.length,
     phase,
     modelId: candidate.modelId,
+    promptHash: candidate.promptHash,
     contractHash: contractHash(candidate.contract),
     verdict: verdictFromReport(result.report, result.exitCode === 0 ? "admitted" : "rejected"),
     diagnostics: diagnosticsFromReport(result.report),
