@@ -19,5 +19,11 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
+    proxy: {
+      "/v1": {
+        target: process.env.FORGE_GATEWAY_PROXY ?? "http://127.0.0.1:8080",
+        changeOrigin: true,
+      },
+    },
   },
 });

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StudioScene } from "./scene";
 import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass } from "./types";
+import { decideReview, listReviews, type ReviewQueueItem, type ReviewStatus } from "./gateway";
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { CoreBake, CoreSession, coreValidate } from "./wasm";
 
@@ -39,6 +40,48 @@ export default function App() {
   const jogDrag = useRef<{ node: string; rx: number; ry: number } | null>(null);
   const jogTotals = useRef(new Map<string, { rx: number; ry: number }>());
   const s = useStudio();
+  const [reviewStatus, setReviewStatus] = useState<ReviewStatus>("needs_review");
+  const [reviews, setReviews] = useState<ReviewQueueItem[]>([]);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1280 : window.innerWidth,
+  );
+
+  const refreshReviews = useCallback(async (status: ReviewStatus) => {
+    setReviewBusy(true);
+    setReviewError(null);
+    try {
+      setReviews(await listReviews(status));
+    } catch (error) {
+      setReviews([]);
+      setReviewError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setReviewBusy(false);
+    }
+  }, []);
+
+  const setReviewFilter = useCallback((status: ReviewStatus) => {
+    setReviewStatus(status);
+    void refreshReviews(status);
+  }, [refreshReviews]);
+
+  const recordDecision = useCallback(async (id: number, decision: "approved" | "rejected") => {
+    setReviewBusy(true);
+    setReviewError(null);
+    try {
+      const item = await decideReview(id, decision);
+      setReviews((current) =>
+        reviewStatus === "needs_review"
+          ? current.filter((candidate) => candidate.id !== id)
+          : current.map((candidate) => (candidate.id === id ? item : candidate)),
+      );
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setReviewBusy(false);
+    }
+  }, [reviewStatus]);
 
   /** Load a contract end to end: bake handle + scene + session + report. */
   const loadContract = useCallback(async (contract: string) => {
@@ -279,6 +322,16 @@ export default function App() {
     sceneRef.current?.setBlueprint(s.blueprint);
   }, [s.blueprint]);
 
+  useEffect(() => {
+    void refreshReviews("needs_review");
+  }, [refreshReviews]);
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (jogDrag.current) return; // a jog drag ate this gesture
     const rect = e.currentTarget.getBoundingClientRect();
@@ -336,6 +389,7 @@ export default function App() {
 
   const hud = s.artifact?.hud;
   const isMultirotor = hud?.twr !== undefined;
+  const narrow = viewportWidth < 760;
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <canvas
@@ -347,7 +401,17 @@ export default function App() {
         style={{ width: "100%", height: "100%", display: "block" }}
       />
 
-      <div style={{ ...panel, top: 12, left: 12, minWidth: 230 }}>
+      <div
+        style={{
+          ...panel,
+          top: 12,
+          left: 12,
+          width: 360,
+          maxWidth: "calc(100vw - 32px)",
+          maxHeight: narrow ? "42vh" : undefined,
+          overflow: narrow ? "auto" : undefined,
+        }}
+      >
         <div style={{ color: "#8fa3bf", marginBottom: 6 }}>ForgedTTC STUDIO</div>
         <select
           value={s.modelId}
@@ -453,10 +517,61 @@ export default function App() {
             )}
           </>
         )}
+
+        <div data-testid="review-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#8fa3bf", flex: 1 }}>catalog review</span>
+            <select
+              value={reviewStatus}
+              onChange={(e) => setReviewFilter(e.target.value as ReviewStatus)}
+              style={selectStyle}
+            >
+              <option value="needs_review">pending</option>
+              <option value="approved">approved</option>
+              <option value="rejected">rejected</option>
+            </select>
+            <button onClick={() => void refreshReviews(reviewStatus)} disabled={reviewBusy} style={btn}>
+              refresh
+            </button>
+          </div>
+          <div
+            style={{
+              marginTop: 6,
+              maxHeight: 220,
+              overflow: "auto",
+              scrollbarWidth: "thin",
+            }}
+          >
+            {reviewError ? (
+              <div style={{ color: "#e6a23c" }}>gateway · {reviewError}</div>
+            ) : reviewBusy && reviews.length === 0 ? (
+              <div style={{ color: "#6b7686" }}>loading…</div>
+            ) : reviews.length === 0 ? (
+              <div style={{ color: "#6b7686" }}>0 rows</div>
+            ) : (
+              reviews.map((item) => (
+                <ReviewItem
+                  key={item.id}
+                  item={item}
+                  busy={reviewBusy}
+                  onApprove={() => void recordDecision(item.id, "approved")}
+                  onReject={() => void recordDecision(item.id, "rejected")}
+                />
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {hud && (
-        <div style={{ ...panel, top: 12, right: 12, minWidth: 220 }}>
+        <div
+          style={{
+            ...panel,
+            ...(narrow
+              ? { top: "calc(42vh + 24px)", left: 12, right: 12 }
+              : { top: 12, right: 12, minWidth: 220 }),
+          }}
+        >
           <div style={{ color: "#8fa3bf", marginBottom: 4 }}>HUD — derived, never decorative</div>
           <Row k="AUW" v={`${hud.auwG.toFixed(0)} g`} />
           {hud.twr !== undefined && <Row k="TWR" v={hud.twr.toFixed(2)} />}
@@ -533,7 +648,17 @@ export default function App() {
       )}
 
       {s.report && (
-        <div style={{ ...panel, bottom: 12, left: 12, maxWidth: 460 }}>
+        <div
+          style={{
+            ...panel,
+            bottom: 12,
+            left: 12,
+            right: narrow ? 12 : undefined,
+            maxWidth: narrow ? undefined : 460,
+            maxHeight: 200,
+            overflow: "auto",
+          }}
+        >
           <div style={{ color: s.report.verdict === "admitted" ? "#7dd87d" : "#e6a23c" }}>
             forge-validate {s.report.validatorVersion} · {s.report.target} → {s.report.verdict.toUpperCase()}
           </div>
@@ -559,7 +684,16 @@ export default function App() {
 
       {/* perf overlay (P1-017): budgets are binding — render ≤ 6 ms · core
           tick ≤ 1.5 ms · ≤ 40 draw calls/model (architecture §7) */}
-      <div style={{ ...panel, bottom: 12, right: 12, color: "#6b7686", textAlign: "right" }}>
+      <div
+        style={{
+          ...panel,
+          bottom: 12,
+          right: 12,
+          color: "#6b7686",
+          textAlign: "right",
+          display: narrow ? "none" : undefined,
+        }}
+      >
         <div>{s.perf.fps} fps</div>
         <div>render {s.perf.frameMs.toFixed(1)} ms · core {s.perf.coreMs.toFixed(2)} ms</div>
         <div>{s.perf.drawCalls} draw calls</div>
@@ -577,6 +711,19 @@ const btn: React.CSSProperties = {
   cursor: "pointer",
 };
 
+const dangerBtn: React.CSSProperties = {
+  ...btn,
+  color: "#f0b0a8",
+};
+
+const selectStyle: React.CSSProperties = {
+  background: "#16181c",
+  color: "#cfd6df",
+  border: "1px solid #2a2f38",
+  borderRadius: 4,
+  fontSize: 11,
+};
+
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
@@ -584,4 +731,64 @@ function Row({ k, v }: { k: string; v: string }) {
       <span>{v}</span>
     </div>
   );
+}
+
+function ReviewItem({
+  item,
+  busy,
+  onApprove,
+  onReject,
+}: {
+  item: ReviewQueueItem;
+  busy: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const label = reviewLabel(item);
+  return (
+    <div data-testid={`review-item-${item.id}`} style={{ borderTop: "1px solid #242a33", padding: "7px 0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ color: "#cfd6df", wordBreak: "break-word" }}>{label}</span>
+        <span style={{ color: item.confidence < 0.8 ? "#e6a23c" : "#7dd87d" }}>
+          {Math.round(item.confidence * 100)}%
+        </span>
+      </div>
+      <div style={{ color: "#6b7686", wordBreak: "break-word" }}>
+        {item.artifactKind} · {item.reason}
+      </div>
+      <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{item.artifactId}</div>
+      {item.status === "needs_review" ? (
+        <div style={{ display: "flex", gap: 6, marginTop: 5 }}>
+          <button data-testid={`review-approve-${item.id}`} onClick={onApprove} disabled={busy} style={btn}>
+            approve
+          </button>
+          <button data-testid={`review-reject-${item.id}`} onClick={onReject} disabled={busy} style={dangerBtn}>
+            reject
+          </button>
+        </div>
+      ) : (
+        <div style={{ color: "#6b7686", marginTop: 5 }}>
+          {item.status}
+          {item.reviewer ? ` · ${item.reviewer}` : ""}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function reviewLabel(item: ReviewQueueItem): string {
+  if (item.payload && typeof item.payload === "object") {
+    const payload = item.payload as {
+      brand?: unknown;
+      model?: unknown;
+      name?: unknown;
+      id?: unknown;
+    };
+    if (typeof payload.name === "string") return payload.name;
+    if (typeof payload.brand === "string" && typeof payload.model === "string") {
+      return `${payload.brand} ${payload.model}`;
+    }
+    if (typeof payload.id === "string") return payload.id;
+  }
+  return item.artifactId;
 }

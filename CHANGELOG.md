@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Add studio catalog review panel
+**Session:** Codex agent · branch `codex/p4-review-ui-cleanup` · **Phase:** P4 · **TODO items:** P4-014 [~]
+**Done:** Continued the P4 review loop with a real studio surface: typed gateway
+client, `/v1/reviews` list/filter, approve/reject actions, Vite `/v1` proxy for
+local gateway development, and responsive panel cleanup. Verified against seeded
+Postgres through the running gateway: pending rows rendered, approving one row
+removed it from pending, and the approved filter showed reviewer attribution.
+Browser-checked desktop and 390px mobile layouts for panel overflow/overlap.
+**Changed:** `packages/studio/src/{App.tsx,gateway.ts}`, `packages/studio/vite.config.ts`,
+and P4 docs (`TODO`, `ROADMAP`, generation pipeline, studio UI).
+**Decisions:** none.
+**Next:** Add live source-fetch and Claude extraction adapters behind fixture-backed
+tests, then wire audit notes/export filters into the review decision path.
+**Blockers:** none.
+
 ## 2026-06-13 — Complete Node 24 action migration
 **Session:** Codex agent · branch `codex/node24-action-majors` · **Phase:** CI hygiene · **TODO items:** none
 **Done:** Follow-up to the post-P3 PR: the force-env approach made the hosted run
