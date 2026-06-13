@@ -61,6 +61,13 @@ jobs:
         run: pnpm -r build
       - name: gateway tests (spawns the gatekeeper)
         run: pnpm --filter @forge/gateway test
+      - name: P4 Brief-25 deterministic generation eval
+        run: pnpm eval:brief25 -- --validator real --out artifacts/evals/brief25-ci.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: brief25-eval
+          path: artifacts/evals/brief25-ci.json
       - name: P0-004 byte-equivalence — translations vs the frozen monolith
         run: |
           node scripts/extract-counts.mjs prototype/cad-object-studio.html --out /tmp/extracted.json

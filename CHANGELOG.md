@@ -18,6 +18,29 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Add P4 generation UI, audit rows, and Brief-25 scaffold
+**Session:** Codex agent · branch `codex/p4-completion-batch` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-006 [x], P4-008 [~], P4-009 [x], P4-010 [~], P4-012 [x]
+**Done:** Added `generated_artifacts` with a forward migration and gateway recording
+for admitted, draft, and rejected generations. Rows capture prompt/provider,
+archetype/categories, seed, stable contract hash, prompt hash, final model, contract
+JSON, validator report, attempt history, approved-catalog context, and D26 model
+pins. Added `POST /v1/generate/stream` as an SSE-compatible start/complete/error
+event surface using the same generation and persistence path as `POST
+/v1/generate`. Added the studio generation panel with template/Anthropic provider
+selection, local-session BYO key handling, prompt/archetype/category/repair/seed
+controls, verdict/attempt/diagnostic display, draft/admitted scene loading, and
+admitted-only sharing. Added the Brief-25 corpus and deterministic evaluator; CI
+runs it and uploads the JSON artifact.
+**Changed:** `infra/migrations/0005_generated_artifacts.sql`,
+`packages/gateway/src/{generatedArtifacts.ts,generation.ts,server.ts}`,
+`packages/gateway/test/server.test.ts`, `packages/studio/src/{App.tsx,gateway.ts,wasm.ts}`,
+`evals/brief25.corpus.json`, `scripts/{brief25-eval.mjs,db-assert-p3.mjs}`,
+`.github/workflows/ci.yml`, `package.json`, and P4 docs.
+**Decisions:** none.
+**Next:** Split explicit multi-pass synthesis and per-pass SSE diagnostics, then
+add the time-series Brief-25 dashboard and conversational JSON-Patch editing.
+**Blockers:** none.
+
 ## 2026-06-13 — Add opt-in Anthropic generation transport
 **Session:** Codex agent · branch `codex/p4-anthropic-generation-adapter` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-008 [~]
 **Done:** Added the live Anthropic provider behind the existing generation route:

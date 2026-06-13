@@ -60,9 +60,11 @@ with validator diagnostics in context. Keys are supplied per request through
 through `forge-validate`; rejected contracts may be repaired up to three times;
 exhausted attempts are re-run with D14 draft semantics and returned with
 diagnostics. The route stamps generated contracts with model version, prompt hash,
-and seed, and returns the validator report. Persisted generated-artifact audit rows,
-SSE progress events, and explicit multi-pass stage splitting remain P4 follow-up
-work.
+and seed, returns the validator report, and records admitted/draft/rejected
+generations in `generated_artifacts` with the contract, report, attempts, model
+pins, and approved-catalog context. `POST /v1/generate/stream` is available as an
+SSE-compatible start/complete/error event surface for the studio. Explicit
+multi-pass stage splitting remains P4 follow-up work.
 
 ## 3. Conversational editing (P4-005)
 
@@ -90,6 +92,13 @@ pattern-library update, and LLM model-version bump. Tracked: admission rate (GA 
 ≥ 20/25 without human repair), repair-iteration count, diversity metrics — on a
 dashboard, over time. A model bump that regresses the dashboard does not ship.
 
+Live scaffold: [`evals/brief25.corpus.json`](../../evals/brief25.corpus.json)
+holds the 25 canonical briefs. `pnpm eval:brief25` runs the deterministic template
+provider through the gateway generation loop with fixture catalog rows and writes a
+machine-readable report to `artifacts/evals/brief25-latest.json`. CI runs the same
+script in real-validator mode and uploads `brief25-ci.json`; the time-series
+dashboard remains follow-up work.
+
 ## 6. Environment generation (P10, §8.5)
 
 The same pipeline with a smaller schema: text → EnvSpec (terrain, gates, obstacles,
@@ -108,8 +117,8 @@ resolution, wire list from electrical ports.
 `forge-contract` (schemars schema + types), `forge-validate` (the repair oracle —
 WASM + binary), component DB (retrieval + componentRefs), review queue API
 (`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy),
-`POST /v1/generate/context`, `POST /v1/generate`, injectable synthesis/source/
-Claude/OCCT adapters, Anthropic API, `studio` (BYO-key settings, streaming
+`POST /v1/generate/context`, `POST /v1/generate`, `POST /v1/generate/stream`,
+`generated_artifacts`, injectable synthesis/source/Claude/OCCT adapters, Anthropic API, `studio` (BYO-key settings, streaming
 viewport, draft UX XC-16).
 
 ## 9. Testing

@@ -60,6 +60,8 @@ export async function corePatch(contractJson: string, patchJson: string): Promis
 
 /** Long-lived bake handle: patch → re-bake in place (configurator loop). */
 export class CoreBake {
+  private disposed = false;
+
   private constructor(private handle: Bake) {}
 
   static async create(contractJson: string): Promise<CoreBake> {
@@ -68,20 +70,25 @@ export class CoreBake {
   }
 
   artifact(): BakeArtifact {
+    if (this.disposed) throw new Error("bake handle has been disposed");
     return artifactFrom(this.handle);
   }
 
   /** Apply a JSON-Patch and re-bake; returns the fresh artifact. */
   patch(patchJson: string): BakeArtifact {
+    if (this.disposed) throw new Error("bake handle has been disposed");
     this.handle.patch(patchJson);
     return artifactFrom(this.handle);
   }
 
   contract(): string {
+    if (this.disposed) throw new Error("bake handle has been disposed");
     return this.handle.contract();
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.handle.free();
   }
 }
@@ -97,6 +104,8 @@ export interface DriveInput {
 
 /** The `tick` boundary call: fixed-step motion in core, poses out. */
 export class CoreSession {
+  private disposed = false;
+
   private constructor(
     private session: Session,
     readonly nodeNames: string[],
@@ -110,6 +119,7 @@ export class CoreSession {
 
   /** Advance the 120 Hz clock; returns fixed steps executed. */
   step(dt: number, input: DriveInput): number {
+    if (this.disposed) return 0;
     return this.session.step(
       dt,
       input.throttle,
@@ -124,25 +134,31 @@ export class CoreSession {
   /** Zero-copy pose view (16 f32 per node) — read synchronously after
    * `step`, never hold across calls (invalidates on wasm memory growth). */
   poseView(): Float32Array {
+    if (this.disposed) return new Float32Array();
     return this.session.pose_view();
   }
 
   /** Drive-mode camera focus: driver body position at viewing height. */
   focus(): [number, number, number] {
+    if (this.disposed) return [0, 0, 0];
     const f = this.session.focus();
     return [f[0], f[1], f[2]];
   }
 
   /** Teach-pendant jog (P1-013): euler offset over the pose layers. */
   setJog(node: string, rx: number, ry: number): void {
+    if (this.disposed) return;
     this.session.set_jog(node, rx, ry);
   }
 
   clearJog(): void {
+    if (this.disposed) return;
     this.session.clear_jog();
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.session.free();
   }
 }

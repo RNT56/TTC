@@ -6,6 +6,7 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { gatewayDb, type GatewayDb } from "./db.js";
+import { recordGeneratedArtifact } from "./generatedArtifacts.js";
 import {
   ANTHROPIC_MODEL_PINS,
   buildGenerationContext,
@@ -35,6 +36,7 @@ export interface ServerOptions {
   generationValidator?: GenerationValidator;
   anthropicTransport?: AnthropicTransport;
   anthropicBaseUrl?: string;
+  persistGeneratedArtifacts?: boolean;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -65,6 +67,22 @@ const reviewExportPolicySchema = Type.Union([
   Type.Literal("blocked"),
   Type.Literal("assembly-policy-derived"),
 ]);
+const generationBodySchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, maxLength: 4000 }),
+    archetype: Type.Optional(generationArchetypeSchema),
+    categories: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 16 }),
+    ),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
+    includePrefixText: Type.Optional(Type.Boolean()),
+    provider: Type.Optional(generationProviderSchema),
+    seed: Type.Optional(Type.Integer({ minimum: 0 })),
+    maxRepairIterations: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
+    anthropicApiKey: Type.Optional(Type.String({ minLength: 1, maxLength: 4096 })),
+  },
+  { additionalProperties: false },
+);
 
 function unavailable(error: unknown): { error: string; detail: string } {
   const detail = error instanceof Error ? error.message : String(error);
@@ -79,6 +97,34 @@ function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): 
 function generationApiKeyHeader(request: FastifyRequest): string | undefined {
   const value = request.headers["x-forge-anthropic-key"];
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function sse(event: string, data: unknown): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+async function executeGeneration(
+  db: GatewayDb,
+  body: GenerationRequest,
+  request: FastifyRequest,
+  options: ServerOptions,
+): Promise<Awaited<ReturnType<typeof runGeneration>>> {
+  const generationRequest: GenerationRequest = {
+    ...body,
+    provider: (body.provider ?? "template") as GenerationProvider,
+    anthropicApiKey: generationApiKeyHeader(request) ?? body.anthropicApiKey,
+  };
+  const result = await runGeneration(db, generationRequest, {
+    materials: options.generationMaterials,
+    adapter: options.generationAdapter,
+    anthropicTransport: options.anthropicTransport,
+    anthropicBaseUrl: options.anthropicBaseUrl,
+    validator: options.generationValidator,
+  });
+  if (options.persistGeneratedArtifacts ?? true) {
+    result.generatedArtifact = await recordGeneratedArtifact(db, generationRequest, result);
+  }
+  return result;
 }
 
 export function buildServer(options: ServerOptions = {}): FastifyInstance {
@@ -208,43 +254,43 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   app.post(
     "/v1/generate",
     {
-      schema: {
-        body: Type.Object(
-          {
-            prompt: Type.String({ minLength: 1, maxLength: 4000 }),
-            archetype: Type.Optional(generationArchetypeSchema),
-            categories: Type.Optional(
-              Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 16 }),
-            ),
-            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
-            includePrefixText: Type.Optional(Type.Boolean()),
-            provider: Type.Optional(generationProviderSchema),
-            seed: Type.Optional(Type.Integer({ minimum: 0 })),
-            maxRepairIterations: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
-            anthropicApiKey: Type.Optional(Type.String({ minLength: 1, maxLength: 4096 })),
-          },
-          { additionalProperties: false },
-        ),
-      },
+      schema: { body: generationBodySchema },
     },
     async (request, reply) => {
       try {
         const body = request.body as GenerationRequest;
-        const result = await runGeneration(db, {
-          ...body,
-          provider: (body.provider ?? "template") as GenerationProvider,
-          anthropicApiKey: generationApiKeyHeader(request) ?? body.anthropicApiKey,
-        }, {
-          materials: options.generationMaterials,
-          adapter: options.generationAdapter,
-          anthropicTransport: options.anthropicTransport,
-          anthropicBaseUrl: options.anthropicBaseUrl,
-          validator: options.generationValidator,
-        });
+        const result = await executeGeneration(db, body, request, options);
         return reply.status(result.verdict === "blocked" ? 409 : 200).send(result);
       } catch (error) {
         return reply.status(503).send(unavailable(error));
       }
+    },
+  );
+
+  app.post(
+    "/v1/generate/stream",
+    {
+      schema: { body: generationBodySchema },
+    },
+    async (request, reply) => {
+      const body = request.body as GenerationRequest;
+      reply.raw.writeHead(200, {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache",
+        connection: "keep-alive",
+      });
+      reply.raw.write(sse("start", {
+        prompt: body.prompt,
+        provider: body.provider ?? "template",
+      }));
+      try {
+        const result = await executeGeneration(db, body, request, options);
+        reply.raw.write(sse("complete", result));
+      } catch (error) {
+        reply.raw.write(sse("error", unavailable(error)));
+      }
+      reply.raw.end();
+      return reply;
     },
   );
 

@@ -239,7 +239,12 @@ test("generate blocks before synthesis when approved catalog context is empty", 
       throw new Error("synthesis should not run without approved catalog context");
     },
   };
-  const app = buildServer({ db, generationMaterials, generationAdapter: adapter });
+  const app = buildServer({
+    db,
+    generationMaterials,
+    generationAdapter: adapter,
+    persistGeneratedArtifacts: false,
+  });
   const res = await app.inject({
     method: "POST",
     url: "/v1/generate",
@@ -313,7 +318,13 @@ test("generate repairs validator diagnostics and admits the repaired contract", 
       stderr: "",
     };
   };
-  const app = buildServer({ db, generationMaterials, generationAdapter: adapter, generationValidator: validator });
+  const app = buildServer({
+    db,
+    generationMaterials,
+    generationAdapter: adapter,
+    generationValidator: validator,
+    persistGeneratedArtifacts: false,
+  });
   const res = await app.inject({
     method: "POST",
     url: "/v1/generate",
@@ -386,7 +397,13 @@ test("generate persists exhausted repairs as a diagnostic draft", async () => {
     },
     stderr: "",
   });
-  const app = buildServer({ db, generationMaterials, generationAdapter: adapter, generationValidator: validator });
+  const app = buildServer({
+    db,
+    generationMaterials,
+    generationAdapter: adapter,
+    generationValidator: validator,
+    persistGeneratedArtifacts: false,
+  });
   const res = await app.inject({
     method: "POST",
     url: "/v1/generate",
@@ -399,6 +416,145 @@ test("generate persists exhausted repairs as a diagnostic draft", async () => {
     body.attempts.map((attempt) => `${attempt.phase}:${attempt.verdict}`),
     ["synthesize:rejected", "draft:draft"],
   );
+  await app.close();
+});
+
+test("generate records admitted artifacts in the audit table", async () => {
+  let insertSeen = false;
+  const db: GatewayDb = {
+    async query(text, params) {
+      if (text.includes("INSERT INTO generated_artifacts")) {
+        insertSeen = true;
+        assert.equal(params?.[0], "gen-audit");
+        assert.equal(params?.[1], "admitted");
+        assert.equal(params?.[2], "audit this quad");
+        assert.equal(params?.[3], "template");
+        assert.deepEqual(params?.[5], ["motor"]);
+        assert.equal(params?.[6], 11);
+        assert.match(String(params?.[7]), /^[a-f0-9]{64}$/);
+        assert.match(String(params?.[8]), /^[a-f0-9]{64}$/);
+        assert.equal(params?.[9], "claude-fable-5");
+        assert.match(String(params?.[10]), /gen-audit/);
+        assert.match(String(params?.[12]), /claude-fable-5/);
+        return { rows: [], rowCount: 1 } as never;
+      }
+      assert.deepEqual(params, [["motor"], "audit this quad", 1]);
+      return {
+        rows: [
+          {
+            id: "cmp_motor_emax-eco2-2207-1900kv",
+            brand: "EMAX",
+            model: "ECO II 2207 1900KV",
+            rev: "1.0.0",
+            category: "motor",
+            dims: { diameterMm: 27.9 },
+            mass_g: "33.2",
+            elec: { kv: 1900 },
+            mech: { propShaft: "prop-shaft-M5" },
+            confidence: "1",
+            license_class: "open",
+            export_policy: "full-geometry-ok",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "9",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const adapter: SynthesisAdapter = {
+    async synthesize() {
+      return {
+        contract: { meta: { id: "gen-audit" }, ok: true },
+        modelId: "claude-fable-5",
+        promptHash: "f".repeat(64),
+      };
+    },
+  };
+  const validator: GenerationValidator = async () => ({
+    exitCode: 0,
+    report: { verdict: "admitted", results: [] },
+    stderr: "",
+  });
+  const app = buildServer({ db, generationMaterials, generationAdapter: adapter, generationValidator: validator });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: {
+      prompt: "audit this quad",
+      categories: ["motor"],
+      limit: 1,
+      seed: 11,
+    },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.equal(insertSeen, true);
+  const body = res.json() as { generatedArtifact?: { artifactId: string; status: string } };
+  assert.equal(body.generatedArtifact?.artifactId, "gen-audit");
+  assert.equal(body.generatedArtifact?.status, "admitted");
+  await app.close();
+});
+
+test("generate stream returns SSE-compatible progress events", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [null, "stream a quad", 8]);
+      return {
+        rows: [
+          {
+            id: "cmp_motor_emax-eco2-2207-1900kv",
+            brand: "EMAX",
+            model: "ECO II 2207 1900KV",
+            rev: "1.0.0",
+            category: "motor",
+            dims: { diameterMm: 27.9 },
+            mass_g: "33.2",
+            elec: { kv: 1900 },
+            mech: { propShaft: "prop-shaft-M5" },
+            confidence: "1",
+            license_class: "open",
+            export_policy: "full-geometry-ok",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "9",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const adapter: SynthesisAdapter = {
+    async synthesize() {
+      return { contract: { meta: { id: "stream" }, ok: true }, modelId: "claude-fable-5", promptHash: "s" };
+    },
+  };
+  const validator: GenerationValidator = async () => ({
+    exitCode: 0,
+    report: { verdict: "admitted", results: [] },
+    stderr: "",
+  });
+  const app = buildServer({
+    db,
+    generationMaterials,
+    generationAdapter: adapter,
+    generationValidator: validator,
+    persistGeneratedArtifacts: false,
+  });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate/stream",
+    payload: { prompt: "stream a quad" },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.match(res.headers["content-type"] as string, /text\/event-stream/);
+  assert.match(res.body, /event: start/);
+  assert.match(res.body, /event: complete/);
+  assert.match(res.body, /"verdict":"admitted"/);
   await app.close();
 });
 
@@ -504,6 +660,7 @@ test("generate can use the Anthropic tool-pass adapter with a per-request key", 
     anthropicTransport: transport,
     anthropicBaseUrl: "https://anthropic.test",
     generationValidator: validator,
+    persistGeneratedArtifacts: false,
   });
   const res = await app.inject({
     method: "POST",
