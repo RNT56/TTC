@@ -1,0 +1,117 @@
+{
+  "id": "cmp_batt_cnhl-black-v2-4s-1300",
+  "brand": "CNHL",
+  "model": "Black Series V2.0 1300mAh 14.8V 4S 130C XT60",
+  "category": "battery",
+  "massG": 151.0,
+  "dims": {
+    "lengthMm": 74.0,
+    "widthMm": 31.0,
+    "heightMm": 33.0
+  },
+  "elec": {
+    "vMin": 14.8,
+    "vMax": 16.8,
+    "maxDischargeA": 169.0,
+    "connectors": [
+      "XT60"
+    ],
+    "capacityMah": 1300.0
+  },
+  "mech": {},
+  "license": {
+    "id": "lic_cnhl_black_v2_1300_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer product specifications; source URL required for redistribution.",
+    "sourceUrl": "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug",
+    "exportPolicy": "full-geometry-ok"
+  },
+  "source": "datasheet",
+  "confidence": 0.9,
+  "review": "REQUIRED before marketplace exposure: source is manufacturer storefront text; owner review still required for marketplace publication.",
+  "prices": [
+    {
+      "vendor": "ChinaHobbyLine",
+      "sku": "1301304BK",
+      "url": "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug",
+      "amount": 19.99,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Approx Weight(+/-5g): 151g",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "dims": {
+      "value": "Size(1-5mm difference): 31X33X74mm",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMin": {
+      "value": "Voltage: 14.8V / 4-Cell / 4S1P",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMax": {
+      "value": "Normal cell voltage is between 3.7V~4.2V; 4 x 4.2V = 16.8V",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited per-cell maximum."
+    },
+    "elec.maxDischargeA": {
+      "value": "130C continual x 1.3 Ah = 169A",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited discharge rate and capacity."
+    },
+    "elec.connectors": {
+      "value": "Output Connector: XT60",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.capacityMah": {
+      "value": "Capacity: 1300mAh",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "US warehouse variant $19.99; Stock Number 1301304BK",
+      "sources": [
+        "https://chinahobbyline.com/collections/cnhl-black-series-lipo-batteries/products/cnhl-black-series-v2-0-1300mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

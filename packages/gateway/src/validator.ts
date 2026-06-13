@@ -2,6 +2,7 @@
 // forge-validate binary — process isolation plus guaranteed bit-equality with
 // CI (D17). napi-rs hot-path bindings are the OD-08 alternative, measured at P2.
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,8 +20,17 @@ export function validatorBin(): string {
   );
 }
 
+export function catalogDir(): string {
+  return process.env.FORGE_CATALOG_DIR ?? join(process.cwd(), "..", "..", "catalog");
+}
+
+function catalogFlags(): string[] {
+  const dir = catalogDir();
+  return existsSync(dir) ? ["--catalog", dir] : [];
+}
+
 async function runSubcommand(
-  subcommand: "run" | "bake",
+  subcommand: "run" | "bake" | "bom",
   contractJson: string,
   extraFlags: string[] = [],
 ): Promise<ValidateResult> {
@@ -33,7 +43,7 @@ async function runSubcommand(
     const { code, stderr } = await new Promise<{ code: number; stderr: string }>((resolve) => {
       execFile(
         validatorBin(),
-        [subcommand, contractPath, outFlag, reportPath, ...extraFlags],
+        [subcommand, contractPath, outFlag, reportPath, ...catalogFlags(), ...extraFlags],
         { timeout: 30_000 },
         (error, _stdout, stderrBuf) => {
           const code =
@@ -66,4 +76,9 @@ export function runValidator(contractJson: string, asDraft = false): Promise<Val
 /** Server-side bake for viewer-grade clients without the WASM facade (D15). */
 export function runBake(contractJson: string): Promise<ValidateResult> {
   return runSubcommand("bake", contractJson);
+}
+
+/** JSON BOM for catalog-backed procurement surfaces (P3-009). */
+export function runBom(contractJson: string): Promise<ValidateResult> {
+  return runSubcommand("bom", contractJson, ["--format", "json"]);
 }

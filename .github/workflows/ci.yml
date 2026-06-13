@@ -90,6 +90,40 @@ jobs:
           git diff --exit-code prototype/trajectories \
             || { echo "::error::tapes drifted — the recorder or the frozen prototype changed"; exit 1; }
 
+  data-plane:
+    name: catalog data plane (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: forge
+          POSTGRES_USER: forge
+          POSTGRES_PASSWORD: forge-dev-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U forge -d forge"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://forge:forge-dev-only@localhost:5432/forge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: migrate catalog schema
+        run: pnpm db:migrate
+      - name: seed reviewed catalog fixtures
+        run: pnpm db:seed-catalog
+      - name: assert P3 catalog invariants
+        run: pnpm db:assert-p3
+
   workers:
     name: compute workers (Python)
     runs-on: ubuntu-latest

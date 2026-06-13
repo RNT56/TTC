@@ -19,7 +19,7 @@ fn main() -> ExitCode {
         Some("schema") => cmd_schema(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json]\n       forge-validate bom <contract.json> [--out bom.csv]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate schema [--out schema.json]"
             );
             ExitCode::from(1)
         }
@@ -50,22 +50,11 @@ fn cmd_run(args: &[String]) -> ExitCode {
     };
     // --catalog <dir>: resolve componentRefs against file-backed rows
     // (P3-007a); without it every ref is unresolved (EmptyCatalog).
-    let file_catalog = match flag_value(args, "--catalog") {
-        Some(dir) => {
-            match forge_validate::file_catalog::FileCatalog::load(std::path::Path::new(&dir)) {
-                Ok(c) => Some(c),
-                Err(e) => {
-                    eprintln!("run: catalog load failed: {e}");
-                    return ExitCode::from(1);
-                }
-            }
-        }
-        None => None,
+    let file_catalog = match load_catalog(args, "run") {
+        Ok(c) => c,
+        Err(code) => return code,
     };
-    let catalog: &dyn forge_contract::CatalogSource = match &file_catalog {
-        Some(c) => c,
-        None => &EmptyCatalog,
-    };
+    let catalog = catalog_ref(file_catalog.as_ref());
     let report = run_full(&doc, catalog, &opts);
 
     let errors = report
@@ -120,6 +109,33 @@ fn cmd_run(args: &[String]) -> ExitCode {
     }
 }
 
+fn load_catalog(
+    args: &[String],
+    command: &str,
+) -> Result<Option<forge_validate::file_catalog::FileCatalog>, ExitCode> {
+    Ok(match flag_value(args, "--catalog") {
+        Some(dir) => {
+            match forge_validate::file_catalog::FileCatalog::load(std::path::Path::new(&dir)) {
+                Ok(c) => Some(c),
+                Err(e) => {
+                    eprintln!("{command}: catalog load failed: {e}");
+                    return Err(ExitCode::from(1));
+                }
+            }
+        }
+        None => None,
+    })
+}
+
+fn catalog_ref(
+    file_catalog: Option<&forge_validate::file_catalog::FileCatalog>,
+) -> &dyn forge_contract::CatalogSource {
+    match file_catalog {
+        Some(c) => c,
+        None => &EmptyCatalog,
+    }
+}
+
 /// The bake artifact the studio consumes (truth from core; TS only renders).
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -158,6 +174,11 @@ fn cmd_bake(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    let file_catalog = match load_catalog(args, "bake") {
+        Ok(c) => c,
+        Err(code) => return code,
+    };
+    let catalog = catalog_ref(file_catalog.as_ref());
     let artifact = BakeArtifact {
         contract_hash: forge_contract::contract_hash(&spec),
         schema_version: forge_contract::SCHEMA_VERSION.to_string(),
@@ -167,7 +188,7 @@ fn cmd_bake(args: &[String]) -> ExitCode {
             vertices: baked.total_vertices,
             triangles: baked.total_faces,
         },
-        hud: forge_sim::derive_hud(&spec, &baked).ok(),
+        hud: forge_sim::derive_hud_with_catalog(&spec, &baked, catalog).ok(),
         baked,
     };
     eprintln!(
@@ -218,9 +239,33 @@ fn cmd_bom(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let csv = forge_validate::bom_csv(&forge_validate::bom_rows(&spec, &baked));
+    let file_catalog = match load_catalog(args, "bom") {
+        Ok(c) => c,
+        Err(code) => return code,
+    };
+    let catalog = catalog_ref(file_catalog.as_ref());
+    let rows = forge_validate::bom_rows_with_catalog(&spec, &baked, catalog);
+    let format = flag_value(args, "--format")
+        .or_else(|| {
+            flag_value(args, "--out").and_then(|out| {
+                if out.ends_with(".json") {
+                    Some("json".to_string())
+                } else {
+                    None
+                }
+            })
+        })
+        .unwrap_or_else(|| "csv".to_string());
+    let body = match format.as_str() {
+        "csv" => forge_validate::bom_csv(&rows),
+        "json" => serde_json::to_string_pretty(&rows).expect("bom rows serialize"),
+        other => {
+            eprintln!("bom: unknown --format '{other}' (expected csv|json)");
+            return ExitCode::from(1);
+        }
+    };
     match flag_value(args, "--out") {
-        Some(out) => match std::fs::write(&out, csv) {
+        Some(out) => match std::fs::write(&out, body) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => {
                 eprintln!("bom: cannot write {out}: {e}");
@@ -228,7 +273,10 @@ fn cmd_bom(args: &[String]) -> ExitCode {
             }
         },
         None => {
-            print!("{csv}");
+            print!("{body}");
+            if format == "json" {
+                println!();
+            }
             ExitCode::SUCCESS
         }
     }

@@ -1,0 +1,16 @@
+{
+  "id": "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
+  "name": "P3 Reference Pi-class ROS2 Rover",
+  "class": "rover",
+  "purpose": "Default P3 D12 reference rig for Pi-class rover validation.",
+  "decisionId": "D12-P3-REFERENCE-RIGS",
+  "items": [
+    {
+      "role": "kit",
+      "componentId": "cmp_rover_waveshare-ugv-rover-pt-pi5-ros2",
+      "revision": "1.0.0",
+      "quantity": 1,
+      "required": true
+    }
+  ]
+}

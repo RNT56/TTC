@@ -1,6 +1,6 @@
 # Component Database & Compatibility Engine — implementation doc
 
-**Status:** not started · **Phases:** P3 · **Home:** Postgres (data plane) +
+**Status:** P3 local production slice live · **Phases:** P3 · **Home:** Postgres (data plane) +
 `crates/forge-validate::compat` (compatibility rules — CORE-side per D16, corrected from the earlier gateway *(proposed)* placement; gateway/studio consume) + `workers/etl`; lockfile resolution in `crates/forge-contract` (live) · **Plan refs:** §9 (v3.0) · **Decisions:** D1,
 D5, D10, D12
 
@@ -12,7 +12,7 @@ contract slots via `componentRef`. This is the **verify-first wedge (D1)**: the
 catalog and its honest numbers are the first public artifact, shipping before
 generation GA.
 
-## 2. Schema (Postgres DDL sketch — finalize at P3-001)
+## 2. Schema (Postgres DDL — P3 local slice)
 
 ```sql
 CREATE TABLE components (
@@ -44,10 +44,13 @@ CREATE TABLE licenses (id text PRIMARY KEY, class text NOT NULL  -- open|attribu
   , terms text, source_url text);
 CREATE TABLE thrust_tables (component_id text, voltage numeric, throttle numeric,
   thrust_g numeric, current_a numeric, rpm numeric);
-CREATE TABLE prices (component_id text, vendor text, price numeric, currency text,
-  url text, fetched_at timestamptz);
+CREATE TABLE prices (component_id text, vendor text, sku text, price numeric, currency text,
+  url text, fetched_at timestamptz, region text, purchasable boolean);
 CREATE TABLE provenance (artifact_id text, field text, source_url text,
   extractor text, confidence numeric, cited_at timestamptz);  -- per-field citations
+CREATE TABLE review_queue (...);
+CREATE TABLE reference_rigs (...);
+CREATE TABLE reference_rig_items (...);
 ```
 
 Connector taxonomy seed (P3-002): `stack-30.5×30.5-M3`, `stack-20×20-M2`,
@@ -103,6 +106,11 @@ throttle/endurance respond to the pack swap; BOM exports purchasable SKUs.
 Reference rigs: ArduPilot-capable 5″ quad + Pi-class rover, SKUs pinned at ingestion,
 recorded in DECISIONS — they become P8's pilot hardware, the tutorials, and standing
 test fixtures.
+
+Live P3 fixture set (2026-06-13): `catalog/reference-rigs/` pins the quad and rover;
+`forge-validate bom --catalog catalog --format json` and gateway `/v1/bom` emit
+purchasable SKU rows; catalog-backed HUD includes equipped component masses and
+responds to the CNHL 1500 -> 1300 pack swap.
 
 ## 8. Dependencies
 

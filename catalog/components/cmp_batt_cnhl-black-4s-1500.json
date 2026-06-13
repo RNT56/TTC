@@ -1,80 +1,111 @@
 {
   "id": "cmp_batt_cnhl-black-4s-1500",
   "brand": "CNHL",
-  "model": "Black Series 1500mAh 14.8V 4S 100C",
+  "model": "Black Series V2.0 1500mAh 14.8V 4S 130C XT60",
   "category": "battery",
-  "massG": 183.0,
+  "massG": 164.0,
   "dims": {
-    "lengthMm": 75.0,
-    "widthMm": 35.0,
-    "heightMm": 37.0
+    "lengthMm": 80.0,
+    "widthMm": 39.0,
+    "heightMm": 28.0
   },
   "elec": {
     "vMin": 14.8,
     "vMax": 16.8,
-    "maxDischargeA": 150.0,
+    "maxDischargeA": 195.0,
     "connectors": [
       "XT60"
     ],
     "capacityMah": 1500.0
   },
   "mech": {},
-  "licenseClass": "open",
+  "license": {
+    "id": "lic_cnhl_black_v2_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer product specifications; source URL required for redistribution.",
+    "sourceUrl": "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug",
+    "exportPolicy": "full-geometry-ok"
+  },
   "source": "datasheet",
-  "confidence": 0.7,
-  "review": "REQUIRED before marketplace exposure: values transcribed from search-result quotations of the cited pages (manufacturer + retailers republishing the CNHL spec table); direct page fetch is blocked by this build environment's egress allowlist. Verify each field against the citations.",
+  "confidence": 0.85,
+  "review": "REQUIRED before marketplace exposure: product is sold as a two-pack while this component row models one pack; BOM price records the purchasable package.",
+  "prices": [
+    {
+      "vendor": "ChinaHobbyLine",
+      "sku": "1501304BK-2PACK",
+      "url": "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug",
+      "amount": 45.98,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
   "citations": {
     "massG": {
-      "value": "Approx Weight: 183g (6.45oz)",
+      "value": "Approx Weight(+/-5g): 164g",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12"
+      "accessed": "2026-06-13"
     },
     "dims": {
-      "value": "Dimensions: 75*35*37mm (2.95*1.38*1.46 inches)",
+      "value": "Size(1-5mm difference): 39X28X80mm",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12"
+      "accessed": "2026-06-13"
     },
     "elec.vMin": {
-      "value": "Battery voltage: 14.8V (4S1P nominal; cell 3.7~4.2V)",
+      "value": "Voltage: 14.8V / 4-Cell / 4S1P",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12",
-      "note": "window recorded as nominal\u2192max from the cited cell range"
+      "accessed": "2026-06-13"
     },
     "elec.vMax": {
-      "value": "cell voltage 3.7~4.2V \u2192 4 \u00d7 4.2 = 16.8 V",
+      "value": "Normal cell voltage is between 3.7V~4.2V; 4 x 4.2V = 16.8V",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12",
-      "note": "derived from the cited per-cell maximum"
+      "accessed": "2026-06-13",
+      "note": "Derived from cited per-cell maximum."
     },
     "elec.maxDischargeA": {
-      "value": "Discharge: 100C (burst 200C) \u00d7 1.5 Ah = 150 A continuous",
+      "value": "130C continual x 1.5 Ah = 195A",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12",
-      "note": "derived: C-rating \u00d7 capacity, the rating's own definition"
+      "accessed": "2026-06-13",
+      "note": "Derived from cited discharge rate and capacity."
     },
     "elec.connectors": {
-      "value": "Plug: XT60 (balance lead JST-XH)",
+      "value": "Output Connector: XT60",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12"
+      "accessed": "2026-06-13"
     },
     "elec.capacityMah": {
       "value": "Capacity: 1500mAh",
       "sources": [
-        "https://chinahobbyline.com/products/cnhl-black-series-1500mah-14-8v-4s-100c-lipo-battery-with-xt60-plug"
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
       ],
-      "accessed": "2026-06-12"
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "US warehouse variant $45.98 USD; Stock Number 1501304BK",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
     }
   },
   "revisions": [

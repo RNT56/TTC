@@ -5,7 +5,7 @@ import { Type } from "@sinclair/typebox";
 import Fastify, { type FastifyInstance } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
-import { runBake, runValidator, validatorBin } from "./validator.js";
+import { runBake, runBom, runValidator, validatorBin } from "./validator.js";
 
 export function buildServer(): FastifyInstance {
   const app = Fastify({ logger: false });
@@ -60,6 +60,27 @@ export function buildServer(): FastifyInstance {
       if (result.exitCode === -1 || result.report === null) {
         return reply.status(result.exitCode === -1 ? 503 : 422).send({
           error: "bake failed",
+          detail: result.stderr.slice(0, 500),
+        });
+      }
+      return reply.send(result.report);
+    },
+  );
+
+  app.post(
+    "/v1/bom",
+    {
+      schema: {
+        body: Type.Object({ contract: Type.Unknown() }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      const { contract } = request.body as { contract: unknown };
+      const json = typeof contract === "string" ? contract : JSON.stringify(contract);
+      const result = await runBom(json);
+      if (result.exitCode === -1 || result.report === null) {
+        return reply.status(result.exitCode === -1 ? 503 : 422).send({
+          error: "bom failed",
           detail: result.stderr.slice(0, 500),
         });
       }

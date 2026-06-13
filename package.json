@@ -1,7 +1,7 @@
 {
   "name": "forge-monorepo",
   "private": true,
-  "description": "FORGE \u2014 Rust core, web face (D16). TS packages live in packages/*; the cargo workspace in crates/*.",
+  "description": "FORGE — Rust core, web face (D16). TS packages live in packages/*; the cargo workspace in crates/*.",
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
@@ -9,10 +9,14 @@
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
     "build:wasm": "./scripts/build-wasm.sh",
     "parity": "node scripts/parity-gallery.mjs",
-    "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/"
+    "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:seed-catalog": "node scripts/db-seed-catalog.mjs",
+    "db:assert-p3": "node scripts/db-assert-p3.mjs"
   },
   "devDependencies": {
     "json-schema-to-typescript": "^15.0.0",
+    "pg": "^8.21.0",
     "playwright-core": "^1.60.0",
     "pngjs": "^7.0.0",
     "wasm-pack": "^0.15.0"

@@ -15,7 +15,7 @@
 pub mod export;
 pub mod thrust_table;
 
-use forge_contract::{Archetype, Estimator, ModelSpec};
+use forge_contract::{Archetype, CatalogComponent, CatalogSource, Estimator, ModelSpec};
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
 use thrust_table::ThrustTable;
@@ -241,6 +241,7 @@ pub enum HudError {
     MissingMotors,
     MissingMotorKv,
     MissingProps,
+    CatalogRowIncomplete(String),
 }
 
 impl std::fmt::Display for HudError {
@@ -252,6 +253,9 @@ impl std::fmt::Display for HudError {
                 "motor kv unavailable (inline kv or resolved catalog ref required)"
             }
             HudError::MissingProps => "sim.props required for powertrain HUD",
+            HudError::CatalogRowIncomplete(id) => {
+                return write!(f, "catalog row '{id}' is incomplete for HUD derivation");
+            }
         };
         write!(f, "{s}")
     }
@@ -262,11 +266,39 @@ impl std::error::Error for HudError {}
 /// Derive the HUD from a contract + its bake. Non-multirotor archetypes get
 /// AUW only (their powertrain analytics land with their drivers).
 pub fn derive_hud(spec: &ModelSpec, baked: &BakedModel) -> Result<Hud, HudError> {
-    let auw_g = forge_geometry::model_mass_g(spec, baked);
+    derive_hud_inner(spec, baked, None)
+}
+
+/// P3 catalog-backed HUD derivation. Resolved catalog rows override inline sim
+/// constants while inline values remain the authoring fallback for generated
+/// or synthetic examples.
+pub fn derive_hud_with_catalog(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    catalog: &dyn CatalogSource,
+) -> Result<Hud, HudError> {
+    derive_hud_inner(spec, baked, Some(catalog))
+}
+
+fn derive_hud_inner(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    catalog: Option<&dyn CatalogSource>,
+) -> Result<Hud, HudError> {
+    let mut auw_g = forge_geometry::model_mass_g(spec, baked);
     let mut assumptions = vec![
         "masses: geometry × material-class density unless a part states valueG/densityKgm3"
             .to_string(),
     ];
+    if let Some(catalog) = catalog {
+        let equipped = catalog_equipped_mass_g(spec, catalog);
+        if equipped > 0.0 {
+            auw_g += equipped;
+            assumptions.push(format!(
+                "catalog-equipped component masses included in AUW: +{equipped:.1} g"
+            ));
+        }
+    }
 
     if !matches!(spec.meta.archetype, Archetype::Multirotor) {
         return Ok(Hud {
@@ -280,27 +312,33 @@ pub fn derive_hud(spec: &ModelSpec, baked: &BakedModel) -> Result<Hud, HudError>
         });
     }
 
-    let battery = spec.sim.battery.as_ref().ok_or(HudError::MissingBattery)?;
+    let catalog_battery = catalog.and_then(|c| first_catalog_component(spec, c, "battery"));
+    let catalog_motor = catalog.and_then(|c| first_catalog_component(spec, c, "motor"));
+    let catalog_prop = catalog.and_then(|c| first_catalog_component(spec, c, "prop"));
+
+    let battery = resolve_battery(spec, catalog_battery.as_ref())?;
     if spec.sim.motors.is_empty() {
         return Err(HudError::MissingMotors);
     }
-    let prop = spec.sim.props.first().ok_or(HudError::MissingProps)?;
-    // v0: inline kv required; catalog-resolved constants arrive with P3 (D5).
-    let kv = spec
-        .sim
-        .motors
-        .iter()
-        .filter_map(|m| m.kv)
-        .next()
-        .ok_or(HudError::MissingMotorKv)?;
-    let motor_r = spec
-        .sim
-        .motors
-        .iter()
-        .filter_map(|m| m.r_int_mohm)
-        .next()
-        .unwrap_or(0.0)
-        / 1000.0;
+    let prop = resolve_prop(spec, catalog_prop.as_ref())?;
+    let kv = resolve_motor_kv(spec, catalog_motor.as_ref())?;
+    let motor_r = resolve_motor_r_ohm(spec);
+    let table = catalog_motor
+        .as_ref()
+        .and_then(|m| m.thrust_tables.first())
+        .and_then(|t| {
+            let points: Vec<thrust_table::ThrustPoint> = t
+                .points
+                .iter()
+                .map(|p| thrust_table::ThrustPoint {
+                    voltage: p.voltage,
+                    throttle: p.throttle,
+                    thrust_n: p.thrust_n,
+                    current_a: p.current_a,
+                })
+                .collect();
+            ThrustTable::from_points(&points).ok()
+        });
 
     let pt = Powertrain {
         motor_kv: kv,
@@ -311,17 +349,32 @@ pub fn derive_hud(spec: &ModelSpec, baked: &BakedModel) -> Result<Hud, HudError>
         ct: DEFAULT_CT,
         n_motors: spec.sim.motors.len(),
         air_density: spec.env.air_density,
-        // catalog-backed thrust tables resolve through the lockfile at P3;
-        // inline contracts carry no bench data yet (XC-06).
-        table: None,
+        table,
     };
 
     assumptions.push(format!(
         "battery V0 = cells × {NOMINAL_CELL_V} V nominal; sag via R_int fixed point"
     ));
-    assumptions.push(format!(
-        "C_T = {DEFAULT_CT} blade-element-lite default (no thrust table; XC-06 pending)"
-    ));
+    if let Some(row) = catalog_battery.as_ref() {
+        assumptions.push(format!(
+            "battery constants resolved from catalog row {} ({})",
+            row.id, row.model
+        ));
+    }
+    if let Some(row) = catalog_motor.as_ref() {
+        assumptions.push(format!(
+            "motor constants resolved from catalog row {} ({})",
+            row.id, row.model
+        ));
+    }
+    if pt.table.is_some() {
+        assumptions
+            .push("thrust/current from catalog bench table; edge-clamped interpolation".into());
+    } else {
+        assumptions.push(format!(
+            "C_T = {DEFAULT_CT} blade-element-lite default (no thrust table)"
+        ));
+    }
     assumptions.push(format!(
         "power: momentum theory, figure of merit {FIGURE_OF_MERIT}, electrical η {ELECTRICAL_EFF}"
     ));
@@ -370,6 +423,143 @@ pub fn derive_hud(spec: &ModelSpec, baked: &BakedModel) -> Result<Hud, HudError>
         max_thrust_g: Some(max_thrust_n / spec.env.gravity * 1000.0),
         assumptions,
     })
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ResolvedBattery {
+    cells: u32,
+    capacity_mah: f64,
+    r_int_mohm: f64,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ResolvedProp {
+    diameter_in: f64,
+}
+
+fn first_catalog_component(
+    spec: &ModelSpec,
+    catalog: &dyn CatalogSource,
+    category: &str,
+) -> Option<CatalogComponent> {
+    for slot in &spec.slots {
+        for variant in &slot.variants {
+            let Some(component_ref) = &variant.component_ref else {
+                continue;
+            };
+            let Some(pin) = spec.lockfile.get(component_ref) else {
+                continue;
+            };
+            let Some((id, _)) = pin.rsplit_once('@') else {
+                continue;
+            };
+            let Some(component) = catalog.component(id) else {
+                continue;
+            };
+            if component.category == category {
+                return Some(component);
+            }
+        }
+    }
+    None
+}
+
+fn catalog_equipped_mass_g(spec: &ModelSpec, catalog: &dyn CatalogSource) -> f64 {
+    let mut total = 0.0;
+    for slot in &spec.slots {
+        let quantity = slot.mount_nodes.len().max(1) as f64;
+        for variant in &slot.variants {
+            let Some(component_ref) = &variant.component_ref else {
+                continue;
+            };
+            let Some(pin) = spec.lockfile.get(component_ref) else {
+                continue;
+            };
+            let Some((id, _)) = pin.rsplit_once('@') else {
+                continue;
+            };
+            if let Some(component) = catalog.component(id) {
+                total += component.mass_g * quantity;
+            }
+        }
+    }
+    total
+}
+
+fn resolve_battery(
+    spec: &ModelSpec,
+    catalog_battery: Option<&CatalogComponent>,
+) -> Result<ResolvedBattery, HudError> {
+    let inline = spec.sim.battery.as_ref();
+    if let Some(row) = catalog_battery {
+        let capacity_mah = row
+            .elec
+            .capacity_mah
+            .or_else(|| inline.map(|b| b.capacity_mah))
+            .ok_or_else(|| HudError::CatalogRowIncomplete(row.id.clone()))?;
+        let cells = row
+            .elec
+            .v_min
+            .map(|v| (v / NOMINAL_CELL_V).round().max(1.0) as u32)
+            .or_else(|| inline.map(|b| b.cells))
+            .ok_or_else(|| HudError::CatalogRowIncomplete(row.id.clone()))?;
+        let r_int_mohm = inline.map(|b| b.r_int_mohm).unwrap_or(0.0);
+        return Ok(ResolvedBattery {
+            cells,
+            capacity_mah,
+            r_int_mohm,
+        });
+    }
+    let battery = inline.ok_or(HudError::MissingBattery)?;
+    Ok(ResolvedBattery {
+        cells: battery.cells,
+        capacity_mah: battery.capacity_mah,
+        r_int_mohm: battery.r_int_mohm,
+    })
+}
+
+fn resolve_prop(
+    spec: &ModelSpec,
+    catalog_prop: Option<&CatalogComponent>,
+) -> Result<ResolvedProp, HudError> {
+    if let Some(row) = catalog_prop {
+        if let Some(diameter_in) = row.mech.prop_diameter_in {
+            return Ok(ResolvedProp { diameter_in });
+        }
+        return Err(HudError::CatalogRowIncomplete(row.id.clone()));
+    }
+    let prop = spec.sim.props.first().ok_or(HudError::MissingProps)?;
+    Ok(ResolvedProp {
+        diameter_in: prop.diameter_in,
+    })
+}
+
+fn resolve_motor_kv(
+    spec: &ModelSpec,
+    catalog_motor: Option<&CatalogComponent>,
+) -> Result<f64, HudError> {
+    if let Some(row) = catalog_motor {
+        return row
+            .elec
+            .kv
+            .ok_or_else(|| HudError::CatalogRowIncomplete(row.id.clone()));
+    }
+    spec.sim
+        .motors
+        .iter()
+        .filter_map(|m| m.kv)
+        .next()
+        .ok_or(HudError::MissingMotorKv)
+}
+
+fn resolve_motor_r_ohm(spec: &ModelSpec) -> f64 {
+    spec.sim
+        .motors
+        .iter()
+        .filter_map(|m| m.r_int_mohm)
+        .next()
+        .unwrap_or(0.0)
+        / 1000.0
 }
 
 // ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@
 //
 //   node scripts/extract-trajectories.mjs   (writes prototype/trajectories/*.json)
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import vm from "node:vm";
 
 const htmlPath = "prototype/cad-object-studio.html";
@@ -56,6 +56,24 @@ const SCHEDULES = {
 
 mkdirSync("prototype/trajectories", { recursive: true });
 
+function equivalentTape(a, b, tol = 1e-12) {
+  if (typeof a === "number" && typeof b === "number") {
+    return Math.abs(a - b) <= tol;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((v, i) => equivalentTape(v, b[i], tol));
+  }
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    const ak = Object.keys(a).sort();
+    const bk = Object.keys(b).sort();
+    return (
+      ak.length === bk.length &&
+      ak.every((key, i) => key === bk[i] && equivalentTape(a[key], b[key], tol))
+    );
+  }
+  return Object.is(a, b);
+}
+
 const ids = Object.keys(vm.runInContext("MODELS", context));
 for (const id of ids) {
   vm.runInContext(
@@ -100,6 +118,19 @@ for (const id of ids) {
     frames,
   };
   const out = `prototype/trajectories/${id}.tape.json`;
+  if (existsSync(out)) {
+    const existingText = readFileSync(out, "utf8");
+    const existing = JSON.parse(existingText);
+    if (equivalentTape(existing, tape)) {
+      const flat = frames.flat();
+      const finite = flat.every((v) => Number.isFinite(v));
+      console.log(
+        `${out}: unchanged within 1e-12 (${frames.length} frames × ${nodeNames.length} nodes × 9 ch, finite: ${finite})`,
+      );
+      if (!finite) process.exit(1);
+      continue;
+    }
+  }
   writeFileSync(out, JSON.stringify(tape) + "\n");
   const flat = frames.flat();
   const finite = flat.every((v) => Number.isFinite(v));

@@ -6,6 +6,7 @@
 //! mass-properties-correct bar); the resolver pins both refs; the compat
 //! engine finds the pair electrically compatible.
 
+use forge_contract::CatalogSource;
 use forge_validate::file_catalog::FileCatalog;
 use std::path::Path;
 
@@ -88,7 +89,7 @@ fn battery_renders_to_datasheet_dimensions_within_tolerance() {
     assert!(within(aabb[0] * 1000.0, l, 0.001));
     assert!(within(aabb[1] * 1000.0, h, 0.001));
     assert!(within(aabb[2] * 1000.0, w, 0.001));
-    assert_eq!(row.mass_g, 183.0);
+    assert_eq!(row.mass_g, 164.0);
 }
 
 #[test]
@@ -125,6 +126,16 @@ fn proof_pair_resolves_and_is_compatible() {
             assert!(row.review.is_some(), "{} needs a review note", row.id);
         }
         assert!(!row.citations.is_empty(), "{} cites nothing", row.id);
+        assert!(
+            !row.license.id.is_empty(),
+            "{} has no license ledger id",
+            row.id
+        );
+        assert!(
+            row.prices.iter().any(|p| p.purchasable),
+            "{} has no purchasable SKU",
+            row.id
+        );
     }
 }
 
@@ -154,4 +165,102 @@ fn sim004_flags_inline_vs_equipped_drift_once() {
     .unwrap();
     let report = forge_validate::run_full(&clean, &cat, &forge_validate::Options::default());
     assert!(report.results.iter().all(|d| d.check != "SIM-004"));
+}
+
+#[test]
+fn bom_exports_purchasable_catalog_skus() {
+    let cat = catalog();
+    let doc = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../examples/vx2-proof.forge.json"
+    ))
+    .unwrap();
+    let spec = forge_contract::validate_shape(&doc).unwrap();
+    let baked = forge_geometry::bake(&spec).unwrap();
+    let rows = forge_validate::bom_rows_with_catalog(&spec, &baked, &cat);
+    let motor = rows
+        .iter()
+        .find(|r| r.component_id.as_deref() == Some("cmp_motor_emax-eco2-2207-1900kv"))
+        .unwrap();
+    assert_eq!(motor.quantity, 4);
+    assert_eq!(motor.sku.as_deref(), Some("0101096015"));
+    assert_eq!(motor.license_class.as_deref(), Some("open"));
+    assert!(motor.price.unwrap() > 0.0);
+
+    let battery = rows
+        .iter()
+        .find(|r| r.component_id.as_deref() == Some("cmp_batt_cnhl-black-4s-1500"))
+        .unwrap();
+    assert_eq!(battery.sku.as_deref(), Some("1501304BK-2PACK"));
+    assert_eq!(battery.currency.as_deref(), Some("USD"));
+
+    let csv = forge_validate::bom_csv(&rows);
+    assert!(csv.contains("componentId"));
+    assert!(csv.contains("0101096015"));
+    assert!(csv.contains("1501304BK-2PACK"));
+}
+
+#[test]
+fn catalog_hud_responds_to_pack_swap() {
+    let cat = catalog();
+    let doc = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../examples/vx2-proof.forge.json"
+    ))
+    .unwrap();
+    let spec = forge_contract::validate_shape(&doc).unwrap();
+    let baked = forge_geometry::bake(&spec).unwrap();
+    let base = forge_sim::derive_hud_with_catalog(&spec, &baked, &cat).unwrap();
+
+    let mut swapped = spec.clone();
+    let old_ref = "cmp_batt_cnhl-black-4s-1500@^1.0.0";
+    let new_ref = "cmp_batt_cnhl-black-v2-4s-1300@^1.0.0";
+    for slot in &mut swapped.slots {
+        for variant in &mut slot.variants {
+            if variant.component_ref.as_deref() == Some(old_ref) {
+                variant.component_ref = Some(new_ref.to_string());
+                variant.name = Some("CNHL Black Series V2.0 4S 1300 mAh 130C".to_string());
+            }
+        }
+    }
+    swapped.lockfile.remove(old_ref);
+    swapped.lockfile.insert(
+        new_ref.to_string(),
+        "cmp_batt_cnhl-black-v2-4s-1300@1.0.0".to_string(),
+    );
+    let swapped_hud = forge_sim::derive_hud_with_catalog(&swapped, &baked, &cat).unwrap();
+
+    assert!(
+        swapped_hud.hover_throttle.unwrap() < base.hover_throttle.unwrap(),
+        "lighter 1300 mAh pack should lower hover throttle"
+    );
+    assert!(
+        swapped_hud.endurance_min.unwrap() < base.endurance_min.unwrap(),
+        "lower capacity pack should reduce endurance"
+    );
+}
+
+#[test]
+fn reference_rig_manifests_resolve_to_catalog_revisions() {
+    let cat = catalog();
+    let root = Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../catalog/reference-rigs"
+    ));
+    let mut rigs = 0;
+    for entry in std::fs::read_dir(root).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        rigs += 1;
+        let value: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        for item in value["items"].as_array().unwrap() {
+            let id = item["componentId"].as_str().unwrap();
+            let rev = item["revision"].as_str().unwrap();
+            assert!(cat.has_revision(id, rev), "{}@{} missing", id, rev);
+        }
+    }
+    assert_eq!(rigs, 2);
 }

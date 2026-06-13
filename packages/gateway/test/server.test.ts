@@ -81,6 +81,23 @@ test(
 );
 
 test(
+  "bom returns catalog-backed purchasable rows",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const contract = JSON.parse(
+      readFileSync(join(process.cwd(), "..", "..", "examples", "vx2-proof.forge.json"), "utf8"),
+    ) as unknown;
+    const res = await app.inject({ method: "POST", url: "/v1/bom", payload: { contract } });
+    assert.equal(res.statusCode, 200, res.body);
+    const rows = res.json() as { componentId?: string; sku?: string }[];
+    assert.ok(rows.some((row) => row.componentId === "cmp_motor_emax-eco2-2207-1900kv"));
+    assert.ok(rows.some((row) => row.sku === "1501304BK-2PACK"));
+    await app.close();
+  },
+);
+
+test(
   "schema endpoint serves the emitted JSON Schema",
   { skip: !haveBinary && "forge-validate binary not built" },
   async () => {

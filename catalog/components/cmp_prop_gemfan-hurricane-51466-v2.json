@@ -1,0 +1,90 @@
+{
+  "id": "cmp_prop_gemfan-hurricane-51466-v2",
+  "brand": "Gemfan",
+  "model": "Hurricane 51466 V2 3-Blade Propeller",
+  "category": "prop",
+  "massG": 4.2,
+  "dims": {
+    "diameterMm": 131.8
+  },
+  "elec": {},
+  "mech": {
+    "propShaft": "prop-shaft-M5",
+    "propDiameterIn": 5.1,
+    "pitchIn": 4.66,
+    "blades": 3
+  },
+  "license": {
+    "id": "lic_gemfan_51466_retailer_attribution",
+    "class": "attribution",
+    "terms": "Retailer product specification; attribution/source URL required.",
+    "sourceUrl": "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html",
+    "exportPolicy": "attribution-manifest-required"
+  },
+  "source": "datasheet",
+  "confidence": 0.75,
+  "review": "REQUIRED before marketplace exposure: specs are retailer-sourced and pitch varies between retailer descriptions; owner must verify against packaging/manufacturer data.",
+  "prices": [
+    {
+      "vendor": "GetFPV",
+      "sku": "17756",
+      "url": "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html",
+      "amount": 3.49,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Weight: 4.2g",
+      "sources": [
+        "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "mech.propDiameterIn": {
+      "value": "Prop Disk Diameter: 131.8mm (5.1 inch)",
+      "sources": [
+        "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "mech.pitchIn": {
+      "value": "51466 product name and retailer spec list 5.1 x 4.66 inch",
+      "sources": [
+        "https://www.myfpvstore.com/drone-propellers/5-inch-propellers/gemfan-hurricane-5-durable-3-blade-51466-prop-set-of-4-pick-your-color/"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "mech.blades": {
+      "value": "3 Blade/Tri-Blade",
+      "sources": [
+        "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Attribution row because source is retailer-published.",
+      "sources": [
+        "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "SKU 17756; listed retailer item",
+      "sources": [
+        "https://www.getfpv.com/gemfan-hurricane-51466-v2-3-blade-propeller-mck-edition-set-of-4.html"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Price requires owner verification; row remains review-gated."
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

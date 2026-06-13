@@ -1,0 +1,72 @@
+{
+  "id": "cmp_rover_waveshare-ugv-rover-pt-pi5-ros2",
+  "brand": "Waveshare",
+  "model": "UGV Rover PT PI5 ROS2 Kit",
+  "category": "rover",
+  "massG": 2190.0,
+  "dims": {
+    "lengthMm": 230.42,
+    "widthMm": 252.4,
+    "heightMm": 254.53
+  },
+  "elec": {},
+  "mech": {},
+  "license": {
+    "id": "lic_waveshare_ugv_rover_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer product specifications; source URL required for redistribution.",
+    "sourceUrl": "https://www.waveshare.com/ugv-rover.htm",
+    "exportPolicy": "full-geometry-ok"
+  },
+  "source": "datasheet",
+  "confidence": 0.8,
+  "review": "REQUIRED before marketplace exposure: selected option price is inferred from the page range for the PT PI5 ROS2 kit and must be owner-verified.",
+  "prices": [
+    {
+      "vendor": "Waveshare",
+      "sku": "27255-PT-PI5-ROS2",
+      "url": "https://www.waveshare.com/ugv-rover.htm",
+      "amount": 485.99,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Weight 2190+/-5g for PT kit",
+      "sources": [
+        "https://www.waveshare.com/ugv-rover.htm"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "dims": {
+      "value": "Dimension 230.42 x 252.40 x 254.53mm for PT kit",
+      "sources": [
+        "https://www.waveshare.com/ugv-rover.htm"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://www.waveshare.com/ugv-rover.htm"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "$244.99 - $485.99 product range; selected PT PI5 ROS2 kit uses upper bound pending owner verification.",
+      "sources": [
+        "https://www.waveshare.com/ugv-rover.htm"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

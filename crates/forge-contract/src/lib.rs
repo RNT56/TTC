@@ -682,10 +682,27 @@ pub trait CatalogSource {
     /// Returns true if `component_id@exact_revision` exists as an immutable revision.
     fn has_revision(&self, component_id: &str, revision: &str) -> bool;
 
+    /// Full reviewed row surface used by P3 catalog-backed HUD/BOM/export
+    /// decisions. `None` means the source cannot answer or the row is absent.
+    fn component(&self, _component_id: &str) -> Option<CatalogComponent> {
+        None
+    }
+
     /// Checked summary of a row for sim-consistency checks (SIM-004): None =
     /// the source cannot answer (EmptyCatalog, remote stubs).
     fn row_summary(&self, _component_id: &str) -> Option<RowSummary> {
-        None
+        self.component(_component_id).map(|row| RowSummary {
+            category: row.category,
+            mass_g: row.mass_g,
+            kv: row.elec.kv,
+            capacity_mah: row.elec.capacity_mah,
+            max_thrust_g: row.max_thrust_g,
+            v_min: row.elec.v_min,
+            v_max: row.elec.v_max,
+            max_current_a: row.elec.max_current_a,
+            max_discharge_a: row.elec.max_discharge_a,
+            connectors: row.elec.connectors,
+        })
     }
 }
 
@@ -697,6 +714,126 @@ pub struct RowSummary {
     pub kv: Option<f64>,
     pub capacity_mah: Option<f64>,
     pub max_thrust_g: Option<f64>,
+    pub v_min: Option<f64>,
+    pub v_max: Option<f64>,
+    pub max_current_a: Option<f64>,
+    pub max_discharge_a: Option<f64>,
+    pub connectors: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogComponent {
+    pub id: String,
+    pub brand: String,
+    pub model: String,
+    pub category: String,
+    pub mass_g: f64,
+    pub dims: BTreeMap<String, f64>,
+    pub elec: CatalogElec,
+    pub mech: CatalogMech,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_thrust_g: Option<f64>,
+    pub license: CatalogLicense,
+    pub source: String,
+    pub confidence: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub review: Option<String>,
+    #[serde(default)]
+    pub citations: BTreeMap<String, CatalogCitation>,
+    #[serde(default)]
+    pub prices: Vec<CatalogPrice>,
+    #[serde(default)]
+    pub thrust_tables: Vec<CatalogThrustTable>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogElec {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_min: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v_max: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_current_a: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_discharge_a: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kv: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capacity_mah: Option<f64>,
+    #[serde(default)]
+    pub connectors: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogMech {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mount_pattern: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prop_shaft: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prop_diameter_in: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pitch_in: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blades: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub motor_spacing_mm: Option<f64>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogLicense {
+    pub id: String,
+    pub class: String,
+    pub terms: String,
+    pub source_url: String,
+    pub export_policy: String,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogCitation {
+    pub value: String,
+    pub sources: Vec<String>,
+    pub accessed: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogPrice {
+    pub vendor: String,
+    pub sku: String,
+    pub url: String,
+    pub amount: f64,
+    pub currency: String,
+    pub fetched_at: String,
+    pub region: String,
+    pub purchasable: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogThrustTable {
+    pub id: String,
+    pub prop: String,
+    pub voltage: f64,
+    pub confidence: f64,
+    pub source_url: String,
+    pub points: Vec<CatalogThrustPoint>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogThrustPoint {
+    pub voltage: f64,
+    pub throttle: f64,
+    pub thrust_n: f64,
+    pub current_a: f64,
 }
 
 /// One published immutable revision (P3-006/XC-03).

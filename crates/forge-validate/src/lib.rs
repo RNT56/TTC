@@ -247,7 +247,7 @@ pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Repor
                     vertices: b.total_vertices,
                     triangles: b.total_faces,
                 };
-                match forge_sim::derive_hud(&spec, b) {
+                match forge_sim::derive_hud_with_catalog(&spec, b, catalog) {
                     Ok(h) => hud = Some(h),
                     Err(e) => diags.push(
                         Diagnostic::warn("SIM-001", format!("powertrain_hud_unavailable: {e}"))
@@ -756,7 +756,7 @@ fn run_checks(
 
     // ---- SIM-00x powertrain checks (multirotor with data) + BEH-001 smoke
     if matches!(spec.meta.archetype, Archetype::Multirotor) {
-        match forge_sim::derive_hud(spec, &baked) {
+        match forge_sim::derive_hud_with_catalog(spec, &baked, catalog) {
             Err(_) => { /* surfaced as SIM warn by run_full */ }
             Ok(hud) => {
                 match hud.hover_throttle {
@@ -988,13 +988,42 @@ pub struct BomRow {
     pub item: String,
     pub node: String,
     pub material: String,
+    pub quantity: u32,
     pub mass_g: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub component_ref: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub component_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vendor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sku: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub currency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub license_class: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub review_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub citation: Option<String>,
     pub source: String,
 }
 
 pub fn bom_rows(spec: &ModelSpec, baked: &BakedModel) -> Vec<BomRow> {
+    bom_rows_with_catalog(spec, baked, &EmptyCatalog)
+}
+
+pub fn bom_rows_with_catalog(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    catalog: &dyn CatalogSource,
+) -> Vec<BomRow> {
     let mut rows: Vec<BomRow> = baked
         .parts
         .iter()
@@ -1007,8 +1036,19 @@ pub fn bom_rows(spec: &ModelSpec, baked: &BakedModel) -> Vec<BomRow> {
                     .unwrap_or_else(|| format!("part-{}", bp.part_index)),
                 node: part.node.clone(),
                 material: format!("{:?}", part.material).to_lowercase(),
+                quantity: 1,
                 mass_g: forge_geometry::part_mass_g(&part.mass, part.material, &bp.mesh),
                 component_ref: None,
+                component_id: None,
+                revision: None,
+                vendor: None,
+                sku: None,
+                url: None,
+                price: None,
+                currency: None,
+                license_class: None,
+                review_status: None,
+                citation: None,
                 source: "inline".to_string(),
             }
         })
@@ -1016,13 +1056,59 @@ pub fn bom_rows(spec: &ModelSpec, baked: &BakedModel) -> Vec<BomRow> {
     for slot in &spec.slots {
         for v in &slot.variants {
             if let Some(r) = &v.component_ref {
+                let pin = spec.lockfile.get(r);
+                let (component_id, revision) = pin
+                    .and_then(|p| p.rsplit_once('@'))
+                    .map(|(id, rev)| (Some(id.to_string()), Some(rev.to_string())))
+                    .unwrap_or((None, None));
+                let component = component_id.as_deref().and_then(|id| catalog.component(id));
+                let price = component
+                    .as_ref()
+                    .and_then(|c| c.prices.iter().find(|p| p.purchasable).or(c.prices.first()));
+                let quantity = slot.mount_nodes.len().max(1) as u32;
+                let citation = component
+                    .as_ref()
+                    .and_then(|c| {
+                        c.citations
+                            .get("prices")
+                            .or_else(|| c.citations.get("massG"))
+                    })
+                    .and_then(|c| c.sources.first().cloned());
+                let review_status = component.as_ref().map(|c| {
+                    if c.review.is_some() || c.confidence < 1.0 {
+                        "needs_review".to_string()
+                    } else {
+                        "reviewed".to_string()
+                    }
+                });
                 rows.push(BomRow {
                     item: format!("{}/{}", slot.id, v.id),
                     node: slot.mount_nodes.first().cloned().unwrap_or_default(),
-                    material: String::new(),
-                    mass_g: 0.0,
+                    material: component
+                        .as_ref()
+                        .map(|c| c.category.clone())
+                        .unwrap_or_default(),
+                    quantity,
+                    mass_g: component
+                        .as_ref()
+                        .map(|c| c.mass_g * quantity as f64)
+                        .unwrap_or(0.0),
                     component_ref: Some(r.clone()),
-                    source: "catalog (resolves at P3)".to_string(),
+                    component_id,
+                    revision,
+                    vendor: price.map(|p| p.vendor.clone()),
+                    sku: price.map(|p| p.sku.clone()),
+                    url: price.map(|p| p.url.clone()),
+                    price: price.map(|p| p.amount * quantity as f64),
+                    currency: price.map(|p| p.currency.clone()),
+                    license_class: component.as_ref().map(|c| c.license.class.clone()),
+                    review_status,
+                    citation,
+                    source: if component.is_some() {
+                        "catalog".to_string()
+                    } else {
+                        "catalog-unresolved".to_string()
+                    },
                 });
             }
         }
@@ -1031,19 +1117,47 @@ pub fn bom_rows(spec: &ModelSpec, baked: &BakedModel) -> Vec<BomRow> {
 }
 
 pub fn bom_csv(rows: &[BomRow]) -> String {
-    let mut out = String::from("item,node,material,mass_g,componentRef,source\n");
+    let mut out = String::from(
+        "item,node,material,quantity,mass_g,componentRef,componentId,revision,vendor,sku,url,price,currency,licenseClass,reviewStatus,citation,source\n",
+    );
     for r in rows {
-        out.push_str(&format!(
-            "{},{},{},{:.1},{},{}\n",
-            r.item,
-            r.node,
-            r.material,
-            r.mass_g,
-            r.component_ref.as_deref().unwrap_or(""),
-            r.source
-        ));
+        let fields = [
+            r.item.clone(),
+            r.node.clone(),
+            r.material.clone(),
+            r.quantity.to_string(),
+            format!("{:.1}", r.mass_g),
+            r.component_ref.clone().unwrap_or_default(),
+            r.component_id.clone().unwrap_or_default(),
+            r.revision.clone().unwrap_or_default(),
+            r.vendor.clone().unwrap_or_default(),
+            r.sku.clone().unwrap_or_default(),
+            r.url.clone().unwrap_or_default(),
+            r.price.map(|p| format!("{p:.2}")).unwrap_or_default(),
+            r.currency.clone().unwrap_or_default(),
+            r.license_class.clone().unwrap_or_default(),
+            r.review_status.clone().unwrap_or_default(),
+            r.citation.clone().unwrap_or_default(),
+            r.source.clone(),
+        ];
+        out.push_str(
+            &fields
+                .iter()
+                .map(|f| csv_escape(f))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
+        out.push('\n');
     }
     out
+}
+
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
 }
 
 fn out_pose(driver: &forge_motion::quadruped::QuadrupedDriver) -> [f64; 3] {
