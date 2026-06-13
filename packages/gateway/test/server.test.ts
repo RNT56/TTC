@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import type { GatewayDb } from "../src/db.js";
 import { buildServer } from "../src/server.js";
 import { validatorBin } from "../src/validator.js";
 
@@ -108,6 +109,88 @@ test(
     await app.close();
   },
 );
+
+test("review queue lists pending catalog items", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, ["needs_review", 50]);
+      return {
+        rows: [
+          {
+            id: 7,
+            artifact_id: "cmp_frame_tbs-source-one-v6-5in",
+            artifact_kind: "component",
+            reason: "retailer-only dimensions require owner verification",
+            status: "needs_review",
+            confidence: "0.7",
+            payload: { id: "cmp_frame_tbs-source-one-v6-5in" },
+            created_at: "2026-06-13T18:00:00.000Z",
+            reviewed_at: null,
+            reviewer: null,
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const app = buildServer({ db });
+  const res = await app.inject({ method: "GET", url: "/v1/reviews" });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json() as { items: { id: number; artifactId: string; confidence: number }[] };
+  assert.equal(body.items.length, 1);
+  assert.equal(body.items[0].artifactId, "cmp_frame_tbs-source-one-v6-5in");
+  assert.equal(body.items[0].confidence, 0.7);
+  await app.close();
+});
+
+test("review queue records an approval decision", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [7, "approved", "owner"]);
+      return {
+        rows: [
+          {
+            id: 7,
+            artifact_id: "ref_quad_kakute-h7-source-one-5in",
+            artifact_kind: "reference-rig",
+            reason: "reference rig owner verification required",
+            status: "approved",
+            confidence: "0.8",
+            payload: { id: "ref_quad_kakute-h7-source-one-5in" },
+            created_at: "2026-06-13T18:00:00.000Z",
+            reviewed_at: "2026-06-13T18:05:00.000Z",
+            reviewer: "owner",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const app = buildServer({ db });
+  const res = await app.inject({
+    method: "PATCH",
+    url: "/v1/reviews/7",
+    payload: { status: "approved", reviewer: "owner" },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const item = res.json() as { status: string; reviewer: string };
+  assert.equal(item.status, "approved");
+  assert.equal(item.reviewer, "owner");
+  await app.close();
+});
+
+test("review queue reports database unavailability cleanly", async () => {
+  const db: GatewayDb = {
+    async query() {
+      throw new Error("connect ECONNREFUSED 127.0.0.1:5432");
+    },
+  };
+  const app = buildServer({ db });
+  const res = await app.inject({ method: "GET", url: "/v1/reviews" });
+  assert.equal(res.statusCode, 503);
+  assert.match(res.body, /catalog database unavailable/);
+  await app.close();
+});
 
 test(
   "asDraft turns a failing contract into an editable draft (D14)",
