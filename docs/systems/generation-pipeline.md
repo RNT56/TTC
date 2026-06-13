@@ -1,7 +1,7 @@
 # Generation Pipeline (Text-to-CAD) — implementation doc
 
-**Status:** P4 context + validator-loop synthesis live · **Phases:** P4 (GA), P10 (environments) · **Home:**
-`packages/gateway` (orchestrator context and deterministic synthesis live; live Claude transport proposed) · **Plan refs:** §8 (v3.0) ·
+**Status:** P4 context + validator-loop synthesis + opt-in Claude transport live · **Phases:** P4 (GA), P10 (environments) · **Home:**
+`packages/gateway` (orchestrator context, deterministic synthesis, and Anthropic tool-pass adapter live) · **Plan refs:** §8 (v3.0) ·
 **Decisions:** D3, D14, D16, D17, D25, D26, D-evals
 
 ## 1. Purpose
@@ -50,13 +50,19 @@ approved review rows plus non-blocked export policies. It returns
 
 Also live 2026-06-13: `POST /v1/generate` runs the first executable synthesis loop.
 The default adapter is deterministic and exemplar-backed so local/CI behavior does
-not require live Claude keys; deployments can inject a Claude-backed
-`SynthesisAdapter`. Every candidate is run through `forge-validate`; rejected
-contracts may be repaired up to three times; exhausted attempts are re-run with
-D14 draft semantics and returned with diagnostics. The route stamps generated
-contracts with model version, prompt hash, and seed, and returns the validator
-report. Persisted generated-artifact audit rows and SSE/tool-pass streaming remain
-P4 follow-up work.
+not require live Claude keys. The opt-in Anthropic provider (`provider:
+"anthropic"`) calls the Messages API through a strict client-tool pass:
+`forge_emit_modelspec` is forced via `tool_choice`, its `input_schema` is the
+schemars-emitted ModelSpec schema, and repair calls switch to the D26 repair model
+with validator diagnostics in context. Keys are supplied per request through
+`x-forge-anthropic-key` or `anthropicApiKey`, or by deployment-owned
+`ANTHROPIC_API_KEY`; the gateway never returns the key. Every candidate is run
+through `forge-validate`; rejected contracts may be repaired up to three times;
+exhausted attempts are re-run with D14 draft semantics and returned with
+diagnostics. The route stamps generated contracts with model version, prompt hash,
+and seed, and returns the validator report. Persisted generated-artifact audit rows,
+SSE progress events, and explicit multi-pass stage splitting remain P4 follow-up
+work.
 
 ## 3. Conversational editing (P4-005)
 
@@ -103,7 +109,8 @@ resolution, wire list from electrical ports.
 WASM + binary), component DB (retrieval + componentRefs), review queue API
 (`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy),
 `POST /v1/generate/context`, `POST /v1/generate`, injectable synthesis/source/
-Claude/OCCT adapters, Anthropic API, `studio` (streaming viewport, draft UX XC-16).
+Claude/OCCT adapters, Anthropic API, `studio` (BYO-key settings, streaming
+viewport, draft UX XC-16).
 
 ## 9. Testing
 

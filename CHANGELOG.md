@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-13 — Add opt-in Anthropic generation transport
+**Session:** Codex agent · branch `codex/p4-anthropic-generation-adapter` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-008 [~]
+**Done:** Added the live Anthropic provider behind the existing generation route:
+`POST /v1/generate` now accepts `provider: "anthropic"` and a per-request
+`x-forge-anthropic-key`/`anthropicApiKey` or deployment `ANTHROPIC_API_KEY`. The
+adapter calls the Messages API through a forced strict `forge_emit_modelspec` client
+tool using the emitted ModelSpec schema, stamps model/prompt/seed provenance, and
+reuses the existing validator repair/draft loop. Tests use an injected transport and
+cover synthesis, repair, usage/stop metadata, key redaction, and missing-key failure.
+**Changed:** `packages/gateway/src/{generation.ts,server.ts}`,
+`packages/gateway/test/server.test.ts`, and P4/security docs.
+**Decisions:** none.
+**Next:** Build the studio generation panel/BYO-key settings and SSE progress
+surface, then add Brief-25 corpus/CI.
+**Blockers:** none.
+
 ## 2026-06-13 — Add validator-loop generation endpoint
 **Session:** Codex agent · branch `codex/p4-generation-orchestrator` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-006 [~], P4-011 [x]
 **Done:** Added the executable P4 generation loop: `POST /v1/generate` consumes

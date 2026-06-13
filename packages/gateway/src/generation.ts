@@ -22,9 +22,13 @@ export interface GenerationContextRequest {
 }
 
 export interface GenerationRequest extends GenerationContextRequest {
+  provider?: GenerationProvider;
   seed?: number;
   maxRepairIterations?: number;
+  anthropicApiKey?: string;
 }
+
+export type GenerationProvider = "template" | "anthropic";
 
 export interface AnthropicModelPin {
   role: "synthesis" | "repair" | "edit" | "etl";
@@ -101,6 +105,8 @@ export interface SynthesisCandidate {
   contract: unknown;
   modelId: string;
   promptHash: string;
+  stopReason?: string;
+  usage?: unknown;
 }
 
 export interface SynthesisRepairInput {
@@ -124,6 +130,8 @@ export interface GenerationAttempt {
   contractHash: string;
   verdict: string;
   diagnostics: { check?: string; severity?: string; message?: string }[];
+  stopReason?: string;
+  usage?: unknown;
 }
 
 export interface GenerationResponse {
@@ -158,10 +166,59 @@ interface CatalogComponentRow {
   citation_count: string | number;
 }
 
+interface AnthropicToolDefinition {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
+  strict: true;
+}
+
+interface AnthropicMessagesRequest {
+  model: string;
+  max_tokens: number;
+  system: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  tools: AnthropicToolDefinition[];
+  tool_choice: { type: "tool"; name: string };
+}
+
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  id?: string;
+  name: string;
+  input: unknown;
+}
+
+interface AnthropicTextBlock {
+  type: "text";
+  text: string;
+}
+
+type AnthropicContentBlock = AnthropicToolUseBlock | AnthropicTextBlock | Record<string, unknown>;
+
+interface AnthropicMessagesResponse {
+  model?: string;
+  stop_reason?: string;
+  content?: AnthropicContentBlock[];
+  usage?: unknown;
+}
+
+export interface AnthropicTransportInput {
+  baseUrl: string;
+  apiKey: string;
+  request: AnthropicMessagesRequest;
+}
+
+export type AnthropicTransport = (input: AnthropicTransportInput) => Promise<AnthropicMessagesResponse>;
+
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 20;
 const DEFAULT_REPAIR_ITERATIONS = 3;
 const MAX_REPAIR_ITERATIONS = 3;
+const DEFAULT_GENERATION_MAX_TOKENS = 8192;
+const ANTHROPIC_API_VERSION = "2023-06-01";
+const ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com";
+const CONTRACT_TOOL_NAME = "forge_emit_modelspec";
 const MODEL_SOURCE_URLS = [
   "https://platform.claude.com/docs/en/about-claude/models/overview",
   "https://platform.claude.com/docs/en/about-claude/pricing",
@@ -480,6 +537,8 @@ function pushAttempt(
     contractHash: contractHash(candidate.contract),
     verdict: verdictFromReport(result.report, result.exitCode === 0 ? "admitted" : "rejected"),
     diagnostics: diagnosticsFromReport(result.report),
+    stopReason: candidate.stopReason,
+    usage: candidate.usage,
   };
   attempts.push(attempt);
   return attempt;
@@ -491,6 +550,125 @@ function repairLimit(limit: number | undefined): number {
 
 function synthesisModel(): AnthropicModelPin {
   return ANTHROPIC_MODEL_PINS.find((pin) => pin.role === "synthesis") ?? ANTHROPIC_MODEL_PINS[0];
+}
+
+function repairModel(): AnthropicModelPin {
+  return ANTHROPIC_MODEL_PINS.find((pin) => pin.role === "repair") ?? synthesisModel();
+}
+
+function generationBaseUrl(): string {
+  return process.env.ANTHROPIC_BASE_URL ?? ANTHROPIC_DEFAULT_BASE_URL;
+}
+
+function generationApiKey(request: GenerationRequest): string | null {
+  return request.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseObjectJson(text: string): Record<string, unknown> {
+  const value = JSON.parse(text) as unknown;
+  if (!isRecord(value)) {
+    throw new Error("generation schema is not a JSON object");
+  }
+  return value;
+}
+
+function reportSummary(attempt: GenerationAttempt): string {
+  if (attempt.diagnostics.length === 0) return "validator rejected the candidate without diagnostics";
+  return stableJson(
+    attempt.diagnostics.map((diagnostic) => ({
+      check: diagnostic.check ?? "unknown",
+      severity: diagnostic.severity ?? "unknown",
+      message: diagnostic.message ?? "",
+    })),
+  );
+}
+
+function extractContractFromAnthropic(response: AnthropicMessagesResponse): unknown {
+  const content = response.content ?? [];
+  const toolUse = content.find(
+    (block): block is AnthropicToolUseBlock =>
+      isRecord(block) && block.type === "tool_use" && block.name === CONTRACT_TOOL_NAME,
+  );
+  if (toolUse === undefined) {
+    throw new Error(`Anthropic response did not include ${CONTRACT_TOOL_NAME} tool_use`);
+  }
+  return toolUse.input;
+}
+
+async function defaultAnthropicTransport(
+  input: AnthropicTransportInput,
+): Promise<AnthropicMessagesResponse> {
+  const response = await fetch(`${input.baseUrl.replace(/\/$/, "")}/v1/messages`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": input.apiKey,
+      "anthropic-version": ANTHROPIC_API_VERSION,
+    },
+    body: JSON.stringify(input.request),
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`Anthropic Messages API failed (${response.status}): ${text.slice(0, 500)}`);
+  }
+  try {
+    return JSON.parse(text) as AnthropicMessagesResponse;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Anthropic Messages API returned invalid JSON: ${detail}`);
+  }
+}
+
+function buildContractTool(materials: GenerationMaterials): AnthropicToolDefinition {
+  return {
+    name: CONTRACT_TOOL_NAME,
+    description: [
+      "Emit one complete ForgedTTC ModelSpec contract JSON object.",
+      "Use only approved catalog component references provided in the generation context.",
+      "Do not invent mechanical, electrical, mass, price, citation, or license truth.",
+      "Generated contracts must include meta.provenance with modelVersion, promptHash, and seed.",
+    ].join(" "),
+    input_schema: parseObjectJson(materials.schemaText),
+    strict: true,
+  };
+}
+
+function buildAnthropicSystem(materials: GenerationMaterials, context: GenerationContextResponse): string {
+  return [
+    buildPromptPrefix(materials, context.retrievedComponents, true).text ?? "",
+    "You are the constrained synthesis pass for ForgedTTC.",
+    "Always call the forge_emit_modelspec tool exactly once. The tool input must be the full ModelSpec contract.",
+    "Every referenced catalog component must come from the approved catalog context.",
+  ].join("\n\n");
+}
+
+function buildSynthesisPrompt(request: GenerationRequest): string {
+  return [
+    `User brief: ${request.prompt}`,
+    `Archetype: ${request.archetype ?? "unspecified"}`,
+    `Categories: ${normalizeCategories(request.categories).join(", ") || "unspecified"}`,
+    `Seed: ${Math.max(0, Math.trunc(request.seed ?? 0))}`,
+    "Return only the tool call; no explanatory text is needed.",
+  ].join("\n");
+}
+
+function buildRepairPrompt(input: SynthesisRepairInput): string {
+  return [
+    "Repair the previous ModelSpec candidate so it can pass forge-validate.",
+    `Original user brief: ${input.request.prompt}`,
+    `Previous validator verdict: ${input.attempt.verdict}`,
+    `Diagnostics: ${reportSummary(input.attempt)}`,
+    `Previous candidate JSON: ${stableJson(input.candidate.contract)}`,
+    "Return the repaired full ModelSpec as the tool input.",
+  ].join("\n\n");
+}
+
+function promptHashForRepair(request: GenerationRequest, attempt: GenerationAttempt): string {
+  return sha256([request.prompt.trim(), attempt.contractHash, reportSummary(attempt)].join("\n"));
 }
 
 function pickExemplar(materials: GenerationMaterials, request: GenerationRequest): PatternExemplar {
@@ -533,6 +711,82 @@ export class TemplateSynthesisAdapter implements SynthesisAdapter {
   }
 }
 
+export class AnthropicSynthesisAdapter implements SynthesisAdapter {
+  private readonly baseUrl: string;
+  private readonly transport: AnthropicTransport;
+
+  constructor(
+    private readonly materials: GenerationMaterials,
+    private readonly apiKey: string,
+    options: {
+      baseUrl?: string;
+      transport?: AnthropicTransport;
+    } = {},
+  ) {
+    if (!apiKey.trim()) {
+      throw new Error("Anthropic generation requires an API key");
+    }
+    this.baseUrl = options.baseUrl ?? generationBaseUrl();
+    this.transport = options.transport ?? defaultAnthropicTransport;
+  }
+
+  async synthesize(context: GenerationContextResponse, request: GenerationRequest): Promise<SynthesisCandidate> {
+    return this.callClaude(context, request, synthesisModel(), buildSynthesisPrompt(request), promptHash(request.prompt));
+  }
+
+  async repair(input: SynthesisRepairInput): Promise<SynthesisCandidate | null> {
+    return this.callClaude(
+      input.context,
+      input.request,
+      repairModel(),
+      buildRepairPrompt(input),
+      promptHashForRepair(input.request, input.attempt),
+    );
+  }
+
+  private async callClaude(
+    context: GenerationContextResponse,
+    request: GenerationRequest,
+    model: AnthropicModelPin,
+    userPrompt: string,
+    hash: string,
+  ): Promise<SynthesisCandidate> {
+    const response = await this.transport({
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey,
+      request: {
+        model: model.modelId,
+        max_tokens: Math.min(DEFAULT_GENERATION_MAX_TOKENS, model.maxOutputTokens),
+        system: buildAnthropicSystem(this.materials, context),
+        messages: [{ role: "user", content: userPrompt }],
+        tools: [buildContractTool(this.materials)],
+        tool_choice: { type: "tool", name: CONTRACT_TOOL_NAME },
+      },
+    });
+    const contract = extractContractFromAnthropic(response);
+    if (isRecord(contract)) {
+      const meta = isRecord(contract.meta) ? contract.meta : {};
+      contract.meta = {
+        ...meta,
+        provenance: {
+          ...(isRecord(meta.provenance) ? meta.provenance : {}),
+          kind: "llm-generation",
+          promptHash: hash,
+          modelVersion: response.model ?? model.modelId,
+          seed: Math.max(0, Math.trunc(request.seed ?? 0)),
+        },
+      };
+    }
+    return {
+      contract,
+      modelId: response.model ?? model.modelId,
+      promptHash: hash,
+      stopReason: response.stop_reason,
+      usage: response.usage,
+    };
+  }
+}
+
 export async function buildDefaultSynthesisAdapter(): Promise<SynthesisAdapter> {
   return new TemplateSynthesisAdapter(await loadGenerationMaterials());
 }
@@ -543,6 +797,8 @@ export async function runGeneration(
   options: {
     materials?: GenerationMaterials;
     adapter?: SynthesisAdapter;
+    anthropicTransport?: AnthropicTransport;
+    anthropicBaseUrl?: string;
     validator?: GenerationValidator;
   } = {},
 ): Promise<GenerationResponse> {
@@ -568,7 +824,23 @@ export async function runGeneration(
     };
   }
 
-  const adapter: SynthesisAdapter = options.adapter ?? new TemplateSynthesisAdapter(materials);
+  let adapter: SynthesisAdapter;
+  if (options.adapter !== undefined) {
+    adapter = options.adapter;
+  } else if (request.provider === "anthropic") {
+    const apiKey = generationApiKey(request);
+    if (apiKey === null) {
+      throw new Error(
+        "Anthropic generation requires anthropicApiKey, x-forge-anthropic-key, or ANTHROPIC_API_KEY",
+      );
+    }
+    adapter = new AnthropicSynthesisAdapter(materials, apiKey, {
+      baseUrl: options.anthropicBaseUrl,
+      transport: options.anthropicTransport,
+    });
+  } else {
+    adapter = new TemplateSynthesisAdapter(materials);
+  }
   const validator = options.validator ?? runValidator;
   let candidate = await adapter.synthesize(context, request);
   const maxRepairs = repairLimit(request.maxRepairIterations);

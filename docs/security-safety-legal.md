@@ -19,7 +19,9 @@ deployment carries its ladder history. Provenance fields are validated
 
 **Surface minimization.** Compute workers have no public network surface (queue-driven
 only). One stateful service (Postgres) bounds the audit surface. Server secrets never
-reach the client; BYO Anthropic keys are client-held and per-request.
+reach the client; BYO Anthropic keys are client-held and sent per request to the
+generation endpoint, which forwards them to Anthropic but never persists or returns
+them.
 
 **Bridge safety = security.** The bridge never auto-arms; ladder transitions require
 deliberate physical confirmation; pairing-code auth for FORGE Link; the supervisor
