@@ -3,7 +3,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import type { GatewayDb } from "../src/db.js";
-import type { GenerationMaterials } from "../src/generation.js";
+import {
+  ANTHROPIC_MODEL_PINS,
+  type GenerationMaterials,
+  type GenerationValidator,
+  type SynthesisAdapter,
+} from "../src/generation.js";
 import { buildServer } from "../src/server.js";
 import { validatorBin } from "../src/validator.js";
 
@@ -218,6 +223,196 @@ test("generate context rejects malformed bodies at the schema boundary", async (
     payload: { prompt: "" },
   });
   assert.equal(res.statusCode, 400);
+  await app.close();
+});
+
+test("generate blocks before synthesis when approved catalog context is empty", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [null, "make a quad", 8]);
+      return { rows: [], rowCount: 0 } as never;
+    },
+  };
+  const adapter: SynthesisAdapter = {
+    async synthesize() {
+      throw new Error("synthesis should not run without approved catalog context");
+    },
+  };
+  const app = buildServer({ db, generationMaterials, generationAdapter: adapter });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: { prompt: "make a quad" },
+  });
+  assert.equal(res.statusCode, 409, res.body);
+  const body = res.json() as {
+    verdict: string;
+    contract: unknown;
+    attempts: unknown[];
+    blockedReasons: string[];
+  };
+  assert.equal(body.verdict, "blocked");
+  assert.equal(body.contract, null);
+  assert.deepEqual(body.attempts, []);
+  assert.ok(body.blockedReasons.some((reason) => reason.includes("no approved catalog")));
+  await app.close();
+});
+
+test("generate repairs validator diagnostics and admits the repaired contract", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [["motor"], "5 inch quad motor", 1]);
+      return {
+        rows: [
+          {
+            id: "cmp_motor_emax-eco2-2207-1900kv",
+            brand: "EMAX",
+            model: "ECO II 2207 1900KV",
+            rev: "1.0.0",
+            category: "motor",
+            dims: { diameterMm: 27.9 },
+            mass_g: "33.2",
+            elec: { kv: 1900 },
+            mech: { propShaft: "prop-shaft-M5" },
+            confidence: "1",
+            license_class: "open",
+            export_policy: "full-geometry-ok",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "9",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const adapter: SynthesisAdapter = {
+    async synthesize() {
+      return { contract: { bad: true }, modelId: "claude-fable-5", promptHash: "p1" };
+    },
+    async repair(input) {
+      assert.equal(input.attempt.phase, "synthesize");
+      assert.equal(input.attempt.diagnostics[0]?.check, "CTR-001");
+      return { contract: { ok: true }, modelId: "claude-opus-4-8", promptHash: "p1" };
+    },
+  };
+  const validator: GenerationValidator = async (contractJson) => {
+    const contract = JSON.parse(contractJson) as { ok?: boolean };
+    if (contract.ok) {
+      return { exitCode: 0, report: { verdict: "admitted", results: [] }, stderr: "" };
+    }
+    return {
+      exitCode: 1,
+      report: {
+        verdict: "rejected",
+        results: [{ check: "CTR-001", severity: "error", message: "missing ModelSpec fields" }],
+      },
+      stderr: "",
+    };
+  };
+  const app = buildServer({ db, generationMaterials, generationAdapter: adapter, generationValidator: validator });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: {
+      prompt: "5 inch quad motor",
+      categories: ["motor"],
+      limit: 1,
+      maxRepairIterations: 1,
+    },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json() as {
+    verdict: string;
+    contract: { ok?: boolean };
+    attempts: { phase: string; modelId: string; verdict: string; diagnostics: { check?: string }[] }[];
+  };
+  assert.equal(body.verdict, "admitted");
+  assert.deepEqual(body.contract, { ok: true });
+  assert.deepEqual(
+    body.attempts.map((attempt) => attempt.phase),
+    ["synthesize", "repair"],
+  );
+  assert.equal(body.attempts[0].modelId, "claude-fable-5");
+  assert.equal(body.attempts[0].diagnostics[0]?.check, "CTR-001");
+  assert.equal(body.attempts[1].modelId, "claude-opus-4-8");
+  assert.equal(body.attempts[1].verdict, "admitted");
+  await app.close();
+});
+
+test("generate persists exhausted repairs as a diagnostic draft", async () => {
+  const db: GatewayDb = {
+    async query(_text, params) {
+      assert.deepEqual(params, [null, "rough draft rover", 8]);
+      return {
+        rows: [
+          {
+            id: "cmp_rover_waveshare-ugv-rover-pt-pi5-ros2",
+            brand: "Waveshare",
+            model: "UGV Rover PT PI5 ROS2",
+            rev: "1.0.0",
+            category: "rover",
+            dims: { lengthMm: 265 },
+            mass_g: "1800",
+            elec: {},
+            mech: {},
+            confidence: "0.8",
+            license_class: "attribution",
+            export_policy: "attribution-manifest-required",
+            reviewer: "owner",
+            reviewed_at: "2026-06-13T19:00:00.000Z",
+            review_note: "owner checked",
+            price_count: "1",
+            citation_count: "6",
+          },
+        ],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const adapter: SynthesisAdapter = {
+    async synthesize() {
+      return { contract: { stillBad: true }, modelId: "claude-fable-5", promptHash: "p2" };
+    },
+  };
+  const validator: GenerationValidator = async (_contractJson, asDraft = false) => ({
+    exitCode: asDraft ? 0 : 1,
+    report: {
+      verdict: asDraft ? "draft" : "rejected",
+      results: [{ check: "CTR-004", severity: "error", message: "slot unresolved" }],
+    },
+    stderr: "",
+  });
+  const app = buildServer({ db, generationMaterials, generationAdapter: adapter, generationValidator: validator });
+  const res = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: { prompt: "rough draft rover", maxRepairIterations: 0 },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json() as { verdict: string; attempts: { phase: string; verdict: string }[] };
+  assert.equal(body.verdict, "draft");
+  assert.deepEqual(
+    body.attempts.map((attempt) => `${attempt.phase}:${attempt.verdict}`),
+    ["synthesize:rejected", "draft:draft"],
+  );
+  await app.close();
+});
+
+test("generate model pins expose the implementation-time Anthropic contract", async () => {
+  const app = buildServer({ generationMaterials });
+  const res = await app.inject({ method: "GET", url: "/v1/generate/models" });
+  assert.equal(res.statusCode, 200, res.body);
+  const body = res.json() as { models: typeof ANTHROPIC_MODEL_PINS };
+  assert.equal(body.models.find((pin) => pin.role === "synthesis")?.modelId, "claude-fable-5");
+  assert.equal(body.models.find((pin) => pin.role === "repair")?.modelId, "claude-opus-4-8");
+  assert.equal(body.models.find((pin) => pin.role === "edit")?.modelId, "claude-sonnet-4-6");
+  assert.equal(body.models.find((pin) => pin.role === "etl")?.modelId, "claude-haiku-4-5-20251001");
+  assert.equal(body.models.find((pin) => pin.role === "synthesis")?.inputUsdPerMTok, 10);
+  assert.equal(body.models.find((pin) => pin.role === "synthesis")?.outputUsdPerMTok, 50);
+  assert.deepEqual(body.models, ANTHROPIC_MODEL_PINS);
   await app.close();
 });
 

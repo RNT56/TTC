@@ -7,9 +7,14 @@ import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import {
+  ANTHROPIC_MODEL_PINS,
   buildGenerationContext,
+  runGeneration,
   type GenerationArchetype,
   type GenerationMaterials,
+  type GenerationRequest,
+  type GenerationValidator,
+  type SynthesisAdapter,
 } from "./generation.js";
 import {
   listReviewQueue,
@@ -24,6 +29,8 @@ export interface ServerOptions {
   db?: GatewayDb;
   reviewToken?: string | null;
   generationMaterials?: GenerationMaterials;
+  generationAdapter?: SynthesisAdapter;
+  generationValidator?: GenerationValidator;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -175,6 +182,44 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       try {
         const context = await buildGenerationContext(db, body, options.generationMaterials);
         return reply.send(context);
+      } catch (error) {
+        return reply.status(503).send(unavailable(error));
+      }
+    },
+  );
+
+  app.get("/v1/generate/models", async () => ({
+    models: ANTHROPIC_MODEL_PINS,
+  }));
+
+  app.post(
+    "/v1/generate",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            prompt: Type.String({ minLength: 1, maxLength: 4000 }),
+            archetype: Type.Optional(generationArchetypeSchema),
+            categories: Type.Optional(
+              Type.Array(Type.String({ minLength: 1, maxLength: 80 }), { maxItems: 16 }),
+            ),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
+            includePrefixText: Type.Optional(Type.Boolean()),
+            seed: Type.Optional(Type.Integer({ minimum: 0 })),
+            maxRepairIterations: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const result = await runGeneration(db, request.body as GenerationRequest, {
+          materials: options.generationMaterials,
+          adapter: options.generationAdapter,
+          validator: options.generationValidator,
+        });
+        return reply.status(result.verdict === "blocked" ? 409 : 200).send(result);
       } catch (error) {
         return reply.status(503).send(unavailable(error));
       }

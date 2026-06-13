@@ -92,17 +92,17 @@ Studio (TypeScript face):
 - [x] P3-010 — Thrust-table interpolation + proof row: table-over-estimate precedence is wired through catalog-backed HUD; proof motor carries a cited sparse 5x4.6/6S thrust-current table pending owner review.
 
 ### P4 — Text-to-CAD GA
-- [~] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft *(2026-06-13: context-building gateway endpoint live; synthesis/repair loop still pending)*
+- [~] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft *(2026-06-13: approved-catalog context endpoint plus deterministic/injectable `POST /v1/generate` synthesis, repair, and D14 draft fallback are live; live Claude tool-pass streaming and in-process WASM hot path still pending)*
 - [x] P4-002 — Prompt-cache prefix builder *(2026-06-13)*: schemars-emitted schema + engine docs + pattern exemplars (= XC-14)
 - [~] P4-003 — Retrieval: pgvector over catalog + pattern library; schema-true few-shot exemplars *(2026-06-13: approved-catalog SQL retrieval live; pgvector ranking + harvested pattern library still pending)*
 - [ ] P4-004 — Pattern-library harvester with consent flags (§2.2 terms) (= XC-13)
 - [ ] P4-005 — Conversational editing: NL → JSON-Patch (LLM side); **core patch path ✓** (RFC-6902 subset + shape gate, in facade); incremental validation + < 3 s budget pending
-- [ ] P4-006 — Provenance stamps: model version, prompt hash, seed, validator report on every generated artifact
+- [~] P4-006 — Provenance stamps: model version, prompt hash, seed, validator report on every generated artifact *(2026-06-13: generated contracts carry model/prompt/seed provenance and the route returns the validator report; persisted artifact audit rows remain pending)*
 - [ ] P4-007 — Share URLs (D4): read-only contract viewer, no account required
 - [ ] P4-008 — BYO Anthropic key + metered credits plumbing (D3); studio-free tier boundaries
 - [ ] P4-009 — Brief-25 corpus authored (25 canonical briefs across archetypes/scales/constraints) (= XC-15)
 - [ ] P4-010 — Brief-25 CI + dashboard: admission rate, repair iterations, diversity; re-run on prompt/schema/model change
-- [ ] P4-011 — Pin Anthropic model strings/limits/pricing from https://docs.claude.com/en/api/overview at implementation; record in DECISIONS
+- [x] P4-011 — Pin Anthropic model strings/limits/pricing from official Anthropic docs at implementation; record in DECISIONS *(2026-06-13: D26; exposed by `GET /v1/generate/models`)*
 - [ ] P4-012 — Draft-state UX in studio (= XC-16)
 - [ ] P4-013 — Environment generation reuses the pipeline with EnvSpec schema (delivers with P10; seam designed now)
 - [x] P4-014 — Catalog review operations before live generation (D25) *(2026-06-13)*: gateway exposes `GET /v1/reviews` and `PATCH /v1/reviews/:id` over the P3 `review_queue`; studio owner-review panel lists, filters, approves, and rejects rows against the local gateway. Audit notes, decision payloads, export-policy filters, and local/admin owner-token auth are live; full account Auth.js remains P11 platform scope.
