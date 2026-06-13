@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "FORGE gateway — thin Fastify API; spawns the forge-validate binary (process isolation + bit-equality with CI, D17).",
+  "description": "FORGE gateway \u2014 thin Fastify API; spawns the forge-validate binary (process isolation + bit-equality with CI, D17).",
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
@@ -18,5 +18,6 @@
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
-  }
+  },
+  "license": "SEE LICENSE IN ../../LICENSE"
 }

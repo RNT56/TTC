@@ -37,7 +37,7 @@ fast-math (D17)** — binary and WASM must be bit-identical (P1 exit criterion).
 
 Severity: `error` blocks admission; `warn` admits with notice.
 
-**GEO — geometry**
+**GEO — geometry** *(GEO-003 = BVH-confirmed mesh intersection, GEO-008 = sampled animation-frame sweep — both live 2026-06-12 via XC-09)*
 | ID | Check | Pass condition |
 |---|---|---|
 | GEO-001 | NaN/Inf scan | no NaN/Inf in baked vertices across animation frames |
@@ -57,6 +57,7 @@ Severity: `error` blocks admission; `warn` admits with notice.
 | CTR-005 | materials | a material on every part |
 | CTR-006 | lockfile | every componentRef resolves to an immutable catalog revision |
 | CTR-007 | collider budget | ≤ 8 convex pieces/node, ≤ 24/model (D7) |
+| CTR-008 *(provisional v0)* | driver params | `driver.params` validates against the archetype's schema (P2-003) |
 
 **BEH — behavior**
 | ID | Check | Pass condition |
@@ -87,14 +88,24 @@ built at all (unknown node, degenerate dims, unsupported mesh ref pre-P5).
 **RND — render** · RND-001 golden-image perceptual diff (canonical cameras) ·
 RND-002 blueprint pass renders cleanly.
 
-> **Implementation state (v0, 2026-06-12 — D21):** live in `crates/forge-validate`:
-> CTR-001..007, GEO-001 (static frame), GEO-003 (AABB proxy, warn), GEO-004..007,
-> SIM-001..003, BEH-001 (multirotor/rover), BEH-002, PRV-001 — with the diagnostic
-> JSON and report envelope below, the CLI (`run`/`bake`/`schema`), and the WASM
-> facade producing `target: "wasm"` reports. Animation-frame scans, the BVH joint
-> sweep, and the remaining rows land with their phases.
+> **Implementation state (v0.2, 2026-06-12 — D21):** live in `crates/forge-validate`:
+> CTR-001..008, GEO-001 (static frame), GEO-003 (AABB proxy, warn), GEO-004..007,
+> SIM-001..003, BEH-001 (multirotor/rover/**quadruped** 1 m smoke), BEH-002, PRV-001 —
+> with the diagnostic JSON and report envelope below, the CLI
+> (`run`/`bake`/`bom`/`schema`), and the WASM facade producing `target: "wasm"`
+> reports in-browser. Animation-frame scans, the BVH joint sweep, and the remaining
+> rows land with their phases.
 **XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
 bit-identical native↔WASM (detail: [`core-runtime.md`](core-runtime.md) §5).
+**CAT — catalog compatibility (P3-003; live 2026-06-12 in `forge-validate::compat`)** ·
+CAT-001 mount-pattern equality (stack parts vs frame) · CAT-002 voltage-window
+intersection (battery↔ESC↔motor) · CAT-003 current budget (discharge ≥ Σ motor
+max × 1.2) · CAT-004 prop tip clearance (v0 spacing form; geometric BVH = XC-09) ·
+CAT-005 TWR floors per preset (freestyle: reject < 1.8, warn < 2.5; thrust/AUW
+supplied by the caller from thrust tables) · CAT-006 connector matching
+(battery↔ESC). Every violation carries an explanation string — the reason a
+configurator card greys out. Rules run wherever the core runs (D17); they
+activate against real rows at catalog ingestion (P3-004).
 **LIF — lifecycle** · LIF-001 upgrade re-validation when lockfiles move (D5).
 **PRV — provenance** · PRV-001 prompt/seed hashes present on generated content ·
 PRV-002 training lineage present on policies/skills.

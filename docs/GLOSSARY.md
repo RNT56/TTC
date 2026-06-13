@@ -75,3 +75,5 @@ schema's single source) · **wasm-pack / wasm-bindgen** (the WASM facade build) 
 shell) · **serialport-rs** (Desktop serial plugin) · **TypeBox** (gateway route
 schemas) · **graphile-worker** (Postgres job queue) · **pgvector** (embedding
 search).
+
+**ForgedTTC** — the product name (D23, 2026-06-12); historical working codename FORGE. Code namespaces remain `forge-*`.

@@ -17,3 +17,8 @@ sha2 = { workspace = true }
 [[bin]]
 name = "forge-validate"
 path = "src/main.rs"
+
+# the report clock on the facade target (std::time traps on wasm32) — see
+# the `clock` module; judgment never depends on it (D17)
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"

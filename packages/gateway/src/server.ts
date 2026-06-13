@@ -4,7 +4,8 @@
 import { Type } from "@sinclair/typebox";
 import Fastify, { type FastifyInstance } from "fastify";
 import { existsSync } from "node:fs";
-import { runValidator, validatorBin } from "./validator.js";
+import { execFile } from "node:child_process";
+import { runBake, runBom, runValidator, validatorBin } from "./validator.js";
 
 export function buildServer(): FastifyInstance {
   const app = Fastify({ logger: false });
@@ -21,15 +22,15 @@ export function buildServer(): FastifyInstance {
     {
       schema: {
         body: Type.Object(
-          { contract: Type.Unknown() },
+          { contract: Type.Unknown(), asDraft: Type.Optional(Type.Boolean()) },
           { additionalProperties: false },
         ),
       },
     },
     async (request, reply) => {
-      const { contract } = request.body as { contract: unknown };
+      const { contract, asDraft } = request.body as { contract: unknown; asDraft?: boolean };
       const json = typeof contract === "string" ? contract : JSON.stringify(contract);
-      const result = await runValidator(json);
+      const result = await runValidator(json, asDraft ?? false);
       if (result.exitCode === -1 || result.report === null) {
         return reply.status(503).send({
           error: "validator unavailable",
@@ -38,9 +39,67 @@ export function buildServer(): FastifyInstance {
       }
       const verdict = (result.report as { verdict?: string }).verdict;
       // Admission gate: the sovereign validator's verdict drives the status.
-      return reply.status(verdict === "admitted" ? 200 : 422).send(result.report);
+      // A draft is a SUCCESSFUL save-as-draft (D14): the document persists as
+      // editable with its diagnostics, but can never train/export/share —
+      // enforced at those surfaces as they land (P4+/P7).
+      return reply.status(verdict === "rejected" ? 422 : 200).send(result.report);
     },
   );
+
+  app.post(
+    "/v1/bake",
+    {
+      schema: {
+        body: Type.Object({ contract: Type.Unknown() }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      const { contract } = request.body as { contract: unknown };
+      const json = typeof contract === "string" ? contract : JSON.stringify(contract);
+      const result = await runBake(json);
+      if (result.exitCode === -1 || result.report === null) {
+        return reply.status(result.exitCode === -1 ? 503 : 422).send({
+          error: "bake failed",
+          detail: result.stderr.slice(0, 500),
+        });
+      }
+      return reply.send(result.report);
+    },
+  );
+
+  app.post(
+    "/v1/bom",
+    {
+      schema: {
+        body: Type.Object({ contract: Type.Unknown() }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      const { contract } = request.body as { contract: unknown };
+      const json = typeof contract === "string" ? contract : JSON.stringify(contract);
+      const result = await runBom(json);
+      if (result.exitCode === -1 || result.report === null) {
+        return reply.status(result.exitCode === -1 ? 503 : 422).send({
+          error: "bom failed",
+          detail: result.stderr.slice(0, 500),
+        });
+      }
+      return reply.send(result.report);
+    },
+  );
+
+  // the schemars-emitted JSON Schema — the single source all clients derive
+  // from (D16); served for tooling and the generation prompt prefix (P4).
+  app.get("/v1/schema", async (_request, reply) => {
+    const schema = await new Promise<string | null>((resolve) => {
+      execFile(validatorBin(), ["schema"], { timeout: 15_000, maxBuffer: 8 * 1024 * 1024 },
+        (error, stdout) => resolve(error ? null : String(stdout)));
+    });
+    if (schema === null) {
+      return reply.status(503).send({ error: "validator unavailable" });
+    }
+    return reply.type("application/schema+json").send(schema);
+  });
 
   return app;
 }

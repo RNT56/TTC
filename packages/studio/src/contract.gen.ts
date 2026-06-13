@@ -95,12 +95,29 @@ export interface ModelSpec {
   slots?: Slot[];
 }
 /**
- * Staged disassembly grouping *(proposed shape pending PRE-002)*.
+ * Staged disassembly: one row per kinematic-chain node, reconciled to the
+ * prototype's chains table `[node, dir, dist, t0, t1]` (PRE-002).
  */
 export interface Chain {
+  /**
+   * Node-local explode direction.
+   *
+   * @minItems 3
+   * @maxItems 3
+   */
+  dir?: [number, number, number] | null;
   id: string;
+  /**
+   * Travel distance, meters.
+   */
+  mag?: number | null;
   nodes: string[];
   stage: number;
+  /**
+   * Window within the global explode phase.
+   */
+  t0?: number | null;
+  t1?: number | null;
 }
 export interface Driver {
   archetype: Archetype;
@@ -162,6 +179,7 @@ export interface Part {
    * Skeleton node this part attaches to.
    */
   node: string;
+  pose?: PartPose | null;
   /**
    * Polygon-offset hint for true coplanar decals only (plan §7.2).
    */
@@ -215,6 +233,27 @@ export interface LoftStation {
 export interface MassSpec {
   densityKgm3?: number | null;
   valueG?: number | null;
+}
+/**
+ * Part-local pose applied before node placement (prototype `P(node, mesh,
+ * {p, r, s})` — the executable spec). Rotation composes T·Ry·Rx·Rz·S.
+ */
+export interface PartPose {
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  p?: [number, number, number];
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  r?: [number, number, number];
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  s?: [number, number, number];
 }
 export interface Port {
   /**

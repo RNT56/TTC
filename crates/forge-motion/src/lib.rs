@@ -7,10 +7,79 @@
 
 #![forbid(unsafe_code)]
 
+pub mod biped;
+pub mod fpv;
+pub mod params;
+pub mod quadruped;
+
 use forge_contract::{Archetype, ModelSpec};
 
 /// The canonical fixed timestep (s): 120 Hz driver tick.
 pub const DT: f64 = 1.0 / 120.0;
+
+// ---------------------------------------------------------------------------
+// prototype-convention pose channels (PRE-002 oracle)
+//   Node local matrix = T(pos + off) · Ry · Rx · Rz — the monolith's nm().
+//   Oracle drivers (biped, fpv) write these per tick; the face bakes them.
+// ---------------------------------------------------------------------------
+
+/// Per-node animation channels: intrinsic euler rotation (applied Ry·Rx·Rz)
+/// and a translation offset added to the node's skeleton `pos`.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct NodePose {
+    pub rot: [f64; 3],
+    pub off: [f64; 3],
+}
+
+/// Reusable per-node pose storage in skeleton declaration order. Reset and
+/// rewritten every tick — no allocation in the tick path (D17).
+#[derive(Debug, Clone)]
+pub struct PoseBuffer {
+    names: Vec<String>,
+    poses: Vec<NodePose>,
+}
+
+impl PoseBuffer {
+    pub fn from_spec(spec: &ModelSpec) -> Self {
+        PoseBuffer {
+            names: spec.skeleton.iter().map(|n| n.name.clone()).collect(),
+            poses: vec![NodePose::default(); spec.skeleton.len()],
+        }
+    }
+
+    pub fn names(&self) -> &[String] {
+        &self.names
+    }
+
+    pub fn poses(&self) -> &[NodePose] {
+        &self.poses
+    }
+
+    pub fn get(&self, name: &str) -> Option<&NodePose> {
+        Some(&self.poses[self.idx(name)?])
+    }
+
+    fn idx(&self, name: &str) -> Option<usize> {
+        self.names.iter().position(|n| n == name)
+    }
+
+    fn reset(&mut self) {
+        for p in &mut self.poses {
+            *p = NodePose::default();
+        }
+    }
+}
+
+/// The prototype's input convention (`inp` in the monolith): mx strafe/roll,
+/// mz forward/pitch, yaw rate, thr climb, run gait modifier. All −1..1.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct StickInput {
+    pub mx: f64,
+    pub mz: f64,
+    pub yaw: f64,
+    pub thr: f64,
+    pub run: bool,
+}
 
 // ---------------------------------------------------------------------------
 // servo layer — critically damped second order (Appendix C)
@@ -64,9 +133,9 @@ pub fn leg_ik(l1: f64, l2: f64, dy: f64, dz: f64) -> LegPose {
     let reach_max = (l1 + l2) * 0.99999;
     let d = (dy * dy + dz * dz).sqrt().min(reach_max).max(1e-9);
     let cos_beta = ((d * d - l1 * l1 - l2 * l2) / (2.0 * l1 * l2)).clamp(-1.0, 1.0);
-    let beta = cos_beta.acos();
-    let gamma = dz.atan2(-dy);
-    let delta = (l2 * beta.sin()).atan2(l1 + l2 * beta.cos());
+    let beta = forge_num::acos(cos_beta);
+    let gamma = forge_num::atan2(dz, -dy);
+    let delta = forge_num::atan2(l2 * forge_num::sin(beta), l1 + l2 * forge_num::cos(beta));
     let hip = -gamma - delta;
     LegPose {
         hip_pitch: hip,
@@ -82,8 +151,8 @@ pub fn leg_ik(l1: f64, l2: f64, dy: f64, dz: f64) -> LegPose {
 pub fn leg_fk(l1: f64, l2: f64, pose: &LegPose) -> (f64, f64) {
     let t1 = pose.hip_pitch;
     let knee_dir = t1 + pose.knee;
-    let dy = -(l1 * t1.cos() + l2 * knee_dir.cos());
-    let dz = -(l1 * t1.sin() + l2 * knee_dir.sin());
+    let dy = -(l1 * forge_num::cos(t1) + l2 * forge_num::cos(knee_dir));
+    let dz = -(l1 * forge_num::sin(t1) + l2 * forge_num::sin(knee_dir));
     (dy, dz)
 }
 
@@ -334,15 +403,18 @@ impl RoverDriver {
         let left = v - w * self.wheelbase_m / 2.0;
         let right = v + w * self.wheelbase_m / 2.0;
         self.pose[2] += w * dt;
-        self.pose[0] += v * self.pose[2].sin() * dt;
-        self.pose[1] += v * self.pose[2].cos() * dt;
+        self.pose[0] += v * forge_num::sin(self.pose[2]) * dt;
+        self.pose[1] += v * forge_num::cos(self.pose[2]) * dt;
         (left, right)
     }
 }
 
-/// Smoke-level driver dispatch used by BEH-001 (full archetype set lands P2).
+/// Smoke-level driver dispatch used by BEH-001.
 pub fn supported_archetype(a: &Archetype) -> bool {
-    matches!(a, Archetype::Multirotor | Archetype::Rover)
+    matches!(
+        a,
+        Archetype::Multirotor | Archetype::Rover | Archetype::Quadruped | Archetype::Biped
+    )
 }
 
 #[cfg(test)]

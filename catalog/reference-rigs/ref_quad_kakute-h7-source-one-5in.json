@@ -1,0 +1,51 @@
+{
+  "id": "ref_quad_kakute-h7-source-one-5in",
+  "name": "P3 Reference 5-inch ArduPilot-capable Quad",
+  "class": "multirotor",
+  "purpose": "Default P3 D12 reference rig for ArduPilot-capable 5-inch quad validation.",
+  "decisionId": "D12-P3-REFERENCE-RIGS",
+  "items": [
+    {
+      "role": "frame",
+      "componentId": "cmp_frame_tbs-source-one-v6-5in",
+      "revision": "1.0.0",
+      "quantity": 1,
+      "required": true
+    },
+    {
+      "role": "flight-controller",
+      "componentId": "cmp_fc_holybro-kakute-h7-v15",
+      "revision": "1.0.0",
+      "quantity": 1,
+      "required": true
+    },
+    {
+      "role": "esc",
+      "componentId": "cmp_esc_holybro-tekko32-f4-4in1-50a",
+      "revision": "1.0.0",
+      "quantity": 1,
+      "required": true
+    },
+    {
+      "role": "motor",
+      "componentId": "cmp_motor_emax-eco2-2207-1900kv",
+      "revision": "1.0.0",
+      "quantity": 4,
+      "required": true
+    },
+    {
+      "role": "prop",
+      "componentId": "cmp_prop_gemfan-hurricane-51466-v2",
+      "revision": "1.0.0",
+      "quantity": 4,
+      "required": true
+    },
+    {
+      "role": "battery",
+      "componentId": "cmp_batt_cnhl-black-4s-1500",
+      "revision": "1.0.0",
+      "quantity": 1,
+      "required": true
+    }
+  ]
+}

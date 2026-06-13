@@ -1,23 +1,51 @@
 from forge_workers.etl.citations import Citation, check_citations
+from forge_workers.etl.ingest import ingest_fixture
 
 
 def motor_row():
     return {
+        "id": "cmp_motor_example-x2207",
         "brand": "ExampleCo",
         "model": "X2207",
-        "rev": "v2",
-        "mass_g": 32.4,
-        "elec": {"kv": 1750},
-        "mech": {"mount_pattern": "motor-mount-16x16-M3"},
-        "license_id": "lic_exampleco_datasheet",
+        "category": "motor",
+        "massG": 32.4,
+        "elec": {"kv": 1750, "vMin": 11.1, "vMax": 25.2, "maxCurrentA": 38.0},
+        "mech": {"mountPattern": "motor-16x16-M3", "propShaft": "prop-shaft-M5"},
+        "license": {
+            "id": "lic_exampleco_datasheet",
+            "class": "open",
+            "terms": "public datasheet",
+            "sourceUrl": "https://example.com/datasheet.pdf",
+            "exportPolicy": "full-geometry-ok",
+        },
+        "prices": [
+            {
+                "vendor": "Example Store",
+                "sku": "X2207-1750",
+                "url": "https://example.com/x2207",
+                "amount": 19.99,
+                "currency": "USD",
+                "fetchedAt": "2026-06-13",
+                "region": "US",
+                "purchasable": True,
+            }
+        ],
+        "confidence": 0.97,
     }
 
 
 def full_citations():
+    url = "https://example.com/datasheet.pdf"
     return [
-        Citation("mass_g", "https://example.com/datasheet.pdf", "claude-etl", 0.97),
-        Citation("elec.kv", "https://example.com/datasheet.pdf", "claude-etl", 0.99),
-        Citation("mech.mount_pattern", "https://example.com/datasheet.pdf", "claude-etl", 0.95),
+        Citation("massG", url, "fixture-etl", 0.97),
+        Citation("elec.kv", url, "fixture-etl", 0.99),
+        Citation("elec.vMin", url, "fixture-etl", 0.99),
+        Citation("elec.vMax", url, "fixture-etl", 0.99),
+        Citation("elec.maxCurrentA", url, "fixture-etl", 0.99),
+        Citation("mech.mountPattern", url, "fixture-etl", 0.95),
+        Citation("mech.propShaft", url, "fixture-etl", 0.95),
+        Citation("license", url, "fixture-etl", 0.97),
+        Citation("prices", url, "fixture-etl", 0.97),
     ]
 
 
@@ -36,7 +64,7 @@ def test_uncited_field_blocks_publication():
 
 def test_missing_license_is_non_optional_d10():
     row = motor_row()
-    row.pop("license_id")
+    row.pop("license")
     verdict = check_citations("motor", row, full_citations())
     assert not verdict.publishable
     assert any("D10" in p for p in verdict.problems)
@@ -44,10 +72,36 @@ def test_missing_license_is_non_optional_d10():
 
 def test_low_confidence_goes_to_review():
     cites = full_citations()
-    cites[0] = Citation("mass_g", cites[0].source_url, "claude-etl", 0.4)
+    cites[0] = Citation("massG", cites[0].source_url, "fixture-etl", 0.4)
     verdict = check_citations("motor", motor_row(), cites)
     assert verdict.needs_review
     assert not verdict.publishable
+
+
+def test_missing_price_blocks_p3_bom_publication():
+    row = motor_row()
+    row["prices"] = []
+    verdict = check_citations("motor", row, full_citations())
+    assert not verdict.publishable
+    assert any("price" in p for p in verdict.problems)
+
+
+def test_fixture_ingest_emits_review_queue_for_low_confidence_row():
+    row = motor_row()
+    row["confidence"] = 0.7
+    row["review"] = "owner verification required"
+    row["citations"] = {
+        c.field_path: {
+            "value": "quoted",
+            "sources": [c.source_url],
+            "accessed": "2026-06-13",
+        }
+        for c in full_citations()
+    }
+    out = ingest_fixture({"canonicalRow": row})
+    assert out["needsReview"]
+    assert out["reviewQueue"]
+    assert out["reviewQueue"][0]["artifact_id"] == row["id"]
 
 
 def test_queue_registry_dispatch():

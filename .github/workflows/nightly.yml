@@ -1,0 +1,46 @@
+name: nightly
+# Heavier gates that would add latency or flake risk to every PR: the
+# parity gallery (headless chromium + SwiftShader) and code coverage.
+on:
+  schedule:
+    - cron: "20 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  parity-gallery:
+    name: golden-scene parity gallery (P1-015)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - name: install headless chromium
+        run: pnpm exec playwright install chromium
+      - name: run the gallery (structural gate edge-F1 >= 0.85, <= 40 draws)
+        run: node scripts/parity-gallery.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-gallery
+          path: artifacts/parity
+
+  coverage:
+    name: core coverage (informational)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - name: install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: coverage summary
+        run: cargo llvm-cov --workspace --summary-only

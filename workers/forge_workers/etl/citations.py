@@ -9,12 +9,44 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-#: Fields that must be cited for a component row to be publishable, per category.
+#: Fields that must be cited for a canonical component row to be publishable.
 REQUIRED_CITED_FIELDS: dict[str, tuple[str, ...]] = {
-    "motor": ("mass_g", "elec.kv", "mech.mount_pattern"),
-    "battery": ("mass_g", "elec.capacity_mah", "elec.cells_min", "elec.cells_max"),
-    "prop": ("mass_g", "dims.diameter_in", "dims.pitch_in"),
-    "frame": ("mass_g", "mech.mount_pattern"),
+    "motor": (
+        "massG",
+        "elec.kv",
+        "elec.vMin",
+        "elec.vMax",
+        "elec.maxCurrentA",
+        "mech.mountPattern",
+        "mech.propShaft",
+        "license",
+        "prices",
+    ),
+    "battery": (
+        "massG",
+        "dims",
+        "elec.capacityMah",
+        "elec.vMin",
+        "elec.vMax",
+        "elec.maxDischargeA",
+        "elec.connectors",
+        "license",
+        "prices",
+    ),
+    "prop": ("massG", "mech.propDiameterIn", "mech.pitchIn", "mech.blades", "license", "prices"),
+    "frame": ("massG", "dims", "mech.mountPattern", "mech.motorSpacingMm", "license", "prices"),
+    "esc": (
+        "massG",
+        "dims",
+        "elec.vMin",
+        "elec.vMax",
+        "elec.maxCurrentA",
+        "mech.mountPattern",
+        "license",
+        "prices",
+    ),
+    "fc": ("massG", "dims", "elec.vMin", "elec.vMax", "mech.mountPattern", "license", "prices"),
+    "rover": ("massG", "dims", "license", "prices"),
 }
 
 #: Extractions below this confidence go to the human review queue.
@@ -36,9 +68,11 @@ class IngestVerdict:
     problems: list[str] = field(default_factory=list)
 
 
-def check_citations(category: str,
-                    row: dict[str, Any],
-                    citations: list[Citation]) -> IngestVerdict:
+def check_citations(
+    category: str,
+    row: dict[str, Any],
+    citations: list[Citation],
+) -> IngestVerdict:
     """Gate a candidate component row on citation completeness + confidence."""
     problems: list[str] = []
     cited = {c.field_path for c in citations}
@@ -54,10 +88,17 @@ def check_citations(category: str,
         elif path not in cited:
             problems.append(f"uncited field: {path}")
 
-    if "license_id" not in row or not row["license_id"]:
+    license_row = row.get("license")
+    if not isinstance(license_row, dict) or not license_row.get("id") or not license_row.get("class"):
         problems.append("license ledger entry is non-optional (D10)")
 
+    prices = row.get("prices")
+    if not isinstance(prices, list) or not any(p.get("purchasable") for p in prices if isinstance(p, dict)):
+        problems.append("purchasable price/SKU is required for P3 BOM export")
+
     low = [c.field_path for c in citations if c.confidence < REVIEW_CONFIDENCE_FLOOR]
+    if float(row.get("confidence", 0.0)) < REVIEW_CONFIDENCE_FLOOR:
+        low.append("row.confidence")
     needs_review = bool(low)
     if low:
         problems.append(

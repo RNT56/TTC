@@ -1,0 +1,37 @@
+name: release
+# Tag v* (or dispatch) → the static forge-validate binary + the wasm facade
+# package as downloadable artifacts. Publication to crates.io/npm (P2-001)
+# remains a separate, owner-keyed step.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: release validator binary
+        run: |
+          cargo build --release -p forge-validate
+          mkdir -p dist-release
+          cp target/release/forge-validate dist-release/forge-validate-linux-x86_64
+          cp LICENSE NOTICE LICENSES/Apache-2.0.txt dist-release/
+      - name: wasm facade package
+        run: |
+          pnpm exec wasm-pack build crates/forge-wasm --target web --release --out-dir dist-release/forge-wasm-pkg --out-name forge_wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forgedttc-release
+          path: dist-release

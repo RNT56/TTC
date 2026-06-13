@@ -12,7 +12,55 @@ use forge_contract::{Archetype, CatalogSource, CollisionPolicy, ModelSpec, Prove
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::time::{SystemTime, UNIX_EPOCH};
+// ---------------------------------------------------------------------------
+// report clock — provenance metadata only; judgment NEVER depends on it (D17).
+// std::time::{SystemTime, Instant} trap (`unreachable`) on
+// wasm32-unknown-unknown, so the facade target reads the host clock through
+// js-sys — the same glue the facade already requires.
+// ---------------------------------------------------------------------------
+
+pub mod compat;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod file_catalog;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod clock {
+    use std::time::{Instant, SystemTime, UNIX_EPOCH};
+
+    pub fn now_unix_s() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+    }
+
+    pub struct Stopwatch(Instant);
+    impl Stopwatch {
+        pub fn start() -> Self {
+            Stopwatch(Instant::now())
+        }
+        pub fn elapsed_ms(&self) -> u64 {
+            self.0.elapsed().as_millis() as u64
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+mod clock {
+    pub fn now_unix_s() -> u64 {
+        (js_sys::Date::now() / 1000.0) as u64
+    }
+
+    pub struct Stopwatch(f64);
+    impl Stopwatch {
+        pub fn start() -> Self {
+            Stopwatch(js_sys::Date::now())
+        }
+        pub fn elapsed_ms(&self) -> u64 {
+            (js_sys::Date::now() - self.0).max(0.0) as u64
+        }
+    }
+}
 
 pub const VALIDATOR_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Per-model face budget (default quality tier) — provisional until P1 profiling.
@@ -85,6 +133,10 @@ impl Diagnostic {
         self.limit = Some(v);
         self
     }
+    fn phase(mut self, t: f64) -> Self {
+        self.phase = Some(t);
+        self
+    }
     fn units(mut self, u: &str) -> Self {
         self.units = Some(u.into());
         self
@@ -127,8 +179,12 @@ pub struct Report {
 #[serde(rename_all = "camelCase")]
 pub struct Counts {
     pub parts: usize,
+    /// Polygon faces — the monolith's counting (P0-004 equivalence quantity).
     pub faces: usize,
+    /// Polygon-mesh vertices (P0-004 equivalence quantity).
     pub vertices: usize,
+    /// Render triangles (GEO-004 budget quantity).
+    pub triangles: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -161,11 +217,8 @@ impl CatalogSource for EmptyCatalog {
 
 /// Run the full v0 suite over a raw JSON document.
 pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Report {
-    let started_at = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    let t0 = std::time::Instant::now();
+    let started_at = clock::now_unix_s();
+    let t0 = clock::Stopwatch::start();
 
     let mut results: Vec<Diagnostic> = Vec::new();
     let mut hud = None;
@@ -190,10 +243,11 @@ pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Repor
             if let Some(b) = &baked {
                 counts = Counts {
                     parts: b.parts.len(),
-                    faces: b.total_faces,
+                    faces: b.total_polygons,
                     vertices: b.total_vertices,
+                    triangles: b.total_faces,
                 };
-                match forge_sim::derive_hud(&spec, b) {
+                match forge_sim::derive_hud_with_catalog(&spec, b, catalog) {
                     Ok(h) => hud = Some(h),
                     Err(e) => diags.push(
                         Diagnostic::warn("SIM-001", format!("powertrain_hud_unavailable: {e}"))
@@ -222,7 +276,7 @@ pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Repor
         seed: opts.seed,
         target: opts.target.to_string(),
         started_at,
-        duration_ms: t0.elapsed().as_millis() as u64,
+        duration_ms: t0.elapsed_ms(),
         results,
         verdict,
         hud,
@@ -315,6 +369,79 @@ fn run_checks(
         );
     }
 
+    // ---- SIM-004 (provisional): inline sim vs equipped catalog rows —
+    // when a slot pins to a row, the contract's inline sim numbers must
+    // agree with the datasheet (>5 % drift warns; reconciliation is the
+    // configurator equip flow's job, never a silent override).
+    for slot in &spec.slots {
+        for v in &slot.variants {
+            let Some(component_ref) = &v.component_ref else {
+                continue;
+            };
+            let Some(pin) = spec.lockfile.get(component_ref) else {
+                continue;
+            };
+            let Some((id, _)) = pin.rsplit_once('@') else {
+                continue;
+            };
+            let Some(row) = catalog.row_summary(id) else {
+                continue;
+            };
+            let drift = |a: f64, b: f64| (a - b).abs() / b.max(1e-9);
+            match row.category.as_str() {
+                "motor" => {
+                    if let Some(row_kv) = row.kv {
+                        let mut seen_kv: Vec<f64> = Vec::new();
+                        for m in &spec.sim.motors {
+                            if let Some(kv) = m.kv {
+                                if seen_kv.contains(&kv) {
+                                    continue;
+                                }
+                                seen_kv.push(kv);
+                                if drift(kv, row_kv) > 0.05 {
+                                    d.push(
+                                        Diagnostic::warn(
+                                            "SIM-004",
+                                            format!(
+                                                "catalog_drift: inline motor kv {kv:.0} vs equipped '{id}' datasheet {row_kv:.0}",
+                                            ),
+                                        )
+                                        .subject("slot", &slot.id)
+                                        .observed(kv)
+                                        .limit(serde_json::Value::from(row_kv))
+                                        .hint("reconcile via the equip flow — inline sim must match the equipped component"),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                "battery" => {
+                    if let (Some(row_cap), Some(batt)) =
+                        (row.capacity_mah, spec.sim.battery.as_ref())
+                    {
+                        let cap = batt.capacity_mah;
+                        if drift(cap, row_cap) > 0.05 {
+                            d.push(
+                                Diagnostic::warn(
+                                    "SIM-004",
+                                    format!(
+                                        "catalog_drift: inline battery {cap:.0} mAh vs equipped '{id}' datasheet {row_cap:.0} mAh",
+                                    ),
+                                )
+                                .subject("slot", &slot.id)
+                                .observed(cap)
+                                .limit(serde_json::Value::from(row_cap))
+                                .hint("reconcile via the equip flow — inline sim must match the equipped component"),
+                            );
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
     // ---- CTR-007 collider budget (D7)
     let budget = &spec.sim.colliders.budget;
     let mut per_node: BTreeMap<&str, u32> = BTreeMap::new();
@@ -347,6 +474,15 @@ fn run_checks(
             .observed(total as f64)
             .limit(serde_json::json!(budget.per_model))
             .hint("collapse colliders into per-node compounds (D7)"),
+        );
+    }
+
+    // ---- CTR-008 (provisional v0): driver params validate against the
+    // archetype's schema (P2-003)
+    if let Err(e) = forge_motion::params::check_driver_params(spec) {
+        d.push(
+            Diagnostic::error("CTR-008", format!("driver_params: {e}"))
+                .hint("archetype param schemas live in forge-motion::params"),
         );
     }
 
@@ -445,16 +581,161 @@ fn run_checks(
         }
     }
 
-    // ---- GEO-003 (v0 proxy): static-pose AABB interpenetration, warn-level.
-    for (i, j) in forge_geometry::aabb_interferences(&baked, 0.0005) {
-        d.push(
-            Diagnostic::warn(
-                "GEO-003",
-                format!("aabb_overlap: parts {i} and {j} interpenetrate (static pose)"),
-            )
-            .subject("part", i.to_string())
-            .hint("v0 AABB proxy — the BVH joint-limit sweep lands P1+ (XC-09)"),
-        );
+    // ---- GEO-003 (XC-09): AABB candidacy → BVH tri-tri CONFIRMATION.
+    // Confirmed mesh intersections warn (deliberate interpenetration is the
+    // prototype's design language); AABB-only candidates stay silent now
+    // that real geometry answers. Animation-frame sweep: GEO-008 below.
+    let mut static_pairs: std::collections::BTreeSet<(usize, usize)> =
+        std::collections::BTreeSet::new();
+    {
+        let candidates = forge_geometry::aabb_interferences(&baked, 0.0005);
+        let mut bvhs: BTreeMap<usize, forge_geometry::collide::PartBvh> = BTreeMap::new();
+        for (i, j) in candidates {
+            for k in [i, j] {
+                bvhs.entry(k).or_insert_with(|| {
+                    let p = &baked.parts[k];
+                    let world = baked.node_world.get(&p.node).copied().unwrap_or_else(|| {
+                        let mut m = [0.0; 16];
+                        m[0] = 1.0;
+                        m[5] = 1.0;
+                        m[10] = 1.0;
+                        m[15] = 1.0;
+                        m
+                    });
+                    forge_geometry::collide::PartBvh::build(&p.mesh, &world)
+                });
+            }
+            if bvhs[&i].intersects(&bvhs[&j]) {
+                static_pairs.insert((i, j));
+                d.push(
+                    Diagnostic::warn(
+                        "GEO-003",
+                        format!("mesh_intersect: parts {i} and {j} interpenetrate (static pose, BVH-confirmed)"),
+                    )
+                    .subject("part", i.to_string())
+                    .hint("deliberate overlap is the design language; confirmed by triangle intersection (XC-09)"),
+                );
+            }
+        }
+    }
+
+    // ---- GEO-008 (provisional, XC-09): sampled animation-frame sweep —
+    // tick the real driver, pose the skeleton, and report pairs that begin
+    // to interpenetrate IN MOTION (static pairs are already recorded above).
+    {
+        use forge_motion::{StickInput, DT};
+        type PoseMap = BTreeMap<String, ([f64; 3], [f64; 3])>;
+        let mut frames: Vec<(f64, PoseMap)> = Vec::new();
+        let collect = |poses: &forge_motion::PoseBuffer| {
+            poses
+                .names()
+                .iter()
+                .cloned()
+                .zip(poses.poses().iter().map(|p| (p.rot, p.off)))
+                .collect::<PoseMap>()
+        };
+        match spec.meta.archetype {
+            Archetype::Biped => {
+                let mut drv = forge_motion::biped::BipedDriver::new(spec);
+                let input = StickInput {
+                    mz: 1.0,
+                    ..Default::default()
+                };
+                for step in 0..240u32 {
+                    let t = (step + 1) as f64 * DT;
+                    drv.tick(&input, [0.0, 0.0, 1.0], DT, t);
+                    if (step + 1) % 30 == 0 {
+                        frames.push((t, collect(&drv.poses)));
+                    }
+                }
+            }
+            Archetype::Multirotor => {
+                let mut drv = forge_motion::fpv::FpvDriver::new(spec);
+                let input = StickInput {
+                    mz: 0.5,
+                    thr: 0.3,
+                    ..Default::default()
+                };
+                for step in 0..240u32 {
+                    let t = (step + 1) as f64 * DT;
+                    drv.tick(&input, DT, t);
+                    if (step + 1) % 30 == 0 {
+                        frames.push((t, collect(&drv.poses)));
+                    }
+                }
+            }
+            _ => {}
+        }
+        if !frames.is_empty() {
+            let locals: Vec<([f64; 3], [f64; 3])> = baked
+                .parts
+                .iter()
+                .map(|p| forge_geometry::collide::mesh_local_aabb(&p.mesh))
+                .collect();
+            let mut seen = static_pairs.clone();
+            let mut hits: Vec<(usize, usize, f64)> = Vec::new();
+            for (t, poses) in &frames {
+                let Ok(world) = forge_geometry::node_world_posed(spec, poses) else {
+                    continue;
+                };
+                let mats: Vec<forge_geometry::Mat4> = baked
+                    .parts
+                    .iter()
+                    .map(|p| {
+                        world
+                            .get(&p.node)
+                            .copied()
+                            .unwrap_or_else(forge_geometry::identity)
+                    })
+                    .collect();
+                let boxes: Vec<([f64; 3], [f64; 3])> = (0..baked.parts.len())
+                    .map(|i| forge_geometry::collide::transformed_aabb(locals[i], &mats[i]))
+                    .collect();
+                let mut bvhs: BTreeMap<usize, forge_geometry::collide::PartBvh> = BTreeMap::new();
+                for i in 0..baked.parts.len() {
+                    for j in (i + 1)..baked.parts.len() {
+                        if baked.parts[i].node == baked.parts[j].node
+                            || seen.contains(&(i, j))
+                            || !forge_geometry::collide::aabbs_overlap(boxes[i], boxes[j], 0.0005)
+                        {
+                            continue;
+                        }
+                        for k in [i, j] {
+                            bvhs.entry(k).or_insert_with(|| {
+                                forge_geometry::collide::PartBvh::build(
+                                    &baked.parts[k].mesh,
+                                    &mats[k],
+                                )
+                            });
+                        }
+                        if bvhs[&i].intersects(&bvhs[&j]) {
+                            seen.insert((i, j));
+                            hits.push((i, j, *t));
+                        }
+                    }
+                }
+            }
+            for (i, j, t) in hits.iter().take(8) {
+                d.push(
+                    Diagnostic::warn(
+                        "GEO-008",
+                        format!("anim_intersect: parts {i} and {j} first interpenetrate at t = {t:.2} s (sampled drive sweep)"),
+                    )
+                    .subject("part", i.to_string())
+                    .phase(*t)
+                    .hint("not present at rest — check joint travel / gait extremes"),
+                );
+            }
+            if hits.len() > 8 {
+                d.push(Diagnostic::warn(
+                    "GEO-008",
+                    format!(
+                        "anim_intersect: +{} more moving pairs (showing first 8)",
+                        hits.len() - 8
+                    ),
+                ));
+            }
+        }
     }
 
     // ---- BEH-002 servo stability at dt = 50 ms (library invariant)
@@ -475,7 +756,7 @@ fn run_checks(
 
     // ---- SIM-00x powertrain checks (multirotor with data) + BEH-001 smoke
     if matches!(spec.meta.archetype, Archetype::Multirotor) {
-        match forge_sim::derive_hud(spec, &baked) {
+        match forge_sim::derive_hud_with_catalog(spec, &baked, catalog) {
             Err(_) => { /* surfaced as SIM warn by run_full */ }
             Ok(hud) => {
                 match hud.hover_throttle {
@@ -569,6 +850,100 @@ fn run_checks(
                 );
             }
         }
+        Archetype::Quadruped => {
+            let mut driver = forge_motion::quadruped::QuadrupedDriver::new(spec);
+            if driver.legs.len() < 4 {
+                d.push(
+                    Diagnostic::error(
+                        "BEH-001",
+                        format!(
+                            "quadruped_smoke: {} legs found; need ≥ 4 via the hip_/knee_/foot_ chain convention",
+                            driver.legs.len()
+                        ),
+                    )
+                    .hint("name leg chains hip_<id> → knee_<id> → foot_<id>"),
+                );
+            } else {
+                let input = forge_motion::InputFrame {
+                    drive: 1.0,
+                    ..Default::default()
+                };
+                let v = driver.params.stride_m * driver.params.cadence_hz;
+                let steps = (1.0 / v.max(1e-6) / forge_motion::DT).ceil() as usize;
+                let mut finite = true;
+                for _ in 0..steps.min(100_000) {
+                    let out = driver.tick(&input, forge_motion::DT);
+                    if out
+                        .joint_targets
+                        .iter()
+                        .any(|(_, angle)| !angle.is_finite())
+                    {
+                        finite = false;
+                        break;
+                    }
+                }
+                let dist = (out_pose(&driver)[0].powi(2) + out_pose(&driver)[1].powi(2)).sqrt();
+                if !finite {
+                    d.push(Diagnostic::error(
+                        "BEH-001",
+                        "quadruped_smoke: non-finite joint target during 1 m walk",
+                    ));
+                } else if (dist - 1.0).abs() > 0.05 {
+                    d.push(
+                        Diagnostic::error(
+                            "BEH-001",
+                            format!("quadruped_smoke: walked {dist:.3} m, expected 1 m ± 0.05"),
+                        )
+                        .observed(dist)
+                        .units("m"),
+                    );
+                }
+            }
+        }
+        Archetype::Biped => {
+            let mut driver = forge_motion::biped::BipedDriver::new(spec);
+            let input = forge_motion::StickInput {
+                mz: 1.0,
+                ..Default::default()
+            };
+            let mut finite = true;
+            for step in 0..240 {
+                driver.tick(
+                    &input,
+                    [0.0, 0.0, 1.0],
+                    forge_motion::DT,
+                    (step + 1) as f64 * forge_motion::DT,
+                );
+                if !driver
+                    .poses
+                    .poses()
+                    .iter()
+                    .all(|p| p.rot.iter().chain(&p.off).all(|v| v.is_finite()))
+                {
+                    finite = false;
+                    break;
+                }
+            }
+            let dist = (driver.pos[0].powi(2) + driver.pos[1].powi(2)).sqrt();
+            if !finite {
+                d.push(Diagnostic::error(
+                    "BEH-001",
+                    "biped_smoke: non-finite pose channel during 2 s walk",
+                ));
+            } else if !(1.3..=1.6).contains(&dist) {
+                d.push(
+                    Diagnostic::error(
+                        "BEH-001",
+                        format!(
+                            "biped_smoke: walked {dist:.3} m in 2 s, expected ≈1.49 m \
+                             (0.85 m/s walk target, 0.25 s speed ramp)"
+                        ),
+                    )
+                    .observed(dist)
+                    .units("m"),
+                );
+            }
+        }
         _ => d.push(
             Diagnostic::warn(
                 "BEH-001",
@@ -577,7 +952,7 @@ fn run_checks(
                     spec.meta.archetype
                 ),
             )
-            .hint("biped/quadruped/arm drivers arrive with the P2 driver library"),
+            .hint("arm/fixedwing drivers arrive with the P2+ driver library"),
         ),
     }
 
@@ -600,6 +975,196 @@ fn run_checks(
     }
 
     (d, Some(baked))
+}
+
+// ---------------------------------------------------------------------------
+// BOM v0 (P3-009): parts list with masses; catalog-backed slots resolve to
+// SKUs/prices/links once the catalog lands (P3).
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BomRow {
+    pub item: String,
+    pub node: String,
+    pub material: String,
+    pub quantity: u32,
+    pub mass_g: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub component_ref: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub component_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vendor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sku: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub currency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub license_class: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub review_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub citation: Option<String>,
+    pub source: String,
+}
+
+pub fn bom_rows(spec: &ModelSpec, baked: &BakedModel) -> Vec<BomRow> {
+    bom_rows_with_catalog(spec, baked, &EmptyCatalog)
+}
+
+pub fn bom_rows_with_catalog(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    catalog: &dyn CatalogSource,
+) -> Vec<BomRow> {
+    let mut rows: Vec<BomRow> = baked
+        .parts
+        .iter()
+        .map(|bp| {
+            let part = &spec.parts[bp.part_index];
+            BomRow {
+                item: part
+                    .comp
+                    .clone()
+                    .unwrap_or_else(|| format!("part-{}", bp.part_index)),
+                node: part.node.clone(),
+                material: format!("{:?}", part.material).to_lowercase(),
+                quantity: 1,
+                mass_g: forge_geometry::part_mass_g(&part.mass, part.material, &bp.mesh),
+                component_ref: None,
+                component_id: None,
+                revision: None,
+                vendor: None,
+                sku: None,
+                url: None,
+                price: None,
+                currency: None,
+                license_class: None,
+                review_status: None,
+                citation: None,
+                source: "inline".to_string(),
+            }
+        })
+        .collect();
+    for slot in &spec.slots {
+        for v in &slot.variants {
+            if let Some(r) = &v.component_ref {
+                let pin = spec.lockfile.get(r);
+                let (component_id, revision) = pin
+                    .and_then(|p| p.rsplit_once('@'))
+                    .map(|(id, rev)| (Some(id.to_string()), Some(rev.to_string())))
+                    .unwrap_or((None, None));
+                let component = component_id.as_deref().and_then(|id| catalog.component(id));
+                let price = component
+                    .as_ref()
+                    .and_then(|c| c.prices.iter().find(|p| p.purchasable).or(c.prices.first()));
+                let quantity = slot.mount_nodes.len().max(1) as u32;
+                let citation = component
+                    .as_ref()
+                    .and_then(|c| {
+                        c.citations
+                            .get("prices")
+                            .or_else(|| c.citations.get("massG"))
+                    })
+                    .and_then(|c| c.sources.first().cloned());
+                let review_status = component.as_ref().map(|c| {
+                    if c.review.is_some() || c.confidence < 1.0 {
+                        "needs_review".to_string()
+                    } else {
+                        "reviewed".to_string()
+                    }
+                });
+                rows.push(BomRow {
+                    item: format!("{}/{}", slot.id, v.id),
+                    node: slot.mount_nodes.first().cloned().unwrap_or_default(),
+                    material: component
+                        .as_ref()
+                        .map(|c| c.category.clone())
+                        .unwrap_or_default(),
+                    quantity,
+                    mass_g: component
+                        .as_ref()
+                        .map(|c| c.mass_g * quantity as f64)
+                        .unwrap_or(0.0),
+                    component_ref: Some(r.clone()),
+                    component_id,
+                    revision,
+                    vendor: price.map(|p| p.vendor.clone()),
+                    sku: price.map(|p| p.sku.clone()),
+                    url: price.map(|p| p.url.clone()),
+                    price: price.map(|p| p.amount * quantity as f64),
+                    currency: price.map(|p| p.currency.clone()),
+                    license_class: component.as_ref().map(|c| c.license.class.clone()),
+                    review_status,
+                    citation,
+                    source: if component.is_some() {
+                        "catalog".to_string()
+                    } else {
+                        "catalog-unresolved".to_string()
+                    },
+                });
+            }
+        }
+    }
+    rows
+}
+
+pub fn bom_csv(rows: &[BomRow]) -> String {
+    let mut out = String::from(
+        "item,node,material,quantity,mass_g,componentRef,componentId,revision,vendor,sku,url,price,currency,licenseClass,reviewStatus,citation,source\n",
+    );
+    for r in rows {
+        let fields = [
+            r.item.clone(),
+            r.node.clone(),
+            r.material.clone(),
+            r.quantity.to_string(),
+            format!("{:.1}", r.mass_g),
+            r.component_ref.clone().unwrap_or_default(),
+            r.component_id.clone().unwrap_or_default(),
+            r.revision.clone().unwrap_or_default(),
+            r.vendor.clone().unwrap_or_default(),
+            r.sku.clone().unwrap_or_default(),
+            r.url.clone().unwrap_or_default(),
+            r.price.map(|p| format!("{p:.2}")).unwrap_or_default(),
+            r.currency.clone().unwrap_or_default(),
+            r.license_class.clone().unwrap_or_default(),
+            r.review_status.clone().unwrap_or_default(),
+            r.citation.clone().unwrap_or_default(),
+            r.source.clone(),
+        ];
+        out.push_str(
+            &fields
+                .iter()
+                .map(|f| csv_escape(f))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
+        out.push('\n');
+    }
+    out
+}
+
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+fn out_pose(driver: &forge_motion::quadruped::QuadrupedDriver) -> [f64; 3] {
+    // the driver's last outputs carry the body pose; a zero-dt tick re-reads it
+    // without advancing the gait
+    let mut probe = driver.clone();
+    probe.tick(&forge_motion::InputFrame::default(), 0.0).body
 }
 
 fn valid_hex_color(c: &str) -> bool {
@@ -706,6 +1271,7 @@ mod tests {
                     h: 0.01,
                     d: 0.01,
                 },
+                pose: None,
                 material: forge_contract::MaterialClass::Matte,
                 color: "#111111".into(),
                 explode: None,
@@ -721,6 +1287,18 @@ mod tests {
             .results
             .iter()
             .any(|d| d.check == "CTR-007" && d.severity == Severity::Error));
+    }
+
+    #[test]
+    fn bom_lists_every_part_with_mass() {
+        let spec = forge_contract::validate_shape(GOOD).unwrap();
+        let baked = forge_geometry::bake(&spec).unwrap();
+        let rows = bom_rows(&spec, &baked);
+        assert_eq!(rows.len(), 16);
+        let total: f64 = rows.iter().map(|r| r.mass_g).sum();
+        assert!((total - 479.0).abs() < 1e-6, "Σ {total}");
+        let csv = bom_csv(&rows);
+        assert_eq!(csv.lines().count(), 17, "header + 16 rows");
     }
 
     #[test]

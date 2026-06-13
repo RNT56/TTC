@@ -10,3 +10,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 schemars = { workspace = true }
 sha2 = { workspace = true }
+
+[dev-dependencies]
+# property-based testing for the schema heart (test-only dependency)
+proptest = "1"

@@ -1,0 +1,30 @@
+{
+  "_comment": "P2-006: every first-party contract declares its expected gatekeeper outcome \u2014 verdict plus the exact set of ERROR check ids (warnings may evolve with new checks; errors may not drift silently). scripts/validate-all.mjs enforces this in CI; adding a contract without an entry here fails the build.",
+  "vx2-mini": {
+    "verdict": "admitted",
+    "errors": []
+  },
+  "qd-mini": {
+    "verdict": "admitted",
+    "errors": []
+  },
+  "hrx7": {
+    "verdict": "rejected",
+    "errors": [
+      "CTR-004"
+    ],
+    "_why": "historical model predates the v2.1 explode-coverage gate (69 % < 80 %); recorded honestly, gate unchanged"
+  },
+  "vx2-hornet": {
+    "verdict": "rejected",
+    "errors": [
+      "CTR-004"
+    ],
+    "_why": "historical model predates the v2.1 explode-coverage gate (42 % < 80 %)"
+  },
+  "vx2-proof": {
+    "verdict": "admitted",
+    "errors": [],
+    "_why": "P3-007 proof pair: rotors+battery slots resolve against catalog/ (file-backed rows with per-field citations)"
+  }
+}

@@ -64,3 +64,77 @@ test(
     await app.close();
   },
 );
+
+test(
+  "bake returns buffers and counts",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const contract = JSON.parse(readFileSync(demoPath, "utf8")) as unknown;
+    const res = await app.inject({ method: "POST", url: "/v1/bake", payload: { contract } });
+    assert.equal(res.statusCode, 200, res.body);
+    const artifact = res.json() as { counts: { parts: number; faces: number } };
+    assert.equal(artifact.counts.parts, 16);
+    assert.ok(artifact.counts.faces > 0);
+    await app.close();
+  },
+);
+
+test(
+  "bom returns catalog-backed purchasable rows",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const contract = JSON.parse(
+      readFileSync(join(process.cwd(), "..", "..", "examples", "vx2-proof.forge.json"), "utf8"),
+    ) as unknown;
+    const res = await app.inject({ method: "POST", url: "/v1/bom", payload: { contract } });
+    assert.equal(res.statusCode, 200, res.body);
+    const rows = res.json() as { componentId?: string; sku?: string }[];
+    assert.ok(rows.some((row) => row.componentId === "cmp_motor_emax-eco2-2207-1900kv"));
+    assert.ok(rows.some((row) => row.sku === "1501304BK-2PACK"));
+    await app.close();
+  },
+);
+
+test(
+  "schema endpoint serves the emitted JSON Schema",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const res = await app.inject({ method: "GET", url: "/v1/schema" });
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.body.includes("ModelSpec") || res.body.includes("skeleton"));
+    await app.close();
+  },
+);
+
+test(
+  "asDraft turns a failing contract into an editable draft (D14)",
+  { skip: !haveBinary && "forge-validate binary not built" },
+  async () => {
+    const app = buildServer();
+    const hrx7 = JSON.parse(
+      readFileSync(join(process.cwd(), "..", "..", "examples", "hrx7.forge.json"), "utf8"),
+    ) as unknown;
+    // without the flag: rejected, 422
+    const rejected = await app.inject({
+      method: "POST",
+      url: "/v1/validate",
+      payload: { contract: hrx7 },
+    });
+    assert.equal(rejected.statusCode, 422);
+    assert.equal((rejected.json() as { verdict: string }).verdict, "rejected");
+    // with it: a successful save-as-draft, diagnostics intact
+    const draft = await app.inject({
+      method: "POST",
+      url: "/v1/validate",
+      payload: { contract: hrx7, asDraft: true },
+    });
+    assert.equal(draft.statusCode, 200, draft.body);
+    const report = draft.json() as { verdict: string; results: { check: string }[] };
+    assert.equal(report.verdict, "draft");
+    assert.ok(report.results.some((d) => d.check === "CTR-004"), "diagnostics carried");
+    await app.close();
+  },
+);

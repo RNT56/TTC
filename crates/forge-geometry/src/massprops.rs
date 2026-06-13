@@ -123,21 +123,25 @@ fn sub_expressions(w0: f64, w1: f64, w2: f64) -> (f64, f64, f64, f64, f64, f64) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitives::build;
+    use crate::primitives::bake_part;
     use forge_contract::Geom;
 
     #[test]
     fn unit_cube_about_com() {
-        // box builder: y ∈ [0,1], centered XZ
-        let m = build(&Geom::Box {
-            w: 1.0,
-            h: 1.0,
-            d: 1.0,
-        })
-        .unwrap();
+        // prototype convention: solids are origin-centered
+        let m = bake_part(
+            &Geom::Box {
+                w: 1.0,
+                h: 1.0,
+                d: 1.0,
+            },
+            None,
+        )
+        .unwrap()
+        .0;
         let mp = compute(&m);
         assert!((mp.volume - 1.0).abs() < 1e-9);
-        assert!(mp.com[0].abs() < 1e-9 && (mp.com[1] - 0.5).abs() < 1e-9 && mp.com[2].abs() < 1e-9);
+        assert!(mp.com[0].abs() < 1e-9 && mp.com[1].abs() < 1e-9 && mp.com[2].abs() < 1e-9);
         // unit-density cube: I = m·(a²+b²)/12 = 1/6 on each axis about COM
         for k in 0..3 {
             assert!(
@@ -154,13 +158,17 @@ mod tests {
     #[test]
     fn cylinder_inertia_close() {
         let (r, h) = (0.5f64, 1.0f64);
-        let m = build(&Geom::Cyl {
-            r0: r,
-            r1: None,
-            h,
-            n: Some(512),
-        })
-        .unwrap();
+        let m = bake_part(
+            &Geom::Cyl {
+                r0: r,
+                r1: None,
+                h,
+                n: Some(512),
+            },
+            None,
+        )
+        .unwrap()
+        .0;
         let mp = compute(&m);
         let vol = std::f64::consts::PI * r * r * h;
         assert!((mp.volume - vol).abs() / vol < 5e-4);

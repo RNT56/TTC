@@ -18,3 +18,19 @@ __pycache__/
 # OS / editors
 .DS_Store
 *.swp
+
+# generated galleries / captures (committed evidence lives in docs/assets/)
+artifacts/
+
+# environment / secrets (never committed)
+.env
+.env.*
+!.env.example
+
+# coverage / profiling output
+coverage/
+*.profraw
+flamegraph.svg
+
+# logs
+*.log

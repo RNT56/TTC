@@ -22,7 +22,8 @@ monolith, shimmer gone, and 60 fps on mid hardware.
   material ids) wrapped directly as Three.js BufferAttributes. No per-frame JSON; no
   geometry math in TS.
 - **Scene graph** mirrors the contract's skeleton nodes; parts batch per material
-  class (`BatchedMesh`) — a whole model is a handful of draw calls (budget:
+  class (`BatchedMesh`, *live 2026-06-12: hrx7 = 8 calls shaded / 9 blueprint,
+  gallery-gated ≤ 40*) — a whole model is a handful of draw calls (budget:
   ≤ 40/model). Pose matrices come from the core `tick`'s shared region,
   render-interpolated.
 - **WebGL2 baseline**, `WebGPURenderer` behind a flag (TSL gives the path without a
@@ -47,14 +48,24 @@ becomes physically consistent for free. AO via N8AO at quality tiers.
 ## 4. Studio features
 
 - **Blueprint mode:** post pass — normal/depth edge detection composited over a flat
-  pass with the grid shader.
+  pass with the grid shader. *Live 2026-06-12 (P1-010): view-normal + depth RT,
+  full-screen discontinuity shader; replaced the per-part EdgesGeometry objects.*
 - **Explode:** the prototype's chain/window math verbatim, driving per-part instance
-  matrices; leader lines as dashed `Line2` with datum dots.
-- **Selection:** stencil outline; component-scoped picking (must satisfy BEH-004).
+  matrices; leader lines as dashed `Line2` with datum dots. *Live: all leaders
+  merge into ONE LineSegments under the draw-call budget; Line2 fat lines remain
+  a cosmetic upgrade.*
+- **Selection:** component-scoped picking (must satisfy BEH-004) — *live via
+  BatchedMesh batchId raycast*. Outline shipped as an **inverted hull** (back-face
+  shell inflated along normals, distance-scaled rim) instead of stencil — one draw
+  call, no postprocess dependency, depth-correct; decision recorded at P1-012.
 - **`renderBias`** survives only as a polygon-offset hint for true coplanar decals —
   not as a sorting crutch.
 - **Quality-tier autoswitcher (XC-22):** degradation ladder AO off → shadow
   resolution → pixel ratio, engaged at scene-scale thresholds (3 models / 400 k tris).
+  *v0 live 2026-06-12 (P1-016): N8AO through EffectComposer, tiers
+  high/medium(½-res)/low(off) over pixel ratio; the ladder triggers on sustained
+  < 45 fps (3 s) and only ever steps down. Scene-scale thresholds join when
+  multi-model scenes exist (P10).*
 
 ## 5. Budgets (binding)
 
@@ -69,11 +80,15 @@ codegen. Hosts: `packages/studio`. The recorder feeds ghost overlay geometry (P8
 
 ## 7. Testing
 
-Golden-image perceptual diffs on the canonical camera set (RND-001) — built at P1 as
-the parity gallery vs the monolith, then kept forever as regression; blueprint render
-check (RND-002); draw-call and frame-budget assertions in a perf harness on
-representative scenes; zero-copy discipline test (no buffer cloning on the bake
-path *(proposed: allocation assertions in the perf harness)*).
+Golden-image perceptual diffs on the canonical camera set (RND-001) — **live
+2026-06-12** as the parity gallery (`pnpm parity`, P1-015): the frozen monolith
+(bridged copy, rest pose pinned, chrome suppressed) vs the built studio under
+6 shared cameras, gated on Sobel-edge F1 ≥ 0.85 with measured 0.95–0.995;
+evidence committed under `docs/assets/parity/`, kept as regression (re-run
+locally; CI integration deferred — headless-chromium install flake). Blueprint
+render check (RND-002); draw-call and frame-budget assertions in a perf
+harness on representative scenes; zero-copy discipline test (no buffer cloning
+on the bake path *(proposed: allocation assertions in the perf harness)*).
 
 ## 8. Phase mapping & backlog
 
@@ -82,6 +97,7 @@ P1: P1-008..017 studio tasks; XC-22 foundations. P8 adds the ghost overlay consu
 
 ## 9. Open questions
 
-N8AO vs alternative AO at low tier; whether the parity gallery diffs against
-prototype *screenshots* or re-rendered references (prototype screenshots are the
-honest baseline — decide tooling at P1-015); WebGPU flag timing.
+N8AO vs alternative AO at low tier; WebGPU flag timing. *(Resolved at P1-015:
+the gallery diffs against the prototype rendering itself live in the same
+headless browser — fresher than stored screenshots and still the honest
+baseline, since the frozen monolith is executed read-only.)*

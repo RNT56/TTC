@@ -35,7 +35,26 @@ Crate rules: **no DOM, no I/O** (only `forge-validate`'s CLI does I/O, native-on
 deterministic iteration order everywhere (no HashMap iteration into output paths);
 `#![forbid(unsafe_code)]` except in the facade's view plumbing *(proposed)*.
 
-## 3. The core boundary (frozen at P0-009)
+## 3. The core boundary (FROZEN v1 — P0-009, 2026-06-12)
+
+All four calls are live: **bake** and **validate** in the facade + binary;
+**tick** as `CoreSession` (fixed-step 120 Hz accumulator, bit-deterministic —
+tested); **patch** as RFC-6902-subset JSON-Patch with the shape gate.
+
+**P1-005 landed (2026-06-12):** the typed boundary is real — the facade's
+`Bake` handle ships meta as JSON once and exposes positions/normals/indices
+as typed-array **views over wasm linear memory** (geometry never round-trips
+through JSON; views are valid until the next memory growth, consumed
+synchronously); `Bake.patch` re-bakes in place (the configurator primitive);
+`Session.pose_view` is the zero-copy per-frame pose read. Budgets measured
+through this path and CI-gated (`scripts/budgets.mjs`): hrx7 bake 2.0 ms
+(≤ 60), patch→re-bake 2.8 ms (≤ 10), facade 298 KB gz (≤ 2 MB). The JSON
+`bake`/`validate` calls remain for interop. Finding while landing it: wasm
+`validate` had trapped since its first build — `std::time` panics on
+wasm32-unknown-unknown and no gate exercised the path; fixed with a cfg'd
+report clock (js-sys on wasm — provenance metadata only, judgment never
+reads it) and golden-compare now also requires native↔wasm **validator-report
+equality** (volatile fields normalized) on the four canonical contracts.
 
 Four calls, allocation-disciplined, identical across facade (WASM), napi-rs, and the
 in-crate API:
@@ -77,7 +96,26 @@ A port of *proven* code with the oracle watching:
   arithmetic over flat buffers. CSG sits behind a trait (Manifold native C API /
   Manifold WASM in-browser); OCCT stays server-side.
 
-## 5. The golden-number suite (XC-26, D17)
+## 5. The golden-number suite (XC-26, D17) — LIVE 2026-06-12
+
+Implemented and CI-gated: core-side FNV-1a hashing over exact f32 bit patterns
+(bake buffers + 600-step scripted tick streams), compared byte-identical between
+the native `forge-golden` binary and the WASM facade, plus time-pinned fixture
+hashes. **First run caught a real divergence** (platform libm vs wasm libm ULPs
+on lathe angles and pose rotations) — resolved by routing every
+non-correctly-rounded transcendental in core through **`forge-num`** (the
+pure-Rust `libm` crate: identical bits on every target). IEEE-correctly-rounded
+ops (sqrt, arithmetic) stay on std. This is now core policy: new core math uses
+`forge_num::{sin,cos,sin_cos,acos,asin,atan2,pow}` — never `f64::` trig — plus
+the oracle-compat helpers `forge_num::{hypot,js_round}` (plain-sqrt hypot and
+JS `Math.round` tie semantics, both deterministic everywhere).
+
+**Re-pin 2026-06-12 (P1-001):** the tick corpus now exercises the ported
+oracle drivers — `CoreSession` drives multirotor through `fpv.rs` and biped
+through `biped.rs` with full pose channels (`node_world_posed`). Tick hashes
+for vx2-mini/hrx7/vx2-hornet were re-pinned accordingly (qd-mini and **all
+bake hashes unchanged**); native ↔ WASM stayed bit-identical on first
+comparison after the rewire.
 
 The cross-target exactness gate, run in CI on every core change:
 

@@ -1,0 +1,108 @@
+{
+  "id": "cmp_esc_holybro-tekko32-f4-4in1-50a",
+  "brand": "Holybro",
+  "model": "Tekko32 F4 4in1 50A ESC (AM32)",
+  "category": "esc",
+  "massG": 13.8,
+  "dims": {
+    "lengthMm": 48.0,
+    "widthMm": 37.0,
+    "heightMm": 6.0
+  },
+  "elec": {
+    "vMin": 14.8,
+    "vMax": 25.2,
+    "maxCurrentA": 50.0
+  },
+  "mech": {
+    "mountPattern": "stack-30.5x30.5-M3"
+  },
+  "license": {
+    "id": "lic_holybro_tekko32_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer product specifications; source URL required for redistribution.",
+    "sourceUrl": "https://holybro.com/products/tekko32-f4-4in1-50a-esc",
+    "exportPolicy": "full-geometry-ok"
+  },
+  "source": "datasheet",
+  "confidence": 0.9,
+  "review": "REQUIRED before marketplace exposure: owner review still required for marketplace publication.",
+  "prices": [
+    {
+      "vendor": "Holybro Store",
+      "sku": "31102",
+      "url": "https://holybro.com/products/tekko32-f4-4in1-50a-esc",
+      "amount": 62.99,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Weight: 13.8g",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "dims": {
+      "value": "Dimensions: 48x37x6 mm",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMin": {
+      "value": "Supports 4-6S battery; 4S nominal 14.8V",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited cell-count range."
+    },
+    "elec.vMax": {
+      "value": "Supports 4-6S battery; 6S charged 25.2V",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited cell-count range."
+    },
+    "elec.maxCurrentA": {
+      "value": "Continuous Current: 50A x4",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "mech.mountPattern": {
+      "value": "Mounting holes: M4 30.5x30.5mm (M3 grommets included)",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "SKU 31102; Regular price $62.99",
+      "sources": [
+        "https://holybro.com/products/tekko32-f4-4in1-50a-esc"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

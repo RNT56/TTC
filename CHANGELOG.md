@@ -18,6 +18,528 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-12 — Execution batch: collision truth (XC-09/GEO-008), SIM-004, share URLs, gamepad, workflows, incremental re-bake
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1/P3 cross-cutting · **TODO items:** §5 batch (9 of 10 closed), P1-002 [x]
+**Done:** The owner-approved improvement list, executed. **XC-09:**
+`forge-geometry::collide` — Möller tri-tri (coplanar = touching, by policy)
++ median-split world-space BVH per part, pure f64, no transcendentals;
+GEO-003 upgraded to BVH-CONFIRMED mesh intersection (hrx7 53 AABB
+candidates → 41 confirmed, 12 false positives silenced). **GEO-008**
+(provisional): the validator ticks the model's real driver and sweeps 8
+sampled frames — hrx7 shows **2 genuine motion-only contacts** (thigh
+shells × pelvis at gait extremes), invisible at rest; whole sweep 127 ms;
+cross-target report equality holds. **SIM-004:** inline-sim vs
+equipped-catalog drift (deduped) — flagged vx2-proof's inline kv 1750 vs
+the cited 1900; reconciled, and the equipped datasheet now flows into the
+physics: **TWR 4.70→5.32, hover 43 %→39 %**; regression test pins both
+directions. **Share URLs:** contract → deflate-raw → base64url fragment
+(`share.ts`); opening re-validates/re-bakes locally (never trusted);
+browser-verified round trip (hrx7 = 5.5 kB fragment boots a fresh page).
+**Gamepad:** stick polling with deadzone in the drive loop (left =
+strafe/forward, right = yaw/throttle); sliders remain fallback. **Patch
+consequence diff:** Δ AUW/TWR/hover line after every configurator patch
+(D5). **Bundle split:** three+n8ao chunk; app js 78 kB gz, warning gone.
+**Workflows:** `nightly.yml` (parity gallery on headless chromium +
+cargo-llvm-cov coverage, artifacts uploaded) and `release.yml` (tag v* →
+static validator binary + wasm facade package). **Incremental re-bake:**
+`bake_incremental` reuses untouched (geom, pose) buffers — a color patch
+re-bakes zero geometry; budgets re-measured and hold. Verified: 106 Rust
+tests, clippy --all-targets -D clean, golden + report equality, verdict
+matrix (5), gateway 7/7, builds green, wasm-pkg rebuilt (320 KB gz).
+**Changed:** `crates/forge-geometry/src/{collide.rs (new), lib.rs}`,
+`crates/forge-validate/src/{lib.rs (GEO-003/008, SIM-004), file_catalog.rs}`,
+`crates/forge-contract/src/lib.rs` (RowSummary on CatalogSource),
+`crates/forge-wasm/src/lib.rs` (incremental patch), catalog battery row
+(+capacityMah, cited), `examples/vx2-proof.forge.json` (kv reconciled),
+`packages/studio/{src/share.ts (new), src/App.tsx, src/store.ts,
+vite.config.ts}`, `.github/workflows/{nightly.yml, release.yml}` (new),
+`tests/proof_pair.rs` (SIM-004), docs (TODO §5 batch, harness GEO note).
+**Decisions:** none new (GEO-008/SIM-004 are provisional check ids per the
+harness doc's convention).
+**Next:** P3's data-layer remainder (Postgres runner, ETL pipeline, XC-17
+export filter, D12 SKUs). *(Addendum, same session: the proptest item also
+closed — see the follow-up commit; the batch is 10/10.)*
+**Blockers:** none.
+
+## 2026-06-12 — Pre-P0 closed: licensing (D24), hygiene, the name is ForgedTTC (D23)
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** Pre-P0 · **TODO items:** PRE-003 [x], PRE-004 [x], PRE-005 [x]
+**Done:** Owner-delegated business calls executed and recorded. **D23 — the
+product name is ForgedTTC** (resolves OD-01/PRE-005): living docs, UI title
+("ForgedTTC STUDIO"), page title, NOTICE updated; `forge-*`/`@forge/*` code
+namespaces deliberately stay (internal prefixes — renaming churns every
+crate/import for zero user value); frozen papers keep the historical FORGE
+codename; trademark scan recorded as the owner's pre-P4 action.
+**D24 — license mechanics** (implements D2, © RNT56): root `LICENSE` states
+the open-core split — Apache-2.0 zone = `crates/` (all forge-* crates incl.
+the wasm facade and forge-gen: everything published must be usable),
+`schema/`, `examples/` (fixtures travel with the validator); everything else
+(studio, gateway, workers, prototype, catalog, docs, infra, scripts)
+proprietary, all rights reserved; `LICENSES/Apache-2.0.txt` is the canonical
+apache.org text (11,358 bytes); `NOTICE` per Apache convention; zone-2
+package.json marked "SEE LICENSE IN"; the cargo workspace already declared
+Apache-2.0 (the wasm-pack missing-LICENSE warning resolves). Contribution
+terms stated in LICENSE. **PRE-004:** `.editorconfig` (LF/utf-8, 2-space,
+rust 4, tabs for Make) + `.gitignore` extended (env/secrets, coverage,
+logs). **Branch protection on `main` is the one remaining owner click**
+(GitHub → Settings → Branches; no API surface in this session's toolset).
+Pre-P0 phase → ● in ROADMAP.
+**Changed:** `LICENSE`, `LICENSES/Apache-2.0.txt`, `NOTICE`, `.editorconfig`,
+`.gitignore`, `package.json` ×3 (license fields), `CLAUDE.md` §1,
+`docs/{DECISIONS.md (D23, D24), GLOSSARY.md, TODO.md, ROADMAP.md}`,
+`packages/studio/{src/App.tsx, index.html}` (ForgedTTC title).
+**Decisions:** D23 (name), D24 (license mechanics).
+**Next:** owner clicks branch protection; then the standing P3 queue
+(Postgres runner, ETL pipeline, license-export filter XC-17, D12 SKUs).
+**Blockers:** none.
+
+## 2026-06-12 — P3-007 proof pair: cited catalog rows, file-backed resolution, dims within 1 %
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P3 · **TODO items:** P3-007 [x], P3-004 [~ format], P3-001 [~ DDL]
+**Done:** The proof pair is real and gated. **Rows:** EMAX ECO II 2207 1900KV
+(31.5 g w/o wire · Ø27.45×32.6 mm · 16×16 M3 · M5 shaft · 3–6S · 40.6 A ·
+2020 g max thrust @ 5×4.6/25.2 V) and CNHL Black Series 4S 1500 mAh 100C
+(183 g · 75×35×37 mm · 14.8–16.8 V window · 150 A = 100C×1.5 Ah · XT60) as
+`catalog/components/*.json` with **per-field citations** (value-as-printed,
+source URLs, accessed date, derivation/discrepancy notes — incl. the
+31.5-vs-33.5 g with/without-wire discrepancy). **Provenance stated honestly:**
+this environment's egress allowlist blocks direct datasheet fetch (every
+storefront/manufacturer/archive fetch 403s; only package registries pass),
+so values are transcribed from search-result quotations of the cited pages —
+rows carry confidence 0.7 + a mandatory review note (P3-004 review-queue
+semantics, loader-enforced: confidence < 1 without a review note is a load
+error). **Plumbing:** `FileCatalog` (native-only `CatalogSource` +
+`RevisionSource` over `catalog/components/`), CLI `--catalog <dir>`.
+**Proof body:** `examples/vx2-proof.forge.json` — VX-2 Mini with
+rotors+battery slots as semver refs and a pinned lockfile: **Admitted with
+the catalog, CTR-006-rejected without it**; the verdict matrix now runs with
+`--catalog` (5 contracts green). **Exit-criterion evidence**
+(`tests/proof_pair.rs`): baked AABB within 1 % of cited dims (cylinder/box
+from the row envelopes; masses carried from datasheets, never derived from
+the primitive approximation), resolver pins both refs, CAT engine finds the
+pair compatible (4S window ⊂ 3–6S rating), citation+review enforcement over
+every row. ROADMAP P3 → ◑ with the dims criterion checked (owner
+verification of citations noted).
+**Changed:** `catalog/{README.md, components/*.json}` (new),
+`crates/forge-validate/{src/file_catalog.rs (new), src/lib.rs, src/main.rs
+(--catalog), tests/proof_pair.rs (new)}`, `examples/{vx2-proof.forge.json
+(new), expected-verdicts.json, README.md}`, `scripts/validate-all.mjs`
+(runs with the catalog), docs (TODO P3-001/004/007, ROADMAP).
+**Decisions:** none (the review-queue gate at confidence < 1 implements
+P3-004's stated semantics).
+**Next:** P3-008 reference rigs (SKU selection — owner sign-off needed for
+D12), P3-001 migration runner against a live Postgres, P3-004 fetch→extract
+pipeline (needs API keys + unblocked egress), license-export filter (XC-17).
+Owner items: verify the two rows against their citations; prototype-final
+tag; P0-007 build question; PRE-003/004/005; mid-hardware fps reading.
+**Blockers:** direct datasheet fetch blocked by the environment's egress
+policy — recorded on the rows themselves, not worked around.
+
+## 2026-06-12 — P3 core logic: compat rule engine, lockfile resolver, connector taxonomy
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P3 · **TODO items:** P3-002 [x], P3-003 [x], P3-006 [x]
+**Done:** The data-layer-independent half of P3. **P3-003 compatibility rule
+engine** in `forge-validate::compat` — CORE-side, correcting the component-db
+doc's gateway *(proposed)* placement per D16 (gateway/studio consume the same
+bits via the facade): CAT-001 mount-pattern equality, CAT-002 voltage-window
+intersection, CAT-003 current budget ×1.2, CAT-004 prop tip clearance (v0
+spacing form; BVH sweep = XC-09), CAT-005 TWR floors per preset (thrust/AUW
+supplied by the caller — never invented), CAT-006 connector matching. Every
+violation carries an explanation string (the reason a configurator card
+greys); fixture-tested rule by rule, with undeclared-field semantics explicit
+(skip when unverifiable, warn when one side declares). **P3-006 lockfile
+resolver** in `forge-contract` — `semver` module (exact/^/~, ~120 lines, no
+new dependency), `pin_refs` (pin STABILITY: existing pins survive catalog
+updates; yanked revisions verify-but-never-freshly-resolve), and
+`upgrade_lockfile` (the explicit mover, returning diffs for LIF-001
+re-validation + consequence diffs); tested incl. yanked and
+unsatisfiable-range reasons. **P3-002 connector taxonomy seed**
+(`infra/migrations/0002_connector_taxonomy.sql`): stack 30.5/25.5/20,
+motor 16/19/12 bases, prop M5/T-mount, XT60/XT30/JST-PH-2, UART/I2C —
+published ecosystem standards; component rows still cite their own
+datasheets (D10). Check catalog gains the CAT block
+(validation-harness.md). Drive-by: clippy now clean under `--all-targets`
+(test-target lints incl. a TAU literal in forge-num's test). Verified: 100
+Rust tests, golden + report equality, verdict matrix, wasm32.
+**Changed:** `crates/forge-validate/src/{compat.rs (new), lib.rs}`,
+`crates/forge-contract/{src/semver.rs (new), src/lib.rs (RevisionSource,
+pin_refs, upgrade_lockfile), tests/lockfile_resolution.rs (new)}`,
+`crates/forge-num/src/lib.rs` (test literal), `infra/migrations/0002…sql`
+(new), docs (validation-harness CAT block, component-database placement +
+status, TODO).
+**Decisions:** compat engine placement = core (recorded in the system doc;
+the prior gateway note was *(proposed)*-level).
+**Next:** P3-007 proof pair — needs (a) a file-backed `RevisionSource` for
+the CLI so admitted contracts can pin against seed rows pre-Postgres, and
+(b) real 2207-motor + 4S-1500 datasheets with per-field citations (web
+research); then P3-001 migration runner + P3-004 ETL worker skeleton.
+**Blockers:** none.
+
+## 2026-06-12 — P2 closed: verdict matrix in CI, draft semantics, OD-08 → D22
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P2 · **TODO items:** P2-006 [x], P2-007 [x], P2-002 [~], P2-003 (biped ✓)
+**Done:** **P2's four exit criteria are all checked — phase closed.**
+P2-006: `examples/expected-verdicts.json` declares verdict + the exact ERROR
+check-id set for every first-party contract; `scripts/validate-all.mjs`
+enforces it in CI (undeclared contracts and stale expectations fail) —
+hrx7/vx2-hornet pinned as rejected with exactly CTR-004, vx2-mini/qd-mini
+admitted clean. P2-007/OD-08 resolved by measurement and recorded as **D22**:
+gateway binary-spawn p50 5.3 ms (16 parts) / 17.8 ms (125 parts) vs
+in-process WASM 0.7 / 3.7 ms (`scripts/od08-measure.mjs`) — spawn stays
+(isolation + bit-equality with CI, far inside budget); napi-rs deferred
+until a measured hot path demands it. P2-002 (D14) validation semantics
+live end to end: CLI `--as-draft` → gateway `asDraft` flag → HTTP 200 with
+`verdict: draft` and full diagnostics (a draft is a successful save, not a
+422); gateway test added (7/7). Draft PERSISTENCE deferred to the data
+layer (P3-001) — recorded honestly, not faked with a file store.
+**Changed:** `examples/expected-verdicts.json` (new),
+`scripts/{validate-all.mjs,od08-measure.mjs}` (new), `.github/workflows/ci.yml`
+(P2-006 step), `packages/gateway/{src/server.ts,src/validator.ts,
+test/server.test.ts}`, docs (DECISIONS **D22**, TODO P2 section + P2-003
+biped tick, ROADMAP P2 criteria + phase table: **P2 ●**, P1 ◑ 5/6).
+**Decisions:** **D22** (OD-08 closed: binary-spawn stays, numbers recorded).
+**Next:** P1's last open criterion is a real-mid-hardware 60 fps run (owner
+can read the perf overlay); then P3 — component DB schema (P3-001 Postgres
+DDL), which also unblocks P2-002's persistence half. Owner items still open:
+prototype-final tag push (P0-010), configurator-build question (P0-007),
+PRE-003/004/005.
+**Blockers:** none.
+
+## 2026-06-12 — P1-016 closed: N8AO + the XC-22 quality ladder
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-016 [x]
+**Done:** Shaded rendering now goes through EffectComposer (Render → N8AO →
+Output; blueprint keeps its dedicated pass; AO is meaningless on a technical
+drawing). `n8ao` is the only new dependency — the package the plan names at
+XC-22; three's own composer avoids pmndrs postprocessing. Tiers: high /
+medium (½-res AO) / low (AO off) over pixel ratio, selectable in the panel;
+the **degradation ladder v0** steps the tier DOWN on sustained < 45 fps for
+3 s and never up (raising is manual). Parity gallery pins tier=low for
+deterministic structural captures — re-ran green (F1 0.957–0.995, precision
+≈ 1.000). Measured on the SwiftShader software floor: high 2.6 ms render /
+25 draws (AO's internal passes), low 0.6 ms / 8 draws — the ≤ 6 ms render
+budget holds with AO on even WITHOUT a GPU. Headless screenshot verifies
+contact shading. All gates green (gateway 6/6, builds, gallery).
+**Changed:** `packages/studio/src/{scene.ts (composer + setTier), App.tsx
+(tier select + auto-degrader), store.ts (tier), n8ao.d.ts (decl shim)}`,
+`packages/studio/package.json` (+n8ao), `scripts/parity-gallery.mjs`
+(tier=low pin), docs (TODO P1-016, render-engine §4).
+**Decisions:** none (N8AO was plan-named; the three-composer-over-pmndrs
+choice is implementation detail recorded here).
+**Next:** P2 remainder — P2-002 draft semantics, P2-006 CI on all
+first-party contracts, OD-08 napi-rs vs binary-spawn measurement, npm/crates
+publication plumbing (P2-001).
+**Blockers:** none.
+
+## 2026-06-12 — Studio P1 finishers: BatchedMesh, blueprint post pass, outline, jog, configurator
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-008 [x], P1-010 [x], P1-012 [x], P1-013 [x], P1-014 [~ mechanics], P1-017 [~]
+**Done:** The render layer is rebuilt around **one BatchedMesh per material
+class** (per-instance color + matrix, batchId raycast picking, merged
+single-LineSegments leaders, camera near 0.01 for depth precision): hrx7
+draws in **8 calls shaded / 9 blueprint / 9 exploded** vs ~260 before; the
+≤ 40 budget is now gated inside the parity gallery (which re-ran with
+IDENTICAL edge-F1s 0.95–0.995 at 3 draws/scene — the batch refactor is
+pixel-equivalent). **Blueprint post pass** (P1-010): view-normal + depth RT →
+full-screen discontinuity shader over the flat pass; the 125 per-part
+EdgesGeometry objects are deleted; verified by headless screenshot.
+**Selection outline** (P1-012): inverted hull (back-face shell inflated along
+normals, rim distance-scaled ~2 px) — chosen over stencil for 1 draw call,
+no postprocess dep, depth-correct occlusion; first attempt via
+MeshBasicMaterial onBeforeCompile silently failed (no objectNormal in
+unlit shaders) — replaced with an explicit ShaderMaterial. **Jog + pause +
+frame-step** (P1-013 close): `CoreSession.set_jog` applies per-node euler
+over the pose layers (the monolith's `nodes[k].rot += jog[k]`), zeros clear;
+test proves jog moves the head and clearing restores the bit-identical
+stream; studio drags the selected node (orbit suspended during the drag),
+pause freezes the drive clock, step advances exactly 1/120 s.
+**Configurator mechanics** (P1-014): the selection pane patches
+color/material through the live CoreBake handle — JSON-Patch → re-bake in
+place; the validator re-judges every patched document; explode/camera/
+drive/jog/selection survive (browser-verified: head visor patched to
+#39c8ff, material to gloss, verdict honestly stays REJECTED on the
+historical hrx7). Variant cards stay gated on slots (P0-007/P3).
+**Perf overlay** (P1-017): fps + render ms + draw calls + core-tick ms with
+honest multi-pass accounting (`info.autoReset` off); SwiftShader software
+floor: render 0.5 ms · core ≤ 0.05 ms · 9 draws — ROADMAP frame-budget
+criterion annotated, "shimmer gone" checked (no painter sort exists to
+flicker; z-buffer + near-plane fix; gallery is the record). Verified: 89
+Rust tests, clippy -D clean, golden + report equality, budgets, gateway 6/6,
+gallery green with draw-call gate, wasm-pkg rebuilt (301 KB gz).
+**Changed:** `packages/studio/src/{scene.ts (rewrite), App.tsx (rewrite),
+store.ts, wasm.ts, materials.ts}`, `crates/forge-wasm/src/{session.rs (jog),
+lib.rs (set_jog/clear_jog)}`, `crates/forge-motion/src/quadruped.rs (body
+getter)`, `scripts/parity-gallery.mjs` (stats + ≤ 40 gate), wasm-pkg,
+`docs/assets/parity/` (refreshed with draw-call metrics), docs (TODO,
+ROADMAP, render-engine).
+**Decisions:** outline = inverted hull, not stencil (recorded at P1-012 —
+implementation-level, system doc updated); jog scope = posed driver paths.
+**Next:** P1-016 N8AO + quality tiers (the last open studio finisher), then
+P2 remainder (P2-002 drafts, P2-006 CI on all first-party contracts, OD-08
+napi-rs measurement).
+**Blockers:** none.
+
+## 2026-06-12 — P1-013 (follow half): drive-mode follow camera through the boundary
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-013 [~] (follow camera ✓; jog + pause/frame-step remain)
+**Done:** `CoreSession::focus()` (driver body at natural viewing height —
+biped/fpv use the ported drvFocus, rover/quadruped their body pose) exported
+through the wasm `Session`; the studio's drive loop eases orbit target AND
+eye toward it at the monolith's smoothing (min(1, dt·5)), preserving the
+user's orbit offset. Verified: 88 tests, clippy clean, golden-compare green
+(focus is not part of the hashed streams), budgets hold, builds green.
+**Changed:** `crates/forge-wasm/src/{session.rs,lib.rs}`,
+`crates/forge-motion/src/quadruped.rs` (body() getter),
+`packages/studio/src/{scene.ts,wasm.ts,App.tsx}`, wasm-pkg rebuilt, TODO.
+**Decisions:** none. **Next:** P1-014 configurator pane (CoreBake.patch
+ready), P1-008 BatchedMesh, P1-010/012 render finishers, P1-013 jog half.
+**Blockers:** none.
+
+## 2026-06-12 — P1-005 closed: typed facade boundary, budgets gated; wasm validate trap found+fixed
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-005 [x]
+**Done:** The zero-copy boundary is real. Facade grows a stateful `Bake`
+handle — meta (counts/HUD/node_world/part table) crosses as JSON once;
+positions/normals/indices cross as **typed-array views over wasm linear
+memory** (consumed synchronously; the sanctioned `unsafe` per BEST-PRACTICES
+§5 lives here with SAFETY notes); `Bake.patch` applies JSON-Patch and
+re-bakes in place (the P1-014 configurator primitive); `Session.step` now
+returns steps and `Session.pose_view` is the zero-copy per-frame pose read.
+Studio: fetches CONTRACTS only and bakes+validates in-browser (demo
+.bake/.report payloads deleted; `pnpm demo:sync` copies contracts; drag-drop
+unchanged); scene consumes typed arrays without copies; drive loop reads
+pose_view. **Budgets measured through the real path and CI-gated as stated —
+no runner fudge** (`scripts/budgets.mjs`): hrx7 bake **2.0 ms** (≤ 60 ms,
+was ~10 via JSON), patch→re-bake **2.8 ms** (≤ 10 ms, was ~10.8 — the JSON
+mesh serialization WAS the budget), facade 298 KB gz (≤ 2 MB). Parity
+gallery re-run on the new load path: identical F1s (0.95–0.995) — the
+in-browser bake renders equivalently to the old prebaked payloads.
+**Finding (D17): wasm `validate` had trapped (`unreachable`) on every
+contract since its first build** — `std::time::{SystemTime,Instant}` panic
+on wasm32-unknown-unknown, and NO gate exercised the path (gateway spawns
+the native binary; the facade test runs the native rlib; the old studio
+fetched prebaked reports). Fixed with a cfg'd `clock` module (js-sys
+Date.now on wasm — report provenance only, judgment never reads it) and the
+gate is closed: golden-compare now ALSO requires native↔wasm
+**validator-report equality** (startedAt/durationMs/target normalized) on
+all four canonical contracts, in CI.
+**Changed:** `crates/forge-wasm/src/lib.rs` (Bake handle, pose_view, bake_meta_json
++ native test), `crates/forge-validate/{src/lib.rs (clock), Cargo.toml (js-sys
+wasm-only)}`, `packages/studio/src/{wasm.ts (CoreBake, artifactFrom, poseView),
+types.ts (typed mesh), scene.ts (typed attrs), App.tsx (in-browser demo bake)}`,
+`packages/studio/public/demo/` (payloads pruned), `scripts/{budgets.mjs (new),
+golden-compare.mjs (report leg), parity-gallery.mjs (contract check)}`,
+`.github/workflows/ci.yml` (budgets step), root `package.json`
+(demo:sync replaces bake:demo), wasm-pkg rebuilt (298 KB gz), docs (TODO,
+ROADMAP P1 budgets criterion, core-runtime §3).
+**Decisions:** none (unsafe-in-facade was already sanctioned *(proposed)* in
+BEST-PRACTICES §5; this makes it real with the documented discipline).
+**Next:** studio P1 finishers — P1-008 BatchedMesh, P1-010 blueprint post
+pass, P1-012 stencil outline, P1-013 jog/follow camera, P1-014 configurator
+pane (CoreBake.patch is ready for it); P1-016/017.
+**Blockers:** none.
+
+## 2026-06-12 — P1-015 closed: golden-scene parity gallery, monolith vs studio
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-015 [x]
+**Done:** `pnpm parity` (`scripts/parity-gallery.mjs`) renders the SAME models
+under the SAME six canonical cameras (hrx7 + vx2-hornet × three-quarter/
+profile/high-rear, monolith FOV 2·atan(0.3443) ≈ 38°) in two renderers — the
+frozen monolith (served as a bridged in-memory copy because its IIFE hides
+state; pinned: auto-rotate off, clock frozen, pose overridden to pure rest,
+grid/marker/blob-shadow/gizmo/vignette suppressed) and the built studio
+(`window.__forgeParity` hook: load model, pin camera orbit+FOV, grid/shadows
+off) — in headless chromium on SwiftShader (the env pre-provisions build 1194
+under /opt/pw-browsers; the script falls back to playwright's resolution
+elsewhere). Structural metric: Sobel edge maps of downscaled luminance,
+binarized top-8 %, F1 with 1-px dilation tolerance. **Measured 0.95–0.995 on
+all six scenes; gate 0.85** (observed failure modes — overlaid UI chrome,
+background vignette banding, studio ground shadow — scored ≤ 0.4 before they
+were eliminated, so the gate separates regimes with wide margin). Luminance
+RMS reported as informational (PBR vs painter shading differs by design).
+Composites + metrics committed as evidence (`docs/assets/parity/`, ~128 KB);
+full gallery regenerates into `artifacts/parity/` (now gitignored). CI
+integration deliberately deferred (fresh-chromium flake risk) — recorded in
+TODO. ROADMAP P1 "parity gallery" criterion checked.
+**Changed:** `scripts/parity-gallery.mjs` (new), `packages/studio/src/{scene.ts
+(setCameraPose/setGridVisible/setShadowsVisible), App.tsx (__forgeParity hook)}`,
+root `package.json` (parity script; playwright-core+pngjs devDeps — playwright
+moved out of the studio package), `.gitignore` (artifacts/),
+`docs/assets/parity/*` (new evidence), docs (TODO P1-015, ROADMAP P1,
+render-engine §7/§9).
+**Decisions:** none (RND-001's open question — screenshots vs re-render —
+resolved operationally: the frozen monolith renders itself live, read-only).
+**Next:** studio P1 finishers — P1-008 BatchedMesh, P1-010 blueprint post
+pass, P1-012 stencil outline, P1-013 jog/follow camera (drivers expose
+`focus()`), P1-005 zero-copy views + bake/patch timing; then P1-016/017.
+**Blockers:** none.
+
+## 2026-06-12 — P1-001 closed: biped + FPV oracle drivers ported, tape parity at ULP level
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-001 [x]
+**Done:** Line-faithful Rust ports of the monolith's two drive pipelines.
+`forge-motion/src/biped.rs` (HRX-7: idle breathing/scan/sway, arrive
+controller, heading spring, speed ramp, blended phase gait with the monolith's
+legIK variant, world placement, head-scan detents, ω16/ζ0.8 servo settle on
+head+arms, actuator telltales) and `fpv.rs` (VX-2: hover-drift idle,
+drag-limited velocity flight in the bounded arena, tilt servos, per-motor RPM
+mixer with alternating spin, ω14/ζ0.85 camera servo). Expression groupings
+mirror the JS so FP op order is identical; all transcendentals via forge-num
+(D17), which grew `hypot` + `js_round` (JS Math.round tie semantics,
+double-rounding safe). **Tape parity measured: max deviation 4.4e-16 (biped)
+and 7.1e-15 (fpv)** against `prototype/trajectories/` over 300 frames × all
+rot/off channels (`tests/tape_parity.rs`, banded 1e-9, bit-deterministic
+replays; tape pos channels == contract skeleton exactly). Session wiring:
+`node_world_posed` in forge-geometry implements nm() faithfully — skeleton
+`rot` is BASE euler, driver channels ADD to it (hips/shoulders carry base
+splay; replacing instead of adding would silently flatten it). `CoreSession`
+drives multirotor (pitch/roll/yaw/throttle sticks) and biped
+(drive/roll/turn) through the oracle ports with full pose channels; golden
+tick corpus re-pinned for vx2-mini/hrx7/vx2-hornet (qd + ALL bake hashes
+unchanged; native↔WASM stayed bit-identical on first post-rewire comparison —
+forge-num doing its job). BEH-001 biped smoke (2 s walk ≈ 1.49 m) replaces the
+"lands P2" warn; hrx7 report now 1 error (CTR-004, historical) + 53 GEO-003
+warns. wasm-pkg rebuilt (293 KB gz ≤ 2 MB). Earlier in session: fixed CI
+golden-compare path bug (`join(cwd, abs)` → `resolve`) that failed all three
+prior runs in the XT-001 step. Verified: 87 Rust tests, clippy -D clean,
+wasm32 cross-compiles, studio+gateway build, gateway 6/6, tapes re-record
+byte-identical, golden-compare green fresh + committed.
+**Changed:** `crates/forge-motion/{src/biped.rs,src/fpv.rs,src/lib.rs,tests/tape_parity.rs}`,
+`crates/forge-num/src/lib.rs`, `crates/forge-geometry/src/lib.rs` (node_world_posed),
+`crates/forge-wasm/{src/session.rs,tests/fixtures/golden.jsonl}`,
+`crates/forge-validate/src/lib.rs` (BEH-001 biped arm),
+`packages/studio/src/wasm-pkg/` (rebuilt), `scripts/golden-compare.mjs`,
+docs (TODO P1-001, motion-engine, core-runtime §5, examples/README).
+**Decisions:** none (golden re-pin is the documented intended-bump path, not a
+new decision).
+**Next:** P1-015 golden-scene parity gallery vs the monolith (canonical
+cameras, perceptual diff), then the studio P1 finishers (P1-008 BatchedMesh,
+P1-010 blueprint post pass, P1-012 stencil outline, P1-013 jog/follow camera —
+`focus()` is exposed on both drivers for it).
+**Blockers:** none. (Owner actions still open: push `prototype-final` tag
+(P0-010), the later configurator build question (P0-007), PRE-003/004/005.)
+
+## 2026-06-12 — Golden numbers live: native↔WASM bit-identical; D17 divergence found+fixed
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P1 · **TODO items:** P1-006 [x], P1-007 [x], XC-26 [x], P1-001 (oracle ready)
+**Done:** **XT-001 is real and green.** Golden-number suite: FNV-1a hashing of
+exact f32 bit patterns inside the core (bake buffers + 600-step scripted tick
+streams, four canonical scenes); `forge-golden` native binary vs the WASM
+facade in Node, byte-identical required; hashes also pinned in time as a
+fixture test. **First run caught a genuine D17 violation** — hrx7/vx2-hornet
+bake hashes differed native↔wasm (platform libm vs Rust wasm libm, ULP drift
+on lathe angles + pose rotations). Fix: new **`forge-num`** crate routes all
+core transcendentals through pure-Rust `libm` (identical bits on every
+target); sqrt/arithmetic stay std. After the sweep all four scenes are
+bit-identical across targets → **P1-007 met** (binary↔WASM bit-identical on
+both translated contracts). Also rebuilt the stale committed wasm-pkg (it
+predated the polymesh rework); CI now builds a fresh facade, runs
+golden-compare, and fails on committed-pkg staleness. **Oracle axis:**
+deterministic motion tapes recorded from the monolith's own drv/pose/post
+pipeline (`prototype/trajectories/`, 300 frames × 9 ch/node; hrx7 walks
+2.35 m — translation lives in root.off; fpv climbs/banks with spinner
+history); CI re-records and fails on drift.
+**Changed:** `crates/forge-num` (new), transcendental sweep across
+geometry/motion/sim, forge-wasm (golden module + bin + export),
+`scripts/{golden-compare,extract-trajectories}.mjs`, tapes, pinned
+`golden.jsonl`, CI gates, wasm-pkg rebuild, docs state.
+**Decisions:** forge-num/libm adopted as the execution of D17's no-fast-math
+policy (core-runtime §5; no new D-number — it implements D17).
+**Next:** port the biped + FPV drivers against the trajectory tapes (P1-001
+finish) — tolerance-banded vs the JS oracle, bit-exact across our targets;
+then the parity gallery (P1-015) and BatchedMesh/blueprint finishers.
+**Blockers:** none.
+
+## 2026-06-12 — P0 closed (vintage scope): byte-equivalent translations of both models
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0 · **TODO items:** P0-004 [x], P0-005 [x], P0-006 [x], P1-002 (reconciliation)
+**Done:** **Byte-equivalence MET on first comparison** — hrx7 `125 parts · 2195
+faces · 2581 vertices`, vx2-hornet `73 · 924 · 1250`, exact against the monolith
+extraction, now CI-guarded (extraction drift + translation drift + compare).
+How: (1) PRE-002 reconciliation of forge-geometry — line-by-line ports of the
+monolith's taper/box/cbox/cyl/lathe as shared-vertex polygon meshes
+(origin-centered), part pose T·Ry·Rx·Rz·S, node composition T·Ry·Rx·Rz, the
+centroid outward-orientation rule, and the monolith's TAU literal (kept under a
+justified clippy allow — position-level golden numbers depend on it); GPU
+buffers via fan triangulation at bake; counts now expose polygons + poly-verts
+(oracle quantities) alongside render triangles. (2) **Mechanical translation**:
+`scripts/translate-monolith.mjs` instruments the monolith's own N()/P() calls
+in a vm sandbox and emits `examples/{hrx7,vx2-hornet}.forge.json` — zero hand
+transcription; semantic rules (material mapping, collision none pre-D7,
+spinner/hip/knee joints, combat naming dropped §17.2) documented in the script.
+Contract gained `Part.pose` and chain explode fields (prototype reconciliation);
+schema/codegen/goldens/demo artifacts regenerated; vx2-mini + qd-mini re-posed
+for centered solids; both translations joined the studio picker. **Findings:**
+both translations fail CTR-004 (explode coverage 69 %/42 % vs the later 80 %
+gate) — historical models predate the completeness gates; gates unchanged.
+hrx7 AUW reads 93 kg from class densities (no masses in the vintage — doctrine
+holds: computed, not invented; real masses arrive with sourcing).
+**Changed:** crates (contract pose/chains, geometry polymesh+primitives rework,
+validate/wasm counts, sim export origins, gen poses), scripts (translate,
+extract --out arg), examples (2 new + 2 re-posed), studio (picker, report
+truncation), CI (equivalence guard), goldens, schema, codegen, docs state.
+**Decisions:** none new (all within PRE-002 reconciliation scope under D21).
+**Next:** extend extraction to record gait/flight trajectories → golden-number
+corpus (P1-006/XC-26) → bit-identical native↔WASM verification (P1-007). P0 is
+now ● for the delivered vintage (P0-007 variants still gated; remote tag still
+an owner push).
+**Blockers:** none.
+
+## 2026-06-12 — PRE-002 executed: prototype delivered, frozen, oracle extracted
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** pre-P0/P0 · **TODO items:** PRE-002, P0-004 (oracle side), P0-008 (counts), P0-010
+**Done:** The owner delivered `cad-object-studio.html` (50,967 bytes, sha256
+`ca93489e…`). Searched first (TTC refs/tags, all 45 owner repos by name and code
+content — zero hits; recorded). Committed **byte-exact** at
+`prototype/cad-object-studio.html`, tagged **`prototype-final`**. Built the
+extraction harness (`scripts/extract-counts.mjs`): slices the monolith's pure
+builder segment into a Node vm sandbox (read-only) and replicates `loadModel`'s
+reset+build+count core. **Oracle numbers extracted** →
+`prototype/extracted-counts.json`: hrx7 humanoid **125 parts · 2195 faces ·
+2581 vertices · 20 nodes · 15 chains**; fpv VX-2 **73 parts · 924 faces · 1250
+vertices · 14 nodes · 13 chains**. Byte-equivalence comparator ready
+(`scripts/compare-counts.mjs`). **Vintage finding (recorded in
+prototype/README.md):** this is the pre-configurator build — N/P registry,
+chains, gait+IK (L1=L2=0.39, Appendix-C verbatim), FPV mixer, servos (ω 14–16,
+ζ 0.8–0.85), blueprint/jog/click-to-move are all present; slots/variants/ports/
+bellows/squircle/harness (the plan's ~83 KB audit) are not. P0-007 (31 variants)
+stays gated on the later build or a re-scope decision; everything else
+prototype-gated is now **unblocked** (P0-005/006 translations, P1-006/007/015).
+**Changed:** `prototype/` (monolith + README + extracted-counts.json),
+`scripts/extract-counts.mjs`, `scripts/compare-counts.mjs`, CLAUDE.md §2,
+TODO (blocker resolved; P0 items re-stated), ROADMAP (P0 ⛔→◑).
+**Decisions:** none new (vintage re-scope of P0-007 awaits the owner's answer on
+whether the configurator build exists).
+**Next:** P0-005/006 — translate hrx7 + fpv from the frozen source into
+`ModelSpec` JSON and drive `compare-counts` to byte-equivalence; then extend
+extraction to record gait/flight trajectories (golden-number corpus, P1-006).
+**Blockers:** none critical. Two owner items: (1) the remote tag — the git proxy
+rejects tag pushes (403), so `prototype-final` exists locally only; push it from
+any clone or create a Release on `0294a9d`. (2) Open question: does the later
+~83 KB configurator monolith (31 variants/11 slots/harness) exist?
+
+## 2026-06-12 — Boundary frozen; P2 quadruped family; in-browser core; exporters
+**Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1/P2 interleaved (D21) · **TODO items:** P0-009, P1-004/005/009/010/011/012/017, P2-001/003/004/005, P3-009/010, P4-005 (core path), P6-008, XC-04, XC-06
+**Done (all verified: 66 Rust tests, clippy -D clean, studio+gateway builds, 6
+gateway tests, 12 worker tests):**
+**Core boundary FROZEN v1 (P0-009)** — all four calls live: `patch` (RFC-6902
+subset with shape gate, in `forge-contract`), `tick` (`CoreSession`: fixed-step
+120 Hz accumulator, multirotor spinner kinematics, rover/quadruped body+joint
+poses, bit-deterministic under uneven dts — tested), alongside bake/validate.
+**P2 substantially delivered** — quadruped driver (trot phase gait, per-leg IK,
+diagonal pairing, hip_/knee_/foot_ chain discovery); typed driver-param schemas
+(schemars) for multirotor/rover/quadruped with new check CTR-008; **`forge-gen
+quadruped`**: slider params → admitted, walking contracts with zero hand-written
+code, grid-tested at 2/3/4 leg pairs (P2 exit criterion); demo committed as
+`examples/qd-mini.forge.json` (Admitted, 0/0).
+**In-browser core (D17 made real)** — wasm-pack builds the facade into the studio
+(committed pkg, **275 KB gz vs ≤ 2 MB budget**); the studio now validates and
+bakes dropped `.forge.json` files locally (same bits as CI), and **Drive mode
+ticks the core in-browser** (spinners spin, the quadruped walks). Studio also
+gained: blueprint mode v0, raycast selection + info panel, explode leader lines,
+model picker, fps overlay.
+**Pull-forwards** — MJCF/URDF exporters v0 with per-node mass/COM/inertia from
+baked meshes, Y-up→Z-up conversion, joints/limits/actuators + golden fixtures
+(XC-04); thrust-table bilinear interpolation with table-over-estimate precedence
+(XC-06); BOM v0 (`forge-validate bom`); gateway `/v1/bake` + `/v1/schema`.
+**Changed:** `crates/*` (patch.rs, session.rs, quadruped.rs, params.rs,
+thrust_table.rs, export.rs, forge-gen new), `packages/studio/*` (wasm.ts,
+scene/store/App rewrites, wasm-pkg committed), `packages/gateway/*`,
+`examples/qd-mini.forge.json` + demo artifacts, `scripts/build-wasm.sh`,
+docs/TODO/ROADMAP/validation-harness/core-runtime.
+**Decisions:** none new (all under D21's recorded scope).
+**Next:** PRE-002 still the highest-value unlock. Independent: P1-014 configurator
+pane via the patch path; P1-016 AO/quality tiers; P2-002 draft persistence;
+P2-007 napi-rs measurement; zero-copy facade views.
+**Blockers:** PRE-002 (unchanged).
+
 ## 2026-06-12 — Fix PR #1 CI: pnpm version double-pin
 **Session:** Claude agent · branch `claude/beautiful-edison-fx5qnz` · **Phase:** P0/P1 (D21) · **TODO items:** none
 **Done:** PR #1's "studio + gateway" check failed in setup: `pnpm/action-setup@v4`

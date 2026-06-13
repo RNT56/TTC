@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, "claude/**"]
   pull_request:
 
 jobs:
@@ -44,6 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         # version comes from package.json "packageManager" — pinning it here too
@@ -59,6 +61,68 @@ jobs:
         run: pnpm -r build
       - name: gateway tests (spawns the gatekeeper)
         run: pnpm --filter @forge/gateway test
+      - name: P0-004 byte-equivalence — translations vs the frozen monolith
+        run: |
+          node scripts/extract-counts.mjs prototype/cad-object-studio.html --out /tmp/extracted.json
+          diff <(python3 -c "import json;d=json.load(open('/tmp/extracted.json'));print(json.dumps(d['models']))") \
+               <(python3 -c "import json;d=json.load(open('prototype/extracted-counts.json'));print(json.dumps(d['models']))") \
+            || { echo "::error::extraction drifted from the committed oracle"; exit 1; }
+          node scripts/translate-monolith.mjs
+          git diff --exit-code examples/hrx7.forge.json examples/vx2-hornet.forge.json \
+            || { echo "::error::translations drifted — regenerate via scripts/translate-monolith.mjs"; exit 1; }
+          cargo run -q -p forge-validate -- bake examples/hrx7.forge.json --out /tmp/hrx7.bake.json
+          cargo run -q -p forge-validate -- bake examples/vx2-hornet.forge.json --out /tmp/vx2.bake.json
+          node scripts/compare-counts.mjs prototype/extracted-counts.json /tmp/hrx7.bake.json /tmp/vx2.bake.json
+      - name: XT-001 golden numbers — native ↔ WASM bit-identical (D17)
+        run: |
+          cargo build -p forge-wasm --bin forge-golden
+          pnpm exec wasm-pack build crates/forge-wasm --target web --release --out-dir /tmp/wasm-fresh --out-name forge_wasm
+          node scripts/golden-compare.mjs --pkg /tmp/wasm-fresh --bin target/debug/forge-golden
+          node scripts/golden-compare.mjs --pkg packages/studio/src/wasm-pkg --bin target/debug/forge-golden \
+            || { echo "::error::committed wasm-pkg is stale — run pnpm build:wasm and commit"; exit 1; }
+      - name: P1-005 performance budgets — bake ≤ 60 ms, patch ≤ 10 ms (binding)
+        run: node scripts/budgets.mjs --pkg /tmp/wasm-fresh
+      - name: P2-006 declared verdicts on every first-party contract
+        run: node scripts/validate-all.mjs
+      - name: trajectory oracle tapes are deterministic and current
+        run: |
+          node scripts/extract-trajectories.mjs
+          git diff --exit-code prototype/trajectories \
+            || { echo "::error::tapes drifted — the recorder or the frozen prototype changed"; exit 1; }
+
+  data-plane:
+    name: catalog data plane (Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: forge
+          POSTGRES_USER: forge
+          POSTGRES_PASSWORD: forge-dev-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U forge -d forge"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://forge:forge-dev-only@localhost:5432/forge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: migrate catalog schema
+        run: pnpm db:migrate
+      - name: seed reviewed catalog fixtures
+        run: pnpm db:seed-catalog
+      - name: assert P3 catalog invariants
+        run: pnpm db:assert-p3
 
   workers:
     name: compute workers (Python)

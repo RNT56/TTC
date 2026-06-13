@@ -1,0 +1,87 @@
+{
+  "id": "cmp_frame_tbs-source-one-v6-5in",
+  "brand": "TBS",
+  "model": "Source One V6 5-Inch Frame Kit",
+  "category": "frame",
+  "massG": 136.5,
+  "dims": {
+    "wheelbaseMm": 240.0
+  },
+  "elec": {},
+  "mech": {
+    "mountPattern": "stack-30.5x30.5-M3",
+    "motorSpacingMm": 240.0
+  },
+  "license": {
+    "id": "lic_tbs_source_one_retailer_attribution",
+    "class": "attribution",
+    "terms": "Retailer product specification; attribution/source URL required.",
+    "sourceUrl": "https://pyrodrone.com/products/tbs-source-one-v5-5inch",
+    "exportPolicy": "attribution-manifest-required"
+  },
+  "source": "datasheet",
+  "confidence": 0.75,
+  "review": "REQUIRED before marketplace exposure: frame row uses retailer-published specs because a primary manufacturer page was not available in the local source pass.",
+  "prices": [
+    {
+      "vendor": "Pyrodrone",
+      "sku": "tbs-source-one-v6-5inch",
+      "url": "https://pyrodrone.com/products/tbs-source-one-v5-5inch",
+      "amount": 41.99,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Weight 5 inch: 136.5g",
+      "sources": [
+        "https://pyrodrone.com/products/tbs-source-one-v5-5inch"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "dims": {
+      "value": "Wheelbase 5 inch: 240mm",
+      "sources": [
+        "https://pyrodrone.com/products/tbs-source-one-v5-5inch"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "mech.mountPattern": {
+      "value": "Stack Mounting: 30.5 x 30.5mm and 20 x 20mm",
+      "sources": [
+        "https://pyrodrone.com/products/tbs-source-one-v5-5inch"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "mech.motorSpacingMm": {
+      "value": "Wheelbase 5 inch: 240mm; Motor Mounting: 16 x 16mm (M3)",
+      "sources": [
+        "https://pyrodrone.com/products/tbs-source-one-v5-5inch"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Attribution row because source is retailer-published.",
+      "sources": [
+        "https://pyrodrone.com/products/tbs-source-one-v5-5inch"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "Current price $41.99",
+      "sources": [
+        "https://pyrodrone.com/products/tbs-source-one-v5-5inch"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

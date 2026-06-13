@@ -1,0 +1,154 @@
+{
+  "id": "cmp_motor_emax-eco2-2207-1900kv",
+  "brand": "EMAX",
+  "model": "ECO II Series 2207 1900KV",
+  "category": "motor",
+  "massG": 31.5,
+  "dims": {
+    "diameterMm": 27.45,
+    "heightMm": 32.6
+  },
+  "elec": {
+    "vMin": 11.1,
+    "vMax": 25.2,
+    "maxCurrentA": 40.6,
+    "kv": 1900.0
+  },
+  "mech": {
+    "mountPattern": "motor-16x16-M3",
+    "propShaft": "prop-shaft-M5"
+  },
+  "maxThrustG": 2020.0,
+  "license": {
+    "id": "lic_emax_eco2_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer/retailer product specifications; source URLs required for redistribution.",
+    "sourceUrl": "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing",
+    "exportPolicy": "full-geometry-ok"
+  },
+  "source": "datasheet",
+  "confidence": 0.7,
+  "review": "REQUIRED before marketplace exposure: values combine manufacturer page, retailer spec tables, and an aggregator max-thrust/current table. Verify each field against the citations.",
+  "prices": [
+    {
+      "vendor": "EMAX Model Store",
+      "sku": "0101096015",
+      "url": "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing",
+      "amount": 20.0,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "thrustTables": [
+    {
+      "id": "tt_emax_eco2_2207_1900kv_5x46_6s_sparse",
+      "prop": "5x4.6",
+      "voltage": 25.2,
+      "confidence": 0.7,
+      "sourceUrl": "https://www.aliexpress.com/s/wiki-ssr/article/emax-eco-ii-2207-1900kv_1005001609557497",
+      "points": [
+        {
+          "throttle": 0.0,
+          "thrustG": 0.0,
+          "currentA": 0.0
+        },
+        {
+          "throttle": 1.0,
+          "thrustG": 2020.0,
+          "currentA": 40.6
+        }
+      ]
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "31.5g (without silicone wire)",
+      "sources": [
+        "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing",
+        "https://emax-usa.com/products/eco-ii-2207-brushless-motor-1700kv-1900kv-2400kv"
+      ],
+      "accessed": "2026-06-12",
+      "note": "One aggregator lists 33.5 g with wire; this row records the without-wire mass."
+    },
+    "dims": {
+      "value": "Length: 32.6mm, Diameter: 27.45mm",
+      "sources": [
+        "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing",
+        "https://www.getfpv.com/emax-eco-ii-series-2207-motor-1700kv-1900kv-2400kv.html"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "elec.kv": {
+      "value": "1900KV",
+      "sources": [
+        "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMin": {
+      "value": "3-6S LiPo (3S nominal 11.1 V)",
+      "sources": [
+        "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing"
+      ],
+      "accessed": "2026-06-12",
+      "note": "Derived from rated cell count."
+    },
+    "elec.vMax": {
+      "value": "Max Voltage: 25.2V (6S)",
+      "sources": [
+        "https://www.aliexpress.com/s/wiki-ssr/article/emax-eco-ii-2207-1900kv_1005001609557497"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "elec.maxCurrentA": {
+      "value": "Max Current: 40.6A (6S, 5x4.6 prop)",
+      "sources": [
+        "https://www.aliexpress.com/s/wiki-ssr/article/emax-eco-ii-2207-1900kv_1005001609557497"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "maxThrustG": {
+      "value": "Max Thrust: 2020g (5x4.6 propeller, 25.2 V)",
+      "sources": [
+        "https://www.aliexpress.com/s/wiki-ssr/article/emax-eco-ii-2207-1900kv_1005001609557497"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "mech.mountPattern": {
+      "value": "16*16mm hole pattern (M3)",
+      "sources": [
+        "https://www.getfpv.com/emax-eco-ii-series-2207-motor-1700kv-1900kv-2400kv.html"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "mech.propShaft": {
+      "value": "Prop adapter: M5 Shaft Thread",
+      "sources": [
+        "https://www.getfpv.com/emax-eco-ii-series-2207-motor-1700kv-1900kv-2400kv.html"
+      ],
+      "accessed": "2026-06-12"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "Product Code: 0101096015; Availability: In stock; $20.00",
+      "sources": [
+        "https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

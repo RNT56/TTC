@@ -1,0 +1,117 @@
+{
+  "id": "cmp_batt_cnhl-black-4s-1500",
+  "brand": "CNHL",
+  "model": "Black Series V2.0 1500mAh 14.8V 4S 130C XT60",
+  "category": "battery",
+  "massG": 164.0,
+  "dims": {
+    "lengthMm": 80.0,
+    "widthMm": 39.0,
+    "heightMm": 28.0
+  },
+  "elec": {
+    "vMin": 14.8,
+    "vMax": 16.8,
+    "maxDischargeA": 195.0,
+    "connectors": [
+      "XT60"
+    ],
+    "capacityMah": 1500.0
+  },
+  "mech": {},
+  "license": {
+    "id": "lic_cnhl_black_v2_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer product specifications; source URL required for redistribution.",
+    "sourceUrl": "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug",
+    "exportPolicy": "full-geometry-ok"
+  },
+  "source": "datasheet",
+  "confidence": 0.85,
+  "review": "REQUIRED before marketplace exposure: product is sold as a two-pack while this component row models one pack; BOM price records the purchasable package.",
+  "prices": [
+    {
+      "vendor": "ChinaHobbyLine",
+      "sku": "1501304BK-2PACK",
+      "url": "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug",
+      "amount": 45.98,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Approx Weight(+/-5g): 164g",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "dims": {
+      "value": "Size(1-5mm difference): 39X28X80mm",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMin": {
+      "value": "Voltage: 14.8V / 4-Cell / 4S1P",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMax": {
+      "value": "Normal cell voltage is between 3.7V~4.2V; 4 x 4.2V = 16.8V",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited per-cell maximum."
+    },
+    "elec.maxDischargeA": {
+      "value": "130C continual x 1.5 Ah = 195A",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited discharge rate and capacity."
+    },
+    "elec.connectors": {
+      "value": "Output Connector: XT60",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.capacityMah": {
+      "value": "Capacity: 1500mAh",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "US warehouse variant $45.98 USD; Stock Number 1501304BK",
+      "sources": [
+        "https://chinahobbyline.com/products/2-packs-cnhl-black-series-v2-0-1500mah-14-8v-4s-130c-lipo-battery-with-xt60-plug"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "id": "cmp_fc_holybro-kakute-h7-v15",
+  "brand": "Holybro",
+  "model": "Kakute H7 V1.5 Flight Controller",
+  "category": "fc",
+  "massG": 8.0,
+  "dims": {
+    "lengthMm": 35.0,
+    "widthMm": 35.0
+  },
+  "elec": {
+    "vMin": 11.1,
+    "vMax": 33.6,
+    "connectors": [
+      "UART",
+      "I2C"
+    ]
+  },
+  "mech": {
+    "mountPattern": "stack-30.5x30.5-M3"
+  },
+  "license": {
+    "id": "lic_holybro_kakute_h7_datasheet_open",
+    "class": "open",
+    "terms": "Public manufacturer product specifications; source URL required for redistribution.",
+    "sourceUrl": "https://holybro.com/products/kakute-h7",
+    "exportPolicy": "full-geometry-ok"
+  },
+  "source": "datasheet",
+  "confidence": 0.85,
+  "review": "REQUIRED before marketplace exposure: this is the current purchasable Kakute H7 V1.5 row used as the P3 ArduPilot-capable reference FC.",
+  "prices": [
+    {
+      "vendor": "Holybro Store",
+      "sku": "11091",
+      "url": "https://holybro.com/products/kakute-h7",
+      "amount": 62.0,
+      "currency": "USD",
+      "fetchedAt": "2026-06-13",
+      "region": "US",
+      "purchasable": true
+    }
+  ],
+  "citations": {
+    "massG": {
+      "value": "Weight - 8g",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "dims": {
+      "value": "Dimension - 35x35mm",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "elec.vMin": {
+      "value": "Battery input voltage: 3S - 8S; 3S nominal 11.1V",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited cell-count range."
+    },
+    "elec.vMax": {
+      "value": "Battery input voltage: 3S - 8S; 8S charged 33.6V",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13",
+      "note": "Derived from cited cell-count range."
+    },
+    "mech.mountPattern": {
+      "value": "Mounting - 30.5 x 30.5mm hole with M3 grommets",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "license": {
+      "value": "Open catalog row with source attribution retained.",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13"
+    },
+    "prices": {
+      "value": "SKU 11091; Regular price $62.00",
+      "sources": [
+        "https://holybro.com/products/kakute-h7"
+      ],
+      "accessed": "2026-06-13"
+    }
+  },
+  "revisions": [
+    {
+      "version": "1.0.0",
+      "yanked": false
+    }
+  ]
+}

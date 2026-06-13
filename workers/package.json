@@ -1,0 +1,10 @@
+{
+  "name": "@forge/workers",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=. python3 -m pytest tests"
+  },
+  "license": "SEE LICENSE IN ../LICENSE"
+}

@@ -1,0 +1,31 @@
+{
+  "source": "prototype/cad-object-studio.html @ sha256:ca93489e05df87f9…",
+  "sha256": "ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe",
+  "extractedAt": "2026-06-12T11:05:33.323Z",
+  "models": [
+    {
+      "model": "hrx7",
+      "name": "HRX-7 MK II — PRODUCTION HUMANOID PLATFORM",
+      "kind": "biped",
+      "parts": 125,
+      "faces": 2195,
+      "vertices": 2581,
+      "nodes": 20,
+      "chains": 15,
+      "leaderFlagged": 35,
+      "explodeWindows": 86
+    },
+    {
+      "model": "fpv",
+      "name": "VX-2 HORNET — FPV COMBAT QUADCOPTER",
+      "kind": "quad",
+      "parts": 73,
+      "faces": 924,
+      "vertices": 1250,
+      "nodes": 14,
+      "chains": 13,
+      "leaderFlagged": 4,
+      "explodeWindows": 31
+    }
+  ]
+}

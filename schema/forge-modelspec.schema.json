@@ -120,11 +120,32 @@
       ]
     },
     "Chain": {
-      "description": "Staged disassembly grouping *(proposed shape pending PRE-002)*.",
+      "description": "Staged disassembly: one row per kinematic-chain node, reconciled to the\nprototype's chains table `[node, dir, dist, t0, t1]` (PRE-002).",
       "type": "object",
       "properties": {
+        "dir": {
+          "description": "Node-local explode direction.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
         "id": {
           "type": "string"
+        },
+        "mag": {
+          "description": "Travel distance, meters.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
         },
         "nodes": {
           "type": "array",
@@ -136,6 +157,21 @@
           "type": "integer",
           "format": "uint32",
           "minimum": 0
+        },
+        "t0": {
+          "description": "Window within the global explode phase.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "t1": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
         }
       },
       "required": [
@@ -921,6 +957,16 @@
           "description": "Skeleton node this part attaches to.",
           "type": "string"
         },
+        "pose": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PartPose"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "renderBias": {
           "description": "Polygon-offset hint for true coplanar decals only (plan §7.2).",
           "type": [
@@ -936,6 +982,54 @@
         "material",
         "color"
       ]
+    },
+    "PartPose": {
+      "description": "Part-local pose applied before node placement (prototype `P(node, mesh,\n{p, r, s})` — the executable spec). Rotation composes T·Ry·Rx·Rz·S.",
+      "type": "object",
+      "properties": {
+        "p": {
+          "type": "array",
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "r": {
+          "type": "array",
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "s": {
+          "type": "array",
+          "default": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 3,
+          "minItems": 3
+        }
+      }
     },
     "Port": {
       "type": "object",

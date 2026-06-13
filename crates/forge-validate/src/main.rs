@@ -15,10 +15,11 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("run") => cmd_run(&args[1..]),
         Some("bake") => cmd_bake(&args[1..]),
+        Some("bom") => cmd_bom(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate schema [--out schema.json]"
             );
             ExitCode::from(1)
         }
@@ -47,7 +48,14 @@ fn cmd_run(args: &[String]) -> ExitCode {
         as_draft: args.iter().any(|a| a == "--as-draft"),
         ..Default::default()
     };
-    let report = run_full(&doc, &EmptyCatalog, &opts);
+    // --catalog <dir>: resolve componentRefs against file-backed rows
+    // (P3-007a); without it every ref is unresolved (EmptyCatalog).
+    let file_catalog = match load_catalog(args, "run") {
+        Ok(c) => c,
+        Err(code) => return code,
+    };
+    let catalog = catalog_ref(file_catalog.as_ref());
+    let report = run_full(&doc, catalog, &opts);
 
     let errors = report
         .results
@@ -101,6 +109,33 @@ fn cmd_run(args: &[String]) -> ExitCode {
     }
 }
 
+fn load_catalog(
+    args: &[String],
+    command: &str,
+) -> Result<Option<forge_validate::file_catalog::FileCatalog>, ExitCode> {
+    Ok(match flag_value(args, "--catalog") {
+        Some(dir) => {
+            match forge_validate::file_catalog::FileCatalog::load(std::path::Path::new(&dir)) {
+                Ok(c) => Some(c),
+                Err(e) => {
+                    eprintln!("{command}: catalog load failed: {e}");
+                    return Err(ExitCode::from(1));
+                }
+            }
+        }
+        None => None,
+    })
+}
+
+fn catalog_ref(
+    file_catalog: Option<&forge_validate::file_catalog::FileCatalog>,
+) -> &dyn forge_contract::CatalogSource {
+    match file_catalog {
+        Some(c) => c,
+        None => &EmptyCatalog,
+    }
+}
+
 /// The bake artifact the studio consumes (truth from core; TS only renders).
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -139,15 +174,21 @@ fn cmd_bake(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    let file_catalog = match load_catalog(args, "bake") {
+        Ok(c) => c,
+        Err(code) => return code,
+    };
+    let catalog = catalog_ref(file_catalog.as_ref());
     let artifact = BakeArtifact {
         contract_hash: forge_contract::contract_hash(&spec),
         schema_version: forge_contract::SCHEMA_VERSION.to_string(),
         counts: forge_validate::Counts {
             parts: baked.parts.len(),
-            faces: baked.total_faces,
+            faces: baked.total_polygons,
             vertices: baked.total_vertices,
+            triangles: baked.total_faces,
         },
-        hud: forge_sim::derive_hud(&spec, &baked).ok(),
+        hud: forge_sim::derive_hud_with_catalog(&spec, &baked, catalog).ok(),
         baked,
     };
     eprintln!(
@@ -167,6 +208,75 @@ fn cmd_bake(args: &[String]) -> ExitCode {
                 "{}",
                 serde_json::to_string(&artifact).expect("artifact serializes")
             );
+            ExitCode::SUCCESS
+        }
+    }
+}
+
+fn cmd_bom(args: &[String]) -> ExitCode {
+    let Some(path) = args.first().filter(|a| !a.starts_with("--")) else {
+        eprintln!("bom: missing <contract.json>");
+        return ExitCode::from(1);
+    };
+    let doc = match std::fs::read_to_string(path) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("bom: cannot read {path}: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let spec = match forge_contract::validate_shape(&doc) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("bom: CTR-001 schema_invalid: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let baked = match forge_geometry::bake(&spec) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("bom: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let file_catalog = match load_catalog(args, "bom") {
+        Ok(c) => c,
+        Err(code) => return code,
+    };
+    let catalog = catalog_ref(file_catalog.as_ref());
+    let rows = forge_validate::bom_rows_with_catalog(&spec, &baked, catalog);
+    let format = flag_value(args, "--format")
+        .or_else(|| {
+            flag_value(args, "--out").and_then(|out| {
+                if out.ends_with(".json") {
+                    Some("json".to_string())
+                } else {
+                    None
+                }
+            })
+        })
+        .unwrap_or_else(|| "csv".to_string());
+    let body = match format.as_str() {
+        "csv" => forge_validate::bom_csv(&rows),
+        "json" => serde_json::to_string_pretty(&rows).expect("bom rows serialize"),
+        other => {
+            eprintln!("bom: unknown --format '{other}' (expected csv|json)");
+            return ExitCode::from(1);
+        }
+    };
+    match flag_value(args, "--out") {
+        Some(out) => match std::fs::write(&out, body) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("bom: cannot write {out}: {e}");
+                ExitCode::from(1)
+            }
+        },
+        None => {
+            print!("{body}");
+            if format == "json" {
+                println!();
+            }
             ExitCode::SUCCESS
         }
     }
