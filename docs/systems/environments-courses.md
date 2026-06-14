@@ -63,7 +63,7 @@ Live 2026-06-14: `forge-sim::heavy::course_to_task` maps EnvSpec/course task lis
 and archetypes to RL task specs; gateway course and leaderboard routes are live;
 `/v1/replays` persists replay verification artifacts and leaderboard writes compute
 verification server-side; Studio renders a filtered verified-board surface for the
-selected course.
+selected course and an editable EnvSpec course form for the create/validate route.
 
 ## 6. Dependencies
 

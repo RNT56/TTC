@@ -226,6 +226,9 @@ export default function App() {
   const [credits, setCredits] = useState<CreditSummary | null>(null);
   const [licenseLedger, setLicenseLedger] = useState<LicenseLedgerEntry[]>([]);
   const [courses, setCourses] = useState<CourseRecord[]>([]);
+  const [courseName, setCourseName] = useState("Fixture slalom");
+  const [courseVisibility, setCourseVisibility] = useState<CourseVisibility>("unlisted");
+  const [courseEnvJson, setCourseEnvJson] = useState(() => JSON.stringify(fixtureEnvSpec(), null, 2));
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [leaderboardRuns, setLeaderboardRuns] = useState<LeaderboardRunRecord[]>([]);
   const [leaderboardArchetypeFilter, setLeaderboardArchetypeFilter] = useState("all");
@@ -1075,16 +1078,21 @@ export default function App() {
     setPlatformError(null);
     setPlatformMessage(null);
     try {
+      const envSpec = JSON.parse(courseEnvJson) as unknown;
+      if (!courseName.trim()) throw new Error("course name is required");
       const result = await createCourse({
-        name: "Fixture slalom",
-        visibility: "unlisted",
-        envSpec: fixtureEnvSpec(),
+        name: courseName.trim(),
+        visibility: courseVisibility,
+        envSpec,
       });
       setActiveCourseId(result.id);
-      setPlatformMessage(`course ${result.id}`);
+      setCourseEnvJson(JSON.stringify(envSpec, null, 2));
+      const report = asRecord(result.validatorReport);
+      setPlatformMessage(`course ${result.id} · ${typeof report?.verdict === "string" ? report.verdict : "validated"}`);
       await refreshPlatform();
     } catch (error) {
-      setPlatformError(error instanceof Error ? error.message : String(error));
+      const message = error instanceof SyntaxError ? `EnvSpec JSON: ${error.message}` : error instanceof Error ? error.message : String(error);
+      setPlatformError(message);
     } finally {
       setPlatformBusy(false);
     }
@@ -1773,6 +1781,9 @@ export default function App() {
           <PlatformPanel
             credits={credits}
             courses={courses}
+            courseName={courseName}
+            courseVisibility={courseVisibility}
+            courseEnvJson={courseEnvJson}
             activeCourseId={activeCourseId}
             leaderboardRuns={leaderboardRuns}
             leaderboardArchetypeFilter={leaderboardArchetypeFilter}
@@ -1793,6 +1804,9 @@ export default function App() {
             activeModelId={activeModelId}
             hasSubmissionContract={Boolean(s.contractJson)}
             onRefresh={() => void refreshPlatform()}
+            onCourseNameChange={setCourseName}
+            onCourseVisibilityChange={setCourseVisibility}
+            onCourseEnvJsonChange={setCourseEnvJson}
             onCourseChange={(courseId) => {
               setActiveCourseId(courseId);
               void refreshLeaderboard(courseId);
@@ -2627,6 +2641,9 @@ function priceText(price: number | null, currency: string | null): string | unde
 function PlatformPanel({
   credits,
   courses,
+  courseName,
+  courseVisibility,
+  courseEnvJson,
   activeCourseId,
   leaderboardRuns,
   leaderboardArchetypeFilter,
@@ -2647,6 +2664,9 @@ function PlatformPanel({
   activeModelId,
   hasSubmissionContract,
   onRefresh,
+  onCourseNameChange,
+  onCourseVisibilityChange,
+  onCourseEnvJsonChange,
   onCourseChange,
   onLeaderboardArchetypeFilter,
   onLeaderboardClassFilter,
@@ -2665,6 +2685,9 @@ function PlatformPanel({
 }: {
   credits: CreditSummary | null;
   courses: CourseRecord[];
+  courseName: string;
+  courseVisibility: CourseVisibility;
+  courseEnvJson: string;
   activeCourseId: string | null;
   leaderboardRuns: LeaderboardRunRecord[];
   leaderboardArchetypeFilter: string;
@@ -2685,6 +2708,9 @@ function PlatformPanel({
   activeModelId: string | null;
   hasSubmissionContract: boolean;
   onRefresh: () => void;
+  onCourseNameChange: (value: string) => void;
+  onCourseVisibilityChange: (value: CourseVisibility) => void;
+  onCourseEnvJsonChange: (value: string) => void;
   onCourseChange: (courseId: string | null) => void;
   onLeaderboardArchetypeFilter: (value: string) => void;
   onLeaderboardClassFilter: (value: string) => void;
@@ -2754,6 +2780,32 @@ function PlatformPanel({
         <button onClick={onRecordListingUsage} disabled={busy || listings.length === 0} style={btn}>
           usage
         </button>
+      </div>
+      <div style={artifactRowStyle}>
+        <div style={{ color: "#8fa3bf" }}>course editor</div>
+        <input
+          value={courseName}
+          onChange={(event) => onCourseNameChange(event.target.value)}
+          placeholder="Course name"
+          style={{ ...inputStyle, marginTop: 5 }}
+        />
+        <select
+          value={courseVisibility}
+          onChange={(event) => onCourseVisibilityChange(toCourseVisibility(event.target.value))}
+          style={{ ...selectStyle, width: "100%", marginTop: 5 }}
+        >
+          {COURSE_VISIBILITIES.map((visibility) => (
+            <option key={visibility} value={visibility}>
+              {visibility}
+            </option>
+          ))}
+        </select>
+        <textarea
+          value={courseEnvJson}
+          onChange={(event) => onCourseEnvJsonChange(event.target.value)}
+          spellCheck={false}
+          style={{ ...textareaStyle, minHeight: 92, marginTop: 5, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+        />
       </div>
       {platformGates.slice(0, 3).map((gate) => (
         <div key={gate.gateKey} style={artifactRowStyle}>
@@ -2930,6 +2982,13 @@ function PlatformPanel({
       ))}
     </div>
   );
+}
+
+type CourseVisibility = CourseRecord["visibility"];
+const COURSE_VISIBILITIES: CourseVisibility[] = ["private", "unlisted", "public"];
+
+function toCourseVisibility(value: string): CourseVisibility {
+  return value === "private" || value === "public" ? value : "unlisted";
 }
 
 type LeaderboardStatusFilter = "all" | "verified" | "held";
