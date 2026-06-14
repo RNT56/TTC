@@ -83,8 +83,9 @@ Scope:
   single-implementation contract.
 - Finish editable draft persistence and make draft state authoritative across
   train/export/share gates.
-- Reconcile `XC-23`: verify `scripts/db-migrate.mjs` satisfies the schema
-  migration runner requirement, or add the missing compatibility/version matrix.
+- `XC-23` is closed as of 2026-06-14: ModelSpec migrations live in
+  `forge-contract`, are exposed by `forge-validate migrate`, and normalize
+  historical schema markers/field aliases before re-running the shape gate.
 - `XC-24` is closed as of 2026-06-14: generator fuzz seeds live under
   `evals/fuzz/modelspec-seeds.json`, with `scripts/fuzz-contract-seeds.mjs`
   checking pinned outcomes and minimizing future regressions.
@@ -447,5 +448,5 @@ Acceptance:
 | `XC-11`, `XC-12` | G | couplers and wire lists |
 | `XC-18` | D | real DfM checks |
 | `XC-19`, `XC-20`, `XC-27` | H | bridge/Desktop hardware work |
-| `XC-23` | V | verify/finish migration runner |
+| `XC-23` | V | done 2026-06-14: ModelSpec migration runner and CLI |
 | `XC-24` | V | done 2026-06-14: fuzz corpus and minimizer |

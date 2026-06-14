@@ -222,7 +222,7 @@ touched.
 | XC-20 | Ghost-overlay telemetry view | P8 | systems/hardware-bridge.md |
 | XC-21 | Scorecard renderer | P7 | systems/learning-engine.md |
 | XC-22 | Quality-tier autoswitcher | P1 | systems/render-engine.md |
-| XC-23 | Schema migration runner | P2 | systems/model-contract.md |
+| XC-23 | Schema migration runner — **done 2026-06-14** (`forge-contract` migration runner + `forge-validate migrate`) | P2 | systems/model-contract.md |
 | XC-24 | Fuzz corpus seed set — **done 2026-06-14** (`evals/fuzz/modelspec-seeds.json` + `scripts/fuzz-contract-seeds.mjs` checker/minimizer) | P4 | systems/validation-harness.md |
 | XC-25 | Leaderboard replay verifier — **done 2026-06-14** (server computes replay hash/timestamp/header checks before official verification) | P10 | systems/environments-courses.md |
 | XC-26 | Golden-number suite harness — **done 2026-06-12** (XT-001 in CI; forge-num determinism fix) | P1 | systems/core-runtime.md |

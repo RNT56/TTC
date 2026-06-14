@@ -7,6 +7,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
+    "schema:migrate": "cargo run -q -p forge-validate -- migrate",
     "build:wasm": "./scripts/build-wasm.sh",
     "parity": "node scripts/parity-gallery.mjs",
     "eval:brief25": "pnpm --filter @forge/gateway build && node scripts/brief25-eval.mjs --validator real --enforce-ga-gate",

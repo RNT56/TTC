@@ -3,6 +3,7 @@
 //!   forge-validate run <contract.json> [--report out.json] [--as-draft]
 //!   forge-validate bake <contract.json> [--out bake.json]
 //!   forge-validate patch <contract.json> <patch.json> [--out out.json]
+//!   forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]
 //!   forge-validate env <env.json> [--report out.json] [--as-draft]
 //!   forge-validate schema [--out schema.json]
 //!
@@ -19,11 +20,12 @@ fn main() -> ExitCode {
         Some("bake") => cmd_bake(&args[1..]),
         Some("bom") => cmd_bom(&args[1..]),
         Some("patch") => cmd_patch(&args[1..]),
+        Some("migrate") => cmd_migrate(&args[1..]),
         Some("env") => cmd_env(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate schema [--out schema.json]"
             );
             ExitCode::from(1)
         }
@@ -321,6 +323,50 @@ fn cmd_patch(args: &[String]) -> ExitCode {
         },
         None => {
             println!("{out}");
+            ExitCode::SUCCESS
+        }
+    }
+}
+
+fn cmd_migrate(args: &[String]) -> ExitCode {
+    let Some(path) = args.first().filter(|a| !a.starts_with("--")) else {
+        eprintln!("migrate: missing <contract.json>");
+        return ExitCode::from(1);
+    };
+    let doc = match read_file("migrate", path) {
+        Ok(d) => d,
+        Err(code) => return code,
+    };
+    let target = flag_value(args, "--to").unwrap_or_else(|| forge_contract::SCHEMA_VERSION.into());
+    let report = match forge_contract::migrate_with_report(&doc, &target) {
+        Ok(report) => report,
+        Err(e) => {
+            eprintln!("migrate: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    eprintln!(
+        "migrate: schema {} -> {} · {} step(s)",
+        report.from_schema_version,
+        report.to_schema_version,
+        report.applied.len()
+    );
+    for step in &report.applied {
+        eprintln!("  {step}");
+    }
+    match flag_value(args, "--out") {
+        Some(out) => {
+            if let Err(e) = write_json(&out, &report.spec) {
+                eprintln!("migrate: cannot write {out}: {e}");
+                return ExitCode::from(1);
+            }
+            ExitCode::SUCCESS
+        }
+        None => {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report.spec).expect("spec serializes")
+            );
             ExitCode::SUCCESS
         }
     }

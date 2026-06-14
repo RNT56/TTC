@@ -18,6 +18,23 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add ModelSpec schema migration runner
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P2/P4 · **TODO items:** XC-23 [x]
+**Done:** Added the XC-23 ModelSpec migration runner in `forge-contract` with
+audit reporting, legacy field/provenance alias normalization, schema-marker
+cleanup, and post-migration shape validation. Exposed it through
+`forge-validate migrate` and a `pnpm schema:migrate` script.
+**Changed:** `crates/forge-contract/src/migrations.rs`,
+`crates/forge-contract/src/lib.rs`, `crates/forge-contract/tests/migrations.rs`,
+`crates/forge-validate/src/main.rs`, `package.json`,
+`docs/systems/model-contract.md`, `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Add new compatibility rows whenever a future schema-breaking DECISIONS
+entry lands, and keep migration coverage pinned before regenerating TS/Python
+types.
+**Blockers:** none.
+
 ## 2026-06-14 — Add ModelSpec fuzz seed corpus
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P4/P2 · **TODO items:** XC-24 [x]
 **Done:** Added a deterministic ModelSpec fuzz seed corpus with adversarial

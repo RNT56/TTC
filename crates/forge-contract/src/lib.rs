@@ -15,10 +15,14 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+mod migrations;
 pub mod patch;
 pub mod semver;
 
-/// Contract schema version carried by `meta.version`-bearing documents.
+pub use migrations::{migrate, migrate_with_report, MigrationError, MigrationReport};
+
+/// Contract schema version exposed by validators and emitted schemas.
+/// `meta.version` remains the semver of the model document itself.
 pub const SCHEMA_VERSION: &str = "2.1.0";
 
 // ---------------------------------------------------------------------------

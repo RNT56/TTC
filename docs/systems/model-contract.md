@@ -82,10 +82,20 @@ driveable robot import is still the P6 exit criterion.
 
 ## 7. Versioning & migrations
 
-Schema is semver'd. A v2.3 contract must load in a v2.5 studio (compatibility matrix);
-migrations live with the crate and run via the migration runner (XC-23). Breaking
-schema changes require a DECISIONS entry. The lockfile pins catalog revisions; the
-*schema version* pins contract shape — both travel with the document.
+Schema is semver'd. Historical contracts load through the Rust migration runner
+before the shape gate; the current XC-23 runner accepts `2.1.0`/`current` as the
+target, drops legacy schema-version markers, normalizes known field aliases, and
+then re-validates against the current `ModelSpec`.
+
+```bash
+cargo run -q -p forge-validate -- migrate path/to/model.forge.json --out migrated.forge.json
+pnpm schema:migrate path/to/model.forge.json --out migrated.forge.json
+```
+
+Breaking schema changes require a DECISIONS entry and a new compatibility row.
+The lockfile pins catalog revisions inside the document; the emitted schema and
+validator version pin contract shape at validation time. Historical schema
+markers are consumed by migration and omitted from the current typed output.
 
 ## 8. Code surface *(proposed)*
 
@@ -96,6 +106,7 @@ pub fn emit_json_schema() -> String;                  // the single schema sourc
 pub fn validate_shape(doc: &str) -> ShapeResult;      // schema-only (CTR-001)
 pub fn resolve_lockfile(spec: &ModelSpec, catalog: &dyn CatalogSource) -> Resolution;
 pub fn migrate(doc: &str, to_version: &str) -> Result<ModelSpec>;
+pub fn migrate_with_report(doc: &str, to_version: &str) -> Result<MigrationReport>;
 pub const SCHEMA_VERSION: &str;
 ```
 
@@ -118,7 +129,7 @@ pipeline test (emitted schema → TS types compile and match fixtures).
 
 - **P0:** author types + schemars emission (P0-001), TS codegen (P0-002), translate
   humanoid + VX-2 + 31 variants (P0-005..007).
-- **P2:** migration runner (XC-23). **P3:** lockfile resolution live (P3-006).
+- **P2:** migration runner live (XC-23). **P3:** lockfile resolution live (P3-006).
 - **P6:** importer (P6-009). Evolves with every system after.
 
 ## 12. Open questions
