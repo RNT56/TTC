@@ -1320,15 +1320,20 @@ export default function App() {
     }
   };
 
-  const recordMarketplaceView = async () => {
-    const listing = listings[0];
-    if (!listing) return;
+  const recordMarketplaceUsage = async (
+    listing: ListingRecord,
+    event: MarketplaceUsageEvent,
+  ) => {
     setPlatformBusy(true);
     setPlatformError(null);
     setPlatformMessage(null);
     try {
-      await recordListingUsage(listing.id, { event: "view", listingKind: marketplaceListingKind(listing.kind) });
-      setPlatformMessage(`usage beta recorded · ${listing.id}`);
+      await recordListingUsage(listing.id, {
+        event,
+        listingKind: marketplaceListingKind(listing.kind),
+        ...(event === "equip" && listing.priceCredits > 0 ? { creditsSpent: listing.priceCredits } : {}),
+      });
+      setPlatformMessage(`${event} recorded · ${listing.id}`);
     } catch (error) {
       setPlatformError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -1869,7 +1874,7 @@ export default function App() {
             onReport={() => void reportFixtureModeration()}
             onRefreshVendorLinks={() => void refreshVendorLinks()}
             onRequestPrintQuote={() => void requestPrintQuoteLink()}
-            onRecordListingUsage={() => void recordMarketplaceView()}
+            onRecordListingUsage={(listing, event) => void recordMarketplaceUsage(listing, event)}
           />
           <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -3077,9 +3082,18 @@ function PlatformPanel({
   onReport: () => void;
   onRefreshVendorLinks: () => void;
   onRequestPrintQuote: () => void;
-  onRecordListingUsage: () => void;
+  onRecordListingUsage: (listing: ListingRecord, event: MarketplaceUsageEvent) => void;
 }) {
   const activeCourse = courses.find((course) => course.id === activeCourseId) ?? null;
+  const [listingKindFilter, setListingKindFilter] = useState<MarketplaceListingKind | "all">("all");
+  const [listingStatusFilter, setListingStatusFilter] = useState<string>("all");
+  const listingKinds = uniqueListingKinds(listings);
+  const listingStatuses = uniqueListingStatuses(listings);
+  const curatedListings = listings.filter((listing) => {
+    const kindMatch = listingKindFilter === "all" || marketplaceListingKind(listing.kind) === listingKindFilter;
+    const statusMatch = listingStatusFilter === "all" || listing.status === listingStatusFilter;
+    return kindMatch && statusMatch;
+  });
   return (
     <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -3129,7 +3143,11 @@ function PlatformPanel({
         <button onClick={onRequestPrintQuote} disabled={busy} style={btn}>
           quote
         </button>
-        <button onClick={onRecordListingUsage} disabled={busy || listings.length === 0} style={btn}>
+        <button
+          onClick={() => listings[0] && onRecordListingUsage(listings[0], "view")}
+          disabled={busy || listings.length === 0}
+          style={btn}
+        >
           usage
         </button>
       </div>
@@ -3238,21 +3256,16 @@ function PlatformPanel({
         );
       })}
       {listings.length > 0 ? (
-        listings.slice(0, 3).map((listing) => (
-          <div key={listing.id} style={artifactRowStyle}>
-            <div style={{ color: "#cfd6df" }}>
-              listing · {listing.title}
-            </div>
-            <MiniRows
-              rows={[
-                ["kind", listing.kind],
-                ["price", `${listing.priceCredits} credits`],
-                ["policy", listing.exportPolicy],
-                ["economics", "usage beta"],
-              ]}
-            />
-          </div>
-        ))
+        <MarketplaceBoard
+          listings={curatedListings}
+          kindOptions={listingKinds}
+          statusOptions={listingStatuses}
+          kindFilter={listingKindFilter}
+          statusFilter={listingStatusFilter}
+          onKindFilter={setListingKindFilter}
+          onStatusFilter={setListingStatusFilter}
+          onUsage={onRecordListingUsage}
+        />
       ) : (
         <div style={{ color: "#6b7686", marginTop: 4 }}>0 listed marketplace items</div>
       )}
@@ -3344,6 +3357,115 @@ function PlatformPanel({
 
 type CourseVisibility = CourseRecord["visibility"];
 const COURSE_VISIBILITIES: CourseVisibility[] = ["private", "unlisted", "public"];
+
+type MarketplaceUsageEvent = "view" | "equip" | "quote-click" | "policy-download" | "training-job";
+
+function MarketplaceBoard({
+  listings,
+  kindOptions,
+  statusOptions,
+  kindFilter,
+  statusFilter,
+  onKindFilter,
+  onStatusFilter,
+  onUsage,
+}: {
+  listings: ListingRecord[];
+  kindOptions: (MarketplaceListingKind | "all")[];
+  statusOptions: string[];
+  kindFilter: MarketplaceListingKind | "all";
+  statusFilter: string;
+  onKindFilter: (value: MarketplaceListingKind | "all") => void;
+  onStatusFilter: (value: string) => void;
+  onUsage: (listing: ListingRecord, event: MarketplaceUsageEvent) => void;
+}) {
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>marketplace</span>
+        <span style={{ color: "#6b7686" }}>{listings.length} shown</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 5 }}>
+        <select
+          value={kindFilter}
+          onChange={(event) => onKindFilter(toMarketplaceKindFilter(event.target.value))}
+          style={{ ...selectStyle, width: "100%" }}
+          aria-label="marketplace kind"
+        >
+          {kindOptions.map((kind) => (
+            <option key={kind} value={kind}>
+              {kind}
+            </option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(event) => onStatusFilter(event.target.value)}
+          style={{ ...selectStyle, width: "100%" }}
+          aria-label="marketplace status"
+        >
+          {statusOptions.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </div>
+      {listings.length === 0 ? (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>0 matching listings</div>
+      ) : (
+        listings.slice(0, 5).map((listing) => {
+          const primary = marketplacePrimaryAction(listing);
+          return (
+            <div key={listing.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: 4, alignItems: "center" }}>
+                <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {listing.title}
+                </span>
+                <button onClick={() => onUsage(listing, "view")} style={btn}>
+                  view
+                </button>
+                <button onClick={() => onUsage(listing, primary.event)} style={btn}>
+                  {primary.label}
+                </button>
+              </div>
+              <MiniRows
+                rows={[
+                  ["kind", listing.kind],
+                  ["status", listing.status],
+                  ["price", `${listing.priceCredits} credits`],
+                  ["license", listing.licenseClass ?? "attached"],
+                  ["policy", listing.exportPolicy],
+                  ["economics", "usage beta"],
+                ]}
+              />
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+function marketplacePrimaryAction(listing: ListingRecord): { event: MarketplaceUsageEvent; label: string } {
+  const kind = marketplaceListingKind(listing.kind);
+  if (kind === "policy" || kind === "skill") return { event: "policy-download", label: "policy" };
+  if (kind === "component") return { event: "quote-click", label: "quote" };
+  if (kind === "course") return { event: "training-job", label: "train" };
+  return { event: "equip", label: "equip" };
+}
+
+function uniqueListingKinds(listings: ListingRecord[]): (MarketplaceListingKind | "all")[] {
+  return ["all", ...new Set(listings.map((listing) => marketplaceListingKind(listing.kind)))];
+}
+
+function uniqueListingStatuses(listings: ListingRecord[]): string[] {
+  return ["all", ...new Set(listings.map((listing) => listing.status).filter((status) => status.trim()))];
+}
+
+function toMarketplaceKindFilter(value: string): MarketplaceListingKind | "all" {
+  return value === "all" ? "all" : marketplaceListingKind(value);
+}
 
 function toCourseVisibility(value: string): CourseVisibility {
   return value === "private" || value === "public" ? value : "unlisted";

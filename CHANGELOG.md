@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add Studio marketplace curation board
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P11 · **TODO items:** P11-002 [~], P11-003 [~]
+**Done:** Replaced the flat listing preview with a Studio marketplace board that
+filters listings by kind/status and records usage-beta events from each listing:
+view, equip, policy download, print quote click, or training job depending on the
+listing kind.
+**Changed:** `packages/studio/src/App.tsx`, `docs/EXECUTION-ROADMAP.md`,
+`docs/TODO.md`, `docs/systems/platform.md`, `docs/systems/studio-ui.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Add durable public curation state and the real skill transfer/fine-tune
+offer once marketplace review policy and training adapters are ready.
+**Blockers:** external curation and live transfer/fine-tune economics remain out of
+this Studio-only slice.
+
 ## 2026-06-14 — Attach repair quote handoff links
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~], P12-004 [~]
 **Done:** Wired Studio maintenance repair sheets to the existing commerce rows:

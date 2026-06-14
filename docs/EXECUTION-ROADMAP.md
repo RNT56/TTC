@@ -323,6 +323,9 @@ Scope:
 - Keep P11 policy sharing fail-closed until dual-use/export-control sanity check
   is accepted.
 - Finish public marketplace curation and external publish/equip flow.
+- Studio now has a marketplace board with kind/status filters and per-listing
+  usage-beta actions for view, equip, policy download, quote click, and training
+  job events; public curation state remains open.
 - Finish skills marketplace transfer/fine-tune offer for non-matching twins.
 - Connect live vendor offer providers for catalog slots behind env-gated,
   sandboxable refresh.

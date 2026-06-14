@@ -46,7 +46,9 @@ local listing scaffold. Listing creation is authenticated and requires an admitt
 model report; policy/skill listings require an explicit dual-use/export-control
 signoff recorded in `policy_signoffs` after the `p11.policy-sharing` platform gate
 is accepted. `POST /v1/listings/:id/usage` records usage-beta views, equips, quote
-clicks, policy downloads, and training jobs into marketplace rollups. `GET/POST
+clicks, policy downloads, and training jobs into marketplace rollups. Studio now
+renders a kind/status-filtered marketplace board with row-level usage/equip actions.
+`GET/POST
 /v1/moderation/reports` records user reports with a 72-hour SLA target and
 repeat-infringer signal. Seller payouts and revenue share are intentionally absent.
 Owner-scoped `object_blobs` registration and S3/MinIO presigned access are live via
