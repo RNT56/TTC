@@ -85,9 +85,9 @@ Scope:
   train/export/share gates.
 - Reconcile `XC-23`: verify `scripts/db-migrate.mjs` satisfies the schema
   migration runner requirement, or add the missing compatibility/version matrix.
-- Reconcile `XC-24`: create the generator fuzz seed corpus and minimized
-  regression fixture flow, or explicitly close it against the existing proptest
-  coverage if the owner accepts that scope.
+- `XC-24` is closed as of 2026-06-14: generator fuzz seeds live under
+  `evals/fuzz/modelspec-seeds.json`, with `scripts/fuzz-contract-seeds.mjs`
+  checking pinned outcomes and minimizing future regressions.
 
 Dependencies:
 
@@ -447,4 +447,5 @@ Acceptance:
 | `XC-11`, `XC-12` | G | couplers and wire lists |
 | `XC-18` | D | real DfM checks |
 | `XC-19`, `XC-20`, `XC-27` | H | bridge/Desktop hardware work |
-| `XC-23`, `XC-24` | V | verify/finish migration runner and fuzz corpus |
+| `XC-23` | V | verify/finish migration runner |
+| `XC-24` | V | done 2026-06-14: fuzz corpus and minimizer |

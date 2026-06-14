@@ -1,0 +1,122 @@
+{
+  "version": "modelspec-fuzz-seeds.v1",
+  "name": "ModelSpec fuzz seed corpus",
+  "description": "Deterministic adversarial seeds for generator and validator regression work. Each seed starts from a first-party example and applies minimized JSON-Pointer mutations.",
+  "seeds": [
+    {
+      "id": "schema-invalid-geom-type",
+      "focus": "CTR-001 schema gate catches malformed tagged-union payloads",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        { "op": "set", "path": "/parts/0/geom/w", "value": "wide" }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["CTR-001"] }
+    },
+    {
+      "id": "invalid-color",
+      "focus": "CTR-005 color diagnostics stay stable for generated visual edits",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        { "op": "set", "path": "/parts/2/color", "value": "red" }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["CTR-005"] }
+    },
+    {
+      "id": "untyped-port",
+      "focus": "CTR-002 refuses uncapped untyped ports",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/ports",
+          "value": {
+            "id": "fuzz-untype",
+            "node": "root",
+            "type": "",
+            "frame": [[0, 0, 0], [0, 0, 0]],
+            "capped": false
+          }
+        }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["CTR-002"] }
+    },
+    {
+      "id": "unresolved-component-ref",
+      "focus": "CTR-006 lockfile resolution catches hallucinated catalog rows",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/slots",
+          "value": {
+            "id": "fuzz-payload",
+            "label": "FUZZ PAYLOAD",
+            "mountNodes": ["root"],
+            "variants": [
+              {
+                "id": "ghost",
+                "componentRef": "cmp_missing_ghost@^1.0.0"
+              }
+            ]
+          }
+        }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["CTR-006"] }
+    },
+    {
+      "id": "collider-budget-overflow",
+      "focus": "CTR-007 catches generated models that exceed collider budgets",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        { "op": "set", "path": "/sim/colliders/budget/perModel", "value": 1 }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["CTR-007"] }
+    },
+    {
+      "id": "generated-provenance-missing-hashes",
+      "focus": "PRV-001 keeps LLM-generated outputs tied to prompt and model provenance",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        { "op": "set", "path": "/meta/provenance/kind", "value": "llm-generation" },
+        { "op": "delete", "path": "/meta/provenance/promptHash" },
+        { "op": "delete", "path": "/meta/provenance/modelVersion" }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["PRV-001"] }
+    },
+    {
+      "id": "mass-closure-drift",
+      "focus": "GEO-006 catches aggregate mass hallucinations",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        { "op": "set", "path": "/sim/aggregateMassG", "value": 1 }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["GEO-006"] }
+    },
+    {
+      "id": "print-wall-too-thin",
+      "focus": "MFG-001 catches unprintably thin generated structural geometry",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/parts/0/geom",
+          "value": { "kind": "box", "w": 0.0008, "h": 0.02, "d": 0.02 }
+        }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["MFG-001"] }
+    },
+    {
+      "id": "print-bed-too-large",
+      "focus": "MFG-004 catches generated parts too large for the v0 FDM lab profile",
+      "base": "examples/vx2-mini.forge.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "/parts/0/geom",
+          "value": { "kind": "box", "w": 0.7, "h": 0.02, "d": 0.02 }
+        }
+      ],
+      "expect": { "verdict": "rejected", "errorChecks": ["MFG-004"] }
+    }
+  ]
+}

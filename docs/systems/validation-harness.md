@@ -174,6 +174,14 @@ minimized into a permanent regression case (XC-24); **Brief-25** generation suit
 with dashboard (D-evals — lives with the generation pipeline but is enforced here as
 a CI gate).
 
+Live 2026-06-14: XC-24 has a deterministic ModelSpec fuzz seed corpus at
+[`evals/fuzz/modelspec-seeds.json`](../../evals/fuzz/modelspec-seeds.json) and an
+executable checker/minimizer at
+[`scripts/fuzz-contract-seeds.mjs`](../../scripts/fuzz-contract-seeds.mjs). The
+corpus materializes first-party examples plus JSON-Pointer mutations, pins verdict
+and error check IDs, and the minimizer greedily removes optional model content while
+preserving a requested diagnostic check for permanent regression fixtures.
+
 ## 9. Phase mapping
 
 - **P0:** embryo — schema validity + part/face byte-equivalence vs the monolith

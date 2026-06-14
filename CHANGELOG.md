@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add ModelSpec fuzz seed corpus
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P4/P2 · **TODO items:** XC-24 [x]
+**Done:** Added a deterministic ModelSpec fuzz seed corpus with adversarial
+JSON-Pointer mutations over first-party examples, an executable checker that pins
+validator verdicts and error check IDs, and a greedy minimizer flow for preserving
+future fuzz failures as regression fixtures.
+**Changed:** `evals/fuzz/modelspec-seeds.json`,
+`scripts/fuzz-contract-seeds.mjs`, `crates/forge-contract/tests/fuzz_corpus.rs`,
+`package.json`, `docs/systems/validation-harness.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Wire `pnpm fuzz:contract:check` into CI beside `node scripts/validate-all.mjs`
+and use `--write-seeds-dir` when a generated failure needs a committed minimized
+fixture.
+**Blockers:** none.
+
 ## 2026-06-14 — Add FDM v0 DfM validator checks
 **Session:** Codex agent · branch main · **Phase:** P6/P11 · **TODO items:** XC-18 [~], P11-006 [~]
 **Done:** Added deterministic validator diagnostics for printable inline

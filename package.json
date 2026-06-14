@@ -11,6 +11,7 @@
     "parity": "node scripts/parity-gallery.mjs",
     "eval:brief25": "pnpm --filter @forge/gateway build && node scripts/brief25-eval.mjs --validator real --enforce-ga-gate",
     "eval:brief25:check": "node scripts/brief25-eval.mjs --check-corpus-only",
+    "fuzz:contract:check": "node scripts/fuzz-contract-seeds.mjs",
     "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:seed-catalog": "node scripts/db-seed-catalog.mjs",
