@@ -28,7 +28,7 @@ phase-level state only. Parallel execution order and subworker ownership live in
 | P6 Sim depth + interop | ◑ *(2026-06-14: collider auto-fit, blade-element-lite, disturbances, replay envelope verification, sag/current helpers, URDF/MJCF exporters, ros2_control sidecar, mesh visual manifest, slotless URDF/MJCF fixture import; full engine-backed Rapier/MuJoCo parity and external-driveable import still open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, scorecard gate, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
 | P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
-| P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, tier labels, Pareto outputs, Studio launch buttons; CMA-ES/Optuna/full sim ladder open)* | 4 wk |
+| P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(2026-06-14: `forge-validate env`, expanded EnvSpec runtime checks, course-to-task adapter, courses/leaderboards/replay verification tables and routes, server-side leaderboard replay verification, Studio fixture course/score panel; full environment generation and board UI open)* | 3–4 wk |
 | P11 Platform | ◑ *(2026-06-14: Auth.js GitHub, credits, user-owned models, listings/moderation reports, platform gates, policy signoffs, classroom assignments/submissions with validator grading, policy ONNX metadata, DfM/3MF metadata, owner-scoped object blobs, executable job queue, usage-beta rollups, vendor offer APIs, print quote/link APIs, and Studio commerce/gate rows; external provider integrations still env-gated)* | open |
 | P12 Maintenance twin | ◑ *(2026-06-14: wear models, crash windows, repair-sheet generation, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and vendor/print quote-link surfacing; full scrubber/fleet dashboards open)* | 3 wk |
@@ -204,9 +204,9 @@ needed.
 **Owning docs:** [`systems/co-design.md`](systems/co-design.md).
 
 Exit criteria:
-- [ ] "Lightest quad for this course under constraints" returns ≥ 3 admitted Pareto points overnight
-- [ ] Tier-0 candidate evaluation < 50 ms native; 200-candidate CMA-ES generation overnight at tier 2
-- [ ] Every returned point is a fully admitted contract (validator as constraint oracle)
+- [~] "Lightest quad for this course under constraints" returns ≥ 3 admitted Pareto points overnight *(keyless 200-candidate constrained-course worker proof live; overnight engine-backed proof open)*
+- [~] Tier-0 candidate evaluation < 50 ms native; 200-candidate CMA-ES generation overnight at tier 2 *(tier evidence and budget metadata live; native/engine timing proof open)*
+- [~] Every returned point is a fully admitted contract (validator as constraint oracle) *(worker Pareto front filters rejected candidates; engine-backed validator oracle proof open)*
 
 ## P10 — Environments & courses
 

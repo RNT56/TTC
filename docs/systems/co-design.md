@@ -25,9 +25,11 @@ lockfile-aware (candidates pin revisions like any model).
 Live 2026-06-14: `codesign.evaluate` emits categorical and continuous manifold
 metadata, validator-bounded dimensions, deterministic JSON-Patch candidates,
 optimizer metadata, and a computed Pareto front. The keyless path now runs a
-budgeted CMA/TPE-shaped search up to 200 candidates. `FORGE_CODESIGN_CMD` can
-replace that deterministic evaluator with a live CMA-ES/Optuna/simulator ladder
-while preserving the same candidate and Pareto output contract.
+budgeted CMA/TPE-shaped search up to 200 candidates with structured tier evidence,
+constraint rejection reasons, and Pareto filtering that only returns admitted
+candidates. `FORGE_CODESIGN_CMD` can replace that deterministic evaluator with a
+live CMA-ES/Optuna/simulator ladder while preserving the same candidate and Pareto
+output contract.
 
 ## 3. Algorithms (P9-002)
 
@@ -54,6 +56,12 @@ generation overnight at tier 2. MJX batch parallelism is what makes tiers 2/3
 feasible at scale only if the P7-010 benchmark demands it and the `forge-sim`
 adoption helper's parity/throughput/cost thresholds pass.
 
+Live 2026-06-14: the keyless worker emits per-candidate evidence for all four tiers
+with explicit runtimes, engines, checks, and reject reasons. Tier-0 budget metadata
+is capped below 50 ms, tier-2 constraint admission is the Pareto gate, and tier-3 is
+marked only for finalists. These records are still fixture evidence until the live
+Rapier/MuJoCo/SB3 lane replaces them through `FORGE_CODESIGN_CMD`.
+
 ## 5. Output
 
 A Pareto front UI (P9-004): each point opens as a normal admitted contract with its
@@ -63,7 +71,10 @@ run (objectives, seed, generations) like any generation lineage.
 Live 2026-06-14: Studio can launch the co-design job, render budgeted Pareto points
 with metrics, apply admitted JSON-Patch candidates through the live patch/re-bake
 path, and save admitted points as openable models. Engine-backed tier 1/2/3
-evaluation remains open.
+evaluation remains open. Worker tests now exercise the "lightest quad under course
+constraints" shape: a 200-candidate run must yield at least three admitted Pareto
+points, and impossible constraints must produce rejected candidates instead of a
+false front.
 
 ## 6. Dependencies
 

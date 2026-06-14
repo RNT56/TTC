@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add constraint-aware co-design ladder
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-004 [~]
+**Done:** Hardened `codesign.evaluate` so the keyless CMA/TPE-shaped search now
+attaches structured tier-0/tier-1/tier-2/tier-3 evaluation evidence, applies
+objective constraints, keeps rejected candidates out of the Pareto front, and proves
+the 200-candidate path returns at least three admitted Pareto points under course
+constraints.
+**Changed:** `workers/forge_workers/codesign.py`,
+`workers/tests/test_codesign_optimizer.py`, `docs/systems/co-design.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Swap the keyless tier evidence for engine-backed Rapier/MuJoCo/SB3
+results through `FORGE_CODESIGN_CMD` once the simulation/training lanes land.
+**Blockers:** live engine-backed tier 1/2/3 execution and P7-010 MJX benchmark data
+remain open.
+
 ## 2026-06-14 — Add ETL command adapter routing
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P3/P4 · **TODO items:** P3-004 [~], P4-016 [~]
 **Done:** Routed `etl.ingest-component` through the fetch/extract/geometry adapter
