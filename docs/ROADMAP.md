@@ -13,7 +13,8 @@ and D17 deletes an entire class of client/server consistency work.
 
 **Status legend:** ○ not started · ◑ in progress · ● done · ⛔ blocked
 **Task detail** lives in [`TODO.md`](TODO.md) (IDs `P0-…`, `XC-…`); this file tracks
-phase-level state only.
+phase-level state only. Parallel execution order and subworker ownership live in
+[`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
 | Phase | Status | Est. |
 |---|---|---|
@@ -26,7 +27,7 @@ phase-level state only.
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; live photogrammetry/COLMAP and mesh-click placement remain adapter/config/UI work)* | 3 wk |
 | P6 Sim depth + interop | ◑ *(2026-06-14: collider auto-fit, blade-element-lite, disturbances, replay envelope verification, sag/current helpers, URDF/MJCF exporters, ros2_control sidecar, mesh visual manifest, slotless URDF/MJCF fixture import; full engine-backed Rapier/MuJoCo parity and external-driveable import still open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, scorecard gate, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
-| P8 Bridge + Desktop | ⛔ *(2026-06-14: config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop D28 lab gates exist; live hardware deployment remains blocked on legal sign-off)* | 5–7 wk |
+| P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, tier labels, Pareto outputs, Studio launch buttons; CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(2026-06-14: `forge-validate env`, expanded EnvSpec runtime checks, course-to-task adapter, courses/leaderboards/replay verification tables and routes, server-side leaderboard replay verification, Studio fixture course/score panel; full environment generation and board UI open)* | 3–4 wk |
 | P11 Platform | ◑ *(2026-06-14: Auth.js GitHub, credits, user-owned models, listings/moderation reports, platform gates, policy signoffs, classroom assignments/submissions with validator grading, policy ONNX metadata, DfM/3MF metadata, owner-scoped object blobs, executable job queue, usage-beta rollups, vendor offer APIs, print quote/link APIs, and Studio commerce/gate rows; external provider integrations still env-gated)* | open |
@@ -180,17 +181,18 @@ recorder + ghost overlay, **FORGE Desktop (Tauri): serial plugin, fs, background
 recorder (D15)**, FORGE Link companion image, deployment-ladder UX with the safety
 supervisor and control-rate contract (D9); pilots on both reference rigs. The
 deterministic package scaffold now exists under `packages/desktop`; gateway and
-Desktop commands also require the D28 platform gate, explicit lab-mode envs, and D12
-rig allowlists. Live hardware and distributable installers remain behind the entry
-gate.
-**Entry gate (hard):** ToS/liability legal review complete
-([`security-safety-legal.md`](security-safety-legal.md) §3).
+Desktop commands also require the D30-accepted platform gate, explicit lab-mode envs,
+D12 rig allowlists, local execution, and physical confirmation. Live hardware
+remains limited to controlled D12 lab pilots.
+**Entry gate:** ToS/liability legal review complete for controlled D12 lab pilots
+by D30 ([`security-safety-legal.md`](security-safety-legal.md) §3). External beta
+requires a later rollout gate after lab evidence.
 **Owning docs:** [`systems/hardware-bridge.md`](systems/hardware-bridge.md).
 
 Exit criteria:
-- [ ] Legal review of ladder UX, supervisor disclaimers, telemetry consent — **before any deployment feature ships**
+- [x] Legal review of ladder UX, supervisor disclaimers, telemetry consent — **accepted for controlled D12 lab pilots by D30**
 - [ ] A real quad configured from its contract via WebSerial
-- [~] SITL → HITL → tethered demonstrated and documented on the reference quad *(D28-gated dry-run pilot playbooks and `pnpm pilot:check` live; real HITL/tethered execution blocked)*
+- [~] SITL → HITL → tethered demonstrated and documented on the reference quad *(D30 accepted; dry-run pilot playbooks and `pnpm pilot:check` live; real HITL/tethered execution awaits lab adapter/evidence capture)*
 - [ ] **A field log captured by FORGE Desktop replays with visible ghost divergence**
 - [ ] System-ID fit updates the contract's sim block from bench/flight telemetry
 

@@ -39,7 +39,7 @@ naming in translated contracts).
 
 | Gate | When | What must happen before the phase ships |
 |---|---|---|
-| **ToS / liability review** | entry to **P8** | counsel reviews: deployment-ladder UX, safety-supervisor disclaimers, telemetry consent language. No hardware-deployment feature ships first. Record sign-off in DECISIONS. |
+| **ToS / liability review** | entry to **P8** | accepted by D30 for controlled D12 lab pilots: deployment-ladder UX, safety-supervisor disclaimers, telemetry consent language, physical confirmation, no-auto-arm, D12 rig allowlist, and advisory policy authority. External beta or non-D12 hardware requires a later rollout gate. |
 | **Dual-use sanity check** | entry to **P11 policy sharing** | export-control adjacency review for autonomy software (EU dual-use regulation, US EAR). Hobby-scale exposure expected minimal — but the check is scheduled, not assumed. Record in DECISIONS. |
 | **UGC moderation policy** | ships **with** the P11 marketplace | written policy: report flow, takedown SLA, repeat-infringer rule; covers models, courses, skills, listings. |
 | **Trademark scan** | before public launch | FORGE is a working codename (OD-01). |
@@ -90,7 +90,8 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 - [ ] Generated artifact path → provenance fields populated and validated
 - [~] Export path → license class/export policy consulted; envelope fallback works in the ingestion/review slice, exporter enforcement still pending
 - [x] Catalog ingestion → per-field citations + license ledger entry + review queue
-- [ ] Bridge/deployment surface → no auto-arm path; physical confirmation; supervisor
+- [x] Bridge/deployment surface → D30 accepted for controlled D12 lab pilots only;
+      no auto-arm path; physical confirmation; supervisor
       authority preserved; D9 rates stated in UX copy
 - [ ] Generation surface → weapons-brief refusal path intact and logged
 - [ ] User content (photos/logs/models) → consent and deletion semantics honored

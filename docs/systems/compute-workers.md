@@ -99,7 +99,8 @@ live SB3/system-ID results in the same artifact contract.
 metadata; `bridge.telemetry-ingest` turns captured samples into sorted replay tapes;
 `bridge.supervisor-check` applies geofence, attitude/rate, battery, and kill-switch
 checks with explicit 50 Hz advisory / 200 Hz supervisor rates. Live hardware write
-and capture remain D28-gated.
+and capture are D30 lab-gated: accepted `d28.hardware` signoff, lab-mode env, local
+provider, D12 rig ID, physical confirmation, and lab adapter are all required.
 
 ### 3.6 `workers/maintenance` — lifecycle twin (P12)
 `maintenance.estimate-wear`, `maintenance.crash-forensics`,

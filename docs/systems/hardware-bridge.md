@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; gateway/Desktop hardware write/capture fail closed behind D28 lab gates · **Phases:** P8 (entry-gated by legal review) · **Home:**
+**Status:** deterministic bridge jobs live; D30 accepted controlled D12 lab pilots; gateway/Desktop hardware write/capture still fail closed behind lab gates · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15
 
@@ -13,13 +13,14 @@ that is never skipped**. This converts the bridge from a deployment feature into
 data flywheel's heaviest gear. P8 also ships **FORGE Desktop** (D15) — the bridge's
 power surface.
 
-**Hard entry gate:** ToS/liability legal review (ladder UX, supervisor disclaimers,
-telemetry consent) before any deployment feature ships
-([`security-safety-legal.md`](../security-safety-legal.md) §3).
-The implementation gate is explicit: `d28.hardware` must be accepted in
-`platform_gate_signoffs`, deployment must set hardware lab mode envs, and the
-request must target one of the D12 reference rigs before any non-fixture
-hardware-touching job or Desktop native command can progress.
+**Entry gate:** ToS/liability legal review for controlled D12 lab pilots is
+accepted by D30 ([`security-safety-legal.md`](../security-safety-legal.md) §3).
+The implementation gate remains explicit: `d28.hardware` must be accepted in
+`platform_gate_signoffs`, deployment must set hardware lab mode envs, the provider
+must be local, the request must target one of the D12 reference rigs, and physical
+confirmation is required before any non-fixture hardware-touching job or Desktop
+native command can progress. External beta or non-D12 rigs require a later rollout
+gate.
 
 ## 2. Browser-native surfaces (Chromium floor)
 
@@ -32,10 +33,11 @@ hardware-touching job or Desktop native command can progress.
 Live 2026-06-14: `bridge.config-diff`, `bridge.telemetry-ingest`, and
 `bridge.supervisor-check` are executable worker jobs and Studio launch buttons. They
 compile FC diffs, normalize telemetry into replay tapes, and apply fail-closed
-supervisor checks. Browser serial writes and real device capture remain blocked by
-D28 until legal/hardware sign-off. The gateway rejects non-fixture live bridge jobs
-unless D28 is accepted, `FORGE_HARDWARE_LAB_MODE=1`, the provider is local, and the
-reference rig is one of the pinned D12 quad/rover IDs.
+supervisor checks. D30 accepts the legal/hardware gate for controlled D12 lab
+pilots only; browser serial writes and real device capture now await the lab
+adapter plus the runtime gates. The gateway rejects non-fixture live bridge jobs
+unless D30's `d28.hardware` signoff is active, `FORGE_HARDWARE_LAB_MODE=1`, the
+provider is local, and the reference rig is one of the pinned D12 quad/rover IDs.
 
 ## 3. FORGE Desktop (Tauri, ships P8 — D15)
 
@@ -50,10 +52,10 @@ Not a contingency: a scheduled product surface that arrives when it has a real j
 
 Live 2026-06-14: `@forge/desktop` carries the Tauri config that wraps the Studio
 bundle, a fail-closed native command contract for serial/config/recording, and a
-package check that validates no-auto-arm, D28 signoff env, hardware lab mode, D12 rig
-allowlist, and bundle target invariants. Native serial/config/recording commands
-still return fail-closed errors until the D12 lab adapter is installed after
-signoff. Build/signing and updater delivery for the three desktop OSes remain
+package check that validates no-auto-arm, the D30 signoff env, hardware lab mode,
+D12 rig allowlist, and bundle target invariants. Native serial/config/recording
+commands still return fail-closed errors until the D12 lab adapter is installed.
+Build/signing and updater delivery for the three desktop OSes remain
 P8-011. A native-core fast path inside the shell (bypassing WASM) is available later
 if profiling asks — not v1 scope. Desktop exit proof: **a field log captured by
 Desktop replays with visible ghost divergence** (P8-014).
@@ -136,10 +138,11 @@ sim-to-real test fixtures.
 Live 2026-06-14: the executable dry-run playbooks are
 [`reference-quad-pilot.md`](../pilots/reference-quad-pilot.md) and
 [`reference-rover-pilot.md`](../pilots/reference-rover-pilot.md). `pnpm pilot:check`
-asserts that the playbooks stay tied to the D12 rig IDs, D28, no-auto-arm policy,
+asserts that the playbooks stay tied to the D12 rig IDs, D30, no-auto-arm policy,
 SITL/HITL/constrained ladder order, telemetry/replay evidence, and the checked
 Desktop deployment ladder. Real HITL, tethered hover, constrained driving, and free
-operation remain blocked until D28 is resolved.
+operation now require the D12 lab adapter, lab-mode envs, physical confirmation,
+and captured evidence under D30's controlled-lab scope.
 
 ## 10. Dependencies
 
@@ -154,7 +157,7 @@ round-trip (log → replay → ghost render — bit-exact under D17); sysid fit 
 synthetic telemetry with known ground truth (fit must recover injected constants);
 supervisor unit tests (envelope breach → fallback within deadline); pairing-auth
 tests; Desktop plugin integration tests on all three OSes; gateway/Desktop gate tests
-for D28 fail-closed behavior, D12 lab-only behavior, physical confirmation, and
+for D30/D28 fail-closed behavior, D12 lab-only behavior, physical confirmation, and
 "never auto-arm".
 
 ## 12. Open questions

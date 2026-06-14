@@ -54,7 +54,7 @@
 
     <g transform="translate(34 306)">
       <rect x="0" y="0" width="438" height="48" rx="14" fill="#111a25" stroke="#ffffff" stroke-opacity="0.12"/>
-      <text x="20" y="30" class="small">D28 hardware gates fail closed until signoff</text>
+      <text x="20" y="30" class="small">D30 lab signoff: D12 rigs only</text>
     </g>
   </g>
 

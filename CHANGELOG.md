@@ -18,6 +18,48 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Record D30 controlled D12 lab signoff
+**Session:** Codex agent · branch current worktree · **Phase:** P8 · **TODO items:** P8-000 [x], P8-001 [~], P8-009 [~], P8-010 [~], P8-012 [~], P8-013 [~]
+**Done:** Recorded owner signoff for the D28 hardware/legal gate as D30 and added
+an active `d28.hardware` migration scoped to controlled D12 lab pilots only.
+Updated the README, roadmap, legal/safety doc, hardware bridge doc, pilot
+playbooks, Studio/worker docs, and execution roadmap so hardware work now reads as
+D30 lab-gated rather than legal-pending.
+**Changed:** `infra/migrations/0013_d28_lab_signoff.sql`, `docs/DECISIONS.md`,
+`docs/ROADMAP.md`, `docs/TODO.md`, `docs/security-safety-legal.md`,
+`docs/systems/hardware-bridge.md`, `docs/EXECUTION-ROADMAP.md`,
+`docs/pilots/reference-quad-pilot.md`, `docs/pilots/reference-rover-pilot.md`,
+`README.md`,
+`docs/assets/readme/hero.svg`, `packages/gateway/src/platform.ts`,
+`packages/gateway/test/server.test.ts`, `packages/desktop/src-tauri/src/main.rs`,
+`packages/desktop/scripts/check-desktop.mjs`,
+`packages/desktop/deployment-ladder.json`, `scripts/check-pilot-docs.mjs`.
+**Decisions:** D30 accepts ToS/liability, telemetry consent, ladder UX, physical
+confirmation, no-auto-arm, D12 rig allowlist, advisory policy authority, and
+supervisor priority for controlled lab pilots only.
+**Next:** Implement the D12 lab adapters and capture evidence for HITL,
+tethered/constrained runs, Desktop recording, ghost replay, and system-ID before
+any external hardware beta.
+**Blockers:** external hardware beta remains blocked until post-lab evidence and a
+separate rollout gate; arbitrary rigs remain blocked.
+
+## 2026-06-14 — Add remaining-work execution roadmap
+**Session:** Codex agent · branch current worktree · **Phase:** P0-P12 · **TODO items:** all remaining open/in-progress/blocked TODOs in `docs/EXECUTION-ROADMAP.md` §4, planning only
+**Done:** Added an execution overlay that maps every remaining open,
+in-progress, and blocked TODO into parallel subworker tracks with dependencies,
+blockers, acceptance gates, and an end-to-end closure order. Linked it from the
+docs index and the phase roadmap so future agents can choose work by either phase
+or subworker lane.
+**Changed:** `docs/EXECUTION-ROADMAP.md`, `docs/README.md`, `docs/ROADMAP.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Start Wave A with track S (`P6-001`/`P6-010`) or track V
+(`P2-001`/`P2-002`), because simulation parity and validator persistence unblock
+the largest number of downstream tracks.
+**Blockers:** D30 allows controlled D12 lab pilots only; external hardware beta,
+P11 policy-sharing signoff, provider sandboxes, physical lab rigs, and the missing
+later configurator prototype still gate their respective live-path tasks.
+
 ## 2026-06-14 — Implement remaining P4-P12 live gates and commerce seams
 **Session:** Codex agent · branch current worktree · **Phase:** P4-P12 · **TODO items:** P7-010 [~], P8-000 [!], P8-001 [~], P8-012 [~], P8-013 [~], P11-000 [~], P11-002 [~], P11-003 [~], P11-005 [~], P11-006 [~], P11-009 [x], P12-003 [x]
 **Done:** Added platform gate records for D28 hardware, P11 policy sharing, and P11

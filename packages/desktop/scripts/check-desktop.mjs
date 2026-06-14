@@ -30,6 +30,9 @@ const ladder = await json("deployment-ladder.json");
 assert(ladder.noAutoArm === true, "deployment ladder must never auto-arm");
 assert(ladder.stages?.map((stage) => stage.id).join(">") === "sitl>hitl>constrained>free", "deployment ladder stage order mismatch");
 assert(ladder.stages.slice(1).every((stage) => stage.physicalConfirmation === true), "hardware stages require physical confirmation");
+assert(ladder.liveHardwareGate?.decision === "D30", "deployment ladder must carry the D30 lab signoff decision");
+assert(ladder.liveHardwareGate?.scope === "controlled D12 lab pilots only", "deployment ladder must stay scoped to D12 lab pilots");
+assert(ladder.liveHardwareGate?.externalBetaEnabled === false, "deployment ladder must not enable external hardware beta");
 
 const main = await readFile(resolve(root, "src-tauri/src/main.rs"), "utf8");
 for (const command of [
@@ -42,7 +45,7 @@ for (const command of [
   assert(main.includes(`fn ${command}`), `missing Tauri command ${command}`);
 }
 assert(main.includes("FORGE_DESKTOP_ENABLE_HARDWARE"), "native hardware access must be env-gated");
-assert(main.includes("FORGE_DESKTOP_D28_SIGNOFF"), "native hardware access must require D28 signoff");
+assert(main.includes("FORGE_DESKTOP_D30_LAB_SIGNOFF"), "native hardware access must require D30 lab signoff");
 assert(main.includes("FORGE_HARDWARE_LAB_MODE"), "native hardware access must require lab mode");
 assert(main.includes("ref_quad_kakute-h7-source-one-5in"), "native hardware access must be D12 quad-gated");
 assert(main.includes("ref_rover_waveshare-ugv-rover-pt-pi5-ros2"), "native hardware access must be D12 rover-gated");

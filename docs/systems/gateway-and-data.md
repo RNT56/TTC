@@ -2,7 +2,7 @@
 
 **Status:** validation/BOM/review/generation/auth/model/share/job/platform APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30
 
 ## 1. Purpose
 

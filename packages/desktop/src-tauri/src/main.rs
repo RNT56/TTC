@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 const HARDWARE_ENV: &str = "FORGE_DESKTOP_ENABLE_HARDWARE";
-const D28_SIGNOFF_ENV: &str = "FORGE_DESKTOP_D28_SIGNOFF";
+const D30_LAB_SIGNOFF_ENV: &str = "FORGE_DESKTOP_D30_LAB_SIGNOFF";
 const LAB_MODE_ENV: &str = "FORGE_HARDWARE_LAB_MODE";
 const D12_RIGS: &[&str] = &[
     "ref_quad_kakute-h7-source-one-5in",
@@ -49,7 +49,7 @@ struct RecorderRequest {
 
 fn hardware_enabled() -> bool {
     std::env::var(HARDWARE_ENV).ok().as_deref() == Some("1")
-        && std::env::var(D28_SIGNOFF_ENV).ok().as_deref() == Some("1")
+        && std::env::var(D30_LAB_SIGNOFF_ENV).ok().as_deref() == Some("1")
         && std::env::var(LAB_MODE_ENV).ok().as_deref() == Some("1")
 }
 
@@ -60,7 +60,7 @@ fn disabled_status() -> BridgeStatus {
             "hardware bridge enabled for D12 lab mode by environment".to_string()
         } else {
             format!(
-                "{HARDWARE_ENV}=1, {D28_SIGNOFF_ENV}=1, and {LAB_MODE_ENV}=1 are required for native D12 lab hardware access"
+                "{HARDWARE_ENV}=1, {D30_LAB_SIGNOFF_ENV}=1, and {LAB_MODE_ENV}=1 are required for native D12 lab hardware access"
             )
         },
         no_auto_arm: true,

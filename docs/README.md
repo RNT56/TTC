@@ -7,7 +7,8 @@ This index maps the `docs/` tree and gives reading orders by role.
 
 **Every session (any role):**
 [`/CLAUDE.md`](../CLAUDE.md) → top of [`/CHANGELOG.md`](../CHANGELOG.md) →
-[`ROADMAP.md`](ROADMAP.md) → [`TODO.md`](TODO.md).
+[`ROADMAP.md`](ROADMAP.md) → [`TODO.md`](TODO.md). For parallel execution
+planning, add [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
 **New to the project:** add [`FORGE-plan.md`](FORGE-plan.md) (the binding v3.0 plan,
 ~35 min), then [`GLOSSARY.md`](GLOSSARY.md) and [`architecture.md`](architecture.md).
@@ -27,6 +28,7 @@ hardware, or user content also requires
 | [`FORGE-vision-and-architecture.md`](FORGE-vision-and-architecture.md) | v1.0 predecessor paper | **Frozen**, historical |
 | [`ROADMAP.md`](ROADMAP.md) | Phases P0–P12: scope, exit-criteria checkboxes, live status | Living |
 | [`TODO.md`](TODO.md) | Every open task across all surfaces, with stable IDs | Living |
+| [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md) | Parallel subworker split for all remaining TODOs, dependencies, blockers, and acceptance gates | Living |
 | [`DECISIONS.md`](DECISIONS.md) | Binding decision record D1–D16+, open decisions, decision process | Living (append-only semantics) |
 | [`BEST-PRACTICES.md`](BEST-PRACTICES.md) | Doctrine, conventions, code/test/AI-usage standards, git discipline | Living |
 | [`GLOSSARY.md`](GLOSSARY.md) | Project vocabulary | Living |

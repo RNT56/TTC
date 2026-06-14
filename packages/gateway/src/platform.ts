@@ -985,10 +985,10 @@ async function assertHardwareGateForJob(
   if (!hardwareTouchingJob(kind, provider, payload)) return;
   const gate = await currentPlatformGate(db, "d28.hardware");
   if (gate.status !== "accepted" || gate.revokedAt !== null) {
-    throw Object.assign(new Error("D28 hardware/legal signoff is required before live hardware bridge jobs"), { statusCode: 409 });
+    throw Object.assign(new Error("D30 controlled D12 lab signoff is required before live hardware bridge jobs"), { statusCode: 409 });
   }
   if (!envEnabled("FORGE_HARDWARE_LAB_MODE")) {
-    throw Object.assign(new Error("FORGE_HARDWARE_LAB_MODE=1 is required for post-D28 lab hardware jobs"), { statusCode: 409 });
+    throw Object.assign(new Error("FORGE_HARDWARE_LAB_MODE=1 is required for D30 lab hardware jobs"), { statusCode: 409 });
   }
   const rigId = rigIdFrom(payload);
   if (!rigId || !D12_RIG_ALLOWLIST.includes(rigId)) {

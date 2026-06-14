@@ -1763,20 +1763,84 @@ test(
 	    assert.equal(telemetryBody.logs.length, 1);
 	    assert.equal(telemetryBody.logs[0].source, "fixture");
 
-	    const liveTelemetryBlocked = await app.inject({
-	      method: "POST",
-	      url: "/v1/jobs",
-	      headers: authHeaders,
-	      payload: {
-	        kind: "bridge.telemetry-ingest",
-	        provider: "local",
+	    const previousHardwareLabMode = process.env.FORGE_HARDWARE_LAB_MODE;
+	    delete process.env.FORGE_HARDWARE_LAB_MODE;
+	    try {
+	      const liveTelemetryBlocked = await app.inject({
+	        method: "POST",
+	        url: "/v1/jobs",
+	        headers: authHeaders,
 	        payload: {
-	          rigId: "ref_quad_kakute-h7-source-one-5in",
-	          samples: [{ t: 0 }, { t: 1 }],
+	          kind: "bridge.telemetry-ingest",
+	          provider: "local",
+	          payload: {
+	            rigId: "ref_quad_kakute-h7-source-one-5in",
+	            samples: [{ t: 0 }, { t: 1 }],
+	          },
 	        },
-	      },
-	    });
-	    assert.equal(liveTelemetryBlocked.statusCode, 409, liveTelemetryBlocked.body);
+	      });
+	      assert.equal(liveTelemetryBlocked.statusCode, 409, liveTelemetryBlocked.body);
+	      assert.match(liveTelemetryBlocked.body, /D30 controlled D12 lab signoff/);
+
+	      const hardwareGate = await app.inject({
+	        method: "POST",
+	        url: "/v1/platform/gates/d28.hardware/signoffs",
+	        payload: {
+	          status: "accepted",
+	          policyVersion: "d30-d28-lab-signoff-test",
+	          jurisdiction: "US/EU",
+	          reviewer: "test-owner",
+	          evidence: { scope: "controlled D12 lab pilots only" },
+	        },
+	      });
+	      assert.equal(hardwareGate.statusCode, 201, hardwareGate.body);
+
+	      const liveTelemetryWithoutLabMode = await app.inject({
+	        method: "POST",
+	        url: "/v1/jobs",
+	        headers: authHeaders,
+	        payload: {
+	          kind: "bridge.telemetry-ingest",
+	          provider: "local",
+	          payload: {
+	            rigId: "ref_quad_kakute-h7-source-one-5in",
+	            samples: [{ t: 2 }, { t: 3 }],
+	          },
+	        },
+	      });
+	      assert.equal(liveTelemetryWithoutLabMode.statusCode, 409, liveTelemetryWithoutLabMode.body);
+	      assert.match(liveTelemetryWithoutLabMode.body, /FORGE_HARDWARE_LAB_MODE=1/);
+
+	      process.env.FORGE_HARDWARE_LAB_MODE = "1";
+	      const liveTelemetryLabQueued = await app.inject({
+	        method: "POST",
+	        url: "/v1/jobs",
+	        headers: authHeaders,
+	        payload: {
+	          kind: "bridge.telemetry-ingest",
+	          provider: "local",
+	          payload: {
+	            rigId: "ref_quad_kakute-h7-source-one-5in",
+	            samples: [{ t: 4 }, { t: 5 }],
+	          },
+	        },
+	      });
+	      assert.equal(liveTelemetryLabQueued.statusCode, 201, liveTelemetryLabQueued.body);
+	      const liveTelemetryLabBody = liveTelemetryLabQueued.json() as { job: { provider: string; status: string; output: unknown } };
+	      assert.equal(liveTelemetryLabBody.job.provider, "local");
+	      assert.equal(liveTelemetryLabBody.job.status, "queued");
+	      assert.equal(liveTelemetryLabBody.job.output, null);
+
+	      const labCapabilities = await app.inject({ method: "GET", url: "/v1/jobs/capabilities", headers: authHeaders });
+	      assert.equal(labCapabilities.statusCode, 200, labCapabilities.body);
+	      assert.equal((labCapabilities.json() as { hardware: { labMode: boolean } }).hardware.labMode, true);
+	    } finally {
+	      if (previousHardwareLabMode === undefined) {
+	        delete process.env.FORGE_HARDWARE_LAB_MODE;
+	      } else {
+	        process.env.FORGE_HARDWARE_LAB_MODE = previousHardwareLabMode;
+	      }
+	    }
 
 	    const wearJob = await app.inject({
       method: "POST",
@@ -1797,7 +1861,7 @@ test(
 
     const jobs = await app.inject({ method: "GET", url: "/v1/jobs", headers: authHeaders });
     assert.equal(jobs.statusCode, 200, jobs.body);
-    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 8);
+    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 9);
 
     const course = await app.inject({
       method: "POST",

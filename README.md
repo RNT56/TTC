@@ -75,7 +75,7 @@ parts, physics, training, build evidence, and field evidence to agree.
 | "Training results are impossible to compare." | A policy blob arrives without observation layout, task definition, randomization, scorecard, or lineage | Policy artifacts include ONNX metadata, I/O headers, scorecards, randomization grids, and export gates |
 | "Sharing a model loses context." | Marketplaces distribute files without validator reports, license policy, moderation, or usage data | Listings require admitted validator reports, policy gates where needed, moderation paths, and usage rollups |
 | "Field evidence rarely improves the next design." | Telemetry, damage notes, and repairs become disconnected logs | Field telemetry can become replay evidence, system-ID input, wear estimates, impact analysis, and repair sheets |
-| "Hardware deployment is too easy to make unsafe." | A UI button can quietly become real-world authority | Real hardware actions are blocked by default. They only unlock after legal/safety signoff, explicit lab mode, approved reference rigs, and physical confirmation |
+| "Hardware deployment is too easy to make unsafe." | A UI button can quietly become real-world authority | D30 accepts controlled D12 lab pilots only. Real hardware actions still require explicit lab mode, approved reference rigs, local execution, physical confirmation, and supervisor authority |
 
 ---
 
@@ -184,7 +184,7 @@ flowchart TD
   S1 --> S2["Constrained reality: tether, wheels-up, harness, bounded course"]
   S2 --> S3["Free operation inside declared envelopes"]
 
-  G0["D28 legal signoff"] --> S1
+  G0["D30 lab signoff"] --> S1
   G1["Lab mode env flag"] --> S1
   G2["D12 rig allowlist"] --> S1
   G3["Physical confirmation"] --> S2
@@ -192,7 +192,7 @@ flowchart TD
 ```
 
 The ladder is not product theater. The current implementation deliberately blocks
-live hardware writes and live capture until the gate conditions are met.
+live hardware writes and live capture unless every D30 lab condition is present.
 
 ---
 
@@ -264,7 +264,7 @@ flowchart LR
 | Courses | EnvSpec validation, assignments, leaderboards | Server-side replay verification |
 | Marketplace | Listed models/skills, usage rollups, moderation | Admitted reports, policy gate, D29 usage beta |
 | Commerce | Vendor links and print quote handoff | Off-platform checkout only, no payout/payment ledger |
-| Desktop/bridge | Future serial and recorder surface | D28 fail-closed native commands |
+| Desktop/bridge | Future serial and recorder surface | D30 lab-gated, fail-closed native commands |
 | Maintenance | Wear estimates, impact windows, repair steps, fleet summaries | Field logs become records, not screenshots |
 
 ---
@@ -285,7 +285,7 @@ ForgedTTC is intentionally split into two truths:
 | Rapier / MuJoCo parity | Fixture contracts | Engine-backed baseline capture still gated |
 | Vendor offers | Sandboxable | Provider endpoint configuration |
 | Print quotes | Sandboxable | Provider quote endpoint, checkout off-platform |
-| Hardware writes/capture | Blocked | D28 signoff + lab env + D12 rig + physical confirmation |
+| Hardware writes/capture | Blocked by default | D30 signoff + lab env + local provider + D12 rig + physical confirmation |
 
 No seller payouts. No revenue share. No direct checkout. D29 records marketplace as
 a usage-data beta until real thresholds justify the next economics decision.
@@ -298,7 +298,7 @@ a usage-data beta until real thresholds justify the next economics decision.
 flowchart TB
   subgraph Client["Client surfaces"]
     Studio["Browser Studio"]
-    Desktop["FORGE Desktop, D28-gated"]
+    Desktop["FORGE Desktop, D30 lab-gated"]
   end
 
   subgraph Core["Open core"]
@@ -415,7 +415,7 @@ node scripts/validate-all.mjs
 | `crates/` | Rust contract, validator, geometry, motion, sim, WASM facade |
 | `packages/studio` | React/Three.js browser studio |
 | `packages/gateway` | Fastify API, auth, jobs, blobs, platform routes |
-| `packages/desktop` | Tauri bridge shell and D28 fail-closed native command contract |
+| `packages/desktop` | Tauri bridge shell and D30 lab-gated native command contract |
 | `workers` | Python jobs for ETL, photoscan, training, replay, bridge, co-design, maintenance |
 | `infra/migrations` | Postgres schema for catalog, jobs, artifacts, gates, commerce |
 | `catalog` | Component and reference rig data |

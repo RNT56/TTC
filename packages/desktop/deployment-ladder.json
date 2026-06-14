@@ -33,8 +33,16 @@
       "physicalConfirmation": true
     }
   ],
-  "blockedUntil": {
-    "decision": "D28",
-    "reason": "ToS/liability legal review and hardware sign-off are required before live deployment features ship."
+  "liveHardwareGate": {
+    "decision": "D30",
+    "scope": "controlled D12 lab pilots only",
+    "requires": [
+      "FORGE_DESKTOP_ENABLE_HARDWARE=1",
+      "FORGE_DESKTOP_D30_LAB_SIGNOFF=1",
+      "FORGE_HARDWARE_LAB_MODE=1",
+      "approved D12 reference rig",
+      "physical confirmation"
+    ],
+    "externalBetaEnabled": false
   }
 }

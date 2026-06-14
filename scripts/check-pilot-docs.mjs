@@ -22,7 +22,7 @@ const requiredDocs = [
     terms: [
       "ref_quad_kakute-h7-source-one-5in",
       "P8-009",
-      "D28",
+      "D30",
       "no-auto-arm",
       "SITL",
       "HITL",
@@ -39,7 +39,7 @@ const requiredDocs = [
     terms: [
       "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
       "P8-010",
-      "D28",
+      "D30",
       "no-auto-arm",
       "ROS 2",
       "SITL",
@@ -63,7 +63,9 @@ for (const doc of requiredDocs) {
 
 const ladder = JSON.parse(read("packages/desktop/deployment-ladder.json"));
 assert(ladder.noAutoArm === true, "deployment ladder must stay no-auto-arm");
-assert(ladder.blockedUntil?.decision === "D28", "deployment ladder must name D28");
+assert(ladder.liveHardwareGate?.decision === "D30", "deployment ladder must name D30");
+assert(ladder.liveHardwareGate?.scope === "controlled D12 lab pilots only", "deployment ladder must stay scoped to D12 lab pilots");
+assert(ladder.liveHardwareGate?.externalBetaEnabled === false, "deployment ladder must not enable external hardware beta");
 assert(
   ladder.stages?.map((stage) => stage.id).join(">") === "sitl>hitl>constrained>free",
   "deployment ladder stage order must stay SITL > HITL > constrained > free",
@@ -86,4 +88,4 @@ assert(
   "reference rover must include the Waveshare ROS 2 kit",
 );
 
-console.log("pilot-docs: reference quad and rover playbooks are present, D28-gated, and ladder-aligned");
+console.log("pilot-docs: reference quad and rover playbooks are present, D30 lab-gated, and ladder-aligned");

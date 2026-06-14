@@ -2,9 +2,10 @@
 
 **Rig:** `ref_quad_kakute-h7-source-one-5in`
 **TODO:** P8-009
-**Status:** documented dry-run path. Live HITL, tethered hover, serial writes, and
-free operation remain blocked by D28 until ToS/liability legal review and hardware
-sign-off are complete.
+**Status:** documented dry-run path. D30 accepts controlled D12 lab pilots, but live
+HITL, tethered hover, serial writes, and free operation still require the lab
+adapter, lab-mode envs, D12 rig confirmation, physical confirmation, and evidence
+capture.
 
 This playbook is the executable tutorial contract for the D12 reference quad. It is
 intended to keep the SITL -> HITL -> tethered path repeatable before hardware is
@@ -38,7 +39,8 @@ pnpm pilot:check
 ```
 
 Expected result: catalog rows resolve, the reference rig lockfile pins are stable,
-the Desktop bridge remains no-auto-arm, and this playbook still names the D28 gate.
+the Desktop bridge remains no-auto-arm, and this playbook still names the D30
+controlled-lab gate.
 
 ## Stage 1 - SITL
 
@@ -56,8 +58,8 @@ Acceptance:
 
 ## Stage 2 - HITL
 
-Blocked by D28. Once unblocked, this stage connects the Holybro Kakute H7 v2 in
-bench mode over serial with props removed.
+D30 lab-gated. This stage connects the Holybro Kakute H7 v2 in bench mode over
+serial with props removed only after the runtime gates pass.
 
 Evidence required before passing:
 
@@ -70,9 +72,9 @@ Evidence required before passing:
 
 ## Stage 3 - Tethered Hover
 
-Blocked by D28. Once unblocked, this stage uses the D12 quad with the TBS
-Source One-class frame, EMAX ECO II 2207 1900KV motors, Tekko32 ESC, cited
-5-inch props, and CNHL Black 4S 1500mAh pack.
+D30 lab-gated. This stage uses the D12 quad with the TBS Source One-class frame,
+EMAX ECO II 2207 1900KV motors, Tekko32 ESC, cited 5-inch props, and CNHL Black 4S
+1500mAh pack only after the runtime gates pass.
 
 Evidence required before passing:
 
