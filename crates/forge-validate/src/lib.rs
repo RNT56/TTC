@@ -8,7 +8,9 @@
 
 #![forbid(unsafe_code)]
 
-use forge_contract::{Archetype, CatalogSource, CollisionPolicy, ModelSpec, ProvenanceKind};
+use forge_contract::{
+    Archetype, CatalogSource, CollisionPolicy, MaterialClass, ModelSpec, ProvenanceKind,
+};
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -580,6 +582,9 @@ fn run_checks(
             );
         }
     }
+
+    // ---- MFG-001..004 (XC-18): FDM v0 DfM checks for printable structural parts.
+    d.extend(run_dfm_checks(spec, &baked));
 
     // ---- GEO-003 (XC-09): AABB candidacy → BVH tri-tri CONFIRMATION.
     // Confirmed mesh intersections warn (deliberate interpenetration is the
@@ -1196,6 +1201,197 @@ fn count_degenerate(mesh: &forge_geometry::MeshBuffers) -> usize {
         .count()
 }
 
+const FDM_MIN_WALL_M: f64 = 0.0012;
+const FDM_SUPPORT_WARN_RATIO: f64 = 0.25;
+const FDM_BED_M: [f64; 3] = [0.5, 0.5, 0.5];
+const FDM_UNSUPPORTED_SURFACE_Y: f64 = -std::f64::consts::FRAC_1_SQRT_2;
+
+fn run_dfm_checks(spec: &ModelSpec, baked: &BakedModel) -> Vec<Diagnostic> {
+    let mut out = Vec::new();
+    for bp in &baked.parts {
+        let part = &spec.parts[bp.part_index];
+        if !printable_structural_part(part) {
+            continue;
+        }
+
+        let extents = mesh_extents(&bp.mesh);
+        let min_wall = extents.into_iter().fold(f64::INFINITY, f64::min);
+        if min_wall.is_finite() && min_wall < FDM_MIN_WALL_M {
+            out.push(
+                Diagnostic::error(
+                    "MFG-001",
+                    format!(
+                        "min_wall_fdm: part {} has {:.2} mm, needs ≥ {:.1} mm",
+                        bp.part_index,
+                        min_wall * 1000.0,
+                        FDM_MIN_WALL_M * 1000.0
+                    ),
+                )
+                .subject("part", bp.part_index.to_string())
+                .observed(min_wall * 1000.0)
+                .limit(serde_json::json!(FDM_MIN_WALL_M * 1000.0))
+                .units("mm")
+                .hint("thicken the thin axis before requesting a structural FDM print quote"),
+            );
+        }
+
+        if !oriented_bed_fit(extents, FDM_BED_M) {
+            out.push(
+                Diagnostic::error(
+                    "MFG-004",
+                    format!(
+                        "bed_fit_fdm: part {} extents {:.0} × {:.0} × {:.0} mm exceed the {:.0} × {:.0} × {:.0} mm oriented bed",
+                        bp.part_index,
+                        extents[0] * 1000.0,
+                        extents[1] * 1000.0,
+                        extents[2] * 1000.0,
+                        FDM_BED_M[0] * 1000.0,
+                        FDM_BED_M[1] * 1000.0,
+                        FDM_BED_M[2] * 1000.0
+                    ),
+                )
+                .subject("part", bp.part_index.to_string())
+                .observed(extents.into_iter().fold(0.0, f64::max) * 1000.0)
+                .limit(serde_json::json!(FDM_BED_M.into_iter().fold(0.0, f64::max) * 1000.0))
+                .units("mm")
+                .hint("split the part or choose a larger print profile before quote handoff"),
+            );
+        }
+
+        let support = support_metrics(&bp.mesh);
+        if support.max_overhang_deg > 45.0 {
+            out.push(
+                Diagnostic::warn(
+                    "MFG-002",
+                    format!(
+                        "overhang_fdm: part {} has unsupported surfaces up to {:.0}° from vertical",
+                        bp.part_index, support.max_overhang_deg
+                    ),
+                )
+                .subject("part", bp.part_index.to_string())
+                .observed(support.max_overhang_deg)
+                .limit(serde_json::json!(45.0))
+                .units("deg")
+                .hint("re-orient the part, add chamfers, or accept supports in the print profile"),
+            );
+        }
+        if support.unsupported_area_ratio > FDM_SUPPORT_WARN_RATIO {
+            out.push(
+                Diagnostic::warn(
+                    "MFG-003",
+                    format!(
+                        "support_estimate_fdm: part {} needs support under {:.0} % of surface area",
+                        bp.part_index,
+                        support.unsupported_area_ratio * 100.0
+                    ),
+                )
+                .subject("part", bp.part_index.to_string())
+                .observed(support.unsupported_area_ratio * 100.0)
+                .limit(serde_json::json!(FDM_SUPPORT_WARN_RATIO * 100.0))
+                .units("%")
+                .hint("reduce underside area or split the component before quote handoff"),
+            );
+        }
+    }
+    out
+}
+
+fn printable_structural_part(part: &forge_contract::Part) -> bool {
+    !matches!(part.material, MaterialClass::Metal | MaterialClass::Rubber)
+}
+
+fn mesh_extents(mesh: &forge_geometry::MeshBuffers) -> [f64; 3] {
+    let mut min = [f64::INFINITY; 3];
+    let mut max = [f64::NEG_INFINITY; 3];
+    for v in mesh.positions.chunks_exact(3) {
+        for axis in 0..3 {
+            min[axis] = min[axis].min(v[axis] as f64);
+            max[axis] = max[axis].max(v[axis] as f64);
+        }
+    }
+    [
+        (max[0] - min[0]).max(0.0),
+        (max[1] - min[1]).max(0.0),
+        (max[2] - min[2]).max(0.0),
+    ]
+}
+
+fn oriented_bed_fit(mut extents: [f64; 3], mut bed: [f64; 3]) -> bool {
+    extents.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    bed.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    extents
+        .iter()
+        .zip(bed.iter())
+        .all(|(part, limit)| part <= limit)
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct SupportMetrics {
+    max_overhang_deg: f64,
+    unsupported_area_ratio: f64,
+}
+
+fn support_metrics(mesh: &forge_geometry::MeshBuffers) -> SupportMetrics {
+    let min_y = mesh
+        .positions
+        .chunks_exact(3)
+        .map(|p| p[1] as f64)
+        .fold(f64::INFINITY, f64::min);
+    let mut total_area = 0.0;
+    let mut unsupported_area = 0.0;
+    let mut max_overhang_deg = 0.0;
+
+    for tri in mesh.indices.chunks_exact(3) {
+        let a = mesh_point(mesh, tri[0]);
+        let b = mesh_point(mesh, tri[1]);
+        let c = mesh_point(mesh, tri[2]);
+        let area = triangle_area(a, b, c);
+        total_area += area;
+        if area <= 0.0 {
+            continue;
+        }
+        let normal_y = mesh
+            .normals
+            .get(tri[0] as usize * 3 + 1)
+            .copied()
+            .unwrap_or(0.0) as f64;
+        let centroid_y = (a[1] + b[1] + c[1]) / 3.0;
+        if centroid_y > min_y + FDM_MIN_WALL_M / 2.0 && normal_y < FDM_UNSUPPORTED_SURFACE_Y {
+            unsupported_area += area;
+            max_overhang_deg = f64::max(max_overhang_deg, normal_y.abs().asin().to_degrees());
+        }
+    }
+
+    SupportMetrics {
+        max_overhang_deg,
+        unsupported_area_ratio: if total_area > 0.0 {
+            unsupported_area / total_area
+        } else {
+            0.0
+        },
+    }
+}
+
+fn mesh_point(mesh: &forge_geometry::MeshBuffers, i: u32) -> [f64; 3] {
+    let i = i as usize * 3;
+    [
+        mesh.positions[i] as f64,
+        mesh.positions[i + 1] as f64,
+        mesh.positions[i + 2] as f64,
+    ]
+}
+
+fn triangle_area(a: [f64; 3], b: [f64; 3], c: [f64; 3]) -> f64 {
+    let ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    let ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    let cr = [
+        ab[1] * ac[2] - ab[2] * ac[1],
+        ab[2] * ac[0] - ab[0] * ac[2],
+        ab[0] * ac[1] - ab[1] * ac[0],
+    ];
+    (cr[0] * cr[0] + cr[1] * cr[1] + cr[2] * cr[2]).sqrt() * 0.5
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1287,6 +1483,51 @@ mod tests {
             .results
             .iter()
             .any(|d| d.check == "CTR-007" && d.severity == Severity::Error));
+    }
+
+    #[test]
+    fn dfm_accepts_demo_without_mfg_errors() {
+        let report = run_full(GOOD, &EmptyCatalog, &Options::default());
+        assert!(report
+            .results
+            .iter()
+            .all(|d| !d.check.starts_with("MFG-") || d.severity != Severity::Error));
+    }
+
+    #[test]
+    fn dfm_rejects_too_thin_printed_part() {
+        let mut spec = forge_contract::validate_shape(GOOD).unwrap();
+        spec.parts[0].geom = forge_contract::Geom::Box {
+            w: 0.0008,
+            h: 0.02,
+            d: 0.02,
+        };
+        spec.parts[0].material = MaterialClass::Matte;
+        let doc = serde_json::to_string(&spec).unwrap();
+        let report = run_full(&doc, &EmptyCatalog, &Options::default());
+        assert!(report
+            .results
+            .iter()
+            .any(|d| d.check == "MFG-001" && d.severity == Severity::Error));
+        assert_eq!(report.verdict, Verdict::Rejected);
+    }
+
+    #[test]
+    fn dfm_rejects_printed_part_that_does_not_fit_bed() {
+        let mut spec = forge_contract::validate_shape(GOOD).unwrap();
+        spec.parts[0].geom = forge_contract::Geom::Box {
+            w: 0.7,
+            h: 0.02,
+            d: 0.02,
+        };
+        spec.parts[0].material = MaterialClass::Matte;
+        let doc = serde_json::to_string(&spec).unwrap();
+        let report = run_full(&doc, &EmptyCatalog, &Options::default());
+        assert!(report
+            .results
+            .iter()
+            .any(|d| d.check == "MFG-004" && d.severity == Severity::Error));
+        assert_eq!(report.verdict, Verdict::Rejected);
     }
 
     #[test]

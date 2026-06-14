@@ -182,7 +182,7 @@ Studio (TypeScript face):
 - [~] P11-003 — Skills marketplace: ONNX + I/O header + scorecard + training lineage; fine-tune-against-buyer's-twin offer for non-matching morphologies *(2026-06-14: policy jobs emit ONNX header/scorecard/lineage; policy listing route requires accepted `p11.policy-sharing` platform gate plus explicit dual-use/export-control signoff and records `policy_signoffs`; live transfer/fine-tune offer open)*
 - [x] P11-004 — Classroom mode: briefs as assignments, rubric = validator config + scorecard thresholds, auto-grading; `forge-validate` free binary as the institutional on-ramp *(2026-06-14: `classroom_assignments`/`classroom_submissions`, gateway routes, deterministic validator/rubric grading, and Studio controls live)*
 - [~] P11-005 — BOM agent: live vendor offers for catalog slots *(2026-06-14: `vendor_offers` tables plus vendor offer refresh/list APIs and Studio link surfacing live; external provider refresh remains env-gated/sandboxable)*
-- [~] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency) *(2026-06-14: print quote request/offer tables plus quote-link handoff API and Studio off-platform quote links live; direct checkout/payment intentionally out of scope)*
+- [~] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency) *(2026-06-14: print quote request/offer tables plus quote-link handoff API and Studio off-platform quote links live; validator FDM v0 MFG-001..004 diagnostics now cover inline printable structural parts; oriented 3MF artifacts, BOM DfM rows, and direct checkout/payment remain out of scope/open)*
 - [x] P11-007 — UGC moderation policy live: report flow, takedown SLA, repeat-infringer rule *(2026-06-14: `moderation_reports`, 72-hour SLA target, repeat-infringer signal, gateway routes, and Studio report action live; legal/process ownership still outside code)*
 - [x] P11-008 — License-ledger UI + export filter surfaced to users (= XC-17) *(2026-06-14: public `/v1/license-ledger` reports license classes, component/price/citation counts, review counts, and export-policy distribution; Studio platform panel renders the ledger)*
 - [x] P11-009 — Marketplace economics decided with usage data (OD-05); record in DECISIONS *(2026-06-14: D29 records usage-data beta, no seller payouts/revenue share/direct checkout at launch, credit cost-plus retained for GPU jobs)*
@@ -217,7 +217,7 @@ touched.
 | XC-15 | Brief-25 corpus + dashboard | P4 | systems/generation-pipeline.md |
 | XC-16 | Draft-state UX | P4 | systems/studio-ui.md |
 | XC-17 | License-ledger UI + export filter — **done 2026-06-14** (`/v1/license-ledger` + Studio platform panel) | P3 | systems/component-database.md |
-| XC-18 | DfM check module | P6 | systems/geometry-engine.md |
+| XC-18 | DfM check module — **FDM v0 validator checks live 2026-06-14** (`MFG-001..004`; 3MF/profile artifacts still open) | P6 | systems/geometry-engine.md |
 | XC-19 | Pairing-code auth + FORGE Link image build | P8 | systems/hardware-bridge.md |
 | XC-20 | Ghost-overlay telemetry view | P8 | systems/hardware-bridge.md |
 | XC-21 | Scorecard renderer | P7 | systems/learning-engine.md |

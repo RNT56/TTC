@@ -78,10 +78,10 @@ Severity: `error` blocks admission; `warn` admits with notice.
 **MFG — manufacturing (printable structural parts)**
 | ID | Check |
 |---|---|
-| MFG-001 | minimum wall thickness per process profile |
-| MFG-002 | overhang angle |
-| MFG-003 | support-volume estimate |
-| MFG-004 | bed fit |
+| MFG-001 | minimum wall thickness per process profile *(FDM v0: inline structural parts require ≥ 1.2 mm)* |
+| MFG-002 | overhang angle *(FDM v0: warns on unsupported surfaces > 45° from vertical)* |
+| MFG-003 | support-volume estimate *(FDM v0: warns when unsupported area exceeds 25 % of surface area)* |
+| MFG-004 | bed fit *(FDM v0: oriented part extents must fit a 500 × 500 × 500 mm lab profile)* |
 
 **GEO-007** *(provisional v0 id)* · bake failure — the geometry could not be
 built at all (unknown node, degenerate dims, unsupported mesh ref pre-P5).

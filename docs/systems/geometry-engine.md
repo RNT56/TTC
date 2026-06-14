@@ -71,9 +71,13 @@ implementation.
 ≤ 800 tris LOD0, ≤ 150 LOD1.
 
 **DfM (XC-18).** Per process profile (FDM/SLA presets): minimum wall, overhang
-angle, support-volume estimate, bed fit. Failing parts carry diagnostics + suggested
-fixes ("thicken to 1.6 mm", "add chamfer") → MFG-* checks; feeds print ordering
-(P11-006).
+angle, support-volume estimate, bed fit. Live 2026-06-14: the validator runs an
+FDM v0 profile over inline printable structural parts (`MFG-001..004`): ≥ 1.2 mm
+minimum wall, unsupported-overhang warnings above 45° from vertical, support-area
+warnings above 25 %, and oriented fit against a 500 mm lab bed. Failing parts carry
+diagnostics + suggested fixes ("thicken the thin axis", "split the part") and feed
+print ordering (P11-006). SLA presets, exact B-rep wall analysis, oriented 3MF
+artifacts, and printed-parts BOM quote references remain open.
 
 **Collider auto-fitter (XC-10).** Per-node compounds (hulls/fitted primitives)
 within D7 budgets (≤ 8/node, ≤ 24/model); fidelity prioritized at contact-critical

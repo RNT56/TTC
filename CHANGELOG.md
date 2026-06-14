@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add FDM v0 DfM validator checks
+**Session:** Codex agent · branch main · **Phase:** P6/P11 · **TODO items:** XC-18 [~], P11-006 [~]
+**Done:** Added deterministic validator diagnostics for printable inline
+structural parts: `MFG-001` minimum wall, `MFG-002` unsupported-overhang warning,
+`MFG-003` support-area estimate warning, and `MFG-004` oriented FDM bed fit.
+Pinned unit coverage for too-thin and too-large printed parts while keeping the
+first-party demo admitted.
+**Changed:** `crates/forge-validate/src/lib.rs`,
+`docs/systems/validation-harness.md`, `docs/systems/geometry-engine.md`,
+`docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Generate oriented 3MF/profile artifacts and attach DfM status/artifact
+refs to printed-parts BOM rows so print quote handoff can consume validator output.
+**Blockers:** exact B-rep wall analysis, SLA profile support, and quote-ready 3MF
+artifacts still require the export/worker slice.
+
 ## 2026-06-14 — Record D30 controlled D12 lab signoff
 **Session:** Codex agent · branch current worktree · **Phase:** P8 · **TODO items:** P8-000 [x], P8-001 [~], P8-009 [~], P8-010 [~], P8-012 [~], P8-013 [~]
 **Done:** Recorded owner signoff for the D28 hardware/legal gate as D30 and added
