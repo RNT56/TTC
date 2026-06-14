@@ -264,12 +264,14 @@ Owns: `P9-002`, `P9-003`, `P9-004`, `P9-005`, P9 open exit criteria.
 
 Scope:
 
-- Replace deterministic candidate generation with live CMA-ES and Optuna TPE
-  orchestration.
+- Keyless `codesign.evaluate` now has a budgeted CMA/TPE-shaped deterministic
+  search up to 200 candidates plus optimizer metadata; live engine-backed CMA-ES
+  and Optuna TPE orchestration remains open.
 - Finish the multi-fidelity ladder: tier 0 native static checks, tier 1 Rapier
   smoke, tier 2 short MuJoCo rollouts, tier 3 finalist training.
 - Persisted/openable Pareto point UI is live in Studio as of 2026-06-14 for
-  admitted patch candidates; live optimizer-backed explorer depth remains open.
+  admitted patch candidates; worker-side budgeted Pareto depth is live, while
+  engine-backed explorer evaluation remains open.
 - Add MJX batching for tier 2/3 only if the P7-010 benchmark demands it.
 
 Dependencies:

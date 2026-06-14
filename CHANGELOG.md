@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Expand co-design optimizer depth
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-004 [~]
+**Done:** Expanded `codesign.evaluate` from three fixed candidates into a
+deterministic, budgeted CMA/TPE-shaped search that emits up to 200 candidates,
+optimizer metadata, richer metrics, and a computed Pareto front while preserving
+the external optimizer command seam.
+**Changed:** `workers/forge_workers/codesign.py`,
+`workers/tests/test_worker_jobs.py`, `docs/systems/co-design.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Replace the keyless optimizer fixture with real CMA-ES/Optuna plus
+engine-backed tier 1/2/3 evaluation once Rapier/MuJoCo/SB3 lanes are ready.
+**Blockers:** engine-backed tiers and overnight hardware benchmarks remain open.
+
 ## 2026-06-14 — Add Studio marketplace curation board
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P11 · **TODO items:** P11-002 [~], P11-003 [~]
 **Done:** Replaced the flat listing preview with a Studio marketplace board that

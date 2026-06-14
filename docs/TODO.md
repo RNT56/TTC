@@ -162,9 +162,9 @@ Studio (TypeScript face):
 
 ### P9 — Co-design optimizer
 - [x] P9-001 — Parameter-manifold encoding: slot choices categorical, dims/driver params continuous, validator bounds *(2026-06-14: codesign worker emits categorical/continuous manifold and bounds)*
-- [~] P9-002 — CMA-ES orchestrator + Optuna TPE for categorical-heavy spaces *(2026-06-14: deterministic candidate/Pareto evaluator live; live CMA-ES/Optuna adapter open)*
-- [~] P9-003 — Multi-fidelity ladder: tier 0 (schema/compat/static — native via core binary, < 50 ms) → tier 1 (Rapier smoke, s) → tier 2 (short MuJoCo rollouts) → tier 3 (full training, finalists only) *(2026-06-14: tier labels and finalist ladder contract live; full simulator ladder open)*
-- [~] P9-004 — Pareto-front UI: each point an admitted, openable contract *(2026-06-14: Studio renders Pareto points with metrics, applies admitted JSON-Patch candidates through live patch/re-bake, and can now save admitted points through the model admission route as openable models; full optimizer-backed explorer remains open)*
+- [~] P9-002 — CMA-ES orchestrator + Optuna TPE for categorical-heavy spaces *(2026-06-14: deterministic candidate/Pareto evaluator live; `codesign.evaluate` now supports a budgeted CMA/TPE-shaped keyless search up to 200 candidates plus external `FORGE_CODESIGN_CMD`; live engine-backed CMA-ES/Optuna remains open)*
+- [~] P9-003 — Multi-fidelity ladder: tier 0 (schema/compat/static — native via core binary, < 50 ms) → tier 1 (Rapier smoke, s) → tier 2 (short MuJoCo rollouts) → tier 3 (full training, finalists only) *(2026-06-14: tier labels, optimizer metadata, finalist ladder contract, and budgeted keyless tier search live; full simulator ladder open)*
+- [~] P9-004 — Pareto-front UI: each point an admitted, openable contract *(2026-06-14: Studio renders Pareto points with metrics, applies admitted JSON-Patch candidates through live patch/re-bake, and can now save admitted points through the model admission route as openable models; worker Pareto depth now supports budgeted candidate fronts; engine-backed explorer remains open)*
 - [ ] P9-005 — MJX batching for tier 2/3 if P7-010 benchmark demands
 
 ### P10 — Environments & courses

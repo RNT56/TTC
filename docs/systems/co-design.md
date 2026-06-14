@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic candidate/Pareto evaluator live; live optimizer adapter open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic budgeted candidate/Pareto evaluator live; live engine-backed optimizer adapter open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 validator-as-oracle
@@ -23,10 +23,11 @@ Encoding/decoding is deterministic contract surgery (JSON-Patch under the hood),
 lockfile-aware (candidates pin revisions like any model).
 
 Live 2026-06-14: `codesign.evaluate` emits categorical and continuous manifold
-metadata, validator-bounded dimensions, deterministic JSON-Patch candidates, and a
-computed Pareto front. `FORGE_CODESIGN_CMD` can replace the deterministic evaluator
-with a live CMA-ES/Optuna/simulator ladder while preserving the same candidate and
-Pareto output contract.
+metadata, validator-bounded dimensions, deterministic JSON-Patch candidates,
+optimizer metadata, and a computed Pareto front. The keyless path now runs a
+budgeted CMA/TPE-shaped search up to 200 candidates. `FORGE_CODESIGN_CMD` can
+replace that deterministic evaluator with a live CMA-ES/Optuna/simulator ladder
+while preserving the same candidate and Pareto output contract.
 
 ## 3. Algorithms (P9-002)
 
@@ -59,9 +60,10 @@ A Pareto front UI (P9-004): each point opens as a normal admitted contract with 
 validator report and (tier-3 points) scorecard; provenance records the optimization
 run (objectives, seed, generations) like any generation lineage.
 
-Live 2026-06-14: Studio can launch the co-design job, render the Pareto points with
-metrics, and apply admitted JSON-Patch candidates through the live patch/re-bake
-path. The full Pareto explorer with persisted open-point models remains open.
+Live 2026-06-14: Studio can launch the co-design job, render budgeted Pareto points
+with metrics, apply admitted JSON-Patch candidates through the live patch/re-bake
+path, and save admitted points as openable models. Engine-backed tier 1/2/3
+evaluation remains open.
 
 ## 6. Dependencies
 

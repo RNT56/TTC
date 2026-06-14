@@ -201,13 +201,33 @@ def test_geometry_and_codesign_outputs_are_deterministic():
         Job(
             id="j7",
             task="codesign.evaluate",
-            payload={"modelId": "mdl-test"},
+            payload={"modelId": "mdl-test", "candidateBudget": 12},
             idempotency_key="codesign-1",
+        )
+    )
+    codesign_repeat = registry.dispatch(
+        Job(
+            id="j7b",
+            task="codesign.evaluate",
+            payload={"modelId": "mdl-test", "candidateBudget": 12},
+            idempotency_key="codesign-1b",
+        )
+    )
+    codesign_wide = registry.dispatch(
+        Job(
+            id="j7c",
+            task="codesign.evaluate",
+            payload={"modelId": "mdl-test", "candidateBudget": 24},
+            idempotency_key="codesign-1c",
         )
     )
     assert geometry["cacheKey"].startswith("occt.tessellate:")
     assert geometry["dfm"]["pass"]
-    assert len(codesign["candidates"]) == 3
+    assert codesign["optimizer"]["algorithm"] == "deterministic-cma-tpe-fixture"
+    assert codesign["optimizer"]["candidateBudget"] == 12
+    assert len(codesign["candidates"]) == 12
+    assert codesign["candidates"] == codesign_repeat["candidates"]
+    assert codesign["candidates"] == codesign_wide["candidates"][:12]
     assert len(codesign["pareto"]) >= 1
 
 
