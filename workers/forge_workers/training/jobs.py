@@ -7,18 +7,29 @@ same scorecard object used by tests.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
 from forge_workers.training.scorecard import Scorecard, gate
+from forge_workers.training.tasks import task_definition
+
+
+def _digest(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode("utf-8")).hexdigest()[:12]
 
 
 def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
     task = str(payload.get("task", "hover-hold"))
     contract_hash = str(payload.get("contractHash", "00" * 32))
     seed = str(payload.get("seed", "0"))
+    curriculum_stage = int(payload.get("curriculumStage", 1))
+    horizon_s = float(payload.get("horizonS", task_definition(task)["horizonS"]))
+    task_meta = task_definition(task, curriculum_stage=curriculum_stage, horizon_s=horizon_s)
+    resolved_task = str(task_meta["id"])
     external = run_json_command(
         "FORGE_SB3_TRAIN_CMD",
         {"task": "train.policy", **payload},
@@ -33,7 +44,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
             "artifactKind": "policy",
             "provider": external.get("provider", "external-sb3"),
             "algorithm": external.get("algorithm", payload.get("algorithm", "ppo")),
-            "task": external.get("task", {"id": task, "suite": "p7-v1", "curriculumStage": int(payload.get("curriculumStage", 1)), "horizonS": float(payload.get("horizonS", 60))}),
+            "task": external.get("task", task_meta),
             "io": external.get(
                 "io",
                 {
@@ -41,7 +52,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
                     "actions": external.get("actions", []),
                     "onnxHeader": external.get(
                         "onnxHeader",
-                        {"contractHash": contract_hash, "task": task, "observationCount": "0", "actionCount": "0"},
+                        {"contractHash": contract_hash, "task": resolved_task, "observationCount": "0", "actionCount": "0"},
                     ),
                 },
             ),
@@ -49,8 +60,8 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
             "onnx": external.get("onnx", {"cacheKey": external.get("cacheKey", f"external-sb3:{contract_hash[:12]}"), "opset": 18, "fixture": False}),
             "scorecard": {
                 **scorecard,
-                "task": scorecard.get("task", task) if isinstance(scorecard, dict) else task,
-                "taskVersion": scorecard.get("taskVersion", payload.get("taskVersion", "1.0.0")) if isinstance(scorecard, dict) else "1.0.0",
+                "task": scorecard.get("task", resolved_task) if isinstance(scorecard, dict) else resolved_task,
+                "taskVersion": scorecard.get("taskVersion", payload.get("taskVersion", task_meta["version"])) if isinstance(scorecard, dict) else task_meta["version"],
                 "lineage": scorecard.get("lineage", {"contractHash": contract_hash, "seed": seed, "codeVersion": external.get("codeVersion", "external-sb3")}) if isinstance(scorecard, dict) else {},
                 "exportable": exportable,
                 "reasons": scorecard.get("reasons", [] if exportable else ["external scorecard did not mark policy exportable"]) if isinstance(scorecard, dict) else [],
@@ -58,8 +69,8 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         }
     gpu = configured_gpu_adapter().run("train.policy", payload)
     card = Scorecard(
-        task=task,
-        task_version=str(payload.get("taskVersion", "1.0.0")),
+        task=resolved_task,
+        task_version=str(payload.get("taskVersion", task_meta["version"])),
         success_rate=float(payload.get("successRate", 0.91)),
         robustness={
             "mass+15%": float(payload.get("massRobustness", 0.84)),
@@ -95,18 +106,13 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         "artifactKind": "policy",
         "provider": gpu["provider"],
         "algorithm": str(payload.get("algorithm", "ppo-fixture")),
-        "task": {
-            "id": task,
-            "suite": "p7-v1",
-            "curriculumStage": int(payload.get("curriculumStage", 1)),
-            "horizonS": float(payload.get("horizonS", 60)),
-        },
+        "task": task_meta,
         "io": {
             "observations": observations,
             "actions": actions,
             "onnxHeader": {
                 "contractHash": contract_hash,
-                "task": task,
+                "task": resolved_task,
                 "observationCount": str(len(observations)),
                 "actionCount": str(len(actions)),
             },
@@ -123,7 +129,116 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
             "exportable": result.exportable,
             "reasons": result.reasons,
         },
+}
+
+
+def train_offline_bc(payload: dict[str, Any]) -> dict[str, Any]:
+    external = run_json_command(
+        "FORGE_OFFLINE_RL_CMD",
+        {"task": "train.offline-bc", **payload},
+        timeout_s=float(payload.get("timeoutS", 3600)),
+    )
+    if external is not None:
+        if external.get("artifactKind") == "offline-learning":
+            return external
+        return {
+            "artifactKind": "offline-learning",
+            "provider": external.get("provider", "external-offline-rl"),
+            "algorithm": external.get("algorithm", payload.get("algorithm", "behavior-cloning")),
+            "task": external.get("task", task_definition(str(payload.get("task", "hover-hold")))),
+            "dataset": external.get("dataset", {}),
+            "policyWarmstart": external.get("policyWarmstart", {}),
+            "scorecard": external.get("scorecard", {"exportable": False, "reasons": ["external offline trainer did not return a scorecard"]}),
+            "rejectReason": external.get("rejectReason"),
+        }
+
+    task = str(payload.get("task", "hover-hold"))
+    task_meta = task_definition(task)
+    resolved_task = str(task_meta["id"])
+    frames = _telemetry_frames(payload)
+    sorted_frames = sorted(frames, key=lambda frame: float(frame.get("t", frame.get("timeS", 0.0))))
+    was_sorted = frames == sorted_frames
+    observation_columns = sorted(_matching_columns(sorted_frames, ("estimator.", "target.", "battery.", "imu.", "pose.", "velocity.")))
+    action_columns = sorted(_matching_columns(sorted_frames, ("action.", "stick.", "motor.", "cmd.")))
+    sample_count = len(sorted_frames)
+    duration_s = _duration_s(sorted_frames)
+    accepted = sample_count >= 3 and bool(action_columns)
+    reasons = [] if accepted else ["offline BC requires at least 3 frames with action columns"]
+    if not was_sorted:
+        reasons.append("input frames were sorted by timestamp before dataset build")
+    contract_hash = str(payload.get("contractHash", "00" * 32))
+    seed = str(payload.get("seed", "0"))
+    cache_key = f"offline-bc:{_digest({'task': resolved_task, 'contractHash': contract_hash, 'frames': sorted_frames})}"
+    return {
+        "artifactKind": "offline-learning",
+        "provider": "fixture-offline-bc",
+        "algorithm": str(payload.get("algorithm", "behavior-cloning-fixture")),
+        "task": task_meta,
+        "dataset": {
+            "sampleCount": sample_count,
+            "durationS": duration_s,
+            "sorted": True,
+            "sourceLogId": payload.get("telemetryLogId"),
+            "observationColumns": observation_columns,
+            "actionColumns": action_columns,
+            "quality": "accepted" if accepted else "held",
+        },
+        "policyWarmstart": {
+            "cacheKey": cache_key,
+            "format": "behavior-cloning-dataset-v1",
+            "compatible": accepted,
+        },
+        "scorecard": {
+            "task": resolved_task,
+            "taskVersion": task_meta["version"],
+            "exportable": False,
+            "reasons": ["offline BC warmstart requires live fine-tune before export"],
+            "lineage": {"contractHash": contract_hash, "seed": seed, "codeVersion": "fixture-p7-bc-v1"},
+        },
+        "rejectReason": None if accepted else reasons[0],
+        "notes": reasons,
     }
+
+
+def _telemetry_frames(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    tape = payload.get("tape")
+    if isinstance(tape, dict) and isinstance(tape.get("frames"), list):
+        rows = tape["frames"]
+    elif isinstance(payload.get("frames"), list):
+        rows = payload["frames"]
+    else:
+        rows = []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _matching_columns(frames: list[dict[str, Any]], prefixes: tuple[str, ...]) -> set[str]:
+    out: set[str] = set()
+    for frame in frames:
+        for key in _flatten_keys(frame):
+            if key in {"t", "timeS"}:
+                continue
+            if key.startswith(prefixes):
+                out.add(key)
+    return out
+
+
+def _flatten_keys(value: dict[str, Any], prefix: str = "") -> list[str]:
+    keys: list[str] = []
+    for key, raw in value.items():
+        current = f"{prefix}.{key}" if prefix else str(key)
+        if isinstance(raw, dict):
+            keys.extend(_flatten_keys(raw, current))
+        else:
+            keys.append(current)
+    return keys
+
+
+def _duration_s(frames: list[dict[str, Any]]) -> float:
+    if len(frames) < 2:
+        return 0.0
+    start = float(frames[0].get("t", frames[0].get("timeS", 0.0)))
+    end = float(frames[-1].get("t", frames[-1].get("timeS", start)))
+    return round(max(0.0, end - start), 3)
 
 
 def fit_sysid(payload: dict[str, Any]) -> dict[str, Any]:
@@ -179,6 +294,11 @@ def fit_sysid(payload: dict[str, Any]) -> dict[str, Any]:
 @registry.register("train.policy")
 def handle_train_policy(job: Job) -> dict[str, Any]:
     return train_policy(job.payload)
+
+
+@registry.register("train.offline-bc")
+def handle_offline_bc(job: Job) -> dict[str, Any]:
+    return train_offline_bc(job.payload)
 
 
 @registry.register("train.sysid-fit")

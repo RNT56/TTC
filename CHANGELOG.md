@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add P7 task suite and offline BC worker
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7 · **TODO items:** P7-001 [x], P7-009 [~]
+**Done:** Added the versioned P7 task catalog covering hover, waypoint, slalom,
+velocity, legged, rover, and arm tasks, wired `train.policy` to emit those
+environment definitions, and added `train.offline-bc` for deterministic telemetry
+dataset ingestion and behavior-cloning warmstart artifacts.
+**Changed:** `workers/forge_workers/training/tasks.py`,
+`workers/forge_workers/training/jobs.py`, `workers/tests/test_worker_jobs.py`,
+`docs/systems/learning-engine.md`, `docs/systems/compute-workers.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Connect live offline-RL/fine-tune adapters and route Desktop-captured
+field logs into the trainer once the P8 recorder lane lands.
+**Blockers:** live SB3/MuJoCo/offline-RL execution remains deployment-adapter work.
+
 ## 2026-06-14 — Expand co-design optimizer depth
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-004 [~]
 **Done:** Expanded `codesign.evaluate` from three fixed candidates into a

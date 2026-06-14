@@ -59,7 +59,9 @@ noise/bias · ground friction 0.4–1.2 · wind 0–4 m/s · observation dropout
 randomization grid doubles as the **robustness axis of the scorecard**.
 
 Live 2026-06-14: fixture policy jobs carry the default randomization block and tests
-assert it is present in the artifact.
+assert it is present in the artifact. The P7 v1 task suite now has versioned
+environment definitions for hover, waypoint, slalom, velocity tracking, legged,
+rover, and arm reach tasks, and `train.policy` emits the selected definition.
 
 ## 6. Scorecards (the gate)
 
@@ -82,8 +84,10 @@ Live 2026-06-14: the deterministic fixture path produces the ONNX/scorecard/head
 artifact and Studio renders the scorecard, robustness grid, IO counts, ONNX
 metadata, and a one-click playback control that feeds the policy action header
 through `CoreSession`. `train.sysid-fit` estimates R_int plus a sim-block
-JSON-Patch. Live SB3/MuJoCo training and ONNX Runtime Web inference remain adapter
-work unless the external command/env integrations are configured.
+JSON-Patch, and `train.offline-bc` builds deterministic sorted behavior-cloning
+datasets plus warmstart artifact metadata from telemetry tapes. Live SB3/MuJoCo
+training, offline-RL fine-tune, and ONNX Runtime Web inference remain adapter work
+unless the external command/env integrations are configured.
 
 ## 8. Dependencies
 

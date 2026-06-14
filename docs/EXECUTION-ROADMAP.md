@@ -196,13 +196,15 @@ Owns: `P7-001`, `P7-003`, `P7-008`, `P7-009`, `P7-010`, P7 open exit criteria.
 
 Scope:
 
-- Finish versioned task environment definitions for hover-hold, waypoint chain,
-  gate slalom, velocity tracking, walk-to-target, rough terrain, push recovery,
-  line follow, obstacle course, reach, and track.
+- P7 task suite v1 environment definitions are live in the worker task catalog as
+  of 2026-06-14 for hover-hold, waypoint chain, gate slalom, velocity tracking,
+  walk-to-target, rough terrain, push recovery, line follow, obstacle course,
+  reach, and track.
 - Replace fixture `train.policy` with live seeded SB3 PPO/SAC runs.
 - Add ONNX Runtime Web inference so browser playback uses real policy outputs,
   not only fixture action headers.
-- Add behavior cloning and offline RL over telemetry replay tapes.
+- `train.offline-bc` now builds deterministic telemetry warmstart datasets;
+  live offline-RL/fine-tune remains open.
 - Run the P7-010 MJX benchmark on D12 quad, rover, and legged morphologies before
   any adoption claim.
 - Finalize scorecard schema and estimator-smoke rejection for ground-truth-trained

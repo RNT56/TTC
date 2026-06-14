@@ -2,6 +2,7 @@ import pytest
 
 from forge_workers import register_all_handlers
 from forge_workers.queue import HandlerRegistry, Job, run_once, registry
+from forge_workers.training.tasks import task_ids
 
 
 class FakeStore:
@@ -36,6 +37,7 @@ def test_all_standard_tasks_register():
         "photoscan.single",
         "photoscan.multiview",
         "train.policy",
+        "train.offline-bc",
         "train.sysid-fit",
         "replay.verify",
         "codesign.evaluate",
@@ -120,8 +122,57 @@ def test_training_policy_uses_scorecard_gate():
     )
     assert not result["scorecard"]["exportable"]
     assert result["io"]["onnxHeader"]["actionCount"] == "4"
+    assert result["task"]["suite"] == "p7-v1"
+    assert result["task"]["env"]["targets"]
     assert result["domainRandomization"]["massPct"] == 15
     assert any("success_rate" in reason for reason in result["scorecard"]["reasons"])
+
+
+def test_training_task_suite_has_versioned_env_definitions():
+    expected = {
+        "hover-hold",
+        "waypoint-chain",
+        "gate-slalom",
+        "velocity-tracking",
+        "walk-to-target",
+        "rough-terrain",
+        "push-recovery",
+        "line-follow",
+        "obstacle-course",
+        "reach-track",
+    }
+    assert expected.issubset(set(task_ids()))
+
+
+def test_offline_bc_builds_sorted_dataset_from_telemetry():
+    register_all_handlers()
+    result = registry.dispatch(
+        Job(
+            id="j3b",
+            task="train.offline-bc",
+            payload={
+                "task": "gate-slalom",
+                "contractHash": "cd" * 32,
+                "telemetryLogId": "log-1",
+                "tape": {
+                    "frames": [
+                        {"t": 0.2, "estimator": {"attitude": [0, 0, 0]}, "action": {"throttle": 0.52}},
+                        {"t": 0.0, "estimator": {"attitude": [0, 0, 0]}, "action": {"throttle": 0.48}},
+                        {"t": 0.1, "target": {"error": [1, 0, 0]}, "cmd": {"yaw": 0.1}},
+                    ]
+                },
+            },
+            idempotency_key="bc-1",
+        )
+    )
+    assert result["dataset"]["sampleCount"] == 3
+    assert result["dataset"]["durationS"] == 0.2
+    assert result["dataset"]["quality"] == "accepted"
+    assert result["policyWarmstart"]["compatible"]
+    assert "action.throttle" in result["dataset"]["actionColumns"]
+    assert "estimator.attitude" in result["dataset"]["observationColumns"]
+    assert not result["scorecard"]["exportable"]
+    assert "sorted by timestamp" in " ".join(result["notes"])
 
 
 def test_sysid_requires_samples():

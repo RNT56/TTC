@@ -134,8 +134,9 @@ one result); poison-payload handling; cache-hit tests.
 P3/P4: etl + adapter seams (P3-004, P3-010, P4-015..017). P5: fixture photoscan is
 live; full TRELLIS/COLMAP remains adapter work. P6: fixture tessellation, DfM
 metadata, and runtime sim helpers are live; full OCCT/STEP export remains open. P7:
-fixture training scorecards and ONNX headers are live; SB3/MuJoCo training remains
-open. P8: config-diff, telemetry ingest, supervisor, sysid, and replay.verify
+versioned task definitions, fixture training scorecards, ONNX headers, and
+`train.offline-bc` telemetry dataset ingestion are live; SB3/MuJoCo/offline-RL
+training remains open. P8: config-diff, telemetry ingest, supervisor, sysid, and replay.verify
 fixtures are live. P9: codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes
 matching outputs into `photoscan_artifacts`, `policy_artifacts`, `telemetry_logs`,

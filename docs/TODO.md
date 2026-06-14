@@ -132,7 +132,7 @@ Studio (TypeScript face):
 - [x] P6-011 — Replay format v1: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17) *(2026-06-14: replay envelope/header verification in Rust plus worker hash/timestamp/contract checks)*
 
 ### P7 — Training service
-- [~] P7-001 — Task suite v1 (versioned env definitions): hover-hold, waypoint chain, gate slalom, velocity tracking; walk-to-target, rough-terrain, push recovery; line-follow, obstacle course; reach/track *(2026-06-14: task enum/spec and worker task metadata live; full per-task environment definitions open)*
+- [x] P7-001 — Task suite v1 (versioned env definitions): hover-hold, waypoint chain, gate slalom, velocity tracking; walk-to-target, rough-terrain, push recovery; line-follow, obstacle course; reach/track *(2026-06-14: `workers/forge_workers/training/tasks.py` defines the full P7 v1 env suite and `train.policy` emits the selected task definition)*
 - [x] P7-002 — Obs/action space derivation from contract (estimator state in, normalized targets out); ONNX policy I/O header *(2026-06-14: Rust derivation and worker ONNX header emitted/tested)*
 - [~] P7-003 — SB3 PPO/SAC pipeline; seeded, reproducible runs *(2026-06-14: fixture `train.policy` job emits deterministic policy/ONNX/scorecard, materializes `policy_artifacts`, and links ONNX output through `object_blobs`; live SB3 remains adapter work)*
 - [x] P7-004 — Domain-randomization config block (mass ±15 %, Kv ±8 %, sag ±20 %, latency 0–30 ms, IMU noise/bias, friction 0.4–1.2, wind 0–4 m/s, obs dropout) *(2026-06-14: fixture policy jobs carry the default randomization block)*
@@ -140,7 +140,7 @@ Studio (TypeScript face):
 - [x] P7-006 — Scorecard generator: success rate, robustness grid, energy; sub-threshold export block; estimator-smoke gate (D8)
 - [x] P7-007 — Scorecard renderer in studio (= XC-21) *(2026-06-14: output-aware jobs panel renders success rate, robustness grid, energy, export gate, IO counts, and ONNX metadata)*
 - [~] P7-008 — ONNX export + in-browser playback through the motion engine's policy layer *(2026-06-14: ONNX fixture metadata is emitted/rendered and Studio can play policy job action headers through `CoreSession`; live ONNX Runtime Web inference remains open)*
-- [~] P7-009 — Behavior cloning + offline RL ingestion seam for telemetry logs (full pipeline lands P8+) *(2026-06-14: telemetry ingest worker emits sorted replay tapes; BC/offline-RL trainer remains open)*
+- [~] P7-009 — Behavior cloning + offline RL ingestion seam for telemetry logs (full pipeline lands P8+) *(2026-06-14: telemetry ingest worker emits sorted replay tapes; `train.offline-bc` now builds deterministic sorted datasets and warmstart artifacts from telemetry frames; live offline-RL/fine-tune adapter remains open)*
 - [~] P7-010 — MJX benchmark: measure CPU-MuJoCo PPO saturation on our morphologies before adopting (claims hedged until benchmarked) *(2026-06-14: benchmark command seam plus adoption helper landed; real D12 quad/rover/legged benchmark data still required before adoption)*
 
 ### P8 — Bridge + Desktop
