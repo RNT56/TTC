@@ -3,21 +3,92 @@ import { StudioScene } from "./scene";
 import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass, Report } from "./types";
 import {
+  accessObjectBlob,
+  createClassroomAssignment,
+  createModerationReport,
+  createCourse,
+  createJob,
+  createListing,
+  createPrintQuote,
   decideReview,
-  generateContract,
+  editModel,
+  gatewayUrl,
+  generateContractStream,
+  getJobCapabilities,
+  getCredits,
+  getMe,
+  getPlatformGates,
+  getShare,
+  latestBrief25Eval,
+  listClassroomAssignments,
+  listClassroomSubmissions,
+  listCourses,
   listGenerationModels,
+  listJobs,
+  listLeaderboardRuns,
+  listLicenseLedger,
+  listMaintenanceRecords,
+  listListings,
+  listModels,
+  listModerationReports,
+  listPhotoscanArtifacts,
+  listPolicyArtifacts,
+  listPrintQuotes,
+  listReplayArtifacts,
+  listTelemetryLogs,
+  listVendorOffers,
+  recordListingUsage,
+  refreshVendorOffers,
+  saveModel,
+  shareModel,
+  submitLeaderboardRun,
+  submitClassroomSubmission,
+  uploadObjectBlob,
+  updatePhotoscanAlignment,
   type AnthropicModelPin,
+  type ClassroomAssignmentRecord,
+  type ClassroomSubmissionRecord,
+  type CourseRecord,
+  type CreditSummary,
   type GenerationArchetype,
   type GenerationAttempt,
   type GenerationProvider,
   type GenerationResponse,
+  type GenerationStageEvent,
+  type JobCapabilities,
+  type JobRecord,
+  type LeaderboardRunRecord,
+  type LicenseLedgerEntry,
+  type ListingRecord,
+  type MaintenanceRecord,
+  type MeResponse,
+  type ModelRecord,
+  type ModerationReportRecord,
+  type PlatformGateSignoff,
+  type PhotoscanAlignmentInput,
+  type PhotoscanPortInput,
+  type PhotoscanArtifactRecord,
+  type PolicyArtifactRecord,
+  type PrintQuoteRequestRecord,
+  type ReplayArtifactRecord,
+  type TelemetryLogRecord,
+  type VendorOfferRecord,
   listReviews,
   type ReviewExportPolicy,
   type ReviewQueueItem,
   type ReviewStatus,
 } from "./gateway";
+import {
+  artifactKind,
+  asRecord,
+  isKnownJobOutput,
+  isPatchList,
+  numberOrNull,
+  type JsonPatchOp,
+  type PolicyOutput,
+} from "./jobOutputs";
 import { decodeShareFragment, encodeShareFragment } from "./share";
-import { CoreBake, CoreSession, coreValidate } from "./wasm";
+import { CoreBake, CoreSession, coreValidate, type DriveInput } from "./wasm";
 
 const panel: React.CSSProperties = {
   position: "absolute",
@@ -30,6 +101,32 @@ const panel: React.CSSProperties = {
 };
 
 const DT = 1 / 120;
+interface PolicyPlaybackState {
+  taskId: string;
+  actions: string[];
+  durationS: number;
+  elapsedS: number;
+  successRate: number;
+  exportable: boolean;
+}
+
+function policyPlaybackInput(playback: PolicyPlaybackState): DriveInput {
+  const t = playback.elapsedS;
+  const phase = playback.durationS > 0 ? Math.min(1, t / playback.durationS) : 1;
+  const confidence = Math.max(0, Math.min(1, playback.successRate));
+  const wobble = (1 - confidence) * 0.18;
+  const has = (action: string) => playback.actions.includes(action);
+  const hoverTask = playback.taskId.includes("hover");
+  const throttleBase = hoverTask ? 0.56 + confidence * 0.08 : 0.42 + confidence * 0.18;
+  return {
+    throttle: has("throttle") ? Math.max(0, Math.min(1, throttleBase + wobble * Math.sin(t * Math.PI * 2))) : 0,
+    roll: has("roll") ? wobble * Math.sin(t * Math.PI * 1.4) : 0,
+    pitch: has("pitch") ? wobble * Math.cos(t * Math.PI * 1.1) : 0,
+    yaw: has("yaw") ? 0.18 * Math.sin(phase * Math.PI * 2) : 0,
+    drive: has("speed") || has("bodyVelocity") ? 0.45 + confidence * 0.35 : 0,
+    turn: has("turnRate") ? 0.2 * Math.sin(t * Math.PI) : 0,
+  };
+}
 /** configurator palette (P1-014) — patch-applied through the live handle */
 const SWATCHES = [
   "#d8dde3",
@@ -76,6 +173,7 @@ export default function App() {
   /** long-lived bake handle — the patch → re-bake loop (P1-005/P1-014) */
   const bakeRef = useRef<CoreBake | null>(null);
   const stepOnceRef = useRef(false);
+  const policyPlaybackRef = useRef<PolicyPlaybackState | null>(null);
   const jogDrag = useRef<{ node: string; rx: number; ry: number } | null>(null);
   const jogTotals = useRef(new Map<string, { rx: number; ry: number }>());
   const s = useStudio();
@@ -101,6 +199,47 @@ export default function App() {
   const [generationLoadMessage, setGenerationLoadMessage] = useState<string | null>(null);
   const [generationModels, setGenerationModels] = useState<AnthropicModelPin[]>([]);
   const [generationModelsError, setGenerationModelsError] = useState<string | null>(null);
+  const [generationStages, setGenerationStages] = useState<GenerationStageEvent[]>([]);
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [models, setModels] = useState<ModelRecord[]>([]);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [activeModelId, setActiveModelId] = useState<string | null>(null);
+  const [modelBusy, setModelBusy] = useState(false);
+  const [editPrompt, setEditPrompt] = useState("make it blue and 15% longer");
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [jobCapabilities, setJobCapabilities] = useState<JobCapabilities | null>(null);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [policyPlaybackMessage, setPolicyPlaybackMessage] = useState<string | null>(null);
+  const [photoscanArtifacts, setPhotoscanArtifacts] = useState<PhotoscanArtifactRecord[]>([]);
+  const [policyArtifacts, setPolicyArtifacts] = useState<PolicyArtifactRecord[]>([]);
+  const [replayArtifacts, setReplayArtifacts] = useState<ReplayArtifactRecord[]>([]);
+  const [telemetryLogs, setTelemetryLogs] = useState<TelemetryLogRecord[]>([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [artifactBusy, setArtifactBusy] = useState(false);
+  const [artifactError, setArtifactError] = useState<string | null>(null);
+  const [artifactMessage, setArtifactMessage] = useState<string | null>(null);
+  const [scanImageRefs, setScanImageRefs] = useState<string[]>([]);
+  const [scanUploadBusy, setScanUploadBusy] = useState(false);
+  const [scanUploadMessage, setScanUploadMessage] = useState<string | null>(null);
+  const [credits, setCredits] = useState<CreditSummary | null>(null);
+  const [licenseLedger, setLicenseLedger] = useState<LicenseLedgerEntry[]>([]);
+  const [courses, setCourses] = useState<CourseRecord[]>([]);
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
+  const [leaderboardRuns, setLeaderboardRuns] = useState<LeaderboardRunRecord[]>([]);
+  const [listings, setListings] = useState<ListingRecord[]>([]);
+  const [platformGates, setPlatformGates] = useState<PlatformGateSignoff[]>([]);
+  const [vendorOffers, setVendorOffers] = useState<VendorOfferRecord[]>([]);
+  const [printQuotes, setPrintQuotes] = useState<PrintQuoteRequestRecord[]>([]);
+  const [classroomAssignments, setClassroomAssignments] = useState<ClassroomAssignmentRecord[]>([]);
+  const [activeAssignmentId, setActiveAssignmentId] = useState<string | null>(null);
+  const [classroomSubmissions, setClassroomSubmissions] = useState<ClassroomSubmissionRecord[]>([]);
+  const [moderationReports, setModerationReports] = useState<ModerationReportRecord[]>([]);
+  const [platformBusy, setPlatformBusy] = useState(false);
+  const [platformError, setPlatformError] = useState<string | null>(null);
+  const [platformMessage, setPlatformMessage] = useState<string | null>(null);
+  const [briefEval, setBriefEval] = useState<unknown | null>(null);
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === "undefined" ? 1280 : window.innerWidth,
   );
@@ -122,6 +261,196 @@ export default function App() {
     setReviewStatus(status);
     void refreshReviews(status);
   }, [refreshReviews]);
+
+  const refreshAccount = useCallback(async () => {
+    try {
+      setMe(await getMe());
+    } catch (error) {
+      setMe({
+        authenticated: false,
+        user: null,
+      });
+      setModelError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const refreshModels = useCallback(async () => {
+    setModelError(null);
+    try {
+      const next = await listModels();
+      setModels(next);
+      setActiveModelId((current) => current ?? next[0]?.id ?? null);
+    } catch (error) {
+      setModels([]);
+      setModelError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const refreshJobs = useCallback(async () => {
+    setJobsError(null);
+    try {
+      const [jobRows, capabilities] = await Promise.all([listJobs(), getJobCapabilities().catch(() => null)]);
+      setJobs(jobRows);
+      setJobCapabilities(capabilities);
+    } catch (error) {
+      setJobs([]);
+      setJobCapabilities(null);
+      setJobsError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const refreshArtifacts = useCallback(async () => {
+    setArtifactBusy(true);
+    setArtifactError(null);
+    try {
+      const [scans, policies, replays, telemetry, maintenance] = await Promise.all([
+        listPhotoscanArtifacts(),
+        listPolicyArtifacts(),
+        listReplayArtifacts(),
+        listTelemetryLogs(),
+        listMaintenanceRecords(),
+      ]);
+      setPhotoscanArtifacts(scans);
+      setPolicyArtifacts(policies);
+      setReplayArtifacts(replays);
+      setTelemetryLogs(telemetry);
+      setMaintenanceRecords(maintenance);
+    } catch (error) {
+      setPhotoscanArtifacts([]);
+      setPolicyArtifacts([]);
+      setReplayArtifacts([]);
+      setTelemetryLogs([]);
+      setMaintenanceRecords([]);
+      setArtifactError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setArtifactBusy(false);
+    }
+  }, []);
+
+  const openArtifactBlob = useCallback(async (blobId: string | null) => {
+    if (!blobId) return;
+    setArtifactMessage(null);
+    setArtifactError(null);
+    try {
+      const { access } = await accessObjectBlob(blobId, "download");
+      const opened = window.open(access.url, "_blank", "noopener,noreferrer");
+      if (!opened) window.location.assign(access.url);
+      setArtifactMessage(`${access.objectKey} · expires ${new Date(access.expiresAt).toLocaleTimeString()}`);
+    } catch (error) {
+      setArtifactError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const alignPhotoscanArtifact = useCallback(
+    async (artifactId: string, input?: PhotoscanAlignmentInput) => {
+      setArtifactBusy(true);
+      setArtifactMessage(null);
+      setArtifactError(null);
+      try {
+        const payload = input ?? {
+          knownDimensionMm: 150,
+          axis: "z",
+          ports: [{ id: "motor-mount", kind: "mount", axis: "z", role: "component-port" }],
+          note: "Studio owner alignment pass",
+        };
+        const { artifact } = await updatePhotoscanAlignment(artifactId, payload);
+        await refreshArtifacts();
+        const alignment = asRecord(artifact.scaleAxesPorts);
+        const dimension =
+          typeof alignment?.knownDimensionMm === "number" ? alignment.knownDimensionMm : payload.knownDimensionMm;
+        const axis = typeof alignment?.axis === "string" ? alignment.axis : payload.axis;
+        const ports = Array.isArray(alignment?.ports) ? alignment.ports.length : payload.ports?.length ?? 0;
+        setArtifactMessage(`aligned ${artifact.id} · ${dimension ?? "scale"} mm · ${axis ?? "axis"}-axis · ${ports} ports`);
+      } catch (error) {
+        setArtifactError(error instanceof Error ? error.message : String(error));
+      } finally {
+        setArtifactBusy(false);
+      }
+    },
+    [refreshArtifacts],
+  );
+
+  const refreshLeaderboard = useCallback(async (courseId: string | null) => {
+    if (!courseId) {
+      setLeaderboardRuns([]);
+      return;
+    }
+    setLeaderboardRuns(await listLeaderboardRuns(courseId));
+  }, []);
+
+  const refreshClassroomSubmissions = useCallback(async (assignmentId: string | null) => {
+    if (!assignmentId) {
+      setClassroomSubmissions([]);
+      return;
+    }
+    setClassroomSubmissions(await listClassroomSubmissions(assignmentId));
+  }, []);
+
+  const refreshPlatform = useCallback(async () => {
+    setPlatformBusy(true);
+    setPlatformError(null);
+    try {
+      const [
+        courseRows,
+        listingRows,
+        assignmentRows,
+        reportRows,
+        creditSummary,
+        licenseRows,
+        gateRows,
+        vendorRows,
+        printQuoteRows,
+      ] = await Promise.all([
+        listCourses(),
+        listListings(),
+        listClassroomAssignments(),
+        listModerationReports().catch(() => []),
+        getCredits().catch(() => null),
+        listLicenseLedger().catch(() => []),
+        getPlatformGates().catch(() => []),
+        listVendorOffers().catch(() => []),
+        listPrintQuotes().catch(() => []),
+      ]);
+      setCourses(courseRows);
+      setListings(listingRows);
+      setClassroomAssignments(assignmentRows);
+      setModerationReports(reportRows);
+      setCredits(creditSummary);
+      setLicenseLedger(licenseRows);
+      setPlatformGates(gateRows);
+      setVendorOffers(vendorRows);
+      setPrintQuotes(printQuoteRows);
+      const courseId = activeCourseId ?? courseRows[0]?.id ?? null;
+      setActiveCourseId(courseId);
+      const assignmentId = activeAssignmentId ?? assignmentRows[0]?.id ?? null;
+      setActiveAssignmentId(assignmentId);
+      await refreshLeaderboard(courseId);
+      await refreshClassroomSubmissions(assignmentId);
+    } catch (error) {
+      setCourses([]);
+      setListings([]);
+      setClassroomAssignments([]);
+      setClassroomSubmissions([]);
+      setModerationReports([]);
+      setLicenseLedger([]);
+      setPlatformGates([]);
+      setVendorOffers([]);
+      setPrintQuotes([]);
+      setLeaderboardRuns([]);
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  }, [activeAssignmentId, activeCourseId, refreshClassroomSubmissions, refreshLeaderboard]);
+
+  const refreshBriefEval = useCallback(async () => {
+    try {
+      const result = await latestBrief25Eval();
+      setBriefEval(result.eval);
+    } catch {
+      setBriefEval(null);
+    }
+  }, []);
 
   const recordDecision = useCallback(async (id: number, decision: "approved" | "rejected") => {
     setReviewBusy(true);
@@ -162,6 +491,8 @@ export default function App() {
 
   /** Load a contract end to end: bake handle + scene + session + report. */
   const loadContract = useCallback(async (contract: string, reportOverride?: Report | null) => {
+    policyPlaybackRef.current = null;
+    setPolicyPlaybackMessage(null);
     const handle = await CoreBake.create(contract);
     bakeRef.current?.dispose();
     bakeRef.current = handle;
@@ -203,21 +534,30 @@ export default function App() {
     setGenerationBusy(true);
     setGenerationError(null);
     setGenerationLoadMessage(null);
+    setGenerationStages([]);
     try {
       const categories = parseCategories(generationCategories);
-      const result = await generateContract(
+      const request = {
+        prompt,
+        provider: generationProvider,
+        ...(generationArchetype ? { archetype: generationArchetype } : {}),
+        ...(categories.length > 0 ? { categories } : {}),
+        limit: boundedInt(generationLimit, 1, 20),
+        maxRepairIterations: boundedInt(generationMaxRepairs, 0, 3),
+        seed: boundedInt(generationSeed, 0, Number.MAX_SAFE_INTEGER),
+      };
+      const result = await generateContractStream(
+        request,
         {
-          prompt,
-          provider: generationProvider,
-          ...(generationArchetype ? { archetype: generationArchetype } : {}),
-          ...(categories.length > 0 ? { categories } : {}),
-          limit: boundedInt(generationLimit, 1, 20),
-          maxRepairIterations: boundedInt(generationMaxRepairs, 0, 3),
-          seed: boundedInt(generationSeed, 0, Number.MAX_SAFE_INTEGER),
+          onStage: (event) => setGenerationStages((current) => [...current.slice(-10), event]),
         },
         { anthropicApiKey: generationProvider === "anthropic" ? anthropicKey : undefined },
       );
       setGenerationResult(result);
+      if (result.registeredModel) {
+        setActiveModelId(result.registeredModel.id);
+        void refreshModels();
+      }
       if ((result.verdict === "admitted" || result.verdict === "draft") && result.contract !== null) {
         try {
           await loadContract(JSON.stringify(result.contract), result.report);
@@ -245,11 +585,12 @@ export default function App() {
     generationProvider,
     generationSeed,
     loadContract,
+    refreshModels,
   ]);
 
   /** Configurator (P1-014): JSON-Patch the live handle, re-bake in place —
    * explode, camera, drive state and selection all survive the rebuild. */
-  const applyPatch = useCallback(async (ops: { op: string; path: string; value: unknown }[]) => {
+  const applyPatch = useCallback(async (ops: { op: string; path: string; value?: unknown }[]) => {
     const handle = bakeRef.current;
     const scene = sceneRef.current;
     if (!handle || !scene) return;
@@ -349,6 +690,18 @@ export default function App() {
             };
           }
         }
+        const playback = policyPlaybackRef.current;
+        if (playback) {
+          playback.elapsedS += stepDt;
+          sticks = policyPlaybackInput(playback);
+          if (playback.elapsedS >= playback.durationS) {
+            policyPlaybackRef.current = null;
+            setPolicyPlaybackMessage(
+              `played ${playback.taskId} · ${playback.exportable ? "exportable" : "held"} scorecard`,
+            );
+            st.setDriving(false);
+          }
+        }
         const t0 = performance.now();
         if (stepDt > 0) {
           sessionRef.current.step(stepDt, sticks);
@@ -383,6 +736,17 @@ export default function App() {
     };
     scene.start();
     void (async () => {
+      const shareId = new URLSearchParams(window.location.search).get("share");
+      if (shareId) {
+        try {
+          const { share } = await getShare(shareId);
+          await loadContract(JSON.stringify(share.contract), share.validatorReport);
+          setShareUrl(window.location.href);
+          return;
+        } catch {
+          /* failed server share → try fragment/demo */
+        }
+      }
       // a share link carries the whole contract in the fragment (re-judged
       // locally on arrival — never trusted)
       const shared = await decodeShareFragment(window.location.hash);
@@ -494,6 +858,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void refreshAccount();
+    void refreshModels();
+    void refreshJobs();
+    void refreshArtifacts();
+    void refreshPlatform();
+    void refreshBriefEval();
+  }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshJobs, refreshModels, refreshPlatform]);
+
+  useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -541,18 +914,399 @@ export default function App() {
     sessionRef.current?.clearJog();
   };
 
+  const copyText = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      /* clipboard needs a user gesture/permission; visible URL still updates */
+    }
+  };
+
+  const saveCurrentModel = async () => {
+    const contract = useStudio.getState().contractJson;
+    if (!contract) return;
+    setModelBusy(true);
+    setModelError(null);
+    try {
+      const { model } = await saveModel(JSON.parse(contract), true);
+      setActiveModelId(model.id);
+      await refreshModels();
+    } catch (error) {
+      setModelError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setModelBusy(false);
+    }
+  };
+
+  const editActiveModel = async () => {
+    if (!activeModelId || !editPrompt.trim()) return;
+    setModelBusy(true);
+    setEditMessage(null);
+    setModelError(null);
+    try {
+      const result = await editModel(activeModelId, editPrompt.trim());
+      setActiveModelId(result.model.id);
+      await loadContract(JSON.stringify(result.model.contract), result.report);
+      setEditMessage(`edited in ${result.elapsedMs} ms`);
+      await refreshModels();
+    } catch (error) {
+      setEditMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setModelBusy(false);
+    }
+  };
+
+  const uploadScanFiles = async (files: FileList | null) => {
+    const selected = Array.from(files ?? []).slice(0, 8);
+    if (selected.length === 0) return;
+    setScanUploadBusy(true);
+    setScanUploadMessage(null);
+    setJobsError(null);
+    try {
+      const uploaded = [];
+      for (const file of selected) {
+        const result = await uploadObjectBlob(file, "photoscan-source");
+        uploaded.push(`obj:${result.blob.id}`);
+      }
+      setScanImageRefs(uploaded);
+      setScanUploadMessage(`${uploaded.length} image${uploaded.length === 1 ? "" : "s"} uploaded`);
+    } catch (error) {
+      setJobsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setScanUploadBusy(false);
+    }
+  };
+
+  const runFixtureJob = async (kind: string) => {
+    setJobsError(null);
+    const common = {
+      modelId: activeModelId,
+      contractHash: s.report?.contractHash,
+      sourceObjectId: "fixture://asset",
+    };
+    const singleImages = scanImageRefs.length > 0 ? scanImageRefs.slice(0, 1) : ["fixture-front", "fixture-side"];
+    const multiImages = scanImageRefs.length > 0 ? scanImageRefs : ["fixture-front", "fixture-side", "fixture-top"];
+    const payloadByKind: Record<string, unknown> = {
+      "photoscan.single": { ...common, images: singleImages },
+      "photoscan.multiview": { ...common, images: multiImages, scale: 1.0 },
+      "train.policy": { ...common, task: "hover-hold", seed: 7 },
+      "train.sysid-fit": {
+        ...common,
+        nominalVoltageV: 16.8,
+        samples: [
+          { t: 0, voltageV: 16.8, currentA: 0 },
+          { t: 2, voltageV: 15.7, currentA: 22 },
+          { t: 4, voltageV: 15.5, currentA: 24 },
+        ],
+      },
+      "replay.verify": { ...common, tape: { frames: [{ t: 0 }, { t: 1 / 60 }] } },
+      "codesign.evaluate": common,
+      "bridge.config-diff": { firmware: "betaflight", mixer: "quadx", rates: { failsafe_delay: 10 } },
+      "bridge.telemetry-ingest": {
+        ...common,
+        samples: [
+          { t: 1, positionM: [0, 0, 0], accelG: 1.1 },
+          { t: 0, positionM: [0, 0, 0], accelG: 1.0 },
+        ],
+      },
+      "bridge.supervisor-check": {
+        config: { geofenceRadiusM: 5, maxAttitudeRad: 0.8, maxRateRadS: 6, minBatteryV: 13.2 },
+        state: { positionM: [0, 0, 0], attitudeRad: [0, 0, 0], rateRadS: [0, 0, 0], batteryV: 14.8 },
+      },
+      "maintenance.estimate-wear": {
+        nominalVoltageV: 16.8,
+        capacityMah: 1500,
+        samples: [
+          { t: 0, voltageV: 16.8, currentA: 0, throttle: 0, accelG: 1 },
+          { t: 60, voltageV: 15.8, currentA: 20, throttle: 0.5, accelG: 2 },
+        ],
+      },
+      "maintenance.crash-forensics": {
+        samples: [
+          { t: 0, accelG: 1 },
+          { t: 10, accelG: 12 },
+        ],
+      },
+      "maintenance.repair-sheet": {
+        damagedNodes: ["root"],
+        vendorSkus: { frame: "FRAME-SKU" },
+        parts: [{ node: "root", comp: "frame", explode: { t0: 0.8 } }],
+      },
+      "maintenance.fleet-summary": { vehicles: [{ id: "demo", packCycles: 81 }] },
+    };
+    try {
+      await createJob(kind, payloadByKind[kind] ?? common);
+      await refreshJobs();
+      await refreshArtifacts();
+    } catch (error) {
+      setJobsError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const startPolicyPlayback = useCallback((output: PolicyOutput) => {
+    if (!sessionRef.current) {
+      setPolicyPlaybackMessage("policy playback requires a loaded driveable contract");
+      return;
+    }
+    const scorecard = output.scorecard;
+    const successRate = numberOrNull(scorecard?.successRate ?? scorecard?.returnMean) ?? 0.5;
+    const actions = output.io?.actions?.filter((action): action is string => typeof action === "string") ?? [];
+    const durationS = Math.max(2, Math.min(8, Number(output.task?.horizonS ?? 6) / 10));
+    const taskId = output.task?.id ?? scorecard?.task ?? "fixture-policy";
+    policyPlaybackRef.current = {
+      taskId,
+      actions: actions.length ? actions : ["throttle", "roll", "pitch", "yaw"],
+      durationS,
+      elapsedS: 0,
+      successRate,
+      exportable: scorecard?.exportable === true,
+    };
+    const st = useStudio.getState();
+    st.setDriving(true);
+    st.setPaused(false);
+    setPolicyPlaybackMessage(`playing ${taskId} · ${(successRate * 100).toFixed(0)}% score`);
+  }, []);
+
+  const publishFixtureCourse = async () => {
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const result = await createCourse({
+        name: "Fixture slalom",
+        visibility: "unlisted",
+        envSpec: fixtureEnvSpec(),
+      });
+      setActiveCourseId(result.id);
+      setPlatformMessage(`course ${result.id}`);
+      await refreshPlatform();
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const submitFixtureLeaderboardRun = async () => {
+    if (!activeCourseId) return;
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const result = await submitLeaderboardRun({
+        courseId: activeCourseId,
+        score: 88.4,
+        tape: { frames: [{ t: 0 }, { t: 1 / 60 }, { t: 2 / 60 }] },
+      });
+      setPlatformMessage(`run ${result.id} · ${result.verified ? "verified" : "held"}`);
+      await refreshLeaderboard(activeCourseId);
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const publishFixtureAssignment = async () => {
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const result = await createClassroomAssignment({
+        title: "Admit a safe mini quad",
+        brief: "Submit a validator-admitted model and a scorecard above the course threshold.",
+        courseId: activeCourseId ?? undefined,
+        visibility: "unlisted",
+        rubric: { maxErrors: 0, minScore: 0.8, minSuccessRate: 0.8 },
+      });
+      setActiveAssignmentId(result.id);
+      setPlatformMessage(`assignment ${result.id}`);
+      await refreshPlatform();
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const submitFixtureAssignment = async () => {
+    if (!activeAssignmentId) return;
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const contractJson = useStudio.getState().contractJson;
+      const result = await submitClassroomSubmission(activeAssignmentId, {
+        ...(activeModelId ? { modelId: activeModelId } : contractJson ? { contract: JSON.parse(contractJson) } : {}),
+        scorecard: { successRate: 0.92 },
+      });
+      const grade = asRecord(result.grade);
+      setPlatformMessage(`submission ${result.id} · ${grade?.pass === true ? "pass" : "held"}`);
+      await refreshClassroomSubmissions(activeAssignmentId);
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const reportFixtureModeration = async () => {
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const target = listings[0]
+        ? { targetKind: "listing" as const, targetId: listings[0].id }
+        : activeModelId
+          ? { targetKind: "model" as const, targetId: activeModelId }
+          : activeCourseId
+            ? { targetKind: "course" as const, targetId: activeCourseId }
+            : { targetKind: "model" as const, targetId: "local-fixture" };
+      const result = await createModerationReport({
+        ...target,
+        reason: "safety",
+        detail: "local moderation fixture",
+      });
+      setPlatformMessage(`report ${result.id} · ${result.repeatInfringerSignal ? "repeat" : result.status}`);
+      setModerationReports(await listModerationReports());
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const submitModelListing = async () => {
+    if (!activeModelId) return;
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const model = models.find((candidate) => candidate.id === activeModelId);
+      const result = await createListing({
+        modelId: activeModelId,
+        title: model?.name ?? "FORGE model",
+        listingKind: "model",
+        priceCredits: 0,
+      });
+      setPlatformMessage(`listing ${result.id} · ${result.status}`);
+      await refreshPlatform();
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const submitPolicyListing = async () => {
+    if (!activeModelId) return;
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const model = models.find((candidate) => candidate.id === activeModelId);
+      const result = await createListing({
+        modelId: activeModelId,
+        title: `${model?.name ?? "FORGE model"} skill`,
+        listingKind: "policy",
+        priceCredits: 0,
+        policySignoff: { accepted: true, jurisdiction: "US/EU", useCase: "simulation-only local fixture" },
+      });
+      setPlatformMessage(`policy listing ${result.id} · ${result.status}`);
+      await refreshPlatform();
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const refreshVendorLinks = async () => {
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const componentIds = vendorComponentIds(maintenanceRecords);
+      const result = await refreshVendorOffers({ componentIds });
+      setVendorOffers(result.offers);
+      setPlatformMessage(`vendor links ${result.offers.length} · quote/link handoff only`);
+      setVendorOffers(await listVendorOffers());
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const requestPrintQuoteLink = async () => {
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      const artifact = photoscanArtifacts.find((candidate) => candidate.artifactBlobId);
+      if (!artifact?.artifactBlobId) {
+        throw new Error("print quote handoff requires a photoscan artifact blob");
+      }
+      const result = await createPrintQuote({
+        artifactBlobId: artifact.artifactBlobId,
+        modelId: activeModelId ?? undefined,
+        process: "mjf",
+        material: "pa12",
+        quantity: 1,
+        dfmArtifact: {
+          source: "studio",
+          photoscanArtifactId: artifact.id,
+          checkout: "off-platform",
+          noDirectPayment: true,
+        },
+      });
+      setPrintQuotes([result.quote, ...printQuotes.filter((quote) => quote.id !== result.quote.id)].slice(0, 10));
+      setPlatformMessage(`print quote ${result.quote.id} · off-platform checkout`);
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
+  const recordMarketplaceView = async () => {
+    const listing = listings[0];
+    if (!listing) return;
+    setPlatformBusy(true);
+    setPlatformError(null);
+    setPlatformMessage(null);
+    try {
+      await recordListingUsage(listing.id, { event: "view", listingKind: marketplaceListingKind(listing.kind) });
+      setPlatformMessage(`usage beta recorded · ${listing.id}`);
+    } catch (error) {
+      setPlatformError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPlatformBusy(false);
+    }
+  };
+
   const share = async () => {
     const st = useStudio.getState();
     const contract = st.contractJson;
     if (!contract || st.report?.verdict !== "admitted") return;
+    if (activeModelId) {
+      setModelError(null);
+      try {
+        const result = await shareModel(activeModelId);
+        const url = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(result.share.id)}`;
+        setShareUrl(url);
+        window.history.replaceState(null, "", `?share=${encodeURIComponent(result.share.id)}`);
+        await copyText(url);
+        return;
+      } catch (error) {
+        setModelError(error instanceof Error ? error.message : String(error));
+      }
+    }
     const fragment = await encodeShareFragment(contract);
     const url = `${window.location.origin}${window.location.pathname}#${fragment}`;
+    setShareUrl(url);
     window.history.replaceState(null, "", `#${fragment}`);
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      /* clipboard needs a user gesture/permission; the hash is set anyway */
-    }
+    await copyText(url);
   };
 
   const hud = s.artifact?.hud;
@@ -615,8 +1369,67 @@ export default function App() {
           title={shareDisabled ? "only admitted contracts can be shared" : "copy share URL"}
           style={{ ...btn, marginTop: 6, opacity: shareDisabled ? 0.55 : 1 }}
         >
-          share — contract in the URL
+          share
         </button>
+        {shareUrl && <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{shareUrl}</div>}
+
+        <div data-testid="account-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#8fa3bf", flex: 1 }}>account</span>
+            {me?.authenticated ? (
+              <a href={gatewayUrl("/auth/signout")} style={linkStyle}>
+                sign out
+              </a>
+            ) : (
+              <a href={gatewayUrl("/auth/signin/github")} style={linkStyle}>
+                GitHub
+              </a>
+            )}
+            <button onClick={() => void refreshAccount()} style={btn}>
+              refresh
+            </button>
+          </div>
+          <div style={{ color: "#6b7686", wordBreak: "break-word" }}>
+            {me?.authenticated ? me.user?.email ?? me.user?.name ?? me.user?.id : "not signed in"}
+          </div>
+          {modelError && <div style={{ color: "#e6a23c", wordBreak: "break-word" }}>{modelError}</div>}
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <button onClick={() => void saveCurrentModel()} disabled={modelBusy || !s.contractJson} style={btn}>
+              save
+            </button>
+            <button
+              onClick={() => void refreshModels()}
+              disabled={modelBusy}
+              style={btn}
+            >
+              models
+            </button>
+          </div>
+          {models.length > 0 && (
+            <select
+              value={activeModelId ?? ""}
+              onChange={(event) => setActiveModelId(event.target.value || null)}
+              style={{ ...selectStyle, width: "100%", marginTop: 6 }}
+            >
+              {models.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name} · {model.status}
+                </option>
+              ))}
+            </select>
+          )}
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <input
+              value={editPrompt}
+              onChange={(event) => setEditPrompt(event.target.value)}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+            <button onClick={() => void editActiveModel()} disabled={modelBusy || !activeModelId} style={btn}>
+              edit
+            </button>
+          </div>
+          {editMessage && <div style={{ color: editMessage.includes("ms") ? "#7dd87d" : "#e6a23c" }}>{editMessage}</div>}
+        </div>
 
         <label style={{ display: "block", marginTop: 8 }}>
           explode
@@ -836,12 +1649,26 @@ export default function App() {
               {generationLoadMessage}
             </div>
           )}
+          {generationStages.length > 0 && (
+            <div style={{ marginTop: 5, color: "#6b7686" }}>
+              {generationStages.slice(-5).map((stage, index) => (
+                <div key={`${String(stage.stage ?? "stage")}-${index}`}>
+                  {String(stage.stage ?? "stage")}
+                  {typeof stage.verdict === "string" ? ` · ${stage.verdict}` : ""}
+                </div>
+              ))}
+            </div>
+          )}
           {generationResult && (
             <div style={{ marginTop: 6 }}>
               <div style={{ color: "#6b7686" }}>
-                {generationResult.context.retrievedComponents.length} approved rows · prefix{" "}
+                {generationResult.context.retrievedComponents.length} approved rows ·{" "}
+                {generationResult.context.retrievedPatterns.length} patterns · prefix{" "}
                 {generationResult.context.promptPrefix.hash.slice(0, 8)}
               </div>
+              {generationResult.registeredModel && (
+                <div style={{ color: "#7dd87d" }}>model {generationResult.registeredModel.id}</div>
+              )}
               {generationResult.blockedReasons.length > 0 && (
                 <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
                   {generationResult.blockedReasons.map((reason) => (
@@ -854,6 +1681,140 @@ export default function App() {
               <GenerationAttemptList attempts={generationResult.attempts} />
             </div>
           )}
+        </div>
+
+        <div data-testid="ops-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#8fa3bf", flex: 1 }}>jobs</span>
+            <button onClick={() => void refreshJobs()} style={btn}>
+              refresh
+            </button>
+          </div>
+          <CapabilitySummary capabilities={jobCapabilities} />
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
+            <label style={{ ...btn, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              images
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={scanUploadBusy}
+                onChange={(event) => void uploadScanFiles(event.currentTarget.files)}
+                style={{ display: "none" }}
+              />
+            </label>
+            <span style={{ color: scanUploadBusy ? "#e6a23c" : "#6b7686", flex: 1 }}>
+              {scanUploadBusy ? "uploading" : scanUploadMessage ?? `${scanImageRefs.length} uploaded`}
+            </span>
+            {scanImageRefs.length > 0 && (
+              <button
+                onClick={() => {
+                  setScanImageRefs([]);
+                  setScanUploadMessage(null);
+                }}
+                style={btn}
+              >
+                clear
+              </button>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 6 }}>
+            {[
+              ["photoscan.single", "scan"],
+              ["photoscan.multiview", "scan x3"],
+              ["train.policy", "train"],
+              ["train.sysid-fit", "sysid"],
+              ["replay.verify", "replay"],
+              ["codesign.evaluate", "co-design"],
+              ["bridge.config-diff", "config"],
+              ["bridge.telemetry-ingest", "telemetry"],
+              ["bridge.supervisor-check", "supervise"],
+              ["maintenance.estimate-wear", "wear"],
+              ["maintenance.crash-forensics", "crash"],
+              ["maintenance.repair-sheet", "repair"],
+              ["maintenance.fleet-summary", "fleet"],
+            ].map(([kind, label]) => (
+              <button key={kind} onClick={() => void runFixtureJob(kind)} style={btn}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {jobsError && <div style={{ color: "#e6a23c", marginTop: 5 }}>{jobsError}</div>}
+          {policyPlaybackMessage && <div style={{ color: "#6b7686", marginTop: 5 }}>{policyPlaybackMessage}</div>}
+          {jobs.slice(0, 5).map((job) => (
+            <div key={job.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
+              <div style={{ color: verdictColor(job.status === "succeeded" ? "admitted" : "draft") }}>
+                {job.kind} · {job.status}
+              </div>
+              <div style={{ color: "#6b7686" }}>{job.provider} · {job.id}</div>
+              <JobDetails
+                job={job}
+                onApplyPatch={(ops) => void applyPatch(ops)}
+                onPlayPolicy={startPolicyPlayback}
+              />
+            </div>
+          ))}
+          <ArtifactRegistry
+            photoscanArtifacts={photoscanArtifacts}
+            policyArtifacts={policyArtifacts}
+            replayArtifacts={replayArtifacts}
+            telemetryLogs={telemetryLogs}
+            maintenanceRecords={maintenanceRecords}
+            busy={artifactBusy}
+            error={artifactError}
+            message={artifactMessage}
+            onRefresh={() => void refreshArtifacts()}
+            onOpenBlob={(blobId) => void openArtifactBlob(blobId)}
+            onAlignPhotoscan={(artifactId, input) => void alignPhotoscanArtifact(artifactId, input)}
+          />
+          <PlatformPanel
+            credits={credits}
+            courses={courses}
+            activeCourseId={activeCourseId}
+            leaderboardRuns={leaderboardRuns}
+            listings={listings}
+            licenseLedger={licenseLedger}
+            platformGates={platformGates}
+            vendorOffers={vendorOffers}
+            printQuotes={printQuotes}
+            classroomAssignments={classroomAssignments}
+            activeAssignmentId={activeAssignmentId}
+            classroomSubmissions={classroomSubmissions}
+            moderationReports={moderationReports}
+            busy={platformBusy}
+            error={platformError}
+            message={platformMessage}
+            activeModelId={activeModelId}
+            hasSubmissionContract={Boolean(s.contractJson)}
+            onRefresh={() => void refreshPlatform()}
+            onCourseChange={(courseId) => {
+              setActiveCourseId(courseId);
+              void refreshLeaderboard(courseId);
+            }}
+            onAssignmentChange={(assignmentId) => {
+              setActiveAssignmentId(assignmentId);
+              void refreshClassroomSubmissions(assignmentId);
+            }}
+            onCreateCourse={() => void publishFixtureCourse()}
+            onSubmitRun={() => void submitFixtureLeaderboardRun()}
+            onCreateListing={() => void submitModelListing()}
+            onCreatePolicyListing={() => void submitPolicyListing()}
+            onCreateAssignment={() => void publishFixtureAssignment()}
+            onSubmitAssignment={() => void submitFixtureAssignment()}
+            onReport={() => void reportFixtureModeration()}
+            onRefreshVendorLinks={() => void refreshVendorLinks()}
+            onRequestPrintQuote={() => void requestPrintQuoteLink()}
+            onRecordListingUsage={() => void recordMarketplaceView()}
+          />
+          <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: "#8fa3bf", flex: 1 }}>Brief-25</span>
+              <button onClick={() => void refreshBriefEval()} style={btn}>
+                refresh
+              </button>
+            </div>
+            <BriefEvalSummary value={briefEval} />
+          </div>
         </div>
 
         <div data-testid="review-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
@@ -1058,9 +2019,27 @@ const btn: React.CSSProperties = {
   cursor: "pointer",
 };
 
+const jobDetailStyle: React.CSSProperties = {
+  marginTop: 4,
+  color: "#cfd6df",
+  minWidth: 0,
+};
+
+const artifactRowStyle: React.CSSProperties = {
+  borderTop: "1px solid #242a33",
+  marginTop: 5,
+  paddingTop: 5,
+  minWidth: 0,
+};
+
 const dangerBtn: React.CSSProperties = {
   ...btn,
   color: "#f0b0a8",
+};
+
+const linkStyle: React.CSSProperties = {
+  color: "#39c8ff",
+  textDecoration: "none",
 };
 
 const selectStyle: React.CSSProperties = {
@@ -1168,6 +2147,1070 @@ function GenerationAttemptList({ attempts }: { attempts: GenerationAttempt[] }) 
       })}
     </div>
   );
+}
+
+function BriefEvalSummary({ value }: { value: unknown | null }) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return <div style={{ color: "#6b7686" }}>no stored run</div>;
+  }
+  const artifact = value as {
+    summary?: {
+      finalVerdictCounts?: { admitted?: number; draft?: number; rejected?: number; blocked?: number };
+      qualityGate?: { pass?: boolean; admittedWithoutHumanRepairActual?: number; admittedWithoutHumanRepairTarget?: number };
+    };
+    completedAt?: string;
+  };
+  const counts = artifact.summary?.finalVerdictCounts;
+  const gate = artifact.summary?.qualityGate;
+  return (
+    <div style={{ color: gate?.pass ? "#7dd87d" : "#e6a23c", marginTop: 4 }}>
+      {counts
+        ? `${counts.admitted ?? 0} admitted · ${counts.draft ?? 0} draft · ${counts.rejected ?? 0} rejected`
+        : "stored run"}
+      {gate ? ` · gate ${gate.admittedWithoutHumanRepairActual ?? 0}/${gate.admittedWithoutHumanRepairTarget ?? 20}` : ""}
+      {artifact.completedAt ? <div style={{ color: "#6b7686" }}>{artifact.completedAt}</div> : null}
+    </div>
+  );
+}
+
+function ArtifactRegistry({
+  photoscanArtifacts,
+  policyArtifacts,
+  replayArtifacts,
+  telemetryLogs,
+  maintenanceRecords,
+  busy,
+  error,
+  message,
+  onRefresh,
+  onOpenBlob,
+  onAlignPhotoscan,
+}: {
+  photoscanArtifacts: PhotoscanArtifactRecord[];
+  policyArtifacts: PolicyArtifactRecord[];
+  replayArtifacts: ReplayArtifactRecord[];
+  telemetryLogs: TelemetryLogRecord[];
+  maintenanceRecords: MaintenanceRecord[];
+  busy: boolean;
+  error: string | null;
+  message: string | null;
+  onRefresh: () => void;
+  onOpenBlob: (blobId: string | null) => void;
+  onAlignPhotoscan: (artifactId: string, input: PhotoscanAlignmentInput) => void;
+}) {
+  return (
+    <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>artifacts</span>
+        <button onClick={onRefresh} disabled={busy} style={btn}>
+          refresh
+        </button>
+      </div>
+      {error ? <div style={{ color: "#e6a23c", marginTop: 4 }}>gateway · {error}</div> : null}
+      {message ? <div style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
+      {busy &&
+      photoscanArtifacts.length === 0 &&
+      policyArtifacts.length === 0 &&
+      replayArtifacts.length === 0 &&
+      telemetryLogs.length === 0 &&
+      maintenanceRecords.length === 0 ? (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>loading…</div>
+      ) : photoscanArtifacts.length === 0 &&
+        policyArtifacts.length === 0 &&
+        replayArtifacts.length === 0 &&
+        telemetryLogs.length === 0 &&
+        maintenanceRecords.length === 0 ? (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>0 materialized outputs</div>
+      ) : null}
+      {photoscanArtifacts.slice(0, 3).map((artifact) => (
+        <PhotoscanArtifactRow
+          key={artifact.id}
+          artifact={artifact}
+          onOpenBlob={onOpenBlob}
+          onAlign={onAlignPhotoscan}
+        />
+      ))}
+      {policyArtifacts.slice(0, 3).map((artifact) => (
+        <PolicyArtifactRow key={artifact.id} artifact={artifact} onOpenBlob={onOpenBlob} />
+      ))}
+      {replayArtifacts.slice(0, 2).map((artifact) => (
+        <ReplayArtifactRow key={artifact.id} artifact={artifact} />
+      ))}
+      {telemetryLogs.slice(0, 2).map((log) => (
+        <TelemetryLogRow key={log.id} log={log} />
+      ))}
+      {maintenanceRecords.slice(0, 3).map((record) => (
+        <MaintenanceRecordRow key={record.id} record={record} />
+      ))}
+    </div>
+  );
+}
+
+const photoscanAxes = ["x", "y", "z"] as const;
+type PhotoscanAxis = (typeof photoscanAxes)[number];
+
+interface PhotoscanPortDraft {
+  id: string;
+  kind: string;
+  axis: PhotoscanAxis;
+  role: string;
+}
+
+function isPhotoscanAxis(value: unknown): value is PhotoscanAxis {
+  return value === "x" || value === "y" || value === "z";
+}
+
+function photoscanDimensionText(alignment: Record<string, unknown> | null | undefined): string {
+  return typeof alignment?.knownDimensionMm === "number" ? String(Math.round(alignment.knownDimensionMm)) : "150";
+}
+
+function photoscanAxis(alignment: Record<string, unknown> | null | undefined): PhotoscanAxis {
+  return isPhotoscanAxis(alignment?.axis) ? alignment.axis : "z";
+}
+
+function photoscanPorts(alignment: Record<string, unknown> | null | undefined, axis: PhotoscanAxis): PhotoscanPortDraft[] {
+  const rawPorts = Array.isArray(alignment?.ports) ? alignment.ports : [];
+  return rawPorts.slice(0, 64).map((raw, index) => {
+    const port = asRecord(raw);
+    return {
+      id: typeof port?.id === "string" && port.id.trim() ? port.id : `port-${index + 1}`,
+      kind: typeof port?.kind === "string" && port.kind.trim() ? port.kind : "mount",
+      axis: isPhotoscanAxis(port?.axis) ? port.axis : axis,
+      role: typeof port?.role === "string" && port.role.trim() ? port.role : "component-port",
+    };
+  });
+}
+
+function sanitizePhotoscanPorts(ports: PhotoscanPortDraft[]): PhotoscanPortInput[] {
+  return ports
+    .map((port, index) => ({
+      id: port.id.trim() || `port-${index + 1}`,
+      kind: port.kind.trim() || "mount",
+      axis: port.axis,
+      role: port.role.trim() || "component-port",
+    }))
+    .slice(0, 64);
+}
+
+function PhotoscanArtifactRow({
+  artifact,
+  onOpenBlob,
+  onAlign,
+}: {
+  artifact: PhotoscanArtifactRecord;
+  onOpenBlob: (blobId: string | null) => void;
+  onAlign: (artifactId: string, input: PhotoscanAlignmentInput) => void;
+}) {
+  const candidate = asRecord(artifact.candidateComponent);
+  const acceptance = asRecord(asRecord(artifact.validatorReport)?.acceptance);
+  const alignment = asRecord(artifact.scaleAxesPorts);
+  const alignmentKey = JSON.stringify(alignment ?? {});
+  const initialAxis = photoscanAxis(alignment);
+  const [dimensionDraft, setDimensionDraft] = useState(() => photoscanDimensionText(alignment));
+  const [axisDraft, setAxisDraft] = useState<PhotoscanAxis>(() => initialAxis);
+  const [portDrafts, setPortDrafts] = useState<PhotoscanPortDraft[]>(() => photoscanPorts(alignment, initialAxis));
+  const [draftError, setDraftError] = useState<string | null>(null);
+  useEffect(() => {
+    const nextAxis = photoscanAxis(alignment);
+    setDimensionDraft(photoscanDimensionText(alignment));
+    setAxisDraft(nextAxis);
+    setPortDrafts(photoscanPorts(alignment, nextAxis));
+    setDraftError(null);
+  }, [artifact.id, alignmentKey]);
+
+  const refits = Array.isArray(artifact.refitPrimitives) ? artifact.refitPrimitives.length : null;
+  const portCount = Array.isArray(alignment?.ports) ? alignment.ports.length : null;
+  const knownDimension =
+    typeof alignment?.knownDimensionMm === "number" ? `${alignment.knownDimensionMm.toFixed(0)} mm` : undefined;
+  const axis = typeof alignment?.axis === "string" ? alignment.axis : alignment?.axesLocked === true ? "locked" : undefined;
+  const label =
+    [candidate?.brand, candidate?.model].filter((value): value is string => typeof value === "string").join(" ") ||
+    (typeof candidate?.id === "string" ? candidate.id : artifact.id);
+  const addPort = () => {
+    setPortDrafts((ports) =>
+      ports.length >= 64
+        ? ports
+        : [
+            ...ports,
+            {
+              id: `port-${ports.length + 1}`,
+              kind: "mount",
+              axis: axisDraft,
+              role: "component-port",
+            },
+          ],
+    );
+  };
+  const updatePort = (index: number, patch: Partial<PhotoscanPortDraft>) => {
+    setPortDrafts((ports) => ports.map((port, current) => (current === index ? { ...port, ...patch } : port)));
+  };
+  const removePort = (index: number) => {
+    setPortDrafts((ports) => ports.filter((_, current) => current !== index));
+  };
+  const saveAlignment = () => {
+    const knownDimensionMm = Number(dimensionDraft);
+    if (!Number.isFinite(knownDimensionMm) || knownDimensionMm <= 0) {
+      setDraftError("scale must be > 0");
+      return;
+    }
+    setDraftError(null);
+    onAlign(artifact.id, {
+      knownDimensionMm,
+      axis: axisDraft,
+      ports: sanitizePhotoscanPorts(portDrafts),
+      note: "Studio alignment editor",
+    });
+  };
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#cfd6df", flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+          scan · {label}
+        </span>
+        <button disabled={!artifact.artifactBlobId} onClick={() => onOpenBlob(artifact.artifactBlobId)} style={btn}>
+          blob
+        </button>
+      </div>
+      <MiniRows
+        rows={[
+          ["created", shortTime(artifact.createdAt)],
+          ["sources", artifact.sourceBlobIds.length],
+          ["refit", refits === null ? undefined : `${refits} primitives`],
+          ["D13", acceptance?.pass === true ? "pass" : acceptance?.pass === false ? "review" : undefined],
+          ["scale", knownDimension ?? (alignment?.scaleLocked === true ? "locked" : undefined)],
+          ["axis", axis],
+          ["ports", portCount === null ? (alignment?.portsMarked === true ? "marked" : undefined) : portCount],
+        ]}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 58px 44px", gap: 4, marginTop: 5 }}>
+        <label>
+          <span style={fieldLabel}>scale mm</span>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={dimensionDraft}
+            onChange={(event) => setDimensionDraft(event.target.value)}
+            style={inputStyle}
+          />
+        </label>
+        <label>
+          <span style={fieldLabel}>axis</span>
+          <select
+            value={axisDraft}
+            aria-label="alignment axis"
+            onChange={(event) => setAxisDraft(event.target.value as PhotoscanAxis)}
+            style={{ ...selectStyle, width: "100%" }}
+          >
+            {photoscanAxes.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          onClick={saveAlignment}
+          style={{ ...btn, alignSelf: "end", height: 21 }}
+          aria-label={`save alignment ${artifact.id}`}
+        >
+          save
+        </button>
+      </div>
+      {portDrafts.length ? (
+        <div style={{ display: "grid", gap: 4, marginTop: 5 }}>
+          {portDrafts.map((port, index) => (
+            <div
+              key={`port-${index}`}
+              style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 70px 48px 24px", gap: 4 }}
+            >
+              <input
+                aria-label={`port ${index + 1}`}
+                value={port.id}
+                onChange={(event) => updatePort(index, { id: event.target.value })}
+                style={inputStyle}
+              />
+              <input
+                aria-label={`port ${index + 1} kind`}
+                value={port.kind}
+                onChange={(event) => updatePort(index, { kind: event.target.value })}
+                style={inputStyle}
+              />
+              <select
+                value={port.axis}
+                aria-label={`port ${index + 1} axis`}
+                onChange={(event) => updatePort(index, { axis: event.target.value as PhotoscanAxis })}
+                style={{ ...selectStyle, width: "100%" }}
+              >
+                {photoscanAxes.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => removePort(index)} style={btn} aria-label={`remove ${port.id}`}>
+                -
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div style={{ display: "flex", gap: 4, marginTop: 5, alignItems: "center" }}>
+        <button
+          onClick={addPort}
+          disabled={portDrafts.length >= 64}
+          style={btn}
+          aria-label={`add port ${artifact.id}`}
+        >
+          + port
+        </button>
+        {draftError ? <span style={{ color: "#e6a23c" }}>{draftError}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function PolicyArtifactRow({
+  artifact,
+  onOpenBlob,
+}: {
+  artifact: PolicyArtifactRecord;
+  onOpenBlob: (blobId: string | null) => void;
+}) {
+  const scorecard = asRecord(artifact.scorecard);
+  const success = numberOrNull(scorecard?.successRate);
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: artifact.exportGate === "passed" ? "#7dd87d" : "#e6a23c", flex: 1 }}>
+          policy · {artifact.taskKind}
+        </span>
+        <button disabled={!artifact.artifactBlobId} onClick={() => onOpenBlob(artifact.artifactBlobId)} style={btn}>
+          onnx
+        </button>
+      </div>
+      <MiniRows
+        rows={[
+          ["created", shortTime(artifact.createdAt)],
+          ["success", success === null ? undefined : formatPercent(success)],
+          ["energy", typeof scorecard?.energyWh === "number" ? `${scorecard.energyWh.toFixed(1)} Wh` : undefined],
+          ["gate", artifact.exportGate],
+        ]}
+      />
+    </div>
+  );
+}
+
+function ReplayArtifactRow({ artifact }: { artifact: ReplayArtifactRecord }) {
+  const verification = asRecord(artifact.verification);
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ color: verification?.verified === true ? "#7dd87d" : "#e6a23c" }}>
+        replay · {verification?.verified === true ? "verified" : "held"}
+      </div>
+      <MiniRows
+        rows={[
+          ["created", shortTime(artifact.createdAt)],
+          ["frames", verification?.frameCount],
+          ["duration", typeof verification?.durationS === "number" ? `${verification.durationS.toFixed(2)} s` : undefined],
+          ["hash", artifact.tamperHash],
+          ["reject", verification?.rejectReason],
+        ]}
+      />
+    </div>
+  );
+}
+
+function TelemetryLogRow({ log }: { log: TelemetryLogRecord }) {
+  const tape = asRecord(log.tape);
+  const frames = Array.isArray(tape?.frames) ? tape.frames.length : undefined;
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ color: "#cfd6df" }}>telemetry · {log.source}</div>
+      <MiniRows
+        rows={[
+          ["captured", shortTime(log.capturedAt)],
+          ["frames", frames],
+          ["model", log.modelId],
+        ]}
+      />
+    </div>
+  );
+}
+
+function MaintenanceRecordRow({ record }: { record: MaintenanceRecord }) {
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ color: record.severity === "critical" ? "#e66" : record.severity === "warn" ? "#e6a23c" : "#cfd6df" }}>
+        maintenance · {record.kind}
+      </div>
+      <MiniRows
+        rows={[
+          ["created", shortTime(record.createdAt)],
+          ["severity", record.severity],
+          ["summary", record.summary],
+        ]}
+      />
+    </div>
+  );
+}
+
+function CapabilitySummary({ capabilities }: { capabilities: JobCapabilities | null }) {
+  if (!capabilities) {
+    return <div style={{ color: "#6b7686", marginTop: 5 }}>capabilities unavailable</div>;
+  }
+  const liveReady = Object.entries(capabilities.live)
+    .filter(([, state]) => state.configured)
+    .map(([key]) => key)
+    .join(", ");
+  return (
+    <div style={{ marginTop: 5 }}>
+      <MiniRows
+        rows={[
+          ["providers", Object.entries(capabilities.providers).map(([key, state]) => `${key}:${state.enabled ? state.mode : "off"}`).join(", ")],
+          ["live", liveReady || "keyless fixture only"],
+          ["hardware", capabilities.hardware.labMode ? "D12 lab mode" : "blocked"],
+          ["no auto arm", capabilities.hardware.noAutoArm ? "yes" : "no"],
+        ]}
+      />
+    </div>
+  );
+}
+
+type MarketplaceListingKind = "model" | "course" | "skill" | "component" | "policy";
+
+function marketplaceListingKind(value: string): MarketplaceListingKind {
+  return value === "course" || value === "skill" || value === "component" || value === "policy" ? value : "model";
+}
+
+function vendorComponentIds(records: MaintenanceRecord[]): string[] {
+  const ids = new Set<string>();
+  for (const record of records) {
+    const payload = asRecord(record.payload);
+    const vendorSkus = asRecord(payload?.vendorSkus);
+    if (vendorSkus) {
+      for (const value of Object.values(vendorSkus)) {
+        if (typeof value === "string" && value.trim()) ids.add(value.trim());
+      }
+    }
+    const steps = Array.isArray(payload?.steps) ? payload.steps : [];
+    for (const rawStep of steps) {
+      const step = asRecord(rawStep);
+      const sku = step?.sku ?? step?.vendorSku ?? step?.componentId;
+      if (typeof sku === "string" && sku.trim()) ids.add(sku.trim());
+    }
+  }
+  if (ids.size === 0) ids.add("FRAME-SKU");
+  return [...ids].slice(0, 10);
+}
+
+function gateSummary(gates: PlatformGateSignoff[]): string {
+  if (gates.length === 0) return "unknown";
+  const accepted = gates.filter((gate) => gate.status === "accepted" && gate.revokedAt === null).length;
+  return `${accepted}/${gates.length} accepted`;
+}
+
+function priceText(price: number | null, currency: string | null): string | undefined {
+  if (price === null) return undefined;
+  return `${price.toFixed(2)} ${currency ?? "USD"}`;
+}
+
+function PlatformPanel({
+  credits,
+  courses,
+  activeCourseId,
+  leaderboardRuns,
+  listings,
+  licenseLedger,
+  platformGates,
+  vendorOffers,
+  printQuotes,
+  classroomAssignments,
+  activeAssignmentId,
+  classroomSubmissions,
+  moderationReports,
+  busy,
+  error,
+  message,
+  activeModelId,
+  hasSubmissionContract,
+  onRefresh,
+  onCourseChange,
+  onAssignmentChange,
+  onCreateCourse,
+  onSubmitRun,
+  onCreateListing,
+  onCreatePolicyListing,
+  onCreateAssignment,
+  onSubmitAssignment,
+  onReport,
+  onRefreshVendorLinks,
+  onRequestPrintQuote,
+  onRecordListingUsage,
+}: {
+  credits: CreditSummary | null;
+  courses: CourseRecord[];
+  activeCourseId: string | null;
+  leaderboardRuns: LeaderboardRunRecord[];
+  listings: ListingRecord[];
+  licenseLedger: LicenseLedgerEntry[];
+  platformGates: PlatformGateSignoff[];
+  vendorOffers: VendorOfferRecord[];
+  printQuotes: PrintQuoteRequestRecord[];
+  classroomAssignments: ClassroomAssignmentRecord[];
+  activeAssignmentId: string | null;
+  classroomSubmissions: ClassroomSubmissionRecord[];
+  moderationReports: ModerationReportRecord[];
+  busy: boolean;
+  error: string | null;
+  message: string | null;
+  activeModelId: string | null;
+  hasSubmissionContract: boolean;
+  onRefresh: () => void;
+  onCourseChange: (courseId: string | null) => void;
+  onAssignmentChange: (assignmentId: string | null) => void;
+  onCreateCourse: () => void;
+  onSubmitRun: () => void;
+  onCreateListing: () => void;
+  onCreatePolicyListing: () => void;
+  onCreateAssignment: () => void;
+  onSubmitAssignment: () => void;
+  onReport: () => void;
+  onRefreshVendorLinks: () => void;
+  onRequestPrintQuote: () => void;
+  onRecordListingUsage: () => void;
+}) {
+  return (
+    <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>platform</span>
+        <button onClick={onRefresh} disabled={busy} style={btn}>
+          refresh
+        </button>
+      </div>
+      <MiniRows
+        rows={[
+          ["credits", credits ? credits.balanceCredits : "auth required"],
+          ["credit ledger", credits?.ledger.length],
+          ["license ledger", licenseLedger.length],
+          ["gates", gateSummary(platformGates)],
+          ["capability", "usage beta · no seller payouts"],
+          ["vendor links", vendorOffers.length],
+          ["print quotes", printQuotes.length],
+        ]}
+      />
+      {error ? <div style={{ color: "#e6a23c", marginTop: 4, wordBreak: "break-word" }}>{error}</div> : null}
+      {message ? <div style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 6 }}>
+        <button onClick={onCreateCourse} disabled={busy} style={btn}>
+          course
+        </button>
+        <button onClick={onSubmitRun} disabled={busy || !activeCourseId} style={btn}>
+          score
+        </button>
+        <button onClick={onCreateListing} disabled={busy || !activeModelId} style={btn}>
+          list
+        </button>
+        <button onClick={onCreatePolicyListing} disabled={busy || !activeModelId} style={btn}>
+          skill
+        </button>
+        <button onClick={onCreateAssignment} disabled={busy} style={btn}>
+          assign
+        </button>
+        <button onClick={onSubmitAssignment} disabled={busy || !activeAssignmentId || (!activeModelId && !hasSubmissionContract)} style={btn}>
+          submit
+        </button>
+        <button onClick={onReport} disabled={busy} style={btn}>
+          report
+        </button>
+        <button onClick={onRefreshVendorLinks} disabled={busy} style={btn}>
+          vendors
+        </button>
+        <button onClick={onRequestPrintQuote} disabled={busy} style={btn}>
+          quote
+        </button>
+        <button onClick={onRecordListingUsage} disabled={busy || listings.length === 0} style={btn}>
+          usage
+        </button>
+      </div>
+      {platformGates.slice(0, 3).map((gate) => (
+        <div key={gate.gateKey} style={artifactRowStyle}>
+          <div style={{ color: gate.status === "accepted" && gate.revokedAt === null ? "#7dd87d" : "#e6a23c" }}>
+            gate · {gate.gateKey}
+          </div>
+          <MiniRows
+            rows={[
+              ["status", gate.revokedAt ? "revoked" : gate.status],
+              ["policy", gate.policyVersion],
+              ["jurisdiction", gate.jurisdiction],
+              ["reviewer", gate.reviewer],
+            ]}
+          />
+        </div>
+      ))}
+      {courses.length > 0 ? (
+        <select
+          value={activeCourseId ?? ""}
+          onChange={(event) => onCourseChange(event.target.value || null)}
+          style={{ ...selectStyle, width: "100%", marginTop: 6 }}
+        >
+          {courses.map((course) => (
+            <option key={course.id} value={course.id}>
+              {course.name} · {course.visibility}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>0 courses</div>
+      )}
+      {leaderboardRuns.slice(0, 3).map((run) => (
+        <div key={run.id} style={artifactRowStyle}>
+          <div style={{ color: run.verified ? "#7dd87d" : "#e6a23c" }}>
+            score {run.score.toFixed(1)} · {run.verified ? "verified" : "held"}
+          </div>
+          <MiniRows rows={[["created", shortTime(run.createdAt)], ["run", run.id]]} />
+        </div>
+      ))}
+      {classroomAssignments.length > 0 ? (
+        <select
+          value={activeAssignmentId ?? ""}
+          onChange={(event) => onAssignmentChange(event.target.value || null)}
+          style={{ ...selectStyle, width: "100%", marginTop: 6 }}
+        >
+          {classroomAssignments.map((assignment) => (
+            <option key={assignment.id} value={assignment.id}>
+              {assignment.title} · {assignment.visibility}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>0 assignments</div>
+      )}
+      {classroomSubmissions.slice(0, 3).map((submission) => {
+        const grade = asRecord(submission.grade);
+        return (
+          <div key={submission.id} style={artifactRowStyle}>
+            <div style={{ color: grade?.pass === true ? "#7dd87d" : "#e6a23c" }}>
+              submission · {grade?.pass === true ? "pass" : "held"}
+            </div>
+            <MiniRows
+              rows={[
+                ["created", shortTime(submission.createdAt)],
+                ["score", typeof grade?.score === "number" ? grade.score.toFixed(2) : undefined],
+                ["status", submission.status],
+              ]}
+            />
+          </div>
+        );
+      })}
+      {listings.length > 0 ? (
+        listings.slice(0, 3).map((listing) => (
+          <div key={listing.id} style={artifactRowStyle}>
+            <div style={{ color: "#cfd6df" }}>
+              listing · {listing.title}
+            </div>
+            <MiniRows
+              rows={[
+                ["kind", listing.kind],
+                ["price", `${listing.priceCredits} credits`],
+                ["policy", listing.exportPolicy],
+                ["economics", "usage beta"],
+              ]}
+            />
+          </div>
+        ))
+      ) : (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>0 listed marketplace items</div>
+      )}
+      {licenseLedger.length > 0 ? (
+        licenseLedger.slice(0, 3).map((entry) => (
+          <div key={entry.id} style={artifactRowStyle}>
+            <div style={{ color: entry.blockedExportCount > 0 ? "#e6a23c" : "#cfd6df" }}>
+              license · {entry.class}
+            </div>
+            <MiniRows
+              rows={[
+                ["id", entry.id],
+                ["components", entry.componentCount],
+                ["priced", entry.pricedComponentCount],
+                ["cited", entry.citedComponentCount],
+                ["approved", entry.approvedReviewCount],
+                ["pending", entry.pendingReviewCount],
+                ["blocked", entry.blockedExportCount],
+                ["policies", Object.entries(entry.exportPolicies).map(([key, count]) => `${key}:${count}`).join(", ")],
+              ]}
+            />
+          </div>
+        ))
+      ) : (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>0 license ledger rows</div>
+      )}
+      {vendorOffers.slice(0, 3).map((offer) => (
+        <div key={offer.id} style={artifactRowStyle}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ color: "#cfd6df", flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+              vendor · {offer.vendor}
+            </span>
+            <a href={offer.url} target="_blank" rel="noreferrer" style={{ ...linkStyle, fontSize: 11 }}>
+              open
+            </a>
+          </div>
+          <MiniRows
+            rows={[
+              ["component", offer.componentId],
+              ["sku", offer.sku],
+              ["price", priceText(offer.price, offer.currency)],
+              ["source", offer.source],
+            ]}
+          />
+        </div>
+      ))}
+      {printQuotes.slice(0, 3).map((quote) => {
+        const offer = quote.offers[0];
+        return (
+          <div key={quote.id} style={artifactRowStyle}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: "#cfd6df", flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+                print · {quote.process}/{quote.material}
+              </span>
+              {offer ? (
+                <a href={offer.quoteUrl} target="_blank" rel="noreferrer" style={{ ...linkStyle, fontSize: 11 }}>
+                  quote
+                </a>
+              ) : null}
+            </div>
+            <MiniRows
+              rows={[
+                ["status", quote.status],
+                ["qty", quote.quantity],
+                ["provider", offer?.provider],
+                ["payment", "off-platform"],
+              ]}
+            />
+          </div>
+        );
+      })}
+      {moderationReports.slice(0, 3).map((report) => (
+        <div key={report.id} style={artifactRowStyle}>
+          <div style={{ color: report.repeatInfringerSignal ? "#e6a23c" : "#cfd6df" }}>
+            report · {report.reason}
+          </div>
+          <MiniRows
+            rows={[
+              ["target", `${report.targetKind}:${report.targetId}`],
+              ["status", report.status],
+              ["SLA", shortTime(report.slaDueAt)],
+            ]}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function JobDetails({
+  job,
+  onApplyPatch,
+  onPlayPolicy,
+}: {
+  job: JobRecord;
+  onApplyPatch: (ops: JsonPatchOp[]) => void;
+  onPlayPolicy: (output: PolicyOutput) => void;
+}) {
+  if (job.error) {
+    return <div style={{ color: "#e66" }}>{job.error}</div>;
+  }
+  const output = job.output;
+  if (!output) {
+    return <div style={{ color: "#6b7686" }}>no output yet</div>;
+  }
+  if (!isKnownJobOutput(output)) {
+    return <JsonPreview value={output} />;
+  }
+  switch (output.artifactKind) {
+    case "photoscan": {
+      const acceptance = output.acceptance;
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["D13", acceptance?.pass ? "pass" : "review"],
+              ["coverage", formatMaybePercent(acceptance?.fitCoveragePct, 0)],
+              ["Hausdorff", formatMaybePercent(acceptance?.hausdorffPct, 2)],
+              ["cache", output.objectCache?.key],
+              ["candidate", output.candidateComponent?.id ?? formatConfidence(output.candidateComponent?.confidence)],
+            ]}
+          />
+          {output.primitiveRefit?.length ? (
+            <div style={{ color: "#6b7686" }}>
+              refit {output.primitiveRefit.map((row) => `${row.kind ?? "primitive"} ${formatConfidence(row.confidence)}`).join(" · ")}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+    case "policy": {
+      const scorecard = output.scorecard;
+      const success = numberOrNull(scorecard?.successRate ?? scorecard?.returnMean);
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["task", output.task?.id ?? scorecard?.task],
+              ["success", success === null ? undefined : formatPercent(success)],
+              ["energy", scorecard?.energyWh === undefined ? undefined : `${scorecard.energyWh.toFixed(1)} Wh`],
+              ["export", scorecard?.exportable === undefined ? scorecard?.exportGate : scorecard.exportable ? "allowed" : "blocked"],
+              ["onnx", output.onnx?.path ?? output.onnx?.cacheKey],
+            ]}
+          />
+          {scorecard?.robustness ? <RobustnessGrid values={scorecard.robustness} /> : null}
+          <div style={{ color: "#6b7686" }}>
+            {(output.io?.observations?.length ?? 0)} obs · {(output.io?.actions?.length ?? 0)} actions
+          </div>
+          <button onClick={() => onPlayPolicy(output)} style={{ ...btn, marginTop: 4 }}>
+            play
+          </button>
+          {scorecard?.reasons?.length ? (
+            <div style={{ color: "#e6a23c" }}>{scorecard.reasons.join(" · ")}</div>
+          ) : null}
+        </div>
+      );
+    }
+    case "codesign":
+      return (
+        <div style={jobDetailStyle}>
+          <div style={{ color: "#6b7686" }}>
+            {(output.pareto?.length ?? 0)} Pareto · {(output.candidates?.length ?? 0)} candidates
+          </div>
+          <ParetoPlot candidates={output.pareto ?? output.candidates ?? []} />
+          {(output.pareto ?? output.candidates ?? []).slice(0, 3).map((candidate) => (
+            <div key={candidate.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6, alignItems: "center" }}>
+              <span style={{ color: candidate.admitted ? "#7dd87d" : "#e6a23c", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {candidate.id} · {candidate.tier ?? "tier"} · {formatMetrics(candidate.metrics)}
+              </span>
+              <button
+                disabled={!isPatchList(candidate.patch)}
+                onClick={() => candidate.patch && onApplyPatch(candidate.patch)}
+                style={btn}
+              >
+                apply
+              </button>
+            </div>
+          ))}
+        </div>
+      );
+    case "replay":
+    case "telemetry-replay":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["verified", output.verified === undefined ? undefined : output.verified ? "yes" : "no"],
+              ["frames", output.frameCount],
+              ["duration", output.durationS === undefined ? undefined : `${output.durationS.toFixed(2)} s`],
+              ["hash", output.tamperHash ?? output.tapeHash],
+              ["reject", output.rejectReason ?? undefined],
+            ]}
+          />
+        </div>
+      );
+    case "bridge-config":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows rows={[["firmware", output.firmware], ["confirm", output.requiresPhysicalConfirmation ? "required" : "no"], ["hash", output.diffHash]]} />
+          {output.lines?.length ? <CodeLines lines={output.lines.slice(0, 4)} /> : null}
+        </div>
+      );
+    case "supervisor-decision":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["command", output.command],
+              ["policy", output.allowPolicy ? "allowed" : "held"],
+              ["rates", `${output.rateHz?.policyAdvisory ?? 50}/${output.rateHz?.supervisor ?? 200} Hz`],
+            ]}
+          />
+          {output.reasons?.length ? <div style={{ color: "#e6a23c" }}>{output.reasons.join(" · ")}</div> : null}
+        </div>
+      );
+    case "wear-estimate":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["motor", output.motorHours === undefined ? undefined : `${output.motorHours.toFixed(2)} h`],
+              ["packs", output.packCycles === undefined ? undefined : output.packCycles.toFixed(2)],
+              ["Rint", output.rIntMohm == null ? undefined : `${output.rIntMohm.toFixed(1)} mOhm`],
+            ]}
+          />
+          {output.warnings?.length ? <div style={{ color: "#e6a23c" }}>{output.warnings.join(" · ")}</div> : null}
+        </div>
+      );
+    case "crash-forensics":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["crash", output.crashDetected ? "detected" : "no"],
+              ["window", output.window ? `${output.window.startS ?? 0}-${output.window.endS ?? 0} s` : "none"],
+              ["impact", output.window?.impactS === undefined ? undefined : `${output.window.impactS} s`],
+              ["ghost", output.ghostOverlay?.enabled ? output.ghostOverlay.divergenceMetric ?? "enabled" : "off"],
+            ]}
+          />
+        </div>
+      );
+    case "repair-sheet":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows rows={[["steps", output.steps?.length ?? 0], ["reorder", output.reorderCount ?? 0]]} />
+          {output.steps?.slice(0, 3).map((step) => (
+            <div key={`${step.order}-${step.partIndex}`} style={{ color: "#6b7686" }}>
+              {step.order}. {step.action ?? "inspect"} {step.reorderSku ? `· ${step.reorderSku}` : ""}
+            </div>
+          ))}
+        </div>
+      );
+    case "fleet-summary":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows rows={[["vehicles", output.vehicleCount ?? 0], ["critical", output.criticalCount ?? 0], ["due", output.serviceDueCount ?? 0]]} />
+          {output.nextActions?.slice(0, 3).map((action) => (
+            <div key={`${action.vehicleId}-${action.action}`} style={{ color: "#6b7686" }}>
+              {action.vehicleId ?? "vehicle"} · {action.action ?? "review"}
+            </div>
+          ))}
+        </div>
+      );
+    case "sysid":
+      return (
+        <div style={jobDetailStyle}>
+          <MiniRows
+            rows={[
+              ["samples", output.sampleCount],
+              ["accepted", output.fit?.accepted ? "yes" : "no"],
+              ["Rint", output.fit?.rIntMohm == null ? undefined : `${output.fit.rIntMohm.toFixed(1)} mOhm`],
+              ["patches", output.simPatch?.length ?? 0],
+              ["reject", output.rejectReason ?? undefined],
+            ]}
+          />
+        </div>
+      );
+  }
+}
+
+function MiniRows({ rows }: { rows: [string, unknown][] }) {
+  return (
+    <div>
+      {rows
+        .filter(([, value]) => value !== undefined && value !== null && value !== "")
+        .map(([key, value]) => (
+          <div key={key} style={{ display: "grid", gridTemplateColumns: "72px minmax(0, 1fr)", gap: 8 }}>
+            <span style={{ color: "#6b7686" }}>{key}</span>
+            <span style={{ color: "#cfd6df", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{String(value)}</span>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+function RobustnessGrid({ values }: { values: Record<string, number> }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 4, marginTop: 3 }}>
+      {Object.entries(values).map(([key, value]) => (
+        <div key={key} style={{ border: "1px solid #242a33", padding: "2px 4px", color: value >= 0.8 ? "#7dd87d" : "#e6a23c" }}>
+          {key} {formatPercent(value)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ParetoPlot({ candidates }: { candidates: { id: string; metrics?: { massG?: number; enduranceMin?: number; score?: number } }[] }) {
+  if (candidates.length === 0) return null;
+  const masses = candidates.map((c) => c.metrics?.massG).filter((v): v is number => typeof v === "number");
+  const endurance = candidates.map((c) => c.metrics?.enduranceMin).filter((v): v is number => typeof v === "number");
+  if (masses.length === 0 || endurance.length === 0) return null;
+  const minMass = Math.min(...masses);
+  const maxMass = Math.max(...masses);
+  const minEndurance = Math.min(...endurance);
+  const maxEndurance = Math.max(...endurance);
+  const scale = (value: number, min: number, max: number, size: number) =>
+    max - min < 1e-9 ? size / 2 : ((value - min) / (max - min)) * size;
+  return (
+    <svg width="100%" height="54" viewBox="0 0 160 54" role="img" aria-label="Pareto front" style={{ display: "block", margin: "4px 0" }}>
+      <line x1="14" y1="44" x2="154" y2="44" stroke="#2a2f38" />
+      <line x1="14" y1="4" x2="14" y2="44" stroke="#2a2f38" />
+      {candidates.map((candidate, index) => {
+        const mass = candidate.metrics?.massG ?? minMass;
+        const end = candidate.metrics?.enduranceMin ?? minEndurance;
+        const x = 14 + scale(mass, minMass, maxMass, 132);
+        const y = 44 - scale(end, minEndurance, maxEndurance, 34);
+        return <circle key={candidate.id} cx={x} cy={y} r="3.5" fill={index === 0 ? "#39c8ff" : "#7dd87d"} />;
+      })}
+    </svg>
+  );
+}
+
+function CodeLines({ lines }: { lines: string[] }) {
+  return (
+    <pre style={{ margin: "3px 0 0", color: "#8fa3bf", whiteSpace: "pre-wrap", fontSize: 11 }}>
+      {lines.join("\n")}
+    </pre>
+  );
+}
+
+function JsonPreview({ value }: { value: unknown }) {
+  return (
+    <details style={jobDetailStyle}>
+      <summary style={{ color: "#6b7686", cursor: "pointer" }}>{artifactKind(value) ?? "json"} output</summary>
+      <pre style={{ margin: 0, color: "#8fa3bf", whiteSpace: "pre-wrap", maxHeight: 110, overflow: "auto" }}>
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    </details>
+  );
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatMaybePercent(value: unknown, digits: number): string | undefined {
+  return typeof value === "number" ? `${value.toFixed(digits)}%` : undefined;
+}
+
+function formatConfidence(value: unknown): string {
+  return typeof value === "number" ? formatPercent(value) : "n/a";
+}
+
+function formatMetrics(metrics: unknown): string {
+  const record = asRecord(metrics);
+  if (!record) return "metrics pending";
+  const parts = [
+    typeof record.score === "number" ? `score ${record.score.toFixed(2)}` : null,
+    typeof record.massG === "number" ? `${record.massG.toFixed(0)} g` : null,
+    typeof record.enduranceMin === "number" ? `${record.enduranceMin.toFixed(1)} min` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "metrics pending";
+}
+
+function shortTime(value: string): string {
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? new Date(time).toLocaleString() : value;
+}
+
+function fixtureEnvSpec(): unknown {
+  return {
+    id: "fixture-slalom",
+    name: "Fixture slalom",
+    kind: "slalom",
+    boundsM: [20, 6, 20],
+    terrain: { kind: "flat" },
+    tasks: ["gate-slalom"],
+    spawns: [{ id: "start", pose: { p: [0, 0, 0] }, archetypeFilter: ["multirotor"] }],
+    gates: [{ id: "g1", pose: { p: [4, 1, 0] }, widthM: 1.2, heightM: 0.8 }],
+    win: { gateOrder: ["g1"], timeLimitS: 30, contactPenalties: true },
+  };
 }
 
 function verdictColor(verdict: string): string {

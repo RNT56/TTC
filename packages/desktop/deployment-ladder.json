@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "noAutoArm": true,
+  "controlRateContract": {
+    "policyRateHz": 50,
+    "supervisorRateHz": 200,
+    "firmwareRateLoopUntouched": true,
+    "missedInferenceFallback": "position-hold-or-manual"
+  },
+  "stages": [
+    {
+      "id": "sitl",
+      "label": "SITL",
+      "requires": ["admitted-model", "passing-scorecard", "supervisor-config"],
+      "physicalConfirmation": false
+    },
+    {
+      "id": "hitl",
+      "label": "HITL",
+      "requires": ["sitl-pass", "real-controller-connected", "timing-report"],
+      "physicalConfirmation": true
+    },
+    {
+      "id": "constrained",
+      "label": "Constrained Reality",
+      "requires": ["hitl-pass", "tether-or-wheels-off-ground", "kill-switch", "observer-present"],
+      "physicalConfirmation": true
+    },
+    {
+      "id": "free",
+      "label": "Free Operation",
+      "requires": ["constrained-pass", "declared-envelope", "fresh-battery-check", "telemetry-recording"],
+      "physicalConfirmation": true
+    }
+  ],
+  "blockedUntil": {
+    "decision": "D28",
+    "reason": "ToS/liability legal review and hardware sign-off are required before live deployment features ship."
+  }
+}

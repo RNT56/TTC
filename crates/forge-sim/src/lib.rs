@@ -13,6 +13,9 @@
 #![forbid(unsafe_code)]
 
 pub mod export;
+pub mod heavy;
+pub mod interop;
+pub mod runtime;
 pub mod thrust_table;
 
 use forge_contract::{Archetype, CatalogComponent, CatalogSource, Estimator, ModelSpec};

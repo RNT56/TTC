@@ -11,6 +11,10 @@
     "test": "node --import tsx --test test/server.test.ts"
   },
   "dependencies": {
+    "@auth/core": "^0.34.3",
+    "@auth/pg-adapter": "^1.11.2",
+    "@aws-sdk/client-s3": "^3.1068.0",
+    "@aws-sdk/s3-request-presigner": "^3.1068.0",
     "@sinclair/typebox": "^0.34.0",
     "fastify": "^5.0.0",
     "pg": "^8.21.0"

@@ -44,6 +44,7 @@ export async function recordGeneratedArtifact(
   db: GatewayDb,
   request: GenerationRequest,
   response: GenerationResponse,
+  ownerUserId: string | null = null,
 ): Promise<GeneratedArtifactRecord | null> {
   if (response.contract === null || response.verdict === "blocked") return null;
   if (!["admitted", "draft", "rejected"].includes(response.verdict)) return null;
@@ -71,10 +72,14 @@ export async function recordGeneratedArtifact(
         validator_report,
         attempts,
         context,
-        model_pins
+        model_pins,
+        owner_user_id,
+        source_kind,
+        share_eligible
       ) VALUES (
         $1, $2, $3, $4, $5, $6::text[], $7, $8, $9, $10,
-        $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb
+        $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb,
+        $16, 'generation', $17
       )
       ON CONFLICT (artifact_id) DO UPDATE SET
         status = EXCLUDED.status,
@@ -91,6 +96,9 @@ export async function recordGeneratedArtifact(
         attempts = EXCLUDED.attempts,
         context = EXCLUDED.context,
         model_pins = EXCLUDED.model_pins,
+        owner_user_id = COALESCE(EXCLUDED.owner_user_id, generated_artifacts.owner_user_id),
+        source_kind = EXCLUDED.source_kind,
+        share_eligible = EXCLUDED.share_eligible,
         created_at = now()`,
     [
       artifactId,
@@ -108,6 +116,8 @@ export async function recordGeneratedArtifact(
       json(response.attempts),
       json(response.context),
       json(response.modelPins),
+      ownerUserId,
+      response.verdict === "admitted",
     ],
   );
 

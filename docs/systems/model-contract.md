@@ -74,9 +74,11 @@ compounds within budget (CTR-007); lockfile fully resolved (CTR-006).
 | firmware config diffs | hardware bridge | bridge/Desktop |
 | ONNX policy I/O header | learning engine | training pipeline |
 
-**Import direction (P6):** URDF/MJCF importer — links→nodes, visual geoms→mesh parts
-(decimation + optional refit), collision geoms→compounds, joints→joint blocks;
-imported models are monolithic (no slots) until a user carves slots in the editor.
+**Import direction (P6):** URDF/MJCF importer — links/bodies→nodes, visual
+geoms→mesh-ref parts, collision geoms→primitive collision parts, joints→joint
+blocks. The deterministic subset imports to schema-valid, slotless contracts from
+static fixtures (`crates/forge-sim/tests/fixtures/import_rover.*`); external
+driveable robot import is still the P6 exit criterion.
 
 ## 7. Versioning & migrations
 

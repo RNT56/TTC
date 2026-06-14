@@ -30,7 +30,7 @@ function catalogFlags(): string[] {
 }
 
 async function runSubcommand(
-  subcommand: "run" | "bake" | "bom",
+  subcommand: "run" | "bake" | "bom" | "env",
   contractJson: string,
   extraFlags: string[] = [],
 ): Promise<ValidateResult> {
@@ -39,7 +39,7 @@ async function runSubcommand(
   const reportPath = join(dir, "report.json");
   try {
     await writeFile(contractPath, contractJson, "utf8");
-    const outFlag = subcommand === "run" ? "--report" : "--out";
+    const outFlag = subcommand === "run" || subcommand === "env" ? "--report" : "--out";
     const { code, stderr } = await new Promise<{ code: number; stderr: string }>((resolve) => {
       execFile(
         validatorBin(),
@@ -66,11 +66,52 @@ async function runSubcommand(
   }
 }
 
+export async function runPatch(contractJson: string, patchJson: string): Promise<ValidateResult> {
+  const dir = await mkdtemp(join(tmpdir(), "forge-patch-"));
+  const contractPath = join(dir, "contract.json");
+  const patchPath = join(dir, "patch.json");
+  const outPath = join(dir, "patched.json");
+  try {
+    await Promise.all([
+      writeFile(contractPath, contractJson, "utf8"),
+      writeFile(patchPath, patchJson, "utf8"),
+    ]);
+    const { code, stderr } = await new Promise<{ code: number; stderr: string }>((resolve) => {
+      execFile(
+        validatorBin(),
+        ["patch", contractPath, patchPath, "--out", outPath],
+        { timeout: 30_000 },
+        (error, _stdout, stderrBuf) => {
+          const code =
+            error && typeof (error as NodeJS.ErrnoException).code === "string"
+              ? -1
+              : ((error as { code?: number } | null)?.code ?? 0);
+          resolve({ code, stderr: String(stderrBuf) });
+        },
+      );
+    });
+    let report: unknown | null = null;
+    try {
+      report = JSON.parse(await readFile(outPath, "utf8"));
+    } catch {
+      report = null;
+    }
+    return { exitCode: code, report, stderr };
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
 /** D14 draft semantics: `asDraft` turns a failing verdict into `draft` —
  * the document persists as editable WITH its diagnostics; drafts can never
  * train/export/share (enforced at those surfaces as they land, P4+/P7). */
 export function runValidator(contractJson: string, asDraft = false): Promise<ValidateResult> {
   return runSubcommand("run", contractJson, asDraft ? ["--as-draft"] : []);
+}
+
+/** EnvSpec gatekeeper for course/community content (P10). */
+export function runEnvSpec(envJson: string, asDraft = false): Promise<ValidateResult> {
+  return runSubcommand("env", envJson, asDraft ? ["--as-draft"] : []);
 }
 
 /** Server-side bake for viewer-grade clients without the WASM facade (D15). */

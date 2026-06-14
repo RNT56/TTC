@@ -9,6 +9,7 @@
 
 use forge_contract::{Geom, JointKind, ModelSpec, Node};
 use forge_geometry::{massprops, BakedModel};
+use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
 // frame conversion helpers
@@ -561,6 +562,61 @@ fn xml_escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// ROS 2 control metadata for a URDF consumer. Kept as an explicit sidecar so
+/// the pinned XC-04 exporter goldens remain stable.
+pub fn ros2_control_block(spec: &ModelSpec) -> String {
+    let mut out = String::new();
+    out.push_str("  <ros2_control name=\"forge_system\" type=\"system\">\n");
+    out.push_str("    <hardware><plugin>forge_ros2_control/ForgeSystem</plugin></hardware>\n");
+    for node in &spec.skeleton {
+        let (kind, limits) = joint_kind_axis(node);
+        if kind != "revolute" {
+            continue;
+        }
+        let effort = limits.map(|(_, _, _, effort, _)| effort).unwrap_or(10.0);
+        let velocity = limits
+            .map(|(_, _, _, _, velocity)| velocity)
+            .unwrap_or(20.0);
+        out.push_str(&format!(
+            "    <joint name=\"{}_joint\">\n      <command_interface name=\"position\"/>\n      <command_interface name=\"velocity\"/>\n      <command_interface name=\"effort\">\n        <param name=\"min\">-{}</param>\n        <param name=\"max\">{}</param>\n      </command_interface>\n      <state_interface name=\"position\"/>\n      <state_interface name=\"velocity\"/>\n      <state_interface name=\"effort\"/>\n      <param name=\"max_velocity\">{}</param>\n    </joint>\n",
+            xml_escape(&node.name),
+            fnum(effort),
+            fnum(effort),
+            fnum(velocity)
+        ));
+    }
+    out.push_str("  </ros2_control>\n");
+    out
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MeshVisual {
+    pub node: String,
+    pub part_index: usize,
+    pub uri: String,
+    pub material: String,
+    pub color: String,
+    pub collision: bool,
+}
+
+/// Mesh-visual manifest for ROS/desktop consumers that want exact rendered
+/// geometry while URDF/MJCF keeps mass/contact primitive approximations.
+pub fn mesh_visual_manifest(spec: &ModelSpec, baked: &BakedModel) -> Vec<MeshVisual> {
+    baked
+        .parts
+        .iter()
+        .map(|part| MeshVisual {
+            node: part.node.clone(),
+            part_index: part.part_index,
+            uri: format!("forge://mesh/{}/part-{}.glb", spec.meta.id, part.part_index),
+            material: format!("{:?}", part.material).to_lowercase(),
+            color: part.color.clone(),
+            collision: part.collision != forge_contract::CollisionPolicy::None,
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -611,6 +667,25 @@ mod tests {
         assert!(urdf.contains("type=\"revolute\""));
         let mjcf = to_mjcf(&spec, &baked);
         assert_eq!(mjcf.matches("<joint ").count(), 8, "hip+knee per leg");
+    }
+
+    #[test]
+    fn ros2_control_sidecar_lists_revolute_joints() {
+        let (spec, _baked) = load("../../examples/vx2-mini.forge.json");
+        let block = ros2_control_block(&spec);
+        assert!(block.contains("forge_ros2_control/ForgeSystem"));
+        assert!(block.contains("<joint name=\"s0_joint\">"));
+        assert!(block.contains("<command_interface name=\"effort\">"));
+        assert!(xml_balanced(&block), "unbalanced XML");
+    }
+
+    #[test]
+    fn mesh_visual_manifest_preserves_part_identity() {
+        let (spec, baked) = load("../../examples/vx2-mini.forge.json");
+        let manifest = mesh_visual_manifest(&spec, &baked);
+        assert_eq!(manifest.len(), spec.parts.len());
+        assert_eq!(manifest[0].part_index, 0);
+        assert!(manifest[0].uri.starts_with("forge://mesh/vx2-mini/part-0"));
     }
 
     #[test]

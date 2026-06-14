@@ -1,6 +1,5 @@
-# FORGE data plane (architecture §6): one stateful service — Postgres 16 with
-# pgvector — plus the gateway. GPU workers burst externally; nothing here
-# exposes the compute plane.
+# FORGE local/prod-like runtime. Modal is the configured burst GPU provider;
+# fixtures remain the default worker backend for CI and local acceptance.
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -19,9 +18,97 @@ services:
       timeout: 3s
       retries: 10
 
-  # Gateway: run from source in development (pnpm --filter @forge/gateway dev).
-  # A production image (node:22-slim + dist + the forge-validate binary) lands
-  # with first deploy; FORGE_VALIDATE_BIN points the gateway at the binary.
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-forge}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-forge-dev-only}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio:/data
+
+  minio-init:
+    image: minio/mc:latest
+    profiles: ["app"]
+    entrypoint: /bin/sh
+    command: >
+      -lc "until mc alias set forge-minio http://minio:9000 ${MINIO_ROOT_USER:-forge} ${MINIO_ROOT_PASSWORD:-forge-dev-only}; do sleep 1; done
+      && mc mb -p forge-minio/${FORGE_OBJECT_BUCKET:-forge-artifacts}
+      && mc anonymous set none forge-minio/${FORGE_OBJECT_BUCKET:-forge-artifacts}"
+    depends_on:
+      - minio
+
+  gateway:
+    image: node:24-slim
+    profiles: ["app"]
+    working_dir: /workspace
+    command: sh -lc "corepack enable && pnpm --filter @forge/gateway dev"
+    environment:
+      DATABASE_URL: postgres://forge:${POSTGRES_PASSWORD:-forge-dev-only}@postgres:5432/forge
+      FORGE_CATALOG_DIR: /workspace/catalog
+      FORGE_VALIDATE_BIN: /workspace/target/debug/forge-validate
+      AUTH_URL: ${AUTH_URL:-http://localhost:8080}
+      AUTH_SECRET: ${AUTH_SECRET:-forge-dev-auth-secret-change-me}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      FORGE_OBJECT_ENDPOINT: http://minio:9000
+      FORGE_OBJECT_BUCKET: ${FORGE_OBJECT_BUCKET:-forge-artifacts}
+      FORGE_OBJECT_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-forge}
+      FORGE_OBJECT_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-forge-dev-only}
+      FORGE_OBJECT_FORCE_PATH_STYLE: "1"
+      FORGE_GPU_BACKEND: ${FORGE_GPU_BACKEND:-fixture}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ..:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+
+  studio:
+    image: node:24-slim
+    profiles: ["app"]
+    working_dir: /workspace
+    command: sh -lc "corepack enable && pnpm --dir packages/studio dev -- --host 0.0.0.0"
+    environment:
+      VITE_FORGE_GATEWAY_URL: ${VITE_FORGE_GATEWAY_URL:-http://localhost:8080}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ..:/workspace
+    depends_on:
+      - gateway
+
+  workers:
+    image: python:3.12-slim
+    profiles: ["app"]
+    working_dir: /workspace/workers
+    command: sh -lc "pip install -e '.[queue]' >/tmp/forge-worker-install.log && python -m forge_workers.runner"
+    environment:
+      DATABASE_URL: postgres://forge:${POSTGRES_PASSWORD:-forge-dev-only}@postgres:5432/forge
+      FORGE_OBJECT_ENDPOINT: http://minio:9000
+      FORGE_OBJECT_BUCKET: ${FORGE_OBJECT_BUCKET:-forge-artifacts}
+      FORGE_OBJECT_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-forge}
+      FORGE_OBJECT_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-forge-dev-only}
+      FORGE_OBJECT_FORCE_PATH_STYLE: "1"
+      FORGE_GPU_BACKEND: ${FORGE_GPU_BACKEND:-fixture}
+      MODAL_TOKEN_ID: ${MODAL_TOKEN_ID:-}
+      MODAL_TOKEN_SECRET: ${MODAL_TOKEN_SECRET:-}
+    volumes:
+      - ..:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   pgdata:
+  minio:

@@ -18,6 +18,30 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Implement remaining P4-P12 live gates and commerce seams
+**Session:** Codex agent · branch current worktree · **Phase:** P4-P12 · **TODO items:** P7-010 [~], P8-000 [!], P8-001 [~], P8-012 [~], P8-013 [~], P11-000 [~], P11-002 [~], P11-003 [~], P11-005 [~], P11-006 [~], P11-009 [x], P12-003 [x]
+**Done:** Added platform gate records for D28 hardware, P11 policy sharing, and P11
+marketplace economics; exposed gate and job-capability APIs; enforced D28 lab gates
+for live bridge jobs and Desktop native commands; added vendor offer refresh/list,
+print quote/link handoff, and marketplace usage-rollup APIs without payment/payout
+ledgers. Added external-command seams for photoscan/COLMAP, SB3/sysid, co-design,
+MuJoCo parity, and MJX benchmarking plus optional Modal worker app dispatch. Added
+sim parity tolerance and MJX adoption helpers. Surfaced gates, capabilities, vendor
+links, quote links, and usage-beta actions in Studio.
+**Changed:** `infra/migrations/0012_gates_capabilities_commerce.sql`,
+`packages/gateway/src/{platform.ts,server.ts}`, `packages/gateway/test/server.test.ts`,
+`packages/studio/src/{App.tsx,gateway.ts}`, `packages/desktop/src-tauri/src/main.rs`,
+`packages/desktop/scripts/check-desktop.mjs`, `workers/forge_workers/{external.py,photoscan.py,codesign.py,simulation.py,modal_app.py,training/jobs.py}`,
+`crates/forge-sim/src/{heavy.rs,interop.rs}`, and roadmap/system docs.
+**Decisions:** D29 — P11 marketplace launches as a usage-data beta; no seller
+payouts, revenue share, or direct checkout at launch; GPU jobs retain credit
+cost-plus until real usage thresholds justify a new decision.
+**Next:** Capture real engine-backed Rapier/MuJoCo baselines and run the P7-010 D12
+quad/rover/legged MJX benchmark; separately, get owner/legal D28 signoff before any
+hardware pilot.
+**Blockers:** D28 legal/hardware signoff remains owner/counsel work; live provider
+SLOs require configured GPU/vendor/print-service sandboxes and physical lab rigs.
+
 ## 2026-06-13 — Add P4 generation UI, audit rows, and Brief-25 scaffold
 **Session:** Codex agent · branch `codex/p4-completion-batch` · **Phase:** P4 · **TODO items:** P4-001 [~], P4-006 [x], P4-008 [~], P4-009 [x], P4-010 [~], P4-012 [x]
 **Done:** Added `generated_artifacts` with a forward migration and gateway recording

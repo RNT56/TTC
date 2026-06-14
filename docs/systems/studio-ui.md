@@ -1,6 +1,6 @@
 # Studio UI — implementation doc
 
-**Status:** P1 shell live; P4 review operations started · **Phases:** P1 shell, grows every phase · **Home:**
+**Status:** P1 shell + P4 account/model/generation/share/review/job panels live; output-aware heavy-job artifact registry and platform panels live · **Phases:** P1 shell, grows every phase · **Home:**
 `packages/studio` · **Plan refs:** §5, §6
 (v3.0) · **Decisions:** D3, D4, D14, D15, D16
 
@@ -29,19 +29,20 @@ geometry math.
 | P1 | viewport (orbit/follow), configurator pane (variant cards, greyed-with-reason), explode/blueprint/selection controls, jog teach-pendant, pause/frame-step, HUD v0, perf overlay (P1-017) |
 | P2 | draft semantics groundwork; validator report viewer (incremental in-WASM checks as you edit) |
 | P3 | compatibility explanations on cards; BOM export; lockfile upgrade diff UI (XC-03) |
-| P4 | catalog review panel (`GET/PATCH /v1/reviews`, optional `VITE_FORGE_REVIEW_TOKEN`) for owner approval, audit notes, and export-policy decisions before live-ingested rows feed generation; generation panel (`POST /v1/generate`) with template/Anthropic provider selection, BYO key held in session storage, attempt diagnostics, and draft/admitted scene loading; share-URL **read-only viewer** (D4: orbit, explode, blueprint, drive demo — no account); credit/account settings and streamed slot progress remain pending |
-| P5 | photoscan alignment UI (known-dimension scale, axis snap, port authoring) |
+| P4 | account/session panel (`/v1/me`, Auth.js GitHub links), model registry save/list, deterministic edit prompt (`POST /v1/models/:id/edit`), server-backed admitted-only share (`?share=` viewer + public `/v1/share/:shareId`), catalog review panel (`GET/PATCH /v1/reviews`), generation panel using staged SSE (`POST /v1/generate/stream`) with template/Anthropic provider selection, BYO key in session storage, attempt diagnostics, draft/admitted scene loading, Brief-25 eval summary |
+| P5 | upload-backed photoscan job launcher plus D13/refit/cache/candidate details, linked blob access, recent photoscan artifact registry, and editable owner alignment controls/readout for known scale, axis, and structured ports; mesh-click placement remains polish |
 | P6 | HUD analytics full (AUW/TWR/hover/current/endurance with inspectable assumptions); disturbance controls |
-| P7 | training tab: task picker, job status, scorecard renderer (XC-21), policy playback toggle |
-| P8 | bridge tab: FC config, ladder UX with physical confirmations, recorder/ghost scrubber; **Desktop**: same bundle + serial/recorder plugin hooks |
-| P9–P12 | Pareto-front explorer; course editor/leaderboards; marketplace/classroom; maintenance twin views |
+| P7 | fixture training job output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, and one-click CoreSession policy playback; full training tab and live ONNX Runtime inference remain open |
+| P8 | D28-blocked hardware bridge; config-diff, telemetry/replay, supervisor, system-ID, crash/ghost metadata, replay artifacts, telemetry logs, and maintenance records render in job/artifact panels; WebSerial write, ladder UX, recorder/ghost scrubber and **Desktop** serial/recorder plugins remain open |
+| P9–P12 | fixture co-design Pareto points, wear, crash, repair, and fleet outputs render in job details; co-design points can apply admitted JSON-Patch candidates through patch/re-bake; platform panel covers credits, license ledger/export-policy visibility, fixture course creation, replay-verified leaderboard submission, classroom assignment/submission, public listings read, listing/policy-listing submission, and moderation reports; full Pareto explorer, marketplace economics, and maintenance twin dashboards remain open |
 
 ## 4. Local-first persistence *(proposed)*
 
 Contracts + drafts in OPFS/IndexedDB with explicit file export/import (a contract is
 a JSON file the user owns); recent-models list; offline queue for server jobs.
-Share = upload-on-action (D4), never implicit sync. Anonymous-local mode is
-first-class (Auth.js only adds identity for server features). On Desktop, the
+Share = upload-on-action (D4), never implicit sync; fragment shares remain a local
+fallback. Anonymous-local mode is first-class (Auth.js only adds identity for server
+features). On Desktop, the
 filesystem plugin supersedes OPFS for log archives (P8-013).
 
 ## 5. Browser floor & surfaces (D15)

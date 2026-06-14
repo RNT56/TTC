@@ -5,6 +5,7 @@ import { Type } from "@sinclair/typebox";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
+import { getCurrentUser, handleAuthRequest, requireUser, type CurrentUser } from "./auth.js";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import { recordGeneratedArtifact } from "./generatedArtifacts.js";
 import {
@@ -26,7 +27,47 @@ import {
   type ReviewExportPolicy,
   type ReviewStatus,
 } from "./reviewQueue.js";
-import { runBake, runBom, runValidator, validatorBin } from "./validator.js";
+import {
+  assertJobKind,
+  createJob,
+  createModel,
+  createPrintQuoteRequest,
+  creditSummary,
+  currentPlatformGate,
+  editModel,
+  getOwnedObjectBlob,
+  getOwnedJob,
+  getOwnedModel,
+  getShare,
+  insertModelFromGeneration,
+  insertReplayArtifact,
+  insertVendorOffer,
+  jobCapabilities,
+  latestBrief25Eval,
+  listPlatformGates,
+  listPhotoscanArtifacts,
+  listPolicyArtifacts,
+  listPrintQuoteRequests,
+  listReplayArtifacts,
+  listTelemetryLogs,
+  listJobEvents,
+  listJobs,
+  listModels,
+  listVendorOffers,
+  recordMarketplaceUsageRollup,
+  recordPlatformGateSignoff,
+  recordUsageEvent,
+  registerObjectBlob,
+  shareModel,
+  updatePhotoscanAlignment,
+  validatorError,
+  verifyReplayTape,
+  type JobKind,
+  type PlatformGateKey,
+  type PlatformGateStatus,
+} from "./platform.js";
+import { objectStorageConfigFromEnv, presignObjectAccess } from "./objectStorage.js";
+import { runBake, runBom, runEnvSpec, runValidator, validatorBin } from "./validator.js";
 
 export interface ServerOptions {
   db?: GatewayDb;
@@ -58,6 +99,74 @@ const generationProviderSchema = Type.Union([
   Type.Literal("template"),
   Type.Literal("anthropic"),
 ]);
+const visibilitySchema = Type.Union([
+  Type.Literal("private"),
+  Type.Literal("unlisted"),
+  Type.Literal("public"),
+]);
+const jobKindSchema = Type.Union([
+  Type.Literal("etl.ingest-component"),
+  Type.Literal("occt.tessellate"),
+  Type.Literal("photoscan.single"),
+  Type.Literal("photoscan.multiview"),
+  Type.Literal("train.policy"),
+  Type.Literal("train.sysid-fit"),
+  Type.Literal("replay.verify"),
+  Type.Literal("codesign.evaluate"),
+  Type.Literal("bridge.config-diff"),
+  Type.Literal("bridge.telemetry-ingest"),
+  Type.Literal("bridge.supervisor-check"),
+  Type.Literal("maintenance.estimate-wear"),
+  Type.Literal("maintenance.crash-forensics"),
+  Type.Literal("maintenance.repair-sheet"),
+  Type.Literal("maintenance.fleet-summary"),
+]);
+const jobProviderSchema = Type.Union([
+  Type.Literal("fixture"),
+  Type.Literal("local"),
+  Type.Literal("modal"),
+]);
+const blobAccessActionSchema = Type.Union([Type.Literal("upload"), Type.Literal("download")]);
+const photoscanAxisSchema = Type.Union([Type.Literal("x"), Type.Literal("y"), Type.Literal("z")]);
+const photoscanPortSchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1, maxLength: 80 }),
+    kind: Type.String({ minLength: 1, maxLength: 80 }),
+    axis: Type.Optional(photoscanAxisSchema),
+    role: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+  },
+  { additionalProperties: false },
+);
+const sha256Schema = Type.String({ pattern: "^[a-fA-F0-9]{64}$" });
+const blobPurposeSchema = Type.String({ minLength: 1, maxLength: 80, pattern: "^[A-Za-z0-9._:-]+$" });
+const moderationReasonSchema = Type.Union([
+  Type.Literal("safety"),
+  Type.Literal("ip"),
+  Type.Literal("spam"),
+  Type.Literal("abuse"),
+  Type.Literal("export-control"),
+  Type.Literal("other"),
+]);
+const moderationTargetSchema = Type.Union([
+  Type.Literal("listing"),
+  Type.Literal("course"),
+  Type.Literal("share"),
+  Type.Literal("model"),
+  Type.Literal("policy"),
+]);
+const listingKindSchema = Type.Union([
+  Type.Literal("model"),
+  Type.Literal("course"),
+  Type.Literal("skill"),
+  Type.Literal("component"),
+  Type.Literal("policy"),
+]);
+const licenseClassSchema = Type.Union([
+  Type.Literal("open"),
+  Type.Literal("attribution"),
+  Type.Literal("no-redistribution"),
+  Type.Literal("view-only"),
+]);
 const reviewExportPolicySchema = Type.Union([
   Type.Literal("full-geometry-ok"),
   Type.Literal("attribution-manifest-required"),
@@ -67,6 +176,34 @@ const reviewExportPolicySchema = Type.Union([
   Type.Literal("blocked"),
   Type.Literal("assembly-policy-derived"),
 ]);
+const platformGateKeySchema = Type.Union([
+  Type.Literal("d28.hardware"),
+  Type.Literal("p11.policy-sharing"),
+  Type.Literal("p11.marketplace-economics"),
+]);
+const platformGateStatusSchema = Type.Union([
+  Type.Literal("blocked"),
+  Type.Literal("accepted"),
+  Type.Literal("revoked"),
+]);
+const vendorAvailabilitySchema = Type.Union([
+  Type.Literal("in-stock"),
+  Type.Literal("backorder"),
+  Type.Literal("out-of-stock"),
+  Type.Literal("unknown"),
+]);
+const vendorOfferInputSchema = Type.Object(
+  {
+    componentId: Type.String({ minLength: 1, maxLength: 200 }),
+    vendor: Type.String({ minLength: 1, maxLength: 120 }),
+    sku: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+    url: Type.String({ minLength: 1, maxLength: 2000 }),
+    price: Type.Optional(Type.Number({ minimum: 0 })),
+    currency: Type.Optional(Type.String({ minLength: 3, maxLength: 8 })),
+    availability: Type.Optional(vendorAvailabilitySchema),
+  },
+  { additionalProperties: false },
+);
 const generationBodySchema = Type.Object(
   {
     prompt: Type.String({ minLength: 1, maxLength: 4000 }),
@@ -89,9 +226,76 @@ function unavailable(error: unknown): { error: string; detail: string } {
   return { error: "catalog database unavailable", detail: detail.slice(0, 500) };
 }
 
+function routeError(error: unknown): { statusCode: number; body: unknown } {
+  const mapped = validatorError(error);
+  if (mapped) return mapped;
+  return { statusCode: 503, body: unavailable(error) };
+}
+
 function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): boolean {
   if (!reviewToken) return true;
   return request.headers.authorization === `Bearer ${reviewToken}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function reportVerdict(report: unknown): string {
+  return isRecord(report) && typeof report.verdict === "string" ? report.verdict : "rejected";
+}
+
+function diagnosticErrorCount(report: unknown): number {
+  if (!isRecord(report) || !Array.isArray(report.results)) return 0;
+  return report.results.filter((item) => isRecord(item) && item.severity === "error").length;
+}
+
+function scorecardValue(scorecard: unknown, field: string): number | null {
+  if (!isRecord(scorecard)) return null;
+  const value = scorecard[field];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function numberMap(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    const n = Number(raw);
+    if (Number.isFinite(n)) out[key] = n;
+  }
+  return out;
+}
+
+function gradeClassroomSubmission(
+  report: unknown,
+  rubric: unknown,
+  scorecard: unknown,
+): { pass: boolean; score: number; reasons: string[]; validatorVerdict: string } {
+  const rules = isRecord(rubric) ? rubric : {};
+  const verdict = reportVerdict(report);
+  const maxErrors = typeof rules.maxErrors === "number" ? Math.max(0, Math.trunc(rules.maxErrors)) : 0;
+  const minScore = typeof rules.minScore === "number" ? rules.minScore : 0.8;
+  const minSuccessRate = typeof rules.minSuccessRate === "number" ? rules.minSuccessRate : null;
+  const reasons: string[] = [];
+  const errors = diagnosticErrorCount(report);
+  if (verdict !== "admitted") reasons.push(`validator verdict ${verdict}`);
+  if (errors > maxErrors) reasons.push(`${errors} validator errors > ${maxErrors}`);
+  const successRate = scorecardValue(scorecard, "successRate");
+  if (minSuccessRate !== null && (successRate === null || successRate < minSuccessRate)) {
+    reasons.push(`successRate ${successRate ?? "missing"} < ${minSuccessRate}`);
+  }
+  const score = reasons.length === 0 ? 1 : Math.max(0, verdict === "draft" ? 0.5 : 0.2);
+  if (score < minScore) reasons.push(`score ${score.toFixed(2)} < ${minScore}`);
+  return {
+    pass: reasons.length === 0,
+    score,
+    reasons,
+    validatorVerdict: verdict,
+  };
+}
+
+function policySignoffAccepted(value: unknown): boolean {
+  return isRecord(value) && value.accepted === true;
 }
 
 function generationApiKeyHeader(request: FastifyRequest): string | undefined {
@@ -108,6 +312,8 @@ async function executeGeneration(
   body: GenerationRequest,
   request: FastifyRequest,
   options: ServerOptions,
+  user: CurrentUser | null = null,
+  onEvent?: (event: string, data: unknown) => void,
 ): Promise<Awaited<ReturnType<typeof runGeneration>>> {
   const generationRequest: GenerationRequest = {
     ...body,
@@ -120,15 +326,44 @@ async function executeGeneration(
     anthropicTransport: options.anthropicTransport,
     anthropicBaseUrl: options.anthropicBaseUrl,
     validator: options.generationValidator,
+    onEvent,
   });
   if (options.persistGeneratedArtifacts ?? true) {
-    result.generatedArtifact = await recordGeneratedArtifact(db, generationRequest, result);
+    result.generatedArtifact = await recordGeneratedArtifact(db, generationRequest, result, user?.id ?? null);
+    if (user) {
+      await recordUsageEvent(db, user, {
+        eventKind: "generation",
+        provider: generationRequest.provider ?? "template",
+        units: {
+          attempts: result.attempts.length,
+          verdict: result.verdict,
+        },
+        costCredits: generationRequest.provider === "template" ? 0 : undefined,
+        idempotencyKey: result.generatedArtifact
+          ? `generation:${result.generatedArtifact.artifactId}:${result.generatedArtifact.contractHash}`
+          : null,
+      });
+    }
+    if (user && result.generatedArtifact) {
+      const registeredModel = await insertModelFromGeneration(db, user, generationRequest, result);
+      (result as typeof result & { registeredModel?: unknown }).registeredModel = registeredModel
+        ? {
+            id: registeredModel.id,
+            status: registeredModel.status,
+            name: registeredModel.name,
+            contractHash: registeredModel.contractHash,
+          }
+        : null;
+    }
   }
   return result;
 }
 
 export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const app = Fastify({ logger: false });
+  app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_request, body, done) => {
+    done(null, body);
+  });
   const db = options.db ?? {
     query: (text, params) => gatewayDb().query(text, params),
   } satisfies GatewayDb;
@@ -140,6 +375,22 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     validatorBin: validatorBin(),
     validatorPresent: existsSync(validatorBin()),
   }));
+
+  app.all("/auth", async (request, reply) => handleAuthRequest(request, reply));
+  app.all("/auth/*", async (request, reply) => handleAuthRequest(request, reply));
+
+  app.get("/v1/me", async (request, reply) => {
+    try {
+      const user = await getCurrentUser(request, db);
+      return reply.send({
+        authenticated: user !== null,
+        user,
+      });
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
 
   app.post(
     "/v1/validate",
@@ -259,10 +510,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       try {
         const body = request.body as GenerationRequest;
-        const result = await executeGeneration(db, body, request, options);
+        const user = await getCurrentUser(request, db);
+        const result = await executeGeneration(db, body, request, options, user);
         return reply.status(result.verdict === "blocked" ? 409 : 200).send(result);
       } catch (error) {
-        return reply.status(503).send(unavailable(error));
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
       }
     },
   );
@@ -284,13 +537,1859 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         provider: body.provider ?? "template",
       }));
       try {
-        const result = await executeGeneration(db, body, request, options);
+        const user = await getCurrentUser(request, db);
+        const result = await executeGeneration(db, body, request, options, user, (event, data) => {
+          reply.raw.write(sse(event, data));
+        });
         reply.raw.write(sse("complete", result));
       } catch (error) {
-        reply.raw.write(sse("error", unavailable(error)));
+        const mapped = routeError(error);
+        reply.raw.write(sse("error", mapped.body));
       }
       reply.raw.end();
       return reply;
+    },
+  );
+
+  app.get(
+    "/v1/models",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ models: await listModels(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/models",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            contract: Type.Unknown(),
+            asDraft: Type.Optional(Type.Boolean()),
+            visibility: Type.Optional(visibilitySchema),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as { contract: unknown; asDraft?: boolean };
+        const result = await createModel(db, user, body.contract, body.asDraft ?? true);
+        return reply.status(result.model.status === "rejected" ? 422 : 201).send(result);
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/models/:id",
+    { schema: { params: Type.Object({ id: Type.String({ minLength: 1 }) }) } },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const model = await getOwnedModel(db, user, id);
+        if (model === null) return reply.status(404).send({ error: "model not found" });
+        return reply.send({ model });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/models/:id/edit",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }),
+        body: Type.Object(
+          { prompt: Type.String({ minLength: 1, maxLength: 2000 }) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const { prompt } = request.body as { prompt: string };
+        const result = await editModel(db, user, id, prompt);
+        return reply.send(result);
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/models/:id/share",
+    { schema: { params: Type.Object({ id: Type.String({ minLength: 1 }) }) } },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const share = await shareModel(db, user, id);
+        return reply.status(201).send({ share, url: `/v1/share/${share.id}` });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/share/:shareId",
+    { schema: { params: Type.Object({ shareId: Type.String({ minLength: 1 }) }) } },
+    async (request, reply) => {
+      try {
+        const { shareId } = request.params as { shareId: string };
+        const share = await getShare(db, shareId);
+        if (share === null) return reply.status(404).send({ error: "share not found" });
+        return reply.send({ share });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get("/v1/credits", async (request, reply) => {
+    try {
+      const user = await requireUser(request, db);
+      return reply.send(await creditSummary(db, user));
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.get("/v1/platform/gates", async (request, reply) => {
+    try {
+      await requireUser(request, db);
+      return reply.send({ gates: await listPlatformGates(db) });
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.post(
+    "/v1/platform/gates/:gateKey/signoffs",
+    {
+      schema: {
+        params: Type.Object({ gateKey: platformGateKeySchema }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            status: platformGateStatusSchema,
+            policyVersion: Type.String({ minLength: 1, maxLength: 120 }),
+            jurisdiction: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+            reviewer: Type.String({ minLength: 1, maxLength: 120 }),
+            evidence: Type.Optional(Type.Unknown()),
+            evidenceUrl: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
+            effectiveAt: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      if (!reviewAuthorized(request, reviewToken)) {
+        return reply.status(401).send({ error: "platform gate admin auth required" });
+      }
+      try {
+        const { gateKey } = request.params as { gateKey: PlatformGateKey };
+        const body = request.body as {
+          status: PlatformGateStatus;
+          policyVersion: string;
+          jurisdiction?: string;
+          reviewer: string;
+          evidence?: unknown;
+          evidenceUrl?: string;
+          effectiveAt?: string;
+        };
+        const gate = await recordPlatformGateSignoff(db, {
+          gateKey,
+          status: body.status,
+          policyVersion: body.policyVersion,
+          jurisdiction: body.jurisdiction,
+          reviewer: body.reviewer,
+          evidence: body.evidence ?? {},
+          evidenceUrl: body.evidenceUrl ?? null,
+          effectiveAt: body.effectiveAt ?? null,
+        });
+        return reply.status(201).send({ gate });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/blobs",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            purpose: blobPurposeSchema,
+            contentType: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+            byteSize: Type.Optional(Type.Integer({ minimum: 0 })),
+            sha256: Type.Optional(sha256Schema),
+            cacheKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+            metadata: Type.Optional(Type.Record(Type.String({ minLength: 1, maxLength: 80 }), Type.Unknown())),
+            expiresInSeconds: Type.Optional(Type.Integer({ minimum: 60, maximum: 3600 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          purpose: string;
+          contentType?: string;
+          byteSize?: number;
+          sha256?: string;
+          cacheKey?: string;
+          metadata?: Record<string, unknown>;
+          expiresInSeconds?: number;
+        };
+        const config = objectStorageConfigFromEnv();
+        const blob = await registerObjectBlob(db, user, {
+          bucket: config.bucket,
+          purpose: body.purpose,
+          contentType: body.contentType,
+          byteSize: body.byteSize,
+          sha256: body.sha256,
+          metadata: body.metadata,
+          cacheKey: body.cacheKey,
+        });
+        const upload = await presignObjectAccess(config, {
+          action: "upload",
+          bucket: blob.bucket,
+          objectKey: blob.objectKey,
+          contentType: blob.contentType,
+          expiresInSeconds: body.expiresInSeconds,
+        });
+        return reply.status(201).send({ blob, upload });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/blobs/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const blob = await getOwnedObjectBlob(db, user, id);
+        if (!blob) {
+          return reply.status(404).send({ error: "object blob not found" });
+        }
+        return reply.send({ blob });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/blobs/:id/access",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            action: blobAccessActionSchema,
+            expiresInSeconds: Type.Optional(Type.Integer({ minimum: 60, maximum: 3600 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const body = request.body as { action: "upload" | "download"; expiresInSeconds?: number };
+        const blob = await getOwnedObjectBlob(db, user, id);
+        if (!blob) {
+          return reply.status(404).send({ error: "object blob not found" });
+        }
+        const access = await presignObjectAccess(objectStorageConfigFromEnv(), {
+          action: body.action,
+          bucket: blob.bucket,
+          objectKey: blob.objectKey,
+          contentType: blob.contentType,
+          expiresInSeconds: body.expiresInSeconds,
+        });
+        return reply.send({ blob, access });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/jobs",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ jobs: await listJobs(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get("/v1/jobs/capabilities", async (request, reply) => {
+    try {
+      await requireUser(request, db);
+      return reply.send(await jobCapabilities(db));
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.get(
+    "/v1/jobs/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        querystring: Type.Object(
+          { includeEvents: Type.Optional(Type.Boolean()) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const query = request.query as { includeEvents?: boolean };
+        const job = await getOwnedJob(db, user, id);
+        if (!job) {
+          return reply.status(404).send({ error: "job not found" });
+        }
+        const events = query.includeEvents ? await listJobEvents(db, user, id, 100) : undefined;
+        return reply.send({ job, events });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/jobs/:id/events",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const query = request.query as { limit?: number };
+        const job = await getOwnedJob(db, user, id);
+        if (!job) {
+          return reply.status(404).send({ error: "job not found" });
+        }
+        return reply.send({ job, events: await listJobEvents(db, user, id, query.limit ?? 100) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/jobs",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            kind: jobKindSchema,
+            provider: Type.Optional(jobProviderSchema),
+            payload: Type.Optional(Type.Unknown()),
+            idempotencyKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          kind: string;
+          provider?: "fixture" | "local" | "modal";
+          payload?: unknown;
+          idempotencyKey?: string;
+        };
+        assertJobKind(body.kind);
+        const job = await createJob(db, user, {
+          kind: body.kind,
+          provider: body.provider,
+          payload: body.payload,
+          idempotencyKey: body.idempotencyKey,
+        });
+        return reply.status(201).send({ job });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/photoscan/artifacts",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ artifacts: await listPhotoscanArtifacts(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.patch(
+    "/v1/photoscan/artifacts/:id/alignment",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            knownDimensionMm: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
+            axis: Type.Optional(photoscanAxisSchema),
+            ports: Type.Optional(Type.Array(photoscanPortSchema, { maxItems: 64 })),
+            note: Type.Optional(Type.String({ minLength: 1, maxLength: 300 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const params = request.params as { id: string };
+        const body = request.body as {
+          knownDimensionMm?: number;
+          axis?: "x" | "y" | "z";
+          ports?: { id: string; kind: string; axis?: "x" | "y" | "z"; role?: string }[];
+          note?: string;
+        };
+        const alignmentPatch: Record<string, unknown> = {
+          updatedAt: new Date().toISOString(),
+          reviewedBy: user.id,
+        };
+        if (body.knownDimensionMm !== undefined) alignmentPatch.knownDimensionMm = body.knownDimensionMm;
+        if (body.axis !== undefined) alignmentPatch.axis = body.axis;
+        if (body.ports !== undefined) alignmentPatch.ports = body.ports;
+        if (body.note !== undefined) alignmentPatch.note = body.note;
+
+        const artifact = await updatePhotoscanAlignment(db, user, params.id, alignmentPatch);
+        if (!artifact) return reply.status(404).send({ error: "photoscan artifact not found" });
+        return reply.send({ artifact });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/photoscan",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            mode: Type.Optional(Type.Union([Type.Literal("single"), Type.Literal("multiview")])),
+            payload: Type.Optional(Type.Unknown()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as { mode?: "single" | "multiview"; payload?: unknown };
+        const kind: JobKind = body.mode === "multiview" ? "photoscan.multiview" : "photoscan.single";
+        const job = await createJob(db, user, { kind, payload: body.payload, provider: "fixture" });
+        return reply.status(202).send({ job });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/policies",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ artifacts: await listPolicyArtifacts(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/policies",
+    {
+      schema: {
+        body: Type.Object({ payload: Type.Optional(Type.Unknown()) }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { payload } = request.body as { payload?: unknown };
+        const job = await createJob(db, user, { kind: "train.policy", payload, provider: "fixture" });
+        return reply.status(202).send({ job });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/replays",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ replays: await listReplayArtifacts(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/replays",
+    {
+      schema: {
+        body: Type.Object({ tape: Type.Unknown() }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { tape } = request.body as { tape: unknown };
+        const verification = verifyReplayTape(tape);
+        const job = await createJob(db, user, { kind: "replay.verify", payload: { tape }, provider: "fixture" });
+        const replay = await insertReplayArtifact(db, user, { tape, verification });
+        return reply.status(202).send({ job, replay });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/telemetry/logs",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ logs: await listTelemetryLogs(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get("/v1/evals/brief25/latest", async (_request, reply) => {
+    try {
+      return reply.send({ eval: await latestBrief25Eval(db) });
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.get(
+    "/v1/courses",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = request.query as { limit?: number };
+        const result = await db.query<{
+          id: string;
+          name: string;
+          env_spec: unknown;
+          validator_report: unknown;
+          visibility: string;
+          created_at: Date | string;
+        }>(
+          `SELECT id, name, env_spec, validator_report, visibility, created_at
+             FROM courses
+            WHERE visibility IN ('public', 'unlisted')
+            ORDER BY created_at DESC
+            LIMIT $1`,
+          [query.limit ?? 50],
+        );
+        return reply.send({
+          courses: result.rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            envSpec: row.env_spec,
+            validatorReport: row.validator_report,
+            visibility: row.visibility,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/courses",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            name: Type.String({ minLength: 1, maxLength: 160 }),
+            envSpec: Type.Unknown(),
+            visibility: Type.Optional(visibilitySchema),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as { name: string; envSpec: unknown; visibility?: "private" | "unlisted" | "public" };
+        const validation = await runEnvSpec(JSON.stringify(body.envSpec), true);
+        if (validation.exitCode === -1 || validation.report === null) {
+          throw Object.assign(new Error(validation.stderr || "EnvSpec validator unavailable"), { statusCode: 503 });
+        }
+        const validatorReport = validation.report;
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO courses (owner_user_id, name, env_spec, validator_report, visibility)
+           VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)
+           RETURNING id`,
+          [user.id, body.name, JSON.stringify(body.envSpec), JSON.stringify(validatorReport), body.visibility ?? "private"],
+        );
+        return reply.status(201).send({ id: result.rows[0].id, validatorReport });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/leaderboards",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            courseId: Type.String({ minLength: 1 }),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = request.query as { courseId: string; limit?: number };
+        const result = await db.query<{
+          id: string;
+          course_id: string;
+          score: string | number;
+          verified: boolean;
+          verification: unknown;
+          created_at: Date | string;
+        }>(
+          `SELECT id, course_id, score, verified, verification, created_at
+             FROM leaderboard_runs
+            WHERE course_id = $1
+            ORDER BY verified DESC, score DESC, created_at ASC
+            LIMIT $2`,
+          [query.courseId, query.limit ?? 50],
+        );
+        return reply.send({
+          runs: result.rows.map((row) => ({
+            id: row.id,
+            courseId: row.course_id,
+            score: Number(row.score),
+            verified: row.verified,
+            verification: row.verification,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/leaderboards",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            courseId: Type.String({ minLength: 1 }),
+            score: Type.Number(),
+            replayId: Type.Optional(Type.String({ minLength: 1 })),
+            policyId: Type.Optional(Type.String({ minLength: 1 })),
+            tape: Type.Optional(Type.Unknown()),
+            expectedReplayHash: Type.Optional(Type.String({ minLength: 1 })),
+            expectedContractHash: Type.Optional(Type.String({ minLength: 1 })),
+            verification: Type.Optional(Type.Unknown()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          courseId: string;
+          score: number;
+          replayId?: string;
+          policyId?: string;
+          tape?: unknown;
+          expectedReplayHash?: string;
+          expectedContractHash?: string;
+          verification?: unknown;
+        };
+        const clientVerification =
+          typeof body.verification === "object" && body.verification !== null
+            ? (body.verification as Record<string, unknown>)
+            : {};
+        const submittedTape = body.tape ?? clientVerification.tape;
+        const expectedHash =
+          body.expectedReplayHash ??
+          (typeof clientVerification.expectedHash === "string" ? clientVerification.expectedHash : undefined) ??
+          (typeof clientVerification.tamperHash === "string" ? clientVerification.tamperHash : undefined);
+        const expectedContractHash =
+          body.expectedContractHash ??
+          (typeof clientVerification.expectedContractHash === "string" ? clientVerification.expectedContractHash : undefined);
+        const verification =
+          submittedTape === undefined
+            ? verifyReplayTape(null, { courseId: body.courseId })
+            : verifyReplayTape(submittedTape, {
+                expectedHash,
+                expectedContractHash,
+                courseId: body.courseId,
+              });
+        const replay =
+          submittedTape === undefined
+            ? null
+            : await insertReplayArtifact(db, user, {
+                tape: submittedTape,
+                verification,
+                modelId: typeof clientVerification.modelId === "string" ? clientVerification.modelId : null,
+              });
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO leaderboard_runs (course_id, policy_id, replay_id, user_id, score, verified, verification)
+           VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+           RETURNING id`,
+          [
+            body.courseId,
+            body.policyId ?? null,
+            replay?.id ?? body.replayId ?? null,
+            user.id,
+            body.score,
+            verification.verified,
+            JSON.stringify({
+              ...verification,
+              clientClaim: clientVerification.verified === undefined ? null : Boolean(clientVerification.verified),
+            }),
+          ],
+        );
+        return reply.status(201).send({ id: result.rows[0].id, verified: verification.verified, verification, replay });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/classroom/assignments",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = request.query as { limit?: number };
+        const user = await getCurrentUser(request, db);
+        const result = await db.query<{
+          id: string;
+          owner_user_id: string | null;
+          course_id: string | null;
+          title: string;
+          brief: string;
+          rubric: unknown;
+          visibility: string;
+          due_at: Date | string | null;
+          created_at: Date | string;
+        }>(
+          `SELECT id, owner_user_id, course_id, title, brief, rubric, visibility, due_at, created_at
+             FROM classroom_assignments
+            WHERE visibility IN ('public', 'unlisted')
+               OR ($1::text IS NOT NULL AND owner_user_id = $1)
+            ORDER BY created_at DESC
+            LIMIT $2`,
+          [user?.id ?? null, query.limit ?? 50],
+        );
+        return reply.send({
+          assignments: result.rows.map((row) => ({
+            id: row.id,
+            ownerUserId: row.owner_user_id,
+            courseId: row.course_id,
+            title: row.title,
+            brief: row.brief,
+            rubric: row.rubric,
+            visibility: row.visibility,
+            dueAt: row.due_at instanceof Date ? row.due_at.toISOString() : row.due_at,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/classroom/assignments",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            title: Type.String({ minLength: 1, maxLength: 180 }),
+            brief: Type.String({ minLength: 1, maxLength: 4000 }),
+            rubric: Type.Optional(Type.Unknown()),
+            courseId: Type.Optional(Type.String({ minLength: 1 })),
+            visibility: Type.Optional(visibilitySchema),
+            dueAt: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          title: string;
+          brief: string;
+          rubric?: unknown;
+          courseId?: string;
+          visibility?: "private" | "unlisted" | "public";
+          dueAt?: string;
+        };
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO classroom_assignments (owner_user_id, course_id, title, brief, rubric, visibility, due_at)
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7::timestamptz)
+           RETURNING id`,
+          [
+            user.id,
+            body.courseId ?? null,
+            body.title,
+            body.brief,
+            JSON.stringify(body.rubric ?? { maxErrors: 0, minScore: 0.8 }),
+            body.visibility ?? "private",
+            body.dueAt ?? null,
+          ],
+        );
+        return reply.status(201).send({ id: result.rows[0].id });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/classroom/assignments/:id/submissions",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const query = request.query as { limit?: number };
+        const result = await db.query<{
+          id: string;
+          assignment_id: string;
+          student_user_id: string | null;
+          model_id: string | null;
+          policy_id: string | null;
+          replay_id: string | null;
+          validator_report: unknown;
+          scorecard: unknown;
+          grade: unknown;
+          status: string;
+          created_at: Date | string;
+        }>(
+          `SELECT s.id, s.assignment_id, s.student_user_id, s.model_id, s.policy_id, s.replay_id,
+                  s.validator_report, s.scorecard, s.grade, s.status, s.created_at
+             FROM classroom_submissions s
+             JOIN classroom_assignments a ON a.id = s.assignment_id
+            WHERE s.assignment_id = $1
+              AND (a.owner_user_id = $2 OR s.student_user_id = $2)
+            ORDER BY s.created_at DESC
+            LIMIT $3`,
+          [id, user.id, query.limit ?? 50],
+        );
+        return reply.send({
+          submissions: result.rows.map((row) => ({
+            id: row.id,
+            assignmentId: row.assignment_id,
+            studentUserId: row.student_user_id,
+            modelId: row.model_id,
+            policyId: row.policy_id,
+            replayId: row.replay_id,
+            validatorReport: row.validator_report,
+            scorecard: row.scorecard,
+            grade: row.grade,
+            status: row.status,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/classroom/assignments/:id/submissions",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            modelId: Type.Optional(Type.String({ minLength: 1 })),
+            policyId: Type.Optional(Type.String({ minLength: 1 })),
+            replayId: Type.Optional(Type.String({ minLength: 1 })),
+            contract: Type.Optional(Type.Unknown()),
+            scorecard: Type.Optional(Type.Unknown()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const body = request.body as {
+          modelId?: string;
+          policyId?: string;
+          replayId?: string;
+          contract?: unknown;
+          scorecard?: unknown;
+        };
+        const assignment = await db.query<{ rubric: unknown }>(
+          `SELECT rubric
+             FROM classroom_assignments
+            WHERE id = $1
+              AND (visibility IN ('public', 'unlisted') OR owner_user_id = $2)
+            LIMIT 1`,
+          [id, user.id],
+        );
+        if (!assignment.rows[0]) return reply.status(404).send({ error: "assignment not found" });
+        let contract = body.contract;
+        let validatorReport: unknown;
+        if (body.modelId) {
+          const model = await getOwnedModel(db, user, body.modelId);
+          if (model === null) return reply.status(404).send({ error: "model not found" });
+          contract = model.contract;
+          validatorReport = model.validatorReport ?? { verdict: model.status, results: [] };
+        } else if (contract !== undefined) {
+          const validation = await runValidator(JSON.stringify(contract), true);
+          if (validation.exitCode === -1 || validation.report === null) {
+            throw Object.assign(new Error(validation.stderr || "validator unavailable"), { statusCode: 503 });
+          }
+          validatorReport = validation.report;
+        } else {
+          return reply.status(400).send({ error: "classroom submission requires modelId or contract" });
+        }
+        const grade = gradeClassroomSubmission(validatorReport, assignment.rows[0].rubric, body.scorecard ?? {});
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO classroom_submissions (
+             assignment_id, student_user_id, model_id, policy_id, replay_id,
+             contract, validator_report, scorecard, grade, status
+           )
+           VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb, 'graded')
+           RETURNING id`,
+          [
+            id,
+            user.id,
+            body.modelId ?? null,
+            body.policyId ?? null,
+            body.replayId ?? null,
+            JSON.stringify(contract ?? null),
+            JSON.stringify(validatorReport),
+            JSON.stringify(body.scorecard ?? {}),
+            JSON.stringify(grade),
+          ],
+        );
+        return reply.status(201).send({ id: result.rows[0].id, grade, validatorReport });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/license-ledger",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            licenseClass: Type.Optional(licenseClassSchema),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = request.query as { licenseClass?: string; limit?: number };
+        const result = await db.query<{
+          id: string;
+          class: string;
+          terms: string | null;
+          source_url: string | null;
+          component_count: string | number;
+          priced_component_count: string | number;
+          cited_component_count: string | number;
+          approved_review_count: string | number;
+          pending_review_count: string | number;
+          blocked_export_count: string | number;
+          export_policies: unknown;
+        }>(
+          `WITH latest_reviews AS (
+             SELECT DISTINCT ON (artifact_id)
+                    artifact_id, status, export_policy
+               FROM review_queue
+              WHERE artifact_kind = 'component'
+              ORDER BY artifact_id, reviewed_at DESC NULLS LAST, created_at DESC
+           ),
+           component_counts AS (
+             SELECT c.license_id,
+                    COUNT(*) AS component_count,
+                    COUNT(*) FILTER (WHERE EXISTS (
+                      SELECT 1 FROM prices p WHERE p.component_id = c.id
+                    )) AS priced_component_count,
+                    COUNT(*) FILTER (WHERE EXISTS (
+                      SELECT 1 FROM provenance pr WHERE pr.artifact_id = c.id
+                    )) AS cited_component_count
+               FROM components c
+              GROUP BY c.license_id
+           ),
+           review_counts AS (
+             SELECT c.license_id,
+                    COUNT(*) FILTER (WHERE lr.status = 'approved') AS approved_review_count,
+                    COUNT(*) FILTER (WHERE lr.status = 'needs_review') AS pending_review_count,
+                    COUNT(*) FILTER (WHERE COALESCE(lr.export_policy, 'blocked') = 'blocked') AS blocked_export_count
+               FROM components c
+               LEFT JOIN latest_reviews lr ON lr.artifact_id = c.id
+              GROUP BY c.license_id
+           ),
+           export_counts AS (
+             SELECT c.license_id,
+                    COALESCE(lr.export_policy, 'blocked') AS export_policy,
+                    COUNT(*) AS count
+               FROM components c
+               LEFT JOIN latest_reviews lr ON lr.artifact_id = c.id
+              GROUP BY c.license_id, COALESCE(lr.export_policy, 'blocked')
+           ),
+           export_policy_counts AS (
+             SELECT license_id, jsonb_object_agg(export_policy, count) AS export_policies
+               FROM export_counts
+              GROUP BY license_id
+           )
+           SELECT l.id, l.class, l.terms, l.source_url,
+                  COALESCE(cc.component_count, 0) AS component_count,
+                  COALESCE(cc.priced_component_count, 0) AS priced_component_count,
+                  COALESCE(cc.cited_component_count, 0) AS cited_component_count,
+                  COALESCE(rc.approved_review_count, 0) AS approved_review_count,
+                  COALESCE(rc.pending_review_count, 0) AS pending_review_count,
+                  COALESCE(rc.blocked_export_count, 0) AS blocked_export_count,
+                  COALESCE(epc.export_policies, '{}'::jsonb) AS export_policies
+             FROM licenses l
+             LEFT JOIN component_counts cc ON cc.license_id = l.id
+             LEFT JOIN review_counts rc ON rc.license_id = l.id
+             LEFT JOIN export_policy_counts epc ON epc.license_id = l.id
+            WHERE ($1::text IS NULL OR l.class = $1)
+            ORDER BY l.class, l.id
+            LIMIT $2`,
+          [query.licenseClass ?? null, query.limit ?? 50],
+        );
+        return reply.send({
+          ledger: result.rows.map((row) => ({
+            id: row.id,
+            class: row.class,
+            terms: row.terms,
+            sourceUrl: row.source_url,
+            componentCount: Number(row.component_count),
+            pricedComponentCount: Number(row.priced_component_count),
+            citedComponentCount: Number(row.cited_component_count),
+            approvedReviewCount: Number(row.approved_review_count),
+            pendingReviewCount: Number(row.pending_review_count),
+            blockedExportCount: Number(row.blocked_export_count),
+            exportPolicies: numberMap(row.export_policies),
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/commerce/vendor-offers",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            componentId: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        await requireUser(request, db);
+        const query = request.query as { componentId?: string; limit?: number };
+        return reply.send({ offers: await listVendorOffers(db, { componentId: query.componentId ?? null, limit: query.limit ?? 50 }) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/commerce/vendor-offers/refresh",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            componentIds: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 200 }), { maxItems: 50 })),
+            offers: Type.Optional(Type.Array(vendorOfferInputSchema, { maxItems: 50 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          componentIds?: string[];
+          offers?: {
+            componentId: string;
+            vendor: string;
+            sku?: string;
+            url: string;
+            price?: number;
+            currency?: string;
+            availability?: string;
+          }[];
+        };
+        const endpoint = process.env.FORGE_VENDOR_OFFER_ENDPOINT?.trim();
+        let offers = body.offers ?? [];
+        let source: "live" | "sandbox" = "sandbox";
+        if (endpoint) {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ componentIds: body.componentIds ?? [], offers }),
+          });
+          if (!response.ok) {
+            throw Object.assign(new Error(`vendor offer endpoint failed: ${response.status}`), { statusCode: 503 });
+          }
+          const remote = await response.json();
+          if (!isRecord(remote) || !Array.isArray(remote.offers)) {
+            throw Object.assign(new Error("vendor offer endpoint returned invalid JSON"), { statusCode: 503 });
+          }
+          offers = remote.offers.filter(isRecord).map((offer) => ({
+            componentId: String(offer.componentId ?? ""),
+            vendor: String(offer.vendor ?? "unknown"),
+            sku: typeof offer.sku === "string" ? offer.sku : undefined,
+            url: String(offer.url ?? ""),
+            price: typeof offer.price === "number" ? offer.price : undefined,
+            currency: typeof offer.currency === "string" ? offer.currency : undefined,
+            availability: typeof offer.availability === "string" ? offer.availability : "unknown",
+          }));
+          source = "live";
+        } else if (offers.length === 0 && body.componentIds?.length) {
+          offers = body.componentIds.map((componentId) => ({
+            componentId,
+            vendor: "sandbox-vendor-link",
+            sku: componentId,
+            url: `${(process.env.FORGE_VENDOR_OFFER_BASE_URL ?? "https://vendor.example.invalid/components").replace(/\/$/, "")}/${encodeURIComponent(componentId)}`,
+            availability: "unknown",
+          }));
+        }
+        if (offers.length === 0) {
+          return reply.status(400).send({ error: "vendor offer refresh requires offers or componentIds" });
+        }
+        const inserted = [];
+        for (const offer of offers) {
+          if (!offer.componentId || !offer.vendor || !offer.url) continue;
+          inserted.push(
+            await insertVendorOffer(db, {
+              ...offer,
+              availability: offer.availability,
+              source,
+              provenance: {
+                refreshedBy: user.id,
+                endpointConfigured: Boolean(endpoint),
+                quoteLinkOnly: true,
+              },
+            }),
+          );
+        }
+        await recordUsageEvent(db, user, {
+          eventKind: "vendor-offer-refresh",
+          provider: endpoint ? "live" : "sandbox",
+          units: { offers: inserted.length },
+          idempotencyKey: null,
+        });
+        return reply.status(201).send({ offers: inserted });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/commerce/print-quotes",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { limit?: number };
+        return reply.send({ quotes: await listPrintQuoteRequests(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/commerce/print-quotes",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            artifactBlobId: Type.String({ minLength: 1 }),
+            modelId: Type.Optional(Type.String({ minLength: 1 })),
+            jobId: Type.Optional(Type.String({ minLength: 1 })),
+            process: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+            material: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+            profile: Type.Optional(Type.Unknown()),
+            quantity: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+            dfmArtifact: Type.Optional(Type.Unknown()),
+            offer: Type.Optional(Type.Unknown()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          artifactBlobId: string;
+          modelId?: string;
+          jobId?: string;
+          process?: string;
+          material?: string;
+          profile?: unknown;
+          quantity?: number;
+          dfmArtifact?: unknown;
+          offer?: unknown;
+        };
+        const blob = await getOwnedObjectBlob(db, user, body.artifactBlobId);
+        if (!blob) return reply.status(404).send({ error: "print quote artifact blob not found" });
+        const endpoint = process.env.FORGE_PRINT_QUOTE_ENDPOINT?.trim();
+        let offer = isRecord(body.offer) ? body.offer : {};
+        if (endpoint) {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ ...body, objectKey: blob.objectKey, bucket: blob.bucket, checkout: "off-platform" }),
+          });
+          if (!response.ok) {
+            throw Object.assign(new Error(`print quote endpoint failed: ${response.status}`), { statusCode: 503 });
+          }
+          const remote = await response.json();
+          if (!isRecord(remote) || !isRecord(remote.offer)) {
+            throw Object.assign(new Error("print quote endpoint returned invalid JSON"), { statusCode: 503 });
+          }
+          offer = remote.offer;
+        }
+        const quote = await createPrintQuoteRequest(db, user, {
+          modelId: body.modelId ?? null,
+          jobId: body.jobId ?? null,
+          artifactBlobId: body.artifactBlobId,
+          process: body.process,
+          material: body.material,
+          profile: body.profile,
+          quantity: body.quantity,
+          dfmArtifact: body.dfmArtifact ?? { artifactBlobId: body.artifactBlobId, objectKey: blob.objectKey },
+          offer: {
+            provider: typeof offer.provider === "string" ? offer.provider : undefined,
+            providerQuoteId: typeof offer.providerQuoteId === "string" ? offer.providerQuoteId : null,
+            quoteUrl: typeof offer.quoteUrl === "string" ? offer.quoteUrl : undefined,
+            price: typeof offer.price === "number" ? offer.price : null,
+            currency: typeof offer.currency === "string" ? offer.currency : null,
+            leadTimeDays: typeof offer.leadTimeDays === "number" ? offer.leadTimeDays : null,
+            expiresAt: typeof offer.expiresAt === "string" ? offer.expiresAt : null,
+            terms: isRecord(offer.terms) ? offer.terms : {},
+          },
+        });
+        await recordUsageEvent(db, user, {
+          eventKind: "print-quote-link",
+          provider: endpoint ? "live" : "sandbox",
+          units: { quantity: quote.quantity, offerCount: quote.offers.length },
+          idempotencyKey: null,
+        });
+        return reply.status(201).send({ quote });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/listings",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            kind: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = request.query as { kind?: string; limit?: number };
+        const result = await db.query<{
+          id: string;
+          listing_kind: string;
+          status: string;
+          title: string;
+          license_class: string | null;
+          export_policy: string;
+          price_credits: string | number;
+          created_at: Date | string;
+        }>(
+          `SELECT id, listing_kind, status, title, license_class, export_policy, price_credits, created_at
+             FROM marketplace_listings
+            WHERE status = 'listed'
+              AND ($1::text IS NULL OR listing_kind = $1)
+            ORDER BY created_at DESC
+            LIMIT $2`,
+          [query.kind ?? null, query.limit ?? 50],
+        );
+        return reply.send({
+          listings: result.rows.map((row) => ({
+            id: row.id,
+            kind: row.listing_kind,
+            status: row.status,
+            title: row.title,
+            licenseClass: row.license_class,
+            exportPolicy: row.export_policy,
+            priceCredits: Number(row.price_credits),
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/listings",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            modelId: Type.String({ minLength: 1 }),
+            title: Type.String({ minLength: 1, maxLength: 160 }),
+            listingKind: Type.Optional(listingKindSchema),
+            priceCredits: Type.Optional(Type.Number({ minimum: 0 })),
+            policySignoff: Type.Optional(Type.Unknown()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          modelId: string;
+          title: string;
+          listingKind?: string;
+          priceCredits?: number;
+          policySignoff?: unknown;
+        };
+        const model = await getOwnedModel(db, user, body.modelId);
+        if (model === null) return reply.status(404).send({ error: "model not found" });
+        if (model.status !== "admitted") {
+          return reply.status(409).send({ error: "marketplace listings require an admitted validator report" });
+        }
+        if ((body.listingKind ?? "model") === "policy") {
+          const platformGate = await currentPlatformGate(db, "p11.policy-sharing");
+          if (platformGate.status !== "accepted" || platformGate.revokedAt !== null) {
+            return reply.status(409).send({ error: "policy sharing platform gate is not accepted" });
+          }
+          if (!policySignoffAccepted(body.policySignoff)) {
+            return reply.status(409).send({ error: "policy listings require dual-use/export-control signoff" });
+          }
+        }
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO marketplace_listings (
+             owner_user_id, model_id, listing_kind, status, title, license_class, export_policy,
+             price_credits, validator_report, moderation
+           )
+           VALUES ($1, $2, $3, 'review', $4, 'open', 'assembly-policy-derived', $5, $6::jsonb, $7::jsonb)
+           RETURNING id`,
+          [
+            user.id,
+            model.id,
+            body.listingKind ?? "model",
+            body.title,
+            body.priceCredits ?? 0,
+            JSON.stringify(model.validatorReport),
+            JSON.stringify({ dualUseSignoff: "required-before-listed" }),
+          ],
+        );
+        if ((body.listingKind ?? "model") === "policy") {
+          await db.query(
+            `INSERT INTO policy_signoffs (
+               owner_user_id, target_kind, target_id, jurisdiction, policy_version, status, answers
+             )
+             VALUES ($1, 'marketplace-listing', $2, $3, 'p11-local-2026-06-14', 'accepted', $4::jsonb)`,
+            [
+              user.id,
+              result.rows[0].id,
+              isRecord(body.policySignoff) && typeof body.policySignoff.jurisdiction === "string"
+                ? body.policySignoff.jurisdiction
+                : "unspecified",
+              JSON.stringify(body.policySignoff ?? {}),
+            ],
+          );
+        }
+        return reply.status(201).send({ id: result.rows[0].id, status: "review" });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/listings/:id/usage",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            event: Type.Union([
+              Type.Literal("view"),
+              Type.Literal("equip"),
+              Type.Literal("quote-click"),
+              Type.Literal("policy-download"),
+              Type.Literal("training-job"),
+            ]),
+            listingKind: Type.Optional(listingKindSchema),
+            creditsSpent: Type.Optional(Type.Number({ minimum: 0 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params as { id: string };
+        const body = request.body as {
+          event: "view" | "equip" | "quote-click" | "policy-download" | "training-job";
+          listingKind?: "model" | "course" | "skill" | "component" | "policy";
+          creditsSpent?: number;
+        };
+        await recordMarketplaceUsageRollup(db, {
+          listingId: id,
+          listingKind: body.listingKind ?? "model",
+          event: body.event,
+          creditsSpent: body.creditsSpent ?? 0,
+        });
+        await recordUsageEvent(db, null, {
+          eventKind: `marketplace.${body.event}`,
+          provider: "usage-beta",
+          units: { listingId: id, listingKind: body.listingKind ?? "model" },
+          costCredits: body.creditsSpent ?? 0,
+          idempotencyKey: null,
+        });
+        return reply.status(202).send({ status: "recorded" });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/moderation/reports",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            status: Type.Optional(Type.Union([Type.Literal("open"), Type.Literal("triaged"), Type.Literal("actioned"), Type.Literal("rejected")])),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { status?: string; limit?: number };
+        const result = await db.query<{
+          id: string;
+          target_kind: string;
+          target_id: string;
+          reason: string;
+          detail: string;
+          status: string;
+          sla_due_at: Date | string;
+          repeat_infringer_signal: boolean;
+          created_at: Date | string;
+        }>(
+          `SELECT id, target_kind, target_id, reason, detail, status, sla_due_at,
+                  repeat_infringer_signal, created_at
+             FROM moderation_reports
+            WHERE reporter_user_id = $1
+              AND ($2::text IS NULL OR status = $2)
+            ORDER BY created_at DESC
+            LIMIT $3`,
+          [user.id, query.status ?? null, query.limit ?? 50],
+        );
+        return reply.send({
+          reports: result.rows.map((row) => ({
+            id: row.id,
+            targetKind: row.target_kind,
+            targetId: row.target_id,
+            reason: row.reason,
+            detail: row.detail,
+            status: row.status,
+            slaDueAt: row.sla_due_at instanceof Date ? row.sla_due_at.toISOString() : row.sla_due_at,
+            repeatInfringerSignal: row.repeat_infringer_signal,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/moderation/reports",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            targetKind: moderationTargetSchema,
+            targetId: Type.String({ minLength: 1, maxLength: 200 }),
+            reason: moderationReasonSchema,
+            detail: Type.Optional(Type.String({ maxLength: 4000 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          targetKind: string;
+          targetId: string;
+          reason: string;
+          detail?: string;
+        };
+        const result = await db.query<{
+          id: string;
+          status: string;
+          sla_due_at: Date | string;
+          repeat_infringer_signal: boolean;
+        }>(
+          `INSERT INTO moderation_reports (
+             reporter_user_id, target_kind, target_id, reason, detail, repeat_infringer_signal
+           )
+           VALUES (
+             $1, $2, $3, $4, $5,
+             EXISTS (
+               SELECT 1 FROM moderation_reports
+                WHERE target_kind = $2
+                  AND target_id = $3
+                  AND status IN ('open', 'triaged', 'actioned')
+                LIMIT 1
+             )
+           )
+           RETURNING id, status, sla_due_at, repeat_infringer_signal`,
+          [user.id, body.targetKind, body.targetId, body.reason, body.detail ?? ""],
+        );
+        const row = result.rows[0];
+        return reply.status(201).send({
+          id: row.id,
+          status: row.status,
+          slaDueAt: row.sla_due_at instanceof Date ? row.sla_due_at.toISOString() : row.sla_due_at,
+          repeatInfringerSignal: row.repeat_infringer_signal,
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/maintenance/records",
+    {
+      schema: {
+        querystring: Type.Object(
+          {
+            modelId: Type.Optional(Type.String({ minLength: 1 })),
+            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const query = request.query as { modelId?: string; limit?: number };
+        const result = await db.query<{
+          id: string;
+          model_id: string | null;
+          record_kind: string;
+          severity: string;
+          summary: string;
+          payload: unknown;
+          created_at: Date | string;
+        }>(
+          `SELECT id, model_id, record_kind, severity, summary, payload, created_at
+             FROM maintenance_records
+            WHERE owner_user_id = $1
+              AND ($2::text IS NULL OR model_id = $2)
+            ORDER BY created_at DESC
+            LIMIT $3`,
+          [user.id, query.modelId ?? null, query.limit ?? 100],
+        );
+        return reply.send({
+          records: result.rows.map((row) => ({
+            id: row.id,
+            modelId: row.model_id,
+            kind: row.record_kind,
+            severity: row.severity,
+            summary: row.summary,
+            payload: row.payload,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/maintenance/records",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            modelId: Type.Optional(Type.String({ minLength: 1 })),
+            kind: Type.Union([Type.Literal("wear"), Type.Literal("crash-forensics"), Type.Literal("repair-sheet"), Type.Literal("reorder")]),
+            severity: Type.Optional(Type.Union([Type.Literal("info"), Type.Literal("warn"), Type.Literal("critical")])),
+            summary: Type.String({ minLength: 1, maxLength: 1000 }),
+            payload: Type.Optional(Type.Unknown()),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          modelId?: string;
+          kind: string;
+          severity?: "info" | "warn" | "critical";
+          summary: string;
+          payload?: unknown;
+        };
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO maintenance_records (owner_user_id, model_id, record_kind, severity, summary, payload)
+           VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+           RETURNING id`,
+          [user.id, body.modelId ?? null, body.kind, body.severity ?? "info", body.summary, JSON.stringify(body.payload ?? {})],
+        );
+        return reply.status(201).send({ id: result.rows[0].id });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
     },
   );
 

@@ -1,15 +1,18 @@
-"""Queue consumption skeleton (graphile-worker table polling — plan §6).
+"""Queue consumption for the local worker plane.
 
-The DB wiring (psycopg, SKIP LOCKED claim loop) lands with P3's first real
-worker; the handler registry and idempotency discipline are real now and
-unit-tested. Handlers must be safe to retry (BEST-PRACTICES §5).
+The handler registry stays dependency-free for tests. The Postgres store is
+loaded lazily by the runner so CI can exercise the deterministic fixture
+handlers without requiring a database driver.
 """
 
 from __future__ import annotations
 
 import json
+import hashlib
+import os
+import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Protocol, Sequence
 
 
 @dataclass
@@ -25,6 +28,18 @@ class Job:
 
 class JobHandler(Protocol):
     def __call__(self, job: Job) -> dict[str, Any]: ...
+
+
+class QueueStore(Protocol):
+    """Persistence boundary used by the worker loop."""
+
+    def claim_one(self, tasks: Sequence[str]) -> Job | None: ...
+
+    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> None: ...
+
+    def mark_failed(self, job_id: str, error: str) -> None: ...
+
+    def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None: ...
 
 
 @dataclass
@@ -62,3 +77,346 @@ class HandlerRegistry:
 
 registry = HandlerRegistry()
 """Process-global registry the worker families register into on import."""
+
+
+def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
+    """Claim and execute one queued job.
+
+    Returns True when a job was claimed, regardless of success or failure. Handler
+    exceptions fail the job closed and are not re-raised, so the long-running
+    loop can continue processing subsequent jobs.
+    """
+
+    tasks = handlers.tasks()
+    if not tasks:
+        return False
+    job = store.claim_one(tasks)
+    if job is None:
+        return False
+    store.record_event(job.id, "started", {"task": job.task, "attempt": max(1, job.attempts)})
+    try:
+        output = handlers.dispatch(job)
+    except Exception as exc:  # noqa: BLE001 - queue workers must fail closed.
+        error = f"{type(exc).__name__}: {exc}"
+        store.mark_failed(job.id, error)
+        store.record_event(job.id, "failed", {"error": error})
+    else:
+        store.mark_succeeded(job.id, output)
+        store.record_event(job.id, "succeeded", {"task": job.task})
+    return True
+
+
+def run_forever(
+    store: QueueStore,
+    handlers: HandlerRegistry = registry,
+    *,
+    poll_seconds: float = 1.0,
+    should_stop: Callable[[], bool] | None = None,
+) -> None:
+    """Poll the queue until `should_stop` returns True."""
+
+    stop = should_stop or (lambda: False)
+    while not stop():
+        claimed = run_once(store, handlers)
+        if not claimed:
+            time.sleep(poll_seconds)
+
+
+class PostgresQueueStore:
+    """Postgres-backed job store using FOR UPDATE SKIP LOCKED claims."""
+
+    def __init__(self, dsn: str) -> None:
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+            from psycopg.types.json import Jsonb
+        except ModuleNotFoundError as exc:  # pragma: no cover - exercised in Compose.
+            raise RuntimeError(
+                "psycopg is required for DATABASE_URL-backed workers; install workers with .[queue]"
+            ) from exc
+        self._jsonb = Jsonb
+        self._conn = psycopg.connect(dsn, autocommit=False, row_factory=dict_row)
+
+    def claim_one(self, tasks: Sequence[str]) -> Job | None:
+        if not tasks:
+            return None
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                WITH claimed AS (
+                  SELECT id
+                    FROM jobs
+                   WHERE status = 'queued'
+                     AND provider IN ('local', 'modal')
+                     AND kind = ANY(%s)
+                   ORDER BY created_at ASC
+                   FOR UPDATE SKIP LOCKED
+                   LIMIT 1
+                )
+                UPDATE jobs
+                   SET status = 'running',
+                       attempts = attempts + 1,
+                       started_at = COALESCE(started_at, now())
+                 WHERE id IN (SELECT id FROM claimed)
+                RETURNING id, kind, input, COALESCE(idempotency_key, id) AS idempotency_key, attempts
+                """,
+                [list(tasks)],
+            ).fetchone()
+        if row is None:
+            return None
+        payload = row["input"]
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+        if not isinstance(payload, dict):
+            payload = {}
+        return Job(
+            id=str(row["id"]),
+            task=str(row["kind"]),
+            payload=payload,
+            idempotency_key=str(row["idempotency_key"]),
+            attempts=int(row["attempts"]),
+        )
+
+    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> None:
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                UPDATE jobs
+                   SET status = 'succeeded',
+                       output = %s::jsonb,
+                       error = NULL,
+                       finished_at = now()
+                 WHERE id = %s
+                RETURNING owner_user_id, input
+                """,
+                [self._jsonb(output), job_id],
+            ).fetchone()
+            if row is not None:
+                self._materialize_job_output(
+                    job_id=job_id,
+                    owner_user_id=row["owner_user_id"],
+                    job_input=_object(row["input"]),
+                    output=output,
+                )
+
+    def mark_failed(self, job_id: str, error: str) -> None:
+        with self._conn.transaction():
+            self._conn.execute(
+                """
+                UPDATE jobs
+                   SET status = 'failed',
+                       error = %s,
+                       finished_at = now()
+                 WHERE id = %s
+                """,
+                [error, job_id],
+            )
+
+    def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None:
+        with self._conn.transaction():
+            self._conn.execute(
+                """
+                INSERT INTO job_events (job_id, event, payload)
+                VALUES (%s, %s, %s::jsonb)
+                """,
+                [job_id, event, self._jsonb(payload)],
+            )
+
+    def _materialize_job_output(
+        self,
+        *,
+        job_id: str,
+        owner_user_id: str | None,
+        job_input: dict[str, Any],
+        output: dict[str, Any],
+    ) -> None:
+        artifact_kind = output.get("artifactKind")
+        if artifact_kind == "photoscan":
+            artifact_blob_id = self._upsert_artifact_blob(
+                owner_user_id=owner_user_id,
+                purpose="photoscan-result",
+                cache_key=_nested_cache_key(output, "objectCache"),
+                content_type="model/gltf-binary",
+                metadata={"jobId": job_id, "artifactKind": "photoscan"},
+            )
+            self._conn.execute(
+                """
+                INSERT INTO photoscan_artifacts (
+                  owner_user_id, job_id, source_blob_ids, scale_axes_ports,
+                  refit_primitives, candidate_component, validator_report, artifact_blob_id
+                )
+                VALUES (%s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s)
+                """,
+                [
+                    owner_user_id,
+                    job_id,
+                    _string_list(output.get("sourceImages")),
+                    self._jsonb(_object(output.get("alignment"))),
+                    self._jsonb(output.get("primitiveRefit") if isinstance(output.get("primitiveRefit"), list) else []),
+                    self._jsonb(output.get("candidateComponent")),
+                    self._jsonb({"artifactKind": "photoscan", "acceptance": _object(output.get("acceptance"))}),
+                    artifact_blob_id,
+                ],
+            )
+            return
+        if artifact_kind == "policy":
+            scorecard = _object(output.get("scorecard"))
+            artifact_blob_id = self._upsert_artifact_blob(
+                owner_user_id=owner_user_id,
+                purpose="policy-onnx",
+                cache_key=_nested_cache_key(output, "onnx"),
+                content_type="application/octet-stream",
+                metadata={"jobId": job_id, "artifactKind": "policy"},
+            )
+            self._conn.execute(
+                """
+                INSERT INTO policy_artifacts (
+                  owner_user_id, model_id, task_kind, scorecard, artifact_blob_id, export_gate
+                )
+                VALUES (%s, %s, %s, %s::jsonb, %s, %s)
+                """,
+                [
+                    owner_user_id,
+                    _model_id_from(job_input),
+                    _task_id_from(output),
+                    self._jsonb(scorecard),
+                    artifact_blob_id,
+                    "exportable" if scorecard.get("exportable") is True else "blocked",
+                ],
+            )
+            return
+        if artifact_kind == "telemetry-replay":
+            self._conn.execute(
+                """
+                INSERT INTO telemetry_logs (owner_user_id, model_id, source, tape, privacy)
+                VALUES (%s, %s, 'fixture', %s::jsonb, %s::jsonb)
+                """,
+                [
+                    owner_user_id,
+                    _model_id_from(job_input),
+                    self._jsonb(output.get("tape") if isinstance(output.get("tape"), dict) else {"frames": []}),
+                    self._jsonb({"sharing": "private"}),
+                ],
+            )
+            return
+        if artifact_kind == "replay":
+            self._conn.execute(
+                """
+                INSERT INTO replay_artifacts (owner_user_id, model_id, tape, verification, tamper_hash)
+                VALUES (%s, %s, %s::jsonb, %s::jsonb, %s)
+                """,
+                [
+                    owner_user_id,
+                    _model_id_from(job_input),
+                    self._jsonb(job_input.get("tape") if isinstance(job_input.get("tape"), dict) else {"frames": []}),
+                    self._jsonb(output),
+                    output.get("tamperHash") if isinstance(output.get("tamperHash"), str) else None,
+                ],
+            )
+            return
+        if artifact_kind in {"wear-estimate", "crash-forensics", "repair-sheet"}:
+            record_kind = {
+                "wear-estimate": "wear",
+                "crash-forensics": "crash-forensics",
+                "repair-sheet": "repair-sheet",
+            }[str(artifact_kind)]
+            self._conn.execute(
+                """
+                INSERT INTO maintenance_records (owner_user_id, model_id, record_kind, severity, summary, payload)
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb)
+                """,
+                [
+                    owner_user_id,
+                    _model_id_from(job_input),
+                    record_kind,
+                    "warn" if artifact_kind == "crash-forensics" and output.get("crashDetected") is True else "info",
+                    str(artifact_kind),
+                    self._jsonb(output),
+                ],
+            )
+
+    def _upsert_artifact_blob(
+        self,
+        *,
+        owner_user_id: str | None,
+        purpose: str,
+        cache_key: str | None,
+        content_type: str,
+        metadata: dict[str, Any],
+    ) -> str | None:
+        if not cache_key:
+            return None
+        scoped_cache_key = f"{_owner_segment(owner_user_id)}:{cache_key}"
+        row = self._conn.execute(
+            """
+            INSERT INTO object_blobs (
+              owner_user_id, visibility, cache_key, bucket, object_key,
+              content_type, metadata
+            )
+            VALUES (%s, 'private', %s, %s, %s, %s, %s::jsonb)
+            ON CONFLICT (cache_key) DO UPDATE
+            SET metadata = object_blobs.metadata || EXCLUDED.metadata,
+                content_type = COALESCE(object_blobs.content_type, EXCLUDED.content_type)
+            RETURNING id
+            """,
+            [
+                owner_user_id,
+                scoped_cache_key,
+                os.environ.get("FORGE_OBJECT_BUCKET", "forge-artifacts"),
+                _artifact_object_key(owner_user_id, purpose, cache_key),
+                content_type,
+                self._jsonb({**metadata, "purpose": purpose, "cacheKey": cache_key}),
+            ],
+        ).fetchone()
+        return str(row["id"]) if row else None
+
+
+def _object(value: Any) -> dict[str, Any]:
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return value if isinstance(value, dict) else {}
+
+
+def _string_list(value: Any) -> list[str]:
+    return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+
+
+def _model_id_from(value: dict[str, Any]) -> str | None:
+    model_id = value.get("modelId")
+    return model_id if isinstance(model_id, str) else None
+
+
+def _task_id_from(output: dict[str, Any]) -> str:
+    task = _object(output.get("task"))
+    task_id = task.get("id")
+    return task_id if isinstance(task_id, str) else "fixture"
+
+
+def _nested_cache_key(output: dict[str, Any], field: str) -> str | None:
+    value = output.get(field)
+    if not isinstance(value, dict):
+        return None
+    cache_key = value.get("cacheKey") or value.get("key")
+    return cache_key if isinstance(cache_key, str) else None
+
+
+def _safe_segment(value: str) -> str:
+    segment = "".join(ch.lower() if ch.isalnum() or ch in "._-" else "-" for ch in value)
+    segment = segment.strip("-")[:80]
+    return segment or "artifact"
+
+
+def _owner_segment(owner_user_id: str | None) -> str:
+    return _safe_segment(owner_user_id or "system")
+
+
+def _artifact_object_key(owner_user_id: str | None, purpose: str, cache_key: str) -> str:
+    owner = _owner_segment(owner_user_id)
+    safe_purpose = _safe_segment(purpose)
+    safe_key = _safe_segment(cache_key)
+    digest = hashlib.sha256(cache_key.encode("utf-8")).hexdigest()[:16]
+    return f"users/{owner}/{safe_purpose}/{safe_key}-{digest}"
