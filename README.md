@@ -5,13 +5,15 @@
 <h1 align="center">ForgedTTC</h1>
 
 <p align="center">
-  <strong>Design robots from intent, prove them before you build, and keep the model alive after the crash.</strong>
+  <strong>Describe a robot, validate the design, train the twin, and turn field telemetry into repair evidence.</strong>
 </p>
 
 <p align="center">
   <a href="#the-problem-we-are-solving"><strong>Painpoints</strong></a>
   &nbsp;&nbsp;|&nbsp;&nbsp;
-  <a href="#what-you-get"><strong>What users get</strong></a>
+  <a href="#how-ttc-works-for-users"><strong>How it works</strong></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#what-you-can-do"><strong>Features</strong></a>
   &nbsp;&nbsp;|&nbsp;&nbsp;
   <a href="#visual-proof-the-core-already-renders-real-contracts"><strong>Visual proof</strong></a>
   &nbsp;&nbsp;|&nbsp;&nbsp;
@@ -28,29 +30,32 @@
 </p>
 
 <p align="center">
-  <code>prompt -> admitted model -> sim/replay -> policy scorecard -> BOM/quotes -> field log -> repair sheet</code>
+  <code>brief -> generated model -> validator report -> sim/replay -> scorecard -> BOM/quotes -> telemetry -> repair sheet</code>
 </p>
 
-ForgedTTC is an open-core robotics design system: a browser studio, a Rust
-validator, a simulation/export stack, a Python worker plane, and a platform layer
-for sharing, courses, policy scorecards, quote links, and maintenance records.
+ForgedTTC is an open-core robotics design system for people who want AI-assisted
+robot design without giving up engineering discipline. It combines a browser
+studio, a Rust validator, a simulation/export stack, a Python worker plane, and a
+platform layer for sharing, courses, policy scorecards, quote links, and
+maintenance records.
 
-> The product bet: robotics design should not end at a file export. It should carry
-> evidence from first idea to build, training, field logs, and repair.
+> The product bet: a useful robot model is not just geometry. It is the design,
+> parts, assumptions, validation results, scorecards, quotes, telemetry, and repair
+> history moving together.
 
 <table>
   <tr>
     <td width="33%">
-      <h3>Evidence-first design</h3>
-      <p>Every serious artifact carries a validator report, lockfile, provenance, scorecard, license state, or replay hash.</p>
+      <h3>Generate with guardrails</h3>
+      <p>Start from a brief, photo, import, or catalog-backed template. Every candidate is checked before it becomes a real model.</p>
     </td>
     <td width="33%">
-      <h3>One source of truth</h3>
-      <p>The browser, gateway, worker jobs, exports, replay, and policy metadata all orbit the same typed model contract.</p>
+      <h3>Know why it passes</h3>
+      <p>Validation reports, lockfiles, provenance, license policy, scorecards, and replay hashes travel with the model.</p>
     </td>
     <td width="33%">
-      <h3>Gated reality</h3>
-      <p>Live GPU, provider, engine, and hardware paths exist, but default to deterministic fixtures and explicit gates.</p>
+      <h3>Close the loop</h3>
+      <p>BOMs, quote links, training outputs, field telemetry, and repair sheets all point back to the same design contract.</p>
     </td>
   </tr>
 </table>
@@ -59,33 +64,99 @@ for sharing, courses, policy scorecards, quote links, and maintenance records.
 
 ## The Problem We Are Solving
 
-Robotics builders do not fail because they lack another pretty viewport.
-They fail because the tools disagree until the hardware does.
+Robotics builders do not need another isolated viewport. They need the design,
+parts, physics, training, build evidence, and field evidence to agree.
 
-| Painpoint | What usually happens | What ForgedTTC does instead |
+| User painpoint | What usually happens today | What ForgedTTC does instead |
 |---|---|---|
-| CAD knows shape, not truth | Mass, thrust, wiring, policy limits, and BOM drift into spreadsheets | One typed model contract carries geometry, parts, drivers, sim assumptions, lockfiles, and provenance |
-| "Looks buildable" is not enough | Interference, wrong mounts, bad hover margins, and missing citations surface late | The Rust validator is the gatekeeper before share, train, export, list, or deploy |
-| AI design is mostly vibes | Generated outputs vanish, hallucinate parts, or bypass review | Generation is validator-in-loop; failed generations persist as editable drafts with diagnostics |
-| Simulation is disconnected | Browser sim, training sim, and field replay become separate worlds | Rapier/MuJoCo/export paths consume the same compiled source of truth and are parity-gated |
-| Policies are hard to trust | A policy blob arrives without observation layout, scorecard, or lineage | Policy artifacts include ONNX metadata, I/O headers, scorecards, randomization, and export gates |
-| Marketplace files are dead ends | Downloads do not know if they are legal, buildable, repairable, or safe | Listings require admitted validator reports, moderation paths, license/export policy, and usage rollups |
-| Hardware authority gets blurry | "Deploy" buttons quietly become risky write paths | D28 hardware gates fail closed until legal signoff, lab mode, D12 rig allowlist, and physical confirmation exist |
+| "I can sketch the robot, but I do not know if it will build." | CAD shows shape while mass, thrust, component fit, wiring, and BOM live elsewhere | The model contract carries geometry, parts, drivers, sim assumptions, lockfiles, and provenance together |
+| "AI can draw something plausible, but I cannot trust it." | Generated designs hallucinate parts, skip constraints, or disappear when validation fails | Generation runs through retrieval, synthesis, validation, and repair; failed attempts persist as editable drafts with diagnostics |
+| "I need a BOM and vendor links, not just an STL." | Build planning becomes a spreadsheet hunt across vendors and print services | BOM rows, license state, vendor offers, DfM artifacts, and print quote links are platform objects |
+| "Training results are impossible to compare." | A policy blob arrives without observation layout, task definition, randomization, scorecard, or lineage | Policy artifacts include ONNX metadata, I/O headers, scorecards, randomization grids, and export gates |
+| "Sharing a model loses context." | Marketplaces distribute files without validator reports, license policy, moderation, or usage data | Listings require admitted validator reports, policy gates where needed, moderation paths, and usage rollups |
+| "Field evidence rarely improves the next design." | Telemetry, damage notes, and repairs become disconnected logs | Field telemetry can become replay evidence, system-ID input, wear estimates, impact analysis, and repair sheets |
+| "Hardware deployment is too easy to make unsafe." | A UI button can quietly become real-world authority | D28 hardware gates fail closed until legal signoff, lab mode, D12 rig allowlist, and physical confirmation exist |
 
 ---
 
-## What You Get
+## How TTC Works For Users
 
-### A studio that is useful before the cloud exists
+The user loop is deliberately concrete. You are not expected to understand the whole
+repo to understand the product.
 
-| Surface | User value | Current state |
+<table>
+  <tr>
+    <td width="50%">
+      <h3>1. Describe or import</h3>
+      <p>Start with a natural-language brief, a saved model, a catalog-backed archetype, a photo/multiview scan, or an external URDF/MJCF import.</p>
+    </td>
+    <td width="50%">
+      <h3>2. Generate a ModelSpec</h3>
+      <p>TTC turns the input into a typed robotics contract: skeleton, parts, slots, ports, drivers, materials, sim assumptions, and lockfile pins.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>3. Validate before it counts</h3>
+      <p>The Rust validator checks structure, geometry, compatibility, physics assumptions, provenance, and export policy. Passing models become admitted; failing models remain editable drafts.</p>
+    </td>
+    <td width="50%">
+      <h3>4. Inspect and configure</h3>
+      <p>The Studio renders the same contract the validator sees. You can inspect parts, patch colors/materials/dimensions, align scans, launch jobs, and see consequences.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>5. Train, score, and share</h3>
+      <p>Training jobs produce policy artifacts with ONNX headers, task metadata, scorecards, randomization grids, and export gates. Shares and listings carry the validator evidence.</p>
+    </td>
+    <td width="50%">
+      <h3>6. Build, log, and repair</h3>
+      <p>BOM rows, vendor links, print quote handoffs, telemetry logs, wear estimates, impact analysis, and repair sheets all stay attached to the design lineage.</p>
+    </td>
+  </tr>
+</table>
+
+### How model generation works
+
+```mermaid
+flowchart LR
+  A["User brief"] --> B["Intent parser"]
+  B --> C["Approved catalog retrieval"]
+  C --> D["Pattern and exemplar context"]
+  D --> E["ModelSpec synthesis"]
+  E --> F["Rust validator"]
+  F -->|passes| G["Admitted model"]
+  F -->|fails| H["Repair loop"]
+  H --> E
+  H -->|exhausted| I["Editable draft with diagnostics"]
+  G --> J["Share, train, quote, list, export"]
+```
+
+Generation is not a black-box image prompt. It is a constrained pipeline:
+
+- The prompt is converted into an archetype, constraints, and retrieval query.
+- Only approved catalog rows and consented patterns enter the generation context.
+- The generator emits a real `ModelSpec`, not hidden code.
+- The validator checks every candidate.
+- Repair attempts are tracked.
+- If the model still fails, the work is saved as a draft with reasons, not thrown away.
+- Admitted models carry prompt hash, seed, model provenance, contract hash, and validator report.
+
+## What You Can Do
+
+| User action | What you get back | Why it matters |
 |---|---|---|
-| Browser Studio | Inspect, configure, validate, share, launch jobs, view artifacts | Live in `packages/studio` |
-| Rust core + WASM | One deterministic bake, validate, patch, and tick path | Live in `crates/` |
-| Gateway API | Models, shares, jobs, blobs, courses, listings, gates, quotes | Live in `packages/gateway` |
-| Worker plane | Photoscan, training, replay, bridge, co-design, maintenance jobs | Fixture truth plus live adapter seams |
-| Desktop shell | Native bridge surface for future serial and background recording | Fail-closed D28-gated Tauri scaffold |
-| Platform layer | Usage beta marketplace, classroom, moderation, license ledger | Live local APIs and Studio rows |
+| Generate from a brief | An admitted model or an editable diagnostic draft | AI output is useful only when it survives validation |
+| Edit a model conversationally | A JSON-Patch, re-baked geometry, and a fresh validator report | Changes are real contract edits, not visual-only tweaks |
+| Upload photos or multiview images | Photoscan artifacts, refit metrics, candidate component rows | Physical parts can become reviewed components instead of loose meshes |
+| Validate a design | A deterministic report with pass/fail diagnostics | Share, train, export, and listing gates have one source of truth |
+| Export MJCF/URDF | Training/deployment artifacts from the same model | Sim and external tooling do not fork the design |
+| Train a policy | ONNX metadata, I/O headers, task scorecard, export gate | Policy artifacts are inspectable and comparable |
+| Create a course or leaderboard run | EnvSpec validation and server-side replay verification | Community challenges can double as training curricula |
+| List a model or skill | Marketplace entry with validator evidence and usage rollup | Files become accountable product artifacts |
+| Request build handoff | Vendor links and print quote links | Users leave with actionable build steps, not just downloads |
+| Ingest field telemetry | Replay, system-ID, wear, impact, and repair records | Real use improves the twin and the next design |
 
 ### A design loop that keeps carrying evidence forward
 
@@ -101,7 +172,7 @@ flowchart LR
   H --> I["Policy artifact with ONNX header"]
   I --> J["Marketplace usage beta"]
   D --> K["Field log and maintenance twin"]
-  K --> L["Crash window, ghost divergence, repair sheet"]
+  K --> L["Impact window, ghost divergence, repair sheet"]
   F --> M["Vendor offers and print quote links"]
 ```
 
@@ -152,7 +223,7 @@ You get faster answers to the questions that usually appear too late:
 - Can I share it without leaking restricted geometry?
 - Can a stranger equip it and still see the validator report?
 - Can I get a quote link for the printed parts without building a checkout system?
-- If it crashes, can I turn the log into a repair sheet?
+- If a field run damages hardware, can I turn the telemetry into repair steps?
 
 ### For teams
 
@@ -184,16 +255,17 @@ flowchart LR
 
 | Area | What users see | What keeps it honest |
 |---|---|---|
-| Generation | Prompted models, staged progress, editable drafts | Validator-in-loop repair and Brief-25 gate |
-| Catalog | Approved parts, BOM rows, prices, citations | License ledger, review queue, immutable revisions |
-| Photoscan | Image/multiview job artifacts and alignment UI | D13 primitive-refit metrics and owner review flags |
-| Simulation | HUD, replay, MJCF/URDF, parity contracts | Rust source of truth and engine parity tolerances |
-| Training | Policy scorecards, ONNX headers, playback metadata | Estimator-only observations and export gates |
+| Model generation | Brief-to-ModelSpec pipeline, staged progress, repair attempts, editable drafts | Approved retrieval context, validator-in-loop repair, Brief-25 gate |
+| Studio editing | Visual inspection, conversational edits, JSON-Patch changes, revalidation | The visible model and validator contract stay the same object |
+| Catalog and BOM | Approved parts, BOM rows, prices, citations, license state | License ledger, review queue, immutable revisions |
+| Photoscan | Image/multiview job artifacts, scale/axis/port alignment UI | D13 primitive-refit metrics and owner review flags |
+| Simulation and export | HUD, replay, MJCF/URDF, parity contracts | Rust source of truth and engine parity tolerances |
+| Policy training | Scorecards, ONNX headers, task metadata, playback metadata | Estimator-only observations and export gates |
 | Courses | EnvSpec validation, assignments, leaderboards | Server-side replay verification |
 | Marketplace | Listed models/skills, usage rollups, moderation | Admitted reports, policy gate, D29 usage beta |
 | Commerce | Vendor links and print quote handoff | Off-platform checkout only, no payout/payment ledger |
 | Desktop/bridge | Future serial and recorder surface | D28 fail-closed native commands |
-| Maintenance | Wear, crash windows, repair steps, fleet summaries | Logs become records, not screenshots |
+| Maintenance | Wear estimates, impact windows, repair steps, fleet summaries | Field logs become records, not screenshots |
 
 ---
 
