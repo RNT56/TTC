@@ -26,7 +26,7 @@ phase-level state only. Parallel execution order and subworker ownership live in
 | P4 Text-to-CAD GA | ● *(2026-06-14: deterministic six-archetype template generation, staged SSE, validator repair/draft path, JSON-Patch edit route, Auth.js GitHub/account seam, server-backed shares, Brief-25 real-validator gate 25/25, eval history tables/API, Studio model/edit/share/eval panels)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
 | P6 Sim depth + interop | ◑ *(2026-06-14: collider auto-fit, blade-element-lite, disturbances, replay envelope verification, sag/current helpers, URDF/MJCF exporters, ros2_control sidecar, mesh visual manifest, slotless URDF/MJCF fixture import; full engine-backed Rapier/MuJoCo parity and external-driveable import still open)* | 3–4 wk |
-| P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, scorecard gate, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
+| P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
 | P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(2026-06-14: `forge-validate env`, expanded EnvSpec runtime checks, course-to-task adapter, courses/leaderboards/replay verification tables and routes, server-side leaderboard replay verification, Studio fixture course/score panel; full environment generation and board UI open)* | 3–4 wk |
@@ -170,9 +170,9 @@ ONNX export, in-browser policy playback; estimator-smoke gate (D8).
 
 Exit criteria:
 - [~] A trained hover + waypoint policy flies the twin in-browser from a one-click job *(fixture policy action-header playback live; live ONNX inference open)*
-- [ ] Ground-truth-trained policies rejected at scorecard time (estimator smoke)
+- [x] Ground-truth-trained policies rejected at scorecard time (estimator smoke) *(fixture and external SB3 worker gates reject SIM-004)*
 - [ ] Hover-class task to passing scorecard overnight on one consumer GPU
-- [ ] Scorecard schema final: success rate, robustness grid, energy; sub-threshold policies do not export
+- [x] Scorecard schema final: success rate, robustness grid, energy; sub-threshold policies do not export *(p7-scorecard-v1 plus blocked ONNX export metadata live)*
 
 ## P8 — Bridge + Desktop
 

@@ -18,6 +18,23 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Re-gate live SB3 policy artifacts
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7 · **TODO items:** P7-003 [~], P7-006 [x], P7-008 [~]
+**Done:** Normalized every `FORGE_SB3_TRAIN_CMD` result through the P7 scorecard
+gate instead of trusting external `artifactKind: policy` payloads. Live SB3 outputs
+now carry `p7-scorecard-v1`, required success/robustness/energy/lineage fields,
+estimator-smoke evidence, thresholds, `exportGate`, and `onnx.exportable`; missing
+scorecard fields and ground-truth-trained policies fail closed.
+**Changed:** `workers/forge_workers/training/jobs.py`,
+`workers/forge_workers/training/scorecard.py`,
+`workers/tests/test_training_live_adapter.py`, `workers/tests/test_scorecard.py`,
+`docs/systems/learning-engine.md`, `docs/systems/compute-workers.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `docs/ROADMAP.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Run a real SB3/MuJoCo hover/waypoint job through the normalized adapter and
+feed the resulting ONNX into browser runtime playback.
+**Blockers:** live SB3/MuJoCo runtime and ONNX Runtime Web integration remain open.
+
 ## 2026-06-14 — Normalize live photoscan adapter output
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P5 · **TODO items:** P5-001 [~], P5-002 [~], P5-006 [~]
 **Done:** Hardened `FORGE_PHOTOSCAN_CMD` and `FORGE_COLMAP_CMD` outputs so live

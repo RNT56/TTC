@@ -50,11 +50,15 @@ def gate(card: Scorecard,
         reasons.append(
             f"success_rate {card.success_rate:.2f} < {min_success:.2f}"
         )
+    if not card.robustness:
+        reasons.append("robustness grid missing")
     weak = [k for k, v in card.robustness.items() if v < min_robust]
     if weak:
         reasons.append(
             f"robustness below {min_robust:.2f} in grid cells: {', '.join(sorted(weak))}"
         )
+    if card.energy_wh <= 0:
+        reasons.append("energyWh must be positive")
     missing = [k for k in REQUIRED_LINEAGE if k not in card.lineage]
     if missing:
         reasons.append(f"PRV-002 lineage missing: {', '.join(missing)}")

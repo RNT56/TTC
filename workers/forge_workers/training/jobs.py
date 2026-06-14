@@ -14,7 +14,7 @@ from typing import Any
 from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
-from forge_workers.training.scorecard import Scorecard, gate
+from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS, Scorecard, gate
 from forge_workers.training.tasks import task_definition
 
 
@@ -36,37 +36,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         timeout_s=float(payload.get("timeoutS", 12 * 3600)),
     )
     if external is not None:
-        if external.get("artifactKind") == "policy":
-            return external
-        scorecard = external.get("scorecard") if isinstance(external.get("scorecard"), dict) else {}
-        exportable = bool(scorecard.get("exportable", external.get("exportable", False))) if isinstance(scorecard, dict) else False
-        return {
-            "artifactKind": "policy",
-            "provider": external.get("provider", "external-sb3"),
-            "algorithm": external.get("algorithm", payload.get("algorithm", "ppo")),
-            "task": external.get("task", task_meta),
-            "io": external.get(
-                "io",
-                {
-                    "observations": external.get("observations", []),
-                    "actions": external.get("actions", []),
-                    "onnxHeader": external.get(
-                        "onnxHeader",
-                        {"contractHash": contract_hash, "task": resolved_task, "observationCount": "0", "actionCount": "0"},
-                    ),
-                },
-            ),
-            "domainRandomization": external.get("domainRandomization", payload.get("domainRandomization", {})),
-            "onnx": external.get("onnx", {"cacheKey": external.get("cacheKey", f"external-sb3:{contract_hash[:12]}"), "opset": 18, "fixture": False}),
-            "scorecard": {
-                **scorecard,
-                "task": scorecard.get("task", resolved_task) if isinstance(scorecard, dict) else resolved_task,
-                "taskVersion": scorecard.get("taskVersion", payload.get("taskVersion", task_meta["version"])) if isinstance(scorecard, dict) else task_meta["version"],
-                "lineage": scorecard.get("lineage", {"contractHash": contract_hash, "seed": seed, "codeVersion": external.get("codeVersion", "external-sb3")}) if isinstance(scorecard, dict) else {},
-                "exportable": exportable,
-                "reasons": scorecard.get("reasons", [] if exportable else ["external scorecard did not mark policy exportable"]) if isinstance(scorecard, dict) else [],
-            },
-        }
+        return _external_policy_result(external, payload, task_meta, resolved_task, contract_hash, seed)
     gpu = configured_gpu_adapter().run("train.policy", payload)
     card = Scorecard(
         task=resolved_task,
@@ -118,18 +88,138 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
             },
         },
         "domainRandomization": randomization,
-        "onnx": {"cacheKey": gpu["cacheKey"], "opset": 18, "fixture": True, "path": f"{gpu['cacheKey']}/policy.onnx"},
-        "scorecard": {
-            "task": card.task,
-            "taskVersion": card.task_version,
-            "successRate": card.success_rate,
-            "robustness": card.robustness,
-            "energyWh": card.energy_wh,
-            "lineage": card.lineage,
+        "onnx": {
+            "cacheKey": gpu["cacheKey"],
+            "opset": 18,
+            "fixture": True,
+            "path": f"{gpu['cacheKey']}/policy.onnx",
             "exportable": result.exportable,
-            "reasons": result.reasons,
         },
-}
+        "exportGate": "exportable" if result.exportable else "blocked",
+        "scorecard": _scorecard_payload(card, result.reasons, result.exportable),
+    }
+
+
+def _external_policy_result(
+    external: dict[str, Any],
+    payload: dict[str, Any],
+    task_meta: dict[str, Any],
+    resolved_task: str,
+    contract_hash: str,
+    seed: str,
+) -> dict[str, Any]:
+    raw_scorecard = external.get("scorecard") if isinstance(external.get("scorecard"), dict) else {}
+    lineage = _string_dict(
+        raw_scorecard.get(
+            "lineage",
+            external.get("lineage", {"contractHash": contract_hash, "seed": seed, "codeVersion": external.get("codeVersion", "external-sb3")}),
+        )
+    )
+    card = Scorecard(
+        task=str(raw_scorecard.get("task", external.get("taskId", resolved_task))),
+        task_version=str(raw_scorecard.get("taskVersion", payload.get("taskVersion", task_meta["version"]))),
+        success_rate=_number(raw_scorecard.get("successRate", external.get("successRate")), 0.0),
+        robustness=_robustness(raw_scorecard.get("robustness", external.get("robustness"))),
+        energy_wh=_number(raw_scorecard.get("energyWh", external.get("energyWh")), 0.0),
+        trained_on_estimator=_bool(raw_scorecard.get("trainedOnEstimator", external.get("trainedOnEstimator")), False),
+        lineage=lineage,
+    )
+    gate_result = gate(card)
+    provider_reasons = _provider_reasons(raw_scorecard, external)
+    reasons = [*gate_result.reasons, *provider_reasons]
+    exportable = gate_result.exportable and not provider_reasons
+    onnx = external.get("onnx") if isinstance(external.get("onnx"), dict) else {}
+    onnx_payload = {
+        "cacheKey": onnx.get("cacheKey", external.get("cacheKey", f"external-sb3:{contract_hash[:12]}")),
+        "opset": onnx.get("opset", 18),
+        "fixture": False,
+        "path": onnx.get("path"),
+        "exportable": exportable,
+    }
+    return {
+        "artifactKind": "policy",
+        "provider": external.get("provider", "external-sb3"),
+        "algorithm": external.get("algorithm", payload.get("algorithm", "ppo")),
+        "task": external.get("task", task_meta) if isinstance(external.get("task"), dict) else task_meta,
+        "io": _external_io(external, contract_hash, resolved_task),
+        "domainRandomization": external.get("domainRandomization", payload.get("domainRandomization", {})),
+        "onnx": onnx_payload,
+        "exportGate": "exportable" if exportable else "blocked",
+        "scorecard": _scorecard_payload(card, reasons, exportable),
+    }
+
+
+def _scorecard_payload(card: Scorecard, reasons: list[str], exportable: bool) -> dict[str, Any]:
+    return {
+        "schemaVersion": "p7-scorecard-v1",
+        "task": card.task,
+        "taskVersion": card.task_version,
+        "successRate": card.success_rate,
+        "robustness": card.robustness,
+        "energyWh": card.energy_wh,
+        "trainedOnEstimator": card.trained_on_estimator,
+        "lineage": card.lineage,
+        "thresholds": {"minSuccess": DEFAULT_MIN_SUCCESS, "minRobustness": DEFAULT_MIN_ROBUST},
+        "exportable": exportable,
+        "reasons": reasons,
+    }
+
+
+def _external_io(external: dict[str, Any], contract_hash: str, resolved_task: str) -> dict[str, Any]:
+    io = external.get("io")
+    if isinstance(io, dict):
+        return io
+    observations = external.get("observations") if isinstance(external.get("observations"), list) else []
+    actions = external.get("actions") if isinstance(external.get("actions"), list) else []
+    header = external.get("onnxHeader") if isinstance(external.get("onnxHeader"), dict) else {}
+    return {
+        "observations": observations,
+        "actions": actions,
+        "onnxHeader": {
+            "contractHash": header.get("contractHash", contract_hash),
+            "task": header.get("task", resolved_task),
+            "observationCount": str(header.get("observationCount", len(observations))),
+            "actionCount": str(header.get("actionCount", len(actions))),
+        },
+    }
+
+
+def _provider_reasons(scorecard: dict[str, Any], external: dict[str, Any]) -> list[str]:
+    reasons = []
+    if scorecard.get("exportable", external.get("exportable", True)) is False:
+        reasons.append("external scorecard marked policy non-exportable")
+    raw = scorecard.get("reasons")
+    if isinstance(raw, list):
+        reasons.extend(str(reason) for reason in raw)
+    return reasons
+
+
+def _robustness(value: Any) -> dict[str, float]:
+    if not isinstance(value, dict):
+        return {}
+    out: dict[str, float] = {}
+    for key, raw in value.items():
+        if isinstance(raw, (int, float)):
+            out[str(key)] = float(raw)
+    return out
+
+
+def _string_dict(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    return {str(key): str(raw) for key, raw in value.items() if isinstance(raw, (str, int, float, bool))}
+
+
+def _number(value: Any, default: float) -> float:
+    if isinstance(value, (int, float)):
+        return float(value)
+    return default
+
+
+def _bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    return default
 
 
 def train_offline_bc(payload: dict[str, Any]) -> dict[str, Any]:

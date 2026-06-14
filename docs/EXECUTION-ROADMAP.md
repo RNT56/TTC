@@ -206,15 +206,17 @@ Scope:
   of 2026-06-14 for hover-hold, waypoint chain, gate slalom, velocity tracking,
   walk-to-target, rough terrain, push recovery, line follow, obstacle course,
   reach, and track.
-- Replace fixture `train.policy` with live seeded SB3 PPO/SAC runs.
-- Add ONNX Runtime Web inference so browser playback uses real policy outputs,
-  not only fixture action headers.
+- Replace fixture `train.policy` with live seeded SB3 PPO/SAC runs. External SB3
+  outputs now normalize through the same `p7-scorecard-v1` export gate, but real
+  engine-backed training evidence remains open.
+- Add ONNX Runtime Web inference so browser playback uses real exportable policy
+  outputs, not only fixture action headers.
 - `train.offline-bc` now builds deterministic telemetry warmstart datasets;
   live offline-RL/fine-tune remains open.
 - Run the P7-010 MJX benchmark on D12 quad, rover, and legged morphologies before
   any adoption claim.
-- Finalize scorecard schema and estimator-smoke rejection for ground-truth-trained
-  policies.
+- Scorecard schema and estimator-smoke rejection are live in fixture and external
+  SB3 worker paths; keep them wired through any live trainer.
 
 Dependencies:
 

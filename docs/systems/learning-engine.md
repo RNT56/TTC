@@ -46,11 +46,13 @@ P7-010 benchmark says CPU PPO saturates (claims hedged until measured). Curricul
 from-reality (P8+): behavior cloning over logged (o, a) pairs and conservative
 offline RL over telemetry tapes.
 
-Live 2026-06-14: `FORGE_SB3_TRAIN_CMD` can supply live SB3 output in the same
-policy artifact shape, and `forge-sim::heavy::evaluate_mjx_adoption` encodes the
-P7-010 rule: adopt MJX only when CPU MuJoCo/SB3 misses the overnight/budget target
-by more than 25 %, MJX stays inside frozen parity bands, and cost-normalized
-throughput is at least 3x.
+Live 2026-06-14: `FORGE_SB3_TRAIN_CMD` can supply live SB3 output, but every result
+is normalized back through the P7 scorecard gate before export. External policies
+must provide success, robustness grid, energy, estimator-source evidence, and
+lineage; missing fields, provider rejection, or ground-truth training fail closed.
+`forge-sim::heavy::evaluate_mjx_adoption` encodes the P7-010 rule: adopt MJX only
+when CPU MuJoCo/SB3 misses the overnight/budget target by more than 25 %, MJX stays
+inside frozen parity bands, and cost-normalized throughput is at least 3x.
 
 ## 5. Domain randomization (first-class config)
 
@@ -65,13 +67,19 @@ rover, and arm reach tasks, and `train.policy` emits the selected definition.
 
 ## 6. Scorecards (the gate)
 
-`{successRate, robustness: grid results, energy, taskVersion, randomizationConfig,
-lineage}`. Computed by the training service; under D17 the evaluation replays are
-verifiable on any surface, with server re-verification as anti-cheat hygiene for
+`p7-scorecard-v1 = {successRate, robustness: grid results, energyWh,
+trainedOnEstimator, taskVersion, lineage, thresholds, exportable, reasons}`.
+Computed by the training service; under D17 the evaluation replays are verifiable on
+any surface, with server re-verification as anti-cheat hygiene for
 marketplace/leaderboard use. Gates: sub-threshold → no export;
 **estimator smoke (SIM-004/D8)** — a policy whose performance collapses when run on
 estimator output (i.e., trained on ground truth) is rejected at scorecard time.
 Renderer in studio: XC-21.
+
+Live 2026-06-14: fixture and external SB3 policy artifacts both pass through this
+schema and export gate. The ONNX metadata carries `exportable: false` whenever the
+scorecard is blocked, and the gateway stores the same state as a blocked export
+gate.
 
 ## 7. Pipeline
 

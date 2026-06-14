@@ -37,6 +37,18 @@ def test_weak_grid_cell_blocks_export():
     assert any("mass+15%" in r for r in result.reasons)
 
 
+def test_missing_robustness_grid_blocks_export():
+    result = gate(card(robustness={}))
+    assert not result.exportable
+    assert any("robustness grid missing" in r for r in result.reasons)
+
+
+def test_missing_energy_blocks_export():
+    result = gate(card(energy_wh=0.0))
+    assert not result.exportable
+    assert any("energyWh" in r for r in result.reasons)
+
+
 def test_missing_lineage_is_prv_002():
     result = gate(card(lineage={}))
     assert not result.exportable

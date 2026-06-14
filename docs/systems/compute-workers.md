@@ -97,8 +97,10 @@ system-ID, replay verdict, and Pareto candidate metadata so the gateway and stud
 can exercise the product surfaces without SB3/MuJoCo/GPU dependencies in CI.
 `train.policy` now also emits task metadata, domain-randomization settings, and an
 ONNX I/O header; `train.sysid-fit` estimates internal resistance and emits a
-contract patch proposal. `FORGE_SB3_TRAIN_CMD` and `FORGE_SYSID_FIT_CMD` can supply
-live SB3/system-ID results in the same artifact contract.
+contract patch proposal. `FORGE_SB3_TRAIN_CMD` can supply live SB3 results, but the
+worker re-runs every external policy through the scorecard/export gate before
+marking ONNX exportable. `FORGE_SYSID_FIT_CMD` can supply live system-ID results in
+the same artifact contract.
 
 ### 3.5 `workers/bridge` — config, recorder, supervisor (P8)
 `bridge.config-diff` compiles deployment config diffs with physical-confirmation
