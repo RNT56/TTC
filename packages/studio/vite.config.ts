@@ -24,6 +24,10 @@ export default defineConfig({
         target: process.env.FORGE_GATEWAY_PROXY ?? "http://127.0.0.1:8080",
         changeOrigin: true,
       },
+      "/auth": {
+        target: process.env.FORGE_GATEWAY_PROXY ?? "http://127.0.0.1:8080",
+        changeOrigin: true,
+      },
     },
   },
 });

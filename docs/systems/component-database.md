@@ -86,6 +86,11 @@ License class set at ingestion drives the export matrix
 serve derived LODs in-studio and degrade to dimensioned envelopes + link-out in
 STEP/3MF exports. The filter lives in the exporters; the *data* lives here.
 
+Live 2026-06-14: gateway `GET /v1/license-ledger` exposes a read-only ledger of
+license classes, source terms, component counts, priced/cited row counts, review
+counts, blocked exports, and export-policy distribution. Studio renders the ledger
+in the platform panel so restricted/export-filtered catalog state is user-visible.
+
 ## 6. Lockfiles & upgrades (D5; P3-006, XC-03)
 
 `componentRef`s are semver ranges; each model's lockfile resolves to immutable
@@ -127,8 +132,8 @@ ingestion-without-license rejection test.
 
 ## 10. Phase mapping & backlog
 
-P3: P3-001..010, XC-03, XC-06 (thrust tables), XC-17 (ledger UI/filter — UI lands
-P11). P11: BOM agent live vendor offers; price tracking as catalog-pro feature (D3).
+P3: P3-001..010, XC-03, XC-06 (thrust tables), XC-17 (ledger UI/filter). P11:
+BOM agent live vendor offers; price tracking as catalog-pro feature (D3).
 
 ## 11. Open questions
 

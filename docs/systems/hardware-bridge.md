@@ -1,7 +1,7 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** not started · **Phases:** P8 (entry-gated by legal review) · **Home:**
-studio bridge logic (TS) + `desktop/` (Tauri) + FORGE Link image *(proposed)* ·
+**Status:** deterministic bridge jobs live; gateway/Desktop hardware write/capture fail closed behind D28 lab gates · **Phases:** P8 (entry-gated by legal review) · **Home:**
+studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15
 
 ## 1. Purpose
@@ -16,6 +16,10 @@ power surface.
 **Hard entry gate:** ToS/liability legal review (ladder UX, supervisor disclaimers,
 telemetry consent) before any deployment feature ships
 ([`security-safety-legal.md`](../security-safety-legal.md) §3).
+The implementation gate is explicit: `d28.hardware` must be accepted in
+`platform_gate_signoffs`, deployment must set hardware lab mode envs, and the
+request must target one of the D12 reference rigs before any non-fixture
+hardware-touching job or Desktop native command can progress.
 
 ## 2. Browser-native surfaces (Chromium floor)
 
@@ -24,6 +28,14 @@ telemetry consent) before any deployment feature ships
   tab — read/write the firmware config diffs the contract compiles (P8-001).
 - **Telemetry ingest** over WebSerial/WebUSB into the recorder (P8-002).
 - Non-Chromium browsers get the viewer and the files — stated, not discovered (D15).
+
+Live 2026-06-14: `bridge.config-diff`, `bridge.telemetry-ingest`, and
+`bridge.supervisor-check` are executable worker jobs and Studio launch buttons. They
+compile FC diffs, normalize telemetry into replay tapes, and apply fail-closed
+supervisor checks. Browser serial writes and real device capture remain blocked by
+D28 until legal/hardware sign-off. The gateway rejects non-fixture live bridge jobs
+unless D28 is accepted, `FORGE_HARDWARE_LAB_MODE=1`, the provider is local, and the
+reference rig is one of the pinned D12 quad/rover IDs.
 
 ## 3. FORGE Desktop (Tauri, ships P8 — D15)
 
@@ -36,10 +48,15 @@ Not a contingency: a scheduled product surface that arrives when it has a real j
 | filesystem | big log archives on a real filesystem instead of OPFS (P8-013) |
 | background recorder | field telemetry capture with the laptop lid closed (P8-013) |
 
-Build/signing/update pipeline for the three desktop OSes is part of P8-011. A
-native-core fast path inside the shell (bypassing WASM) is available later if
-profiling asks — not v1 scope. Desktop exit proof: **a field log captured by Desktop
-replays with visible ghost divergence** (P8-014).
+Live 2026-06-14: `@forge/desktop` carries the Tauri config that wraps the Studio
+bundle, a fail-closed native command contract for serial/config/recording, and a
+package check that validates no-auto-arm, D28 signoff env, hardware lab mode, D12 rig
+allowlist, and bundle target invariants. Native serial/config/recording commands
+still return fail-closed errors until the D12 lab adapter is installed after
+signoff. Build/signing and updater delivery for the three desktop OSes remain
+P8-011. A native-core fast path inside the shell (bypassing WASM) is available later
+if profiling asks — not v1 scope. Desktop exit proof: **a field log captured by
+Desktop replays with visible ghost divergence** (P8-014).
 
 ## 4. The flight recorder & ghost protocol (P8-003/004)
 
@@ -59,11 +76,19 @@ Bench thrust pulls, logged flights, joint step responses → fitting job
 constants, friction) → policy fine-tunes against the corrected twin. **A guided
 ritual, not an expert chore** — the ghost makes the residual gap visible.
 
+Live 2026-06-14: the fixture `train.sysid-fit` path estimates battery internal
+resistance from telemetry samples and emits a JSON-Patch proposal for the sim block.
+
 ## 6. FORGE Link (P8-006; XC-19)
 
 Flashable companion-computer image (Pi-class): rosbridge + MAVLink router + ONNX/
 TFLite runtime + **pairing-code auth**. Makes the ladder turnkey where a companion
 computer is required (ROS 2 graphs, MAVLink routing, onboard policy install).
+
+Live 2026-06-14: the checked manifest at
+`packages/desktop/forge-link/manifest.json` pins the required services, ports,
+pairing-code TTL, no-auto-arm policy, and policy/supervisor rate contract. The
+actual image build remains open.
 
 ## 7. The deployment ladder (product-enforced, never skipped)
 
@@ -77,6 +102,10 @@ computer is required (ROS 2 graphs, MAVLink routing, onboard policy install).
 Every transition is a **deliberate physical-confirmation interaction**. The bridge
 never auto-arms anything.
 
+Live 2026-06-14: `packages/desktop/deployment-ladder.json` is the executable ladder
+contract used by package checks. It freezes the SITL → HITL → constrained → free
+stage order and requires physical confirmation for all hardware-touching stages.
+
 **Control-rate contract (D9), stated in the UX:** policy advises at ~50 Hz; the
 supervisor runs at ≥ 200 Hz; the FC rate loop is never touched; a missed inference
 tick degrades to the fallback **by design**.
@@ -84,6 +113,10 @@ tick degrades to the fallback **by design**.
 **Safety supervisor (P8-008):** geofence, attitude and rate envelopes, battery
 floor, hardware kill switch, and a fallback controller (manual or position-hold)
 that owns the air gap. The policy is an *advisor* the supervisor can veto.
+
+Live 2026-06-14: supervisor decisions are deterministic in Rust and worker code,
+including explicit policy-advisory and supervisor loop rates. The hardware loop is
+not enabled by this implementation.
 
 ## 8. Deployment targets & honesty (plan §11.4)
 
@@ -100,6 +133,14 @@ Both reference rigs: the quad walks SITL → HITL → tethered, documented as th
 tutorial; the rover deploys via the ROS 2 path. These rigs are the standing
 sim-to-real test fixtures.
 
+Live 2026-06-14: the executable dry-run playbooks are
+[`reference-quad-pilot.md`](../pilots/reference-quad-pilot.md) and
+[`reference-rover-pilot.md`](../pilots/reference-rover-pilot.md). `pnpm pilot:check`
+asserts that the playbooks stay tied to the D12 rig IDs, D28, no-auto-arm policy,
+SITL/HITL/constrained ladder order, telemetry/replay evidence, and the checked
+Desktop deployment ladder. Real HITL, tethered hover, constrained driving, and free
+operation remain blocked until D28 is resolved.
+
 ## 10. Dependencies
 
 `forge-sim` (replay format, twin), `workers/training` (sysid, fine-tune), firmware
@@ -112,8 +153,9 @@ HITL harness against the reference FC (timing/interface validation); recorder
 round-trip (log → replay → ghost render — bit-exact under D17); sysid fit on
 synthetic telemetry with known ground truth (fit must recover injected constants);
 supervisor unit tests (envelope breach → fallback within deadline); pairing-auth
-tests; Desktop plugin integration tests on all three OSes; "never auto-arm" asserted
-in code review + integration test.
+tests; Desktop plugin integration tests on all three OSes; gateway/Desktop gate tests
+for D28 fail-closed behavior, D12 lab-only behavior, physical confirmation, and
+"never auto-arm".
 
 ## 12. Open questions
 

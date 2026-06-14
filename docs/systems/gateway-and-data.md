@@ -1,8 +1,8 @@
 # Gateway & Data Plane — implementation doc
 
-**Status:** validation/BOM/review/generation APIs live · **Phases:** P2 (validation service), grows through P11 ·
-**Package:** `packages/gateway` + `infra/` *(proposed)* · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17
+**Status:** validation/BOM/review/generation/auth/model/share/job/platform APIs live · **Phases:** P2 (validation service), grows through P12 ·
+**Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28
 
 ## 1. Purpose
 
@@ -23,19 +23,21 @@ stateful service (Postgres) + object storage; local-first means most studio use 
 touches the gateway at all. napi-rs bindings exist as a hot-path option — measured
 against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 
-## 3. API surface *(proposed sketch — finalize per phase)*
+## 3. API surface
 
 | Area | Routes | Phase |
 |---|---|---|
-| Validation | `POST /v1/validate` (contract → report); `GET /v1/reports/:hash` | P2 |
-| Registry: models | CRUD `/v1/models`, admission-gated; `GET /v1/share/:id` (public read-only, D4) | P2/P4 |
-| Generation | `POST /v1/generate/context` (brief → approved catalog context + prompt-cache prefix) live; `POST /v1/generate` (brief → deterministic or opt-in Anthropic tool-pass synthesis + validator repair loop + D14 draft fallback + audit row) live; `POST /v1/generate/stream` (SSE-compatible start/complete/error events) live; `GET /v1/generate/models` (D26 model pins) live; SSE stream of per-pass diagnostics/slots proposed; `POST /v1/models/:id/edit` (NL → JSON-Patch) proposed | P4 |
+| Validation | `POST /v1/validate` (contract → report); `POST /v1/bake`; `POST /v1/bom`; `GET /v1/schema` | P2/P3 |
+| Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits` | P4/P11 |
+| Registry: models | `GET/POST /v1/models`; `GET /v1/models/:id`; `POST /v1/models/:id/edit`; `POST /v1/models/:id/share`; `GET /v1/share/:shareId` (public read-only, D4) | P4 |
+| Generation | `POST /v1/generate/context`; `POST /v1/generate`; `POST /v1/generate/stream` (staged SSE); `GET /v1/generate/models` (D26 model pins) | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
-| Jobs | `POST /v1/jobs/{photoscan,train,sysid,export-step}`; `GET /v1/jobs/:id` (status/SSE) | P5+ |
-| Policies | `GET/POST /v1/policies`, scorecards; export gating | P7 |
-| Courses | CRUD + leaderboards + replay verification submit | P10 |
-| Platform | accounts, listings, classroom, moderation endpoints | P11 |
+| Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
+| Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `maintenance.*`; fixture outputs materialize sidecar rows where tables exist | P5+ |
+| Policies/replays/photoscan | `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
+| Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET/POST /v1/leaderboards`; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
+| Platform | `GET/POST /v1/listings`; `GET/POST /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/evals/brief25/latest` | P11/P12 |
 
 Conventions *(proposed)*: versioned prefix `/v1`; SSE for long-running streams
 (generation, jobs); presigned S3 URLs for all binary upload/download; idempotency
@@ -47,8 +49,19 @@ keys on job creation.
 (+`component_revisions`), validator reports, provenance, scorecard/lineage, courses/
 leaderboards, users; **pgvector** for embeddings; **graphile-worker** for
 transactional jobs (job row commits atomically with the domain row that caused it).
-**Object storage** (S3-compatible: Hetzner/R2): meshes, photos, policies, telemetry
-logs, renders — presigned browser upload, content-addressed keys *(proposed)*.
+**Object storage** (S3-compatible: MinIO locally; Hetzner/R2 viable later): meshes,
+photos, policies, telemetry logs, renders. Authenticated `/v1/blobs` registration
+creates owner-scoped `object_blobs` rows and returns AWS-compatible presigned
+upload/download contracts. Content-hash rows are idempotent per owner.
+Fixture job outputs currently materialize to `photoscan_artifacts`,
+`policy_artifacts`, `telemetry_logs`, `replay_artifacts`, and
+`maintenance_records`; `local` and `modal` jobs persist as queued rows for the
+Docker Compose worker to claim and materialize. Photoscan result caches and policy
+ONNX outputs also upsert owner-scoped `object_blobs` rows and link those rows from
+their artifact tables.
+Classroom assignments/submissions, moderation reports, and policy-sharing signoffs
+are local P11 tables; submissions store the exact validator report and deterministic
+grade object used by the production admission gate.
 
 Migrations: forward-only SQL in `infra/migrations`, run on deploy; schema changes
 reviewed like code.
@@ -63,10 +76,16 @@ optional for local validator-only use: review routes return 503 when the catalog
 database is unavailable, while validation/bake/BOM routes keep working from the
 binary and file catalog.
 
+Auth is pulled forward for P4/P11: Auth.js core runs under Fastify at `/auth/*`,
+using GitHub OAuth and the Auth.js Postgres adapter schema. Local deterministic
+tests and automation can opt into header auth with `FORGE_DEV_AUTH=1`; public share
+reads never require authentication.
+
 Generation operations consume only approved review rows with non-blocked export
 policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
-the validator-gated synthesis loop with an injectable adapter and deterministic
-fixture-backed default. Callers can opt into live Anthropic synthesis with
+the validator-gated synthesis loop with deterministic multi-archetype templates by
+default and an injectable adapter for live providers. Callers can opt into live
+Anthropic synthesis with
 `provider: "anthropic"` and a per-request `x-forge-anthropic-key` header or
 `anthropicApiKey` body field; deployments may instead provide `ANTHROPIC_API_KEY`
 for managed-key environments. The live path uses a forced client tool call whose
@@ -80,25 +99,27 @@ slot/diagnostic streaming remains proposed for the richer studio UX.
 Generated-artifact persistence is in Postgres table `generated_artifacts`: prompt,
 provider, archetype/categories, seed, stable contract hash, prompt hash, final model
 ID, contract JSON, validator report, attempts, approved-catalog context, and D26
-model pins. It is on by default for the gateway and can be disabled in tests through
-the server options.
+model pins. Authenticated generation also creates a user-owned `model_registry` row.
 
-## 5. Job queue taxonomy *(proposed — names final at first implementation)*
+## 5. Job queue taxonomy
 
-`photoscan.reconstruct` · `occt.tessellate` · `occt.step-export` · `occt.dfm` ·
-`etl.ingest-component` · `train.policy` · `train.sysid-fit` · `replay.verify`
-(leaderboards — anti-cheat re-verification, D17) · `codesign.evaluate` (tiered;
-tier-0 runs in-gateway via the native binary). Python workers poll
-graphile-worker; results land transactionally (Postgres) + object storage. Every job
-carries `{userId, provenance, idempotencyKey}`.
+`etl.ingest-component` · `occt.tessellate` · `photoscan.single` ·
+`photoscan.multiview` · `train.policy` · `train.sysid-fit` · `replay.verify`
+(leaderboards — anti-cheat re-verification, D17) · `codesign.evaluate` ·
+`bridge.config-diff` · `bridge.telemetry-ingest` · `bridge.supervisor-check` ·
+`maintenance.estimate-wear` · `maintenance.crash-forensics` ·
+`maintenance.repair-sheet` · `maintenance.fleet-summary`. The local
+runner registers fixture-backed handlers for all names; Modal/GPU work sits behind
+adapters. Fixture jobs complete synchronously for deterministic CI; non-fixture
+jobs remain queued until claimed by the Python worker. Every job carries
+`{userId, provider, payload, idempotencyKey}`.
 
 ## 6. Auth & metering (D3)
 
-Auth.js (email + OAuth) — **anonymous-local mode first-class**; identity only gates
-server features. BYO Anthropic key: client-held, per-request, never persisted
-server-side *(proposed — verify against the vetted integration pattern at P4)*.
-Metered credits for keyless generation and all GPU jobs at transparent cost-plus;
-studio (view/configure/validate/local-sim) free forever.
+Auth.js + GitHub OAuth are live. BYO Anthropic key is client-held, per-request, and
+never persisted server-side. `credit_accounts`, `credit_ledger`, and `usage_events`
+are live; template generation records zero-cost authenticated usage and Modal jobs
+debit the scaffold ledger.
 
 ## 7. Determinism duties (D17)
 
@@ -118,7 +139,7 @@ Backups: Postgres snapshots + object-storage lifecycle rules *(proposed)*.
 Route schema round-trips (TypeBox gives this nearly free); admission-gate integration
 tests (invalid contract → 422 with diagnostics; draft semantics); share-URL
 anonymous-access test (P4 exit criterion); job idempotency tests; queue
-poison-message handling.
+claim/fail-closed tests; poison-message handling.
 
 ## 10. Open questions
 

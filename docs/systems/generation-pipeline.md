@@ -1,7 +1,7 @@
 # Generation Pipeline (Text-to-CAD) — implementation doc
 
-**Status:** P4 context + validator-loop synthesis + opt-in Claude transport live · **Phases:** P4 (GA), P10 (environments) · **Home:**
-`packages/gateway` (orchestrator context, deterministic synthesis, and Anthropic tool-pass adapter live) · **Plan refs:** §8 (v3.0) ·
+**Status:** P4 deterministic GA path live: staged generation, edit, share, eval history · **Phases:** P4 (GA), P10 (environments) · **Home:**
+`packages/gateway` (orchestrator context, deterministic synthesis, staged SSE, edit/share routes, and Anthropic tool-pass adapter) · **Plan refs:** §8 (v3.0) ·
 **Decisions:** D3, D14, D16, D17, D25, D26, D-evals
 
 ## 1. Purpose
@@ -26,11 +26,13 @@ transport/executors remain deployment-owned.
    terms, XC-13); retrieved exemplars ride along as schema-true few-shot context; the
    **schemars-emitted schema** + engine docs sit in a **prompt-cached prefix**
    (XC-14) — the same schema artifact `forge-contract` is built from (D16).
-3. **Constrained synthesis** — Claude emits *only* contract JSON via tool use with
-   the JSON Schema enforced. **Multi-pass emission order:** skeleton + slots + ports
-   + driver params first; per-slot parts second; materials/explode/sim third. Small
-   emissions are checkable and cheap to repair; slots stream into the viewport as
-   they validate (60 s budget).
+3. **Constrained synthesis** — the default local path emits deterministic complete
+   ModelSpec JSON for multirotor, rover, quadruped, arm, biped, and fixedwing
+   archetypes. Optional Claude transport still emits *only* contract JSON via tool
+   use with the JSON Schema enforced. **Multi-pass emission order:** skeleton +
+   slots + ports + driver params first; per-slot parts second;
+   materials/explode/sim third. Small emissions are checkable and cheap to repair;
+   slots stream into the viewport as they validate (60 s budget).
 4. **Validator in the loop** — every pass runs `forge-validate` (in-process WASM for
    instant feedback, the binary in CI — **same bits, D17**); failures return as
    machine-readable diagnostics (the [`validation-harness.md`](validation-harness.md)
@@ -48,9 +50,9 @@ engine docs, and schema-true examples, and retrieves only catalog components wit
 approved review rows plus non-blocked export policies. It returns
 `mode: "context-only"` and blocked reasons when no approved catalog truth matches.
 
-Also live 2026-06-13: `POST /v1/generate` runs the first executable synthesis loop.
-The default adapter is deterministic and exemplar-backed so local/CI behavior does
-not require live Claude keys. The opt-in Anthropic provider (`provider:
+Also live 2026-06-14: `POST /v1/generate` runs the executable synthesis loop.
+The default adapter is deterministic and template-backed so local/CI behavior does
+not require live Claude keys or exemplar copying. The opt-in Anthropic provider (`provider:
 "anthropic"`) calls the Messages API through a strict client-tool pass:
 `forge_emit_modelspec` is forced via `tool_choice`, its `input_schema` is the
 schemars-emitted ModelSpec schema, and repair calls switch to the D26 repair model
@@ -62,9 +64,10 @@ exhausted attempts are re-run with D14 draft semantics and returned with
 diagnostics. The route stamps generated contracts with model version, prompt hash,
 and seed, returns the validator report, and records admitted/draft/rejected
 generations in `generated_artifacts` with the contract, report, attempts, model
-pins, and approved-catalog context. `POST /v1/generate/stream` is available as an
-SSE-compatible start/complete/error event surface for the studio. Explicit
-multi-pass stage splitting remains P4 follow-up work.
+pins, approved-catalog context, owner scope when authenticated, and zero-cost usage.
+`POST /v1/generate/stream` is available as an SSE-compatible stage surface for the
+studio: intent parse, retrieval, skeleton/slot pass, part/detail pass,
+validation/repair pass, admission, and draft admission.
 
 ## 3. Conversational editing (P4-005)
 
@@ -72,6 +75,11 @@ multi-pass stage splitting remains P4 follow-up work.
 operations** against the live contract, validated incrementally, applied with
 rebuild-in-place via the core's patch/re-bake path (explode/jog state preserved;
 re-bake ≤ 10 ms). Budget: < 3 s end to end.
+
+Live 2026-06-14: `POST /v1/models/:id/edit` is authenticated and applies
+deterministic natural-language edits through the same JSON-Patch path used by
+`forge-validate patch`. Supported edits cover dimensions, component swaps, material
+and color changes, battery cell count, prop guards/ducts, and driver parameters.
 
 ## 4. Cost & model discipline (D3)
 
@@ -92,18 +100,20 @@ pattern-library update, and LLM model-version bump. Tracked: admission rate (GA 
 ≥ 20/25 without human repair), repair-iteration count, diversity metrics — on a
 dashboard, over time. A model bump that regresses the dashboard does not ship.
 
-Live scaffold: [`evals/brief25.corpus.json`](../../evals/brief25.corpus.json)
+Live 2026-06-14: [`evals/brief25.corpus.json`](../../evals/brief25.corpus.json)
 holds the 25 canonical briefs. `pnpm eval:brief25` runs the deterministic template
-provider through the gateway generation loop with fixture catalog rows and writes a
-machine-readable report to `artifacts/evals/brief25-latest.json`. CI runs the same
-script in real-validator mode and uploads `brief25-ci.json`; the time-series
-dashboard remains follow-up work.
+provider through the gateway generation loop in real-validator mode and enforces the
+GA gate. The current deterministic path admits 25/25. `--record-db` stores
+`eval_runs` and per-brief rows; the gateway exposes `/v1/evals/brief25/latest`, and
+the studio shows admission rate, repair attempts, diagnostics, and archetype
+coverage.
 
 ## 6. Environment generation (P10, §8.5)
 
 The same pipeline with a smaller schema: text → EnvSpec (terrain, gates, obstacles,
-win conditions) through the same gatekeeper pattern (ENV-* checks). Design the
-orchestrator schema-generic now (P4-013); ship env generation with P10.
+win conditions) through the same gatekeeper pattern (ENV-* checks). The P4 seam is
+live in shared runtime types as `artifactKind: "model" | "env"` plus placeholder
+EnvSpec validation stubs; full course generation ships with P10.
 
 ## 7. Ambient intelligence (later phases)
 
@@ -118,8 +128,11 @@ resolution, wire list from electrical ports.
 WASM + binary), component DB (retrieval + componentRefs), review queue API
 (`GET /v1/reviews`, `PATCH /v1/reviews/:id` with audit/export policy),
 `POST /v1/generate/context`, `POST /v1/generate`, `POST /v1/generate/stream`,
-`generated_artifacts`, injectable synthesis/source/Claude/OCCT adapters, Anthropic API, `studio` (BYO-key settings, streaming
-viewport, draft UX XC-16).
+`POST /v1/models/:id/edit`, `POST /v1/models/:id/share`,
+`GET /v1/share/:shareId`, `GET /v1/evals/brief25/latest`,
+`generated_artifacts`, `model_registry`, `share_snapshots`, `eval_runs`,
+injectable synthesis/source/Claude/OCCT adapters, Anthropic API, `studio`
+(BYO-key settings, streaming viewport, draft UX XC-16).
 
 ## 9. Testing
 
@@ -131,11 +144,12 @@ regression cases (XC-24); patch-editing round-trip tests; provenance completenes
 
 ## 10. Phase mapping & backlog
 
-P4: P4-001..013, XC-13/14/15/16. P10: env generation. P11: BOM/doc agents.
+P4: P4-001..013, XC-13/14/15/16. P10: full env generation and course registry.
+P11: BOM/doc agents.
 
 ## 11. Open questions
 
-Exact multi-pass tool-schema decomposition (one tool per pass vs one tool with a
+Claude multi-pass tool-schema decomposition (one tool per pass vs one tool with a
 `pass` discriminator); repair-context window management across iterations (full
-history vs last-diagnostics-only); how drafts surface in search (likely: private
-only).
+history vs last-diagnostics-only); production draft search rules beyond the current
+private model registry.

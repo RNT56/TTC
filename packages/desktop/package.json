@@ -1,0 +1,13 @@
+{
+  "name": "@forge/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FORGE Desktop shell scaffold: Tauri wrapper, bridge plugin contracts, FORGE Link image plan.",
+  "scripts": {
+    "build": "node scripts/check-desktop.mjs",
+    "test": "node scripts/check-desktop.mjs",
+    "typecheck": "node scripts/check-desktop.mjs"
+  },
+  "license": "SEE LICENSE IN ../../LICENSE"
+}

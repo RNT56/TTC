@@ -2,6 +2,8 @@
 //!
 //!   forge-validate run <contract.json> [--report out.json] [--as-draft]
 //!   forge-validate bake <contract.json> [--out bake.json]
+//!   forge-validate patch <contract.json> <patch.json> [--out out.json]
+//!   forge-validate env <env.json> [--report out.json] [--as-draft]
 //!   forge-validate schema [--out schema.json]
 //!
 //! Exit codes: 0 admitted/ok · 1 usage or I/O error · 2 rejected · 3 draft.
@@ -16,12 +18,24 @@ fn main() -> ExitCode {
         Some("run") => cmd_run(&args[1..]),
         Some("bake") => cmd_bake(&args[1..]),
         Some("bom") => cmd_bom(&args[1..]),
+        Some("patch") => cmd_patch(&args[1..]),
+        Some("env") => cmd_env(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate schema [--out schema.json]"
             );
             ExitCode::from(1)
+        }
+    }
+}
+
+fn read_file(command: &str, path: &str) -> Result<String, ExitCode> {
+    match std::fs::read_to_string(path) {
+        Ok(d) => Ok(d),
+        Err(e) => {
+            eprintln!("{command}: cannot read {path}: {e}");
+            Err(ExitCode::from(1))
         }
     }
 }
@@ -37,12 +51,9 @@ fn cmd_run(args: &[String]) -> ExitCode {
         eprintln!("run: missing <contract.json>");
         return ExitCode::from(1);
     };
-    let doc = match std::fs::read_to_string(path) {
+    let doc = match read_file("run", path) {
         Ok(d) => d,
-        Err(e) => {
-            eprintln!("run: cannot read {path}: {e}");
-            return ExitCode::from(1);
-        }
+        Err(code) => return code,
     };
     let opts = Options {
         as_draft: args.iter().any(|a| a == "--as-draft"),
@@ -153,12 +164,9 @@ fn cmd_bake(args: &[String]) -> ExitCode {
         eprintln!("bake: missing <contract.json>");
         return ExitCode::from(1);
     };
-    let doc = match std::fs::read_to_string(path) {
+    let doc = match read_file("bake", path) {
         Ok(d) => d,
-        Err(e) => {
-            eprintln!("bake: cannot read {path}: {e}");
-            return ExitCode::from(1);
-        }
+        Err(code) => return code,
     };
     let spec = match forge_contract::validate_shape(&doc) {
         Ok(s) => s,
@@ -218,12 +226,9 @@ fn cmd_bom(args: &[String]) -> ExitCode {
         eprintln!("bom: missing <contract.json>");
         return ExitCode::from(1);
     };
-    let doc = match std::fs::read_to_string(path) {
+    let doc = match read_file("bom", path) {
         Ok(d) => d,
-        Err(e) => {
-            eprintln!("bom: cannot read {path}: {e}");
-            return ExitCode::from(1);
-        }
+        Err(code) => return code,
     };
     let spec = match forge_contract::validate_shape(&doc) {
         Ok(s) => s,
@@ -279,6 +284,126 @@ fn cmd_bom(args: &[String]) -> ExitCode {
             }
             ExitCode::SUCCESS
         }
+    }
+}
+
+fn cmd_patch(args: &[String]) -> ExitCode {
+    let Some(contract_path) = args.first().filter(|a| !a.starts_with("--")) else {
+        eprintln!("patch: missing <contract.json>");
+        return ExitCode::from(1);
+    };
+    let Some(patch_path) = args.get(1).filter(|a| !a.starts_with("--")) else {
+        eprintln!("patch: missing <patch.json>");
+        return ExitCode::from(1);
+    };
+    let doc = match read_file("patch", contract_path) {
+        Ok(d) => d,
+        Err(code) => return code,
+    };
+    let patch = match read_file("patch", patch_path) {
+        Ok(d) => d,
+        Err(code) => return code,
+    };
+    let out = match forge_contract::patch::apply_patch(&doc, &patch) {
+        Ok(value) => value,
+        Err(e) => {
+            eprintln!("patch: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    match flag_value(args, "--out") {
+        Some(path) => match std::fs::write(&path, out) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("patch: cannot write {path}: {e}");
+                ExitCode::from(1)
+            }
+        },
+        None => {
+            println!("{out}");
+            ExitCode::SUCCESS
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EnvCounts {
+    tasks: usize,
+    obstacles: usize,
+    gates: usize,
+    spawns: usize,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EnvReport {
+    artifact_kind: &'static str,
+    target: &'static str,
+    validator_version: String,
+    results: Vec<forge_sim::runtime::EnvDiagnostic>,
+    verdict: Verdict,
+    counts: EnvCounts,
+}
+
+fn cmd_env(args: &[String]) -> ExitCode {
+    let Some(path) = args.first().filter(|a| !a.starts_with("--")) else {
+        eprintln!("env: missing <env.json>");
+        return ExitCode::from(1);
+    };
+    let doc = match read_file("env", path) {
+        Ok(d) => d,
+        Err(code) => return code,
+    };
+    let env: forge_sim::runtime::EnvSpec = match serde_json::from_str(&doc) {
+        Ok(env) => env,
+        Err(e) => {
+            eprintln!("env: ENV-000 schema_invalid: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let results = forge_sim::runtime::validate_envspec(&env);
+    let has_errors = results.iter().any(|diag| diag.severity == "error");
+    let as_draft = args.iter().any(|a| a == "--as-draft");
+    let verdict = if has_errors && as_draft {
+        Verdict::Draft
+    } else if has_errors {
+        Verdict::Rejected
+    } else {
+        Verdict::Admitted
+    };
+    let report = EnvReport {
+        artifact_kind: "env",
+        target: "env",
+        validator_version: forge_validate::VALIDATOR_VERSION.to_string(),
+        results,
+        verdict,
+        counts: EnvCounts {
+            tasks: env.tasks.len(),
+            obstacles: env.obstacles.len(),
+            gates: env.gates.len(),
+            spawns: env.spawns.len(),
+        },
+    };
+    eprintln!(
+        "forge-validate env · {} tasks · {} gates · {} spawns → {:?}",
+        report.counts.tasks, report.counts.gates, report.counts.spawns, report.verdict
+    );
+    if let Some(out) = flag_value(args, "--report") {
+        if let Err(e) = write_json(&out, &report) {
+            eprintln!("env: cannot write report {out}: {e}");
+            return ExitCode::from(1);
+        }
+    } else {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report).expect("env report serializes")
+        );
+    }
+    match report.verdict {
+        Verdict::Admitted => ExitCode::SUCCESS,
+        Verdict::Rejected => ExitCode::from(2),
+        Verdict::Draft => ExitCode::from(3),
     }
 }
 

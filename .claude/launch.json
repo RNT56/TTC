@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "studio",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@forge/studio", "dev", "--port", "5179", "--strictPort"],
+      "port": 5179,
+      "autoPort": false
+    }
+  ]
+}

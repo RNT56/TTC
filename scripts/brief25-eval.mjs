@@ -36,6 +36,7 @@ Options:
   --validator <auto|real|shape>
                            auto uses target/debug/forge-validate when present, otherwise shape
   --concurrency <n>        Parallel brief workers (default: 4)
+  --record-db              Persist eval_runs/eval_brief_results to DATABASE_URL
   --check-corpus-only      Validate the corpus shape and exit
   --enforce-ga-gate        Exit nonzero if admitted briefs < 20
 `);
@@ -515,6 +516,54 @@ function summarize(results, corpusSummary) {
   };
 }
 
+async function recordEvalToDb(artifact) {
+  const pg = await import("pg");
+  const Client = pg.Client ?? pg.default.Client;
+  const client = new Client({
+    connectionString:
+      process.env.DATABASE_URL ?? "postgres://forge:forge-dev-only@localhost:5432/forge",
+  });
+  await client.connect();
+  try {
+    const inserted = await client.query(
+      `INSERT INTO eval_runs (suite, mode, validator_kind, provider, summary, artifact)
+       VALUES ('brief25', $1, $2, $3, $4::jsonb, $5::jsonb)
+       RETURNING id`,
+      [
+        artifact.mode,
+        artifact.validator.kind,
+        artifact.provider,
+        JSON.stringify(artifact.summary),
+        JSON.stringify(artifact),
+      ],
+    );
+    const runId = inserted.rows[0].id;
+    for (const brief of artifact.briefs) {
+      await client.query(
+        `INSERT INTO eval_brief_results (
+           eval_run_id, brief_id, archetype, verdict, repair_iterations, diagnostics
+         )
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+         ON CONFLICT (eval_run_id, brief_id) DO UPDATE
+         SET verdict = EXCLUDED.verdict,
+             repair_iterations = EXCLUDED.repair_iterations,
+             diagnostics = EXCLUDED.diagnostics`,
+        [
+          runId,
+          brief.id,
+          brief.archetype,
+          brief.verdict,
+          brief.repairIterations,
+          JSON.stringify(brief.diagnostics),
+        ],
+      );
+    }
+    console.log(`brief25: recorded eval run ${runId}`);
+  } finally {
+    await client.end();
+  }
+}
+
 async function main() {
   if (!["auto", "real", "shape"].includes(validatorMode)) {
     fail("--validator must be one of: auto, real, shape");
@@ -632,6 +681,9 @@ async function main() {
       `(${artifact.summary.repairIterations.total} repair iterations)`,
   );
   console.log(`brief25: wrote ${outPath.replace(`${repoRoot}/`, "")}`);
+  if (hasFlag("--record-db")) {
+    await recordEvalToDb(artifact);
+  }
 
   if (artifact.summary.qualityGate.enforced && !artifact.summary.qualityGate.pass) {
     process.exitCode = 1;

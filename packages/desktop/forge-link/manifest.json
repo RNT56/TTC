@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "imageName": "forge-link-pi",
+  "target": "pi-class-companion",
+  "base": {
+    "os": "debian-bookworm",
+    "arch": ["arm64"],
+    "buildTool": "pi-gen",
+    "status": "plan"
+  },
+  "services": [
+    {
+      "name": "rosbridge",
+      "unit": "forge-rosbridge.service",
+      "ports": [9090],
+      "required": true
+    },
+    {
+      "name": "mavlink-router",
+      "unit": "forge-mavlink-router.service",
+      "ports": [14550, 14551],
+      "required": true
+    },
+    {
+      "name": "onnx-runtime",
+      "unit": "forge-policy-runner.service",
+      "ports": [],
+      "required": true
+    },
+    {
+      "name": "pairing-auth",
+      "unit": "forge-pairing.service",
+      "ports": [7443],
+      "required": true
+    }
+  ],
+  "security": {
+    "pairingCodeTtlSeconds": 600,
+    "requiresLocalPhysicalConfirmation": true,
+    "storesSecrets": false,
+    "noAutoArm": true
+  },
+  "runtimeContract": {
+    "policyRateHz": 50,
+    "supervisorRateHz": 200,
+    "supervisorOwnsActuation": true,
+    "firmwareRateLoopUntouched": true
+  },
+  "artifacts": {
+    "image": "artifacts/forge-link/forge-link-pi.img",
+    "checksums": "artifacts/forge-link/SHA256SUMS"
+  }
+}

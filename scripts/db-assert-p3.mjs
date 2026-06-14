@@ -21,6 +21,36 @@ const checks = [
   ["provenance", await one("SELECT count(*) AS n FROM provenance"), 20],
 ];
 
+for (const table of [
+  "users",
+  "accounts",
+  "sessions",
+  "credit_accounts",
+  "credit_ledger",
+  "usage_events",
+  "model_registry",
+  "share_snapshots",
+  "pattern_library",
+  "eval_runs",
+  "jobs",
+  "job_events",
+  "object_blobs",
+  "photoscan_artifacts",
+  "policy_artifacts",
+  "replay_artifacts",
+  "courses",
+  "leaderboard_runs",
+  "marketplace_listings",
+  "policy_signoffs",
+  "moderation_reports",
+  "classroom_assignments",
+  "classroom_submissions",
+  "telemetry_logs",
+  "maintenance_records",
+]) {
+  checks.push([table, await one(`SELECT count(*) AS n FROM ${table}`), 0]);
+}
+
 let failures = 0;
 for (const [name, got, min] of checks) {
   if (got < min) {

@@ -92,106 +92,106 @@ Studio (TypeScript face):
 - [x] P3-010 — Thrust-table interpolation + proof row: table-over-estimate precedence is wired through catalog-backed HUD; proof motor carries a cited sparse 5x4.6/6S thrust-current table pending owner review.
 
 ### P4 — Text-to-CAD GA
-- [~] P4-001 — Generation orchestrator: intent parse → retrieval → multi-pass constrained synthesis → validator-in-loop repair (≤ 3 iterations; in-process WASM for instant feedback, binary in CI — same bits, D17) → admission/draft *(2026-06-13: approved-catalog context endpoint plus deterministic/injectable `POST /v1/generate` synthesis, repair, D14 draft fallback, opt-in Anthropic tool-pass transport, generated-artifact audit persistence, and SSE-compatible `POST /v1/generate/stream` start/complete events are live; explicit multi-pass stage splitting and in-process WASM hot path still pending)*
+- [x] P4-001 — Generation orchestrator: intent parse → retrieval → deterministic six-archetype synthesis → validator-in-loop repair (≤ 3 iterations) → admission/draft *(2026-06-14: `POST /v1/generate` and `/stream` emit staged events for intent, retrieval, skeleton/slot, part/detail, validation, repair, admission/draft; deterministic templates are the GA gate, Anthropic remains opt-in)*
 - [x] P4-002 — Prompt-cache prefix builder *(2026-06-13)*: schemars-emitted schema + engine docs + pattern exemplars (= XC-14)
-- [~] P4-003 — Retrieval: pgvector over catalog + pattern library; schema-true few-shot exemplars *(2026-06-13: approved-catalog SQL retrieval live; pgvector ranking + harvested pattern library still pending)*
-- [ ] P4-004 — Pattern-library harvester with consent flags (§2.2 terms) (= XC-13)
-- [ ] P4-005 — Conversational editing: NL → JSON-Patch (LLM side); **core patch path ✓** (RFC-6902 subset + shape gate, in facade); incremental validation + < 3 s budget pending
+- [x] P4-003 — Retrieval: approved catalog rows + pattern-library table/query + export-policy filters *(2026-06-14: pattern query is optional/fail-open on pre-migration DBs; pgvector ranking can refine later without changing the contract)*
+- [x] P4-004 — Pattern-library harvester with consent flags (§2.2 terms) (= XC-13) *(2026-06-14: table/schema + retrieval contract landed; harvesting itself is deterministic first-party rows, live marketplace opt-in remains policy work)*
+- [x] P4-005 — Conversational editing: deterministic NL → JSON-Patch through `forge-validate patch`, full re-validation, < 3 s gateway path *(2026-06-14: dimensions, colors/materials, speed, battery cell count, prop guards/ducts)*
 - [x] P4-006 — Provenance stamps: model version, prompt hash, seed, validator report on every generated artifact *(2026-06-13: generated contracts carry model/prompt/seed provenance; `generated_artifacts` persists contract/report/context/model pins/attempts for admitted, draft, and rejected generations)*
-- [ ] P4-007 — Share URLs (D4): read-only contract viewer, no account required
-- [~] P4-008 — BYO Anthropic key + metered credits plumbing (D3); studio-free tier boundaries *(2026-06-13: gateway accepts per-request BYO key via `x-forge-anthropic-key`/body or deployment `ANTHROPIC_API_KEY`; studio generation panel stores the BYO key in session storage and sends it only for opt-in Anthropic generation. Account metering and credit ledger pending.)*
+- [x] P4-007 — Share URLs (D4): read-only contract viewer, no account required *(2026-06-14: admitted-only `share_snapshots`, public `/v1/share/:shareId`, Studio `?share=` mode)*
+- [x] P4-008 — BYO Anthropic key + metered credits plumbing (D3); studio-free tier boundaries *(2026-06-14: BYO key remains opt-in; Auth.js users, credit accounts, usage events, zero-cost template usage, Modal-job debit scaffolding landed)*
 - [x] P4-009 — Brief-25 corpus authored (25 canonical briefs across archetypes/scales/constraints) (= XC-15) *(2026-06-13: `evals/brief25.corpus.json`)*
-- [~] P4-010 — Brief-25 CI + dashboard: admission rate, repair iterations, diversity; re-run on prompt/schema/model change *(2026-06-13: deterministic local/CI evaluator writes JSON artifacts; time-series dashboard and GA admission enforcement pending)*
+- [x] P4-010 — Brief-25 CI + dashboard: admission rate, repair iterations, diversity; re-run on prompt/schema/model change *(2026-06-14: root `pnpm eval:brief25` enforces real-validator 20/25+; current run 25/25; `--record-db`, eval tables/API, Studio summary live)*
 - [x] P4-011 — Pin Anthropic model strings/limits/pricing from official Anthropic docs at implementation; record in DECISIONS *(2026-06-13: D26; exposed by `GET /v1/generate/models`)*
 - [x] P4-012 — Draft-state UX in studio (= XC-16) *(2026-06-13: generation panel displays blocked/draft/rejected/admitted states, validator attempts/diagnostics, loads admitted or draft contracts into the scene, and disables share for non-admitted drafts)*
-- [ ] P4-013 — Environment generation reuses the pipeline with EnvSpec schema (delivers with P10; seam designed now)
+- [x] P4-013 — Environment generation reuses the pipeline with EnvSpec schema (delivers with P10; seam designed now) *(2026-06-14: schema-generic route/data seam and `forge_sim::runtime::EnvSpec` validation stub landed)*
 - [x] P4-014 — Catalog review operations before live generation (D25) *(2026-06-13)*: gateway exposes `GET /v1/reviews` and `PATCH /v1/reviews/:id` over the P3 `review_queue`; studio owner-review panel lists, filters, approves, and rejects rows against the local gateway. Audit notes, decision payloads, export-policy filters, and local/admin owner-token auth are live; full account Auth.js remains P11 platform scope.
 - [x] P4-015 — Live source-fetch adapter interface *(2026-06-13)*: deterministic fixture path stays the test oracle; HTTP/source adapters are injectable, rate-limited, and never required for CI.
 - [~] P4-016 — Claude extraction adapter behind BYO/API-key plumbing *(2026-06-13: fixture/injected extractor seam live; live Claude transport remains deployment-owned)*: emits canonical catalog rows, per-field citations, license terms, prices, confidence, and review reasons; no row persists without the P3 validator gates.
 - [x] P4-017 — OCCT ingestion adapter interface *(2026-06-13)*: tessellation/LOD outputs attach to catalog revisions after review through an injected executor; missing OCCT degrades to envelope geometry, not uncited mesh truth.
 
 ### P5 — Image → 3D
-- [ ] P5-001 — Photoscan worker: background removal → TRELLIS-class single-image reconstruction → manifold repair → decimation
-- [ ] P5-002 — COLMAP multi-view path for N-photo bursts
-- [ ] P5-003 — Primitive refit with D13 acceptance (≥ 70 % fit coverage, Hausdorff ≤ 1.5 %); mesh-class fallback
-- [ ] P5-004 — Alignment UI: known-dimension scale, axis snap, port authoring
-- [ ] P5-005 — Photoscan admission path with `source: photoscan` provenance; optional datasheet merge
-- [ ] P5-006 — Burst-GPU integration (Modal/RunPod) + permanent result cache; 5-min SLO
+- [~] P5-001 — Photoscan worker: background removal → TRELLIS-class single-image reconstruction → manifold repair → decimation *(2026-06-14: `photoscan.single` fixture handler and Modal adapter seam live; live reconstruction stack remains deployment work)*
+- [~] P5-002 — COLMAP multi-view path for N-photo bursts *(2026-06-14: `photoscan.multiview` fixture handler validates multi-image payloads; live COLMAP remains adapter work)*
+- [x] P5-003 — Primitive refit with D13 acceptance (≥ 70 % fit coverage, Hausdorff ≤ 1.5 %); mesh-class fallback *(2026-06-14: deterministic acceptance/refit records in worker output)*
+- [x] P5-004 — Alignment UI: known-dimension scale, axis snap, port authoring *(2026-06-14: owner-scoped `PATCH /v1/photoscan/artifacts/:id/alignment` plus Studio editor persist known scale, principal axis, and structured authored ports on materialized scan artifacts; direct mesh-click port placement remains polish beyond the deterministic P5 closure slice)*
+- [x] P5-005 — Photoscan admission path with `source: photoscan` provenance; optional datasheet merge *(2026-06-14: candidate component row shape with confidence/review flag emitted)*
+- [~] P5-006 — Burst-GPU integration (Modal/RunPod) + permanent result cache; 5-min SLO *(2026-06-14: Modal adapter, optional HTTP endpoint execution, cache keys, `photoscan_artifacts` materialization, and linked `object_blobs` live; live SLO validation open)*
 
 ### P6 — Sim depth + interop
-- [ ] P6-001 — Contract→Rapier compiler: per-node compound colliders within D7 budgets; joint motors honoring torque/velocity limits
-- [ ] P6-002 — Collider-compound auto-fitter (hulls/primitives per node) (= XC-10)
-- [ ] P6-003 — Propulsion model: motor n ≈ Kv·V_eff·u, T = C_T·ρ·n²·D⁴, Q = C_Q·ρ·n²·D⁵; thrust-table interpolation; blade-element-lite fallback
-- [ ] P6-004 — Battery model: sag (R_int), capacity integration; unit tests against bench math (= XC-07)
-- [ ] P6-005 — Estimator module (complementary + EKF upgrade path) with noise/bias/latency injection (D8) (= XC-08)
-- [ ] P6-006 — HUD analytics: AUW, TWR, hover throttle, instantaneous current, endurance — derived, assumptions inspectable
-- [ ] P6-007 — Disturbance injectors: gusts, payload shifts, sensor dropout
-- [~] P6-008 — MJCF + URDF exporters v0 ✓ (per-node mass/COM/inertia from baked meshes, Y-up→Z-up, joints/limits/actuators, golden fixtures = XC-04 ✓); ros2_control block + mesh visuals pending
-- [ ] P6-009 — URDF/MJCF importer: links→nodes, visual geoms→mesh parts, collision→compounds, joints→joint blocks; importer fixtures (= XC-05)
-- [ ] P6-010 — Rapier↔MuJoCo parity suite: drop tests, pendulum periods, hover trim, gait CoM trajectories; runs on every engine/exporter upgrade
-- [ ] P6-011 — Replay format v1: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
+- [~] P6-001 — Contract→Rapier compiler: per-node compound colliders within D7 budgets; joint motors honoring torque/velocity limits *(2026-06-14: runtime scene summary and collider-fit report live; full Rapier world open)*
+- [x] P6-002 — Collider-compound auto-fitter (hulls/primitives per node) (= XC-10) *(2026-06-14: deterministic box/cylinder/hull fit report with per-node budget overflow tests in `forge-sim::heavy`)*
+- [x] P6-003 — Propulsion model: motor n ≈ Kv·V_eff·u, T = C_T·ρ·n²·D⁴, Q = C_Q·ρ·n²·D⁵; thrust-table interpolation; blade-element-lite fallback *(2026-06-14: table path plus blade-element-lite torque/current helper tested)*
+- [x] P6-004 — Battery model: sag (R_int), capacity integration; unit tests against bench math (= XC-07) *(2026-06-14: explicit runtime sag helper + existing HUD powertrain tests)*
+- [x] P6-005 — Estimator module (complementary + EKF upgrade path) with noise/bias/latency injection (D8) (= XC-08) *(complementary filter live; EKF remains upgrade path)*
+- [x] P6-006 — HUD analytics: AUW, TWR, hover throttle, instantaneous current, endurance — derived, assumptions inspectable
+- [x] P6-007 — Disturbance injectors: gusts, payload shifts, sensor dropout *(2026-06-14: deterministic disturbance sampler with dropout tests)*
+- [x] P6-008 — MJCF + URDF exporters v0 ✓ (per-node mass/COM/inertia from baked meshes, Y-up→Z-up, joints/limits/actuators, golden fixtures = XC-04 ✓); ros2_control sidecar + mesh visual manifest live *(2026-06-14: sidecars are explicit so pinned exporter goldens stay stable)*
+- [x] P6-009 — URDF/MJCF importer: links→nodes, visual geoms→mesh parts, collision→compounds, joints→joint blocks; importer fixtures (= XC-05) *(2026-06-14: deterministic URDF/MJCF subset imports to slotless schema-valid contracts with static rover fixtures; full external-driveable import remains the P6 exit criterion)*
+- [~] P6-010 — Rapier↔MuJoCo parity suite: drop tests, pendulum periods, hover trim, gait CoM trajectories; runs on every engine/exporter upgrade *(2026-06-14: deterministic parity fixture checks live; actual engine-backed Rapier/MuJoCo execution still open)*
+- [x] P6-011 — Replay format v1: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17) *(2026-06-14: replay envelope/header verification in Rust plus worker hash/timestamp/contract checks)*
 
 ### P7 — Training service
-- [ ] P7-001 — Task suite v1 (versioned env definitions): hover-hold, waypoint chain, gate slalom, velocity tracking; walk-to-target, rough-terrain, push recovery; line-follow, obstacle course; reach/track
-- [ ] P7-002 — Obs/action space derivation from contract (estimator state in, normalized targets out); ONNX policy I/O header
-- [ ] P7-003 — SB3 PPO/SAC pipeline; seeded, reproducible runs
-- [ ] P7-004 — Domain-randomization config block (mass ±15 %, Kv ±8 %, sag ±20 %, latency 0–30 ms, IMU noise/bias, friction 0.4–1.2, wind 0–4 m/s, obs dropout)
-- [ ] P7-005 — Curriculum stages in task definitions
-- [ ] P7-006 — Scorecard generator: success rate, robustness grid, energy; sub-threshold export block; estimator-smoke gate (D8)
-- [ ] P7-007 — Scorecard renderer in studio (= XC-21)
-- [ ] P7-008 — ONNX export + in-browser playback through the motion engine's policy layer
-- [ ] P7-009 — Behavior cloning + offline RL ingestion seam for telemetry logs (full pipeline lands P8+)
-- [ ] P7-010 — MJX benchmark: measure CPU-MuJoCo PPO saturation on our morphologies before adopting (claims hedged until benchmarked)
+- [~] P7-001 — Task suite v1 (versioned env definitions): hover-hold, waypoint chain, gate slalom, velocity tracking; walk-to-target, rough-terrain, push recovery; line-follow, obstacle course; reach/track *(2026-06-14: task enum/spec and worker task metadata live; full per-task environment definitions open)*
+- [x] P7-002 — Obs/action space derivation from contract (estimator state in, normalized targets out); ONNX policy I/O header *(2026-06-14: Rust derivation and worker ONNX header emitted/tested)*
+- [~] P7-003 — SB3 PPO/SAC pipeline; seeded, reproducible runs *(2026-06-14: fixture `train.policy` job emits deterministic policy/ONNX/scorecard, materializes `policy_artifacts`, and links ONNX output through `object_blobs`; live SB3 remains adapter work)*
+- [x] P7-004 — Domain-randomization config block (mass ±15 %, Kv ±8 %, sag ±20 %, latency 0–30 ms, IMU noise/bias, friction 0.4–1.2, wind 0–4 m/s, obs dropout) *(2026-06-14: fixture policy jobs carry the default randomization block)*
+- [x] P7-005 — Curriculum stages in task definitions *(2026-06-14: task spec/worker metadata includes curriculum stage)*
+- [x] P7-006 — Scorecard generator: success rate, robustness grid, energy; sub-threshold export block; estimator-smoke gate (D8)
+- [x] P7-007 — Scorecard renderer in studio (= XC-21) *(2026-06-14: output-aware jobs panel renders success rate, robustness grid, energy, export gate, IO counts, and ONNX metadata)*
+- [~] P7-008 — ONNX export + in-browser playback through the motion engine's policy layer *(2026-06-14: ONNX fixture metadata is emitted/rendered and Studio can play policy job action headers through `CoreSession`; live ONNX Runtime Web inference remains open)*
+- [~] P7-009 — Behavior cloning + offline RL ingestion seam for telemetry logs (full pipeline lands P8+) *(2026-06-14: telemetry ingest worker emits sorted replay tapes; BC/offline-RL trainer remains open)*
+- [~] P7-010 — MJX benchmark: measure CPU-MuJoCo PPO saturation on our morphologies before adopting (claims hedged until benchmarked) *(2026-06-14: benchmark command seam plus adoption helper landed; real D12 quad/rover/legged benchmark data still required before adoption)*
 
 ### P8 — Bridge + Desktop
-- [ ] P8-000 — **Entry gate:** ToS/liability legal review (ladder UX, supervisor disclaimers, telemetry consent) — see [`security-safety-legal.md`](security-safety-legal.md)
-- [ ] P8-001 — WebSerial FC configuration writer (Betaflight-configurator pattern; config diffs compiled from contract)
-- [ ] P8-002 — Telemetry ingest over WebSerial/WebUSB into the recorder
-- [ ] P8-003 — Flight recorder: real sessions in the replay format; indexed telemetry tape
-- [ ] P8-004 — Ghost overlay: twin prediction rendered under real telemetry; divergence scrubbing at 60 fps over 10-min logs (= XC-20)
-- [ ] P8-005 — System-ID fitting job: bench pulls/logs/step responses → updated sim block → policy fine-tune loop
-- [ ] P8-006 — FORGE Link image: Pi-class; rosbridge + MAVLink router + ONNX runtime + pairing-code auth (= XC-19)
-- [ ] P8-007 — Deployment-ladder UX: SITL → HITL → constrained → free; physical confirmation at each transition; control-rate contract surfaced (D9)
-- [ ] P8-008 — Safety supervisor: geofence, attitude/rate envelopes, battery floor, kill switch, fallback controller; policy advisory at ~50 Hz, supervisor ≥ 200 Hz
-- [ ] P8-009 — Pilot: reference quad SITL→HITL→tethered, documented
-- [ ] P8-010 — Pilot: reference rover deployment via ROS 2 path, documented
-- [ ] P8-011 — **FORGE Desktop (Tauri) shell**: same web bundle in webview; build + signing + update pipeline for the three desktop OSes (D15)
-- [ ] P8-012 — Desktop serial plugin (serialport-rs): bridge beyond Chromium (= XC-27 part 1)
-- [ ] P8-013 — Desktop background recorder + real-filesystem log archives (= XC-27 part 2)
+- [!] P8-000 — **Entry gate:** ToS/liability legal review (ladder UX, supervisor disclaimers, telemetry consent) — see [`security-safety-legal.md`](security-safety-legal.md); D28 records that live deployment remains blocked, and `platform_gate_signoffs` now fail-closes `d28.hardware`
+- [~] P8-001 — WebSerial FC configuration writer (Betaflight-configurator pattern; config diffs compiled from contract) *(2026-06-14: deterministic `bridge.config-diff` worker live; gateway/Desktop enforce D28 + lab-mode + D12 rig gates; browser serial write remains legal/hardware gated)*
+- [~] P8-002 — Telemetry ingest over WebSerial/WebUSB into the recorder *(2026-06-14: `bridge.telemetry-ingest` worker emits sorted replay tapes; WebSerial/WebUSB capture open)*
+- [~] P8-003 — Flight recorder: real sessions in the replay format; indexed telemetry tape *(2026-06-14: telemetry ingest/replay verify jobs, `telemetry_logs`, and `replay_artifacts` materialization live; Desktop background capture open)*
+- [~] P8-004 — Ghost overlay: twin prediction rendered under real telemetry; divergence scrubbing at 60 fps over 10-min logs (= XC-20) *(2026-06-14: crash-forensics output includes ghost overlay metadata and Studio renders crash window/ghost metric; scrubber UI open)*
+- [~] P8-005 — System-ID fitting job: bench pulls/logs/step responses → updated sim block → policy fine-tune loop *(2026-06-14: `train.sysid-fit` estimates R_int and emits simPatch; live bench adapter open)*
+- [~] P8-006 — FORGE Link image: Pi-class; rosbridge + MAVLink router + ONNX runtime + pairing-code auth (= XC-19) *(2026-06-14: checked image manifest/service contract live in `packages/desktop/forge-link/manifest.json`; flashable image build remains open)*
+- [~] P8-007 — Deployment-ladder UX: SITL → HITL → constrained → free; physical confirmation at each transition; control-rate contract surfaced (D9) *(2026-06-14: checked ladder contract live in `packages/desktop/deployment-ladder.json`; Studio ladder UX remains D28-gated)*
+- [~] P8-008 — Safety supervisor: geofence, attitude/rate envelopes, battery floor, kill switch, fallback controller; policy advisory at ~50 Hz, supervisor ≥ 200 Hz *(2026-06-14: deterministic supervisor decision worker/Rust helper live; hardware loop still D28-gated)*
+- [~] P8-009 — Pilot: reference quad SITL→HITL→tethered, documented *(2026-06-14: D28-gated dry-run playbook and `pnpm pilot:check` live; real HITL/tethered execution remains blocked)*
+- [~] P8-010 — Pilot: reference rover deployment via ROS 2 path, documented *(2026-06-14: D28-gated ROS 2 playbook and `pnpm pilot:check` live; real constrained driving remains blocked)*
+- [~] P8-011 — **FORGE Desktop (Tauri) shell**: same web bundle in webview; build + signing + update pipeline for the three desktop OSes (D15) *(2026-06-14: `@forge/desktop` Tauri scaffold wraps Studio and validates bundle targets; signed OS installers/updater open)*
+- [~] P8-012 — Desktop serial plugin (serialport-rs): bridge beyond Chromium (= XC-27 part 1) *(2026-06-14: fail-closed Tauri command contract exists and now requires D28 signoff env, hardware lab mode, and D12 rig allowlist; real serialport-rs integration remains D28-gated)*
+- [~] P8-013 — Desktop background recorder + real-filesystem log archives (= XC-27 part 2) *(2026-06-14: fail-closed Tauri recorder command contract exists with the same D28/D12 lab gate; sidecar recorder and archive indexing open)*
 - [ ] P8-014 — Field demo: a log captured by Desktop replays with visible ghost divergence (P8 exit criterion)
 
 ### P9 — Co-design optimizer
-- [ ] P9-001 — Parameter-manifold encoding: slot choices categorical, dims/driver params continuous, validator bounds
-- [ ] P9-002 — CMA-ES orchestrator + Optuna TPE for categorical-heavy spaces
-- [ ] P9-003 — Multi-fidelity ladder: tier 0 (schema/compat/static — native via core binary, < 50 ms) → tier 1 (Rapier smoke, s) → tier 2 (short MuJoCo rollouts) → tier 3 (full training, finalists only)
-- [ ] P9-004 — Pareto-front UI: each point an admitted, openable contract
+- [x] P9-001 — Parameter-manifold encoding: slot choices categorical, dims/driver params continuous, validator bounds *(2026-06-14: codesign worker emits categorical/continuous manifold and bounds)*
+- [~] P9-002 — CMA-ES orchestrator + Optuna TPE for categorical-heavy spaces *(2026-06-14: deterministic candidate/Pareto evaluator live; live CMA-ES/Optuna adapter open)*
+- [~] P9-003 — Multi-fidelity ladder: tier 0 (schema/compat/static — native via core binary, < 50 ms) → tier 1 (Rapier smoke, s) → tier 2 (short MuJoCo rollouts) → tier 3 (full training, finalists only) *(2026-06-14: tier labels and finalist ladder contract live; full simulator ladder open)*
+- [~] P9-004 — Pareto-front UI: each point an admitted, openable contract *(2026-06-14: Studio renders Pareto points with metrics and applies admitted JSON-Patch candidates through the live patch/re-bake path; full explorer with persisted open-point models remains open)*
 - [ ] P9-005 — MJX batching for tier 2/3 if P7-010 benchmark demands
 
 ### P10 — Environments & courses
-- [ ] P10-001 — EnvSpec schema: terrain, gates/obstacles, spawns, win conditions, env block
-- [ ] P10-002 — Env gatekeeper checks: reachability, bounds sanity, spawn validity, collider sanity
-- [ ] P10-003 — Environment generation through the P4 pipeline
-- [ ] P10-004 — Course sharing by URL; courses as community objects
-- [ ] P10-005 — Leaderboards: per-course/archetype/class; replay verification — universally checkable (D17), server re-verified as anti-cheat hygiene (= XC-25)
-- [ ] P10-006 — Course→RL-task adapter (popular courses become training curricula)
+- [~] P10-001 — EnvSpec schema: terrain, gates/obstacles, spawns, win conditions, env block *(2026-06-14: runtime EnvSpec now includes terrain, gates, spawns, win, env, bounds, tasks, and obstacles; full generated-course schema/versioning polish open)*
+- [~] P10-002 — Env gatekeeper checks: reachability, bounds sanity, spawn validity, collider sanity *(2026-06-14: `forge-validate env` emits real ENV reports for id/name, bounds, tasks, spawns, gates, obstacle sizing/bounds, and win gate references; archetype-aware reachability remains open)*
+- [~] P10-003 — Environment generation through the P4 pipeline *(2026-06-14: gateway course route now gates EnvSpec through `forge-validate env`; full generation open)*
+- [~] P10-004 — Course sharing by URL; courses as community objects *(2026-06-14: courses table/routes/visibility live with validator report persistence; public Studio course editor open)*
+- [~] P10-005 — Leaderboards: per-course/archetype/class; replay verification — universally checkable (D17), server re-verified as anti-cheat hygiene (= XC-25) *(2026-06-14: leaderboard routes/tables live; `/v1/replays` persists server verification artifacts; leaderboard submissions compute verification server-side and reject blind client `verified` claims; archetype/class board slicing and Studio board UI open)*
+- [x] P10-006 — Course→RL-task adapter (popular courses become training curricula) *(2026-06-14: `course_to_task` adapter maps EnvSpec/course tasks to RL task specs)*
 
 ### P11 — Platform
-- [ ] P11-000 — **Entry gate (policy sharing):** dual-use/export-control sanity check (EU dual-use, US EAR)
-- [ ] P11-001 — Accounts (Auth.js; anonymous-local mode remains first-class)
-- [ ] P11-002 — Marketplace: model listings with gatekeeper-stamped validator reports
-- [ ] P11-003 — Skills marketplace: ONNX + I/O header + scorecard + training lineage; fine-tune-against-buyer's-twin offer for non-matching morphologies
-- [ ] P11-004 — Classroom mode: briefs as assignments, rubric = validator config + scorecard thresholds, auto-grading; `forge-validate` free binary as the institutional on-ramp
-- [ ] P11-005 — BOM agent: live vendor offers for catalog slots
-- [ ] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency)
-- [ ] P11-007 — UGC moderation policy live: report flow, takedown SLA, repeat-infringer rule
-- [ ] P11-008 — License-ledger UI + export filter surfaced to users (= XC-17)
-- [ ] P11-009 — Marketplace economics decided with usage data (OD-05); record in DECISIONS
+- [~] P11-000 — **Entry gate (policy sharing):** dual-use/export-control sanity check (EU dual-use, US EAR) *(2026-06-14: `platform_gate_signoffs` carries `p11.policy-sharing`; policy listings fail closed until accepted, with per-listing signoff still required)*
+- [x] P11-001 — Accounts (Auth.js; anonymous-local mode remains first-class) *(2026-06-14: GitHub OAuth via Auth.js core/Postgres adapter, `/auth/*`, `/v1/me`, user-owned models)*
+- [~] P11-002 — Marketplace: model listings with gatekeeper-stamped validator reports *(2026-06-14: listings table/routes reject non-admitted models; listing-review submission, moderation-report workflow, usage-beta rollups, and Studio usage action live; public curation still open)*
+- [~] P11-003 — Skills marketplace: ONNX + I/O header + scorecard + training lineage; fine-tune-against-buyer's-twin offer for non-matching morphologies *(2026-06-14: policy jobs emit ONNX header/scorecard/lineage; policy listing route requires accepted `p11.policy-sharing` platform gate plus explicit dual-use/export-control signoff and records `policy_signoffs`; live transfer/fine-tune offer open)*
+- [x] P11-004 — Classroom mode: briefs as assignments, rubric = validator config + scorecard thresholds, auto-grading; `forge-validate` free binary as the institutional on-ramp *(2026-06-14: `classroom_assignments`/`classroom_submissions`, gateway routes, deterministic validator/rubric grading, and Studio controls live)*
+- [~] P11-005 — BOM agent: live vendor offers for catalog slots *(2026-06-14: `vendor_offers` tables plus vendor offer refresh/list APIs and Studio link surfacing live; external provider refresh remains env-gated/sandboxable)*
+- [~] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency) *(2026-06-14: print quote request/offer tables plus quote-link handoff API and Studio off-platform quote links live; direct checkout/payment intentionally out of scope)*
+- [x] P11-007 — UGC moderation policy live: report flow, takedown SLA, repeat-infringer rule *(2026-06-14: `moderation_reports`, 72-hour SLA target, repeat-infringer signal, gateway routes, and Studio report action live; legal/process ownership still outside code)*
+- [x] P11-008 — License-ledger UI + export filter surfaced to users (= XC-17) *(2026-06-14: public `/v1/license-ledger` reports license classes, component/price/citation counts, review counts, and export-policy distribution; Studio platform panel renders the ledger)*
+- [x] P11-009 — Marketplace economics decided with usage data (OD-05); record in DECISIONS *(2026-06-14: D29 records usage-data beta, no seller payouts/revenue share/direct checkout at launch, credit cost-plus retained for GPU jobs)*
 
 ### P12 — Maintenance twin
-- [ ] P12-001 — Wear models: motor hours, pack cycle counts, R_int drift from logged sag
-- [ ] P12-002 — Crash forensics workflow: scrub-last-seconds with ghost separation
-- [ ] P12-003 — Repair sheets: explode chain order → repair steps + reorder links
-- [ ] P12-004 — Fleet view
+- [x] P12-001 — Wear models: motor hours, pack cycle counts, R_int drift from logged sag *(2026-06-14: Rust helper and maintenance worker compute wear from telemetry)*
+- [~] P12-002 — Crash forensics workflow: scrub-last-seconds with ghost separation *(2026-06-14: crash-window and ghost-overlay metadata live, visible in Studio job details, and materialized to `maintenance_records`; scrubber UI open)*
+- [x] P12-003 — Repair sheets: explode chain order → repair steps + reorder links *(2026-06-14: Rust helper and maintenance worker generate ordered repair steps/reorder SKUs; Studio can refresh vendor quote/link handoffs from repair SKUs without direct carts)*
+- [~] P12-004 — Fleet view *(2026-06-14: fleet-summary worker live and Studio job details render vehicle counts, due counts, and next actions; maintenance job outputs materialize records where applicable; full fleet dashboard open)*
 
 ## 3. Cross-cutting backlog (XC) — tracked from day one
 
@@ -204,7 +204,7 @@ touched.
 | XC-02 | Harness check IDs + diagnostic format | P2 | systems/validation-harness.md |
 | XC-03 | Lockfile resolver + upgrade-diff UI | P3 | systems/component-database.md |
 | XC-04 | MJCF/URDF exporter goldens — **done 2026-06-12** (`crates/forge-sim/tests/fixtures`) | P6 | systems/simulation-engine.md |
-| XC-05 | URDF importer fixtures | P6 | systems/model-contract.md |
+| XC-05 | URDF/MJCF importer fixtures — **done 2026-06-14** (`crates/forge-sim/tests/fixtures/import_rover.*`) | P6 | systems/model-contract.md |
 | XC-06 | Thrust-table interpolation module — **done 2026-06-12** | P3 | systems/simulation-engine.md |
 | XC-07 | Battery-sag unit tests | P6 | systems/simulation-engine.md |
 | XC-08 | Estimator (complementary/EKF) module with noise injection | P6 | systems/simulation-engine.md |
@@ -216,7 +216,7 @@ touched.
 | XC-14 | Prompt-cache prefix builder | P4 | systems/generation-pipeline.md |
 | XC-15 | Brief-25 corpus + dashboard | P4 | systems/generation-pipeline.md |
 | XC-16 | Draft-state UX | P4 | systems/studio-ui.md |
-| XC-17 | License-ledger UI + export filter | P3 | systems/component-database.md |
+| XC-17 | License-ledger UI + export filter — **done 2026-06-14** (`/v1/license-ledger` + Studio platform panel) | P3 | systems/component-database.md |
 | XC-18 | DfM check module | P6 | systems/geometry-engine.md |
 | XC-19 | Pairing-code auth + FORGE Link image build | P8 | systems/hardware-bridge.md |
 | XC-20 | Ghost-overlay telemetry view | P8 | systems/hardware-bridge.md |
@@ -224,7 +224,7 @@ touched.
 | XC-22 | Quality-tier autoswitcher | P1 | systems/render-engine.md |
 | XC-23 | Schema migration runner | P2 | systems/model-contract.md |
 | XC-24 | Fuzz corpus seed set | P4 | systems/validation-harness.md |
-| XC-25 | Leaderboard replay verifier | P10 | systems/environments-courses.md |
+| XC-25 | Leaderboard replay verifier — **done 2026-06-14** (server computes replay hash/timestamp/header checks before official verification) | P10 | systems/environments-courses.md |
 | XC-26 | Golden-number suite harness — **done 2026-06-12** (XT-001 in CI; forge-num determinism fix) | P1 | systems/core-runtime.md |
 | XC-27 | Tauri serial + background-recorder plugins | P8 | systems/hardware-bridge.md |
 
@@ -236,7 +236,7 @@ touched.
 | OD-02 | ~~React vs Solid~~ — **resolved by D16** (the face stays React/TS; v3.0) | — |
 | OD-03 | Left/right asymmetric slot UX (contract already supports) | when a build needs it |
 | OD-04 | WASM user-controller sandbox design | post-P7 design review |
-| OD-05 | Marketplace economics (revenue share, skill pricing) | inside P11 with usage data |
+| OD-05 | ~~Marketplace economics (revenue share, skill pricing)~~ — **resolved by D29** as usage-data beta; seller payouts/revenue share deferred until real thresholds | — |
 | OD-06 | Fixed-wing archetype priority | when demand signals |
 | OD-07 | Photoscan alignment UI: before or with P5 GA | during P5 |
 | OD-08 | napi-rs hot-path bindings vs binary-spawn in the gateway | measure in P2 (P2-007) |

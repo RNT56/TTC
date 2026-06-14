@@ -1,7 +1,7 @@
 # Environments & Courses — implementation doc
 
-**Status:** not started · **Phases:** P10 (seam designed at P4) · **Home:**
-`forge-contract` (EnvSpec schema) + gateway (registry/leaderboards) *(proposed)* ·
+**Status:** EnvSpec seam, course registry, replay verification, and course-to-task adapter live · **Phases:** P10 (seam designed at P4) · **Home:**
+`forge-sim::runtime`, gateway (registry/leaderboards), workers/replay ·
 **Plan refs:** §13, §8.3 (v3.0) · **Decisions:** D17
 
 ## 1. Purpose
@@ -31,24 +31,33 @@ P4 pipeline with a smaller schema (orchestrator is schema-generic by design, P4-
 ## 3. The course gatekeeper (P10-002)
 
 Same sovereign-validator discipline — ENV-* checks in the harness catalog:
-ENV-001 spawn validity · ENV-002 reachability spawn → goals (archetype-aware:
-a gate sequence flyable/driveable by the declared class) · ENV-003 bounds sanity ·
-ENV-004 no degenerate colliders. Courses carry validator reports like models.
+ENV-001 identity/spawn validity · ENV-002 bounds/reference sanity · ENV-003 task and
+win-condition sanity · ENV-004 no degenerate obstacle/gate colliders. Courses carry
+validator reports like models. `forge-validate env` is the distributable gatekeeper
+surface; the gateway calls it before persisting courses. Archetype-aware reachability
+for "flyable/driveable by this class" remains the next fidelity step.
 
 ## 4. Leaderboards (P10-005; D17 makes them honest)
 
 Per-course, per-archetype, and per-class (e.g. stock VX-2 vs open class). A run
 submits its replay `{contract hash + lockfile, env, seed, input tape}` — under D17 a
 tape is **universally checkable** (anyone can replay it bit-exactly on any surface);
-the server re-verifies (`replay.verify` worker, XC-25) before a time enters the
-official board, as **anti-cheat hygiene** rather than as the only place truth
-exists.
+the server re-verifies (gateway replay verifier / `replay.verify` worker contract,
+XC-25) before a time enters the official board, as **anti-cheat hygiene** rather
+than as the only place truth exists. A client-provided `verified: true` claim is
+recorded only as a claim; official `verified` is computed from tape hash,
+monotonic timestamps, and optional contract-hash checks.
 
 ## 5. Courses as RL tasks (P10-006)
 
 A course compiles to a task definition (spawn → win conditions → reward shaping
 defaults per archetype), entering the P7 task suite without conversion work —
 community content becomes training curriculum, the flywheel's social gear.
+
+Live 2026-06-14: `forge-sim::heavy::course_to_task` maps EnvSpec/course task lists
+and archetypes to RL task specs; gateway course and leaderboard routes are live;
+`/v1/replays` persists replay verification artifacts and leaderboard writes compute
+verification server-side.
 
 ## 6. Dependencies
 

@@ -16,6 +16,10 @@ export function databaseUrl(): string {
 }
 
 export function gatewayDb(): GatewayDb {
+  return gatewayPool();
+}
+
+export function gatewayPool(): Pool {
   if (pool === null) {
     pool = new Pool({
       connectionString: databaseUrl(),

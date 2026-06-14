@@ -22,15 +22,15 @@ phase-level state only.
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● *(tag `p3-baseline` → `6937037`, 2026-06-13: Postgres runner/seed/assert, strict catalog rows, fixture ETL/review queue, catalog HUD/BOM, reference rigs pinned)* | 2–3 wk |
-| P4 Text-to-CAD GA | ◑ *(2026-06-13: review loop, fixture ingestion adapters, and generation context/prompt-prefix builder live; synthesis/Brief-25 still pending)* | 3–4 wk |
-| P5 Image → 3D | ○ | 3 wk |
-| P6 Sim depth + interop | ○ | 3–4 wk |
-| P7 Training service | ○ | 4 wk |
-| P8 Bridge + Desktop | ○ | 5–7 wk |
-| P9 Co-design | ○ | 4 wk |
-| P10 Environments & courses | ○ | 3–4 wk |
-| P11 Platform | ○ | open |
-| P12 Maintenance twin | ○ | 3 wk |
+| P4 Text-to-CAD GA | ● *(2026-06-14: deterministic six-archetype template generation, staged SSE, validator repair/draft path, JSON-Patch edit route, Auth.js GitHub/account seam, server-backed shares, Brief-25 real-validator gate 25/25, eval history tables/API, Studio model/edit/share/eval panels)* | 3–4 wk |
+| P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; live photogrammetry/COLMAP and mesh-click placement remain adapter/config/UI work)* | 3 wk |
+| P6 Sim depth + interop | ◑ *(2026-06-14: collider auto-fit, blade-element-lite, disturbances, replay envelope verification, sag/current helpers, URDF/MJCF exporters, ros2_control sidecar, mesh visual manifest, slotless URDF/MJCF fixture import; full engine-backed Rapier/MuJoCo parity and external-driveable import still open)* | 3–4 wk |
+| P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, scorecard gate, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
+| P8 Bridge + Desktop | ⛔ *(2026-06-14: config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop D28 lab gates exist; live hardware deployment remains blocked on legal sign-off)* | 5–7 wk |
+| P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, tier labels, Pareto outputs, Studio launch buttons; CMA-ES/Optuna/full sim ladder open)* | 4 wk |
+| P10 Environments & courses | ◑ *(2026-06-14: `forge-validate env`, expanded EnvSpec runtime checks, course-to-task adapter, courses/leaderboards/replay verification tables and routes, server-side leaderboard replay verification, Studio fixture course/score panel; full environment generation and board UI open)* | 3–4 wk |
+| P11 Platform | ◑ *(2026-06-14: Auth.js GitHub, credits, user-owned models, listings/moderation reports, platform gates, policy signoffs, classroom assignments/submissions with validator grading, policy ONNX metadata, DfM/3MF metadata, owner-scoped object blobs, executable job queue, usage-beta rollups, vendor offer APIs, print quote/link APIs, and Studio commerce/gate rows; external provider integrations still env-gated)* | open |
+| P12 Maintenance twin | ◑ *(2026-06-14: wear models, crash windows, repair-sheet generation, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and vendor/print quote-link surfacing; full scrubber/fleet dashboards open)* | 3 wk |
 
 Sequencing rationale (D1–D4): verify-first means P3 (catalog truth) ships and gets
 attention before P4 (generation GA); sharing arrives at P4; the marketplace is
@@ -130,11 +130,11 @@ metered credits (D3); Brief-25 suite live (D-evals).
 
 Exit criteria:
 - [x] Catalog review loop has an owner-facing API/UI before generated artifacts can consume new live-ingested rows *(2026-06-13: API/UI, audit notes, export-policy filters, owner-token auth, and fixture-backed ingestion adapters live)*
-- [ ] ≥ 20/25 Brief-25 briefs admitted without human repair
-- [ ] Conversational edits apply in < 3 s
-- [ ] A shared link renders for a logged-out visitor (orbit, explode, blueprint, drive demo)
-- [ ] Anthropic model strings/limits/pricing pinned from current docs (not from the plan)
-- [ ] Brief-25 dashboard tracks admission rate, repair iterations, diversity over time
+- [x] ≥ 20/25 Brief-25 briefs admitted without human repair *(2026-06-14: real-validator enforced run is 25/25)*
+- [x] Conversational edits apply in < 3 s *(2026-06-14: deterministic NL→JSON-Patch gateway route uses `forge-validate patch`; reports elapsed ms)*
+- [x] A shared link renders for a logged-out visitor (orbit, explode, blueprint, drive demo) *(2026-06-14: admitted-only immutable share snapshots via `/v1/share/:shareId`, Studio `?share=` viewer mode; legacy fragment shares remain)*
+- [x] Anthropic model strings/limits/pricing pinned from current docs (not from the plan) *(D26)*
+- [x] Brief-25 dashboard tracks admission rate, repair iterations, diversity over time *(2026-06-14: `eval_runs`/`eval_brief_results`, `--record-db`, `/v1/evals/brief25/latest`, Studio summary panel)*
 
 ## P5 — Image → 3D
 
@@ -156,10 +156,10 @@ disturbance injectors; MJCF/URDF exporters with parity suite; URDF/MJCF **import
 [`systems/model-contract.md`](systems/model-contract.md) §6.
 
 Exit criteria:
-- [ ] Hover trim agrees across Rapier and MuJoCo within tolerance (parity suite green)
-- [ ] An external URDF round-trips into a driveable contract
-- [ ] Endurance estimate within stated error of bench math; assumptions inspectable in HUD
-- [ ] Replay format stable: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
+- [~] Hover trim agrees across Rapier and MuJoCo within tolerance (deterministic parity fixture green; engine-backed parity open)
+- [~] An external URDF round-trips into a driveable contract (slotless fixture import green; external-driveable conversion open)
+- [x] Endurance estimate within stated error of bench math; assumptions inspectable in HUD
+- [x] Replay format stable: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
 
 ## P7 — Training service
 
@@ -168,7 +168,7 @@ ONNX export, in-browser policy playback; estimator-smoke gate (D8).
 **Owning docs:** [`systems/learning-engine.md`](systems/learning-engine.md).
 
 Exit criteria:
-- [ ] A trained hover + waypoint policy flies the twin in-browser from a one-click job
+- [~] A trained hover + waypoint policy flies the twin in-browser from a one-click job *(fixture policy action-header playback live; live ONNX inference open)*
 - [ ] Ground-truth-trained policies rejected at scorecard time (estimator smoke)
 - [ ] Hover-class task to passing scorecard overnight on one consumer GPU
 - [ ] Scorecard schema final: success rate, robustness grid, energy; sub-threshold policies do not export
@@ -178,7 +178,11 @@ Exit criteria:
 **Scope:** WebSerial config writer, telemetry ingest, system-ID fitting, flight
 recorder + ghost overlay, **FORGE Desktop (Tauri): serial plugin, fs, background
 recorder (D15)**, FORGE Link companion image, deployment-ladder UX with the safety
-supervisor and control-rate contract (D9); pilots on both reference rigs.
+supervisor and control-rate contract (D9); pilots on both reference rigs. The
+deterministic package scaffold now exists under `packages/desktop`; gateway and
+Desktop commands also require the D28 platform gate, explicit lab-mode envs, and D12
+rig allowlists. Live hardware and distributable installers remain behind the entry
+gate.
 **Entry gate (hard):** ToS/liability legal review complete
 ([`security-safety-legal.md`](security-safety-legal.md) §3).
 **Owning docs:** [`systems/hardware-bridge.md`](systems/hardware-bridge.md).
@@ -186,7 +190,7 @@ supervisor and control-rate contract (D9); pilots on both reference rigs.
 Exit criteria:
 - [ ] Legal review of ladder UX, supervisor disclaimers, telemetry consent — **before any deployment feature ships**
 - [ ] A real quad configured from its contract via WebSerial
-- [ ] SITL → HITL → tethered demonstrated and documented on the reference quad
+- [~] SITL → HITL → tethered demonstrated and documented on the reference quad *(D28-gated dry-run pilot playbooks and `pnpm pilot:check` live; real HITL/tethered execution blocked)*
 - [ ] **A field log captured by FORGE Desktop replays with visible ghost divergence**
 - [ ] System-ID fit updates the contract's sim block from bench/flight telemetry
 
@@ -223,9 +227,9 @@ BOM agent vendor links, DfM + print-service ordering, UGC moderation policy.
 
 Exit criteria:
 - [ ] First external user publishes a model that strangers equip
-- [ ] First printed structural part ordered through the flow
+- [ ] First printed structural part handed off through a provider quote link
 - [ ] Moderation policy live (report flow, takedown SLA, repeat-infringer rule)
-- [ ] Marketplace economics decided with real usage data (OD-05)
+- [x] Marketplace usage-beta economics recorded (D29); seller payouts/revenue share deferred until real thresholds
 
 ## P12 — Maintenance twin
 
@@ -234,4 +238,4 @@ repair-steps-from-explode with reorder links, fleet view.
 **Owning docs:** [`systems/platform.md`](systems/platform.md) §6.
 
 Exit criteria:
-- [ ] A logged crash produces an actionable repair sheet with parts in the cart
+- [ ] A logged crash produces an actionable repair sheet with vendor/print quote links

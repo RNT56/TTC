@@ -10,7 +10,7 @@ drifting in code. On any conflict between documents, this file wins
 
 1. Confirm it is genuinely a decision of consequence (architecture, scope, sequencing,
    security, legal, economics, naming) — not routine implementation detail.
-2. Append a row with the next free ID (next regular ID: **D27**), a one-line decision,
+2. Append a row with the next free ID (next regular ID: **D30**), a one-line decision,
    a one-line rationale, and status `active`.
 3. If it supersedes an earlier decision, set the old row's status to
    `superseded by Dnn` — exactly as D6 and D11 were retired by v3.0.
@@ -70,18 +70,21 @@ drifting in code. On any conflict between documents, this file wins
 | D24 | **License mechanics (implements D2, owner-delegated business calls, 2026-06-12):** Apache-2.0, copyright RNT56, scoped to the open core = `crates/` (ALL forge-* crates incl. the wasm facade and forge-gen — everything published to crates.io/npm must be usable), `schema/`, and `examples/` (fixtures are unusable if closed). Everything else (studio, gateway, workers, prototype, catalog, docs, infra, scripts) proprietary, all rights reserved. Root `LICENSE` states the split; `LICENSES/Apache-2.0.txt` canonical text; `NOTICE` per Apache convention; zone-2 package.json marked "SEE LICENSE IN". Catalog rows keep their per-row `license` metadata (D10). Contribution terms stated in LICENSE. | open core must cover every published artifact or publication (P2-001) deadlocks; examples/fixtures travel with the validator | active |
 | D25 | **P4 starts with live catalog ingestion and review operations before full text-to-CAD generation GA.** The first P4 slice is the owner-facing review API/UI plus injectable fetch/Claude/OCCT adapters; the generation orchestrator then consumes reviewed catalog truth, not unaudited rows. | generation quality depends on trusted parts/provenance; closing the review loop first avoids building LLM flows on unresolved catalog debt | active |
 | D26 | **P4 Anthropic model pins are fixed from official docs checked 2026-06-13:** synthesis `claude-fable-5` (1M context, 128k max output, $10/$50 per MTok input/output), repair `claude-opus-4-8` (1M, 128k, $5/$25), edit `claude-sonnet-4-6` (1M, 64k, $3/$15), ETL `claude-haiku-4-5-20251001` / alias `claude-haiku-4-5` (200k, 64k, $1/$5). Prompt-cache write/hit prices are recorded in code; `claude-mythos-5` is not used because official docs mark it limited availability. | model IDs, limits, and prices move faster than planning docs; generated artifacts must carry auditable model provenance before live calls | active |
+| D27 | **P4-P12 executes as a deterministic local production slice before live cloud/hardware expansion** (2026-06-14): P4 generation uses deterministic multi-archetype templates by default, Auth.js GitHub OAuth is pulled forward, Docker Compose is the runnable stack, MinIO-compatible object storage backs blobs, and Modal remains the burst-GPU adapter behind fixture-default workers. Live Anthropic, live fetch, live photogrammetry, SB3/MuJoCo, and hardware deployment stay injectable/optional until explicitly configured. | the owner requested full P4-P12 execution, but CI/local closure must not depend on external keys, GPUs, or physical hardware | active |
+| D28 | **P8 legal gate remains binding despite scaffold implementation** (2026-06-14): bridge/Desktop data tables, fixture jobs, Studio controls, replay/system-ID seams, and worker handlers may exist before counsel review; WebSerial writes, auto-deploy, free-flight/tethered steps, and any policy/hardware deployment surface remain blocked until the ToS/liability/legal sign-off record is completed. | legal gates are entry conditions, not cleanup; scaffold code must not silently turn into hardware authority | active |
+| D29 | **P11 marketplace launches as a usage-data beta; economics decision is deferred until real thresholds are met** (2026-06-14): listed models/courses/skills/components may collect views, equips, quote clicks, policy downloads, and training-job usage, but launch has no seller payouts, no revenue share, and no direct marketplace checkout. Credit cost-plus remains retained for GPU jobs. | pricing and revenue share need real usage distribution; quote/link handoff and usage rollups give evidence without creating a payout/payment system prematurely | active |
 
 ## Open decisions
 
 Tracked as OD-items in [`TODO.md`](TODO.md) §4 (naming, asymmetric slots, WASM
-sandbox, marketplace economics, fixed-wing priority, alignment-UI timing, napi-rs vs
+sandbox, fixed-wing priority, alignment-UI timing, napi-rs vs
 binary-spawn). None blocks a phase boundary. Resolve → append a D-row here → mark the
 OD row. OD-02 (React vs Solid) was resolved by D16: the face stays React/TS.
 
 ## Expected near-term additions
 
 - ~~P2: napi-rs hot-path bindings vs binary-spawn in the gateway (OD-08)~~ — resolved as D22.
-- P3: reference-rig SKU selection (fulfils D12).
+- ~~P3: reference-rig SKU selection (fulfils D12).~~ — resolved in P3.
 - ~~P4: pinned Anthropic model strings/limits/pricing (CLAUDE.md non-negotiable #11)~~ — resolved as D26.
-- P8: legal-review sign-off record (entry gate).
-- P11: dual-use check record; marketplace economics (OD-05).
+- ~~P8: legal-review sign-off record (entry gate).~~ — blocking state recorded as D28; actual sign-off remains an owner/legal action.
+- P11: dual-use check record remains gate-tracked; marketplace economics deferred by D29.
