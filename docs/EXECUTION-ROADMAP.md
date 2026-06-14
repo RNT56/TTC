@@ -295,8 +295,9 @@ Scope:
 - Finish generated-course schema/versioning polish for EnvSpec.
 - Add archetype-aware reachability to `forge-validate env`.
 - Build full environment generation through the P4 pipeline.
-- Finish public course URL sharing; Studio now has an editable EnvSpec course form
-  for the existing create/validate route.
+- Studio now has an editable EnvSpec course form and `?course=<id>` URL
+  selection/copying for public/unlisted courses; direct course fetch/API polish
+  remains open.
 - Finish durable leaderboard slicing by course, archetype, and class.
 - Studio verified-board UI filters are live as of 2026-06-14 using course
   EnvSpec archetypes and replay verification headers.

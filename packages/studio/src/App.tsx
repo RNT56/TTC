@@ -427,7 +427,10 @@ export default function App() {
       setPlatformGates(gateRows);
       setVendorOffers(vendorRows);
       setPrintQuotes(printQuoteRows);
-      const courseId = activeCourseId ?? courseRows[0]?.id ?? null;
+      const requestedCourseId = readCourseIdParam();
+      const requestedCourse = requestedCourseId && courseRows.some((course) => course.id === requestedCourseId);
+      const currentCourse = activeCourseId && courseRows.some((course) => course.id === activeCourseId);
+      const courseId = requestedCourse ? requestedCourseId : currentCourse ? activeCourseId : courseRows[0]?.id ?? null;
       setActiveCourseId(courseId);
       const assignmentId = activeAssignmentId ?? assignmentRows[0]?.id ?? null;
       setActiveAssignmentId(assignmentId);
@@ -873,6 +876,12 @@ export default function App() {
     void refreshBriefEval();
   }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshJobs, refreshModels, refreshPlatform]);
 
+  const selectCourse = useCallback((courseId: string | null) => {
+    setActiveCourseId(courseId);
+    if (courseId) replaceCourseUrl(courseId);
+    void refreshLeaderboard(courseId);
+  }, [refreshLeaderboard]);
+
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
@@ -927,6 +936,14 @@ export default function App() {
     } catch {
       /* clipboard needs a user gesture/permission; visible URL still updates */
     }
+  };
+
+  const copyActiveCourseUrl = async () => {
+    if (!activeCourseId) return;
+    const url = courseUrlFor(activeCourseId);
+    replaceCourseUrl(activeCourseId);
+    setPlatformMessage(`course URL copied · ${activeCourseId}`);
+    await copyText(url);
   };
 
   const saveCurrentModel = async () => {
@@ -1809,6 +1826,7 @@ export default function App() {
             courseVisibility={courseVisibility}
             courseEnvJson={courseEnvJson}
             activeCourseId={activeCourseId}
+            courseShareUrl={activeCourseId ? courseUrlFor(activeCourseId) : null}
             leaderboardRuns={leaderboardRuns}
             leaderboardArchetypeFilter={leaderboardArchetypeFilter}
             leaderboardClassFilter={leaderboardClassFilter}
@@ -1831,10 +1849,8 @@ export default function App() {
             onCourseNameChange={setCourseName}
             onCourseVisibilityChange={setCourseVisibility}
             onCourseEnvJsonChange={setCourseEnvJson}
-            onCourseChange={(courseId) => {
-              setActiveCourseId(courseId);
-              void refreshLeaderboard(courseId);
-            }}
+            onCourseChange={selectCourse}
+            onCopyCourseUrl={() => void copyActiveCourseUrl()}
             onLeaderboardArchetypeFilter={setLeaderboardArchetypeFilter}
             onLeaderboardClassFilter={setLeaderboardClassFilter}
             onLeaderboardStatusFilter={setLeaderboardStatusFilter}
@@ -2896,6 +2912,7 @@ function PlatformPanel({
   courseVisibility,
   courseEnvJson,
   activeCourseId,
+  courseShareUrl,
   leaderboardRuns,
   leaderboardArchetypeFilter,
   leaderboardClassFilter,
@@ -2919,6 +2936,7 @@ function PlatformPanel({
   onCourseVisibilityChange,
   onCourseEnvJsonChange,
   onCourseChange,
+  onCopyCourseUrl,
   onLeaderboardArchetypeFilter,
   onLeaderboardClassFilter,
   onLeaderboardStatusFilter,
@@ -2940,6 +2958,7 @@ function PlatformPanel({
   courseVisibility: CourseVisibility;
   courseEnvJson: string;
   activeCourseId: string | null;
+  courseShareUrl: string | null;
   leaderboardRuns: LeaderboardRunRecord[];
   leaderboardArchetypeFilter: string;
   leaderboardClassFilter: string;
@@ -2963,6 +2982,7 @@ function PlatformPanel({
   onCourseVisibilityChange: (value: CourseVisibility) => void;
   onCourseEnvJsonChange: (value: string) => void;
   onCourseChange: (courseId: string | null) => void;
+  onCopyCourseUrl: () => void;
   onLeaderboardArchetypeFilter: (value: string) => void;
   onLeaderboardClassFilter: (value: string) => void;
   onLeaderboardStatusFilter: (value: LeaderboardStatusFilter) => void;
@@ -3074,20 +3094,26 @@ function PlatformPanel({
         </div>
       ))}
       {courses.length > 0 ? (
-        <select
-          value={activeCourseId ?? ""}
-          onChange={(event) => onCourseChange(event.target.value || null)}
-          style={{ ...selectStyle, width: "100%", marginTop: 6 }}
-        >
-          {courses.map((course) => (
-            <option key={course.id} value={course.id}>
-              {course.name} · {course.visibility}
-            </option>
-          ))}
-        </select>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 4, marginTop: 6 }}>
+          <select
+            value={activeCourseId ?? ""}
+            onChange={(event) => onCourseChange(event.target.value || null)}
+            style={{ ...selectStyle, width: "100%" }}
+          >
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.name} · {course.visibility}
+              </option>
+            ))}
+          </select>
+          <button onClick={onCopyCourseUrl} disabled={!activeCourseId} style={btn}>
+            url
+          </button>
+        </div>
       ) : (
         <div style={{ color: "#6b7686", marginTop: 4 }}>0 courses</div>
       )}
+      {courseShareUrl ? <div style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{courseShareUrl}</div> : null}
       <LeaderboardBoard
         course={activeCourse}
         runs={leaderboardRuns}
@@ -3749,6 +3775,28 @@ function fixtureEnvSpec(): unknown {
     gates: [{ id: "g1", pose: { p: [4, 1, 0] }, widthM: 1.2, heightM: 0.8 }],
     win: { gateOrder: ["g1"], timeLimitS: 30, contactPenalties: true },
   };
+}
+
+function readCourseIdParam(): string | null {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get("course");
+  return value && value.trim() ? value : null;
+}
+
+function courseUrlFor(courseId: string): string {
+  if (typeof window === "undefined") return `?course=${encodeURIComponent(courseId)}`;
+  const url = new URL(window.location.href);
+  url.searchParams.set("course", courseId);
+  url.hash = "";
+  return url.toString();
+}
+
+function replaceCourseUrl(courseId: string) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.set("course", courseId);
+  url.hash = "";
+  window.history.replaceState(null, "", `${url.pathname}${url.search}`);
 }
 
 function verdictColor(verdict: string): string {

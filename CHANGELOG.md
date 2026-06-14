@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add Studio course URLs
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10 · **TODO items:** P10-004 [~]
+**Done:** Added client-side `?course=<id>` support in Studio: refresh selects a
+matching public/unlisted course from the existing course list, the active course
+selector updates the URL, and the platform panel exposes a copyable course URL.
+**Changed:** `packages/studio/src/App.tsx`,
+`docs/systems/environments-courses.md`, `docs/systems/studio-ui.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Add a direct public course lookup endpoint or route when course listings
+need to load ids outside the current list window.
+**Blockers:** P10-004 remains open until public course pages/API polish are durable
+for arbitrary listed course ids.
+
 ## 2026-06-14 — Persist admitted co-design points from Studio
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P9 · **TODO items:** P9-004 [~]
 **Done:** Added a Studio save action for admitted co-design Pareto candidates. The
