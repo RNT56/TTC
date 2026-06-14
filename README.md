@@ -1,16 +1,59 @@
-# ForgedTTC
+<p align="center">
+  <img src="docs/assets/readme/hero.svg" alt="ForgedTTC: robots that carry their evidence" width="100%">
+</p>
 
-<div align="center">
+<h1 align="center">ForgedTTC</h1>
 
-**Design robots from intent, prove them before you build, and keep the model alive after the crash.**
+<p align="center">
+  <strong>Design robots from intent, prove them before you build, and keep the model alive after the crash.</strong>
+</p>
 
-ForgedTTC is an open-core robotics design system: a browser studio, a Rust validator,
-a simulation/export stack, a Python worker plane, and a platform layer for sharing,
-courses, policy scorecards, quote links, and maintenance records.
+<p align="center">
+  <a href="#the-problem-we-are-solving"><strong>Painpoints</strong></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#what-you-get"><strong>What users get</strong></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#visual-proof-the-core-already-renders-real-contracts"><strong>Visual proof</strong></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#architecture"><strong>Architecture</strong></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#run-it-locally"><strong>Run locally</strong></a>
+</p>
 
-`prompt -> admitted model -> sim/replay -> policy scorecard -> BOM/quotes -> field log -> repair sheet`
+<p align="center">
+  <img alt="Rust core" src="https://img.shields.io/badge/core-Rust-172331?style=for-the-badge&labelColor=10161f">
+  <img alt="React studio" src="https://img.shields.io/badge/studio-React%20%2B%20Three.js-172331?style=for-the-badge&labelColor=10161f">
+  <img alt="Gateway" src="https://img.shields.io/badge/gateway-Fastify%20%2B%20Postgres-172331?style=for-the-badge&labelColor=10161f">
+  <img alt="Worker plane" src="https://img.shields.io/badge/workers-Python-172331?style=for-the-badge&labelColor=10161f">
+</p>
 
-</div>
+<p align="center">
+  <code>prompt -> admitted model -> sim/replay -> policy scorecard -> BOM/quotes -> field log -> repair sheet</code>
+</p>
+
+ForgedTTC is an open-core robotics design system: a browser studio, a Rust
+validator, a simulation/export stack, a Python worker plane, and a platform layer
+for sharing, courses, policy scorecards, quote links, and maintenance records.
+
+> The product bet: robotics design should not end at a file export. It should carry
+> evidence from first idea to build, training, field logs, and repair.
+
+<table>
+  <tr>
+    <td width="33%">
+      <h3>Evidence-first design</h3>
+      <p>Every serious artifact carries a validator report, lockfile, provenance, scorecard, license state, or replay hash.</p>
+    </td>
+    <td width="33%">
+      <h3>One source of truth</h3>
+      <p>The browser, gateway, worker jobs, exports, replay, and policy metadata all orbit the same typed model contract.</p>
+    </td>
+    <td width="33%">
+      <h3>Gated reality</h3>
+      <p>Live GPU, provider, engine, and hardware paths exist, but default to deterministic fixtures and explicit gates.</p>
+    </td>
+  </tr>
+</table>
 
 ---
 
