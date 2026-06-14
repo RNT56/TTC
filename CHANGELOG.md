@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add Studio maintenance twin dashboard
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~], P12-004 [~]
+**Done:** Added a Studio maintenance twin dashboard over materialized
+`maintenance_records`: fleet counts, due/critical state, next actions, wear cards,
+repair/reorder rows, and a crash-window scrubber that surfaces ghost divergence
+status over the last-seconds interval.
+**Changed:** `packages/studio/src/App.tsx`, `docs/systems/platform.md`,
+`docs/systems/studio-ui.md`, `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Connect the dashboard to real Desktop-captured telemetry logs and live
+vendor/print quote handoff rows for crash-to-repair closure.
+**Blockers:** P12 exit proof still depends on D12 lab/Desktop field-log capture and
+live provider handoff evidence.
+
 ## 2026-06-14 — Add Studio course editor and leaderboard filters
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10 · **TODO items:** P10-004 [~], P10-005 [~]
 **Done:** Expanded the Studio platform panel from fixture-only course creation and

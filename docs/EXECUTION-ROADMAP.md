@@ -371,10 +371,10 @@ Owns: `P12-002`, `P12-004`, P12 open exit criterion.
 
 Scope:
 
-- Finish crash-forensics scrubber UI over ghost separation and last-seconds
-  replay windows.
-- Build full fleet dashboard: vehicle counts, due maintenance, next actions,
-  wear, repairs, and linked telemetry/maintenance records.
+- Crash-forensics scrubber UI over ghost separation and last-seconds replay
+  windows is live in Studio as of 2026-06-14 for materialized maintenance records.
+- Fleet dashboard is live in Studio as of 2026-06-14 with vehicle counts, due
+  maintenance, next actions, wear, repairs, crash windows, and reorder rows.
 - Close the logged-crash exit criterion by producing an actionable repair sheet
   with vendor and print quote links.
 

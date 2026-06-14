@@ -2262,6 +2262,7 @@ function ArtifactRegistry({
       {telemetryLogs.slice(0, 2).map((log) => (
         <TelemetryLogRow key={log.id} log={log} />
       ))}
+      <MaintenanceDashboard records={maintenanceRecords} />
       {maintenanceRecords.slice(0, 3).map((record) => (
         <MaintenanceRecordRow key={record.id} record={record} />
       ))}
@@ -2559,6 +2560,232 @@ function TelemetryLogRow({ log }: { log: TelemetryLogRecord }) {
       />
     </div>
   );
+}
+
+function MaintenanceDashboard({ records }: { records: MaintenanceRecord[] }) {
+  if (records.length === 0) return null;
+  const fleetRecord = records.find((record) => maintenanceKind(record) === "fleet-summary") ?? null;
+  const fleet = asRecord(fleetRecord?.payload);
+  const wearRecords = records.filter((record) => maintenanceKind(record) === "wear-estimate" || record.kind === "wear");
+  const crashRecords = records.filter((record) => maintenanceKind(record) === "crash-forensics");
+  const repairRecords = records.filter((record) => maintenanceKind(record) === "repair-sheet");
+  const repairSteps = repairRecords.flatMap((record) => repairStepsFor(record).map((step) => ({ record, step })));
+  const nextActions = [
+    ...fleetActions(fleet),
+    ...repairSteps
+      .filter(({ step }) => typeof step.reorderSku === "string" && step.reorderSku.trim())
+      .map(({ step }) => ({
+        vehicleId: typeof step.node === "string" ? step.node : "repair",
+        action: `reorder ${step.reorderSku}`,
+      })),
+  ].slice(0, 6);
+  const warningCount = records.filter((record) => record.severity === "warn" || record.severity === "critical").length;
+  const repairStepCount = repairSteps.length;
+  const reorderCount = repairSteps.filter(({ step }) => typeof step.reorderSku === "string" && step.reorderSku.trim()).length;
+  const fallbackDue = wearRecords.filter((record) => {
+    const payload = asRecord(record.payload);
+    const packCycles = numberOrNull(payload?.packCycles);
+    const rIntMohm = numberOrNull(payload?.rIntMohm);
+    return (packCycles !== null && packCycles >= 80) || (rIntMohm !== null && rIntMohm >= 120);
+  }).length;
+
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>fleet dashboard</span>
+        <span style={{ color: warningCount > 0 ? "#e6a23c" : "#7dd87d" }}>
+          {warningCount > 0 ? `${warningCount} review` : "clear"}
+        </span>
+      </div>
+      <MiniRows
+        rows={[
+          ["vehicles", numberOrNull(fleet?.vehicleCount) ?? uniqueModelCount(records)],
+          ["service due", numberOrNull(fleet?.serviceDueCount) ?? fallbackDue],
+          ["critical", numberOrNull(fleet?.criticalCount) ?? records.filter((record) => record.severity === "critical").length],
+          ["crashes", crashRecords.length],
+          ["repair steps", repairStepCount],
+          ["reorders", reorderCount],
+        ]}
+      />
+      {nextActions.length > 0 ? (
+        <div style={{ display: "grid", gap: 4, marginTop: 5 }}>
+          {nextActions.map((action, index) => (
+            <div
+              key={`${action.vehicleId}-${action.action}-${index}`}
+              style={{ display: "grid", gridTemplateColumns: "72px minmax(0, 1fr)", gap: 8 }}
+            >
+              <span style={{ color: "#6b7686" }}>{action.vehicleId ?? "vehicle"}</span>
+              <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>{action.action ?? "review"}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {wearRecords.length > 0 ? <WearSummary records={wearRecords} /> : null}
+      {crashRecords.length > 0 ? <CrashScrubber records={crashRecords} /> : null}
+      {repairSteps.length > 0 ? <RepairSummary rows={repairSteps} /> : null}
+    </div>
+  );
+}
+
+function WearSummary({ records }: { records: MaintenanceRecord[] }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 4, marginTop: 6 }}>
+      {records.slice(0, 3).map((record) => {
+        const payload = asRecord(record.payload);
+        const packCycles = numberOrNull(payload?.packCycles);
+        const motorHours = numberOrNull(payload?.motorHours);
+        const rIntMohm = numberOrNull(payload?.rIntMohm);
+        const warnings = Array.isArray(payload?.warnings) ? payload.warnings.length : 0;
+        return (
+          <div key={record.id} style={{ border: "1px solid #242a33", padding: "4px 5px", minWidth: 0 }}>
+            <div style={{ color: warnings > 0 || record.severity !== "info" ? "#e6a23c" : "#cfd6df" }}>
+              wear · {record.modelId ?? "fleet"}
+            </div>
+            <MiniRows
+              rows={[
+                ["packs", packCycles === null ? undefined : packCycles.toFixed(2)],
+                ["motor", motorHours === null ? undefined : `${motorHours.toFixed(2)} h`],
+                ["Rint", rIntMohm === null ? undefined : `${rIntMohm.toFixed(1)} mOhm`],
+              ]}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CrashScrubber({ records }: { records: MaintenanceRecord[] }) {
+  const [selectedId, setSelectedId] = useState(records[0]?.id ?? "");
+  const active = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
+  const window = crashWindow(active);
+  const impactS = window?.impactS ?? window?.startS ?? 0;
+  const [scrubS, setScrubS] = useState(impactS);
+  useEffect(() => {
+    if (!records.some((record) => record.id === selectedId)) {
+      setSelectedId(records[0]?.id ?? "");
+    }
+  }, [records, selectedId]);
+  useEffect(() => {
+    const nextWindow = crashWindow(active);
+    setScrubS(nextWindow?.impactS ?? nextWindow?.startS ?? 0);
+  }, [active?.id]);
+  if (!active || !window) return null;
+  const payload = asRecord(active.payload);
+  const ghost = asRecord(payload?.ghostOverlay);
+  const phase = scrubS < window.impactS ? "pre-impact" : scrubS === window.impactS ? "impact" : "post-impact";
+  return (
+    <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 5 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>crash scrubber</span>
+        {records.length > 1 ? (
+          <select value={active.id} onChange={(event) => setSelectedId(event.target.value)} style={selectStyle}>
+            {records.map((record) => (
+              <option key={record.id} value={record.id}>
+                {shortTime(record.createdAt)}
+              </option>
+            ))}
+          </select>
+        ) : null}
+      </div>
+      <input
+        type="range"
+        min={window.startS}
+        max={window.endS}
+        step="0.01"
+        value={scrubS}
+        onChange={(event) => setScrubS(Number(event.target.value))}
+        style={{ width: "100%", marginTop: 5 }}
+      />
+      <MiniRows
+        rows={[
+          ["time", `${scrubS.toFixed(2)} s · ${phase}`],
+          ["window", `${window.startS.toFixed(2)}-${window.endS.toFixed(2)} s`],
+          ["impact", `${window.impactS.toFixed(2)} s`],
+          ["ghost", ghost?.enabled === true ? ghost.divergenceMetric ?? "enabled" : "off"],
+          ["severity", active.severity],
+        ]}
+      />
+    </div>
+  );
+}
+
+function RepairSummary({ rows }: { rows: { record: MaintenanceRecord; step: RepairStep }[] }) {
+  return (
+    <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 5 }}>
+      <div style={{ color: "#8fa3bf" }}>repair sheet</div>
+      {rows.slice(0, 5).map(({ record, step }, index) => (
+        <div
+          key={`${record.id}-${step.order ?? index}`}
+          style={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr)", gap: 6, marginTop: 3 }}
+        >
+          <span style={{ color: "#6b7686" }}>{step.order ?? index + 1}</span>
+          <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {step.action ?? "inspect"}{step.reorderSku ? ` · ${step.reorderSku}` : ""}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface RepairStep {
+  order?: number;
+  node?: string;
+  partIndex?: number;
+  action?: string;
+  reorderSku?: string | null;
+}
+
+function repairStepsFor(record: MaintenanceRecord): RepairStep[] {
+  const payload = asRecord(record.payload);
+  const steps = Array.isArray(payload?.steps) ? payload.steps : [];
+  const out: RepairStep[] = [];
+  for (const raw of steps) {
+    const step = asRecord(raw);
+    if (!step) continue;
+    const order = numberOrNull(step.order);
+    const partIndex = numberOrNull(step.partIndex);
+    out.push({
+      ...(order === null ? {} : { order }),
+      ...(typeof step.node === "string" ? { node: step.node } : {}),
+      ...(partIndex === null ? {} : { partIndex }),
+      ...(typeof step.action === "string" ? { action: step.action } : {}),
+      reorderSku: typeof step.reorderSku === "string" ? step.reorderSku : null,
+    });
+  }
+  return out;
+}
+
+function fleetActions(payload: Record<string, unknown> | null): { vehicleId?: string; action?: string }[] {
+  const actions = Array.isArray(payload?.nextActions) ? payload.nextActions : [];
+  return actions.slice(0, 10).map((raw) => {
+    const action = asRecord(raw);
+    return {
+      vehicleId: typeof action?.vehicleId === "string" ? action.vehicleId : undefined,
+      action: typeof action?.action === "string" ? action.action : undefined,
+    };
+  });
+}
+
+function crashWindow(record: MaintenanceRecord | null): { startS: number; impactS: number; endS: number } | null {
+  const payload = asRecord(record?.payload);
+  const rawWindow = asRecord(payload?.window);
+  const startS = numberOrNull(rawWindow?.startS);
+  const impactS = numberOrNull(rawWindow?.impactS);
+  const endS = numberOrNull(rawWindow?.endS);
+  if (startS === null || impactS === null || endS === null || endS <= startS) return null;
+  return { startS, impactS, endS };
+}
+
+function maintenanceKind(record: MaintenanceRecord): string {
+  const payload = asRecord(record.payload);
+  return typeof payload?.artifactKind === "string" ? payload.artifactKind : record.kind;
+}
+
+function uniqueModelCount(records: MaintenanceRecord[]): number {
+  const ids = new Set(records.map((record) => record.modelId).filter((id): id is string => typeof id === "string"));
+  return ids.size || (records.length > 0 ? 1 : 0);
 }
 
 function MaintenanceRecordRow({ record }: { record: MaintenanceRecord }) {
