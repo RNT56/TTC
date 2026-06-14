@@ -107,8 +107,9 @@ compute wear estimates, crash windows, ordered repair sheets with reorder SKUs, 
 fleet service summaries; fixture job creation materializes matching outputs into
 the data-plane tables. Studio now renders the maintenance twin dashboard: fleet
 counts, due service, critical state, next actions, wear estimates, crash-window
-scrubbing with ghost divergence status, repair steps, and reorder rows. Studio can
-refresh vendor quote/link handoffs from repair SKUs without direct carts. The
+scrubbing with ghost divergence status, repair steps, reorder rows, and repair
+handoff links. Studio can refresh vendor quote/link handoffs from repair SKUs and
+surface print quote links without direct carts. The
 remaining P12 work is real Desktop-captured field-log evidence and live reorder/
 print quote integrations.
 

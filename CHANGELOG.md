@@ -18,6 +18,19 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Attach repair quote handoff links
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~], P12-004 [~]
+**Done:** Wired Studio maintenance repair sheets to the existing commerce rows:
+repair steps now match reorder SKUs to vendor offers and the repair panel exposes
+the current print quote handoff link with explicit off-platform payment language.
+**Changed:** `packages/studio/src/App.tsx`, `docs/EXECUTION-ROADMAP.md`,
+`docs/TODO.md`, `docs/systems/platform.md`, `docs/systems/studio-ui.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Prove the full P12 exit path with a real Desktop-captured field log and
+DfM-specific print quote artifacts.
+**Blockers:** real field-log evidence remains outside this Studio-only slice.
+
 ## 2026-06-14 — Add Studio course URLs
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10 · **TODO items:** P10-004 [~]
 **Done:** Added client-side `?course=<id>` support in Studio: refresh selects a

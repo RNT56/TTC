@@ -1812,6 +1812,8 @@ export default function App() {
             replayArtifacts={replayArtifacts}
             telemetryLogs={telemetryLogs}
             maintenanceRecords={maintenanceRecords}
+            vendorOffers={vendorOffers}
+            printQuotes={printQuotes}
             busy={artifactBusy}
             error={artifactError}
             message={artifactMessage}
@@ -2242,6 +2244,8 @@ function ArtifactRegistry({
   replayArtifacts,
   telemetryLogs,
   maintenanceRecords,
+  vendorOffers,
+  printQuotes,
   busy,
   error,
   message,
@@ -2254,6 +2258,8 @@ function ArtifactRegistry({
   replayArtifacts: ReplayArtifactRecord[];
   telemetryLogs: TelemetryLogRecord[];
   maintenanceRecords: MaintenanceRecord[];
+  vendorOffers: VendorOfferRecord[];
+  printQuotes: PrintQuoteRequestRecord[];
   busy: boolean;
   error: string | null;
   message: string | null;
@@ -2302,7 +2308,11 @@ function ArtifactRegistry({
       {telemetryLogs.slice(0, 2).map((log) => (
         <TelemetryLogRow key={log.id} log={log} />
       ))}
-      <MaintenanceDashboard records={maintenanceRecords} />
+      <MaintenanceDashboard
+        records={maintenanceRecords}
+        vendorOffers={vendorOffers}
+        printQuotes={printQuotes}
+      />
       {maintenanceRecords.slice(0, 3).map((record) => (
         <MaintenanceRecordRow key={record.id} record={record} />
       ))}
@@ -2602,7 +2612,15 @@ function TelemetryLogRow({ log }: { log: TelemetryLogRecord }) {
   );
 }
 
-function MaintenanceDashboard({ records }: { records: MaintenanceRecord[] }) {
+function MaintenanceDashboard({
+  records,
+  vendorOffers,
+  printQuotes,
+}: {
+  records: MaintenanceRecord[];
+  vendorOffers: VendorOfferRecord[];
+  printQuotes: PrintQuoteRequestRecord[];
+}) {
   if (records.length === 0) return null;
   const fleetRecord = records.find((record) => maintenanceKind(record) === "fleet-summary") ?? null;
   const fleet = asRecord(fleetRecord?.payload);
@@ -2662,7 +2680,9 @@ function MaintenanceDashboard({ records }: { records: MaintenanceRecord[] }) {
       ) : null}
       {wearRecords.length > 0 ? <WearSummary records={wearRecords} /> : null}
       {crashRecords.length > 0 ? <CrashScrubber records={crashRecords} /> : null}
-      {repairSteps.length > 0 ? <RepairSummary rows={repairSteps} /> : null}
+      {repairSteps.length > 0 ? (
+        <RepairSummary rows={repairSteps} vendorOffers={vendorOffers} printQuotes={printQuotes} />
+      ) : null}
     </div>
   );
 }
@@ -2750,21 +2770,55 @@ function CrashScrubber({ records }: { records: MaintenanceRecord[] }) {
   );
 }
 
-function RepairSummary({ rows }: { rows: { record: MaintenanceRecord; step: RepairStep }[] }) {
+function RepairSummary({
+  rows,
+  vendorOffers,
+  printQuotes,
+}: {
+  rows: { record: MaintenanceRecord; step: RepairStep }[];
+  vendorOffers: VendorOfferRecord[];
+  printQuotes: PrintQuoteRequestRecord[];
+}) {
+  const printHandoff = printQuoteForRepairRows(rows, printQuotes);
+  const printOffer = printHandoff?.offers[0] ?? null;
   return (
     <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 5 }}>
-      <div style={{ color: "#8fa3bf" }}>repair sheet</div>
-      {rows.slice(0, 5).map(({ record, step }, index) => (
-        <div
-          key={`${record.id}-${step.order ?? index}`}
-          style={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr)", gap: 6, marginTop: 3 }}
-        >
-          <span style={{ color: "#6b7686" }}>{step.order ?? index + 1}</span>
-          <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {step.action ?? "inspect"}{step.reorderSku ? ` · ${step.reorderSku}` : ""}
-          </span>
-        </div>
-      ))}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>repair sheet</span>
+        {printOffer ? (
+          <a href={printOffer.quoteUrl} target="_blank" rel="noreferrer" style={{ ...linkStyle, fontSize: 11 }}>
+            print handoff
+          </a>
+        ) : null}
+      </div>
+      {printHandoff ? (
+        <MiniRows
+          rows={[
+            ["print", `${printHandoff.process}/${printHandoff.material}`],
+            ["provider", printOffer?.provider],
+            ["payment", "off-platform"],
+          ]}
+        />
+      ) : null}
+      {rows.slice(0, 5).map(({ record, step }, index) => {
+        const vendorOffer = vendorOfferForStep(step, vendorOffers);
+        return (
+          <div
+            key={`${record.id}-${step.order ?? index}`}
+            style={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr) auto", gap: 6, marginTop: 3 }}
+          >
+            <span style={{ color: "#6b7686" }}>{step.order ?? index + 1}</span>
+            <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {step.action ?? "inspect"}{step.reorderSku ? ` · ${step.reorderSku}` : ""}
+            </span>
+            {vendorOffer ? (
+              <a href={vendorOffer.url} target="_blank" rel="noreferrer" style={{ ...linkStyle, fontSize: 11 }}>
+                {priceText(vendorOffer.price, vendorOffer.currency) ?? vendorOffer.vendor}
+              </a>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -2795,6 +2849,33 @@ function repairStepsFor(record: MaintenanceRecord): RepairStep[] {
     });
   }
   return out;
+}
+
+function vendorOfferForStep(step: RepairStep, offers: VendorOfferRecord[]): VendorOfferRecord | null {
+  const reorderSku = normalizedKey(step.reorderSku);
+  if (!reorderSku) return null;
+  return (
+    offers.find((offer) => normalizedKey(offer.sku) === reorderSku || normalizedKey(offer.componentId) === reorderSku) ??
+    null
+  );
+}
+
+function printQuoteForRepairRows(
+  rows: { record: MaintenanceRecord; step: RepairStep }[],
+  quotes: PrintQuoteRequestRecord[],
+): PrintQuoteRequestRecord | null {
+  const modelIds = new Set(
+    rows.map(({ record }) => record.modelId).filter((id): id is string => typeof id === "string"),
+  );
+  return (
+    quotes.find((quote) => quote.offers.length > 0 && quote.modelId !== null && modelIds.has(quote.modelId)) ??
+    quotes.find((quote) => quote.offers.length > 0) ??
+    null
+  );
+}
+
+function normalizedKey(value: string | null | undefined): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
 function fleetActions(payload: Record<string, unknown> | null): { vehicleId?: string; action?: string }[] {
