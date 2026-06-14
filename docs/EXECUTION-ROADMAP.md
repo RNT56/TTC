@@ -295,7 +295,9 @@ Scope:
 - Add archetype-aware reachability to `forge-validate env`.
 - Build full environment generation through the P4 pipeline.
 - Finish public Studio course editor and URL sharing.
-- Finish leaderboard slicing by course, archetype, and class plus Studio board UI.
+- Finish durable leaderboard slicing by course, archetype, and class.
+- Studio verified-board UI filters are live as of 2026-06-14 using course
+  EnvSpec archetypes and replay verification headers.
 - Preserve server-side replay verification as the only official leaderboard path.
 
 Dependencies:

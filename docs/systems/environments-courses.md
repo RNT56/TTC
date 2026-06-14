@@ -48,6 +48,11 @@ than as the only place truth exists. A client-provided `verified: true` claim is
 recorded only as a claim; official `verified` is computed from tape hash,
 monotonic timestamps, and optional contract-hash checks.
 
+Live Studio board UI (2026-06-14) shows the selected course's verified/held runs
+with filters for EnvSpec-derived archetype, verification-header class, and official
+verification status. Durable server-side archetype/class columns remain the next
+leaderboard data-model step before P10-005 can close.
+
 ## 5. Courses as RL tasks (P10-006)
 
 A course compiles to a task definition (spawn → win conditions → reward shaping
@@ -57,7 +62,8 @@ community content becomes training curriculum, the flywheel's social gear.
 Live 2026-06-14: `forge-sim::heavy::course_to_task` maps EnvSpec/course task lists
 and archetypes to RL task specs; gateway course and leaderboard routes are live;
 `/v1/replays` persists replay verification artifacts and leaderboard writes compute
-verification server-side.
+verification server-side; Studio renders a filtered verified-board surface for the
+selected course.
 
 ## 6. Dependencies
 

@@ -228,6 +228,9 @@ export default function App() {
   const [courses, setCourses] = useState<CourseRecord[]>([]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [leaderboardRuns, setLeaderboardRuns] = useState<LeaderboardRunRecord[]>([]);
+  const [leaderboardArchetypeFilter, setLeaderboardArchetypeFilter] = useState("all");
+  const [leaderboardClassFilter, setLeaderboardClassFilter] = useState("all");
+  const [leaderboardStatusFilter, setLeaderboardStatusFilter] = useState<LeaderboardStatusFilter>("all");
   const [listings, setListings] = useState<ListingRecord[]>([]);
   const [platformGates, setPlatformGates] = useState<PlatformGateSignoff[]>([]);
   const [vendorOffers, setVendorOffers] = useState<VendorOfferRecord[]>([]);
@@ -1772,6 +1775,9 @@ export default function App() {
             courses={courses}
             activeCourseId={activeCourseId}
             leaderboardRuns={leaderboardRuns}
+            leaderboardArchetypeFilter={leaderboardArchetypeFilter}
+            leaderboardClassFilter={leaderboardClassFilter}
+            leaderboardStatusFilter={leaderboardStatusFilter}
             listings={listings}
             licenseLedger={licenseLedger}
             platformGates={platformGates}
@@ -1791,6 +1797,9 @@ export default function App() {
               setActiveCourseId(courseId);
               void refreshLeaderboard(courseId);
             }}
+            onLeaderboardArchetypeFilter={setLeaderboardArchetypeFilter}
+            onLeaderboardClassFilter={setLeaderboardClassFilter}
+            onLeaderboardStatusFilter={setLeaderboardStatusFilter}
             onAssignmentChange={(assignmentId) => {
               setActiveAssignmentId(assignmentId);
               void refreshClassroomSubmissions(assignmentId);
@@ -2620,6 +2629,9 @@ function PlatformPanel({
   courses,
   activeCourseId,
   leaderboardRuns,
+  leaderboardArchetypeFilter,
+  leaderboardClassFilter,
+  leaderboardStatusFilter,
   listings,
   licenseLedger,
   platformGates,
@@ -2636,6 +2648,9 @@ function PlatformPanel({
   hasSubmissionContract,
   onRefresh,
   onCourseChange,
+  onLeaderboardArchetypeFilter,
+  onLeaderboardClassFilter,
+  onLeaderboardStatusFilter,
   onAssignmentChange,
   onCreateCourse,
   onSubmitRun,
@@ -2652,6 +2667,9 @@ function PlatformPanel({
   courses: CourseRecord[];
   activeCourseId: string | null;
   leaderboardRuns: LeaderboardRunRecord[];
+  leaderboardArchetypeFilter: string;
+  leaderboardClassFilter: string;
+  leaderboardStatusFilter: LeaderboardStatusFilter;
   listings: ListingRecord[];
   licenseLedger: LicenseLedgerEntry[];
   platformGates: PlatformGateSignoff[];
@@ -2668,6 +2686,9 @@ function PlatformPanel({
   hasSubmissionContract: boolean;
   onRefresh: () => void;
   onCourseChange: (courseId: string | null) => void;
+  onLeaderboardArchetypeFilter: (value: string) => void;
+  onLeaderboardClassFilter: (value: string) => void;
+  onLeaderboardStatusFilter: (value: LeaderboardStatusFilter) => void;
   onAssignmentChange: (assignmentId: string | null) => void;
   onCreateCourse: () => void;
   onSubmitRun: () => void;
@@ -2680,6 +2701,7 @@ function PlatformPanel({
   onRequestPrintQuote: () => void;
   onRecordListingUsage: () => void;
 }) {
+  const activeCourse = courses.find((course) => course.id === activeCourseId) ?? null;
   return (
     <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -2763,14 +2785,16 @@ function PlatformPanel({
       ) : (
         <div style={{ color: "#6b7686", marginTop: 4 }}>0 courses</div>
       )}
-      {leaderboardRuns.slice(0, 3).map((run) => (
-        <div key={run.id} style={artifactRowStyle}>
-          <div style={{ color: run.verified ? "#7dd87d" : "#e6a23c" }}>
-            score {run.score.toFixed(1)} · {run.verified ? "verified" : "held"}
-          </div>
-          <MiniRows rows={[["created", shortTime(run.createdAt)], ["run", run.id]]} />
-        </div>
-      ))}
+      <LeaderboardBoard
+        course={activeCourse}
+        runs={leaderboardRuns}
+        archetypeFilter={leaderboardArchetypeFilter}
+        classFilter={leaderboardClassFilter}
+        statusFilter={leaderboardStatusFilter}
+        onArchetypeFilter={onLeaderboardArchetypeFilter}
+        onClassFilter={onLeaderboardClassFilter}
+        onStatusFilter={onLeaderboardStatusFilter}
+      />
       {classroomAssignments.length > 0 ? (
         <select
           value={activeAssignmentId ?? ""}
@@ -2906,6 +2930,201 @@ function PlatformPanel({
       ))}
     </div>
   );
+}
+
+type LeaderboardStatusFilter = "all" | "verified" | "held";
+
+interface LeaderboardBoardRow {
+  run: LeaderboardRunRecord;
+  rank: number;
+  archetype: string;
+  className: string;
+  frameCount: number | null;
+  durationS: number | null;
+  tamperHash: string | null;
+  rejectReason: string | null;
+  clientClaim: boolean | null;
+}
+
+function LeaderboardBoard({
+  course,
+  runs,
+  archetypeFilter,
+  classFilter,
+  statusFilter,
+  onArchetypeFilter,
+  onClassFilter,
+  onStatusFilter,
+}: {
+  course: CourseRecord | null;
+  runs: LeaderboardRunRecord[];
+  archetypeFilter: string;
+  classFilter: string;
+  statusFilter: LeaderboardStatusFilter;
+  onArchetypeFilter: (value: string) => void;
+  onClassFilter: (value: string) => void;
+  onStatusFilter: (value: LeaderboardStatusFilter) => void;
+}) {
+  const rows = runs.map((run, index) => leaderboardRow(run, index, course));
+  const archetypes = uniqueOptions([...courseArchetypes(course), ...rows.map((row) => row.archetype)]);
+  const classes = uniqueOptions(rows.map((row) => row.className));
+  const visibleRows = rows.filter((row) => {
+    if (archetypeFilter !== "all" && row.archetype !== archetypeFilter) return false;
+    if (classFilter !== "all" && row.className !== classFilter) return false;
+    if (statusFilter === "verified" && !row.run.verified) return false;
+    if (statusFilter === "held" && row.run.verified) return false;
+    return true;
+  });
+  const verifiedCount = rows.filter((row) => row.run.verified).length;
+  const courseTasks = courseTaskLabels(course);
+  const courseReport = asRecord(course?.validatorReport);
+
+  return (
+    <div style={artifactRowStyle}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>leaderboard</span>
+        <span style={{ color: "#6b7686" }}>
+          {verifiedCount}/{rows.length} verified
+        </span>
+      </div>
+      <MiniRows
+        rows={[
+          ["course", course?.name],
+          ["tasks", courseTasks.length ? courseTasks.join(", ") : undefined],
+          ["archetypes", archetypes.length ? archetypes.join(", ") : undefined],
+          ["env", typeof courseReport?.verdict === "string" ? courseReport.verdict : undefined],
+        ]}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginTop: 6 }}>
+        <select
+          value={archetypeFilter}
+          onChange={(event) => onArchetypeFilter(event.target.value)}
+          style={{ ...selectStyle, width: "100%" }}
+        >
+          <option value="all">all archetypes</option>
+          {archetypes.map((archetype) => (
+            <option key={archetype} value={archetype}>
+              {archetype}
+            </option>
+          ))}
+        </select>
+        <select
+          value={classFilter}
+          onChange={(event) => onClassFilter(event.target.value)}
+          style={{ ...selectStyle, width: "100%" }}
+        >
+          <option value="all">all classes</option>
+          {classes.map((className) => (
+            <option key={className} value={className}>
+              {className}
+            </option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(event) => onStatusFilter(toLeaderboardStatusFilter(event.target.value))}
+          style={{ ...selectStyle, width: "100%" }}
+        >
+          <option value="all">all runs</option>
+          <option value="verified">verified</option>
+          <option value="held">held</option>
+        </select>
+      </div>
+      {visibleRows.length === 0 ? (
+        <div style={{ color: "#6b7686", marginTop: 4 }}>{rows.length === 0 ? "0 runs" : "0 runs match filters"}</div>
+      ) : (
+        visibleRows.slice(0, 8).map((row) => (
+          <div key={row.run.id} style={artifactRowStyle}>
+            <div style={{ color: row.run.verified ? "#7dd87d" : "#e6a23c" }}>
+              #{row.rank} · score {row.run.score.toFixed(1)} · {row.run.verified ? "verified" : "held"}
+            </div>
+            <MiniRows
+              rows={[
+                ["archetype", row.archetype],
+                ["class", row.className],
+                ["frames", row.frameCount],
+                ["duration", row.durationS === null ? undefined : `${row.durationS.toFixed(2)} s`],
+                ["claim", row.clientClaim === null ? undefined : row.clientClaim ? "verified" : "not verified"],
+                ["hash", shortHash(row.tamperHash)],
+                ["reject", row.rejectReason],
+                ["created", shortTime(row.run.createdAt)],
+              ]}
+            />
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function leaderboardRow(run: LeaderboardRunRecord, index: number, course: CourseRecord | null): LeaderboardBoardRow {
+  const verification = asRecord(run.verification);
+  const header = asRecord(verification?.header);
+  const courseTypes = courseArchetypes(course);
+  return {
+    run,
+    rank: index + 1,
+    archetype:
+      firstString(header?.archetype, header?.modelArchetype, header?.contractArchetype, verification?.archetype) ??
+      (courseTypes.length === 1 ? courseTypes[0] : "unspecified"),
+    className: firstString(header?.class, header?.modelClass, header?.boardClass, verification?.class) ?? "unspecified",
+    frameCount: numberOrNull(verification?.frameCount),
+    durationS: numberOrNull(verification?.durationS),
+    tamperHash: typeof verification?.tamperHash === "string" ? verification.tamperHash : null,
+    rejectReason: typeof verification?.rejectReason === "string" ? verification.rejectReason : null,
+    clientClaim: typeof verification?.clientClaim === "boolean" ? verification.clientClaim : null,
+  };
+}
+
+function courseArchetypes(course: CourseRecord | null): string[] {
+  const spec = asRecord(course?.envSpec);
+  if (!spec) return [];
+  const values: string[] = [];
+  appendStringOrArray(values, spec.archetypeFilter);
+  if (Array.isArray(spec.spawns)) {
+    for (const spawn of spec.spawns) {
+      appendStringOrArray(values, asRecord(spawn)?.archetypeFilter);
+    }
+  }
+  return uniqueOptions(values);
+}
+
+function courseTaskLabels(course: CourseRecord | null): string[] {
+  const spec = asRecord(course?.envSpec);
+  if (!spec) return [];
+  const values: string[] = [];
+  appendStringOrArray(values, spec.tasks);
+  if (typeof spec.kind === "string") values.push(spec.kind);
+  return uniqueOptions(values);
+}
+
+function appendStringOrArray(out: string[], value: unknown) {
+  if (typeof value === "string" && value.trim()) {
+    out.push(value.trim());
+  } else if (Array.isArray(value)) {
+    for (const item of value) {
+      if (typeof item === "string" && item.trim()) out.push(item.trim());
+    }
+  }
+}
+
+function uniqueOptions(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value))].sort((a, b) => a.localeCompare(b));
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function toLeaderboardStatusFilter(value: string): LeaderboardStatusFilter {
+  return value === "verified" || value === "held" ? value : "all";
+}
+
+function shortHash(value: string | null): string | undefined {
+  return value ? value.slice(0, 12) : undefined;
 }
 
 function JobDetails({

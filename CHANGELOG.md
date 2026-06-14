@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add Studio leaderboard board filters
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10 · **TODO items:** P10-005 [~]
+**Done:** Expanded the Studio platform panel from a top-three leaderboard list into
+a selected-course verified board with filters for EnvSpec archetype, replay-header
+class, and official verified/held status. The board surfaces verification metadata
+including frames, duration, client claim, hash, reject reason, and rank.
+**Changed:** `packages/studio/src/App.tsx`,
+`docs/systems/environments-courses.md`, `docs/EXECUTION-ROADMAP.md`,
+`docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Add durable `archetype`/`board_class` columns or equivalent indexed
+metadata to leaderboard runs so the gateway can slice official boards server-side.
+**Blockers:** P10-005 remains open until leaderboard dimensions are persisted and
+queryable by the gateway API.
+
 ## 2026-06-14 — Add ModelSpec schema migration runner
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P2/P4 · **TODO items:** XC-23 [x]
 **Done:** Added the XC-23 ModelSpec migration runner in `forge-contract` with
