@@ -211,8 +211,9 @@ Scope:
   engine-backed training evidence remains open.
 - Add ONNX Runtime Web inference so browser playback uses real exportable policy
   outputs, not only fixture action headers.
-- `train.offline-bc` now builds deterministic telemetry warmstart datasets;
-  live offline-RL/fine-tune remains open.
+- `train.offline-bc` now builds deterministic telemetry warmstart datasets and
+  normalizes external offline-RL command output into non-exportable warmstarts;
+  live fine-tune remains open.
 - Run the P7-010 MJX benchmark on D12 quad, rover, and legged morphologies before
   any adoption claim.
 - Scorecard schema and estimator-smoke rejection are live in fixture and external

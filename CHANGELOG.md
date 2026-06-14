@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Normalize external offline learning warmstarts
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7 · **TODO items:** P7-009 [~]
+**Done:** Hardened `FORGE_OFFLINE_RL_CMD` results so external behavior-cloning or
+offline-RL outputs normalize into the same dataset/warmstart artifact as the
+fixture path. Warmstarts require at least three samples and action columns, invalid
+datasets are held with reject reasons, and every warmstart remains non-exportable
+until a live fine-tune scorecard passes.
+**Changed:** `workers/forge_workers/training/jobs.py`,
+`workers/tests/test_training_live_adapter.py`, `docs/systems/learning-engine.md`,
+`docs/systems/compute-workers.md`, `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Connect Desktop-captured telemetry logs to a live fine-tune job that
+produces a fresh `p7-scorecard-v1` policy artifact.
+**Blockers:** real recorder data and live offline-RL/fine-tune runtime remain open.
+
 ## 2026-06-14 — Re-gate live SB3 policy artifacts
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7 · **TODO items:** P7-003 [~], P7-006 [x], P7-008 [~]
 **Done:** Normalized every `FORGE_SB3_TRAIN_CMD` result through the P7 scorecard

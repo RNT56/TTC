@@ -44,7 +44,9 @@ contract hash + lockfile recorded as lineage (PRV-002). CPU MuJoCo handles
 hover-class tasks overnight on one consumer GPU host; **MJX** adoption only after the
 P7-010 benchmark says CPU PPO saturates (claims hedged until measured). Curriculum-
 from-reality (P8+): behavior cloning over logged (o, a) pairs and conservative
-offline RL over telemetry tapes.
+offline RL over telemetry tapes. These paths produce warmstarts first; they do not
+become exportable policies until a fine-tune/evaluation job emits a passing
+`p7-scorecard-v1`.
 
 Live 2026-06-14: `FORGE_SB3_TRAIN_CMD` can supply live SB3 output, but every result
 is normalized back through the P7 scorecard gate before export. External policies
@@ -80,6 +82,11 @@ Live 2026-06-14: fixture and external SB3 policy artifacts both pass through thi
 schema and export gate. The ONNX metadata carries `exportable: false` whenever the
 scorecard is blocked, and the gateway stores the same state as a blocked export
 gate.
+
+Behavior-cloning/offline-RL adapters are intentionally stricter: `FORGE_OFFLINE_RL_CMD`
+normalizes external output into a dataset and warmstart artifact, validates sample
+count and action columns, and always keeps the scorecard non-exportable until a
+separate live fine-tune/evaluation run passes the policy gate.
 
 ## 7. Pipeline
 

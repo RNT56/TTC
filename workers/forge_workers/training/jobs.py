@@ -229,18 +229,7 @@ def train_offline_bc(payload: dict[str, Any]) -> dict[str, Any]:
         timeout_s=float(payload.get("timeoutS", 3600)),
     )
     if external is not None:
-        if external.get("artifactKind") == "offline-learning":
-            return external
-        return {
-            "artifactKind": "offline-learning",
-            "provider": external.get("provider", "external-offline-rl"),
-            "algorithm": external.get("algorithm", payload.get("algorithm", "behavior-cloning")),
-            "task": external.get("task", task_definition(str(payload.get("task", "hover-hold")))),
-            "dataset": external.get("dataset", {}),
-            "policyWarmstart": external.get("policyWarmstart", {}),
-            "scorecard": external.get("scorecard", {"exportable": False, "reasons": ["external offline trainer did not return a scorecard"]}),
-            "rejectReason": external.get("rejectReason"),
-        }
+        return _external_offline_learning_result(external, payload)
 
     task = str(payload.get("task", "hover-hold"))
     task_meta = task_definition(task)
@@ -290,6 +279,60 @@ def train_offline_bc(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _external_offline_learning_result(external: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+    task = str(payload.get("task", "hover-hold"))
+    task_meta = external.get("task") if isinstance(external.get("task"), dict) else task_definition(task)
+    resolved_task = str(task_meta.get("id", task)) if isinstance(task_meta, dict) else task
+    raw_dataset = external.get("dataset") if isinstance(external.get("dataset"), dict) else {}
+    action_columns = _string_list(raw_dataset.get("actionColumns", external.get("actionColumns")))
+    observation_columns = _string_list(raw_dataset.get("observationColumns", external.get("observationColumns")))
+    sample_count = _int(raw_dataset.get("sampleCount", external.get("sampleCount")), 0)
+    duration_s = _number(raw_dataset.get("durationS", external.get("durationS")), 0.0)
+    source_log_id = raw_dataset.get("sourceLogId", external.get("telemetryLogId", payload.get("telemetryLogId")))
+    reasons = []
+    if sample_count < 3:
+        reasons.append("offline BC requires at least 3 samples")
+    if not action_columns:
+        reasons.append("offline BC requires action columns")
+    accepted = not reasons
+    raw_warmstart = external.get("policyWarmstart") if isinstance(external.get("policyWarmstart"), dict) else {}
+    contract_hash = str(payload.get("contractHash", "00" * 32))
+    seed = str(payload.get("seed", "0"))
+    cache_key = str(raw_warmstart.get("cacheKey", external.get("cacheKey", f"offline-bc:{_digest({'task': resolved_task, 'contractHash': contract_hash, 'external': raw_dataset})}")))
+    provider_notes = _string_list(external.get("notes"))
+    raw_scorecard = external.get("scorecard") if isinstance(external.get("scorecard"), dict) else {}
+    scorecard_reasons = ["offline BC warmstart requires live fine-tune before export", *_string_list(raw_scorecard.get("reasons"))]
+    return {
+        "artifactKind": "offline-learning",
+        "provider": external.get("provider", "external-offline-rl"),
+        "algorithm": external.get("algorithm", payload.get("algorithm", "behavior-cloning")),
+        "task": task_meta,
+        "dataset": {
+            "sampleCount": sample_count,
+            "durationS": duration_s,
+            "sorted": bool(raw_dataset.get("sorted", True)),
+            "sourceLogId": source_log_id,
+            "observationColumns": observation_columns,
+            "actionColumns": action_columns,
+            "quality": "accepted" if accepted else "held",
+        },
+        "policyWarmstart": {
+            "cacheKey": cache_key,
+            "format": str(raw_warmstart.get("format", "behavior-cloning-dataset-v1")),
+            "compatible": accepted and bool(raw_warmstart.get("compatible", True)),
+        },
+        "scorecard": {
+            "task": str(raw_scorecard.get("task", resolved_task)),
+            "taskVersion": str(raw_scorecard.get("taskVersion", task_meta.get("version", "1.0.0") if isinstance(task_meta, dict) else "1.0.0")),
+            "exportable": False,
+            "reasons": scorecard_reasons,
+            "lineage": _string_dict(raw_scorecard.get("lineage", {"contractHash": contract_hash, "seed": seed, "codeVersion": external.get("codeVersion", "external-offline-rl")})),
+        },
+        "rejectReason": None if accepted else reasons[0],
+        "notes": [*reasons, *provider_notes],
+    }
+
+
 def _telemetry_frames(payload: dict[str, Any]) -> list[dict[str, Any]]:
     tape = payload.get("tape")
     if isinstance(tape, dict) and isinstance(tape.get("frames"), list):
@@ -329,6 +372,20 @@ def _duration_s(frames: list[dict[str, Any]]) -> float:
     start = float(frames[0].get("t", frames[0].get("timeS", 0.0)))
     end = float(frames[-1].get("t", frames[-1].get("timeS", start)))
     return round(max(0.0, end - start), 3)
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]
+
+
+def _int(value: Any, default: int) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return default
 
 
 def fit_sysid(payload: dict[str, Any]) -> dict[str, Any]:

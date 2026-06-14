@@ -99,8 +99,10 @@ can exercise the product surfaces without SB3/MuJoCo/GPU dependencies in CI.
 ONNX I/O header; `train.sysid-fit` estimates internal resistance and emits a
 contract patch proposal. `FORGE_SB3_TRAIN_CMD` can supply live SB3 results, but the
 worker re-runs every external policy through the scorecard/export gate before
-marking ONNX exportable. `FORGE_SYSID_FIT_CMD` can supply live system-ID results in
-the same artifact contract.
+marking ONNX exportable. `FORGE_OFFLINE_RL_CMD` can supply behavior-cloning/offline
+RL warmstarts; those outputs are normalized, dataset-gated, and kept non-exportable
+until a fine-tune scorecard passes. `FORGE_SYSID_FIT_CMD` can supply live system-ID
+results in the same artifact contract.
 
 ### 3.5 `workers/bridge` — config, recorder, supervisor (P8)
 `bridge.config-diff` compiles deployment config diffs with physical-confirmation
