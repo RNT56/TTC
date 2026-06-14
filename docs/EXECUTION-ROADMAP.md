@@ -174,10 +174,13 @@ Scope:
   geometry adapters and exposes command-backed Claude/OCCT transports; deployable
   live provider credentials and review persistence remain open.
 - Keyless photoscan outputs now carry TRELLIS/COLMAP-shaped pipeline stage records,
-  D13 fit metrics, COLMAP view graph metadata, and owner-review flags; live
-  TRELLIS-class single-image reconstruction remains open.
-- Land live COLMAP multi-view reconstruction.
-- Prove permanent object-cache behavior and the 5-minute burst-GPU SLO.
+  D13 fit metrics, COLMAP view graph metadata, and owner-review flags. Live command
+  adapters now normalize TRELLIS/COLMAP outputs into the same D13/cache/SLO contract
+  and fail closed when fit/Hausdorff metrics are missing; real TRELLIS/COLMAP runtime
+  execution remains open.
+- Land real live COLMAP multi-view reconstruction on the deployment image.
+- Prove permanent object-cache behavior and the 5-minute burst-GPU SLO with real
+  GPU evidence.
 - Make a photographed motor become an equipable parametric component end to end:
   scan, refit, D13 acceptance, alignment, catalog row, review, slot equip.
 

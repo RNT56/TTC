@@ -76,8 +76,10 @@ now receive owner alignment patches for known scale, principal axis, and structu
 ports through the gateway/Studio editor path.
 Fixture CPU mode is the CI default. `FORGE_PHOTOSCAN_CMD` and `FORGE_COLMAP_CMD`
 can replace fixture reconstruction with a live external stack while preserving the
-same output shape; Modal is available only through an injected adapter when
-configured.
+same output shape. Command results are normalized back into permanent cache
+metadata, D13 acceptance/reject reasons, pipeline stages, and SLO evidence; missing
+fit/Hausdorff metrics fail closed to mesh-class review. Modal is available only
+through an injected adapter when configured.
 
 ### 3.4 `workers/training` — RL + system ID (P7/P8)
 `train.policy` (MJCF → SB3 PPO/SAC → ONNX + scorecard — details in

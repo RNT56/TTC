@@ -24,7 +24,7 @@ phase-level state only. Parallel execution order and subworker ownership live in
 | P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● *(tag `p3-baseline` → `6937037`, 2026-06-13: Postgres runner/seed/assert, strict catalog rows, fixture ETL/review queue, catalog HUD/BOM, reference rigs pinned)* | 2–3 wk |
 | P4 Text-to-CAD GA | ● *(2026-06-14: deterministic six-archetype template generation, staged SSE, validator repair/draft path, JSON-Patch edit route, Auth.js GitHub/account seam, server-backed shares, Brief-25 real-validator gate 25/25, eval history tables/API, Studio model/edit/share/eval panels)* | 3–4 wk |
-| P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; live photogrammetry/COLMAP and mesh-click placement remain adapter/config/UI work)* | 3 wk |
+| P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
 | P6 Sim depth + interop | ◑ *(2026-06-14: collider auto-fit, blade-element-lite, disturbances, replay envelope verification, sag/current helpers, URDF/MJCF exporters, ros2_control sidecar, mesh visual manifest, slotless URDF/MJCF fixture import; full engine-backed Rapier/MuJoCo parity and external-driveable import still open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, scorecard gate, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
 | P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
@@ -146,8 +146,8 @@ metric, browser alignment UI, photoscan admission path.
 
 Exit criteria:
 - [ ] A photographed motor becomes an equipable parametric component end to end
-- [ ] D13 acceptance enforced (≥ 70 % fit coverage, Hausdorff ≤ 1.5 % of bounding diagonal, else mesh-class)
-- [ ] Photo→part job under the 5-minute SLO on burst GPU; results cached permanently
+- [~] D13 acceptance enforced (≥ 70 % fit coverage, Hausdorff ≤ 1.5 % of bounding diagonal, else mesh-class) *(fixture and live-command normalization fail closed; real photographed-part proof open)*
+- [~] Photo→part job under the 5-minute SLO on burst GPU; results cached permanently *(SLO/cache metadata live; real GPU timing proof open)*
 
 ## P6 — Sim depth + interop out/in
 

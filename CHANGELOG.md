@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Normalize live photoscan adapter output
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P5 · **TODO items:** P5-001 [~], P5-002 [~], P5-006 [~]
+**Done:** Hardened `FORGE_PHOTOSCAN_CMD` and `FORGE_COLMAP_CMD` outputs so live
+commands are normalized into the same photoscan artifact contract as fixtures:
+pipeline stages, permanent object-cache metadata, D13 acceptance/reject reasons,
+candidate review flags, COLMAP view graph, and 5-minute SLO evidence. Missing D13
+fit/Hausdorff metrics now fail closed instead of being treated as accepted scans.
+**Changed:** `workers/forge_workers/photoscan.py`,
+`workers/tests/test_photoscan_live_adapter.py`, `docs/systems/compute-workers.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `docs/ROADMAP.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Run the normalized adapter contract against real TRELLIS/COLMAP GPU
+commands and capture the under-5-minute SLO evidence.
+**Blockers:** live GPU runtime images, credentials, and photographed-motor evidence
+remain deployment/lab work.
+
 ## 2026-06-14 — Add constraint-aware co-design ladder
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-004 [~]
 **Done:** Hardened `codesign.evaluate` so the keyless CMA/TPE-shaped search now

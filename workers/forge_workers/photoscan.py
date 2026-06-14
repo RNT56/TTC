@@ -34,36 +34,7 @@ def run_photoscan(payload: dict[str, Any], *, multiview: bool) -> dict[str, Any]
         timeout_s=float(payload.get("timeoutS", 300)),
     )
     if external is not None:
-        if external.get("artifactKind") == "photoscan":
-            return external
-        cache = external.get("cacheKey") or external.get("objectCacheKey") or "external-photoscan"
-        confidence = float(external.get("confidence", 0.78 if multiview else 0.68))
-        return {
-            "artifactKind": "photoscan",
-            "provider": external.get("provider", "external"),
-            "sourceImages": images,
-            "objectCache": {"key": str(cache), "provider": external.get("provider", "external")},
-            "alignment": external.get("alignment", {"scaleLocked": bool(payload.get("scale")), "axesLocked": bool(payload.get("axes")), "portsMarked": bool(payload.get("ports"))}),
-            "acceptance": external.get(
-                "acceptance",
-                {
-                    "gate": "D13",
-                    "pass": bool(external.get("accepted", confidence >= 0.65)),
-                    "fitCoveragePct": external.get("fitCoveragePct"),
-                    "hausdorffPct": external.get("hausdorffPct"),
-                },
-            ),
-            "primitiveRefit": external.get("primitiveRefit", []),
-            "candidateComponent": external.get(
-                "candidateComponent",
-                {
-                    "id": f"cmp_photoscan_{str(cache).split(':')[-1]}",
-                    "source": "photoscan",
-                    "confidence": confidence,
-                    "review": "photoscan candidate requires owner port/scale review",
-                },
-            ),
-        }
+        return _external_result(external, payload, images, multiview=multiview)
     gpu = configured_gpu_adapter().run(
         "photoscan.multiview" if multiview else "photoscan.single",
         {"images": images, "scale": payload.get("scale"), "axes": payload.get("axes")},
@@ -100,6 +71,110 @@ def run_photoscan(payload: dict[str, Any], *, multiview: bool) -> dict[str, Any]
             "dfmState": "candidate",
             "review": "photoscan candidate requires owner port/scale review",
         },
+    }
+
+
+def _external_result(external: dict[str, Any], payload: dict[str, Any], images: list[str], *, multiview: bool) -> dict[str, Any]:
+    provider = str(external.get("provider", "external-colmap" if multiview else "external-trellis"))
+    cache = str(external.get("cacheKey") or external.get("objectCacheKey") or f"{provider}:uncached")
+    confidence = _number(external.get("confidence"), 0.78 if multiview else 0.68)
+    acceptance = _external_acceptance(external, confidence=confidence, multiview=multiview)
+    duration_s = _number(external.get("durationS", external.get("elapsedS")), 0.0)
+    candidate = external.get("candidateComponent") if isinstance(external.get("candidateComponent"), dict) else {}
+    primitive_refit = external.get("primitiveRefit") if isinstance(external.get("primitiveRefit"), list) else []
+    result = {
+        "artifactKind": "photoscan",
+        "provider": provider,
+        "sourceImages": images,
+        "objectCache": {"key": cache, "provider": provider, "permanent": True},
+        "pipeline": _external_pipeline(external, images, cache_key=cache, provider=provider, multiview=multiview),
+        "colmap": _external_colmap(external, images) if multiview else None,
+        "alignment": external.get(
+            "alignment",
+            {
+                "scaleLocked": bool(payload.get("scale")),
+                "axesLocked": bool(payload.get("axes")),
+                "portsMarked": bool(payload.get("ports")),
+                "knownDimensionMm": _known_dimension_mm(payload.get("scale")),
+                "axis": payload.get("axes") if isinstance(payload.get("axes"), str) else None,
+                "ports": payload.get("ports") if isinstance(payload.get("ports"), list) else [],
+            },
+        ),
+        "acceptance": acceptance,
+        "slo": {
+            "targetS": 300.0,
+            "durationS": duration_s,
+            "pass": duration_s > 0 and duration_s <= 300.0,
+            "cachePermanent": True,
+        },
+        "primitiveRefit": primitive_refit,
+        "candidateComponent": {
+            "id": str(candidate.get("id") or f"cmp_photoscan_{cache.split(':')[-1]}"),
+            "source": "photoscan",
+            "confidence": confidence,
+            "reviewRequired": bool(candidate.get("reviewRequired", True)),
+            "ownerReviewFlags": candidate.get("ownerReviewFlags", _review_flags(payload, acceptance)),
+            "dfmState": str(candidate.get("dfmState", "candidate")),
+            "review": str(candidate.get("review", "photoscan candidate requires owner port/scale review")),
+        },
+    }
+    return result
+
+
+def _external_acceptance(external: dict[str, Any], *, confidence: float, multiview: bool) -> dict[str, Any]:
+    raw = external.get("acceptance") if isinstance(external.get("acceptance"), dict) else {}
+    fit_coverage = _optional_number(raw.get("fitCoveragePct", external.get("fitCoveragePct")))
+    hausdorff = _optional_number(raw.get("hausdorffPct", external.get("hausdorffPct")))
+    scale_error = _optional_number(raw.get("scaleErrorPct", external.get("scaleErrorPct")))
+    axis_error = _optional_number(raw.get("axisErrorDeg", external.get("axisErrorDeg")))
+    reasons: list[str] = []
+    if fit_coverage is None:
+        reasons.append("D13 fit coverage missing")
+    elif fit_coverage < 70.0:
+        reasons.append(f"D13 fit coverage {fit_coverage:.2f}% < 70.00%")
+    if hausdorff is None:
+        reasons.append("D13 Hausdorff metric missing")
+    elif hausdorff > 1.5:
+        reasons.append(f"D13 Hausdorff {hausdorff:.2f}% > 1.50%")
+    if confidence < 0.65:
+        reasons.append(f"confidence {confidence:.2f} < 0.65")
+    provider_pass = bool(raw.get("pass", external.get("accepted", True)))
+    if not provider_pass:
+        reasons.append("provider marked scan rejected")
+    return {
+        "gate": "D13",
+        "pass": not reasons,
+        "fitCoveragePct": fit_coverage,
+        "hausdorffPct": hausdorff,
+        "scaleErrorPct": scale_error,
+        "axisErrorDeg": axis_error,
+        "meshClassFallback": bool(raw.get("meshClassFallback", len(reasons) > 0)),
+        "rejectReasons": reasons,
+        "path": "colmap" if multiview else "trellis",
+    }
+
+
+def _external_pipeline(external: dict[str, Any], images: list[str], *, cache_key: str, provider: str, multiview: bool) -> list[dict[str, Any]]:
+    pipeline = external.get("pipeline")
+    if isinstance(pipeline, list) and all(isinstance(stage, dict) for stage in pipeline):
+        return pipeline
+    return [
+        {"stage": "background-removal", "provider": provider, "sources": len(images), "cacheKey": f"{cache_key}/mask"},
+        {"stage": "reconstruction", "provider": provider, "sources": len(images), "cacheKey": f"{cache_key}/raw-mesh"},
+        {"stage": "manifold-repair", "provider": provider, "watertight": bool(external.get("watertight", True)), "cacheKey": f"{cache_key}/manifold"},
+        {"stage": "decimation", "provider": provider, "targetFaces": int(external.get("targetFaces", 4800 if multiview else 3200)), "cacheKey": f"{cache_key}/lod0"},
+        {"stage": "primitive-refit", "provider": provider, "cacheKey": f"{cache_key}/refit"},
+    ]
+
+
+def _external_colmap(external: dict[str, Any], images: list[str]) -> dict[str, Any]:
+    colmap = external.get("colmap")
+    if isinstance(colmap, dict):
+        return colmap
+    return {
+        **_colmap(images),
+        "sparsePointCount": int(external.get("sparsePointCount", 1200 + 180 * len(images))),
+        "densePointCount": int(external.get("densePointCount", 24_000 + 2_400 * len(images))),
     }
 
 
@@ -152,6 +227,17 @@ def _known_dimension_mm(scale: Any) -> float | None:
         value = scale.get("mm") or scale.get("knownDimensionMm")
         return float(value) if isinstance(value, (int, float)) else None
     return float(scale) if isinstance(scale, (int, float)) else None
+
+
+def _optional_number(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _number(value: Any, default: float) -> float:
+    maybe = _optional_number(value)
+    return maybe if maybe is not None else default
 
 
 def _review_flags(payload: dict[str, Any], acceptance: dict[str, Any]) -> list[str]:
