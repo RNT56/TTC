@@ -111,12 +111,12 @@ Studio (TypeScript face):
 - [x] P4-017 — OCCT ingestion adapter interface *(2026-06-13)*: tessellation/LOD outputs attach to catalog revisions after review through an injected executor; missing OCCT degrades to envelope geometry, not uncited mesh truth.
 
 ### P5 — Image → 3D
-- [~] P5-001 — Photoscan worker: background removal → TRELLIS-class single-image reconstruction → manifold repair → decimation *(2026-06-14: `photoscan.single` fixture handler and Modal adapter seam live; live reconstruction stack remains deployment work)*
-- [~] P5-002 — COLMAP multi-view path for N-photo bursts *(2026-06-14: `photoscan.multiview` fixture handler validates multi-image payloads; live COLMAP remains adapter work)*
+- [~] P5-001 — Photoscan worker: background removal → TRELLIS-class single-image reconstruction → manifold repair → decimation *(2026-06-14: `photoscan.single` fixture handler now emits full stage records for background removal, TRELLIS-class reconstruction, manifold repair, decimation, primitive refit, D13 metrics, and owner-review flags; live reconstruction stack remains deployment work)*
+- [~] P5-002 — COLMAP multi-view path for N-photo bursts *(2026-06-14: `photoscan.multiview` validates multi-image payloads and emits COLMAP-style view graph, sparse/dense counts, camera poses, D13 metrics, and stage records; live COLMAP remains adapter work)*
 - [x] P5-003 — Primitive refit with D13 acceptance (≥ 70 % fit coverage, Hausdorff ≤ 1.5 %); mesh-class fallback *(2026-06-14: deterministic acceptance/refit records in worker output)*
 - [x] P5-004 — Alignment UI: known-dimension scale, axis snap, port authoring *(2026-06-14: owner-scoped `PATCH /v1/photoscan/artifacts/:id/alignment` plus Studio editor persist known scale, principal axis, and structured authored ports on materialized scan artifacts; direct mesh-click port placement remains polish beyond the deterministic P5 closure slice)*
 - [x] P5-005 — Photoscan admission path with `source: photoscan` provenance; optional datasheet merge *(2026-06-14: candidate component row shape with confidence/review flag emitted)*
-- [~] P5-006 — Burst-GPU integration (Modal/RunPod) + permanent result cache; 5-min SLO *(2026-06-14: Modal adapter, optional HTTP endpoint execution, cache keys, `photoscan_artifacts` materialization, and linked `object_blobs` live; live SLO validation open)*
+- [~] P5-006 — Burst-GPU integration (Modal/RunPod) + permanent result cache; 5-min SLO *(2026-06-14: Modal adapter, optional HTTP endpoint execution, cache keys, richer pipeline artifacts, `photoscan_artifacts` materialization, and linked `object_blobs` live; live SLO validation open)*
 
 ### P6 — Sim depth + interop
 - [~] P6-001 — Contract→Rapier compiler: per-node compound colliders within D7 budgets; joint motors honoring torque/velocity limits *(2026-06-14: runtime scene summary and collider-fit report live; full Rapier world open)*

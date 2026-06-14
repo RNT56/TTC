@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Enrich photoscan pipeline artifacts
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P5 · **TODO items:** P5-001 [~], P5-002 [~], P5-006 [~]
+**Done:** Expanded keyless `photoscan.single` and `photoscan.multiview` outputs to
+carry the full pipeline contract: background-removal, reconstruction,
+manifold-repair, decimation, primitive-refit stages, D13 fit coverage/Hausdorff
+metrics, COLMAP-style view graph metadata, alignment hints, and owner-review flags.
+**Changed:** `workers/forge_workers/photoscan.py`,
+`workers/tests/test_worker_jobs.py`, `docs/systems/compute-workers.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Replace the keyless stage records with live TRELLIS/COLMAP execution and
+run the 5-minute burst-GPU SLO suite.
+**Blockers:** live GPU credentials/runtime images remain deployment work.
+
 ## 2026-06-14 — Add P7 task suite and offline BC worker
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7 · **TODO items:** P7-001 [x], P7-009 [~]
 **Done:** Added the versioned P7 task catalog covering hover, waypoint, slalom,

@@ -172,7 +172,9 @@ Scope:
 
 - Replace fixture-only ETL with deployable live source-fetch, Claude extraction,
   and OCCT execution adapters behind BYO/API-key and review gates.
-- Land live TRELLIS-class single-image reconstruction.
+- Keyless photoscan outputs now carry TRELLIS/COLMAP-shaped pipeline stage records,
+  D13 fit metrics, COLMAP view graph metadata, and owner-review flags; live
+  TRELLIS-class single-image reconstruction remains open.
 - Land live COLMAP multi-view reconstruction.
 - Prove permanent object-cache behavior and the 5-minute burst-GPU SLO.
 - Make a photographed motor become an equipable parametric component end to end:

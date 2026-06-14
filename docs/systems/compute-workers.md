@@ -66,10 +66,12 @@ photo → parametric part on burst GPU; cache permanent. Photos grant processing
 rights only (privacy rules in [`security-safety-legal.md`](../security-safety-legal.md) §5).
 
 Live 2026-06-14: `photoscan.single` and `photoscan.multiview` handlers produce
-stable cache keys, primitive refit metrics, candidate component summaries, and
-alignment hints. Materialized scan artifacts can now receive owner alignment
-patches for known scale, principal axis, and structured ports through the
-gateway/Studio editor path.
+stable cache keys, stage records for background removal, reconstruction,
+manifold-repair, decimation, and primitive refit, D13 fit coverage/Hausdorff
+metrics, COLMAP-style view graph metadata for multiview bursts, candidate component
+summaries, owner-review flags, and alignment hints. Materialized scan artifacts can
+now receive owner alignment patches for known scale, principal axis, and structured
+ports through the gateway/Studio editor path.
 Fixture CPU mode is the CI default. `FORGE_PHOTOSCAN_CMD` and `FORGE_COLMAP_CMD`
 can replace fixture reconstruction with a live external stack while preserving the
 same output shape; Modal is available only through an injected adapter when

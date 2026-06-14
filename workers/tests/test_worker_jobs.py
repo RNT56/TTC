@@ -93,6 +93,10 @@ def test_photoscan_single_emits_candidate_review_row():
         )
     )
     assert result["acceptance"]["pass"]
+    assert result["acceptance"]["fitCoveragePct"] >= 70
+    assert result["pipeline"][0]["stage"] == "background-removal"
+    assert result["pipeline"][1]["provider"] == "fixture-trellis"
+    assert result["candidateComponent"]["reviewRequired"]
     assert result["candidateComponent"]["review"]
     assert result["objectCache"]["key"].startswith("photoscan.single:")
 
@@ -108,6 +112,23 @@ def test_photoscan_multiview_requires_multiple_images():
                 idempotency_key="scan-2",
             )
         )
+
+
+def test_photoscan_multiview_emits_colmap_and_d13_metrics():
+    register_all_handlers()
+    result = registry.dispatch(
+        Job(
+            id="j2b",
+            task="photoscan.multiview",
+            payload={"images": ["obj-front", "obj-left", "obj-right"], "scale": 120, "axes": "z"},
+            idempotency_key="scan-3",
+        )
+    )
+    assert result["colmap"]["viewCount"] == 3
+    assert result["colmap"]["matchedPairs"] == 3
+    assert result["pipeline"][1]["provider"] == "fixture-colmap"
+    assert result["acceptance"]["hausdorffPct"] <= 1.5
+    assert result["alignment"]["knownDimensionMm"] == 120
 
 
 def test_training_policy_uses_scorecard_gate():
