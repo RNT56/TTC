@@ -11,7 +11,17 @@ import copy
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from forge_workers.etl.adapters import CatalogExtractor, GeometryAdapter, SourceFetcher
+from forge_workers.etl.adapters import (
+    CatalogExtractor,
+    ClaudeExtractionAdapter,
+    EnvelopeOcctAdapter,
+    FixtureSourceFetcher,
+    GeometryAdapter,
+    HttpSourceFetcher,
+    OcctTessellationAdapter,
+    SourceBundle,
+    SourceFetcher,
+)
 from forge_workers.etl.citations import Citation, IngestVerdict, check_citations
 from forge_workers.queue import Job, registry
 
@@ -56,6 +66,22 @@ def ingest_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
 
     conflicts = [str(c) for c in fixture.get("sourceConflicts", [])]
     return ingest_row(row, conflicts=conflicts)
+
+
+def ingest_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Ingest either a canonical fixture row or a source/extraction adapter payload."""
+
+    if isinstance(payload.get("canonicalRow"), dict):
+        return ingest_fixture(payload)
+    source_url = payload.get("sourceUrl")
+    if not isinstance(source_url, str) or not source_url:
+        raise ValueError("ingest payload requires canonicalRow or sourceUrl")
+    return ingest_with_adapters(
+        source_url,
+        fetcher=_payload_fetcher(payload, source_url),
+        extractor=_payload_extractor(payload),
+        geometry_adapter=_payload_geometry_adapter(payload),
+    )
 
 
 def ingest_with_adapters(
@@ -121,4 +147,36 @@ def review_records(
 
 @registry.register("etl.ingest-component")
 def handle_ingest_component(job: Job) -> dict[str, Any]:
-    return ingest_fixture(job.payload)
+    return ingest_payload(job.payload)
+
+
+def _payload_fetcher(payload: dict[str, Any], source_url: str) -> SourceFetcher:
+    bundle = payload.get("sourceBundle")
+    if isinstance(bundle, dict):
+        source = SourceBundle(
+            source_url=str(bundle.get("sourceUrl", source_url)),
+            body=str(bundle.get("body", "")),
+            content_type=str(bundle.get("contentType", "text/plain")),
+            fetched_at=str(bundle.get("fetchedAt", "2026-06-13T00:00:00Z")),
+            sha256=str(bundle.get("sha256") or SourceBundle.from_text(source_url, str(bundle.get("body", ""))).sha256),
+        )
+        return FixtureSourceFetcher({source_url: source})
+    if payload.get("allowHttpFetch") is True:
+        return HttpSourceFetcher(timeout_s=float(payload.get("timeoutS", 10.0)))
+    raise RuntimeError("live source fetch requires sourceBundle fixture or allowHttpFetch=true")
+
+
+def _payload_extractor(payload: dict[str, Any]) -> CatalogExtractor:
+    extraction = payload.get("extraction")
+    if isinstance(extraction, dict):
+        return ClaudeExtractionAdapter(extractor=lambda _bundle: extraction)
+    return ClaudeExtractionAdapter()
+
+
+def _payload_geometry_adapter(payload: dict[str, Any]) -> GeometryAdapter:
+    geometry = payload.get("geometry")
+    if isinstance(geometry, dict):
+        return OcctTessellationAdapter(lambda _row, _bundle: geometry)
+    if payload.get("requireOcct") is True:
+        return OcctTessellationAdapter()
+    return EnvelopeOcctAdapter()

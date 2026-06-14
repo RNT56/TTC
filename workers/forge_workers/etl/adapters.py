@@ -16,6 +16,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 
+from forge_workers.external import run_json_command
+
 
 @dataclass(frozen=True)
 class SourceBundle:
@@ -123,6 +125,13 @@ class ClaudeExtractionAdapter:
     def extract(self, bundle: SourceBundle) -> dict[str, Any]:
         if self._extractor is not None:
             return copy.deepcopy(dict(self._extractor(bundle)))
+        external = run_json_command(
+            "FORGE_CLAUDE_EXTRACT_CMD",
+            {"task": "etl.extract-component", "sourceBundle": bundle.to_json(), "apiKeyConfigured": bool(self.api_key)},
+            timeout_s=900,
+        )
+        if external is not None:
+            return copy.deepcopy(external)
         if not self.api_key:
             raise RuntimeError("Claude extraction requires ANTHROPIC_API_KEY or an injected extractor")
         raise NotImplementedError("live Claude transport is intentionally provided by the deployment adapter")
@@ -149,8 +158,17 @@ class OcctTessellationAdapter:
         self._tessellate = tessellate
 
     def attach_geometry(self, row: dict[str, Any], bundle: SourceBundle) -> dict[str, Any]:
-        if self._tessellate is None:
-            raise RuntimeError("OCCT tessellation requires an injected executor")
         next_row = copy.deepcopy(row)
-        next_row["geometry"] = copy.deepcopy(dict(self._tessellate(next_row, bundle)))
+        if self._tessellate is not None:
+            geometry = dict(self._tessellate(next_row, bundle))
+        else:
+            external = run_json_command(
+                "FORGE_OCCT_TESSELLATE_CMD",
+                {"task": "etl.occt-tessellate", "row": next_row, "sourceBundle": bundle.to_json()},
+                timeout_s=1800,
+            )
+            if external is None:
+                raise RuntimeError("OCCT tessellation requires an injected executor or FORGE_OCCT_TESSELLATE_CMD")
+            geometry = external
+        next_row["geometry"] = copy.deepcopy(geometry)
         return next_row

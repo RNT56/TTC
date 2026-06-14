@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from forge_workers.etl.adapters import (
@@ -8,7 +10,7 @@ from forge_workers.etl.adapters import (
     OcctTessellationAdapter,
     SourceBundle,
 )
-from forge_workers.etl.ingest import ingest_with_adapters
+from forge_workers.etl.ingest import ingest_payload, ingest_with_adapters
 from test_citations import full_citations, motor_row
 
 
@@ -86,3 +88,53 @@ def test_injected_occt_adapter_attaches_geometry():
 
     assert row["geometry"]["kind"] == "mesh-lod"
     assert row["geometry"]["lods"] == [0, 1, 2]
+
+
+def test_handler_payload_can_use_source_extraction_and_geometry_adapters():
+    row = cited_row()
+    out = ingest_payload(
+        {
+            "sourceUrl": "fixture://motor-x2207",
+            "sourceBundle": {"body": "ExampleCo X2207 captured source"},
+            "extraction": {"canonicalRow": row, "sourceConflicts": []},
+            "geometry": {"kind": "mesh-lod", "lods": [0, 1, 2]},
+        }
+    )
+
+    assert out["row"]["geometry"]["kind"] == "mesh-lod"
+    assert out["sourceBundle"]["source_url"] == "fixture://motor-x2207"
+    assert not out["needsReview"]
+
+
+def test_command_backed_claude_adapter(monkeypatch, tmp_path):
+    script = tmp_path / "extract.py"
+    script.write_text(
+        "import json, sys\n"
+        "payload = json.load(sys.stdin)\n"
+        "print(json.dumps({'canonicalRow': {'id': payload['sourceBundle']['sha256']}, 'sourceConflicts': []}))\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FORGE_CLAUDE_EXTRACT_CMD", f"{sys.executable} {script}")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    bundle = SourceBundle.from_text("fixture://motor-x2207", "captured source")
+    extraction = ClaudeExtractionAdapter().extract(bundle)
+
+    assert extraction["canonicalRow"]["id"] == bundle.sha256
+
+
+def test_command_backed_occt_adapter(monkeypatch, tmp_path):
+    script = tmp_path / "occt.py"
+    script.write_text(
+        "import json, sys\n"
+        "payload = json.load(sys.stdin)\n"
+        "print(json.dumps({'kind': 'mesh-lod', 'source': payload['sourceBundle']['source_url'], 'lods': [0, 1]}))\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("FORGE_OCCT_TESSELLATE_CMD", f"{sys.executable} {script}")
+    bundle = SourceBundle.from_text("fixture://motor-x2207", "captured source")
+
+    row = OcctTessellationAdapter().attach_geometry(cited_row(), bundle)
+
+    assert row["geometry"]["kind"] == "mesh-lod"
+    assert row["geometry"]["source"] == "fixture://motor-x2207"

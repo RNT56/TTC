@@ -43,10 +43,12 @@ hand off geometry to OCCT jobs → dedupe (brand, model, rev) → license-ledger
 (non-optional) → low-confidence rows to the human review queue. **Nothing
 auto-publishes.**
 
-Live 2026-06-13: deterministic fixture ingest plus injectable source-fetch,
-Claude-style extraction, and OCCT geometry adapter protocols. Fixture fetch/extract
-and envelope geometry fallback run in CI; HTTP is rate-limited and injectable;
-Claude/OCCT live transports fail closed unless deployment supplies a key/executor.
+Live 2026-06-14: deterministic fixture ingest plus injectable source-fetch,
+Claude-style extraction, and OCCT geometry adapter protocols. `etl.ingest-component`
+can route source-bundle payloads through those adapters, and deployment-owned
+commands can provide `FORGE_CLAUDE_EXTRACT_CMD` and `FORGE_OCCT_TESSELLATE_CMD`.
+Fixture fetch/extract and envelope geometry fallback run in CI; HTTP and provider
+transports fail closed unless deployment supplies a key/executor.
 
 ### 3.2 `workers/occt` — B-rep truth (P3 tessellation; P6 DfM/STEP)
 STEP I/O, fillets, exact tessellation → meshoptimizer LOD chain (≤ 800/≤ 150 tris);

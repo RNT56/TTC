@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Add ETL command adapter routing
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P3/P4 · **TODO items:** P3-004 [~], P4-016 [~]
+**Done:** Routed `etl.ingest-component` through the fetch/extract/geometry adapter
+protocols when a source bundle payload is supplied, added command-backed Claude and
+OCCT seams (`FORGE_CLAUDE_EXTRACT_CMD`, `FORGE_OCCT_TESSELLATE_CMD`), and kept
+fixture canonical rows as the keyless CI path.
+**Changed:** `workers/forge_workers/etl/adapters.py`,
+`workers/forge_workers/etl/ingest.py`, `workers/forge_workers/etl/__init__.py`,
+`workers/tests/test_etl_adapters.py`, `docs/systems/compute-workers.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Deploy provider-owned Claude/OCCT commands with real credentials and
+review queue persistence.
+**Blockers:** live provider credentials and OCCT runtime images remain deployment
+work.
+
 ## 2026-06-14 — Enrich photoscan pipeline artifacts
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P5 · **TODO items:** P5-001 [~], P5-002 [~], P5-006 [~]
 **Done:** Expanded keyless `photoscan.single` and `photoscan.multiview` outputs to

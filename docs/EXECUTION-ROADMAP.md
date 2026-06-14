@@ -170,8 +170,9 @@ Owns: `P3-004`, `P4-016`, `P5-001`, `P5-002`, `P5-006`, P5 open exit criteria.
 
 Scope:
 
-- Replace fixture-only ETL with deployable live source-fetch, Claude extraction,
-  and OCCT execution adapters behind BYO/API-key and review gates.
+- `etl.ingest-component` now routes source-bundle payloads through fetch/extract/
+  geometry adapters and exposes command-backed Claude/OCCT transports; deployable
+  live provider credentials and review persistence remain open.
 - Keyless photoscan outputs now carry TRELLIS/COLMAP-shaped pipeline stage records,
   D13 fit metrics, COLMAP view graph metadata, and owner-review flags; live
   TRELLIS-class single-image reconstruction remains open.
