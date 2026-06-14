@@ -75,7 +75,7 @@ parts, physics, training, build evidence, and field evidence to agree.
 | "Training results are impossible to compare." | A policy blob arrives without observation layout, task definition, randomization, scorecard, or lineage | Policy artifacts include ONNX metadata, I/O headers, scorecards, randomization grids, and export gates |
 | "Sharing a model loses context." | Marketplaces distribute files without validator reports, license policy, moderation, or usage data | Listings require admitted validator reports, policy gates where needed, moderation paths, and usage rollups |
 | "Field evidence rarely improves the next design." | Telemetry, damage notes, and repairs become disconnected logs | Field telemetry can become replay evidence, system-ID input, wear estimates, impact analysis, and repair sheets |
-| "Hardware deployment is too easy to make unsafe." | A UI button can quietly become real-world authority | D28 hardware gates fail closed until legal signoff, lab mode, D12 rig allowlist, and physical confirmation exist |
+| "Hardware deployment is too easy to make unsafe." | A UI button can quietly become real-world authority | Real hardware actions are blocked by default. They only unlock after legal/safety signoff, explicit lab mode, approved reference rigs, and physical confirmation |
 
 ---
 
@@ -455,7 +455,7 @@ See `LICENSE`, `NOTICE`, and `docs/DECISIONS.md` for the binding split.
 
 ## Current North Star
 
-Make robotics design feel like this:
+Robotics should not reset at every tool boundary.
 
 ```text
 Describe it.
@@ -464,9 +464,10 @@ Sim it.
 Train it.
 Share it.
 Build it.
-Log it.
-Repair it.
-Improve the next one.
+Log what happened in the real world.
+Repair what changed.
+Feed the evidence back into the next design.
 ```
 
-Not because each step is flashy. Because each step keeps the evidence.
+Not because the workflow needs more spectacle.
+Because every step should preserve what was learned.
