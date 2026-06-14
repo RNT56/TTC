@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-14 — Persist admitted co-design points from Studio
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P9 · **TODO items:** P9-004 [~]
+**Done:** Added a Studio save action for admitted co-design Pareto candidates. The
+action applies the candidate JSON Patch through the core boundary, saves the result
+through the model admission route with draft mode disabled, refreshes the model
+registry, and opens the persisted point.
+**Changed:** `packages/studio/src/App.tsx`, `docs/systems/studio-ui.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Back the explorer with live CMA-ES/Optuna and engine-tier results so
+overnight runs produce at least three admitted Pareto points.
+**Blockers:** P9-004 remains open until live optimizer runs and persisted points are
+fed by engine-backed candidate evaluation rather than fixture patches.
+
 ## 2026-06-14 — Add Studio maintenance twin dashboard
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~], P12-004 [~]
 **Done:** Added a Studio maintenance twin dashboard over materialized

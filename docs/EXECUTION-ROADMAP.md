@@ -268,7 +268,8 @@ Scope:
   orchestration.
 - Finish the multi-fidelity ladder: tier 0 native static checks, tier 1 Rapier
   smoke, tier 2 short MuJoCo rollouts, tier 3 finalist training.
-- Build the full Pareto explorer with persisted, openable point contracts.
+- Persisted/openable Pareto point UI is live in Studio as of 2026-06-14 for
+  admitted patch candidates; live optimizer-backed explorer depth remains open.
 - Add MJX batching for tier 2/3 only if the P7-010 benchmark demands it.
 
 Dependencies:

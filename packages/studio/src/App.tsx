@@ -84,11 +84,12 @@ import {
   isKnownJobOutput,
   isPatchList,
   numberOrNull,
+  type CodesignCandidate,
   type JsonPatchOp,
   type PolicyOutput,
 } from "./jobOutputs";
 import { decodeShareFragment, encodeShareFragment } from "./share";
-import { CoreBake, CoreSession, coreValidate, type DriveInput } from "./wasm";
+import { CoreBake, CoreSession, corePatch, coreValidate, type DriveInput } from "./wasm";
 
 const panel: React.CSSProperties = {
   position: "absolute",
@@ -944,6 +945,28 @@ export default function App() {
     }
   };
 
+  const saveCodesignCandidate = useCallback(async (candidate: CodesignCandidate) => {
+    if (!isPatchList(candidate.patch)) return;
+    const contract = useStudio.getState().contractJson;
+    if (!contract) {
+      setModelError("load a base contract before saving a co-design point");
+      return;
+    }
+    setModelBusy(true);
+    setModelError(null);
+    try {
+      const patched = await corePatch(contract, JSON.stringify(candidate.patch));
+      const { model, report } = await saveModel(JSON.parse(patched), false);
+      setActiveModelId(model.id);
+      await loadContract(JSON.stringify(model.contract), report);
+      await refreshModels();
+    } catch (error) {
+      setModelError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setModelBusy(false);
+    }
+  }, [loadContract, refreshModels]);
+
   const editActiveModel = async () => {
     if (!activeModelId || !editPrompt.trim()) return;
     setModelBusy(true);
@@ -1761,6 +1784,7 @@ export default function App() {
               <JobDetails
                 job={job}
                 onApplyPatch={(ops) => void applyPatch(ops)}
+                onSaveCandidate={(candidate) => void saveCodesignCandidate(candidate)}
                 onPlayPolicy={startPolicyPlayback}
               />
             </div>
@@ -3416,10 +3440,12 @@ function shortHash(value: string | null): string | undefined {
 function JobDetails({
   job,
   onApplyPatch,
+  onSaveCandidate,
   onPlayPolicy,
 }: {
   job: JobRecord;
   onApplyPatch: (ops: JsonPatchOp[]) => void;
+  onSaveCandidate: (candidate: CodesignCandidate) => void;
   onPlayPolicy: (output: PolicyOutput) => void;
 }) {
   if (job.error) {
@@ -3488,8 +3514,8 @@ function JobDetails({
             {(output.pareto?.length ?? 0)} Pareto · {(output.candidates?.length ?? 0)} candidates
           </div>
           <ParetoPlot candidates={output.pareto ?? output.candidates ?? []} />
-          {(output.pareto ?? output.candidates ?? []).slice(0, 3).map((candidate) => (
-            <div key={candidate.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6, alignItems: "center" }}>
+          {(output.pareto ?? output.candidates ?? []).slice(0, 5).map((candidate) => (
+            <div key={candidate.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 6, alignItems: "center" }}>
               <span style={{ color: candidate.admitted ? "#7dd87d" : "#e6a23c", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {candidate.id} · {candidate.tier ?? "tier"} · {formatMetrics(candidate.metrics)}
               </span>
@@ -3499,6 +3525,13 @@ function JobDetails({
                 style={btn}
               >
                 apply
+              </button>
+              <button
+                disabled={!candidate.admitted || !isPatchList(candidate.patch)}
+                onClick={() => onSaveCandidate(candidate)}
+                style={btn}
+              >
+                save
               </button>
             </div>
           ))}
