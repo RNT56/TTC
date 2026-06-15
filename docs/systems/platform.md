@@ -90,7 +90,13 @@ Live 2026-06-14: `vendor_offers`, `print_quote_requests`, and
 `print_quote_offers` back `GET /v1/commerce/vendor-offers`, `POST
 /v1/commerce/vendor-offers/refresh`, `GET /v1/commerce/print-quotes`, and `POST
 /v1/commerce/print-quotes`. Provider checkout is always off-platform; no payment or
-payout ledger exists in this slice.
+payout ledger exists in this slice. Live 2026-06-15: geometry worker outputs now
+carry DfM report references, oriented 3MF object keys, print profiles, printed-part
+BOM rows, and quote-link-only handoff metadata for DfM-passing parts.
+Commerce worker normalization now gives the live-provider lane a tested contract:
+`FORGE_VENDOR_REFRESH_CMD` rows must be priced, provenanced, and rate-limit-scoped,
+while `FORGE_PRINT_QUOTE_CMD` only returns quote links after DfM-passing
+3MF/profile artifacts and always marks checkout as off-platform.
 
 ## 6. Maintenance twin (P12)
 

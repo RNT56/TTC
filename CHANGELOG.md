@@ -18,6 +18,38 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Emit print handoff artifacts from geometry jobs
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P11/P6 · **TODO items:** P11-006 [~], XC-18 [~]
+**Done:** Extended `occt.tessellate` fixture output with DfM report references,
+oriented 3MF export references, print-profile metadata, printed-part BOM rows, and
+quote-link-only handoff metadata for DfM-passing structural parts.
+**Changed:** `workers/forge_workers/geometry.py`,
+`workers/tests/test_geometry_print_artifacts.py`, `docs/systems/compute-workers.md`,
+`docs/systems/platform.md`, `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Replace fixture orientation with live OCCT/3MF generation and submit the
+artifact contract to sandbox print-provider quote APIs.
+**Blockers:** live OCCT print export/orientation and print-provider sandbox
+credentials remain open.
+
+## 2026-06-15 — Normalize commerce provider handoffs
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P11 · **TODO items:** P11-005 [~], P11-006 [~]
+**Done:** Added worker-side commerce normalizers for live vendor refresh and print
+quote handoffs. `FORGE_VENDOR_REFRESH_CMD` output now normalizes into rate-limited,
+provenanced vendor offers with invalid rows held, and `FORGE_PRINT_QUOTE_CMD`
+output stays quote-link-only, blocks before DfM-passing 3MF/profile artifacts, and
+marks checkout as off-platform.
+**Changed:** `workers/forge_workers/commerce.py`,
+`workers/tests/test_commerce.py`, `docs/systems/compute-workers.md`,
+`docs/systems/platform.md`, `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Wire these normalizers into the gateway commerce routes once that lane is
+clear, then run sandbox/live provider refresh and print quote suites.
+**Blockers:** real provider credentials/accounts and gateway route integration
+remain open.
+
 ## 2026-06-15 — Add Modal task runtime profiles
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P5/P7/P9 · **TODO items:** P5-006 [~], P7-003 [~], P9-002 [~]
 **Done:** Added test-covered Modal runtime profiles for `photoscan.single`,

@@ -360,9 +360,14 @@ Scope:
   transfer requires exportable scorecards plus matching archetype and
   observation/action layout, and non-matching twins receive a fine-tune offer.
   Public route/Studio wiring and live fine-tune execution remain open.
-- Connect live vendor offer providers for catalog slots behind env-gated,
-  sandboxable refresh.
-- Finish DfM/3MF printed-parts BOM section and print-provider quote/link handoff.
+- Vendor/print provider normalization is now a tested worker helper:
+  `FORGE_VENDOR_REFRESH_CMD` rows become priced/provenanced/rate-limited offers
+  with invalid rows held, and `FORGE_PRINT_QUOTE_CMD` stays quote-link-only after
+  DfM-passing 3MF/profile evidence. Gateway wiring and real provider accounts
+  remain open.
+- Worker geometry now emits DfM report refs, oriented 3MF refs, print profiles,
+  printed-part BOM rows, and quote-link-only handoff metadata. Finish true
+  OCCT-generated orientation and live print-provider quote submission.
 - Keep direct checkout/payment out of scope unless a new decision changes D29.
 
 Dependencies:

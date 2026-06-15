@@ -30,7 +30,8 @@ materialized into the same sidecar tables as synchronous gateway fixture jobs.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and
-`FORGE_MJX_BENCH_CMD`; absent commands keep the deterministic fixture path as CI
+`FORGE_MJX_BENCH_CMD`; commerce providers use `FORGE_VENDOR_REFRESH_CMD` and
+`FORGE_PRINT_QUOTE_CMD`. Absent commands keep the deterministic fixture path as CI
 truth. `workers/forge_workers/modal_app.py` provides an optional Modal entrypoint
 without importing Modal on local/CI runs and now exposes JSON-serializable task
 profiles for burst-GPU deployment planning.
@@ -56,9 +57,11 @@ STEP I/O, fillets, exact tessellation → meshoptimizer LOD chain (≤ 800/≤ 1
 DfM evaluation per process profile (feeds MFG-* checks); STEP/3MF export jobs with
 the **license export filter** applied (D10).
 
-Live 2026-06-14: `occt.tessellate` has a deterministic fixture handler that emits
-stable object keys and mesh metadata. The live OCCT binding remains behind the same
-task boundary for P6 DfM and export work.
+Live 2026-06-15: `occt.tessellate` has a deterministic fixture handler that emits
+stable object keys, mesh metadata, DfM report references, oriented 3MF export
+references, print-profile metadata, and printed-part BOM rows for quote-link
+handoff. The live OCCT binding remains behind the same task boundary for P6 DfM and
+export work.
 
 ### 3.3 `workers/photoscan` — image → 3D (P5)
 background removal → TRELLIS-class single-image reconstruction (or COLMAP multi-view
@@ -130,6 +133,14 @@ provider, D12 rig ID, physical confirmation, and lab adapter are all required.
 pack cycles, R_int estimates, crash windows, repair steps, reorder SKUs, and fleet
 service summaries from deterministic telemetry/build payloads. Vendor and print
 quote links are attached by the platform commerce APIs rather than direct carts.
+
+### 3.7 `workers/commerce` — provider handoffs (P11)
+`refresh_vendor_offers` normalizes live vendor rows into priced, provenanced,
+rate-limited offers and holds malformed rows instead of persisting partial purchase
+truth. `request_print_quote` requires DfM-passing 3MF/profile artifacts before it
+normalizes print-service quote links, and every offer carries off-platform checkout
+terms. The gateway tables/routes own persistence; the worker helper owns provider
+shape normalization for sandbox/live adapters.
 
 ## 4. GPU burst policy
 
