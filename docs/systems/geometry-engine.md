@@ -76,8 +76,10 @@ FDM v0 profile over inline printable structural parts (`MFG-001..004`): ≥ 1.2 
 minimum wall, unsupported-overhang warnings above 45° from vertical, support-area
 warnings above 25 %, and oriented fit against a 500 mm lab bed. Failing parts carry
 diagnostics + suggested fixes ("thicken the thin axis", "split the part") and feed
-print ordering (P11-006). SLA presets, exact B-rep wall analysis, oriented 3MF
-artifacts, and printed-parts BOM quote references remain open.
+print ordering (P11-006). Worker `occt.tessellate` output now carries DfM report
+refs, oriented 3MF refs, print profiles, and printed-part BOM quote metadata for
+handoff surfaces. SLA presets, exact B-rep wall analysis, true OCCT-generated
+orientation, and live provider quote submission remain open.
 
 **Collider auto-fitter (XC-10).** Per-node compounds (hulls/fitted primitives)
 within D7 budgets (≤ 8/node, ≤ 24/model); fidelity prioritized at contact-critical
