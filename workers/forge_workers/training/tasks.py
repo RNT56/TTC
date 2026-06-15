@@ -172,5 +172,140 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
     return definition
 
 
+def course_task_definition(
+    env_spec: dict[str, Any],
+    *,
+    course_id: str | None = None,
+    curriculum_stage: int | None = None,
+    horizon_s: float | None = None,
+    archetype: str | None = None,
+) -> dict[str, Any]:
+    """Compile an EnvSpec/course object into the P7 task shape."""
+
+    meta = _record(env_spec.get("meta"))
+    resolved_id = str(course_id or meta.get("id") or env_spec.get("id") or "course")
+    name = str(meta.get("name") or env_spec.get("name") or resolved_id)
+    task_id = _course_task_id(env_spec)
+    base = task_definition(task_id, curriculum_stage=curriculum_stage, horizon_s=horizon_s)
+    win = _record(env_spec.get("win"))
+    compiled_horizon = horizon_s if horizon_s is not None else _number(win.get("timeLimitS"), _number(env_spec.get("timeLimitS"), base["horizonS"]))
+    family = archetype or _course_family(env_spec, str(base["family"]))
+    compiled = {
+        **base,
+        "id": f"course:{resolved_id}",
+        "sourceTask": task_id,
+        "source": "course",
+        "family": family,
+        "horizonS": compiled_horizon,
+        "course": {
+            "id": resolved_id,
+            "name": name,
+            "version": str(meta.get("version") or env_spec.get("version") or "1.0.0"),
+        },
+        "env": _course_env(env_spec, base["env"]),
+        "reward": _course_reward(env_spec, task_id),
+    }
+    return compiled
+
+
 def task_ids() -> list[str]:
     return sorted(_TASKS)
+
+
+def _course_task_id(env_spec: dict[str, Any]) -> str:
+    tasks = _strings(env_spec.get("tasks"))
+    for task in tasks:
+        if task in _TASKS:
+            return task
+    kind = str(env_spec.get("kind", "")).lower()
+    if "slalom" in kind or _list(env_spec.get("gates")):
+        return "gate-slalom"
+    if "line" in kind or _record(env_spec.get("path")):
+        return "line-follow"
+    if "obstacle" in kind or _list(env_spec.get("obstacles")):
+        return "obstacle-course"
+    if "reach" in kind:
+        return "reach-track"
+    return "waypoint-chain"
+
+
+def _course_family(env_spec: dict[str, Any], default: str) -> str:
+    for spawn in _list(env_spec.get("spawns")):
+        archetypes = _strings(_record(spawn).get("archetypeFilter"))
+        if archetypes:
+            return archetypes[0]
+    task_id = _course_task_id(env_spec)
+    if task_id in {"line-follow", "obstacle-course"}:
+        return "rover"
+    if task_id == "reach-track":
+        return "arm"
+    return default
+
+
+def _course_env(env_spec: dict[str, Any], base_env: dict[str, Any]) -> dict[str, Any]:
+    env = deepcopy(base_env)
+    if isinstance(env_spec.get("boundsM"), list):
+        env["boundsM"] = env_spec["boundsM"]
+    if isinstance(env_spec.get("terrain"), dict):
+        env["terrain"] = env_spec["terrain"]
+    spawns = _list(env_spec.get("spawns"))
+    if spawns:
+        env["spawn"] = _record(spawns[0])
+    gates = _course_gates(env_spec.get("gates"))
+    if gates:
+        env["gates"] = gates
+    obstacles = _list(env_spec.get("obstacles"))
+    if obstacles:
+        env["obstacles"] = obstacles
+    path = _record(env_spec.get("path"))
+    if path:
+        env["path"] = path
+    env_block = _record(env_spec.get("env"))
+    if env_block:
+        env["courseEnv"] = env_block
+    return env
+
+
+def _course_gates(value: Any) -> list[dict[str, Any]]:
+    gates: list[dict[str, Any]] = []
+    for gate in _list(value):
+        row = _record(gate)
+        pose = _record(row.get("pose"))
+        center = pose.get("p") if isinstance(pose.get("p"), list) else row.get("center")
+        width = _number(row.get("widthM"), 1.0)
+        height = _number(row.get("heightM"), 1.0)
+        gates.append(
+            {
+                "id": str(row.get("id", f"gate-{len(gates) + 1}")),
+                "center": center if isinstance(center, list) else [0, 0, 0],
+                "sizeM": row.get("sizeM") if isinstance(row.get("sizeM"), list) else [width, height],
+            }
+        )
+    return gates
+
+
+def _course_reward(env_spec: dict[str, Any], task_id: str) -> dict[str, Any]:
+    win = _record(env_spec.get("win"))
+    return {
+        "source": "env-spec",
+        "task": task_id,
+        "gateOrder": _strings(win.get("gateOrder")),
+        "timeLimitS": _number(win.get("timeLimitS"), _number(env_spec.get("timeLimitS"), 0.0)),
+        "contactPenalties": bool(win.get("contactPenalties", env_spec.get("contactPenalties", True))),
+    }
+
+
+def _record(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _strings(value: Any) -> list[str]:
+    return [str(item) for item in value] if isinstance(value, list) else []
+
+
+def _number(value: Any, default: float) -> float:
+    return float(value) if isinstance(value, (int, float)) else default

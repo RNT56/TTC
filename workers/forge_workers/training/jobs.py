@@ -15,7 +15,7 @@ from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS, Scorecard, gate
-from forge_workers.training.tasks import task_definition
+from forge_workers.training.tasks import course_task_definition, task_definition
 
 
 def _digest(value: Any) -> str:
@@ -23,12 +23,9 @@ def _digest(value: Any) -> str:
 
 
 def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
-    task = str(payload.get("task", "hover-hold"))
     contract_hash = str(payload.get("contractHash", "00" * 32))
     seed = str(payload.get("seed", "0"))
-    curriculum_stage = int(payload.get("curriculumStage", 1))
-    horizon_s = float(payload.get("horizonS", task_definition(task)["horizonS"]))
-    task_meta = task_definition(task, curriculum_stage=curriculum_stage, horizon_s=horizon_s)
+    task_meta = _task_meta(payload)
     resolved_task = str(task_meta["id"])
     external = run_json_command(
         "FORGE_SB3_TRAIN_CMD",
@@ -98,6 +95,24 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         "exportGate": "exportable" if result.exportable else "blocked",
         "scorecard": _scorecard_payload(card, result.reasons, result.exportable),
     }
+
+
+def _task_meta(payload: dict[str, Any]) -> dict[str, Any]:
+    course = payload.get("course") if isinstance(payload.get("course"), dict) else {}
+    env_spec = payload.get("envSpec") if isinstance(payload.get("envSpec"), dict) else course.get("envSpec")
+    curriculum_stage = int(payload.get("curriculumStage", 1))
+    horizon_s = _number(payload.get("horizonS"), None)
+    if isinstance(env_spec, dict):
+        return course_task_definition(
+            env_spec,
+            course_id=str(course.get("id", payload.get("courseId"))) if course.get("id") or payload.get("courseId") else None,
+            curriculum_stage=curriculum_stage,
+            horizon_s=horizon_s,
+            archetype=str(payload.get("archetype")) if payload.get("archetype") else None,
+        )
+    task = str(payload.get("task", "hover-hold"))
+    base = task_definition(task)
+    return task_definition(task, curriculum_stage=curriculum_stage, horizon_s=horizon_s if horizon_s is not None else float(base["horizonS"]))
 
 
 def _external_policy_result(

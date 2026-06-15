@@ -18,6 +18,22 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Wire EnvSpec courses into training tasks
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10/P7 · **TODO items:** P10-006 [x], P7-003 [~]
+**Done:** Added a worker-side EnvSpec→P7 task compiler and wired `train.policy` to
+consume explicit `envSpec` or `course.envSpec` payloads directly. Course tasks now
+preserve course id/name/version, archetype, spawn/gates/bounds/terrain, reward
+metadata, and ONNX/scorecard task ids without gateway conversion work.
+**Changed:** `workers/forge_workers/training/tasks.py`,
+`workers/forge_workers/training/jobs.py`, `workers/tests/test_course_tasks.py`,
+`docs/systems/environments-courses.md`, `docs/EXECUTION-ROADMAP.md`,
+`docs/TODO.md`, `docs/ROADMAP.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Prove the full P10 exit with a public/community course, verified
+leaderboard run, and a live trainer consuming that course task.
+**Blockers:** direct public course fetch/API polish, durable leaderboard dimensions,
+and live trainer evidence remain open.
+
 ## 2026-06-15 — Compute maintenance ghost divergence
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~]
 **Done:** Extended `maintenance.crash-forensics` so crash windows now compute ghost
