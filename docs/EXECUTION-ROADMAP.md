@@ -215,7 +215,9 @@ Scope:
   normalizes external offline-RL command output into non-exportable warmstarts;
   live fine-tune remains open.
 - Run the P7-010 MJX benchmark on D12 quad, rover, and legged morphologies before
-  any adoption claim.
+  any adoption claim. The worker report now normalizes payload or
+  `FORGE_MJX_BENCH_CMD` evidence and applies the CPU-need, parity, and 3x
+  cost-normalized-throughput adoption rule; real D12 benchmark rows remain open.
 - Scorecard schema and estimator-smoke rejection are live in fixture and external
   SB3 worker paths; keep them wired through any live trainer.
 
@@ -285,7 +287,9 @@ Scope:
 - Persisted/openable Pareto point UI is live in Studio as of 2026-06-14 for
   admitted patch candidates; worker-side constrained 200-candidate Pareto depth is
   live, while engine-backed explorer evaluation remains open.
-- Add MJX batching for tier 2/3 only if the P7-010 benchmark demands it.
+- Add MJX batching for tier 2/3 only if the P7-010 benchmark report adopts it;
+  batching remains blocked until real D12 quad, D12 rover, and legged evidence
+  passes the report.
 
 Dependencies:
 

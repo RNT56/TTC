@@ -55,6 +55,9 @@ lineage; missing fields, provider rejection, or ground-truth training fail close
 `forge-sim::heavy::evaluate_mjx_adoption` encodes the P7-010 rule: adopt MJX only
 when CPU MuJoCo/SB3 misses the overnight/budget target by more than 25 %, MJX stays
 inside frozen parity bands, and cost-normalized throughput is at least 3x.
+The worker-side `mjx_benchmark_report` applies the same rule to payload or
+`FORGE_MJX_BENCH_CMD` output and blocks adoption unless D12 quad, D12 rover, and one
+legged morphology all have benchmark evidence.
 
 ## 5. Domain randomization (first-class config)
 

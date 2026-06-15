@@ -104,6 +104,10 @@ RL warmstarts; those outputs are normalized, dataset-gated, and kept non-exporta
 until a fine-tune scorecard passes. `FORGE_SYSID_FIT_CMD` can supply live system-ID
 results in the same artifact contract; external fits must include enough samples, an
 accepted fit, and a non-empty sim patch before the worker marks them accepted.
+`FORGE_MJX_BENCH_CMD` can supply P7-010 benchmark rows; the normalized report
+requires D12 quad, D12 rover, and legged coverage, then adopts MJX only when CPU
+MuJoCo/SB3 needs help, parity stays inside frozen bands, and cost-normalized
+throughput is at least 3x.
 
 ### 3.5 `workers/bridge` — config, recorder, supervisor (P8)
 `bridge.config-diff` compiles deployment config diffs with physical-confirmation

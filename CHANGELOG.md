@@ -18,6 +18,23 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Normalize MJX benchmark adoption reports
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7/P9 · **TODO items:** P7-010 [~], P9-005 [~]
+**Done:** Added a normalized MJX benchmark report for `FORGE_MJX_BENCH_CMD` and
+payload-supplied benchmark rows. The report now requires D12 quad, D12 rover, and
+one legged morphology, applies the P7-010 rule for CPU need, frozen parity bands,
+and at least 3x cost-normalized throughput, and blocks adoption when evidence is
+missing or malformed.
+**Changed:** `workers/forge_workers/simulation.py`,
+`workers/tests/test_mjx_benchmark.py`, `docs/systems/compute-workers.md`,
+`docs/systems/learning-engine.md`, `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Run the report against real D12 quad, D12 rover, and legged MuJoCo/MJX
+benchmarks, then wire P9 tier-2/3 batching only if the report adopts MJX.
+**Blockers:** real benchmark evidence and engine-backed tier-2/3 execution remain
+open.
+
 ## 2026-06-15 — Normalize external system-ID fits
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P8/P7 · **TODO items:** P8-005 [~]
 **Done:** Hardened `FORGE_SYSID_FIT_CMD` output so external bench/log adapters
