@@ -18,6 +18,19 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Compute maintenance ghost divergence
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~]
+**Done:** Extended `maintenance.crash-forensics` so crash windows now compute ghost
+divergence from actual/predicted position samples, emit RMS/max divergence,
+tracking/diverged status, and scrub-frame counts for the replay window.
+**Changed:** `workers/forge_workers/maintenance.py`,
+`workers/tests/test_maintenance_handoffs.py`, `docs/systems/platform.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Feed this worker with a real Desktop-captured field log and compare the
+visible Studio scrubber against the emitted divergence status.
+**Blockers:** real Desktop field-log capture remains open.
+
 ## 2026-06-15 — Attach maintenance repair handoffs in worker output
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~], P12-003 [x], P12-004 [~]
 **Done:** Enriched `maintenance.repair-sheet` so repair steps can carry vendor

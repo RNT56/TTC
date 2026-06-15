@@ -106,10 +106,10 @@ flywheel spins again.
 
 Live 2026-06-14: `telemetry_logs`, `maintenance_records`, and
 `/v1/maintenance/records` provide the authenticated record scaffold. Worker jobs now
-compute wear estimates, crash windows, ordered repair sheets with reorder SKUs,
-vendor offer handoffs, print quote handoffs, and fleet service summaries; fixture
-job creation materializes matching outputs into the data-plane tables. Studio now
-renders the maintenance twin dashboard: fleet
+compute wear estimates, crash windows with computed ghost-divergence RMS/max
+metrics, ordered repair sheets with reorder SKUs, vendor offer handoffs, print quote
+handoffs, and fleet service summaries; fixture job creation materializes matching
+outputs into the data-plane tables. Studio now renders the maintenance twin dashboard: fleet
 counts, due service, critical state, next actions, wear estimates, crash-window
 scrubbing with ghost divergence status, repair steps, reorder rows, and repair
 handoff links. Studio can refresh vendor quote/link handoffs from repair SKUs and

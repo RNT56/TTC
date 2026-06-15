@@ -62,15 +62,61 @@ def crash_forensics(payload: dict[str, Any]) -> dict[str, Any]:
     pre = float(payload.get("preS", 2.0))
     post = float(payload.get("postS", 4.0))
     first_t = float(samples[0].get("t", t))
+    window = {"startS": max(first_t, t - pre), "impactS": t, "endS": t + post}
+    ghost = _ghost_divergence(samples, window["startS"], window["endS"], float(payload.get("ghostWarnM", 0.35)))
     return {
         "artifactKind": "crash-forensics",
         "crashDetected": True,
-        "window": {"startS": max(first_t, t - pre), "impactS": t, "endS": t + post},
+        "window": window,
         "ghostOverlay": {
             "enabled": True,
             "divergenceMetric": payload.get("divergenceMetric", "position-rmse"),
+            "divergence": ghost,
+        },
+        "scrub": {
+            "frameCount": sum(1 for sample in samples if window["startS"] <= float(sample.get("t", 0)) <= window["endS"]),
+            "preS": pre,
+            "postS": post,
         },
     }
+
+
+def _ghost_divergence(samples: list[Any], start_s: float, end_s: float, warn_m: float) -> dict[str, Any]:
+    distances: list[float] = []
+    for sample in samples:
+        if not isinstance(sample, dict):
+            continue
+        t = float(sample.get("t", 0))
+        if t < start_s or t > end_s:
+            continue
+        actual = _position(sample, "positionM", "actualPositionM", "actual")
+        ghost = _position(sample, "ghostPositionM", "predictedPositionM", "ghost")
+        if actual is None or ghost is None:
+            continue
+        distances.append(sum((a - b) ** 2 for a, b in zip(actual, ghost)) ** 0.5)
+    if not distances:
+        return {"sampleCount": 0, "maxM": None, "rmsM": None, "warnM": warn_m, "status": "missing"}
+    rms = (sum(distance * distance for distance in distances) / len(distances)) ** 0.5
+    max_m = max(distances)
+    return {
+        "sampleCount": len(distances),
+        "maxM": round(max_m, 4),
+        "rmsM": round(rms, 4),
+        "warnM": warn_m,
+        "status": "diverged" if max_m >= warn_m else "tracking",
+    }
+
+
+def _position(sample: dict[str, Any], *keys: str) -> list[float] | None:
+    for key in keys:
+        value = sample.get(key)
+        if isinstance(value, list) and len(value) >= 3:
+            return [float(value[0]), float(value[1]), float(value[2])]
+        if isinstance(value, dict):
+            nested = value.get("positionM") or value.get("xyz")
+            if isinstance(nested, list) and len(nested) >= 3:
+                return [float(nested[0]), float(nested[1]), float(nested[2])]
+    return None
 
 
 def repair_sheet(payload: dict[str, Any]) -> dict[str, Any]:

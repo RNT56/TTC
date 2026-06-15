@@ -392,7 +392,9 @@ Owns: `P12-002`, `P12-004`, P12 open exit criterion.
 Scope:
 
 - Crash-forensics scrubber UI over ghost separation and last-seconds replay
-  windows is live in Studio as of 2026-06-14 for materialized maintenance records.
+  windows is live in Studio as of 2026-06-14 for materialized maintenance records;
+  worker outputs now include computed ghost-divergence RMS/max/status and scrub-frame
+  counts when actual/predicted positions are present.
 - Fleet dashboard is live in Studio as of 2026-06-14 with vehicle counts, due
   maintenance, next actions, wear, repairs, crash windows, reorder rows, and
   vendor/print quote handoff links where the platform commerce rows exist.

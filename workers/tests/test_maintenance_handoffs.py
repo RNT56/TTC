@@ -1,4 +1,27 @@
-from forge_workers.maintenance import repair_sheet
+from forge_workers.maintenance import crash_forensics, repair_sheet
+
+
+def test_crash_forensics_computes_ghost_divergence_for_scrub_window():
+    result = crash_forensics(
+        {
+            "thresholdG": 8,
+            "ghostWarnM": 0.5,
+            "samples": [
+                {"t": 0.0, "accelG": 1, "positionM": [0, 0, 0], "ghostPositionM": [0, 0, 0]},
+                {"t": 1.0, "accelG": 2, "positionM": [1, 0, 0], "ghostPositionM": [0.8, 0, 0]},
+                {"t": 2.0, "accelG": 9, "positionM": [2, 0, 0], "ghostPositionM": [1.1, 0, 0]},
+                {"t": 3.0, "accelG": 3, "positionM": [3, 0, 0], "ghostPositionM": [1.9, 0, 0]},
+            ],
+        }
+    )
+
+    divergence = result["ghostOverlay"]["divergence"]
+    assert result["crashDetected"]
+    assert result["window"] == {"startS": 0.0, "impactS": 2.0, "endS": 6.0}
+    assert result["scrub"]["frameCount"] == 4
+    assert divergence["sampleCount"] == 4
+    assert divergence["status"] == "diverged"
+    assert divergence["maxM"] == 1.1
 
 
 def test_repair_sheet_attaches_vendor_and_print_handoff_links():
