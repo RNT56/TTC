@@ -31,7 +31,7 @@ phase-level state only. Parallel execution order and subworker ownership live in
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(2026-06-14: `forge-validate env`, expanded EnvSpec runtime checks, course-to-task adapter, courses/leaderboards/replay verification tables and routes, server-side leaderboard replay verification, Studio fixture course/score panel; full environment generation and board UI open)* | 3–4 wk |
 | P11 Platform | ◑ *(2026-06-14: Auth.js GitHub, credits, user-owned models, listings/moderation reports, platform gates, policy signoffs, classroom assignments/submissions with validator grading, policy ONNX metadata, DfM/3MF metadata, owner-scoped object blobs, executable job queue, usage-beta rollups, vendor offer APIs, print quote/link APIs, and Studio commerce/gate rows; external provider integrations still env-gated)* | open |
-| P12 Maintenance twin | ◑ *(2026-06-14: wear models, crash windows, repair-sheet generation, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and vendor/print quote-link surfacing; full scrubber/fleet dashboards open)* | 3 wk |
+| P12 Maintenance twin | ◑ *(2026-06-15: wear models, crash windows, repair-sheet generation with vendor/print handoff links, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and quote-link surfacing; real field-log evidence remains open)* | 3 wk |
 
 Sequencing rationale (D1–D4): verify-first means P3 (catalog truth) ships and gets
 attention before P4 (generation GA); sharing arrives at P4; the marketplace is
@@ -240,4 +240,4 @@ repair-steps-from-explode with reorder links, fleet view.
 **Owning docs:** [`systems/platform.md`](systems/platform.md) §6.
 
 Exit criteria:
-- [ ] A logged crash produces an actionable repair sheet with vendor/print quote links
+- [~] A logged crash produces an actionable repair sheet with vendor/print quote links *(worker repair sheets now preserve supplied vendor/print handoff links; real Desktop-captured crash proof open)*

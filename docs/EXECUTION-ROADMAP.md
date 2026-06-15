@@ -396,8 +396,10 @@ Scope:
 - Fleet dashboard is live in Studio as of 2026-06-14 with vehicle counts, due
   maintenance, next actions, wear, repairs, crash windows, reorder rows, and
   vendor/print quote handoff links where the platform commerce rows exist.
-- Close the logged-crash exit criterion by producing an actionable repair sheet
-  with vendor and print quote links.
+- `maintenance.repair-sheet` now preserves vendor offer and print quote handoff
+  links directly on ordered repair steps when those links are supplied.
+- Close the logged-crash exit criterion with real Desktop-captured telemetry and
+  live vendor/print quote rows.
 
 Dependencies:
 
@@ -408,7 +410,8 @@ Dependencies:
 Acceptance:
 
 - A logged crash produces a repair sheet ordered by explode chain, with reorder
-  SKUs plus vendor and print quote handoff links where needed.
+  SKUs plus vendor and print quote handoff links where needed. The worker contract
+  is live; real logged-crash evidence remains open.
 - Fleet dashboard reflects the maintenance records produced by worker jobs.
 
 ### Track R - owner/legal/release gates

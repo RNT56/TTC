@@ -189,8 +189,8 @@ Studio (TypeScript face):
 
 ### P12 — Maintenance twin
 - [x] P12-001 — Wear models: motor hours, pack cycle counts, R_int drift from logged sag *(2026-06-14: Rust helper and maintenance worker compute wear from telemetry)*
-- [~] P12-002 — Crash forensics workflow: scrub-last-seconds with ghost separation *(2026-06-14: crash-window and ghost-overlay metadata live, materialized to `maintenance_records`, and Studio now has a crash scrubber over the last-seconds window with ghost divergence status; repair sheets surface vendor/print handoff links when commerce rows exist; real Desktop-captured field-log proof remains open)*
-- [x] P12-003 — Repair sheets: explode chain order → repair steps + reorder links *(2026-06-14: Rust helper and maintenance worker generate ordered repair steps/reorder SKUs; Studio can refresh vendor quote/link handoffs from repair SKUs without direct carts)*
+- [~] P12-002 — Crash forensics workflow: scrub-last-seconds with ghost separation *(2026-06-14/15: crash-window and ghost-overlay metadata live, materialized to `maintenance_records`, and Studio now has a crash scrubber over the last-seconds window with ghost divergence status; repair sheets preserve vendor/print handoff links when commerce rows exist; real Desktop-captured field-log proof remains open)*
+- [x] P12-003 — Repair sheets: explode chain order → repair steps + reorder links *(2026-06-15: Rust helper and maintenance worker generate ordered repair steps/reorder SKUs; worker steps now attach vendor offer and print quote handoff links supplied by commerce rows; Studio can refresh vendor quote/link handoffs without direct carts)*
 - [~] P12-004 — Fleet view *(2026-06-14: fleet-summary worker live; maintenance job outputs materialize records; Studio now renders a fleet dashboard with counts, due service, critical state, next actions, wear, crash, repair, reorder rows, and vendor/print handoff links; live fleet data/field evidence remains open)*
 
 ## 3. Cross-cutting backlog (XC) — tracked from day one

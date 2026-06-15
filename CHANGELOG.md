@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Attach maintenance repair handoffs in worker output
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P12 · **TODO items:** P12-002 [~], P12-003 [x], P12-004 [~]
+**Done:** Enriched `maintenance.repair-sheet` so repair steps can carry vendor
+offer handoff links and print quote links supplied by the commerce layer, including
+per-step `quoteReady`, flattened `quoteLinks`, and `handoffCount`. The worker still
+produces ordered repair steps when no quote links are present.
+**Changed:** `workers/forge_workers/maintenance.py`,
+`workers/tests/test_maintenance_handoffs.py`, `docs/systems/platform.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `docs/ROADMAP.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Run the end-to-end P12 proof with a Desktop-captured crash log plus live
+vendor/print quote rows.
+**Blockers:** real field-log evidence and live commerce provider rows remain open.
+
 ## 2026-06-14 — Normalize external offline learning warmstarts
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7 · **TODO items:** P7-009 [~]
 **Done:** Hardened `FORGE_OFFLINE_RL_CMD` results so external behavior-cloning or

@@ -96,8 +96,9 @@ After deployment the model becomes the living manual:
 - **Crash forensics**: scrub the last seconds, watch where the ghost separated
   (P12-002).
 - **Repair sheets**: damage assessment maps to the explode view as **repair steps in
-  chain order with reorder links** — a logged crash produces an actionable repair
-  sheet with parts in the cart (P12-003, the phase exit criterion).
+  chain order with reorder and quote handoff links** — a logged crash produces an
+  actionable repair sheet with vendor/print provider links, while checkout stays
+  off-platform (P12-003, the phase exit criterion).
 - **Fleet view** for multi-machine users (P12-004).
 
 The model outlives the build — and pulls the user back into the loop where the
@@ -105,13 +106,15 @@ flywheel spins again.
 
 Live 2026-06-14: `telemetry_logs`, `maintenance_records`, and
 `/v1/maintenance/records` provide the authenticated record scaffold. Worker jobs now
-compute wear estimates, crash windows, ordered repair sheets with reorder SKUs, and
-fleet service summaries; fixture job creation materializes matching outputs into
-the data-plane tables. Studio now renders the maintenance twin dashboard: fleet
+compute wear estimates, crash windows, ordered repair sheets with reorder SKUs,
+vendor offer handoffs, print quote handoffs, and fleet service summaries; fixture
+job creation materializes matching outputs into the data-plane tables. Studio now
+renders the maintenance twin dashboard: fleet
 counts, due service, critical state, next actions, wear estimates, crash-window
 scrubbing with ghost divergence status, repair steps, reorder rows, and repair
 handoff links. Studio can refresh vendor quote/link handoffs from repair SKUs and
-surface print quote links without direct carts. The
+surface print quote links without direct carts; the worker now preserves those links
+directly on repair-sheet steps when supplied. The
 remaining P12 work is real Desktop-captured field-log evidence and live reorder/
 print quote integrations.
 

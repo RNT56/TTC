@@ -77,6 +77,8 @@ def repair_sheet(payload: dict[str, Any]) -> dict[str, Any]:
     parts = payload.get("parts", [])
     damaged_nodes = set(str(node) for node in payload.get("damagedNodes", []))
     vendor_skus = payload.get("vendorSkus", {})
+    vendor_offers = _vendor_offer_index(payload.get("vendorOffers", payload.get("vendorOfferLinks", [])))
+    print_quotes = _print_quote_index(payload.get("printQuotes", payload.get("printQuoteOffers", [])))
     if not isinstance(parts, list):
         raise ValueError("maintenance.repair-sheet parts must be a list")
     rows: list[tuple[float, int, dict[str, Any]]] = []
@@ -92,16 +94,97 @@ def repair_sheet(payload: dict[str, Any]) -> dict[str, Any]:
     steps = []
     for order, (_, index, part) in enumerate(rows, start=1):
         comp = part.get("comp")
+        node = str(part.get("node"))
+        reorder_sku = vendor_skus.get(comp) if isinstance(vendor_skus, dict) else None
+        vendor_offer = vendor_offers.get(str(reorder_sku)) if reorder_sku else None
+        print_quote = _match_print_quote(print_quotes, part, index)
+        handoff_links = []
+        if vendor_offer:
+            handoff_links.append({"kind": "vendor-offer", **vendor_offer})
+        if print_quote:
+            handoff_links.append({"kind": "print-quote", **print_quote})
         steps.append(
             {
                 "order": order,
-                "node": part.get("node"),
+                "node": node,
                 "partIndex": index,
                 "action": f"remove, inspect, and replace part {index}",
-                "reorderSku": vendor_skus.get(comp) if isinstance(vendor_skus, dict) else None,
+                "reorderSku": reorder_sku,
+                "dfmArtifactId": part.get("dfmArtifactId"),
+                "vendorOffer": vendor_offer,
+                "printQuote": print_quote,
+                "handoffLinks": handoff_links,
+                "quoteReady": bool(handoff_links),
             }
         )
-    return {"artifactKind": "repair-sheet", "steps": steps, "reorderCount": sum(1 for s in steps if s["reorderSku"])}
+    quote_links = [link for step in steps for link in step["handoffLinks"]]
+    return {
+        "artifactKind": "repair-sheet",
+        "steps": steps,
+        "reorderCount": sum(1 for s in steps if s["reorderSku"]),
+        "handoffCount": len(quote_links),
+        "quoteLinks": quote_links,
+    }
+
+
+def _vendor_offer_index(raw: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(raw, list):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for offer in raw:
+        if not isinstance(offer, dict):
+            continue
+        sku = offer.get("sku") or offer.get("vendorSku") or offer.get("reorderSku")
+        url = offer.get("url") or offer.get("offerUrl") or offer.get("handoffUrl")
+        if not sku or not url:
+            continue
+        out[str(sku)] = {
+            "sku": str(sku),
+            "provider": str(offer.get("provider", offer.get("vendor", "vendor"))),
+            "url": str(url),
+            "price": offer.get("price"),
+            "currency": offer.get("currency"),
+        }
+    return out
+
+
+def _print_quote_index(raw: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for quote in raw:
+        if not isinstance(quote, dict):
+            continue
+        url = quote.get("url") or quote.get("quoteUrl") or quote.get("handoffUrl")
+        if not url:
+            continue
+        out.append(
+            {
+                "node": str(quote["node"]) if "node" in quote else None,
+                "comp": str(quote["comp"]) if "comp" in quote else None,
+                "partIndex": int(quote["partIndex"]) if isinstance(quote.get("partIndex"), int) else None,
+                "dfmArtifactId": str(quote["dfmArtifactId"]) if "dfmArtifactId" in quote else None,
+                "provider": str(quote.get("provider", "print-provider")),
+                "url": str(url),
+                "material": quote.get("material"),
+                "price": quote.get("price"),
+                "currency": quote.get("currency"),
+            }
+        )
+    return out
+
+
+def _match_print_quote(quotes: list[dict[str, Any]], part: dict[str, Any], part_index: int) -> dict[str, Any] | None:
+    for quote in quotes:
+        if quote.get("partIndex") == part_index:
+            return quote
+        if quote.get("dfmArtifactId") and quote.get("dfmArtifactId") == part.get("dfmArtifactId"):
+            return quote
+        if quote.get("node") and quote.get("node") == str(part.get("node")):
+            return quote
+        if quote.get("comp") and quote.get("comp") == str(part.get("comp")):
+            return quote
+    return None
 
 
 def fleet_summary(payload: dict[str, Any]) -> dict[str, Any]:
