@@ -410,15 +410,7 @@ def fit_sysid(payload: dict[str, Any]) -> dict[str, Any]:
         timeout_s=float(payload.get("timeoutS", 1800)),
     )
     if external is not None:
-        if external.get("artifactKind") == "sysid":
-            return external
-        return {
-            "artifactKind": "sysid",
-            "sampleCount": external.get("sampleCount", len(payload.get("samples", [])) if isinstance(payload.get("samples"), list) else 0),
-            "fit": external.get("fit", {}),
-            "simPatch": external.get("simPatch", []),
-            "rejectReason": external.get("rejectReason"),
-        }
+        return _external_sysid_result(external, payload)
     samples = payload.get("samples", [])
     sample_count = len(samples) if isinstance(samples, list) else 0
     accepted = sample_count >= 3
@@ -450,6 +442,38 @@ def fit_sysid(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "simPatch": [{"op": "replace", "path": "/sim/battery/r_int_mohm", "value": round(r_int_mohm, 3)}] if accepted and r_int_mohm is not None else [],
         "rejectReason": None if accepted else "system-ID requires at least 3 telemetry samples",
+    }
+
+
+def _external_sysid_result(external: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+    raw_fit = external.get("fit") if isinstance(external.get("fit"), dict) else {}
+    sample_count = _int(external.get("sampleCount"), len(payload.get("samples", [])) if isinstance(payload.get("samples"), list) else 0)
+    sim_patch = external.get("simPatch") if isinstance(external.get("simPatch"), list) else []
+    r_int = _number(raw_fit.get("rIntMohm", external.get("rIntMohm")), None)
+    accepted_claim = bool(raw_fit.get("accepted", external.get("accepted", False)))
+    reasons: list[str] = []
+    if sample_count < 3:
+        reasons.append("system-ID requires at least 3 telemetry samples")
+    if not accepted_claim:
+        reasons.append("external system-ID fit was not marked accepted")
+    if not sim_patch:
+        reasons.append("system-ID fit requires a simPatch")
+    accepted = not reasons
+    return {
+        "artifactKind": "sysid",
+        "provider": external.get("provider", "external-sysid"),
+        "sampleCount": sample_count,
+        "fit": {
+            "batterySagRmse": raw_fit.get("batterySagRmse", external.get("batterySagRmse")),
+            "currentRmseA": raw_fit.get("currentRmseA", external.get("currentRmseA")),
+            "rIntMohm": r_int,
+            "frictionScale": _number(raw_fit.get("frictionScale", external.get("frictionScale")), 1.0),
+            "timeConstantMs": _number(raw_fit.get("timeConstantMs", external.get("timeConstantMs")), 45.0),
+            "accepted": accepted,
+            "reasons": reasons,
+        },
+        "simPatch": sim_patch if accepted else [],
+        "rejectReason": None if accepted else reasons[0],
     }
 
 

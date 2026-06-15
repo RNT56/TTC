@@ -18,6 +18,21 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Normalize external system-ID fits
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P8/P7 · **TODO items:** P8-005 [~]
+**Done:** Hardened `FORGE_SYSID_FIT_CMD` output so external bench/log adapters
+normalize into the same `train.sysid-fit` artifact shape as fixtures. Live fits now
+require at least three samples, an accepted fit, and a non-empty `simPatch`; otherwise
+they fail closed without updating the contract sim block.
+**Changed:** `workers/forge_workers/training/jobs.py`,
+`workers/tests/test_training_live_adapter.py`, `docs/systems/compute-workers.md`,
+`docs/systems/learning-engine.md`, `docs/TODO.md`, `docs/ROADMAP.md`,
+`CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Run the external sys-ID command on real D12 bench/flight telemetry and
+apply the emitted sim patch in the lab evidence flow.
+**Blockers:** real bench/flight telemetry remains open.
+
 ## 2026-06-15 — Emit leaderboard dimensions from replay verification
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10 · **TODO items:** P10-005 [~]
 **Done:** Extended `replay.verify` output with durable leaderboard dimensions

@@ -1,7 +1,7 @@
 import json
 import sys
 
-from forge_workers.training.jobs import train_offline_bc, train_policy
+from forge_workers.training.jobs import fit_sysid, train_offline_bc, train_policy
 
 
 def _command(tmp_path, payload):
@@ -151,3 +151,40 @@ def test_external_offline_bc_fails_closed_without_actions(tmp_path, monkeypatch)
     assert result["rejectReason"] == "offline BC requires at least 3 samples"
     assert "offline BC requires action columns" in result["notes"]
     assert not result["scorecard"]["exportable"]
+
+
+def test_external_sysid_requires_accepted_fit_and_sim_patch(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "FORGE_SYSID_FIT_CMD",
+        _offline_command(
+            tmp_path,
+            {
+                "provider": "live-bench",
+                "sampleCount": 12,
+                "fit": {"accepted": True, "rIntMohm": 38.2, "batterySagRmse": 0.03, "currentRmseA": 0.8},
+                "simPatch": [{"op": "replace", "path": "/sim/battery/r_int_mohm", "value": 38.2}],
+            },
+        ),
+    )
+
+    result = fit_sysid({"samples": [{"t": 0}, {"t": 1}, {"t": 2}]})
+
+    assert result["provider"] == "live-bench"
+    assert result["fit"]["accepted"]
+    assert result["fit"]["rIntMohm"] == 38.2
+    assert result["simPatch"] == [{"op": "replace", "path": "/sim/battery/r_int_mohm", "value": 38.2}]
+    assert result["rejectReason"] is None
+
+
+def test_external_sysid_fails_closed_without_patch(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "FORGE_SYSID_FIT_CMD",
+        _offline_command(tmp_path, {"provider": "live-bench", "sampleCount": 2, "fit": {"accepted": True}}),
+    )
+
+    result = fit_sysid({})
+
+    assert not result["fit"]["accepted"]
+    assert result["simPatch"] == []
+    assert result["rejectReason"] == "system-ID requires at least 3 telemetry samples"
+    assert "system-ID fit requires a simPatch" in result["fit"]["reasons"]

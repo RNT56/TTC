@@ -88,6 +88,11 @@ normalizes external output into a dataset and warmstart artifact, validates samp
 count and action columns, and always keeps the scorecard non-exportable until a
 separate live fine-tune/evaluation run passes the policy gate.
 
+System-ID follows the same fail-closed rule for P8: `FORGE_SYSID_FIT_CMD` output is
+normalized through `train.sysid-fit`, and a live bench/log fit is accepted only when
+it has at least three samples, an accepted fit marker, and a non-empty contract
+`simPatch`.
+
 ## 7. Pipeline
 
 `train-policy` job: contract → MJCF compile → env build (task + randomization) → SB3

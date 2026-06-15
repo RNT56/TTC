@@ -194,7 +194,7 @@ Exit criteria:
 - [ ] A real quad configured from its contract via WebSerial
 - [~] SITL → HITL → tethered demonstrated and documented on the reference quad *(D30 accepted; dry-run pilot playbooks and `pnpm pilot:check` live; real HITL/tethered execution awaits lab adapter/evidence capture)*
 - [ ] **A field log captured by FORGE Desktop replays with visible ghost divergence**
-- [ ] System-ID fit updates the contract's sim block from bench/flight telemetry
+- [~] System-ID fit updates the contract's sim block from bench/flight telemetry *(worker/external sys-ID patch contract live; real bench/flight telemetry proof open)*
 
 ## P9 — Co-design optimizer
 
