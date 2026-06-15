@@ -32,12 +32,13 @@ def verify_replay(payload: dict[str, Any]) -> dict[str, Any]:
     expected = payload.get("expectedHash")
     monotonic = all(a < b for a, b in zip(times, times[1:]))
     header = tape.get("header", {})
+    header_record = header if isinstance(header, dict) else {}
     expected_contract_hash = payload.get("expectedContractHash")
     contract_ok = (
         expected_contract_hash is None
-        or isinstance(header, dict)
-        and header.get("contractHash") == expected_contract_hash
+        or header_record.get("contractHash") == expected_contract_hash
     )
+    dimensions = _leaderboard_dimensions(payload, header_record)
     verified = expected in (None, digest) and monotonic and contract_ok
     reject_reason = None
     if expected not in (None, digest):
@@ -52,10 +53,51 @@ def verify_replay(payload: dict[str, Any]) -> dict[str, Any]:
         "tamperHash": digest,
         "frameCount": len(frames),
         "durationS": max(0.0, times[-1] - times[0]) if times else 0.0,
-        "header": header if isinstance(header, dict) else {},
-        "courseId": payload.get("courseId"),
+        "header": header_record,
+        "courseId": dimensions["courseId"],
+        "archetype": dimensions["archetype"],
+        "class": dimensions["class"],
+        "dimensions": dimensions,
         "rejectReason": reject_reason,
     }
+
+
+def _leaderboard_dimensions(payload: dict[str, Any], header: dict[str, Any]) -> dict[str, str | None]:
+    return {
+        "courseId": _first_string(payload.get("courseId"), header.get("courseId"), _nested(header, "env", "courseId")),
+        "archetype": _first_string(
+            payload.get("archetype"),
+            header.get("archetype"),
+            header.get("modelArchetype"),
+            header.get("contractArchetype"),
+        ),
+        "class": _first_string(
+            payload.get("class"),
+            payload.get("className"),
+            header.get("class"),
+            header.get("modelClass"),
+            header.get("boardClass"),
+        ),
+        "modelId": _first_string(payload.get("modelId"), header.get("modelId")),
+        "policyId": _first_string(payload.get("policyId"), header.get("policyId")),
+        "contractHash": _first_string(header.get("contractHash")),
+    }
+
+
+def _nested(value: dict[str, Any], *path: str) -> Any:
+    current: Any = value
+    for key in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+def _first_string(*values: Any) -> str | None:
+    for value in values:
+        if isinstance(value, str) and value:
+            return value
+    return None
 
 
 @registry.register("replay.verify")

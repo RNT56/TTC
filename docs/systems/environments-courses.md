@@ -50,8 +50,10 @@ monotonic timestamps, and optional contract-hash checks.
 
 Live Studio board UI (2026-06-14) shows the selected course's verified/held runs
 with filters for EnvSpec-derived archetype, verification-header class, and official
-verification status. Durable server-side archetype/class columns remain the next
-leaderboard data-model step before P10-005 can close.
+verification status. Live 2026-06-15: `replay.verify` emits those durable dimensions
+(`courseId`, `archetype`, `class`, `modelId`, `policyId`, `contractHash`) in its
+verification payload. Persisting them as first-class server-side columns remains the
+next leaderboard data-model step before P10-005 can close.
 
 ## 5. Courses as RL tasks (P10-006)
 

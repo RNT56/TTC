@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Emit leaderboard dimensions from replay verification
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10 · **TODO items:** P10-005 [~]
+**Done:** Extended `replay.verify` output with durable leaderboard dimensions
+derived from replay headers or payload metadata: course id, archetype, board class,
+model id, policy id, and contract hash. Existing hash/timestamp/contract checks stay
+unchanged.
+**Changed:** `workers/forge_workers/replay.py`,
+`workers/tests/test_replay_dimensions.py`, `docs/systems/environments-courses.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Persist these dimensions as first-class leaderboard columns in the gateway
+data model once the gateway lane is clear.
+**Blockers:** durable gateway/database leaderboard dimension migration remains open.
+
 ## 2026-06-15 — Wire EnvSpec courses into training tasks
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P10/P7 · **TODO items:** P10-006 [x], P7-003 [~]
 **Done:** Added a worker-side EnvSpec→P7 task compiler and wired `train.policy` to

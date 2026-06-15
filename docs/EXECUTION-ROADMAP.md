@@ -316,6 +316,8 @@ Scope:
 - Finish durable leaderboard slicing by course, archetype, and class.
 - Studio verified-board UI filters are live as of 2026-06-14 using course
   EnvSpec archetypes and replay verification headers.
+- `replay.verify` now emits course/archetype/class/model/policy dimensions in the
+  verification payload; durable gateway columns remain open.
 - `train.policy` now consumes explicit EnvSpec/course payloads directly as P7 task
   definitions, preserving course ids in ONNX and scorecard metadata.
 - Preserve server-side replay verification as the only official leaderboard path.
