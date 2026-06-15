@@ -48,6 +48,10 @@ signoff recorded in `policy_signoffs` after the `p11.policy-sharing` platform ga
 is accepted. `POST /v1/listings/:id/usage` records usage-beta views, equips, quote
 clicks, policy downloads, and training jobs into marketplace rollups. Studio now
 renders a kind/status-filtered marketplace board with row-level usage/equip actions.
+Worker-side policy transfer assessment now enforces the skill-transfer promise:
+direct transfer requires an exportable scorecard plus matching archetype and
+observation/action layouts; non-matching buyer twins receive a fine-tune offer
+instead.
 `GET/POST
 /v1/moderation/reports` records user reports with a 72-hour SLA target and
 repeat-infringer signal. Seller payouts and revenue share are intentionally absent.

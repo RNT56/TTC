@@ -32,7 +32,8 @@ Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and
 `FORGE_MJX_BENCH_CMD`; absent commands keep the deterministic fixture path as CI
 truth. `workers/forge_workers/modal_app.py` provides an optional Modal entrypoint
-without importing Modal on local/CI runs.
+without importing Modal on local/CI runs and now exposes JSON-serializable task
+profiles for burst-GPU deployment planning.
 
 ## 3. Worker families
 
@@ -79,7 +80,9 @@ can replace fixture reconstruction with a live external stack while preserving t
 same output shape. Command results are normalized back into permanent cache
 metadata, D13 acceptance/reject reasons, pipeline stages, and SLO evidence; missing
 fit/Hausdorff metrics fail closed to mesh-class review. Modal is available only
-through an injected adapter when configured.
+through an injected adapter when configured; the Modal profile pins 300 s timeouts,
+GPU use, permanent-cache requirements, and the live command env for each photoscan
+path.
 
 ### 3.4 `workers/training` — RL + system ID (P7/P8)
 `train.policy` (MJCF → SB3 PPO/SAC → ONNX + scorecard — details in
@@ -108,6 +111,10 @@ accepted fit, and a non-empty sim patch before the worker marks them accepted.
 requires D12 quad, D12 rover, and legged coverage, then adopts MJX only when CPU
 MuJoCo/SB3 needs help, parity stays inside frozen bands, and cost-normalized
 throughput is at least 3x.
+The optional Modal app profiles `train.policy` for SB3/MuJoCo/ONNX dependencies and
+`codesign.evaluate` for MuJoCo/Optuna plus the live co-design/parity/MJX command
+hooks; deployments still need real images, credentials, and benchmark evidence
+before claiming live GPU SLOs.
 
 ### 3.5 `workers/bridge` — config, recorder, supervisor (P8)
 `bridge.config-diff` compiles deployment config diffs with physical-confirmation
@@ -130,7 +137,8 @@ Burst-only (Modal by default): no idle GPU. Job cost is metered to credits (D3) 
 transparent cost-plus. Permanent caching is the cost ceiling: cache key =
 content hash of inputs (photos / contract+lockfile+task+seed). The fixture adapter is
 the default; live Modal jobs require deployment configuration and are optional smoke
-tests, not CI prerequisites.
+tests, not CI prerequisites. Modal runtime profiles are test-covered in CI, but
+performance and provider billing are proved only by explicit live suites.
 
 ## 5. Dependencies
 

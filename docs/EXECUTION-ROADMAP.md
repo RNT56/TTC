@@ -178,6 +178,9 @@ Scope:
   adapters now normalize TRELLIS/COLMAP outputs into the same D13/cache/SLO contract
   and fail closed when fit/Hausdorff metrics are missing; real TRELLIS/COLMAP runtime
   execution remains open.
+- Modal task profiles now pin the photoscan/COLMAP deployment contract: GPU use,
+  300 s timeout, permanent cache, command env, and package expectations. Live Modal
+  image execution and under-5-minute proof remain open.
 - Land real live COLMAP multi-view reconstruction on the deployment image.
 - Prove permanent object-cache behavior and the 5-minute burst-GPU SLO with real
   GPU evidence.
@@ -208,7 +211,8 @@ Scope:
   reach, and track.
 - Replace fixture `train.policy` with live seeded SB3 PPO/SAC runs. External SB3
   outputs now normalize through the same `p7-scorecard-v1` export gate, but real
-  engine-backed training evidence remains open.
+  engine-backed training evidence remains open. The Modal profile declares
+  SB3/MuJoCo/ONNX runtime dependencies and the live command hook for that path.
 - Add ONNX Runtime Web inference so browser playback uses real exportable policy
   outputs, not only fixture action headers.
 - `train.offline-bc` now builds deterministic telemetry warmstart datasets and
@@ -287,6 +291,9 @@ Scope:
 - Persisted/openable Pareto point UI is live in Studio as of 2026-06-14 for
   admitted patch candidates; worker-side constrained 200-candidate Pareto depth is
   live, while engine-backed explorer evaluation remains open.
+- The Modal profile for `codesign.evaluate` now declares MuJoCo/Optuna plus
+  co-design, parity, and MJX command hooks; live engine-backed tier-2/3 execution
+  remains open.
 - Add MJX batching for tier 2/3 only if the P7-010 benchmark report adopts it;
   batching remains blocked until real D12 quad, D12 rover, and legged evidence
   passes the report.
@@ -349,7 +356,10 @@ Scope:
 - Studio now has a marketplace board with kind/status filters and per-listing
   usage-beta actions for view, equip, policy download, quote click, and training
   job events; public curation state remains open.
-- Finish skills marketplace transfer/fine-tune offer for non-matching twins.
+- Skills marketplace transfer assessment is now a tested worker helper: direct
+  transfer requires exportable scorecards plus matching archetype and
+  observation/action layout, and non-matching twins receive a fine-tune offer.
+  Public route/Studio wiring and live fine-tune execution remain open.
 - Connect live vendor offer providers for catalog slots behind env-gated,
   sandboxable refresh.
 - Finish DfM/3MF printed-parts BOM section and print-provider quote/link handoff.

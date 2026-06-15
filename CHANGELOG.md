@@ -18,6 +18,38 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-15 — Add Modal task runtime profiles
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P5/P7/P9 · **TODO items:** P5-006 [~], P7-003 [~], P9-002 [~]
+**Done:** Added test-covered Modal runtime profiles for `photoscan.single`,
+`photoscan.multiview`, `train.policy`, `train.offline-bc`, `train.sysid-fit`, and
+`codesign.evaluate`. Profiles now declare GPU expectations, timeouts, package
+sets, command env hooks, permanent-cache requirements, and photoscan SLO metadata
+without importing Modal in local/CI runs.
+**Changed:** `workers/forge_workers/modal_app.py`,
+`workers/tests/test_modal_app.py`, `docs/systems/compute-workers.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Build/deploy the Modal image with real TRELLIS/COLMAP/SB3/MuJoCo/Optuna
+commands and run the optional live GPU smoke suites.
+**Blockers:** provider credentials, live dependency images, and real SLO/benchmark
+evidence remain open.
+
+## 2026-06-15 — Assess policy transfer compatibility for skills
+**Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P11/P7 · **TODO items:** P11-003 [~]
+**Done:** Added a worker-side policy transfer assessor for skills marketplace
+listings. It allows direct transfer only when the policy is exportable and the
+buyer twin has matching archetype, observation layout, and action layout; otherwise
+it returns an explicit fine-tune-against-buyer-twin offer, or blocks non-exportable
+policies.
+**Changed:** `workers/forge_workers/policy_transfer.py`,
+`workers/tests/test_policy_transfer.py`, `docs/systems/platform.md`,
+`docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Wire this assessor into the public policy-listing/equip route once the
+gateway/Studio lane is clear, then run it against real ONNX headers and buyer
+twins.
+**Blockers:** public marketplace routing and live fine-tune execution remain open.
+
 ## 2026-06-15 — Normalize MJX benchmark adoption reports
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P7/P9 · **TODO items:** P7-010 [~], P9-005 [~]
 **Done:** Added a normalized MJX benchmark report for `FORGE_MJX_BENCH_CMD` and
