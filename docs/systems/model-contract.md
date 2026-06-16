@@ -78,7 +78,10 @@ compounds within budget (CTR-007); lockfile fully resolved (CTR-006).
 geoms→mesh-ref parts, collision geoms→primitive collision parts, joints→joint
 blocks. The deterministic subset imports to schema-valid, slotless contracts from
 static fixtures (`crates/forge-sim/tests/fixtures/import_rover.*`); external
-driveable robot import is still the P6 exit criterion.
+external driveable robot import is live as of 2026-06-15 for the URDF/MJCF
+rover fixtures: primitive visuals stay bakeable, imported parts carry explode
+windows, inferred rover driver params pass CTR-008, and the full validator
+admits the resulting contracts before a `RoverDriver` one-meter smoke.
 
 ## 7. Versioning & migrations
 

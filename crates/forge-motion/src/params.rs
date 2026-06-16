@@ -64,7 +64,10 @@ pub fn check_driver_params(spec: &ModelSpec) -> Result<(), String> {
         Archetype::Quadruped => serde_json::from_value::<crate::quadruped::QuadrupedParams>(params)
             .map(|_| ())
             .map_err(|e| format!("quadruped params: {e}")),
-        // biped / arm / fixedwing drivers land P2+; no schema to enforce yet
+        Archetype::Arm => serde_json::from_value::<crate::arm::ArmParams>(params)
+            .map(|_| ())
+            .map_err(|e| format!("arm params: {e}")),
+        // biped / fixedwing drivers have no strict param schema yet
         _ => Ok(()),
     }
 }
@@ -75,6 +78,7 @@ pub fn params_schema(archetype: &Archetype) -> Option<String> {
         Archetype::Multirotor => schemars::schema_for!(MultirotorParamsDto),
         Archetype::Rover => schemars::schema_for!(RoverParamsDto),
         Archetype::Quadruped => schemars::schema_for!(crate::quadruped::QuadrupedParams),
+        Archetype::Arm => schemars::schema_for!(crate::arm::ArmParams),
         _ => return None,
     };
     Some(serde_json::to_string_pretty(&schema).expect("schema serializes"))
@@ -121,10 +125,24 @@ mod tests {
             Archetype::Multirotor,
             Archetype::Rover,
             Archetype::Quadruped,
+            Archetype::Arm,
         ] {
             let s = params_schema(&a).unwrap();
             assert!(s.contains("$schema") || s.contains("properties"), "{s}");
         }
         assert!(params_schema(&Archetype::Biped).is_none());
+    }
+
+    #[test]
+    fn arm_params_are_checked() {
+        let spec = spec_with(
+            "arm",
+            serde_json::json!({"targetM":[0.0,-0.1,0.3],"iterations":32}),
+        );
+        assert!(check_driver_params(&spec).is_ok());
+
+        let bad = spec_with("arm", serde_json::json!({"targetM":"reach there"}));
+        let err = check_driver_params(&bad).unwrap_err();
+        assert!(err.contains("arm params"), "{err}");
     }
 }

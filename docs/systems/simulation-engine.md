@@ -1,6 +1,6 @@
 # Simulation Engine (`forge-sim`) — implementation doc
 
-**Status:** deterministic sim helpers/exporters/importers live; engine-backed Rapier/MuJoCo execution still feature-gated · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
+**Status:** deterministic sim helpers/exporters/importers, engine-backed Rapier stepping, and Rapier↔MuJoCo parity live · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
 **Decisions:** D7, D8, D16, D17, D20
 
@@ -18,10 +18,18 @@ assumptions inspectable.
 
 - Bodies compiled from the contract; **per-node compound colliders within D7 budgets**
   (≤ 8 convex pieces/node, ≤ 24/model) via `forge-geometry`'s auto-fitter (XC-10).
-- Revolute joints with motors honoring contract `maxTorqueNm`/`maxVelRad`.
+  The runtime fixture compiler emits body masses/collider counts plus joint and
+  motor handoff records, and `forge_sim::rapier::RapierWorld` turns those records
+  plus fitted primitive colliders into an executable Rapier 0.33 world.
+- Fixed, revolute, and spherical joints compile from the contract. Revolute joints
+  carry axes, limits, `maxTorqueNm`, `maxVelRad`, and motor target velocity clamps.
 - Friction-materialed ground; slopes/steps native — legged contact runs here.
-- Fixed 240 Hz substeps; 120 Hz driver tick; render-interpolated; shared-memory
-  state mirror; zero per-frame allocation. Budget: ≤ 4 ms amortized (worker), inside
+- Fixed 240 Hz substeps under a 120 Hz driver tick are executable in Rust today.
+  The Studio core tick path now has a `SharedArrayBuffer` worker pose mirror
+  and perf drain (2026-06-15). Rapier also has a WASM `RapierSession` facade
+  and Studio module-worker path that builds, steps, mirrors body poses through
+  SAB, feeds the visible render loop through the Studio pose-source switch, and
+  drains a Rapier worker perf bucket. Budget: ≤ 4 ms amortized (worker), inside
   the ≤ 1.5 ms core-tick share for the models themselves.
 
 ## 3. Propulsion & battery models (the HUD's source of truth)
@@ -65,10 +73,13 @@ only (D17, superseding D6's client/server split).
   the boundary. Golden fixtures (XC-04). The `ros2_control` block and mesh visual
   manifest are explicit sidecars so the pinned URDF/MJCF goldens remain stable.
 - **Importer (P6-009):** the same mapping reversed for the deterministic subset:
-  links/bodies → nodes, visual geoms → mesh-ref parts, collision geoms → primitive
-  collision parts, joints → joint blocks. Imported models are slot-less until carved
-  in the editor. Fixture corpus starts with `import_rover.urdf` and
-  `import_rover.mjcf` (XC-05).
+  links/bodies → nodes, visual geoms → bakeable primitive parts when possible
+  and mesh refs when assets are external, collision geoms → primitive collision
+  parts, joints → joint blocks. Imported models are slot-less until carved in
+  the editor. Fixture corpus starts with `import_rover.urdf` and
+  `import_rover.mjcf` (XC-05); as of 2026-06-15 both external rover fixtures
+  validate as admitted, driveable contracts with inferred rover wheelbase and
+  conservative explode windows.
 
 ## 7. The parity discipline (D20)
 
@@ -77,10 +88,20 @@ suite — drop tests, pendulum periods, hover trim, gait CoM trajectories — as
 agreement within stated tolerances and runs on **every engine or exporter upgrade**
 (P6-010). Where they disagree, the training side is truth and the client side is
 presentation. (Distinct from the golden-number suite, which asserts *our own* code
-is bit-identical across targets — XT-001.) Current implementation has the
-deterministic fixture checks in `forge-sim::interop`, a frozen parity tolerance
-contract, and worker command seams for MuJoCo parity data. The engine-backed
-Rapier/MuJoCo runners remain feature-gated/open until live baselines are captured.
+is bit-identical across targets — XT-001.) Current implementation has deterministic
+fixture checks in `forge-sim::interop`, a frozen parity tolerance contract, real
+Rapier drop-time and pendulum-period baselines measured through
+`rapier_engine_baseline`, a live engine-backed Rapier world/step adapter, and
+`forge-validate sim-parity` commands that emit Rapier baseline JSON and compare
+MuJoCo baseline JSON for worker/CI handoff. `pnpm sim:parity` materializes the
+request, Rapier baseline, MuJoCo baseline, and comparison artifacts, or calls
+`FORGE_MUJOCO_PARITY_CMD` when a deployment provides a live MuJoCo runner.
+`pnpm sim:parity:check` compares current Rapier against the frozen MuJoCo 3.9.0
+baseline fixture for drop, pendulum, hover trim, and gait CoM. The optional worker
+command `python -m forge_workers.mujoco_parity` refreshes live MuJoCo baselines when
+the Python `mujoco` extra is installed. Local MuJoCo 3.9.0 smoke measured drop
+Δ 0.000653 s, pendulum Δ 0.000517 s, hover-trim Δ 6.98e-10, and gait-CoM
+Δ 0.0000619 m, inside the frozen tolerance bands.
 
 ## 8. Dependencies
 
@@ -93,19 +114,21 @@ SIM-001..003 harness checks; battery/propulsion unit tests vs bench math;
 differential tests vs the JS oracle during the port; parity suite (canonical scenes,
 tolerance bands — also the physics-regression gates for engine bumps); replay
 determinism via the golden-number suite (bit-exact, any target); exporter goldens;
-importer round-trip (external URDF → contract → driveable, P6 exit criterion).
+importer round-trip (external URDF/MJCF → admitted contract → `RoverDriver`
+drive smoke, P6 exit criterion closed 2026-06-15).
 
 ## 10. Phase mapping & backlog
 
-P1: port of model stubs + Rapier worker wiring (P1-003). P3: thrust-table module
-lands with catalog data (P3-010/XC-06). P6: collider fitting, propulsion/battery,
-disturbances, replay, MJCF/URDF export/import, and parity contracts are live;
-engine-backed Rapier/MuJoCo execution remains the open closure item. P8: replay
+P1: port of model stubs + shared-memory Studio tick worker + visible Rapier
+worker pose source. P3:
+thrust-table module lands with catalog data (P3-010/XC-06). P6: collider fitting,
+engine-backed Rapier stepping, propulsion/battery, disturbances, replay,
+MJCF/URDF export/import, and Rapier↔MuJoCo parity contracts are live; P8: replay
 format carries real telemetry (recorder).
 
 ## 11. Open questions
 
-First engine-backed parity baseline numbers for drop/pendulum/hover/gait; ESC modeling depth
-(currently lumped into R_total — revisit with system-ID data at P8); whether
-disturbance injectors are contract-side (EnvSpec) or scene-side (lean EnvSpec, P10);
-Rapier version-pinning policy across native/WASM (must match exactly per D17).
+ESC modeling depth (currently lumped into
+R_total — revisit with system-ID data at P8); whether disturbance injectors are
+contract-side (EnvSpec) or scene-side (lean EnvSpec, P10); Rapier version-pinning
+policy across native/WASM (currently Rapier 0.33.0, must match exactly per D17).

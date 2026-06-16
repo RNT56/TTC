@@ -141,6 +141,96 @@ export class Bake {
 if (Symbol.dispose) Bake.prototype[Symbol.dispose] = Bake.prototype.free;
 
 /**
+ * Engine-backed Rapier session for browser-worker handoff. The worker owns
+ * this handle and mirrors `pose_view` into a SharedArrayBuffer.
+ */
+export class RapierSession {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        RapierSessionFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_rapiersession_free(ptr, 0);
+    }
+    /**
+     * @param {string} contract_json
+     * @param {boolean} fixed_roots
+     * @param {boolean} include_ground
+     */
+    constructor(contract_json, fixed_roots, include_ground) {
+        const ptr0 = passStringToWasm0(contract_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rapiersession_new(ptr0, len0, fixed_roots, include_ground);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        RapierSessionFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * @returns {string[]}
+     */
+    node_names() {
+        const ret = wasm.rapiersession_node_names(this.__wbg_ptr);
+        var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * Zero-copy Rapier body pose view (16 f32 per body, column-major,
+     * `node_names` order). The worker copies this into its SAB mirror after
+     * every step.
+     * @returns {Float32Array}
+     */
+    pose_view() {
+        const ret = wasm.rapiersession_pose_view(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {string}
+     */
+    scene() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.rapiersession_scene(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @param {number} dt_s
+     * @returns {string}
+     */
+    step(dt_s) {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.rapiersession_step(this.__wbg_ptr, dt_s);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) RapierSession.prototype[Symbol.dispose] = RapierSession.prototype.free;
+
+/**
  * The `tick` boundary call as a stateful session.
  */
 export class Session {
@@ -394,6 +484,9 @@ function __wbg_get_imports() {
 const BakeFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_bake_free(ptr, 1));
+const RapierSessionFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_rapiersession_free(ptr, 1));
 const SessionFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_session_free(ptr, 1));

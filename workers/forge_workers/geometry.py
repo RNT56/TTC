@@ -1,13 +1,15 @@
-"""Geometry worker fixtures (P5/P6).
+"""Geometry workers (P5/P6).
 
-OCCT ingestion is not required for local closure, but the task contract exists:
-an object/cache key in, deterministic tessellation metadata out.
+CI uses the deterministic fixture path. Deployments can set
+`FORGE_OCCT_TESSELLATE_CMD` to replace it with a live OCCT stack while preserving
+the same task and artifact contract.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import cache_key
 from forge_workers.queue import Job, registry
 
@@ -16,6 +18,18 @@ def tessellate(payload: dict[str, Any]) -> dict[str, Any]:
     source = payload.get("sourceObjectId") or payload.get("assetRef")
     if not source:
         raise ValueError("occt.tessellate requires sourceObjectId or assetRef")
+    external = run_json_command(
+        "FORGE_OCCT_TESSELLATE_CMD",
+        {"task": "occt.tessellate", **payload, "source": source},
+        timeout_s=float(payload.get("timeoutS", 1800)),
+    )
+    if external is not None:
+        if external.get("artifactKind") != "geometry":
+            external = {"artifactKind": "geometry", **external}
+        external.setdefault("source", source)
+        external.setdefault("cacheKey", cache_key("occt.tessellate", payload))
+        external.setdefault("provider", "external-occt")
+        return external
     key = cache_key("occt.tessellate", payload)
     orientation = _orientation(payload)
     profile = _print_profile(payload)
@@ -25,6 +39,7 @@ def tessellate(payload: dict[str, Any]) -> dict[str, Any]:
         "artifactKind": "geometry",
         "source": source,
         "cacheKey": key,
+        "provider": "fixture",
         "faces": 512,
         "vertices": 288,
         "lods": [

@@ -2,6 +2,7 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export const __wbg_bake_free: (a: number, b: number) => void;
+export const __wbg_rapiersession_free: (a: number, b: number) => void;
 export const __wbg_session_free: (a: number, b: number) => void;
 export const bake: (a: number, b: number) => [number, number, number, number];
 export const bake_contract: (a: number) => [number, number];
@@ -14,6 +15,11 @@ export const bake_patch: (a: number, b: number, c: number) => [number, number, n
 export const bake_positions: (a: number, b: number) => [number, number, number];
 export const golden: (a: number, b: number) => [number, number, number, number];
 export const patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const rapiersession_new: (a: number, b: number, c: number, d: number) => [number, number, number];
+export const rapiersession_node_names: (a: number) => [number, number];
+export const rapiersession_pose_view: (a: number) => any;
+export const rapiersession_scene: (a: number) => [number, number];
+export const rapiersession_step: (a: number, b: number) => [number, number, number, number];
 export const schema: () => [number, number];
 export const session_clear_jog: (a: number) => void;
 export const session_focus: (a: number) => [number, number];

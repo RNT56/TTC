@@ -725,11 +725,21 @@ export default function App() {
       if (fpsAccum >= 0.5) {
         const stats = scene.stats();
         const fps = Math.round(fpsCount / fpsAccum);
+        const corePerf = sessionRef.current?.drainPerf();
         st.setPerf({
           fps,
           frameMs: stats.frameMs,
           drawCalls: stats.drawCalls,
-          coreMs: coreAccum / fpsCount,
+          coreMs: corePerf ? corePerf.coreMs / Math.max(1, fpsCount) : coreAccum / fpsCount,
+          uiMs: 0,
+          workerMs: corePerf?.workerMs ?? 0,
+          workerSamples: corePerf?.workerSamples ?? 0,
+          rapierMs: 0,
+          rapierSamples: 0,
+          sessionMode: corePerf?.mode ?? null,
+          poseSource: st.poseSource,
+          workerPending: corePerf?.pending ?? false,
+          rapierPending: false,
         });
         // XC-22 degradation ladder: only ever steps DOWN; raising is manual
         slowFor = fps < 45 ? slowFor + fpsAccum : 0;

@@ -440,6 +440,7 @@ function platformMemoryDb(): GatewayDb {
       if (text.includes("INSERT INTO courses")) {
         const row = {
           id: `course-${nextCourse++}`,
+          owner_user_id: params[0],
           name: params[1],
           env_spec: parseJsonParam(params[2]),
           validator_report: parseJsonParam(params[3]),
@@ -448,6 +449,14 @@ function platformMemoryDb(): GatewayDb {
         };
         courses.push(row);
         return { rows: [{ id: row.id } as T], rowCount: 1 };
+      }
+      if (text.includes("FROM courses") && text.includes("WHERE id = $1")) {
+        const rows = courses.filter(
+          (row) =>
+            row.id === params[0] &&
+            (row.visibility === "public" || row.visibility === "unlisted" || row.owner_user_id === params[1]),
+        );
+        return { rows: rows as T[], rowCount: rows.length };
       }
       if (text.includes("FROM courses")) {
         const rows = courses.filter((row) => row.visibility === "public" || row.visibility === "unlisted");
@@ -460,16 +469,23 @@ function platformMemoryDb(): GatewayDb {
           policy_id: params[1],
           replay_id: params[2],
           user_id: params[3],
-          score: params[4],
-          verified: params[5],
-          verification: parseJsonParam(params[6]),
+          archetype: params[4],
+          class_key: params[5],
+          score: params[6],
+          verified: params[7],
+          verification: parseJsonParam(params[8]),
           created_at: now,
         };
         leaderboardRuns.push(row);
         return { rows: [{ id: row.id } as T], rowCount: 1 };
       }
       if (text.includes("FROM leaderboard_runs")) {
-        const rows = leaderboardRuns.filter((row) => row.course_id === params[0]);
+        const rows = leaderboardRuns.filter(
+          (row) =>
+            row.course_id === params[0] &&
+            (params[1] === null || row.archetype === params[1]) &&
+            (params[2] === null || row.class_key === params[2]),
+        );
         return { rows: rows as T[], rowCount: rows.length };
       }
       if (text.includes("INSERT INTO marketplace_listings")) {
@@ -505,8 +521,16 @@ function platformMemoryDb(): GatewayDb {
         policySignoffs.push(row);
         return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
       }
+      if (text.includes("UPDATE marketplace_listings")) {
+        const row = listings.find((candidate) => candidate.id === params[0]);
+        if (!row) return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+        row.status = text.includes("status = 'delisted'") ? "delisted" : params[1];
+        row.moderation = { ...parseRecordParam(row.moderation), ...parseRecordParam(params[text.includes("status = 'delisted'") ? 1 : 2]) };
+        row.updated_at = now;
+        return { rows: [row as T], rowCount: 1 };
+      }
       if (text.includes("FROM marketplace_listings")) {
-        const rows = listings.filter((row) => row.status === "listed" && (params[0] === null || row.listing_kind === params[0]));
+        const rows = listings.filter((row) => row.status === params[0] && (params[1] === null || row.listing_kind === params[1]));
         return { rows: rows as T[], rowCount: rows.length };
       }
       if (text.includes("INSERT INTO moderation_reports")) {
@@ -527,6 +551,14 @@ function platformMemoryDb(): GatewayDb {
           updated_at: now,
         };
         moderationReports.push(row);
+        return { rows: [row as T], rowCount: 1 };
+      }
+      if (text.includes("UPDATE moderation_reports")) {
+        const row = moderationReports.find((candidate) => candidate.id === params[0]);
+        if (!row) return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+        row.status = params[1];
+        if (params[2]) row.detail = row.detail ? `${row.detail}\n\n${params[2]}` : params[2];
+        row.updated_at = now;
         return { rows: [row as T], rowCount: 1 };
       }
       if (text.includes("FROM moderation_reports")) {
@@ -1455,6 +1487,28 @@ test(
     assert.equal(publicShare.statusCode, 200, publicShare.body);
     assert.equal((publicShare.json() as { share: { modelId: string } }).share.modelId, createdBody.model.id);
 
+    const draftContract = JSON.parse(
+      readFileSync(join(process.cwd(), "..", "..", "examples", "hrx7.forge.json"), "utf8"),
+    ) as unknown;
+    const draftCreated = await app.inject({
+      method: "POST",
+      url: "/v1/models",
+      headers: authHeaders,
+      payload: { contract: draftContract, asDraft: true },
+    });
+    assert.equal(draftCreated.statusCode, 201, draftCreated.body);
+    const draftBody = draftCreated.json() as { model: { id: string; status: string }; report: { verdict: string } };
+    assert.equal(draftBody.model.status, "draft");
+    assert.equal(draftBody.report.verdict, "draft");
+
+    const draftShare = await app.inject({
+      method: "POST",
+      url: `/v1/models/${draftBody.model.id}/share`,
+      headers: authHeaders,
+    });
+    assert.equal(draftShare.statusCode, 409, draftShare.body);
+    assert.match(draftShare.body, /only admitted models can be shared/);
+
       const credits = await app.inject({ method: "GET", url: "/v1/credits", headers: authHeaders });
       assert.equal(credits.statusCode, 200, credits.body);
       assert.equal((credits.json() as { balanceCredits: number }).balanceCredits, 0);
@@ -1587,6 +1641,20 @@ test(
 	    const printQuoteBody = printQuote.json() as { quote: { offers: { quoteUrl: string; terms: { noDirectPayment: boolean } }[] } };
 	    assert.equal(printQuoteBody.quote.offers[0].terms.noDirectPayment, true);
 	    assert.match(printQuoteBody.quote.offers[0].quoteUrl, /print\.example\.invalid/);
+	    const draftPrintQuote = await app.inject({
+	      method: "POST",
+	      url: "/v1/commerce/print-quotes",
+	      headers: authHeaders,
+	      payload: {
+	        artifactBlobId: sourceBlobBody.blob.id,
+	        modelId: draftBody.model.id,
+	        process: "fdm",
+	        material: "petg",
+	        dfmArtifact: { pass: true, threeMf: "fixture://print.3mf" },
+	      },
+	    });
+	    assert.equal(draftPrintQuote.statusCode, 409, draftPrintQuote.body);
+	    assert.match(draftPrintQuote.body, /drafts cannot train, export, deploy, or share/);
 	    const printQuotes = await app.inject({ method: "GET", url: "/v1/commerce/print-quotes", headers: authHeaders });
 	    assert.equal(printQuotes.statusCode, 200, printQuotes.body);
 	    assert.equal((printQuotes.json() as { quotes: unknown[] }).quotes.length, 1);
@@ -1666,6 +1734,14 @@ test(
       payload: { payload: { task: "hover" } },
     });
     assert.equal(policy.statusCode, 202, policy.body);
+    const draftPolicy = await app.inject({
+      method: "POST",
+      url: "/v1/policies",
+      headers: authHeaders,
+      payload: { payload: { modelId: draftBody.model.id, task: "hover" } },
+    });
+    assert.equal(draftPolicy.statusCode, 409, draftPolicy.body);
+    assert.match(draftPolicy.body, /drafts cannot train, export, deploy, or share/);
 
     const photoscanArtifacts = await app.inject({
       method: "GET",
@@ -1885,9 +1961,32 @@ test(
     });
     assert.equal(course.statusCode, 201, course.body);
     const courseId = (course.json() as { id: string }).id;
+    const courseById = await app.inject({ method: "GET", url: `/v1/courses/${courseId}` });
+    assert.equal(courseById.statusCode, 200, courseById.body);
+    assert.equal((courseById.json() as { course: { id: string } }).course.id, courseId);
+    const generatedCourse = await app.inject({
+      method: "POST",
+      url: "/v1/courses/generate",
+      headers: authHeaders,
+      payload: {
+        prompt: "tight indoor multirotor slalom with one reference block",
+        archetype: "multirotor",
+        seed: 7,
+        visibility: "unlisted",
+      },
+    });
+    assert.equal(generatedCourse.statusCode, 201, generatedCourse.body);
+    const generatedBody = generatedCourse.json() as {
+      id: string;
+      envSpec: { version: string; provenance: { promptHash: string } };
+      generation: { archetype: string; provider: string };
+    };
+    assert.equal(generatedBody.envSpec.version, "1.0.0");
+    assert.equal(generatedBody.generation.archetype, "multirotor");
+    assert.match(generatedBody.envSpec.provenance.promptHash, /^[a-f0-9]{64}$/);
     const courses = await app.inject({ method: "GET", url: "/v1/courses" });
     assert.equal(courses.statusCode, 200, courses.body);
-    assert.equal((courses.json() as { courses: unknown[] }).courses.length, 1);
+    assert.equal((courses.json() as { courses: unknown[] }).courses.length, 2);
 
     const blindLeaderboardClaim = await app.inject({
       method: "POST",
@@ -1902,13 +2001,30 @@ test(
       method: "POST",
       url: "/v1/leaderboards",
       headers: authHeaders,
-      payload: { courseId, score: 92.5, tape: { frames: [{ t: 0 }, { t: 1 / 60 }] } },
+      payload: {
+        courseId,
+        score: 92.5,
+        archetype: "multirotor",
+        classKey: "stock-vx2",
+        tape: { frames: [{ t: 0 }, { t: 1 / 60 }] },
+      },
     });
     assert.equal(leaderboard.statusCode, 201, leaderboard.body);
-    assert.equal((leaderboard.json() as { verified: boolean }).verified, true);
+    assert.equal((leaderboard.json() as { verified: boolean; archetype: string; classKey: string }).verified, true);
+    assert.equal((leaderboard.json() as { verified: boolean; archetype: string; classKey: string }).archetype, "multirotor");
+    assert.equal((leaderboard.json() as { verified: boolean; archetype: string; classKey: string }).classKey, "stock-vx2");
     const leaderboardList = await app.inject({ method: "GET", url: `/v1/leaderboards?courseId=${courseId}` });
     assert.equal(leaderboardList.statusCode, 200, leaderboardList.body);
     assert.equal((leaderboardList.json() as { runs: unknown[] }).runs.length, 2);
+    const slicedLeaderboard = await app.inject({
+      method: "GET",
+      url: `/v1/leaderboards?courseId=${courseId}&archetype=multirotor&classKey=stock-vx2`,
+    });
+    assert.equal(slicedLeaderboard.statusCode, 200, slicedLeaderboard.body);
+    const slicedRuns = slicedLeaderboard.json() as { runs: { archetype: string; classKey: string }[] };
+    assert.equal(slicedRuns.runs.length, 1);
+    assert.equal(slicedRuns.runs[0].archetype, "multirotor");
+    assert.equal(slicedRuns.runs[0].classKey, "stock-vx2");
 
     const listing = await app.inject({
       method: "POST",
@@ -1919,6 +2035,24 @@ test(
     assert.equal(listing.statusCode, 201, listing.body);
     assert.equal((listing.json() as { status: string }).status, "review");
     const listingId = (listing.json() as { id: string }).id;
+    const reviewListings = await app.inject({ method: "GET", url: "/v1/listings?status=review" });
+    assert.equal(reviewListings.statusCode, 200, reviewListings.body);
+    assert.equal((reviewListings.json() as { listings: unknown[] }).listings.length, 1);
+    const curatedListing = await app.inject({
+      method: "PATCH",
+      url: `/v1/listings/${listingId}`,
+      payload: { status: "listed", reviewer: "test-owner", note: "fixture curation pass" },
+    });
+    assert.equal(curatedListing.statusCode, 200, curatedListing.body);
+    assert.equal((curatedListing.json() as { listing: { status: string } }).listing.status, "listed");
+    const draftListing = await app.inject({
+      method: "POST",
+      url: "/v1/listings",
+      headers: authHeaders,
+      payload: { modelId: draftBody.model.id, title: "Draft VX-2 Mini", priceCredits: 5 },
+    });
+    assert.equal(draftListing.statusCode, 409, draftListing.body);
+    assert.match(draftListing.body, /marketplace listings require an admitted validator report/);
 	    const unsignedPolicyListing = await app.inject({
 	      method: "POST",
 	      url: "/v1/listings",
@@ -1971,7 +2105,7 @@ test(
 	    assert.equal(usage.statusCode, 202, usage.body);
 	    const publicListings = await app.inject({ method: "GET", url: "/v1/listings" });
     assert.equal(publicListings.statusCode, 200, publicListings.body);
-    assert.equal((publicListings.json() as { listings: unknown[] }).listings.length, 0);
+    assert.equal((publicListings.json() as { listings: unknown[] }).listings.length, 1);
 
     const moderation = await app.inject({
       method: "POST",
@@ -1981,6 +2115,7 @@ test(
     });
     assert.equal(moderation.statusCode, 201, moderation.body);
     assert.equal((moderation.json() as { repeatInfringerSignal: boolean }).repeatInfringerSignal, false);
+    const moderationId = (moderation.json() as { id: string }).id;
     const repeatedModeration = await app.inject({
       method: "POST",
       url: "/v1/moderation/reports",
@@ -1992,6 +2127,21 @@ test(
     const moderationList = await app.inject({ method: "GET", url: "/v1/moderation/reports", headers: authHeaders });
     assert.equal(moderationList.statusCode, 200, moderationList.body);
     assert.equal((moderationList.json() as { reports: unknown[] }).reports.length, 2);
+    const actionedModeration = await app.inject({
+      method: "PATCH",
+      url: `/v1/moderation/reports/${moderationId}`,
+      payload: {
+        status: "actioned",
+        action: "delist-listing",
+        reviewer: "test-owner",
+        note: "delist unsafe listing",
+      },
+    });
+    assert.equal(actionedModeration.statusCode, 200, actionedModeration.body);
+    assert.equal((actionedModeration.json() as { listing: { status: string } }).listing.status, "delisted");
+    const publicListingsAfterDelist = await app.inject({ method: "GET", url: "/v1/listings" });
+    assert.equal(publicListingsAfterDelist.statusCode, 200, publicListingsAfterDelist.body);
+    assert.equal((publicListingsAfterDelist.json() as { listings: unknown[] }).listings.length, 0);
 
     const assignment = await app.inject({
       method: "POST",

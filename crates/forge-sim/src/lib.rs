@@ -15,6 +15,7 @@
 pub mod export;
 pub mod heavy;
 pub mod interop;
+pub mod rapier;
 pub mod runtime;
 pub mod thrust_table;
 

@@ -358,7 +358,8 @@ pub fn evaluate_mjx_adoption(benchmark: MjxBenchmark) -> MjxAdoptionDecision {
         f64::INFINITY
     };
     let mut reasons = Vec::new();
-    let cpu_needs_help = !benchmark.cpu_overnight_target_hit || benchmark.tier2_budget_miss_pct > 25.0;
+    let cpu_needs_help =
+        !benchmark.cpu_overnight_target_hit || benchmark.tier2_budget_miss_pct > 25.0;
     if !cpu_needs_help {
         reasons.push("CPU MuJoCo/SB3 already meets overnight and tier-2 budgets".to_string());
     }
@@ -678,8 +679,11 @@ mod tests {
         let env = EnvSpec {
             id: "gate-course".to_string(),
             name: "Gate course".to_string(),
+            version: "1.0.0".to_string(),
             kind: "course".to_string(),
             bounds_m: [10.0, 5.0, 10.0],
+            provenance: None,
+            license: None,
             terrain: None,
             tasks: vec!["gate-slalom".to_string()],
             obstacles: vec![],
@@ -739,7 +743,10 @@ mod tests {
             parity_passed: true,
         });
         assert!(!reject.adopt);
-        assert!(reject.reasons.iter().any(|reason| reason.contains("already meets")));
+        assert!(reject
+            .reasons
+            .iter()
+            .any(|reason| reason.contains("already meets")));
     }
 
     #[test]

@@ -193,7 +193,15 @@ export interface JobCapabilityState {
 export interface JobCapabilities {
   providers: Record<"fixture" | "local" | "modal", JobCapabilityState>;
   live: Record<
-    "rapier" | "mujoco" | "sb3" | "colmap" | "onnxRuntime" | "vendorRefresh" | "printQuotes",
+    | "rapier"
+    | "mujoco"
+    | "sb3"
+    | "claudeExtraction"
+    | "occt"
+    | "colmap"
+    | "onnxRuntime"
+    | "vendorRefresh"
+    | "printQuotes",
     JobCapabilityState
   >;
   gates: PlatformGateSignoff[];
@@ -380,6 +388,8 @@ export interface CourseRecord {
 export interface LeaderboardRunRecord {
   id: string;
   courseId: string;
+  archetype: string | null;
+  classKey: string | null;
   score: number;
   verified: boolean;
   verification: unknown;
@@ -795,6 +805,11 @@ export async function listCourses(limit = 10): Promise<CourseRecord[]> {
   return body.courses;
 }
 
+export async function getCourse(courseId: string): Promise<CourseRecord> {
+  const body = await requestJson<{ course: CourseRecord }>(`/v1/courses/${encodeURIComponent(courseId)}`);
+  return body.course;
+}
+
 export function createCourse(input: {
   name: string;
   envSpec: unknown;
@@ -806,8 +821,38 @@ export function createCourse(input: {
   });
 }
 
-export async function listLeaderboardRuns(courseId: string, limit = 10): Promise<LeaderboardRunRecord[]> {
+export function generateCourse(input: {
+  prompt: string;
+  name?: string;
+  archetype?: GenerationArchetype;
+  visibility?: "private" | "unlisted" | "public";
+  provider?: "template";
+  seed?: number;
+}): Promise<{
+  id: string;
+  envSpec: unknown;
+  validatorReport: unknown;
+  generation: { provider: string; archetype: string; promptHash: string | null };
+}> {
+  return requestJson<{
+    id: string;
+    envSpec: unknown;
+    validatorReport: unknown;
+    generation: { provider: string; archetype: string; promptHash: string | null };
+  }>("/v1/courses/generate", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listLeaderboardRuns(
+  courseId: string,
+  limit = 10,
+  filters: { archetype?: string | null; classKey?: string | null } = {},
+): Promise<LeaderboardRunRecord[]> {
   const params = new URLSearchParams({ courseId, limit: String(limit) });
+  if (filters.archetype) params.set("archetype", filters.archetype);
+  if (filters.classKey) params.set("classKey", filters.classKey);
   const body = await requestJson<{ runs: LeaderboardRunRecord[] }>(`/v1/leaderboards?${params}`);
   return body.runs;
 }
@@ -817,10 +862,26 @@ export function submitLeaderboardRun(input: {
   score: number;
   tape?: unknown;
   policyId?: string;
+  archetype?: string;
+  classKey?: string;
   expectedReplayHash?: string;
   expectedContractHash?: string;
-}): Promise<{ id: string; verified: boolean; verification: unknown; replay: ReplayArtifactRecord | null }> {
-  return requestJson<{ id: string; verified: boolean; verification: unknown; replay: ReplayArtifactRecord | null }>(
+}): Promise<{
+  id: string;
+  verified: boolean;
+  archetype: string | null;
+  classKey: string | null;
+  verification: unknown;
+  replay: ReplayArtifactRecord | null;
+}> {
+  return requestJson<{
+    id: string;
+    verified: boolean;
+    archetype: string | null;
+    classKey: string | null;
+    verification: unknown;
+    replay: ReplayArtifactRecord | null;
+  }>(
     "/v1/leaderboards",
     {
       method: "POST",
@@ -829,9 +890,10 @@ export function submitLeaderboardRun(input: {
   );
 }
 
-export async function listListings(kind?: string, limit = 10): Promise<ListingRecord[]> {
+export async function listListings(kind?: string, limit = 10, status?: string): Promise<ListingRecord[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (kind) params.set("kind", kind);
+  if (status) params.set("status", status);
   const body = await requestJson<{ listings: ListingRecord[] }>(`/v1/listings?${params}`);
   return body.listings;
 }
@@ -849,6 +911,16 @@ export function createListing(input: {
   });
 }
 
+export function curateListing(
+  listingId: string,
+  input: { status: "draft" | "review" | "listed" | "rejected" | "delisted"; reviewer?: string; note?: string },
+): Promise<{ listing: ListingRecord }> {
+  return requestJson<{ listing: ListingRecord }>(`/v1/listings/${encodeURIComponent(listingId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
 export function recordListingUsage(
   listingId: string,
   input: {
@@ -861,6 +933,24 @@ export function recordListingUsage(
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function actionModerationReport(
+  reportId: string,
+  input: {
+    status: "open" | "triaged" | "actioned" | "rejected";
+    action?: "none" | "delist-listing";
+    reviewer?: string;
+    note?: string;
+  },
+): Promise<{ report: ModerationReportRecord; listing: ListingRecord | null }> {
+  return requestJson<{ report: ModerationReportRecord; listing: ListingRecord | null }>(
+    `/v1/moderation/reports/${encodeURIComponent(reportId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export async function listClassroomAssignments(limit = 10): Promise<ClassroomAssignmentRecord[]> {

@@ -6,7 +6,29 @@ execution overlay: it groups every remaining open, in-progress, or blocked task
 into parallel subworker tracks, names dependencies, and defines the acceptance
 gate for closing work.
 
-Last rebuilt: 2026-06-14 from `TODO.md`, `ROADMAP.md`, and the v3.0 plan.
+Last rebuilt: 2026-06-16 from `TODO.md`, `ROADMAP.md`, and the v3.0 plan.
+
+## Current Boundary - 2026-06-16
+
+All currently identifiable local development lanes have either been implemented
+or narrowed to a specific external gate. Remaining open rows are intentionally not
+closed by local code alone:
+
+- Owner-input blocked: `P0-007` needs the later configurator build or a rescope
+  decision; `P0-010` needs the owner to push/create `prototype-final`;
+  `P11-000` needs accepted dual-use/export-control policy sharing signoff.
+- Lab/hardware blocked: `P1-017` and `P8-001` through `P8-014` need real
+  mid-hardware, D30/D12 controlled lab execution, field logs, or signed desktop/
+  recorder evidence.
+- External-provider blocked: `P3-004`, `P5-001`, `P5-002`, `P5-006`, `P7-003`,
+  `P9-002`, `P9-003`, `P11-005`, and `P11-006` need configured provider
+  credentials, sandbox runs, live optimizer/simulator evidence, vendor offer
+  providers, or print-provider/oriented-3MF handoff evidence.
+- Conditional: `P7-010` must produce benchmark data before any MJX adoption
+  claim; `P9-005` remains conditional on that benchmark demanding MJX batching.
+- Phase-fed maintenance: `P1-004` catalog/check rows and `P1-014` variant cards
+  remain tied to later concrete catalog/slot-system inputs rather than a missing
+  local implementation path.
 
 ## 0. Rules for every subworker
 
@@ -484,18 +506,20 @@ Acceptance:
 |---|---|---|
 | `P0-007` | G | blocked on later prototype or rescope |
 | `P0-010` | R | owner remote tag/release |
-| `P1-003`, `P6-001`, `P6-010` | S | engine integration |
-| `P1-004`, `P2-001`, `P2-002` | V | validator/package/draft persistence |
-| `P1-014`, `P2-003` | G | slots/configurator/arm |
+| `P1-004` | V | remaining checks arrive with later phase rows |
+| `P1-014` | G | variant cards blocked on slot system / P0-007 |
 | `P1-017` | S | perf accounting and hardware proof |
-| `P3-004`, `P4-016` | C | live ETL/Claude/OCCT adapters |
+| `P3-004` | C | live ETL/provider run and durable reviewed row |
 | `P5-001`, `P5-002`, `P5-006` | C | live GPU/COLMAP/SLO |
-| `P7-001`, `P7-003`, `P7-008`, `P7-009`, `P7-010` | L | training and policy adapters |
-| `P8-001`, `P8-002`, `P8-003`, `P8-004`, `P8-005`, `P8-006`, `P8-007`, `P8-008`, `P8-009`, `P8-010`, `P8-011`, `P8-012`, `P8-013`, `P8-014` | H | D30 controlled D12 lab gate |
-| `P9-002` through `P9-005` | O | simulation/training dependencies |
-| `P10-001` through `P10-005` | E | courses/leaderboard UI |
-| `P11-000`, `P11-002`, `P11-003`, `P11-005`, `P11-006` | P/R/D | policy gate and providers |
-| `P12-002`, `P12-004` | M | telemetry and platform dependencies |
+| `P7-003`, `P7-008`, `P7-010` | L | live SB3/ONNX/MJX evidence |
+| `P8-001`, `P8-002`, `P8-003`, `P8-004`, `P8-005`, `P8-006`, `P8-007`, `P8-008`, `P8-009`, `P8-010`, `P8-011`, `P8-013`, `P8-014` | H | D30 controlled D12 lab gate |
+| `P8-012` | H | closed 2026-06-15 |
+| `P9-002`, `P9-003`, `P9-005` | O | live optimizer/simulator evidence; MJX conditional |
+| `P9-004` | O | closed 2026-06-16 |
+| `P10-001` through `P10-005` | E | closed 2026-06-16 |
+| `P11-002` | P | closed 2026-06-16 |
+| `P11-000`, `P11-003`, `P11-005`, `P11-006` | P/R/D | policy gate and providers |
+| `P12-002`, `P12-004` | M | closed 2026-06-15 |
 | `XC-03` | G | upgrade-diff UI |
 | `XC-11`, `XC-12` | G | couplers and wire lists |
 | `XC-18` | D | real DfM checks |

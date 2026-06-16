@@ -4,6 +4,7 @@ description = "Deterministic transcendentals for forge-core (D17): one libm, eve
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 libm = "0.2"

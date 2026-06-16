@@ -583,7 +583,7 @@ fn run_checks(
         }
     }
 
-    // ---- MFG-001..004 (XC-18): FDM v0 DfM checks for printable structural parts.
+    // ---- MFG-001..004 (XC-18): DfM checks for printable structural parts.
     d.extend(run_dfm_checks(spec, &baked));
 
     // ---- GEO-003 (XC-09): AABB candidacy → BVH tri-tri CONFIRMATION.
@@ -949,6 +949,49 @@ fn run_checks(
                 );
             }
         }
+        Archetype::Arm => {
+            let mut driver = forge_motion::arm::ArmDriver::new(spec);
+            if driver.joints.len() < 2 {
+                d.push(
+                    Diagnostic::error(
+                        "BEH-001",
+                        format!(
+                            "arm_smoke: {} revolute joints found; need at least 2 for reach/track",
+                            driver.joints.len()
+                        ),
+                    )
+                    .hint("declare revolute arm joints or set driver.params.jointNodes"),
+                );
+            } else {
+                let tolerance = driver.params.reach_tolerance_m;
+                let out = driver.tick(&forge_motion::InputFrame::default(), forge_motion::DT);
+                if out
+                    .joint_targets
+                    .iter()
+                    .any(|(_, angle)| !angle.is_finite())
+                    || !out.error_m.is_finite()
+                {
+                    d.push(Diagnostic::error(
+                        "BEH-001",
+                        "arm_smoke: non-finite IK target during reach solve",
+                    ));
+                } else if !out.reached {
+                    d.push(
+                        Diagnostic::error(
+                            "BEH-001",
+                            format!(
+                                "arm_smoke: end effector missed target by {:.3} m, tolerance {:.3} m",
+                                out.error_m, tolerance
+                            ),
+                        )
+                        .observed(out.error_m)
+                        .limit(serde_json::json!(tolerance))
+                        .units("m")
+                        .hint("move targetM within reach, add joints, or increase reachToleranceM"),
+                    );
+                }
+            }
+        }
         _ => d.push(
             Diagnostic::warn(
                 "BEH-001",
@@ -957,7 +1000,7 @@ fn run_checks(
                     spec.meta.archetype
                 ),
             )
-            .hint("arm/fixedwing drivers arrive with the P2+ driver library"),
+            .hint("fixedwing driver arrives with the P2+ driver library"),
         ),
     }
 
@@ -1017,6 +1060,10 @@ pub struct BomRow {
     pub review_status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub citation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dfm_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dfm_artifact_ref: Option<String>,
     pub source: String,
 }
 
@@ -1034,6 +1081,7 @@ pub fn bom_rows_with_catalog(
         .iter()
         .map(|bp| {
             let part = &spec.parts[bp.part_index];
+            let dfm = dfm_bom_summary(bp.part_index, part, bp);
             BomRow {
                 item: part
                     .comp
@@ -1054,6 +1102,8 @@ pub fn bom_rows_with_catalog(
                 license_class: None,
                 review_status: None,
                 citation: None,
+                dfm_status: dfm.as_ref().map(|s| s.status.clone()),
+                dfm_artifact_ref: dfm.as_ref().and_then(|s| s.artifact_ref.clone()),
                 source: "inline".to_string(),
             }
         })
@@ -1109,6 +1159,8 @@ pub fn bom_rows_with_catalog(
                     license_class: component.as_ref().map(|c| c.license.class.clone()),
                     review_status,
                     citation,
+                    dfm_status: None,
+                    dfm_artifact_ref: None,
                     source: if component.is_some() {
                         "catalog".to_string()
                     } else {
@@ -1123,7 +1175,7 @@ pub fn bom_rows_with_catalog(
 
 pub fn bom_csv(rows: &[BomRow]) -> String {
     let mut out = String::from(
-        "item,node,material,quantity,mass_g,componentRef,componentId,revision,vendor,sku,url,price,currency,licenseClass,reviewStatus,citation,source\n",
+        "item,node,material,quantity,mass_g,componentRef,componentId,revision,vendor,sku,url,price,currency,licenseClass,reviewStatus,citation,dfmStatus,dfmArtifactRef,source\n",
     );
     for r in rows {
         let fields = [
@@ -1143,6 +1195,8 @@ pub fn bom_csv(rows: &[BomRow]) -> String {
             r.license_class.clone().unwrap_or_default(),
             r.review_status.clone().unwrap_or_default(),
             r.citation.clone().unwrap_or_default(),
+            r.dfm_status.clone().unwrap_or_default(),
+            r.dfm_artifact_ref.clone().unwrap_or_default(),
             r.source.clone(),
         ];
         out.push_str(
@@ -1201,195 +1255,195 @@ fn count_degenerate(mesh: &forge_geometry::MeshBuffers) -> usize {
         .count()
 }
 
-const FDM_MIN_WALL_M: f64 = 0.0012;
-const FDM_SUPPORT_WARN_RATIO: f64 = 0.25;
-const FDM_BED_M: [f64; 3] = [0.5, 0.5, 0.5];
-const FDM_UNSUPPORTED_SURFACE_Y: f64 = -std::f64::consts::FRAC_1_SQRT_2;
-
 fn run_dfm_checks(spec: &ModelSpec, baked: &BakedModel) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     for bp in &baked.parts {
         let part = &spec.parts[bp.part_index];
-        if !printable_structural_part(part) {
+        let Some(analyses) = dfm_analyses(part, bp) else {
+            continue;
+        };
+        if analyses.iter().any(|a| a.passed) {
             continue;
         }
-
-        let extents = mesh_extents(&bp.mesh);
-        let min_wall = extents.into_iter().fold(f64::INFINITY, f64::min);
-        if min_wall.is_finite() && min_wall < FDM_MIN_WALL_M {
-            out.push(
-                Diagnostic::error(
-                    "MFG-001",
-                    format!(
-                        "min_wall_fdm: part {} has {:.2} mm, needs ≥ {:.1} mm",
-                        bp.part_index,
-                        min_wall * 1000.0,
-                        FDM_MIN_WALL_M * 1000.0
-                    ),
-                )
-                .subject("part", bp.part_index.to_string())
-                .observed(min_wall * 1000.0)
-                .limit(serde_json::json!(FDM_MIN_WALL_M * 1000.0))
-                .units("mm")
-                .hint("thicken the thin axis before requesting a structural FDM print quote"),
-            );
-        }
-
-        if !oriented_bed_fit(extents, FDM_BED_M) {
-            out.push(
-                Diagnostic::error(
-                    "MFG-004",
-                    format!(
-                        "bed_fit_fdm: part {} extents {:.0} × {:.0} × {:.0} mm exceed the {:.0} × {:.0} × {:.0} mm oriented bed",
-                        bp.part_index,
-                        extents[0] * 1000.0,
-                        extents[1] * 1000.0,
-                        extents[2] * 1000.0,
-                        FDM_BED_M[0] * 1000.0,
-                        FDM_BED_M[1] * 1000.0,
-                        FDM_BED_M[2] * 1000.0
-                    ),
-                )
-                .subject("part", bp.part_index.to_string())
-                .observed(extents.into_iter().fold(0.0, f64::max) * 1000.0)
-                .limit(serde_json::json!(FDM_BED_M.into_iter().fold(0.0, f64::max) * 1000.0))
-                .units("mm")
-                .hint("split the part or choose a larger print profile before quote handoff"),
-            );
-        }
-
-        let support = support_metrics(&bp.mesh);
-        if support.max_overhang_deg > 45.0 {
-            out.push(
-                Diagnostic::warn(
-                    "MFG-002",
-                    format!(
-                        "overhang_fdm: part {} has unsupported surfaces up to {:.0}° from vertical",
-                        bp.part_index, support.max_overhang_deg
-                    ),
-                )
-                .subject("part", bp.part_index.to_string())
-                .observed(support.max_overhang_deg)
-                .limit(serde_json::json!(45.0))
-                .units("deg")
-                .hint("re-orient the part, add chamfers, or accept supports in the print profile"),
-            );
-        }
-        if support.unsupported_area_ratio > FDM_SUPPORT_WARN_RATIO {
-            out.push(
-                Diagnostic::warn(
-                    "MFG-003",
-                    format!(
-                        "support_estimate_fdm: part {} needs support under {:.0} % of surface area",
-                        bp.part_index,
-                        support.unsupported_area_ratio * 100.0
-                    ),
-                )
-                .subject("part", bp.part_index.to_string())
-                .observed(support.unsupported_area_ratio * 100.0)
-                .limit(serde_json::json!(FDM_SUPPORT_WARN_RATIO * 100.0))
-                .units("%")
-                .hint("reduce underside area or split the component before quote handoff"),
-            );
+        if let Some(best) = best_dfm_analysis(&analyses) {
+            let profile = dfm_profile(best.process);
+            for check in best.failed_checks() {
+                out.push(dfm_diagnostic(check, bp.part_index, best, profile));
+            }
         }
     }
     out
 }
 
 fn printable_structural_part(part: &forge_contract::Part) -> bool {
-    !matches!(part.material, MaterialClass::Metal | MaterialClass::Rubber)
+    part.collision != CollisionPolicy::None
+        && matches!(
+            part.material,
+            MaterialClass::Gloss | MaterialClass::Matte | MaterialClass::Satin
+        )
 }
 
-fn mesh_extents(mesh: &forge_geometry::MeshBuffers) -> [f64; 3] {
-    let mut min = [f64::INFINITY; 3];
-    let mut max = [f64::NEG_INFINITY; 3];
-    for v in mesh.positions.chunks_exact(3) {
-        for axis in 0..3 {
-            min[axis] = min[axis].min(v[axis] as f64);
-            max[axis] = max[axis].max(v[axis] as f64);
+fn dfm_analyses(
+    part: &forge_contract::Part,
+    bp: &forge_geometry::BakedPart,
+) -> Option<Vec<forge_geometry::dfm::DfmProfileAnalysis>> {
+    printable_structural_part(part).then(|| {
+        forge_geometry::dfm::analyze_mesh(&bp.mesh, &forge_geometry::dfm::structural_profiles())
+    })
+}
+
+fn best_dfm_analysis(
+    analyses: &[forge_geometry::dfm::DfmProfileAnalysis],
+) -> Option<&forge_geometry::dfm::DfmProfileAnalysis> {
+    analyses.iter().min_by(|a, b| {
+        a.failed_checks()
+            .len()
+            .cmp(&b.failed_checks().len())
+            .then_with(|| cmp_f64(a.support_ratio, b.support_ratio))
+            .then_with(|| cmp_f64(a.max_overhang_deg, b.max_overhang_deg))
+    })
+}
+
+fn dfm_profile(process: forge_geometry::dfm::PrintProcess) -> forge_geometry::dfm::PrintProfile {
+    match process {
+        forge_geometry::dfm::PrintProcess::Fdm => {
+            forge_geometry::dfm::PrintProfile::fdm_structural()
+        }
+        forge_geometry::dfm::PrintProcess::Sla => {
+            forge_geometry::dfm::PrintProfile::sla_structural()
         }
     }
-    [
-        (max[0] - min[0]).max(0.0),
-        (max[1] - min[1]).max(0.0),
-        (max[2] - min[2]).max(0.0),
-    ]
 }
 
-fn oriented_bed_fit(mut extents: [f64; 3], mut bed: [f64; 3]) -> bool {
-    extents.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    bed.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    extents
+fn dfm_diagnostic(
+    check: &str,
+    part_index: usize,
+    analysis: &forge_geometry::dfm::DfmProfileAnalysis,
+    profile: forge_geometry::dfm::PrintProfile,
+) -> Diagnostic {
+    let slug = profile.process.slug();
+    match check {
+        "MFG-001" => Diagnostic::error(
+            "MFG-001",
+            format!(
+                "min_wall: part {part_index} has {:.2} mm; {slug} requires {:.1} mm",
+                analysis.min_wall_m * 1000.0,
+                profile.min_wall_m * 1000.0
+            ),
+        )
+        .subject("part", part_index.to_string())
+        .observed(analysis.min_wall_m * 1000.0)
+        .limit(serde_json::json!({
+            "profile": slug,
+            "minWallMm": profile.min_wall_m * 1000.0
+        }))
+        .units("mm")
+        .hint("thicken the printable section or mark decorative/non-structural parts collision:none"),
+        "MFG-002" => Diagnostic::error(
+            "MFG-002",
+            format!(
+                "overhang: part {part_index} has unsupported surfaces up to {:.0} deg from vertical after best {slug} orientation",
+                analysis.max_overhang_deg
+            ),
+        )
+        .subject("part", part_index.to_string())
+        .observed(analysis.max_overhang_deg)
+        .limit(serde_json::json!({
+            "profile": slug,
+            "maxOverhangDeg": profile.max_overhang_deg
+        }))
+        .units("deg")
+        .hint("re-orient, add chamfers, or split the part before print quote handoff"),
+        "MFG-003" => Diagnostic::error(
+            "MFG-003",
+            format!(
+                "support_volume: part {part_index} needs about {:.1} cm^3 of support ({:.0} % of its oriented bounding volume) for {slug}",
+                analysis.support_volume_m3 * 1_000_000.0,
+                analysis.support_ratio * 100.0
+            ),
+        )
+        .subject("part", part_index.to_string())
+        .observed(analysis.support_ratio * 100.0)
+        .limit(serde_json::json!({
+            "profile": slug,
+            "maxSupportPercent": profile.max_support_ratio * 100.0
+        }))
+        .units("%")
+        .hint("reduce underside shelves, split the component, or choose a support-friendly orientation"),
+        "MFG-004" => Diagnostic::error(
+            "MFG-004",
+            format!(
+                "bed_fit: part {part_index} oriented as {} is {:.0} x {:.0} x {:.0} mm; {slug} bed is {:.0} x {:.0} x {:.0} mm",
+                analysis.orientation_up.label(),
+                analysis.oriented_extents_m[0] * 1000.0,
+                analysis.oriented_extents_m[1] * 1000.0,
+                analysis.oriented_extents_m[2] * 1000.0,
+                profile.bed_m[0] * 1000.0,
+                profile.bed_m[1] * 1000.0,
+                profile.bed_m[2] * 1000.0
+            ),
+        )
+        .subject("part", part_index.to_string())
+        .observed(bed_fit_percent(analysis.oriented_extents_m, profile.bed_m))
+        .limit(serde_json::json!({
+            "profile": slug,
+            "bedMm": [
+                profile.bed_m[0] * 1000.0,
+                profile.bed_m[1] * 1000.0,
+                profile.bed_m[2] * 1000.0
+            ],
+            "maxFitPercent": 100.0
+        }))
+        .units("%")
+        .hint("split the part or select a larger print process before quote handoff"),
+        _ => Diagnostic::error(check, format!("dfm_failed: part {part_index}")),
+    }
+}
+
+fn bed_fit_percent(extents: [f64; 3], bed_m: [f64; 3]) -> f64 {
+    let xy_a = (extents[0] / bed_m[0]).max(extents[1] / bed_m[1]);
+    let xy_b = (extents[0] / bed_m[1]).max(extents[1] / bed_m[0]);
+    xy_a.min(xy_b).max(extents[2] / bed_m[2]) * 100.0
+}
+
+fn cmp_f64(a: f64, b: f64) -> std::cmp::Ordering {
+    a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
+}
+
+#[derive(Debug, Clone)]
+struct DfmBomSummary {
+    status: String,
+    artifact_ref: Option<String>,
+}
+
+fn dfm_bom_summary(
+    part_index: usize,
+    part: &forge_contract::Part,
+    bp: &forge_geometry::BakedPart,
+) -> Option<DfmBomSummary> {
+    let analyses = dfm_analyses(part, bp)?;
+    let analysis = analyses
         .iter()
-        .zip(bed.iter())
-        .all(|(part, limit)| part <= limit)
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-struct SupportMetrics {
-    max_overhang_deg: f64,
-    unsupported_area_ratio: f64,
-}
-
-fn support_metrics(mesh: &forge_geometry::MeshBuffers) -> SupportMetrics {
-    let min_y = mesh
-        .positions
-        .chunks_exact(3)
-        .map(|p| p[1] as f64)
-        .fold(f64::INFINITY, f64::min);
-    let mut total_area = 0.0;
-    let mut unsupported_area = 0.0;
-    let mut max_overhang_deg = 0.0;
-
-    for tri in mesh.indices.chunks_exact(3) {
-        let a = mesh_point(mesh, tri[0]);
-        let b = mesh_point(mesh, tri[1]);
-        let c = mesh_point(mesh, tri[2]);
-        let area = triangle_area(a, b, c);
-        total_area += area;
-        if area <= 0.0 {
-            continue;
-        }
-        let normal_y = mesh
-            .normals
-            .get(tri[0] as usize * 3 + 1)
-            .copied()
-            .unwrap_or(0.0) as f64;
-        let centroid_y = (a[1] + b[1] + c[1]) / 3.0;
-        if centroid_y > min_y + FDM_MIN_WALL_M / 2.0 && normal_y < FDM_UNSUPPORTED_SURFACE_Y {
-            unsupported_area += area;
-            max_overhang_deg = f64::max(max_overhang_deg, normal_y.abs().asin().to_degrees());
-        }
+        .find(|a| a.passed)
+        .or_else(|| best_dfm_analysis(&analyses))?;
+    let slug = analysis.process.slug();
+    if analysis.passed {
+        Some(DfmBomSummary {
+            status: format!("pass:{slug}"),
+            artifact_ref: Some(format!(
+                "urn:forge:dfm:part:{part_index}:profile:{slug}:up:{}",
+                analysis.orientation_up.label()
+            )),
+        })
+    } else {
+        Some(DfmBomSummary {
+            status: format!(
+                "fail:{}",
+                analysis.failed_checks().join("+").to_ascii_lowercase()
+            ),
+            artifact_ref: None,
+        })
     }
-
-    SupportMetrics {
-        max_overhang_deg,
-        unsupported_area_ratio: if total_area > 0.0 {
-            unsupported_area / total_area
-        } else {
-            0.0
-        },
-    }
-}
-
-fn mesh_point(mesh: &forge_geometry::MeshBuffers, i: u32) -> [f64; 3] {
-    let i = i as usize * 3;
-    [
-        mesh.positions[i] as f64,
-        mesh.positions[i + 1] as f64,
-        mesh.positions[i + 2] as f64,
-    ]
-}
-
-fn triangle_area(a: [f64; 3], b: [f64; 3], c: [f64; 3]) -> f64 {
-    let ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-    let ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    let cr = [
-        ab[1] * ac[2] - ab[2] * ac[1],
-        ab[2] * ac[0] - ab[0] * ac[2],
-        ab[0] * ac[1] - ab[1] * ac[0],
-    ];
-    (cr[0] * cr[0] + cr[1] * cr[1] + cr[2] * cr[2]).sqrt() * 0.5
 }
 
 #[cfg(test)]
@@ -1410,6 +1464,59 @@ mod tests {
         assert_eq!(report.verdict, Verdict::Admitted);
         assert!(report.hud.is_some(), "multirotor demo derives a HUD");
         assert!(report.counts.faces > 0);
+    }
+
+    fn arm_contract(params: serde_json::Value) -> String {
+        serde_json::json!({
+          "meta":{"id":"arm","name":"arm","version":"2.1.0","archetype":"arm",
+                  "provenance":{"kind":"human"},"license":"CC0"},
+          "skeleton":[
+            {"name":"base","parent":null,"pos":[0,0,0]},
+            {"name":"shoulder","parent":"base","pos":[0,0,0],
+             "joint":{"type":"revolute","axis":[1,0,0],"maxVelRad":8.0},
+             "limits":[[-2.2,2.2],[0,0],[0,0]]},
+            {"name":"elbow","parent":"shoulder","pos":[0,0,0.22],
+             "joint":{"type":"revolute","axis":[1,0,0],"maxVelRad":8.0},
+             "limits":[[-2.2,2.2],[0,0],[0,0]]},
+            {"name":"wrist","parent":"elbow","pos":[0,0,0.18]}
+          ],
+          "parts":[
+            {"node":"shoulder","geom":{"kind":"box","w":0.04,"h":0.04,"d":0.22},
+             "material":"matte","color":"#444444","collision":"primitive"},
+            {"node":"elbow","geom":{"kind":"box","w":0.035,"h":0.035,"d":0.18},
+             "material":"matte","color":"#555555","collision":"primitive"}
+          ],
+          "driver":{"archetype":"arm","params":params}
+        })
+        .to_string()
+    }
+
+    #[test]
+    fn arm_driver_params_and_smoke_are_admitted() {
+        let doc = arm_contract(serde_json::json!({
+            "targetM":[0.0,-0.12,0.30],
+            "reachToleranceM":0.02,
+            "iterations":48
+        }));
+        let report = run_full(&doc, &EmptyCatalog, &Options::default());
+        let errors: Vec<_> = report
+            .results
+            .iter()
+            .filter(|d| d.severity == Severity::Error)
+            .collect();
+        assert!(errors.is_empty(), "unexpected errors: {errors:#?}");
+        assert_eq!(report.verdict, Verdict::Admitted);
+    }
+
+    #[test]
+    fn arm_driver_param_type_mismatch_is_ctr_008() {
+        let doc = arm_contract(serde_json::json!({"targetM":"near the block"}));
+        let report = run_full(&doc, &EmptyCatalog, &Options::default());
+        assert_eq!(report.verdict, Verdict::Rejected);
+        assert!(report
+            .results
+            .iter()
+            .any(|d| d.check == "CTR-008" && d.severity == Severity::Error));
     }
 
     #[test]
@@ -1538,8 +1645,16 @@ mod tests {
         assert_eq!(rows.len(), 16);
         let total: f64 = rows.iter().map(|r| r.mass_g).sum();
         assert!((total - 479.0).abs() < 1e-6, "Σ {total}");
+        let frame = rows.iter().find(|r| r.item == "part-0").unwrap();
+        assert_eq!(frame.dfm_status.as_deref(), Some("pass:fdm-structural"));
+        assert!(frame
+            .dfm_artifact_ref
+            .as_deref()
+            .unwrap()
+            .contains("profile:fdm-structural"));
         let csv = bom_csv(&rows);
         assert_eq!(csv.lines().count(), 17, "header + 16 rows");
+        assert!(csv.contains("dfmStatus"));
     }
 
     #[test]

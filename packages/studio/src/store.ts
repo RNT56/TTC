@@ -2,7 +2,10 @@
 // (BEST-PRACTICES §5; the render loop lives in scene.ts, truth in the core).
 import { create } from "zustand";
 import type { PartPick, QualityTier } from "./scene";
+import type { CoreSessionMode } from "./wasm";
 import type { BakeArtifact, Report } from "./types";
+
+export type PoseSource = "core" | "rapier";
 
 export interface DemoModel {
   id: string;
@@ -21,6 +24,15 @@ export interface Perf {
   frameMs: number;
   drawCalls: number;
   coreMs: number;
+  uiMs: number;
+  workerMs: number;
+  workerSamples: number;
+  rapierMs: number;
+  rapierSamples: number;
+  sessionMode: CoreSessionMode | null;
+  poseSource: PoseSource;
+  workerPending: boolean;
+  rapierPending: boolean;
 }
 
 interface StudioState {
@@ -32,6 +44,8 @@ interface StudioState {
   explode: number;
   blueprint: boolean;
   driving: boolean;
+  /** visible pose source for the drive loop */
+  poseSource: PoseSource;
   /** drive clock frozen; frame-step still advances one fixed step */
   paused: boolean;
   /** teach-pendant jog mode (P1-013): drag the selected node */
@@ -51,6 +65,7 @@ interface StudioState {
   setExplode: (t: number) => void;
   setBlueprint: (on: boolean) => void;
   setDriving: (on: boolean) => void;
+  setPoseSource: (source: PoseSource) => void;
   setPaused: (on: boolean) => void;
   setJogging: (on: boolean) => void;
   setThrottle: (v: number) => void;
@@ -67,12 +82,27 @@ export const useStudio = create<StudioState>((set) => ({
   explode: 0,
   blueprint: false,
   driving: false,
+  poseSource: "core",
   paused: false,
   jogging: false,
   throttle: 0.45,
   drive: 0.8,
   selected: null,
-  perf: { fps: 0, frameMs: 0, drawCalls: 0, coreMs: 0 },
+  perf: {
+    fps: 0,
+    frameMs: 0,
+    drawCalls: 0,
+    coreMs: 0,
+    uiMs: 0,
+    workerMs: 0,
+    workerSamples: 0,
+    rapierMs: 0,
+    rapierSamples: 0,
+    sessionMode: null,
+    poseSource: "core",
+    workerPending: false,
+    rapierPending: false,
+  },
   tier: "high",
   setTier: (tier) => set({ tier }),
   lastDiff: null,
@@ -82,6 +112,7 @@ export const useStudio = create<StudioState>((set) => ({
   setExplode: (explode) => set({ explode }),
   setBlueprint: (blueprint) => set({ blueprint }),
   setDriving: (driving) => set({ driving }),
+  setPoseSource: (poseSource) => set({ poseSource }),
   setPaused: (paused) => set({ paused }),
   // jog needs a ticking session — arming it turns drive on
   setJogging: (jogging) => set(jogging ? { jogging, driving: true } : { jogging }),

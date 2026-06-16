@@ -7,6 +7,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod arm;
 pub mod biped;
 pub mod fpv;
 pub mod params;
@@ -413,7 +414,11 @@ impl RoverDriver {
 pub fn supported_archetype(a: &Archetype) -> bool {
     matches!(
         a,
-        Archetype::Multirotor | Archetype::Rover | Archetype::Quadruped | Archetype::Biped
+        Archetype::Multirotor
+            | Archetype::Rover
+            | Archetype::Quadruped
+            | Archetype::Biped
+            | Archetype::Arm
     )
 }
 

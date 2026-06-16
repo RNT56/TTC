@@ -1,7 +1,7 @@
 # Motion Engine (`forge-motion`) — implementation doc
 
 **Status:** P1 port done (2026-06-12 — biped/FPV oracle drivers tape-parity
-green) · **Phases:** P1 (Rust port), P2 (library formalized) ·
+green); P2 arm/quadruped library work live · **Phases:** P1 (Rust port), P2 (library formalized) ·
 **Home:** `crates/forge-motion` · **Plan refs:** §7.3, Appendix C
 (v3.0) · **Decisions:** D16, D17, D19, D20
 
@@ -25,7 +25,9 @@ recorded gait fixtures make it the gentlest oracle-checked start.
      when physics-coupled (P6). **Ported 2026-06-12** (`fpv.rs`, drag-limited
      velocity flight + tilt servos + RPM mixer; tape parity 7.1e-15).
    - `rover`: differential or Ackermann steering with wheel-spin kinematics.
-   - `arm`: damped-least-squares IK with null-space posture bias.
+   - `arm`: damped-least-squares IK with null-space posture bias. **Live
+     2026-06-14** (`arm.rs`, planar Y/Z solver, joint discovery or explicit
+     `jointNodes`, CTR-008 schema, BEH-001 reach smoke).
    - `quadruped` (first NEW archetype — proves the contract generalizes): trot/walk
      generator with per-leg 3-DOF IK.
 2. **Constraint layer:** joint limits from the skeleton; velocity clamps;
@@ -89,18 +91,19 @@ Differential tests vs the JS oracle: **done for biped + FPV** —
 max dev 4.4e-16 / 7.1e-15; JS↔Rust libm ULPs are the only residual, which is
 why the band exists — bit-exactness across OUR targets is XT-001's job and
 holds). BEH-001 smoke per archetype (biped 2 s walk ≈ 1.49 m; rover 1 m arc;
-quadruped 1 m trot; multirotor hover-trim existence); BEH-002 servo stability;
-IK unit tests against the closed forms; golden-number membership for every
-formula (the session tick corpus now exercises both oracle drivers).
+quadruped 1 m trot; arm reachable-target solve; multirotor hover-trim
+existence); BEH-002 servo stability; IK unit tests against the closed forms;
+golden-number membership for every formula (the session tick corpus now
+exercises both oracle drivers).
 
 ## 8. Phase mapping & backlog
 
 P1: the port (P1-001) — **done 2026-06-12**: gait/IK/mixer/servos/constraint
 layer green against the oracle tapes; `CoreSession` drives biped + multirotor
 through the ported pipelines (`node_world_posed` = the monolith's nm() with
-base+animated euler). P2: driver library formalized + quadruped (P2-003/004 —
-quadruped itself already live), param schemas into the harness, `arm`/
-`fixedwing` drivers. P6: physics coupling. P7: policy layer consumes real ONNX
+base+animated euler). P2: driver library formalized with quadruped (P2-004) and
+arm DLS IK (P2-003) live, plus param schemas into the harness. Fixedwing remains
+a later driver. P6: physics coupling. P7: policy layer consumes real ONNX
 outputs.
 
 ## 9. Open questions

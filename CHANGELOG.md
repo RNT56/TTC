@@ -18,6 +18,20 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 
 ---
 
+## 2026-06-16 — Draw remaining-work boundary
+**Session:** Codex agent · branch main · **Phase:** cleanup · **TODO items:** none
+**Done:** Audited the remaining TODO rows after closing local code lanes and
+recorded the active boundary in `docs/EXECUTION-ROADMAP.md`: remaining work is
+owner-input, D30/D12 lab hardware, external-provider, conditional benchmark, or
+phase-fed catalog/slot-system work. No additional unblocked local implementation
+lane was identified.
+**Changed:** `docs/EXECUTION-ROADMAP.md`, `docs/TODO.md`, `CHANGELOG.md`.
+**Decisions:** none.
+**Next:** Owner/provider/lab inputs must be supplied before the remaining rows can
+be closed honestly.
+**Blockers:** owner signoffs/assets, lab hardware evidence, provider credentials,
+and benchmark data as listed in the execution roadmap boundary.
+
 ## 2026-06-15 — Emit print handoff artifacts from geometry jobs
 **Session:** Codex agent · branch codex/xc24-fuzz-corpus · **Phase:** P11/P6 · **TODO items:** P11-006 [~], XC-18 [~]
 **Done:** Extended `occt.tessellate` fixture output with DfM report references,

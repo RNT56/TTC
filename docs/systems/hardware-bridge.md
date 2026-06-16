@@ -50,15 +50,19 @@ Not a contingency: a scheduled product surface that arrives when it has a real j
 | filesystem | big log archives on a real filesystem instead of OPFS (P8-013) |
 | background recorder | field telemetry capture with the laptop lid closed (P8-013) |
 
-Live 2026-06-14: `@forge/desktop` carries the Tauri config that wraps the Studio
-bundle, a fail-closed native command contract for serial/config/recording, and a
-package check that validates no-auto-arm, the D30 signoff env, hardware lab mode,
-D12 rig allowlist, and bundle target invariants. Native serial/config/recording
-commands still return fail-closed errors until the D12 lab adapter is installed.
-Build/signing and updater delivery for the three desktop OSes remain
-P8-011. A native-core fast path inside the shell (bypassing WASM) is available later
-if profiling asks — not v1 scope. Desktop exit proof: **a field log captured by
-Desktop replays with visible ghost divergence** (P8-014).
+Live 2026-06-15: `@forge/desktop` carries the Tauri config that wraps the Studio
+bundle, native serial commands that enumerate ports and write config diffs through
+`serialport-rs`, and a recorder command that initializes a real filesystem archive
+manifest. Every native command remains gated by no-auto-arm policy, the D30 signoff
+env, hardware lab mode, D12 rig allowlist, and exact physical-confirmation or
+telemetry-consent phrases. Package and Rust unit checks cover those contracts.
+Browser WebSerial capture, live sidecar telemetry capture, build/signing, and
+updater delivery remain open; real bench/field evidence is still P8-009/P8-010/
+P8-014. A native-core fast path inside the shell (bypassing WASM) is available
+later if profiling asks — not v1 scope. Desktop exit proof: **a field log captured
+by Desktop replays with visible ghost divergence** (P8-014). Studio can scrub
+fixture crash-window/ghost metadata; live Desktop field-log capture and replay
+evidence remain the open hardware proof.
 
 ## 4. The flight recorder & ghost protocol (P8-003/004)
 

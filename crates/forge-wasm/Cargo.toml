@@ -4,16 +4,17 @@ description = "FORGE core WASM facade: bake / tick / validate / patch"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-forge-contract = { path = "../forge-contract" }
-forge-geometry = { path = "../forge-geometry" }
-forge-motion = { path = "../forge-motion" }
-forge-sim = { path = "../forge-sim" }
-forge-validate = { path = "../forge-validate" }
+forge-contract = { version = "0.1.0", path = "../forge-contract" }
+forge-geometry = { version = "0.1.0", path = "../forge-geometry" }
+forge-motion = { version = "0.1.0", path = "../forge-motion" }
+forge-sim = { version = "0.1.0", path = "../forge-sim" }
+forge-validate = { version = "0.1.0", path = "../forge-validate" }
 serde_json = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

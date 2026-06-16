@@ -5,12 +5,14 @@
 //!   forge-validate patch <contract.json> <patch.json> [--out out.json]
 //!   forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]
 //!   forge-validate env <env.json> [--report out.json] [--as-draft]
+//!   forge-validate sim-parity rapier-baseline [--out baseline.json]
+//!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
 //!   forge-validate schema [--out schema.json]
 //!
 //! Exit codes: 0 admitted/ok · 1 usage or I/O error · 2 rejected · 3 draft.
 
 use forge_validate::{run_full, EmptyCatalog, Options, Severity, Verdict};
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -22,10 +24,11 @@ fn main() -> ExitCode {
         Some("patch") => cmd_patch(&args[1..]),
         Some("migrate") => cmd_migrate(&args[1..]),
         Some("env") => cmd_env(&args[1..]),
+        Some("sim-parity") => cmd_sim_parity(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]"
             );
             ExitCode::from(1)
         }
@@ -450,6 +453,256 @@ fn cmd_env(args: &[String]) -> ExitCode {
         Verdict::Admitted => ExitCode::SUCCESS,
         Verdict::Rejected => ExitCode::from(2),
         Verdict::Draft => ExitCode::from(3),
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SimParityRapierBaselineArtifact {
+    artifact_kind: &'static str,
+    engine: &'static str,
+    validator_version: String,
+    tolerance: forge_sim::interop::ParityTolerance,
+    baseline: forge_sim::interop::RapierParityBaseline,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SimParityComparisonArtifact {
+    artifact_kind: &'static str,
+    validator_version: String,
+    tolerance: forge_sim::interop::ParityTolerance,
+    rapier: forge_sim::interop::RapierParityBaseline,
+    mujoco: forge_sim::interop::MuJoCoParityBaseline,
+    sample: forge_sim::interop::EngineParitySample,
+    report: forge_sim::interop::ParityReport,
+}
+
+fn cmd_sim_parity(args: &[String]) -> ExitCode {
+    match args.first().map(String::as_str) {
+        Some("rapier-baseline") => cmd_sim_parity_rapier_baseline(&args[1..]),
+        Some("compare") => cmd_sim_parity_compare(&args[1..]),
+        _ => {
+            eprintln!(
+                "usage: forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]"
+            );
+            ExitCode::from(1)
+        }
+    }
+}
+
+fn cmd_sim_parity_rapier_baseline(args: &[String]) -> ExitCode {
+    let tolerance = match sim_parity_tolerance(args, "sim-parity rapier-baseline") {
+        Ok(tolerance) => tolerance,
+        Err(code) => return code,
+    };
+    let baseline = match rapier_baseline_from_args(args, "sim-parity rapier-baseline") {
+        Ok(baseline) => baseline,
+        Err(code) => return code,
+    };
+    let artifact = SimParityRapierBaselineArtifact {
+        artifact_kind: "simParityRapierBaseline",
+        engine: "rapier",
+        validator_version: forge_validate::VALIDATOR_VERSION.to_string(),
+        tolerance,
+        baseline,
+    };
+    eprintln!(
+        "forge-validate sim-parity rapier-baseline · drop {:.6} s · pendulum {:.6} s",
+        artifact.baseline.rapier_drop_time_s, artifact.baseline.rapier_pendulum_period_s
+    );
+    emit_json("sim-parity rapier-baseline", args, &artifact)
+}
+
+fn cmd_sim_parity_compare(args: &[String]) -> ExitCode {
+    let Some(mujoco_path) = flag_value(args, "--mujoco") else {
+        eprintln!("sim-parity compare: missing --mujoco <baseline.json>");
+        return ExitCode::from(1);
+    };
+    let mujoco: forge_sim::interop::MuJoCoParityBaseline =
+        match read_json_baseline("sim-parity compare", &mujoco_path) {
+            Ok(baseline) => baseline,
+            Err(code) => return code,
+        };
+    let rapier: forge_sim::interop::RapierParityBaseline = match flag_value(args, "--rapier") {
+        Some(path) => match read_json_baseline("sim-parity compare", &path) {
+            Ok(baseline) => baseline,
+            Err(code) => return code,
+        },
+        None => match rapier_baseline_from_args(args, "sim-parity compare") {
+            Ok(baseline) => baseline,
+            Err(code) => return code,
+        },
+    };
+    let tolerance = match sim_parity_tolerance(args, "sim-parity compare") {
+        Ok(tolerance) => tolerance,
+        Err(code) => return code,
+    };
+    let sample = match forge_sim::interop::engine_parity_sample_from_baselines(rapier, mujoco) {
+        Ok(sample) => sample,
+        Err(e) => {
+            eprintln!("sim-parity compare: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let report = forge_sim::interop::evaluate_engine_parity(sample, tolerance);
+    let artifact = SimParityComparisonArtifact {
+        artifact_kind: "simParityComparison",
+        validator_version: forge_validate::VALIDATOR_VERSION.to_string(),
+        tolerance,
+        rapier,
+        mujoco,
+        sample,
+        report,
+    };
+    eprintln!(
+        "forge-validate sim-parity compare · drop Δ {:.6} s · pendulum Δ {:.6} s · hover Δ {:.4} · gait Δ {:.4} m → {}",
+        artifact.report.drop_time_error_s,
+        artifact.report.pendulum_period_error_s,
+        artifact.report.hover_trim_error,
+        artifact.report.gait_com_error_m,
+        if artifact.report.passed { "passed" } else { "failed" }
+    );
+    match emit_json("sim-parity compare", args, &artifact) {
+        ExitCode::SUCCESS if artifact.report.passed => ExitCode::SUCCESS,
+        ExitCode::SUCCESS => ExitCode::from(2),
+        code => code,
+    }
+}
+
+fn rapier_baseline_from_args(
+    args: &[String],
+    command: &str,
+) -> Result<forge_sim::interop::RapierParityBaseline, ExitCode> {
+    let gravity = match flag_f64(args, "--gravity", 9.80665, command) {
+        Ok(value) => value,
+        Err(code) => return Err(code),
+    };
+    let pendulum_length_m = match flag_f64(args, "--pendulum-length", 0.4, command) {
+        Ok(value) => value,
+        Err(code) => return Err(code),
+    };
+    let hover_trim = match flag_f64(args, "--hover-trim", 0.42, command) {
+        Ok(value) => value,
+        Err(code) => return Err(code),
+    };
+    let gait_com_m = match flag_f64(args, "--gait-com", 0.004, command) {
+        Ok(value) => value,
+        Err(code) => return Err(code),
+    };
+    match forge_sim::interop::rapier_engine_baseline(
+        gravity,
+        pendulum_length_m,
+        hover_trim,
+        gait_com_m,
+    ) {
+        Ok(baseline) => Ok(baseline),
+        Err(e) => {
+            eprintln!("{command}: Rapier baseline failed: {e}");
+            Err(ExitCode::from(2))
+        }
+    }
+}
+
+fn sim_parity_tolerance(
+    args: &[String],
+    command: &str,
+) -> Result<forge_sim::interop::ParityTolerance, ExitCode> {
+    let mut tolerance = forge_sim::interop::ParityTolerance::default();
+    tolerance.max_drop_time_error_s = flag_f64(
+        args,
+        "--max-drop-error",
+        tolerance.max_drop_time_error_s,
+        command,
+    )?;
+    tolerance.max_pendulum_period_error_s = flag_f64(
+        args,
+        "--max-pendulum-error",
+        tolerance.max_pendulum_period_error_s,
+        command,
+    )?;
+    tolerance.max_hover_trim_error = flag_f64(
+        args,
+        "--max-hover-error",
+        tolerance.max_hover_trim_error,
+        command,
+    )?;
+    tolerance.max_gait_com_error_m = flag_f64(
+        args,
+        "--max-gait-com-error",
+        tolerance.max_gait_com_error_m,
+        command,
+    )?;
+    Ok(tolerance)
+}
+
+fn flag_f64(args: &[String], flag: &str, default: f64, command: &str) -> Result<f64, ExitCode> {
+    let Some(index) = args.iter().position(|arg| arg == flag) else {
+        return Ok(default);
+    };
+    match args.get(index + 1).filter(|raw| !raw.starts_with("--")) {
+        Some(raw) => match raw.parse::<f64>() {
+            Ok(value) if value.is_finite() => Ok(value),
+            _ => {
+                eprintln!("{command}: {flag} must be a finite number");
+                Err(ExitCode::from(1))
+            }
+        },
+        None => {
+            eprintln!("{command}: {flag} requires a value");
+            Err(ExitCode::from(1))
+        }
+    }
+}
+
+fn read_json_baseline<T>(command: &str, path: &str) -> Result<T, ExitCode>
+where
+    T: DeserializeOwned,
+{
+    let doc = read_file(command, path)?;
+    let value: serde_json::Value = match serde_json::from_str(&doc) {
+        Ok(value) => value,
+        Err(e) => {
+            eprintln!("{command}: cannot parse {path} as JSON: {e}");
+            return Err(ExitCode::from(1));
+        }
+    };
+    match serde_json::from_value(value.clone()) {
+        Ok(decoded) => Ok(decoded),
+        Err(root_err) => match value.get("baseline") {
+            Some(baseline) => match serde_json::from_value(baseline.clone()) {
+                Ok(decoded) => Ok(decoded),
+                Err(baseline_err) => {
+                    eprintln!(
+                        "{command}: cannot decode {path} as baseline: {baseline_err}; root decode also failed: {root_err}"
+                    );
+                    Err(ExitCode::from(2))
+                }
+            },
+            None => {
+                eprintln!("{command}: cannot decode {path} as baseline: {root_err}");
+                Err(ExitCode::from(2))
+            }
+        },
+    }
+}
+
+fn emit_json<T: Serialize>(command: &str, args: &[String], value: &T) -> ExitCode {
+    match flag_value(args, "--out") {
+        Some(out) => match write_json(&out, value) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("{command}: cannot write {out}: {e}");
+                ExitCode::from(1)
+            }
+        },
+        None => {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(value).expect("value serializes")
+            );
+            ExitCode::SUCCESS
+        }
     }
 }
 

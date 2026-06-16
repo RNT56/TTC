@@ -62,7 +62,7 @@ Severity: `error` blocks admission; `warn` admits with notice.
 **BEH — behavior**
 | ID | Check | Pass condition |
 |---|---|---|
-| BEH-001 | archetype smoke | biped: walks 1 m, no NaN, penetration ≤ 1 mm · multirotor: holds altitude ± 5 cm · rover: tracks a 1 m arc · (quadruped/arm analogues defined with their drivers) |
+| BEH-001 | archetype smoke | biped: walks 1 m, no NaN, penetration ≤ 1 mm · multirotor: holds altitude ± 5 cm · rover: tracks a 1 m arc · quadruped: finite 1 m trot · arm: reachable IK target solve |
 | BEH-002 | servo stability | no oscillation growth at dt = 50 ms |
 | BEH-003 | explode round-trip | explode→assemble is deterministic |
 | BEH-004 | pick resolution | every visible part maps to a component or core |
@@ -78,21 +78,22 @@ Severity: `error` blocks admission; `warn` admits with notice.
 **MFG — manufacturing (printable structural parts)**
 | ID | Check |
 |---|---|
-| MFG-001 | minimum wall thickness per process profile *(FDM v0: inline structural parts require ≥ 1.2 mm)* |
-| MFG-002 | overhang angle *(FDM v0: warns on unsupported surfaces > 45° from vertical)* |
-| MFG-003 | support-volume estimate *(FDM v0: warns when unsupported area exceeds 25 % of surface area)* |
-| MFG-004 | bed fit *(FDM v0: oriented part extents must fit a 500 × 500 × 500 mm lab profile)* |
+| MFG-001 | minimum wall thickness per process profile *(live: FDM/SLA structural mesh-derived profiles)* |
+| MFG-002 | overhang angle *(live: best-orientation profile check)* |
+| MFG-003 | support-volume estimate *(live: support volume vs oriented bounding volume)* |
+| MFG-004 | bed fit *(live: oriented extents against FDM/SLA print volumes)* |
 
 **GEO-007** *(provisional v0 id)* · bake failure — the geometry could not be
 built at all (unknown node, degenerate dims, unsupported mesh ref pre-P5).
 **RND — render** · RND-001 golden-image perceptual diff (canonical cameras) ·
 RND-002 blueprint pass renders cleanly.
 
-> **Implementation state (v0.2, 2026-06-12 — D21):** live in `crates/forge-validate`:
+> **Implementation state (v0.3, 2026-06-14 — D21):** live in `crates/forge-validate`:
 > CTR-001..008, GEO-001 (static frame), GEO-003 (AABB proxy, warn), GEO-004..007,
-> SIM-001..003, BEH-001 (multirotor/rover/**quadruped** 1 m smoke), BEH-002, PRV-001 —
+> SIM-001..003, BEH-001 (multirotor/rover/quadruped/**arm** smoke), BEH-002,
+> MFG-001..004 (mesh-derived FDM/SLA structural profiles), PRV-001 —
 > with the diagnostic JSON and report envelope below, the CLI
-> (`run`/`bake`/`bom`/`schema`), and the WASM facade producing `target: "wasm"`
+> (`run`/`bake`/`bom`/`schema`/`sim-parity`), and the WASM facade producing `target: "wasm"`
 > reports in-browser. Animation-frame scans, the BVH joint sweep, and the remaining
 > rows land with their phases.
 **XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
@@ -109,8 +110,9 @@ activate against real rows at catalog ingestion (P3-004).
 **LIF — lifecycle** · LIF-001 upgrade re-validation when lockfiles move (D5).
 **PRV — provenance** · PRV-001 prompt/seed hashes present on generated content ·
 PRV-002 training lineage present on policies/skills.
-**ENV — EnvSpec (P10)** · ENV-001 spawn validity · ENV-002 reachability spawn→goals ·
-ENV-003 bounds sanity · ENV-004 no degenerate colliders.
+**ENV — EnvSpec (P10)** · ENV-001 identity/spawn validity · ENV-002 bounds,
+references, and conservative spawn→gate reachability · ENV-003 task/win sanity ·
+ENV-004 no degenerate colliders.
 
 ## 4. Diagnostic format *(proposed — stabilize at P2-001)*
 
@@ -154,10 +156,16 @@ crate exposes the pass/fail contract; the pixel diff is a CI sibling)*.
 
 ## 6. Distribution (D2, D17)
 
-Three artifacts from one crate, published at P2-001: **static binary** (CLI; the
-gateway spawns it — process isolation + bit-equality with CI), **npm WASM package**
-(via the facade), **crates.io crate** (for embedders). Versioned together; a report
-names its `validatorVersion` and `target`.
+Three artifacts from one crate family, with release plumbing live at P2-001:
+**static binary** (CLI; the gateway spawns it — process isolation + bit-equality
+with CI), **npm WASM package** (via the facade), **crates.io crates** (for
+embedders). `scripts/prepare-validator-release.mjs` checks internal Cargo package
+metadata, builds the release binary and `@forge/validate-wasm`, runs
+`npm pack --dry-run`, writes checksums, and powers the tag workflow. Actual
+publication remains owner-token gated and follows the internal crate order:
+`forge-num` → `forge-contract` → `forge-geometry` → `forge-motion` →
+`forge-sim` → `forge-validate` → `forge-wasm`. Versioned together; a report names
+its `validatorVersion` and `target`.
 
 ## 7. Dependencies
 

@@ -187,7 +187,15 @@ export interface JobCapabilityState {
 export interface JobCapabilities {
   providers: Record<"fixture" | "local" | "modal", JobCapabilityState>;
   live: Record<
-    "rapier" | "mujoco" | "sb3" | "colmap" | "onnxRuntime" | "vendorRefresh" | "printQuotes",
+    | "rapier"
+    | "mujoco"
+    | "sb3"
+    | "claudeExtraction"
+    | "occt"
+    | "colmap"
+    | "onnxRuntime"
+    | "vendorRefresh"
+    | "printQuotes",
     JobCapabilityState
   >;
   gates: PlatformGateSignoff[];
@@ -960,6 +968,32 @@ function modelIdFrom(value: unknown): string | null {
   return isRecord(value) && typeof value.modelId === "string" ? value.modelId : null;
 }
 
+const ADMITTED_MODEL_JOB_KINDS = new Set<JobKind>([
+  "occt.tessellate",
+  "train.policy",
+  "train.sysid-fit",
+  "codesign.evaluate",
+  "bridge.config-diff",
+]);
+
+async function assertAdmittedModelReference(
+  db: GatewayDb,
+  user: CurrentUser,
+  modelId: string | null,
+  surface: string,
+): Promise<void> {
+  if (modelId === null) return;
+  const model = await getOwnedModel(db, user, modelId);
+  if (model === null) {
+    throw Object.assign(new Error(`${surface} model not found`), { statusCode: 404 });
+  }
+  if (model.status !== "admitted") {
+    throw Object.assign(new Error(`${surface} requires an admitted model; drafts cannot train, export, deploy, or share`), {
+      statusCode: 409,
+    });
+  }
+}
+
 function rigIdFrom(value: unknown): string | null {
   if (!isRecord(value)) return null;
   return typeof value.rigId === "string"
@@ -1231,6 +1265,18 @@ export async function jobCapabilities(db: GatewayDb): Promise<JobCapabilities> {
         envConfigured("FORGE_SB3_TRAIN_CMD") ? "external-runner" : "python-import",
         "FORGE_SB3_TRAIN_CMD or FORGE_TRAINING_BACKEND=sb3 is required",
       ),
+      claudeExtraction: capability(
+        envConfigured("FORGE_CLAUDE_EXTRACT_CMD") || envConfigured("ANTHROPIC_API_KEY"),
+        envConfigured("FORGE_CLAUDE_EXTRACT_CMD"),
+        envConfigured("FORGE_CLAUDE_EXTRACT_CMD") ? "external-runner" : "deployment-owned",
+        "FORGE_CLAUDE_EXTRACT_CMD or ANTHROPIC_API_KEY is required",
+      ),
+      occt: capability(
+        envConfigured("FORGE_OCCT_TESSELLATE_CMD") || envEnabled("FORGE_OCCT_ENABLED"),
+        envConfigured("FORGE_OCCT_TESSELLATE_CMD"),
+        envConfigured("FORGE_OCCT_TESSELLATE_CMD") ? "external-runner" : "feature-gated",
+        "FORGE_OCCT_TESSELLATE_CMD or FORGE_OCCT_ENABLED=1 is required",
+      ),
       colmap: capability(
         envConfigured("FORGE_COLMAP_CMD") || envConfigured("FORGE_PHOTOSCAN_CMD"),
         envConfigured("FORGE_COLMAP_CMD") || envConfigured("FORGE_PHOTOSCAN_CMD"),
@@ -1341,6 +1387,7 @@ export async function createPrintQuoteRequest(
     };
   },
 ): Promise<PrintQuoteRequestRecord> {
+  await assertAdmittedModelReference(db, user, input.modelId ?? null, "print quote export");
   const requestResult = await db.query<Omit<Parameters<typeof mapPrintQuoteRequest>[0], "offers">>(
     `INSERT INTO print_quote_requests (
        owner_user_id, model_id, job_id, artifact_blob_id, process, material,
@@ -1827,6 +1874,9 @@ export async function createJob(
 ): Promise<JobRecord> {
   const provider = input.provider ?? "fixture";
   const costCredits = provider === "modal" ? 1 : 0;
+  if (ADMITTED_MODEL_JOB_KINDS.has(input.kind)) {
+    await assertAdmittedModelReference(db, user, modelIdFrom(input.payload), `${input.kind} job`);
+  }
   await assertHardwareGateForJob(db, input.kind, provider, input.payload ?? {});
   await ensureCreditAccount(db, user);
   if (costCredits > 0) {

@@ -50,5 +50,8 @@ assert(main.includes("FORGE_HARDWARE_LAB_MODE"), "native hardware access must re
 assert(main.includes("ref_quad_kakute-h7-source-one-5in"), "native hardware access must be D12 quad-gated");
 assert(main.includes("ref_rover_waveshare-ugv-rover-pt-pi5-ros2"), "native hardware access must be D12 rover-gated");
 assert(main.includes("no_auto_arm: true"), "native bridge status must be no-auto-arm");
+assert(main.includes("serialport::available_ports"), "desktop must enumerate serial ports through serialport-rs");
+assert(main.includes("serialport::new"), "desktop serial writes must use serialport-rs behind gates");
+assert(main.includes("forge-recorder-manifest.json"), "desktop recorder must initialize a filesystem archive manifest");
 
 console.log("desktop: scaffold, FORGE Link manifest, and deployment ladder checks passed");

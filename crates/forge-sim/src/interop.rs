@@ -5,9 +5,10 @@
 //! actuators. They are enough for round-trip fixtures, slotless contract import,
 //! and parity gates without taking a general XML dependency.
 
+use crate::rapier::{RapierWorld, RapierWorldConfig};
 use forge_contract::{
-    Archetype, CollisionPolicy, Driver, EnvBlock, Geom, Joint, JointKind, MaterialClass, Meta,
-    ModelSpec, Node, Part, PartPose, Provenance, ProvenanceKind, SimBlock,
+    Archetype, CollisionPolicy, Driver, EnvBlock, Explode, Geom, Joint, JointKind, MaterialClass,
+    Meta, ModelSpec, Node, Part, PartPose, Provenance, ProvenanceKind, SimBlock,
 };
 use serde::{Deserialize, Serialize};
 
@@ -215,21 +216,12 @@ fn summary_to_contract(summary: ImportedSummary) -> Result<ModelSpec, String> {
 
     let mut parts = Vec::new();
     for (i, geom) in summary.geoms.iter().enumerate() {
-        let part_geom = if geom.collision {
-            primitive_geom(geom).unwrap_or_else(|| Geom::Mesh {
-                asset_ref: geom
-                    .asset_ref
-                    .clone()
-                    .unwrap_or_else(|| asset_ref(&summary, geom, i)),
-            })
-        } else {
-            Geom::Mesh {
-                asset_ref: geom
-                    .asset_ref
-                    .clone()
-                    .unwrap_or_else(|| asset_ref(&summary, geom, i)),
-            }
-        };
+        let part_geom = primitive_geom(geom).unwrap_or_else(|| Geom::Mesh {
+            asset_ref: geom
+                .asset_ref
+                .clone()
+                .unwrap_or_else(|| asset_ref(&summary, geom, i)),
+        });
         parts.push(Part {
             node: geom.node.clone(),
             geom: part_geom,
@@ -248,7 +240,7 @@ fn summary_to_contract(summary: ImportedSummary) -> Result<ModelSpec, String> {
             } else {
                 "#9ca3af".to_string()
             },
-            explode: None,
+            explode: Some(imported_explode(i, summary.geoms.len(), geom.collision)),
             render_bias: None,
             comp: Some(format!("imported-{}-{i}", summary.format)),
             mass: None,
@@ -270,13 +262,15 @@ fn summary_to_contract(summary: ImportedSummary) -> Result<ModelSpec, String> {
             pose: None,
             material: MaterialClass::Matte,
             color: "#9ca3af".to_string(),
-            explode: None,
+            explode: Some(imported_explode(0, 1, false)),
             render_bias: None,
             comp: Some("imported-placeholder".to_string()),
             mass: None,
             collision: CollisionPolicy::Primitive,
         });
     }
+
+    let driver_params = inferred_rover_driver_params(&summary);
 
     Ok(ModelSpec {
         meta: Meta {
@@ -301,9 +295,57 @@ fn summary_to_contract(summary: ImportedSummary) -> Result<ModelSpec, String> {
         chains: Vec::new(),
         driver: Driver {
             archetype: Archetype::Rover,
-            params: serde_json::json!({"wheelbaseM":0.2,"maxSpeedMs":1.0}),
+            params: driver_params,
         },
         sim: SimBlock::default(),
+    })
+}
+
+fn imported_explode(index: usize, total: usize, collision: bool) -> Explode {
+    let side = if index % 2 == 0 { 1.0 } else { -1.0 };
+    let axis = match index % 3 {
+        0 => [side, 0.0, 0.0],
+        1 => [0.0, side, 0.0],
+        _ => [0.0, 0.0, side],
+    };
+    let band = if total <= 1 {
+        0.0
+    } else {
+        index as f64 / total as f64
+    };
+    Explode {
+        dir: axis,
+        mag: if collision { 0.035 } else { 0.055 },
+        t0: (band * 0.55).clamp(0.0, 0.9),
+        t1: (band * 0.55 + 0.35).clamp(0.1, 1.0),
+        leader: (index == 0).then(|| "imported assembly".to_string()),
+    }
+}
+
+fn inferred_rover_driver_params(summary: &ImportedSummary) -> serde_json::Value {
+    let wheel_nodes: Vec<&ImportedNode> = summary
+        .nodes
+        .iter()
+        .filter(|node| {
+            node.name.to_ascii_lowercase().contains("wheel")
+                || matches!(
+                    node.joint_kind.as_deref(),
+                    Some("revolute" | "continuous" | "hinge")
+                )
+        })
+        .collect();
+    let mut wheelbase = 0.2_f64;
+    for (i, a) in wheel_nodes.iter().enumerate() {
+        for b in wheel_nodes.iter().skip(i + 1) {
+            let dx = a.pos[0] - b.pos[0];
+            let dy = a.pos[1] - b.pos[1];
+            let dz = a.pos[2] - b.pos[2];
+            wheelbase = wheelbase.max((dx * dx + dy * dy + dz * dz).sqrt());
+        }
+    }
+    serde_json::json!({
+        "wheelbaseM": wheelbase.clamp(0.05, 5.0),
+        "maxSpeedMs": if summary.actuator_count > 0 { 1.2 } else { 1.0 }
     })
 }
 
@@ -350,7 +392,10 @@ pub struct EngineParitySample {
     pub mujoco_gait_com_m: f64,
 }
 
-pub fn evaluate_engine_parity(sample: EngineParitySample, tolerance: ParityTolerance) -> ParityReport {
+pub fn evaluate_engine_parity(
+    sample: EngineParitySample,
+    tolerance: ParityTolerance,
+) -> ParityReport {
     let drop_time_error_s = (sample.rapier_drop_time_s - sample.mujoco_drop_time_s).abs();
     let pendulum_period_error_s =
         (sample.rapier_pendulum_period_s - sample.mujoco_pendulum_period_s).abs();
@@ -395,6 +440,321 @@ pub fn parity_fixture(
             && hover_trim_error < 0.02
             && gait_com_error_m < 0.02,
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RapierParityBaseline {
+    pub drop_height_m: f64,
+    pub rapier_drop_time_s: f64,
+    pub pendulum_length_m: f64,
+    pub rapier_pendulum_period_s: f64,
+    pub rapier_hover_trim: f64,
+    pub rapier_gait_com_m: f64,
+    pub driver_dt_s: f64,
+    pub substeps: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MuJoCoParityBaseline {
+    pub drop_height_m: f64,
+    pub mujoco_drop_time_s: f64,
+    pub pendulum_length_m: f64,
+    pub mujoco_pendulum_period_s: f64,
+    pub mujoco_hover_trim: f64,
+    pub mujoco_gait_com_m: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub driver_dt_s: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub substeps: Option<u32>,
+}
+
+pub fn engine_parity_sample_from_baselines(
+    rapier: RapierParityBaseline,
+    mujoco: MuJoCoParityBaseline,
+) -> Result<EngineParitySample, String> {
+    let geometry_tol = 1e-9;
+    if (rapier.drop_height_m - mujoco.drop_height_m).abs() > geometry_tol {
+        return Err(format!(
+            "drop height mismatch: Rapier {:.9} m vs MuJoCo {:.9} m",
+            rapier.drop_height_m, mujoco.drop_height_m
+        ));
+    }
+    if (rapier.pendulum_length_m - mujoco.pendulum_length_m).abs() > geometry_tol {
+        return Err(format!(
+            "pendulum length mismatch: Rapier {:.9} m vs MuJoCo {:.9} m",
+            rapier.pendulum_length_m, mujoco.pendulum_length_m
+        ));
+    }
+    Ok(EngineParitySample {
+        rapier_drop_time_s: rapier.rapier_drop_time_s,
+        mujoco_drop_time_s: mujoco.mujoco_drop_time_s,
+        rapier_pendulum_period_s: rapier.rapier_pendulum_period_s,
+        mujoco_pendulum_period_s: mujoco.mujoco_pendulum_period_s,
+        rapier_hover_trim: rapier.rapier_hover_trim,
+        mujoco_hover_trim: mujoco.mujoco_hover_trim,
+        rapier_gait_com_m: rapier.rapier_gait_com_m,
+        mujoco_gait_com_m: mujoco.mujoco_gait_com_m,
+    })
+}
+
+pub fn compare_engine_baselines(
+    rapier: RapierParityBaseline,
+    mujoco: MuJoCoParityBaseline,
+    tolerance: ParityTolerance,
+) -> Result<ParityReport, String> {
+    let sample = engine_parity_sample_from_baselines(rapier, mujoco)?;
+    Ok(evaluate_engine_parity(sample, tolerance))
+}
+
+pub fn rapier_engine_baseline(
+    gravity: f64,
+    pendulum_length_m: f64,
+    hover_trim: f64,
+    gait_com_m: f64,
+) -> Result<RapierParityBaseline, String> {
+    let config = RapierWorldConfig {
+        dt_s: 1.0 / 240.0,
+        substeps: 4,
+        fixed_roots: true,
+        include_ground: false,
+    };
+    let drop_height_m = 1.0;
+    Ok(RapierParityBaseline {
+        drop_height_m,
+        rapier_drop_time_s: rapier_drop_time(gravity, drop_height_m, config)?,
+        pendulum_length_m,
+        rapier_pendulum_period_s: rapier_pendulum_period(gravity, pendulum_length_m, config)?,
+        rapier_hover_trim: rapier_hover_trim(gravity, hover_trim, config)?,
+        rapier_gait_com_m: rapier_gait_com(gravity, gait_com_m, config)?,
+        driver_dt_s: config.dt_s,
+        substeps: config.substeps,
+    })
+}
+
+fn rapier_drop_time(
+    gravity: f64,
+    drop_height_m: f64,
+    config: RapierWorldConfig,
+) -> Result<f64, String> {
+    let doc = serde_json::json!({
+      "meta":{"id":"parity-drop","name":"parity-drop","version":"2.1.0","archetype":"rover",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[{"name":"root","parent":null,"pos":[0,drop_height_m,0]}],
+      "parts":[{"node":"root","geom":{"kind":"box","w":0.04,"h":0.04,"d":0.04},
+                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
+      "driver":{"archetype":"rover","params":{"wheelbaseM":0.2,"maxSpeedMs":1.0}}
+    });
+    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
+    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    let mut world = RapierWorld::from_contract(
+        &spec,
+        &baked,
+        RapierWorldConfig {
+            fixed_roots: false,
+            ..config
+        },
+    )
+    .map_err(|err| err.to_string())?;
+    let mut prev_t = 0.0;
+    let mut prev_y = world
+        .body_pose("root")
+        .ok_or("missing parity drop body")?
+        .translation_m[1];
+    for _ in 0..2400 {
+        let step = world.step(config.dt_s);
+        let y = world
+            .body_pose("root")
+            .ok_or("missing parity drop body")?
+            .translation_m[1];
+        if y <= 0.0 {
+            let denom = prev_y - y;
+            let alpha = if denom.abs() > 1e-12 {
+                prev_y / denom
+            } else {
+                1.0
+            };
+            return Ok(prev_t + alpha.clamp(0.0, 1.0) * (step.t_s - prev_t));
+        }
+        prev_t = step.t_s;
+        prev_y = y;
+    }
+    Err("Rapier drop baseline did not cross y=0 within timeout".to_string())
+}
+
+fn rapier_pendulum_period(
+    gravity: f64,
+    pendulum_length_m: f64,
+    config: RapierWorldConfig,
+) -> Result<f64, String> {
+    let initial_angle = 0.12_f64;
+    let doc = serde_json::json!({
+      "meta":{"id":"parity-pendulum","name":"parity-pendulum","version":"2.1.0","archetype":"arm",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[
+        {"name":"root","parent":null,"pos":[0,0,0]},
+        {"name":"bob","parent":"root","pos":[0,0,0],"rot":[0,0,initial_angle],
+         "joint":{"type":"revolute","axis":[0,0,1],"maxTorqueNm":0.0,"maxVelRad":20.0},
+         "limits":[[-3.141592653589793,3.141592653589793],[-3.141592653589793,3.141592653589793],[-3.141592653589793,3.141592653589793]]}
+      ],
+      "parts":[{"node":"bob","geom":{"kind":"box","w":0.03,"h":0.03,"d":0.03},
+                "pose":{"p":[0,-pendulum_length_m,0]},
+                "material":"matte","color":"#777777","collision":"primitive","mass":{"valueG":100}}],
+      "driver":{"archetype":"arm","params":{"targetM":[0,-pendulum_length_m,0]}}
+    });
+    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
+    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    let mut world =
+        RapierWorld::from_contract(&spec, &baked, config).map_err(|err| err.to_string())?;
+    let mut prev_t = 0.0;
+    let mut prev_x = world
+        .body_local_point_world("bob", [0.0, -pendulum_length_m, 0.0])
+        .ok_or("missing parity pendulum body")?[0];
+    let mut crossings = Vec::new();
+    for _ in 0..4800 {
+        let step = world.step(config.dt_s);
+        let x = world
+            .body_local_point_world("bob", [0.0, -pendulum_length_m, 0.0])
+            .ok_or("missing parity pendulum body")?[0];
+        if prev_x > 0.0 && x <= 0.0 {
+            let denom = prev_x - x;
+            let alpha = if denom.abs() > 1e-12 {
+                prev_x / denom
+            } else {
+                1.0
+            };
+            crossings.push(prev_t + alpha.clamp(0.0, 1.0) * (step.t_s - prev_t));
+            if crossings.len() == 2 {
+                return Ok(crossings[1] - crossings[0]);
+            }
+        }
+        prev_t = step.t_s;
+        prev_x = x;
+    }
+    Err("Rapier pendulum baseline did not complete a period within timeout".to_string())
+}
+
+fn rapier_hover_trim(
+    gravity: f64,
+    expected_hover_trim: f64,
+    config: RapierWorldConfig,
+) -> Result<f64, String> {
+    if !(0.0..=1.0).contains(&expected_hover_trim) || expected_hover_trim <= 0.0 {
+        return Err("hover trim design point must be in (0, 1]".to_string());
+    }
+    let mass_kg = 0.1;
+    let max_thrust_n = mass_kg * gravity / expected_hover_trim;
+    let final_velocity = |throttle: f64| -> Result<f64, String> {
+        let doc = serde_json::json!({
+          "meta":{"id":"parity-hover","name":"parity-hover","version":"2.1.0","archetype":"multirotor",
+                  "provenance":{"kind":"human"},"license":"CC0"},
+          "env":{"gravity": gravity, "airDensity": 1.225},
+          "skeleton":[{"name":"root","parent":null,"pos":[0,0,0]}],
+          "parts":[{"node":"root","geom":{"kind":"box","w":0.06,"h":0.02,"d":0.06},
+                    "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
+          "driver":{"archetype":"multirotor","params":{"tiltMaxRad":0.4,"yawRate":2.4,"mixer":"x4"}}
+        });
+        let spec =
+            forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
+        let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+        let mut world = RapierWorld::from_contract(
+            &spec,
+            &baked,
+            RapierWorldConfig {
+                fixed_roots: false,
+                ..config
+            },
+        )
+        .map_err(|err| err.to_string())?;
+        if !world.set_body_force("root", [0.0, throttle * max_thrust_n, 0.0]) {
+            return Err("missing parity hover body".to_string());
+        }
+        let steps = (1.0 / config.dt_s).ceil() as usize;
+        for _ in 0..steps {
+            world.step(config.dt_s);
+        }
+        Ok(world
+            .body_pose("root")
+            .ok_or("missing parity hover body")?
+            .linvel_mps[1])
+    };
+
+    let mut lo = 0.0;
+    let mut hi = 1.0;
+    let lo_v = final_velocity(lo)?;
+    let hi_v = final_velocity(hi)?;
+    if lo_v > 0.0 || hi_v < 0.0 {
+        return Err(format!(
+            "hover trim bracket failed: low velocity {lo_v:.6} m/s, high velocity {hi_v:.6} m/s"
+        ));
+    }
+    for _ in 0..32 {
+        let mid = 0.5 * (lo + hi);
+        let v = final_velocity(mid)?;
+        if v < 0.0 {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    Ok(0.5 * (lo + hi))
+}
+
+fn rapier_gait_com(
+    gravity: f64,
+    target_gait_com_m: f64,
+    config: RapierWorldConfig,
+) -> Result<f64, String> {
+    if !target_gait_com_m.is_finite() || target_gait_com_m < 0.0 {
+        return Err("gait CoM design point must be non-negative and finite".to_string());
+    }
+    if target_gait_com_m == 0.0 {
+        return Ok(0.0);
+    }
+    let mass_kg = 0.1;
+    let omega = 2.0 * std::f64::consts::PI;
+    let lateral_force_amp_n = mass_kg * target_gait_com_m * omega * omega / 2.0;
+    let vertical_force_n = mass_kg * gravity;
+    let doc = serde_json::json!({
+      "meta":{"id":"parity-gait-com","name":"parity-gait-com","version":"2.1.0","archetype":"quadruped",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[{"name":"body","parent":null,"pos":[0,0,0]}],
+      "parts":[{"node":"body","geom":{"kind":"box","w":0.08,"h":0.03,"d":0.04},
+                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
+          "driver":{"archetype":"quadruped","params":{"standHeightM":0.08,"strideM":0.05,"cadenceHz":1.0,"duty":0.5,"liftM":0.02,"yawRate":1.0}}
+    });
+    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
+    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    let mut world = RapierWorld::from_contract(
+        &spec,
+        &baked,
+        RapierWorldConfig {
+            fixed_roots: false,
+            ..config
+        },
+    )
+    .map_err(|err| err.to_string())?;
+    let steps = (1.0 / config.dt_s).ceil() as usize;
+    let mut max_abs_x = 0.0_f64;
+    for step in 0..steps {
+        let t = step as f64 * config.dt_s;
+        let lateral = lateral_force_amp_n * (omega * t).cos();
+        if !world.set_body_force("body", [lateral, vertical_force_n, 0.0]) {
+            return Err("missing parity gait body".to_string());
+        }
+        world.step(config.dt_s);
+        let x = world
+            .body_pose("body")
+            .ok_or("missing parity gait body")?
+            .translation_m[0]
+            .abs();
+        max_abs_x = max_abs_x.max(x);
+    }
+    Ok(max_abs_x)
 }
 
 struct Element {
@@ -657,7 +1017,7 @@ mod tests {
         assert!(imported
             .parts
             .iter()
-            .any(|part| matches!(part.geom, Geom::Mesh { .. })));
+            .all(|part| !matches!(part.geom, Geom::Mesh { .. })));
         assert!(imported
             .parts
             .iter()
@@ -692,6 +1052,8 @@ mod tests {
         assert_eq!(imported.skeleton.len(), 3);
         assert_eq!(imported.parts.len(), 6);
         assert!(imported.slots.is_empty());
+        assert!((imported.driver.params["wheelbaseM"].as_f64().unwrap() - 0.24).abs() < 1e-9);
+        assert!(imported.parts.iter().all(|part| part.explode.is_some()));
         assert_eq!(
             imported
                 .skeleton
@@ -712,6 +1074,8 @@ mod tests {
         assert_eq!(imported.skeleton.len(), 3);
         assert_eq!(imported.parts.len(), 3);
         assert!(imported.slots.is_empty());
+        assert!((imported.driver.params["wheelbaseM"].as_f64().unwrap() - 0.24).abs() < 1e-9);
+        assert!(imported.parts.iter().all(|part| part.explode.is_some()));
         assert!(imported
             .parts
             .iter()
@@ -722,6 +1086,58 @@ mod tests {
     fn parity_fixture_passes_tight_thresholds() {
         let report = parity_fixture(9.80665, 0.4, 0.42, 0.421);
         assert!(report.passed, "{report:?}");
+    }
+
+    #[test]
+    fn rapier_engine_baseline_measures_drop_and_pendulum() {
+        let baseline = rapier_engine_baseline(9.80665, 0.4, 0.42, 0.004)
+            .expect("Rapier baseline should execute");
+        let analytical_drop = (2.0_f64 * baseline.drop_height_m / 9.80665).sqrt();
+        let analytical_period =
+            2.0 * std::f64::consts::PI * (baseline.pendulum_length_m / 9.80665).sqrt();
+
+        assert!(
+            (baseline.rapier_drop_time_s - analytical_drop).abs() < 0.002,
+            "{baseline:?}, analytical_drop={analytical_drop}"
+        );
+        assert!(
+            (baseline.rapier_pendulum_period_s - analytical_period).abs() < 0.04,
+            "{baseline:?}, analytical_period={analytical_period}"
+        );
+        assert!((baseline.rapier_hover_trim - 0.42).abs() < 1e-6);
+        assert!((baseline.rapier_gait_com_m - 0.004).abs() < 2e-4);
+    }
+
+    #[test]
+    fn engine_baseline_comparison_rejects_fixture_mismatch() {
+        let rapier = RapierParityBaseline {
+            drop_height_m: 1.0,
+            rapier_drop_time_s: 0.451,
+            pendulum_length_m: 0.4,
+            rapier_pendulum_period_s: 1.269,
+            rapier_hover_trim: 0.421,
+            rapier_gait_com_m: 0.004,
+            driver_dt_s: 1.0 / 240.0,
+            substeps: 4,
+        };
+        let mut mujoco = MuJoCoParityBaseline {
+            drop_height_m: 1.0,
+            mujoco_drop_time_s: 0.452,
+            pendulum_length_m: 0.4,
+            mujoco_pendulum_period_s: 1.271,
+            mujoco_hover_trim: 0.422,
+            mujoco_gait_com_m: 0.005,
+            driver_dt_s: Some(1.0 / 240.0),
+            substeps: Some(4),
+        };
+        let report = compare_engine_baselines(rapier, mujoco, ParityTolerance::default())
+            .expect("matching fixture metadata compares");
+        assert!(report.passed, "{report:?}");
+
+        mujoco.pendulum_length_m = 0.5;
+        let err = compare_engine_baselines(rapier, mujoco, ParityTolerance::default())
+            .expect_err("fixture mismatch should be rejected before tolerance math");
+        assert!(err.contains("pendulum length mismatch"), "{err}");
     }
 
     #[test]

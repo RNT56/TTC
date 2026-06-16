@@ -1,0 +1,14 @@
+{
+  "artifactKind": "simParityMuJoCoBaseline",
+  "provider": "mujoco-python-3.9.0",
+  "baseline": {
+    "dropHeightM": 1.0,
+    "mujocoDropTimeS": 0.4521218466494958,
+    "pendulumLengthM": 0.4,
+    "mujocoPendulumPeriodS": 1.270112620088624,
+    "mujocoHoverTrim": 0.4200000000419095,
+    "mujocoGaitComM": 0.004020575954833466,
+    "driverDtS": 0.004166666666666667,
+    "substeps": 4
+  }
+}

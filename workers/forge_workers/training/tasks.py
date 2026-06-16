@@ -13,6 +13,54 @@ from typing import Any
 TASK_SUITE = "p7-v1"
 TASK_VERSION = "1.0.0"
 
+DEFAULT_DOMAIN_RANDOMIZATION: dict[str, Any] = {
+    "massPct": 15,
+    "kvPct": 8,
+    "sagPct": 20,
+    "latencyMs": [0, 30],
+    "friction": [0.4, 1.2],
+    "windMps": [0, 4],
+    "obsDropoutPct": [0, 5],
+}
+
+_DEFAULT_OBSERVATIONS: dict[str, list[str]] = {
+    "arm": [
+        "estimator.jointPosition",
+        "estimator.jointVelocity",
+        "target.error",
+        "endEffector.pose",
+        "powertrain.motorCurrent",
+    ],
+    "legged": [
+        "estimator.basePose",
+        "estimator.baseVelocity",
+        "estimator.footContact",
+        "target.error",
+        "powertrain.motorCurrent",
+    ],
+    "multirotor": [
+        "estimator.attitude",
+        "estimator.angularRate",
+        "target.error",
+        "battery.normalizedVoltage",
+        "powertrain.motorCurrent",
+    ],
+    "rover": [
+        "estimator.pose2d",
+        "estimator.velocity",
+        "target.error",
+        "terrain.contact",
+        "powertrain.motorCurrent",
+    ],
+}
+
+_DEFAULT_ACTIONS: dict[str, list[str]] = {
+    "arm": ["jointPosition", "jointVelocity"],
+    "legged": ["legPhase", "stepHeight", "turnRate", "bodyHeight"],
+    "multirotor": ["throttle", "roll", "pitch", "yaw"],
+    "rover": ["drive", "turn"],
+}
+
 
 _TASKS: dict[str, dict[str, Any]] = {
     "hover-hold": {
@@ -157,11 +205,31 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
     """Return a deep-copied task definition with caller overrides applied."""
 
     base = deepcopy(_TASKS.get(task_id, _TASKS["hover-hold"]))
+    family = str(base.get("family", "multirotor"))
     definition = {
         "id": task_id if task_id in _TASKS else "hover-hold",
         "suite": TASK_SUITE,
         "version": TASK_VERSION,
+        "archetype": family,
         **base,
+        "observations": _DEFAULT_OBSERVATIONS.get(family, _DEFAULT_OBSERVATIONS["multirotor"]),
+        "actions": _DEFAULT_ACTIONS.get(family, _DEFAULT_ACTIONS["multirotor"]),
+        "reward": {
+            "terms": base["metrics"],
+            "energyPenalty": "energyWh",
+            "safetyPenalty": "failsafeCount" if family == "multirotor" else "collisionCount",
+        },
+        "termination": {
+            "timeoutS": base["horizonS"],
+            "outOfBounds": base["env"]["boundsM"],
+            "unsafeContact": family in {"legged", "rover", "arm"},
+        },
+        "success": {
+            "metrics": base["metrics"],
+            "minSuccessRate": 0.9,
+            "maxEnergyWh": None,
+        },
+        "domainRandomization": deepcopy(DEFAULT_DOMAIN_RANDOMIZATION),
     }
     if curriculum_stage is not None:
         definition["curriculumStage"] = curriculum_stage

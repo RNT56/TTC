@@ -12,6 +12,7 @@
 #![forbid(unsafe_code)]
 
 pub mod collide;
+pub mod dfm;
 pub mod massprops;
 pub mod polymesh;
 pub mod primitives;

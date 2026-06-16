@@ -1,4 +1,5 @@
 from forge_workers.training.scorecard import Scorecard, gate
+from forge_workers.training.tasks import task_definition, task_ids
 
 
 def card(**overrides):
@@ -53,3 +54,27 @@ def test_missing_lineage_is_prv_002():
     result = gate(card(lineage={}))
     assert not result.exportable
     assert any("PRV-002" in r for r in result.reasons)
+
+
+def test_p7_v1_task_definitions_cover_expected_suite():
+    assert set(task_ids()) == {
+        "gate-slalom",
+        "hover-hold",
+        "line-follow",
+        "obstacle-course",
+        "push-recovery",
+        "reach-track",
+        "rough-terrain",
+        "velocity-tracking",
+        "walk-to-target",
+        "waypoint-chain",
+    }
+    for task_id in task_ids():
+        spec = task_definition(task_id)
+        assert spec["suite"] == "p7-v1"
+        assert spec["version"] == "1.0.0"
+        assert spec["observations"]
+        assert spec["actions"]
+        assert spec["reward"]
+        assert spec["termination"]
+        assert spec["success"]

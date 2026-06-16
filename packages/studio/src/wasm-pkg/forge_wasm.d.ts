@@ -45,6 +45,25 @@ export class Bake {
 }
 
 /**
+ * Engine-backed Rapier session for browser-worker handoff. The worker owns
+ * this handle and mirrors `pose_view` into a SharedArrayBuffer.
+ */
+export class RapierSession {
+    free(): void;
+    [Symbol.dispose](): void;
+    constructor(contract_json: string, fixed_roots: boolean, include_ground: boolean);
+    node_names(): string[];
+    /**
+     * Zero-copy Rapier body pose view (16 f32 per body, column-major,
+     * `node_names` order). The worker copies this into its SAB mirror after
+     * every step.
+     */
+    pose_view(): Float32Array;
+    scene(): string;
+    step(dt_s: number): string;
+}
+
+/**
  * The `tick` boundary call as a stateful session.
  */
 export class Session {
@@ -98,6 +117,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_bake_free: (a: number, b: number) => void;
+    readonly __wbg_rapiersession_free: (a: number, b: number) => void;
     readonly __wbg_session_free: (a: number, b: number) => void;
     readonly bake: (a: number, b: number) => [number, number, number, number];
     readonly bake_contract: (a: number) => [number, number];
@@ -110,6 +130,11 @@ export interface InitOutput {
     readonly bake_positions: (a: number, b: number) => [number, number, number];
     readonly golden: (a: number, b: number) => [number, number, number, number];
     readonly patch: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly rapiersession_new: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly rapiersession_node_names: (a: number) => [number, number];
+    readonly rapiersession_pose_view: (a: number) => any;
+    readonly rapiersession_scene: (a: number) => [number, number];
+    readonly rapiersession_step: (a: number, b: number) => [number, number, number, number];
     readonly schema: () => [number, number];
     readonly session_clear_jog: (a: number) => void;
     readonly session_focus: (a: number) => [number, number];

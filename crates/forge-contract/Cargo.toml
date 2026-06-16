@@ -4,6 +4,7 @@ description = "FORGE Model Contract v2.1 — serde types, schemars JSON-Schema e
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 serde = { workspace = true }

@@ -36,8 +36,8 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 | Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
 | Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `maintenance.*`; fixture outputs materialize sidecar rows where tables exist | P5+ |
 | Policies/replays/photoscan | `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
-| Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET/POST /v1/leaderboards`; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
-| Platform | `GET/POST /v1/listings`; `GET/POST /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/evals/brief25/latest` | P11/P12 |
+| Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
+| Platform | `GET/POST/PATCH /v1/listings`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/evals/brief25/latest` | P11/P12 |
 
 Conventions *(proposed)*: versioned prefix `/v1`; SSE for long-running streams
 (generation, jobs); presigned S3 URLs for all binary upload/download; idempotency

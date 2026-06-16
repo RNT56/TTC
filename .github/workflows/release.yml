@@ -22,15 +22,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: release validator binary
-        run: |
-          cargo build --release -p forge-validate
-          mkdir -p dist-release
-          cp target/release/forge-validate dist-release/forge-validate-linux-x86_64
-          cp LICENSE NOTICE LICENSES/Apache-2.0.txt dist-release/
-      - name: wasm facade package
-        run: |
-          pnpm exec wasm-pack build crates/forge-wasm --target web --release --out-dir dist-release/forge-wasm-pkg --out-name forge_wasm
+      - name: prepare validator release artifacts
+        run: pnpm release:validator
       - uses: actions/upload-artifact@v7
         with:
           name: forgedttc-release

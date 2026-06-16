@@ -12,6 +12,7 @@ dependencies = ["jsonschema>=4.21"]
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 queue = ["psycopg[binary]>=3.2"]
+mujoco = ["mujoco>=3.2"]
 # Heavy runtime stacks are installed per worker family at deployment, never as
 # package deps: mujoco/stable-baselines3 (training), trimesh/occt (geometry),
 # and GPU libraries. Pinned in each family's container image.

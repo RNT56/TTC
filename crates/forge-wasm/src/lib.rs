@@ -89,6 +89,69 @@ pub fn bake_meta_json(
     .to_string()
 }
 
+pub fn rapier_pose_buffer_from_poses(poses: &[forge_sim::rapier::RapierBodyPose]) -> Vec<f32> {
+    let mut buffer = Vec::with_capacity(poses.len() * 16);
+    for pose in poses {
+        buffer.extend_from_slice(&pose_matrix(pose.translation_m, pose.rotation_wxyz));
+    }
+    buffer
+}
+
+fn pose_matrix(translation: [f64; 3], rotation_wxyz: [f64; 4]) -> [f32; 16] {
+    let [mut w, mut x, mut y, mut z] = rotation_wxyz;
+    let norm = (w * w + x * x + y * y + z * z).sqrt();
+    if norm > 1e-9 {
+        w /= norm;
+        x /= norm;
+        y /= norm;
+        z /= norm;
+    } else {
+        w = 1.0;
+        x = 0.0;
+        y = 0.0;
+        z = 0.0;
+    }
+
+    let xx = x * x;
+    let yy = y * y;
+    let zz = z * z;
+    let xy = x * y;
+    let xz = x * z;
+    let yz = y * z;
+    let wx = w * x;
+    let wy = w * y;
+    let wz = w * z;
+
+    let m00 = 1.0 - 2.0 * (yy + zz);
+    let m01 = 2.0 * (xy - wz);
+    let m02 = 2.0 * (xz + wy);
+    let m10 = 2.0 * (xy + wz);
+    let m11 = 1.0 - 2.0 * (xx + zz);
+    let m12 = 2.0 * (yz - wx);
+    let m20 = 2.0 * (xz - wy);
+    let m21 = 2.0 * (yz + wx);
+    let m22 = 1.0 - 2.0 * (xx + yy);
+
+    [
+        m00 as f32,
+        m10 as f32,
+        m20 as f32,
+        0.0,
+        m01 as f32,
+        m11 as f32,
+        m21 as f32,
+        0.0,
+        m02 as f32,
+        m12 as f32,
+        m22 as f32,
+        0.0,
+        translation[0] as f32,
+        translation[1] as f32,
+        translation[2] as f32,
+        1.0,
+    ]
+}
+
 #[cfg(target_arch = "wasm32")]
 mod wasm_bindings {
     use wasm_bindgen::prelude::*;
@@ -287,6 +350,71 @@ mod wasm_bindings {
             unsafe { js_sys::Float32Array::view(self.inner.pose_buffer()) }
         }
     }
+
+    /// Engine-backed Rapier session for browser-worker handoff. The worker owns
+    /// this handle and mirrors `pose_view` into a SharedArrayBuffer.
+    #[wasm_bindgen]
+    pub struct RapierSession {
+        world: forge_sim::rapier::RapierWorld,
+        node_names: Vec<String>,
+        pose: Vec<f32>,
+    }
+
+    #[wasm_bindgen]
+    impl RapierSession {
+        #[wasm_bindgen(constructor)]
+        pub fn new(
+            contract_json: &str,
+            fixed_roots: bool,
+            include_ground: bool,
+        ) -> Result<RapierSession, JsValue> {
+            let spec =
+                forge_contract::validate_shape(contract_json).map_err(|e| err(e.to_string()))?;
+            let baked = forge_geometry::bake(&spec).map_err(|e| err(e.to_string()))?;
+            let world = forge_sim::rapier::RapierWorld::from_contract(
+                &spec,
+                &baked,
+                forge_sim::rapier::RapierWorldConfig {
+                    fixed_roots,
+                    include_ground,
+                    ..forge_sim::rapier::RapierWorldConfig::default()
+                },
+            )
+            .map_err(|e| err(e.to_string()))?;
+            let poses = world.poses();
+            let node_names = poses.iter().map(|pose| pose.node.clone()).collect();
+            let pose = super::rapier_pose_buffer_from_poses(&poses);
+            Ok(RapierSession {
+                world,
+                node_names,
+                pose,
+            })
+        }
+
+        pub fn scene(&self) -> String {
+            serde_json::to_string(self.world.scene()).expect("Rapier scene serializes")
+        }
+
+        pub fn node_names(&self) -> Vec<String> {
+            self.node_names.clone()
+        }
+
+        pub fn step(&mut self, dt_s: f64) -> Result<String, JsValue> {
+            let result = self.world.step(dt_s);
+            self.pose = super::rapier_pose_buffer_from_poses(&result.poses);
+            serde_json::to_string(&result).map_err(|e| err(e.to_string()))
+        }
+
+        /// Zero-copy Rapier body pose view (16 f32 per body, column-major,
+        /// `node_names` order). The worker copies this into its SAB mirror after
+        /// every step.
+        pub fn pose_view(&self) -> js_sys::Float32Array {
+            // SAFETY: the view aliases the session-owned pose Vec. The worker
+            // copies it synchronously before the next facade call can replace
+            // the Vec.
+            unsafe { js_sys::Float32Array::view(&self.pose) }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -305,6 +433,28 @@ mod tests {
         assert!(parts[0].get("mesh").is_none(), "no buffers in meta");
         assert!(parts[0]["vertices"].as_u64().unwrap() > 0);
         assert!(meta["baked"]["node_world"].get("root").is_some());
+    }
+
+    #[test]
+    fn rapier_pose_buffer_is_column_major_transform() {
+        let poses = vec![forge_sim::rapier::RapierBodyPose {
+            node: "root".to_string(),
+            translation_m: [1.0, 2.0, 3.0],
+            rotation_wxyz: [1.0, 0.0, 0.0, 0.0],
+            linvel_mps: [0.0; 3],
+            angvel_radps: [0.0; 3],
+        }];
+        let pose = super::rapier_pose_buffer_from_poses(&poses);
+        assert_eq!(pose.len(), 16);
+        assert_eq!(
+            pose,
+            vec![
+                1.0, 0.0, 0.0, 0.0, //
+                0.0, 1.0, 0.0, 0.0, //
+                0.0, 0.0, 1.0, 0.0, //
+                1.0, 2.0, 3.0, 1.0,
+            ]
+        );
     }
 
     #[test]

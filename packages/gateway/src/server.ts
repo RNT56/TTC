@@ -5,6 +5,7 @@ import { Type } from "@sinclair/typebox";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { getCurrentUser, handleAuthRequest, requireUser, type CurrentUser } from "./auth.js";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import { recordGeneratedArtifact } from "./generatedArtifacts.js";
@@ -147,6 +148,16 @@ const moderationReasonSchema = Type.Union([
   Type.Literal("export-control"),
   Type.Literal("other"),
 ]);
+const moderationStatusSchema = Type.Union([
+  Type.Literal("open"),
+  Type.Literal("triaged"),
+  Type.Literal("actioned"),
+  Type.Literal("rejected"),
+]);
+const moderationActionSchema = Type.Union([
+  Type.Literal("none"),
+  Type.Literal("delist-listing"),
+]);
 const moderationTargetSchema = Type.Union([
   Type.Literal("listing"),
   Type.Literal("course"),
@@ -160,6 +171,13 @@ const listingKindSchema = Type.Union([
   Type.Literal("skill"),
   Type.Literal("component"),
   Type.Literal("policy"),
+]);
+const listingStatusSchema = Type.Union([
+  Type.Literal("draft"),
+  Type.Literal("review"),
+  Type.Literal("listed"),
+  Type.Literal("rejected"),
+  Type.Literal("delisted"),
 ]);
 const licenseClassSchema = Type.Union([
   Type.Literal("open"),
@@ -220,6 +238,36 @@ const generationBodySchema = Type.Object(
   },
   { additionalProperties: false },
 );
+const courseGenerationBodySchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, maxLength: 2000 }),
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
+    archetype: Type.Optional(generationArchetypeSchema),
+    visibility: Type.Optional(visibilitySchema),
+    provider: Type.Optional(Type.Literal("template")),
+    seed: Type.Optional(Type.Integer({ minimum: 0 })),
+  },
+  { additionalProperties: false },
+);
+
+type CourseGenerationBody = {
+  prompt: string;
+  name?: string;
+  archetype?: GenerationArchetype;
+  visibility?: "private" | "unlisted" | "public";
+  provider?: "template";
+  seed?: number;
+};
+
+type CourseRow = {
+  id: string;
+  owner_user_id?: string | null;
+  name: string;
+  env_spec: unknown;
+  validator_report: unknown;
+  visibility: string;
+  created_at: Date | string;
+};
 
 function unavailable(error: unknown): { error: string; detail: string } {
   const detail = error instanceof Error ? error.message : String(error);
@@ -239,6 +287,160 @@ function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): 
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function optionalNonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function leaderboardSlice(input: {
+  archetype?: unknown;
+  classKey?: unknown;
+  verification?: Record<string, unknown>;
+}): { archetype: string | null; classKey: string | null } {
+  const verification = input.verification ?? {};
+  const header = isRecord(verification.header) ? verification.header : {};
+  const replayHeader = isRecord(verification.replayHeader) ? verification.replayHeader : {};
+  const model = isRecord(verification.model) ? verification.model : {};
+  return {
+    archetype:
+      optionalNonEmptyString(input.archetype) ??
+      optionalNonEmptyString(verification.archetype) ??
+      optionalNonEmptyString(header.archetype) ??
+      optionalNonEmptyString(replayHeader.archetype) ??
+      optionalNonEmptyString(model.archetype),
+    classKey:
+      optionalNonEmptyString(input.classKey) ??
+      optionalNonEmptyString(verification.classKey) ??
+      optionalNonEmptyString(verification.vehicleClass) ??
+      optionalNonEmptyString(verification.class) ??
+      optionalNonEmptyString(header.classKey) ??
+      optionalNonEmptyString(replayHeader.classKey) ??
+      optionalNonEmptyString(model.classKey),
+  };
+}
+
+function mapCourse(row: CourseRow): {
+  id: string;
+  name: string;
+  envSpec: unknown;
+  validatorReport: unknown;
+  visibility: string;
+  createdAt: string;
+} {
+  return {
+    id: row.id,
+    name: row.name,
+    envSpec: row.env_spec,
+    validatorReport: row.validator_report,
+    visibility: row.visibility,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  };
+}
+
+function stable(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stable);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, stable((value as Record<string, unknown>)[key])]),
+    );
+  }
+  return value;
+}
+
+function stableJson(value: unknown): string {
+  return JSON.stringify(stable(value));
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function slugify(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return slug || "course";
+}
+
+function titleFromPrompt(prompt: string): string {
+  const title = prompt.trim().split(/\s+/).slice(0, 8).join(" ");
+  return title || "Generated course";
+}
+
+function courseTask(archetype: GenerationArchetype): string {
+  switch (archetype) {
+    case "arm":
+      return "reach";
+    case "biped":
+      return "walk-to-target";
+    case "quadruped":
+      return "rough-terrain";
+    case "rover":
+      return "line-follow";
+    case "fixedwing":
+      return "waypoint-chain";
+    case "multirotor":
+      return "gate-slalom";
+  }
+}
+
+function buildTemplateEnvSpec(body: CourseGenerationBody): Record<string, unknown> {
+  const archetype = body.archetype ?? "multirotor";
+  const seed = Math.max(0, Math.trunc(body.seed ?? 0));
+  const prompt = body.prompt.trim();
+  const hash = sha256(stableJson({ prompt, archetype, seed, kind: "envspec" }));
+  const title = body.name?.trim() || `Generated ${archetype} - ${titleFromPrompt(prompt)}`;
+  const airborne = archetype === "multirotor" || archetype === "fixedwing";
+  const arm = archetype === "arm";
+  const boundsM = arm ? [4, 4, 4] : [20, 6, 20];
+  const gateY = airborne ? 1.2 : 0.5;
+  const lateral = Number((((seed % 7) - 3) * 0.15).toFixed(3));
+  const spawn = airborne ? [-4, 1, 0] : [0, 0, 0];
+  const g1 = arm ? [1, 0.5, lateral] : [4, gateY, lateral];
+  const g2 = arm ? [1.4, 0.65, 0.4 + lateral] : [7, gateY, 1.2 + lateral];
+  return {
+    id: `course-${slugify(title)}-${hash.slice(0, 10)}`,
+    name: title,
+    version: "1.0.0",
+    kind: archetype === "rover" ? "rover" : "course",
+    boundsM,
+    provenance: {
+      kind: "parametric-generator",
+      promptHash: hash,
+      modelVersion: "forge-course-template-p10-v1",
+      provider: body.provider ?? "template",
+      seed,
+    },
+    license: {
+      id: "CC0-1.0",
+      class: "open",
+      terms: "Generated course template; no third-party course assets embedded.",
+    },
+    terrain: { kind: "flat", sizeM: arm ? [4, 4] : [20, 20] },
+    tasks: [courseTask(archetype)],
+    obstacles: [
+      {
+        id: "reference-block",
+        centerM: arm ? [0.4, 0.4, -1] : [2.5, 0.45, -2.5],
+        sizeM: arm ? [0.35, 0.8, 0.35] : [0.8, 0.9, 0.8],
+      },
+    ],
+    gates: [
+      { id: "g1", pose: { p: g1, r: [0, 0, 0] }, widthM: arm ? 0.45 : 1.2, heightM: arm ? 0.45 : 0.8 },
+      { id: "g2", pose: { p: g2, r: [0, 0, 0] }, widthM: arm ? 0.45 : 1.2, heightM: arm ? 0.45 : 0.8 },
+    ],
+    spawns: [{ id: "start", pose: { p: spawn, r: [0, 0, 0] }, archetypeFilter: [archetype] }],
+    win: { gateOrder: ["g1", "g2"], timeLimitS: airborne ? 45 : 90, contactPenalties: true },
+    env: {
+      wind: { meanMps: airborne ? 1.0 : 0.0, gustMps: airborne ? 0.5 : 0.0 },
+      lighting: "studio",
+    },
+  };
 }
 
 function reportVerdict(report: unknown): string {
@@ -1214,14 +1416,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       try {
         const query = request.query as { limit?: number };
-        const result = await db.query<{
-          id: string;
-          name: string;
-          env_spec: unknown;
-          validator_report: unknown;
-          visibility: string;
-          created_at: Date | string;
-        }>(
+        const result = await db.query<CourseRow>(
           `SELECT id, name, env_spec, validator_report, visibility, created_at
              FROM courses
             WHERE visibility IN ('public', 'unlisted')
@@ -1230,15 +1425,37 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           [query.limit ?? 50],
         );
         return reply.send({
-          courses: result.rows.map((row) => ({
-            id: row.id,
-            name: row.name,
-            envSpec: row.env_spec,
-            validatorReport: row.validator_report,
-            visibility: row.visibility,
-            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
-          })),
+          courses: result.rows.map(mapCourse),
         });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/courses/:courseId",
+    {
+      schema: {
+        params: Type.Object({ courseId: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await getCurrentUser(request, db);
+        const { courseId } = request.params as { courseId: string };
+        const result = await db.query<CourseRow>(
+          `SELECT id, owner_user_id, name, env_spec, validator_report, visibility, created_at
+             FROM courses
+            WHERE id = $1
+              AND (visibility IN ('public', 'unlisted') OR owner_user_id = $2)
+            LIMIT 1`,
+          [courseId, user?.id ?? null],
+        );
+        const row = result.rows[0];
+        if (!row) return reply.status(404).send({ error: "course not found" });
+        return reply.send({ course: mapCourse(row) });
       } catch (error) {
         const mapped = routeError(error);
         return reply.status(mapped.statusCode).send(mapped.body);
@@ -1283,6 +1500,56 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
   );
 
+  app.post(
+    "/v1/courses/generate",
+    {
+      schema: { body: courseGenerationBodySchema },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as CourseGenerationBody;
+        const envSpec = buildTemplateEnvSpec(body);
+        const validation = await runEnvSpec(JSON.stringify(envSpec), false);
+        if (validation.exitCode === -1 || validation.report === null) {
+          throw Object.assign(new Error(validation.stderr || "EnvSpec validator unavailable"), { statusCode: 503 });
+        }
+        const validatorReport = validation.report;
+        if (validation.exitCode !== 0 || reportVerdict(validatorReport) !== "admitted") {
+          throw Object.assign(new Error("generated EnvSpec failed validation"), {
+            statusCode: 422,
+            report: validatorReport,
+          });
+        }
+        const result = await db.query<{ id: string }>(
+          `INSERT INTO courses (owner_user_id, name, env_spec, validator_report, visibility)
+           VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)
+           RETURNING id`,
+          [
+            user.id,
+            typeof envSpec.name === "string" ? envSpec.name : body.name ?? "Generated course",
+            JSON.stringify(envSpec),
+            JSON.stringify(validatorReport),
+            body.visibility ?? "unlisted",
+          ],
+        );
+        return reply.status(201).send({
+          id: result.rows[0].id,
+          envSpec,
+          validatorReport,
+          generation: {
+            provider: body.provider ?? "template",
+            archetype: body.archetype ?? "multirotor",
+            promptHash: isRecord(envSpec.provenance) ? envSpec.provenance.promptHash : null,
+          },
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
   app.get(
     "/v1/leaderboards",
     {
@@ -1290,6 +1557,8 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         querystring: Type.Object(
           {
             courseId: Type.String({ minLength: 1 }),
+            archetype: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+            classKey: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
             limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
           },
           { additionalProperties: false },
@@ -1298,26 +1567,32 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
     async (request, reply) => {
       try {
-        const query = request.query as { courseId: string; limit?: number };
+        const query = request.query as { courseId: string; archetype?: string; classKey?: string; limit?: number };
         const result = await db.query<{
           id: string;
           course_id: string;
+          archetype: string | null;
+          class_key: string | null;
           score: string | number;
           verified: boolean;
           verification: unknown;
           created_at: Date | string;
         }>(
-          `SELECT id, course_id, score, verified, verification, created_at
+          `SELECT id, course_id, archetype, class_key, score, verified, verification, created_at
              FROM leaderboard_runs
             WHERE course_id = $1
+              AND ($2::text IS NULL OR archetype = $2)
+              AND ($3::text IS NULL OR class_key = $3)
             ORDER BY verified DESC, score DESC, created_at ASC
-            LIMIT $2`,
-          [query.courseId, query.limit ?? 50],
+            LIMIT $4`,
+          [query.courseId, query.archetype ?? null, query.classKey ?? null, query.limit ?? 50],
         );
         return reply.send({
           runs: result.rows.map((row) => ({
             id: row.id,
             courseId: row.course_id,
+            archetype: row.archetype,
+            classKey: row.class_key,
             score: Number(row.score),
             verified: row.verified,
             verification: row.verification,
@@ -1341,6 +1616,8 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             score: Type.Number(),
             replayId: Type.Optional(Type.String({ minLength: 1 })),
             policyId: Type.Optional(Type.String({ minLength: 1 })),
+            archetype: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+            classKey: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
             tape: Type.Optional(Type.Unknown()),
             expectedReplayHash: Type.Optional(Type.String({ minLength: 1 })),
             expectedContractHash: Type.Optional(Type.String({ minLength: 1 })),
@@ -1358,6 +1635,8 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           score: number;
           replayId?: string;
           policyId?: string;
+          archetype?: string;
+          classKey?: string;
           tape?: unknown;
           expectedReplayHash?: string;
           expectedContractHash?: string;
@@ -1367,6 +1646,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           typeof body.verification === "object" && body.verification !== null
             ? (body.verification as Record<string, unknown>)
             : {};
+        const slice = leaderboardSlice({
+          archetype: body.archetype,
+          classKey: body.classKey,
+          verification: clientVerification,
+        });
         const submittedTape = body.tape ?? clientVerification.tape;
         const expectedHash =
           body.expectedReplayHash ??
@@ -1392,23 +1676,36 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
                 modelId: typeof clientVerification.modelId === "string" ? clientVerification.modelId : null,
               });
         const result = await db.query<{ id: string }>(
-          `INSERT INTO leaderboard_runs (course_id, policy_id, replay_id, user_id, score, verified, verification)
-           VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+          `INSERT INTO leaderboard_runs (
+             course_id, policy_id, replay_id, user_id, archetype, class_key, score, verified, verification
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
            RETURNING id`,
           [
             body.courseId,
             body.policyId ?? null,
             replay?.id ?? body.replayId ?? null,
             user.id,
+            slice.archetype,
+            slice.classKey,
             body.score,
             verification.verified,
             JSON.stringify({
               ...verification,
+              archetype: slice.archetype,
+              classKey: slice.classKey,
               clientClaim: clientVerification.verified === undefined ? null : Boolean(clientVerification.verified),
             }),
           ],
         );
-        return reply.status(201).send({ id: result.rows[0].id, verified: verification.verified, verification, replay });
+        return reply.status(201).send({
+          id: result.rows[0].id,
+          verified: verification.verified,
+          archetype: slice.archetype,
+          classKey: slice.classKey,
+          verification,
+          replay,
+        });
       } catch (error) {
         const mapped = routeError(error);
         return reply.status(mapped.statusCode).send(mapped.body);
@@ -2007,6 +2304,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         querystring: Type.Object(
           {
             kind: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+            status: Type.Optional(listingStatusSchema),
             limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
           },
           { additionalProperties: false },
@@ -2015,7 +2313,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
     async (request, reply) => {
       try {
-        const query = request.query as { kind?: string; limit?: number };
+        const query = request.query as { kind?: string; status?: string; limit?: number };
+        const status = query.status ?? "listed";
+        if (status !== "listed" && !reviewAuthorized(request, reviewToken)) {
+          return reply.status(401).send({ error: "listing curation auth required" });
+        }
         const result = await db.query<{
           id: string;
           listing_kind: string;
@@ -2028,11 +2330,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         }>(
           `SELECT id, listing_kind, status, title, license_class, export_policy, price_credits, created_at
              FROM marketplace_listings
-            WHERE status = 'listed'
-              AND ($1::text IS NULL OR listing_kind = $1)
+            WHERE status = $1
+              AND ($2::text IS NULL OR listing_kind = $2)
             ORDER BY created_at DESC
-            LIMIT $2`,
-          [query.kind ?? null, query.limit ?? 50],
+            LIMIT $3`,
+          [status, query.kind ?? null, query.limit ?? 50],
         );
         return reply.send({
           listings: result.rows.map((row) => ({
@@ -2045,6 +2347,73 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             priceCredits: Number(row.price_credits),
             createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
           })),
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.patch(
+    "/v1/listings/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            status: listingStatusSchema,
+            reviewer: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+            note: Type.Optional(Type.String({ maxLength: 2000 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      if (!reviewAuthorized(request, reviewToken)) {
+        return reply.status(401).send({ error: "listing curation auth required" });
+      }
+      try {
+        const { id } = request.params as { id: string };
+        const body = request.body as { status: string; reviewer?: string; note?: string };
+        const moderation = {
+          curatedAt: new Date().toISOString(),
+          reviewer: body.reviewer ?? "reviewer",
+          note: body.note ?? "",
+          status: body.status,
+        };
+        const result = await db.query<{
+          id: string;
+          listing_kind: string;
+          status: string;
+          title: string;
+          license_class: string | null;
+          export_policy: string;
+          price_credits: string | number;
+          created_at: Date | string;
+        }>(
+          `UPDATE marketplace_listings
+              SET status = $2,
+                  moderation = moderation || $3::jsonb,
+                  updated_at = now()
+            WHERE id = $1
+            RETURNING id, listing_kind, status, title, license_class, export_policy, price_credits, created_at`,
+          [id, body.status, JSON.stringify(moderation)],
+        );
+        const row = result.rows[0];
+        if (!row) return reply.status(404).send({ error: "listing not found" });
+        return reply.send({
+          listing: {
+            id: row.id,
+            kind: row.listing_kind,
+            status: row.status,
+            title: row.title,
+            licenseClass: row.license_class,
+            exportPolicy: row.export_policy,
+            priceCredits: Number(row.price_credits),
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          },
         });
       } catch (error) {
         const mapped = routeError(error);
@@ -2293,6 +2662,126 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           status: row.status,
           slaDueAt: row.sla_due_at instanceof Date ? row.sla_due_at.toISOString() : row.sla_due_at,
           repeatInfringerSignal: row.repeat_infringer_signal,
+        });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.patch(
+    "/v1/moderation/reports/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            status: moderationStatusSchema,
+            action: Type.Optional(moderationActionSchema),
+            reviewer: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+            note: Type.Optional(Type.String({ maxLength: 2000 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      if (!reviewAuthorized(request, reviewToken)) {
+        return reply.status(401).send({ error: "moderation auth required" });
+      }
+      try {
+        const { id } = request.params as { id: string };
+        const body = request.body as {
+          status: "open" | "triaged" | "actioned" | "rejected";
+          action?: "none" | "delist-listing";
+          reviewer?: string;
+          note?: string;
+        };
+        const note = body.note?.trim()
+          ? `curation ${new Date().toISOString()} ${body.reviewer ?? "reviewer"}: ${body.note.trim()}`
+          : "";
+        const result = await db.query<{
+          id: string;
+          target_kind: string;
+          target_id: string;
+          reason: string;
+          detail: string;
+          status: string;
+          sla_due_at: Date | string;
+          repeat_infringer_signal: boolean;
+          created_at: Date | string;
+        }>(
+          `UPDATE moderation_reports
+              SET status = $2,
+                  detail = CASE
+                    WHEN $3::text = '' THEN detail
+                    WHEN detail = '' THEN $3
+                    ELSE detail || E'\n\n' || $3
+                  END,
+                  updated_at = now()
+            WHERE id = $1
+            RETURNING id, target_kind, target_id, reason, detail, status,
+                      sla_due_at, repeat_infringer_signal, created_at`,
+          [id, body.status, note],
+        );
+        const row = result.rows[0];
+        if (!row) return reply.status(404).send({ error: "moderation report not found" });
+        let listing: unknown = null;
+        if (body.status === "actioned" && body.action === "delist-listing" && row.target_kind === "listing") {
+          const listingResult = await db.query<{
+            id: string;
+            listing_kind: string;
+            status: string;
+            title: string;
+            license_class: string | null;
+            export_policy: string;
+            price_credits: string | number;
+            created_at: Date | string;
+          }>(
+            `UPDATE marketplace_listings
+                SET status = 'delisted',
+                    moderation = moderation || $2::jsonb,
+                    updated_at = now()
+              WHERE id = $1
+              RETURNING id, listing_kind, status, title, license_class, export_policy, price_credits, created_at`,
+            [
+              row.target_id,
+              JSON.stringify({
+                delistedByReportId: row.id,
+                reviewer: body.reviewer ?? "reviewer",
+                reason: row.reason,
+                actionedAt: new Date().toISOString(),
+              }),
+            ],
+          );
+          const listingRow = listingResult.rows[0];
+          listing = listingRow
+            ? {
+                id: listingRow.id,
+                kind: listingRow.listing_kind,
+                status: listingRow.status,
+                title: listingRow.title,
+                licenseClass: listingRow.license_class,
+                exportPolicy: listingRow.export_policy,
+                priceCredits: Number(listingRow.price_credits),
+                createdAt: listingRow.created_at instanceof Date ? listingRow.created_at.toISOString() : listingRow.created_at,
+              }
+            : null;
+        }
+        return reply.send({
+          report: {
+            id: row.id,
+            targetKind: row.target_kind,
+            targetId: row.target_id,
+            reason: row.reason,
+            detail: row.detail,
+            status: row.status,
+            slaDueAt: row.sla_due_at instanceof Date ? row.sla_due_at.toISOString() : row.sla_due_at,
+            repeatInfringerSignal: row.repeat_infringer_signal,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          },
+          listing,
         });
       } catch (error) {
         const mapped = routeError(error);
