@@ -302,7 +302,7 @@ fn summary_to_contract(summary: ImportedSummary) -> Result<ModelSpec, String> {
 }
 
 fn imported_explode(index: usize, total: usize, collision: bool) -> Explode {
-    let side = if index % 2 == 0 { 1.0 } else { -1.0 };
+    let side = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
     let axis = match index % 3 {
         0 => [side, 0.0, 0.0],
         1 => [0.0, side, 0.0],
@@ -590,6 +590,7 @@ fn rapier_pendulum_period(
     config: RapierWorldConfig,
 ) -> Result<f64, String> {
     let initial_angle = 0.12_f64;
+    let pi = std::f64::consts::PI;
     let doc = serde_json::json!({
       "meta":{"id":"parity-pendulum","name":"parity-pendulum","version":"2.1.0","archetype":"arm",
               "provenance":{"kind":"human"},"license":"CC0"},
@@ -598,7 +599,7 @@ fn rapier_pendulum_period(
         {"name":"root","parent":null,"pos":[0,0,0]},
         {"name":"bob","parent":"root","pos":[0,0,0],"rot":[0,0,initial_angle],
          "joint":{"type":"revolute","axis":[0,0,1],"maxTorqueNm":0.0,"maxVelRad":20.0},
-         "limits":[[-3.141592653589793,3.141592653589793],[-3.141592653589793,3.141592653589793],[-3.141592653589793,3.141592653589793]]}
+         "limits":[[-pi,pi],[-pi,pi],[-pi,pi]]}
       ],
       "parts":[{"node":"bob","geom":{"kind":"box","w":0.03,"h":0.03,"d":0.03},
                 "pose":{"p":[0,-pendulum_length_m,0]},

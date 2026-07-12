@@ -88,36 +88,53 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
     let leg_mass = p.mass_g * 0.45 / n_legs;
     let (upper_mass, lower_mass, pad_mass) = (leg_mass * 0.55, leg_mass * 0.35, leg_mass * 0.10);
 
-    parts.push(Part {
-        node: "root".into(),
-        geom: Geom::Cbox {
-            w: body_w,
-            h: body_h,
-            d: body_d,
-            ch: 0.02,
-        },
-        // primitives are origin-centered (PRE-002); lift so the body sits on the hips
-        pose: Some(forge_contract::PartPose {
-            p: [0.0, body_h / 2.0, 0.0],
-            ..Default::default()
-        }),
-        material: MaterialClass::Matte,
-        color: "#2b2f36".into(),
-        explode: Some(Explode {
-            dir: [0.0, 1.0, 0.0],
-            mag: 0.10,
-            t0: 0.85,
-            t1: 1.0,
-            leader: Some("body".into()),
-        }),
-        render_bias: None,
-        comp: Some("body".into()),
-        mass: Some(MassSpec {
-            value_g: Some(round_g(body_mass)),
-            density_kgm3: None,
-        }),
-        collision: CollisionPolicy::Primitive,
-    });
+    // Generated structural bodies are modular by construction: no individual tile
+    // exceeds the declared 220 mm FDM bed. This keeps MFG-004 sovereign for every
+    // slider value instead of exempting large bodies after generation.
+    const MAX_PRINT_TILE_M: f64 = 0.220;
+    let body_cols = (body_w / MAX_PRINT_TILE_M).ceil().max(1.0) as usize;
+    let body_rows = (body_d / MAX_PRINT_TILE_M).ceil().max(1.0) as usize;
+    let tile_w = body_w / body_cols as f64;
+    let tile_d = body_d / body_rows as f64;
+    let tile_count = body_cols * body_rows;
+    for col in 0..body_cols {
+        for row in 0..body_rows {
+            let tile_index = col * body_rows + row;
+            let x = -body_w / 2.0 + tile_w * (col as f64 + 0.5);
+            let z = -body_d / 2.0 + tile_d * (row as f64 + 0.5);
+            parts.push(Part {
+                node: "root".into(),
+                geom: Geom::Cbox {
+                    w: tile_w,
+                    h: body_h,
+                    d: tile_d,
+                    ch: 0.02,
+                },
+                // primitives are origin-centered (PRE-002); lift onto the hips and
+                // place each independently printable tile in the body grid.
+                pose: Some(forge_contract::PartPose {
+                    p: [x, body_h / 2.0, z],
+                    ..Default::default()
+                }),
+                material: MaterialClass::Matte,
+                color: "#2b2f36".into(),
+                explode: Some(Explode {
+                    dir: [x.signum(), 1.0, z.signum()],
+                    mag: 0.10,
+                    t0: 0.85,
+                    t1: 1.0,
+                    leader: (tile_index == 0).then(|| "body module".into()),
+                }),
+                render_bias: None,
+                comp: Some(format!("body-module-{tile_index}")),
+                mass: Some(MassSpec {
+                    value_g: Some(round_g(body_mass / tile_count as f64)),
+                    density_kgm3: None,
+                }),
+                collision: CollisionPolicy::Primitive,
+            });
+        }
+    }
 
     let revolute_x = Joint {
         kind: JointKind::Revolute,
@@ -164,9 +181,9 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
             });
 
             // segments grow +Y from their lower node, exactly spanning the bone.
-            // Collider policy follows D7's fidelity-where-it-matters: thighs and
-            // foot pads collide (body protection + ground contact); the lower
-            // tube is visual-only so 8-leg chassis stay inside the ≤24 budget.
+            // Collider policy follows D7's fidelity-where-it-matters: modular body
+            // tiles and foot pads collide; leg tubes are visual so the largest
+            // 8-leg/body-grid combination stays inside the ≤24 model budget.
             let stagger = 0.04 * leg_index as f64 / n_legs;
             parts.push(leg_part(
                 &knee,
@@ -179,7 +196,7 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
                 l1 / 2.0,
                 "#3a4048",
                 round_g(upper_mass),
-                CollisionPolicy::Primitive,
+                CollisionPolicy::None,
                 Explode {
                     dir: [side_sign(side), 0.0, 0.0],
                     mag: 0.06,

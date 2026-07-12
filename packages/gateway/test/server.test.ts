@@ -9,6 +9,7 @@ import {
   type GenerationMaterials,
   type GenerationValidator,
   type SynthesisAdapter,
+  TemplateSynthesisAdapter,
 } from "../src/generation.js";
 import { buildServer } from "../src/server.js";
 import { validatorBin } from "../src/validator.js";
@@ -1052,6 +1053,82 @@ test("generate repairs validator diagnostics and admits the repaired contract", 
   assert.equal(body.attempts[1].modelId, "claude-opus-4-8");
   assert.equal(body.attempts[1].verdict, "admitted");
   await app.close();
+});
+
+test("template repair splits an oversized primitive into printable modules", async () => {
+  const adapter = new TemplateSynthesisAdapter(generationMaterials);
+  const repaired = await adapter.repair({
+    context: {
+      mode: "context-only",
+      catalogPolicy: "approved-review-rows-only",
+      brief: { prompt: "repair this rover", archetype: "rover", categories: [] },
+      retrievedComponents: [],
+      retrievedPatterns: [],
+      promptPrefix: {
+        version: "p4-context-v1",
+        hash: "prefix",
+        schemaHash: "schema",
+        docsHash: "docs",
+        exemplarHashes: [],
+        text: null,
+      },
+      blockedReasons: [],
+    },
+    request: { prompt: "repair this rover", archetype: "rover", seed: 7 },
+    candidate: {
+      modelId: "template",
+      promptHash: "prompt",
+      contract: {
+        meta: { archetype: "rover" },
+        parts: [
+          {
+            node: "root",
+            geom: { kind: "box", w: 0.4, h: 0.08, d: 0.12 },
+            pose: { p: [0, 0, 0], r: [0, 0, 0], s: [1, 1, 1] },
+            comp: "chassis",
+            mass: { valueG: 100 },
+            collision: "primitive",
+          },
+        ],
+      },
+    },
+    attempt: {
+      index: 0,
+      phase: "synthesize",
+      modelId: "template",
+      promptHash: "prompt",
+      contractHash: "contract",
+      verdict: "rejected",
+      diagnostics: [{ check: "MFG-004", severity: "error", message: "bed_fit: part 0 is oversized" }],
+    },
+  });
+
+  assert.ok(repaired);
+  const parts = (repaired.contract as { parts: Record<string, unknown>[] }).parts;
+  assert.equal(parts.length, 2);
+  assert.deepEqual(
+    parts.map((part) => (part.geom as { w: number }).w),
+    [0.2, 0.2],
+  );
+  assert.deepEqual(
+    parts.map((part) => (part.mass as { valueG: number }).valueG),
+    [50, 50],
+  );
+  assert.deepEqual(
+    parts.map((part) => (part.pose as { p: number[] }).p),
+    [
+      [-0.1, 0, 0],
+      [0.1, 0, 0],
+    ],
+  );
+  assert.deepEqual(
+    parts.map((part) => part.comp),
+    ["chassis-module-1", "chassis-module-2"],
+  );
+  assert.deepEqual(
+    parts.map((part) => (part.explode as { t0: number; t1: number }).t0),
+    [0, 0.5],
+  );
 });
 
 test("generate persists exhausted repairs as a diagnostic draft", async () => {

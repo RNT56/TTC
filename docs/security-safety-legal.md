@@ -86,12 +86,15 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 
 ## 7. Engineering checklist (apply to any PR in these areas)
 
-- [ ] New invariant → harness check with stable ID + doc update
+- [ ] New invariant → harness check with stable ID + doc update (`QA-007/008`)
 - [ ] Generated artifact path → provenance fields populated and validated
-- [~] Export path → license class/export policy consulted; envelope fallback works in the ingestion/review slice, exporter enforcement still pending
+- [~] Export path → license class/export policy consulted; ledger/UI exist, but actual restricted-geometry envelope substitution and attribution enforcement remain `SEC-001`
 - [x] Catalog ingestion → per-field citations + license ledger entry + review queue
 - [x] Bridge/deployment surface → D30 accepted for controlled D12 lab pilots only;
       no auto-arm path; physical confirmation; supervisor
       authority preserved; D9 rates stated in UX copy
-- [ ] Generation surface → weapons-brief refusal path intact and logged
-- [ ] User content (photos/logs/models) → consent and deletion semantics honored
+- [ ] Generation surface → weapons-brief refusal path intact and logged (`SEC-002`)
+- [ ] User content (photos/logs/models) → ownership, consent, export, retention, and deletion semantics honored (`SEC-003..005`)
+- [ ] Auth/provider/object/job surfaces → threat model, rate limits, negative tests, redaction, and credential rotation (`SEC-006`)
+- [ ] Policy sharing → current dual-use/export-control gate, per-policy signoff, moderation ownership, and external rollout decision (`SEC-007`)
+- [ ] Desktop/Link release → signed artifacts, update rollback, pairing/revocation, and fault-injection evidence (`SEC-008`)

@@ -790,6 +790,63 @@ function part(
   };
 }
 
+function numericPose(partValue: JsonObject): { pose: JsonObject; position: [number, number, number] } {
+  const pose = isRecord(partValue.pose) ? (stable(partValue.pose) as JsonObject) : {};
+  const raw = Array.isArray(pose.p) ? pose.p : [0, 0, 0];
+  const position: [number, number, number] = [0, 1, 2].map((index) => {
+    const value = Number(raw[index] ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }) as [number, number, number];
+  return { pose, position };
+}
+
+function splitOversizedPrimitive(partValue: unknown, maxSpanM = 0.2): JsonObject[] | null {
+  if (!isRecord(partValue) || !isRecord(partValue.geom)) return null;
+  const geom = partValue.geom;
+  const kind = geom.kind;
+  const dimension =
+    kind === "box" || kind === "cbox"
+      ? (["w", "h", "d"] as const)
+          .map((key, axis) => ({ key, axis, value: Number(geom[key] ?? 0) }))
+          .filter((item) => Number.isFinite(item.value) && item.value > maxSpanM)
+          .sort((a, b) => b.value - a.value)[0]
+      : kind === "cyl"
+        ? { key: "h" as const, axis: 1, value: Number(geom.h ?? 0) }
+        : undefined;
+  if (dimension === undefined || !Number.isFinite(dimension.value) || dimension.value <= maxSpanM) return null;
+
+  const count = Math.ceil(dimension.value / maxSpanM);
+  const segmentSpan = dimension.value / count;
+  const { pose, position } = numericPose(partValue);
+  const mass = isRecord(partValue.mass) ? partValue.mass : null;
+  const valueG = mass === null ? null : Number(mass.valueG ?? Number.NaN);
+  const comp = typeof partValue.comp === "string" ? partValue.comp : "structural-part";
+
+  return Array.from({ length: count }, (_, segment) => {
+    const next = stable(partValue) as JsonObject;
+    const nextGeom = stable(geom) as JsonObject;
+    nextGeom[dimension.key] = segmentSpan;
+    next.geom = nextGeom;
+    const nextPosition = [...position] as [number, number, number];
+    nextPosition[dimension.axis] = Number(
+      (nextPosition[dimension.axis] - dimension.value / 2 + segmentSpan * (segment + 0.5)).toFixed(9),
+    );
+    next.pose = { ...pose, p: nextPosition };
+    next.comp = `${comp}-module-${segment + 1}`;
+    if (mass !== null && valueG !== null && Number.isFinite(valueG)) {
+      next.mass = { ...mass, valueG: valueG / count };
+    }
+    return next;
+  });
+}
+
+function refreshExplodeWindows(parts: JsonObject[]): void {
+  for (const [index, partValue] of parts.entries()) {
+    const leader = typeof partValue.comp === "string" ? partValue.comp : `part-${index}`;
+    partValue.explode = explode(index, parts.length, leader);
+  }
+}
+
 function templateMeta(
   archetype: GenerationArchetype,
   request: GenerationRequest,
@@ -927,22 +984,32 @@ function roverTemplate(
   hash: string,
   seed: number,
 ): JsonObject {
-  const total = 6;
+  const total = 9;
   const skeleton = [node("root", null, [0, 0.08, 0])];
   const wheelPose = (x: number, z: number): JsonObject => ({ p: [x, -0.03, z], r: [0, 0, 1.5708], s: [1, 1, 1] });
+  const chassisModules = [
+    [-0.07, -0.095],
+    [-0.07, 0.095],
+    [0.07, -0.095],
+    [0.07, 0.095],
+  ] as const;
   const parts = [
-    part("root", { kind: "cbox", w: 0.28, h: 0.07, d: 0.38, ch: 0.02 }, 0, total, 900, "chassis", {
-      color: "#1f2937",
-    }),
-    part("root", { kind: "box", w: 0.12, h: 0.05, d: 0.1 }, 1, total, 220, "compute", {
+    ...chassisModules.map(([x, z], index) =>
+      part("root", { kind: "cbox", w: 0.14, h: 0.07, d: 0.19, ch: 0.02 }, index, total, 225, `chassis-${index + 1}`, {
+        color: "#1f2937",
+        pose: { p: [x, 0, z], r: [0, 0, 0], s: [1, 1, 1] },
+      }),
+    ),
+    part("root", { kind: "box", w: 0.12, h: 0.05, d: 0.1 }, 4, total, 220, "compute", {
       material: "gloss",
       color: "#0f172a",
       pose: { p: [0, 0.055, 0.03], r: [0, 0, 0], s: [1, 1, 1] },
+      collision: "none",
     }),
-    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 2, total, 90, "wheel", { pose: wheelPose(-0.16, 0.14), material: "rubber" }),
-    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 3, total, 90, "wheel", { pose: wheelPose(0.16, 0.14), material: "rubber" }),
-    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 4, total, 90, "wheel", { pose: wheelPose(-0.16, -0.14), material: "rubber" }),
-    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 5, total, 90, "wheel", { pose: wheelPose(0.16, -0.14), material: "rubber" }),
+    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 5, total, 90, "wheel", { pose: wheelPose(-0.16, 0.14), material: "rubber" }),
+    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 6, total, 90, "wheel", { pose: wheelPose(0.16, 0.14), material: "rubber" }),
+    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 7, total, 90, "wheel", { pose: wheelPose(-0.16, -0.14), material: "rubber" }),
+    part("root", { kind: "cyl", r0: 0.045, h: 0.035, n: 16 }, 8, total, 90, "wheel", { pose: wheelPose(0.16, -0.14), material: "rubber" }),
   ];
   const catalog = catalogSlots(context, { rover: ["root"], battery: ["root"], fc: ["root"] });
   return {
@@ -982,13 +1049,22 @@ function quadrupedTemplate(
       node(`foot_${id}`, `knee_${id}`, [0, -0.13, 0]),
     );
   }
-  const total = 1 + sides.length * 2;
-  const parts: JsonObject[] = [
-    part("root", { kind: "cbox", w: 0.3, h: 0.06, d: 0.46, ch: 0.02 }, 0, total, 1200, "body", {
+  const bodyModules = [
+    [-0.075, -0.1533],
+    [-0.075, 0],
+    [-0.075, 0.1533],
+    [0.075, -0.1533],
+    [0.075, 0],
+    [0.075, 0.1533],
+  ] as const;
+  const total = bodyModules.length + sides.length * 2;
+  const parts: JsonObject[] = bodyModules.map(([x, z], index) =>
+    part("root", { kind: "cbox", w: 0.15, h: 0.06, d: 0.1533, ch: 0.02 }, index, total, 200, `body-${index + 1}`, {
       color: "#28313d",
+      pose: { p: [x, 0, z], r: [0, 0, 0], s: [1, 1, 1] },
     }),
-  ];
-  let index = 1;
+  );
+  let index = bodyModules.length;
   for (const [id] of sides) {
     parts.push(
       part(`knee_${id}`, { kind: "cyl", r0: 0.018, r1: 0.014, h: 0.13, n: 16 }, index, total, 95, "thigh", {
@@ -1030,7 +1106,7 @@ function armTemplate(
     node("root", null, [0, 0.04, 0]),
     node("shoulder", "root", [0, 0.08, 0], { joint: { type: "revolute", axis: [0, 1, 0], maxVelRad: 4 } }),
     node("elbow", "shoulder", [0, 0.22, 0], { joint: { type: "revolute", axis: [1, 0, 0], maxVelRad: 4 } }),
-    node("wrist", "elbow", [0, 0.18, 0], { joint: { type: "revolute", axis: [1, 0, 0], maxVelRad: 4 } }),
+    node("wrist", "elbow", [0, 0.18, 0]),
   ];
   const total = 5;
   const parts = [
@@ -1057,7 +1133,16 @@ function armTemplate(
     parts,
     slots: catalog.slots,
     lockfile: catalog.lockfile,
-    driver: { archetype: "arm", params: { reachM: 0.48, dof: 4 } },
+    driver: {
+      archetype: "arm",
+      params: {
+        targetM: [0, -0.12, 0.3],
+        jointNodes: ["shoulder", "elbow"],
+        endEffectorNode: "wrist",
+        reachToleranceM: 0.015,
+        iterations: 48,
+      },
+    },
     sim: commonSim(),
   };
 }
@@ -1085,25 +1170,46 @@ function bipedTemplate(
     node("el1", "sh1", [0, -0.24, 0]),
     node("ha1", "el1", [0, -0.22, 0]),
   ];
-  const total = 11;
-  const limb = (nodeName: string, radius: number, height: number, index: number, comp: string, mass = 80) =>
-    part(nodeName, { kind: "cyl", r0: radius, h: height, n: 12 }, index, total, mass, comp, {
-      material: "satin",
-      pose: { p: [0, height / 2, 0], r: [0, 0, 0], s: [1, 1, 1] },
-    });
-  const parts = [
-    part("root", { kind: "box", w: 0.18, h: 0.18, d: 0.08 }, 0, total, 600, "pelvis"),
-    part("chest", { kind: "box", w: 0.24, h: 0.32, d: 0.1 }, 1, total, 800, "torso"),
-    part("head", { kind: "cyl", r0: 0.08, h: 0.1, n: 16 }, 2, total, 200, "head"),
-    limb("kn-1", 0.03, 0.39, 3, "thigh"),
-    limb("an-1", 0.025, 0.39, 4, "shank"),
-    limb("kn1", 0.03, 0.39, 5, "thigh"),
-    limb("an1", 0.025, 0.39, 6, "shank"),
-    limb("el-1", 0.025, 0.24, 7, "upper-arm", 60),
-    limb("ha-1", 0.02, 0.22, 8, "forearm", 50),
-    limb("el1", 0.025, 0.24, 9, "upper-arm", 60),
-    limb("ha1", 0.02, 0.22, 10, "forearm", 50),
+  const total = 16;
+  let index = 0;
+  const parts: JsonObject[] = [
+    part("root", { kind: "box", w: 0.18, h: 0.18, d: 0.08 }, index++, total, 600, "pelvis"),
+    part("chest", { kind: "box", w: 0.2, h: 0.16, d: 0.1 }, index++, total, 400, "torso-lower", {
+      pose: { p: [0, -0.08, 0], r: [0, 0, 0], s: [1, 1, 1] },
+    }),
+    part("chest", { kind: "box", w: 0.2, h: 0.16, d: 0.1 }, index++, total, 400, "torso-upper", {
+      pose: { p: [0, 0.08, 0], r: [0, 0, 0], s: [1, 1, 1] },
+    }),
+    part("head", { kind: "cyl", r0: 0.08, h: 0.1, n: 16 }, index++, total, 200, "head"),
   ];
+  const splitLimb = (nodeName: string, radius: number, height: number, comp: string, mass: number) => {
+    const segmentHeight = height / 2;
+    for (let segment = 0; segment < 2; segment++) {
+      parts.push(
+        part(nodeName, { kind: "cyl", r0: radius, h: segmentHeight, n: 12 }, index++, total, mass / 2, `${comp}-${segment + 1}`, {
+          material: "satin",
+          pose: { p: [0, segmentHeight * (segment + 0.5), 0], r: [0, 0, 0], s: [1, 1, 1] },
+        }),
+      );
+    }
+  };
+  splitLimb("kn-1", 0.03, 0.39, "left-thigh", 80);
+  splitLimb("an-1", 0.025, 0.39, "left-shank", 80);
+  splitLimb("kn1", 0.03, 0.39, "right-thigh", 80);
+  splitLimb("an1", 0.025, 0.39, "right-shank", 80);
+  for (const [nodeName, radius, height, comp, mass] of [
+    ["el-1", 0.025, 0.24, "left-upper-arm", 60],
+    ["ha-1", 0.02, 0.22, "left-forearm", 50],
+    ["el1", 0.025, 0.24, "right-upper-arm", 60],
+    ["ha1", 0.02, 0.22, "right-forearm", 50],
+  ] as const) {
+    parts.push(
+      part(nodeName, { kind: "cyl", r0: radius, h: height, n: 12 }, index++, total, mass, comp, {
+        material: "satin",
+        pose: { p: [0, height / 2, 0], r: [0, 0, 0], s: [1, 1, 1] },
+      }),
+    );
+  }
   const catalog = catalogSlots(context, { battery: ["root"], fc: ["chest"] });
   return {
     meta: templateMeta("biped", request, hash, seed),
@@ -1129,26 +1235,35 @@ function fixedwingTemplate(
     node("tail", "root", [0, 0, -0.32]),
     node("nose", "root", [0, 0, 0.32]),
   ];
-  const total = 5;
-  const parts = [
-    part("root", { kind: "cbox", w: 0.08, h: 0.06, d: 0.6, ch: 0.015 }, 0, total, 280, "fuselage", {
-      color: "#f8fafc",
-    }),
-    part("leftWing", { kind: "box", w: 0.48, h: 0.018, d: 0.12 }, 1, total, 120, "left-wing", {
-      color: "#2563eb",
-      pose: { p: [-0.12, 0, 0], r: [0, 0, 0], s: [1, 1, 1] },
-    }),
-    part("rightWing", { kind: "box", w: 0.48, h: 0.018, d: 0.12 }, 2, total, 120, "right-wing", {
-      color: "#2563eb",
-      pose: { p: [0.12, 0, 0], r: [0, 0, 0], s: [1, 1, 1] },
-    }),
-    part("tail", { kind: "box", w: 0.22, h: 0.015, d: 0.08 }, 3, total, 40, "tailplane", {
+  const total = 11;
+  let index = 0;
+  const parts: JsonObject[] = [];
+  for (const z of [-0.2, 0, 0.2]) {
+    parts.push(
+      part("root", { kind: "cbox", w: 0.08, h: 0.06, d: 0.2, ch: 0.015 }, index++, total, 280 / 3, `fuselage-${index}`, {
+        color: "#f8fafc",
+        pose: { p: [0, 0, z], r: [0, 0, 0], s: [1, 1, 1] },
+      }),
+    );
+  }
+  for (const nodeName of ["leftWing", "rightWing"] as const) {
+    for (const offset of [-0.16, 0, 0.16]) {
+      parts.push(
+        part(nodeName, { kind: "box", w: 0.16, h: 0.018, d: 0.12 }, index++, total, 40, `${nodeName}-${index}`, {
+          color: "#2563eb",
+          pose: { p: [offset, 0, 0], r: [0, 0, 0], s: [1, 1, 1] },
+        }),
+      );
+    }
+  }
+  parts.push(
+    part("tail", { kind: "box", w: 0.22, h: 0.015, d: 0.08 }, index++, total, 40, "tailplane", {
       color: "#94a3b8",
     }),
-    part("nose", { kind: "cyl", r0: 0.035, h: 0.04, n: 16 }, 4, total, 55, "motor-pod", {
+    part("nose", { kind: "cyl", r0: 0.035, h: 0.04, n: 16 }, index++, total, 55, "motor-pod", {
       material: "metal",
     }),
-  ];
+  );
   const catalog = catalogSlots(context, { motor: ["nose"], prop: ["nose"], battery: ["root"], fc: ["root"] });
   return {
     meta: templateMeta("fixedwing", request, hash, seed),
@@ -1247,6 +1362,56 @@ export class TemplateSynthesisAdapter implements SynthesisAdapter {
         battery.cRating = Math.max(Number(battery.cRating ?? 0), 150);
         changed = true;
       }
+    }
+
+    if (checks.has("MFG-004") && Array.isArray(contract.parts)) {
+      const oversized = new Set(
+        input.attempt.diagnostics
+          .filter((diagnostic) => diagnostic.check === "MFG-004")
+          .map((diagnostic) => diagnostic.message?.match(/part (\d+)/)?.[1])
+          .filter((value): value is string => value !== undefined)
+          .map(Number),
+      );
+      const repairedParts: JsonObject[] = [];
+      contract.parts.forEach((partValue, index) => {
+        const split = oversized.has(index) ? splitOversizedPrimitive(partValue) : null;
+        if (split !== null) {
+          repairedParts.push(...split);
+          changed = true;
+        } else if (isRecord(partValue)) {
+          repairedParts.push(stable(partValue) as JsonObject);
+        }
+      });
+      if (changed) {
+        refreshExplodeWindows(repairedParts);
+        contract.parts = repairedParts;
+      }
+    }
+
+    if (checks.has("BEH-001") && isRecord(contract.meta) && contract.meta.archetype === "arm") {
+      const driver = isRecord(contract.driver) ? contract.driver : {};
+      const revoluteNodes = Array.isArray(contract.skeleton)
+        ? contract.skeleton
+            .filter((nodeValue) => isRecord(nodeValue) && isRecord(nodeValue.joint) && nodeValue.joint.type === "revolute")
+            .map((nodeValue) => String((nodeValue as JsonObject).name ?? ""))
+            .filter(Boolean)
+        : [];
+      const skeletonNames = Array.isArray(contract.skeleton)
+        ? contract.skeleton
+            .filter(isRecord)
+            .map((nodeValue) => String(nodeValue.name ?? ""))
+            .filter(Boolean)
+        : [];
+      driver.params = {
+        ...(isRecord(driver.params) ? driver.params : {}),
+        targetM: [0, -0.12, 0.3],
+        jointNodes: revoluteNodes.slice(0, 2),
+        endEffectorNode: skeletonNames.at(-1) ?? "wrist",
+        reachToleranceM: 0.015,
+        iterations: 48,
+      };
+      contract.driver = driver;
+      changed = true;
     }
 
     if (!changed) return null;

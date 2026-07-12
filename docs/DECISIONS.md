@@ -2,8 +2,9 @@
 
 Decisions bind all work. They are changed only by **recording a superseding decision**
 (new entry, references the old one, states why) — never by silently editing docs or
-drifting in code. On any conflict between documents, this file wins
-([`/CLAUDE.md`](../CLAUDE.md) §3). The record below reflects plan **v3.0** §21
+drifting in code. On any conflict between documents, use the authority order in
+[`/AGENTS.md`](../AGENTS.md); executable evidence still owns current-state claims.
+The record below reflects plan **v3.0** §21
 (D1–D18) plus two structural decisions recorded here for visibility (D19–D20).
 
 ## How to add a decision
@@ -77,10 +78,12 @@ drifting in code. On any conflict between documents, this file wins
 
 ## Open decisions
 
-Tracked as OD-items in [`TODO.md`](TODO.md) §4 (naming, asymmetric slots, WASM
-sandbox, fixed-wing priority, alignment-UI timing, napi-rs vs
-binary-spawn). None blocks a phase boundary. Resolve → append a D-row here → mark the
-OD row. OD-02 (React vs Solid) was resolved by D16: the face stays React/TS.
+Tracked as OD-items in [`TODO.md`](TODO.md) §4. The product name (D23), React face
+(D16), marketplace economics (D29), alignment timing (P5-004), and binary-spawn
+(D22) are resolved. Remaining decision work is asymmetric slot UX (OD-03), the WASM
+user-controller sandbox (OD-04), fixed-wing priority (OD-06), plus the formal
+ForgedTTC trademark scan tracked as GOV-010. Resolve a real decision by appending a
+D-row here and updating the OD row; do not silently mutate earlier decisions.
 
 ## Expected near-term additions
 

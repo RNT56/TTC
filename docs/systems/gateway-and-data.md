@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-A thin, typed Fastify + TypeBox API on Node 22 owning the **validation service** —
+A thin, typed Fastify + TypeBox API on Node 24 owning the **validation service** —
 which is now mostly process management: the gateway **spawns the `forge-validate`
 binary** (process isolation + guaranteed bit-equality with CI, D17) — plus the
 registries (models, components, courses, skills), the generation and co-design

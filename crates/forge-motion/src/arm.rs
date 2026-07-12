@@ -231,14 +231,14 @@ fn planar_jacobian(joints: &[ArmJoint], angles: &[f64], out: &mut [[f64; 2]]) {
         theta += angle;
         cumulative.push(theta);
     }
-    for i in 0..joints.len() {
+    for (i, column) in out.iter_mut().enumerate().take(joints.len()) {
         let mut dy = 0.0;
         let mut dz = 0.0;
         for j in i..joints.len() {
             dy -= joints[j].length_m * forge_num::cos(cumulative[j]);
             dz -= joints[j].length_m * forge_num::sin(cumulative[j]);
         }
-        out[i] = [dy, dz];
+        *column = [dy, dz];
     }
 }
 

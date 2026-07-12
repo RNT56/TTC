@@ -100,10 +100,12 @@ pattern-library update, and LLM model-version bump. Tracked: admission rate (GA 
 ≥ 20/25 without human repair), repair-iteration count, diversity metrics — on a
 dashboard, over time. A model bump that regresses the dashboard does not ship.
 
-Live 2026-06-14: [`evals/brief25.corpus.json`](../../evals/brief25.corpus.json)
+Live through 2026-07-12: [`evals/brief25.corpus.json`](../../evals/brief25.corpus.json)
 holds the 25 canonical briefs. `pnpm eval:brief25` runs the deterministic template
 provider through the gateway generation loop in real-validator mode and enforces the
-GA gate. The current deterministic path admits 25/25. `--record-db` stores
+GA gate. The 2026-07-12 recovery restores **25/25 admitted** after making structural
+templates DfM/collider/behavior-correct; focused repair coverage also protects
+oversized non-template candidates. `--record-db` stores
 `eval_runs` and per-brief rows; the gateway exposes `/v1/evals/brief25/latest`, and
 the studio shows admission rate, repair attempts, diagnostics, and archetype
 coverage.
