@@ -283,7 +283,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [ ] GOV-008 — Build cross-platform release artifacts, checksums, provenance/attestations, SBOM, release notes, and reproducible release verification.
 - [ ] GOV-009 — Publish or explicitly defer crates.io/npm artifacts; prove clean external install, version output, example validation, and downloaded checksum verification.
 - [ ] GOV-010 — Complete the ForgedTTC trademark/name scan and set accurate GitHub description, topics, homepage, SECURITY, CONTRIBUTING, support, and conduct surfaces before public launch.
-- [!] GOV-011 — Replace Tauri's Linux GTK3/glib 0.18 chain or prove a safe patched route. `glib::VariantStrIter` is not called by FORGE and Desktop is not released, so alert 1 is accepted as a time-bounded upstream risk through **2026-10-12**; Linux Desktop release remains blocked until resolution or reviewed reachability proof.
+- [!] GOV-011 — Replace Tauri's Linux GTK3/glib 0.18 chain or prove a safe patched route. `glib::VariantStrIter` is not called by FORGE and Desktop is not released, so Dependabot alert 1 is dismissed as `tolerable_risk` only through **2026-10-12** with the same rationale in its remote audit trail; Linux Desktop release remains blocked until resolution or reviewed reachability proof.
 
 ## 8. Security, privacy, safety, and legal completion (SEC)
 

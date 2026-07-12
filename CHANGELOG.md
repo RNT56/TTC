@@ -25,6 +25,8 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 pushed annotated tag `prototype-final`, pinned all external workflow actions to live
 resolved commit SHAs, added an immutable-ref gate, declared least-privilege workflow
 permissions, and added validated SPDX source SBOMs to security and release workflows.
+Dismissed only the documented glib alert as a time-bounded tolerable risk with the
+2026-10-12 expiry and Linux-release block recorded in GitHub.
 **Changed:** workflow definitions and policy check, package/verification commands,
 prototype evidence, governance contract, project state, roadmaps, TODO, and README.
 **Decisions:** GitHub-owned Actions remain allowed; every third-party Action is

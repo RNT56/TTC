@@ -75,6 +75,8 @@ Live GitHub evidence checked on 2026-07-12:
   resolves to commit `0294a9d`; its frozen file SHA-256 is `ca93489e…`;
 - vulnerability alerts, Dependabot security updates, secret scanning, and push
   protection are enabled; dependency review/audit and CodeQL have remote proof;
+- Dependabot alert 1 for the upstream Tauri Linux glib chain is dismissed as
+  `tolerable_risk` only through 2026-10-12; GOV-011 still blocks Linux release;
 - repository description and homepage remain empty.
 
 Consequently G0 is **closed**. The next release boundary is G1: compatibility policy,
