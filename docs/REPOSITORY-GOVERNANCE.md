@@ -42,6 +42,7 @@ The following are not required on every PR, but must be green on the release com
 - `golden-scene parity gallery (P1-015)`;
 - `core coverage (>=80% lines)`;
 - `dependency audit`;
+- `source SBOM (SPDX)`;
 - `CodeQL (javascript-typescript)` and `CodeQL (python)`;
 - validator artifact workflow plus downloaded checksum/install/version proof.
 
@@ -55,6 +56,14 @@ surface.
   protection remain enabled.
 - `.github/dependabot.yml` opens grouped weekly Cargo, pnpm, Python, and Actions
   updates. Major updates stay separate and require compatibility review.
+- Every external workflow action uses an immutable 40-character commit SHA with a
+  human-readable version comment. `pnpm verify:workflows` enforces this locally and
+  the required `dependency review` job enforces it on pull requests.
+- Repository Actions policy permits GitHub-owned actions plus only the exact pinned
+  third-party action revisions used in-tree; all other external actions are denied.
+- Security and release workflows generate a validated SPDX JSON source SBOM. Release
+  publication still requires artifact-specific SBOM, provenance, and downloaded
+  verification under GOV-008.
 - Low-or-higher advisories fail the security audit. Exceptions require a dated owner,
   expiry, exploitability analysis, compensating control, and TODO/decision record.
 - Secret alerts are triaged immediately: revoke/rotate first, then remove exposure and

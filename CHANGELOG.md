@@ -18,6 +18,23 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-12 — Publish the frozen prototype and pin workflow execution
+**Session:** Codex agent · branch `codex/g1-release-foundations` · **Phase:** G1 ·
+**TODO items:** PRE-002, P0-010, GOV-005, GOV-006
+**Done:** Verified the frozen prototype SHA-256 at commit `0294a9d`, created and
+pushed annotated tag `prototype-final`, pinned all external workflow actions to live
+resolved commit SHAs, added an immutable-ref gate, declared least-privilege workflow
+permissions, and added validated SPDX source SBOMs to security and release workflows.
+**Changed:** workflow definitions and policy check, package/verification commands,
+prototype evidence, governance contract, project state, roadmaps, TODO, and README.
+**Decisions:** GitHub-owned Actions remain allowed; every third-party Action is
+allowlisted only at its reviewed SHA. Source SBOM proof does not replace the
+artifact-specific release proof required by GOV-008.
+**Next:** Merge the pinned workflow change, activate the repository selected-Action
+allowlist, verify post-merge CI/security/SBOM evidence, and close GOV-005.
+**Blockers:** GitHub-hosted post-merge runners are queued; GOV-011 still blocks Linux
+Desktop release.
+
 ## 2026-07-12 — Make the native Desktop shell a protected gate
 **Session:** Codex agent · branch `codex/g0-evidence-closeout` · **Phase:** Wave 0/G1 hardening ·
 **TODO items:** GOV-003, GOV-011, QA-011

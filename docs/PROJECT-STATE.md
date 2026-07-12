@@ -26,9 +26,9 @@ operational recovery, and field evidence remain incomplete.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | clean protected `main` at `02b5561` | local and remote source agree |
+| Git state | clean protected `main` at `52e234f` before this G1 branch | PR #22 merged through all required checks; post-merge refresh is queued |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 29 required non-DB gates | fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify` | pass: 30 required non-DB gates | immutable Action pins, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
@@ -59,7 +59,8 @@ The repaired generation baseline is intentionally stronger than the minimum:
 Live GitHub evidence checked on 2026-07-12:
 
 - recovery [PR #11](https://github.com/RNT56/TTC/pull/11) and security closeout
-  [PR #21](https://github.com/RNT56/TTC/pull/21) merged through protection;
+  [PR #21](https://github.com/RNT56/TTC/pull/21), then native Desktop
+  [PR #22](https://github.com/RNT56/TTC/pull/22), merged through protection;
 - final `main` CI is green at [run 29211399662](https://github.com/RNT56/TTC/actions/runs/29211399662);
 - final dependency audit and both CodeQL languages are green at
   [run 29211399718](https://github.com/RNT56/TTC/actions/runs/29211399718);
@@ -70,8 +71,8 @@ Live GitHub evidence checked on 2026-07-12:
   [run 29211055558](https://github.com/RNT56/TTC/actions/runs/29211055558); final-commit rerun
   [29211517706](https://github.com/RNT56/TTC/actions/runs/29211517706) also passed and is the closeout record;
 - no GitHub Release exists;
-- the only remote tag is `p3-baseline`;
-- `prototype-final` is absent locally and remotely;
+- annotated [`prototype-final`](https://github.com/RNT56/TTC/tree/prototype-final)
+  resolves to commit `0294a9d`; its frozen file SHA-256 is `ca93489e…`;
 - vulnerability alerts, Dependabot security updates, secret scanning, and push
   protection are enabled; dependency review/audit and CodeQL have remote proof;
 - repository description and homepage remain empty.
@@ -108,7 +109,6 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   in actual exporters (`SEC-001`);
 - prohibited-brief refusal/logging and full user-content deletion are not implemented
   (`SEC-002..005`);
-- `prototype-final` must be recreated only after its intended commit is verified;
 - release/supply-chain hardening and external/live/field acceptance remain open.
 
 ## 6. Go/no-go verdicts
@@ -129,9 +129,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **199 tasks: 111 done, 40 in progress, 46 open,
-and 2 explicitly blocked**. All 8 recovery tasks are done. The 88 remaining tasks are
-the phase/live/field program plus 7 governance, 8 security, 9 quality, 10 operations,
+The stable ledger currently contains **199 tasks: 114 done, 39 in progress, 44 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 85 remaining tasks are
+the phase/live/field program plus 6 governance, 8 security, 9 quality, 10 operations,
 9 external-proof, and 3 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

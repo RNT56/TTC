@@ -59,11 +59,12 @@ currently release-ready or production-proven.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
-- the recovery worktree passes the 29-step `pnpm verify` gate and the isolated
+- the recovery worktree passes the 30-step `pnpm verify` gate and the isolated
   Postgres/pgvector `pnpm verify:db` gate on pinned Rust 1.96.0;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
+- the byte-exact prototype is published as annotated tag `prototype-final`;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 

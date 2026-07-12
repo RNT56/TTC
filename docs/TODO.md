@@ -21,9 +21,9 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
   post-merge CI/security, and manual nightly evidence are linked in `PROJECT-STATE.md`.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance/release blocker (`GOV-005..011`):** immutable Action pins, compatibility
-  policy, release/SBOM/provenance/install proof, public repository surfaces, and
-  `prototype-final` resolution remain open.
+- **Governance/release blocker (`GOV-005`, `GOV-007..011`):** the selected-Action
+  repository allowlist, compatibility policy, release/SBOM/provenance/install proof,
+  and public repository surfaces remain open.
 - **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
   pre-configurator prototype. P0-007 remains owner/rescope-gated because the delivered
   vintage has no 31-variant slot system.
@@ -31,9 +31,9 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 ## 1. Pre-P0 housekeeping (PRE)
 
 - [x] PRE-001 — Documentation system: canonical `AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, changelog, phase/task/execution ledgers, and system docs *(rebuilt 2026-07-12)*
-- [~] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree, but `prototype-final` is absent locally/remotely and must be recreated under P0-010/GOV-006.
+- [x] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree and published as annotated tag `prototype-final` at `0294a9d` *(remote proof refreshed 2026-07-12 under P0-010/GOV-006)*.
 - [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
-- [~] PRE-004 — Basic repo hygiene, active `main` protection, and remote security scans exist; immutable Action pins, repository metadata, and contributor/security surfaces remain GOV work.
+- [~] PRE-004 — Basic repo hygiene, active `main` protection, remote security scans, and immutable Action pins exist; the selected-Action allowlist, repository metadata, and contributor/security surfaces remain GOV work.
 - [x] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC**; `forge-*` code namespaces stay (minimal churn); formal trademark scan recorded as the owner's pre-P4 action
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
@@ -49,7 +49,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [!] P0-007 — Translate all 31 slot variants — **the delivered vintage has no slot/variant system**; gated on the later ~83 KB configurator build (owner) or a re-scoping decision
 - [x] P0-008 — Extraction harness complete *(2026-06-12)*: counts (`extract-counts.mjs`) + **trajectory tapes** (`extract-trajectories.mjs` → `prototype/trajectories/`, deterministic, CI re-records on drift)
 - [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
-- [~] P0-010 — Freeze hash is recorded, but `prototype-final` is absent locally and remotely as of 2026-07-12. Verify the intended target (`0294a9d`), recreate the annotated tag, push it, and attach remote evidence (= `GOV-006`).
+- [x] P0-010 — Verified the current file and commit `0294a9d` both hash to `ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe`; created and pushed annotated tag `prototype-final` at that commit *(2026-07-12; = `GOV-006`)*.
 
 ### P1 — Core & studio
 Rust core (D21 note: v0 implemented directly in Rust on 2026-06-12; "done" for
@@ -268,7 +268,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] REC-004 — Restored Brief-25 to 25/25; added diagnostic-aware manufacturing/arm repair and focused oversized-part repair coverage *(2026-07-12)*.
 - [x] REC-005 — Fixed `playwright-core` installation, retained always-uploaded parity artifacts, and proved all six scenes plus enforced coverage in manual merged-main nightly runs *(2026-07-12)*.
 - [x] REC-006 — `cargo llvm-cov --workspace` passes at 84.34% line coverage; nightly enforces a reviewed 80% line floor *(2026-07-12)*.
-- [x] REC-007 — The 29-step local gate, Postgres gate, green PR checks, protected merges, final post-merge CI/security, and manual nightly are linked in `PROJECT-STATE.md` *(2026-07-12)*.
+- [x] REC-007 — The 30-step local gate, Postgres gate, green PR checks, protected merges, final post-merge CI/security, and manual nightly are linked in `PROJECT-STATE.md` *(30th workflow-pin gate added 2026-07-12)*.
 - [x] REC-008 — Reconciled the agent entry, project state, phase/TODO/execution roadmaps, system docs, README verification flow, and changelog to the recovery evidence *(2026-07-12)*.
 
 ## 7. Governance, publication, and supply chain (GOV)
@@ -277,8 +277,8 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [x] GOV-003 — Enabled vulnerability alerts, security updates, secret scanning/push protection, weekly grouped updates, dependency review/audits, and JS/Python CodeQL; first PR and post-merge runs are green *(2026-07-12)*.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
-- [ ] GOV-005 — Pin release-sensitive GitHub Actions by immutable SHA, restrict allowed actions, review workflow permissions, and add dependency-review/SBOM checks.
-- [ ] GOV-006 — Recreate and remotely publish annotated `prototype-final` at the verified commit; document tag and frozen SHA evidence.
+- [~] GOV-005 — All workflow Actions are pinned by immutable SHA, `pnpm verify` rejects mutable refs, explicit read-only defaults and narrow job grants are present, dependency review is required, and security/release workflows generate SPDX SBOMs. Activate and verify the repository selected-Action allowlist after the protected workflow change merges.
+- [x] GOV-006 — Recreated and remotely published annotated `prototype-final` at verified commit `0294a9d`; current and historical prototype SHA-256 both equal `ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe` *(2026-07-12)*.
 - [ ] GOV-007 — Define SemVer/compatibility/deprecation policy for ModelSpec, validator CLI/report, WASM, replay, EnvSpec, and worker artifacts.
 - [ ] GOV-008 — Build cross-platform release artifacts, checksums, provenance/attestations, SBOM, release notes, and reproducible release verification.
 - [ ] GOV-009 — Publish or explicitly defer crates.io/npm artifacts; prove clean external install, version output, example validation, and downloaded checksum verification.
@@ -298,7 +298,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 9. Quality, testing, and product acceptance (QA)
 
-- [x] QA-001 — Added `pnpm verify` as the 29-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle artifacts and are documented in README/AGENTS *(2026-07-12)*.
+- [x] QA-001 — Added `pnpm verify` as the 30-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle/workflow artifacts and are documented in README/AGENTS *(workflow-pin gate added 2026-07-12)*.
 - [ ] QA-002 — Add browser E2E coverage for generate/draft/edit/validate/share/catalog/course/listing/job/maintenance flows using real built WASM and an isolated DB.
 - [ ] QA-003 — Add accessibility, keyboard, focus, contrast, reduced-motion, responsive, and viewer-grade browser acceptance; publish the supported-browser matrix.
 - [ ] QA-004 — Test migrations from every supported prior schema with populated data; document backup, rollback/roll-forward, and failed-migration recovery.
