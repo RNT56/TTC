@@ -574,22 +574,10 @@ fn rapier_baseline_from_args(
     args: &[String],
     command: &str,
 ) -> Result<forge_sim::interop::RapierParityBaseline, ExitCode> {
-    let gravity = match flag_f64(args, "--gravity", 9.80665, command) {
-        Ok(value) => value,
-        Err(code) => return Err(code),
-    };
-    let pendulum_length_m = match flag_f64(args, "--pendulum-length", 0.4, command) {
-        Ok(value) => value,
-        Err(code) => return Err(code),
-    };
-    let hover_trim = match flag_f64(args, "--hover-trim", 0.42, command) {
-        Ok(value) => value,
-        Err(code) => return Err(code),
-    };
-    let gait_com_m = match flag_f64(args, "--gait-com", 0.004, command) {
-        Ok(value) => value,
-        Err(code) => return Err(code),
-    };
+    let gravity = flag_f64(args, "--gravity", 9.80665, command)?;
+    let pendulum_length_m = flag_f64(args, "--pendulum-length", 0.4, command)?;
+    let hover_trim = flag_f64(args, "--hover-trim", 0.42, command)?;
+    let gait_com_m = flag_f64(args, "--gait-com", 0.004, command)?;
     match forge_sim::interop::rapier_engine_baseline(
         gravity,
         pendulum_length_m,

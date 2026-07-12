@@ -391,16 +391,16 @@
       "node": "root",
       "geom": {
         "kind": "cbox",
-        "w": 0.3,
+        "w": 0.15,
         "h": 0.06,
-        "d": 0.48000000000000004,
+        "d": 0.16,
         "ch": 0.02
       },
       "pose": {
         "p": [
-          0.0,
+          -0.075,
           0.03,
-          0.0
+          -0.16000000000000003
         ],
         "r": [
           0.0,
@@ -417,18 +417,238 @@
       "color": "#2b2f36",
       "explode": {
         "dir": [
-          0.0,
+          -1.0,
           1.0,
-          0.0
+          -1.0
         ],
         "mag": 0.1,
         "t0": 0.85,
         "t1": 1.0,
-        "leader": "body"
+        "leader": "body module"
       },
-      "comp": "body",
+      "comp": "body-module-0",
       "mass": {
-        "valueG": 1375.0
+        "valueG": 229.2
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "root",
+      "geom": {
+        "kind": "cbox",
+        "w": 0.15,
+        "h": 0.06,
+        "d": 0.16,
+        "ch": 0.02
+      },
+      "pose": {
+        "p": [
+          -0.075,
+          0.03,
+          -2.7755575615628914e-17
+        ],
+        "r": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "s": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "material": "matte",
+      "color": "#2b2f36",
+      "explode": {
+        "dir": [
+          -1.0,
+          1.0,
+          -1.0
+        ],
+        "mag": 0.1,
+        "t0": 0.85,
+        "t1": 1.0
+      },
+      "comp": "body-module-1",
+      "mass": {
+        "valueG": 229.2
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "root",
+      "geom": {
+        "kind": "cbox",
+        "w": 0.15,
+        "h": 0.06,
+        "d": 0.16,
+        "ch": 0.02
+      },
+      "pose": {
+        "p": [
+          -0.075,
+          0.03,
+          0.16
+        ],
+        "r": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "s": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "material": "matte",
+      "color": "#2b2f36",
+      "explode": {
+        "dir": [
+          -1.0,
+          1.0,
+          1.0
+        ],
+        "mag": 0.1,
+        "t0": 0.85,
+        "t1": 1.0
+      },
+      "comp": "body-module-2",
+      "mass": {
+        "valueG": 229.2
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "root",
+      "geom": {
+        "kind": "cbox",
+        "w": 0.15,
+        "h": 0.06,
+        "d": 0.16,
+        "ch": 0.02
+      },
+      "pose": {
+        "p": [
+          0.07499999999999998,
+          0.03,
+          -0.16000000000000003
+        ],
+        "r": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "s": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "material": "matte",
+      "color": "#2b2f36",
+      "explode": {
+        "dir": [
+          1.0,
+          1.0,
+          -1.0
+        ],
+        "mag": 0.1,
+        "t0": 0.85,
+        "t1": 1.0
+      },
+      "comp": "body-module-3",
+      "mass": {
+        "valueG": 229.2
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "root",
+      "geom": {
+        "kind": "cbox",
+        "w": 0.15,
+        "h": 0.06,
+        "d": 0.16,
+        "ch": 0.02
+      },
+      "pose": {
+        "p": [
+          0.07499999999999998,
+          0.03,
+          -2.7755575615628914e-17
+        ],
+        "r": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "s": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "material": "matte",
+      "color": "#2b2f36",
+      "explode": {
+        "dir": [
+          1.0,
+          1.0,
+          -1.0
+        ],
+        "mag": 0.1,
+        "t0": 0.85,
+        "t1": 1.0
+      },
+      "comp": "body-module-4",
+      "mass": {
+        "valueG": 229.2
+      },
+      "collision": "primitive"
+    },
+    {
+      "node": "root",
+      "geom": {
+        "kind": "cbox",
+        "w": 0.15,
+        "h": 0.06,
+        "d": 0.16,
+        "ch": 0.02
+      },
+      "pose": {
+        "p": [
+          0.07499999999999998,
+          0.03,
+          0.16
+        ],
+        "r": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "s": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "material": "matte",
+      "color": "#2b2f36",
+      "explode": {
+        "dir": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "mag": 0.1,
+        "t0": 0.85,
+        "t1": 1.0
+      },
+      "comp": "body-module-5",
+      "mass": {
+        "valueG": 229.2
       },
       "collision": "primitive"
     },
@@ -475,7 +695,7 @@
       "mass": {
         "valueG": 154.7
       },
-      "collision": "primitive"
+      "collision": "none"
     },
     {
       "node": "foot_0l",
@@ -608,7 +828,7 @@
       "mass": {
         "valueG": 154.7
       },
-      "collision": "primitive"
+      "collision": "none"
     },
     {
       "node": "foot_0r",
@@ -741,7 +961,7 @@
       "mass": {
         "valueG": 154.7
       },
-      "collision": "primitive"
+      "collision": "none"
     },
     {
       "node": "foot_1l",
@@ -874,7 +1094,7 @@
       "mass": {
         "valueG": 154.7
       },
-      "collision": "primitive"
+      "collision": "none"
     },
     {
       "node": "foot_1r",
@@ -993,6 +1213,6 @@
         "perModel": 24
       }
     },
-    "aggregateMassG": 2499.8
+    "aggregateMassG": 2500.0
   }
 }

@@ -16,20 +16,24 @@ and D17 deletes an entire class of client/server consistency work.
 phase-level state only. Parallel execution order and subworker ownership live in
 [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
+**Recovery gate (2026-07-12):** the local recovery tree is green, including Brief-25
+25/25, Postgres, coverage, and browser parity. No release may ship until
+`REC-005/007` add PR, protected-merge, post-merge, and remote-nightly evidence.
+
 | Phase | Status | Est. |
 |---|---|---|
-| Pre-P0 housekeeping | ● *(2026-06-12 — licensing D24, hygiene, naming D23; branch protection = owner click)* | days |
-| P0 Freeze & extract | ● for the delivered vintage *(2026-06-12; P0-007 variants gated on the later build or a re-scope decision; remote tag = owner push)* | 1.5–2.5 wk |
+| Pre-P0 housekeeping | ◑ *(implementation hygiene exists; root AGENTS/docs rebuilt 2026-07-12; branch protection/security/repository metadata remain GOV work)* | days |
+| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree; P0-007 variants require later build/rescope; `prototype-final` is absent locally/remotely and must be recreated)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
-| P2 Data-driven models | ● *(2026-06-12 — all four exit criteria checked; non-gating tasks P2-001 publication / P2-002 persistence tracked in TODO)* | 3 wk |
-| P3 Component DB + proof pair + reference rigs | ● *(tag `p3-baseline` → `6937037`, 2026-06-13: Postgres runner/seed/assert, strict catalog rows, fixture ETL/review queue, catalog HUD/BOM, reference rigs pinned)* | 2–3 wk |
-| P4 Text-to-CAD GA | ● *(2026-06-14: deterministic six-archetype template generation, staged SSE, validator repair/draft path, JSON-Patch edit route, Auth.js GitHub/account seam, server-backed shares, Brief-25 real-validator gate 25/25, eval history tables/API, Studio model/edit/share/eval panels)* | 3–4 wk |
+| P2 Data-driven models | ◑ *(local implementation/full-suite criterion restored 2026-07-12; validator publication and remote G0 evidence remain)* | 3 wk |
+| P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs; live ETL remains P3-004/R1 work)* | 2–3 wk |
+| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate restored to 25/25 on 2026-07-12; live extraction, refusal/privacy work, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
-| P6 Sim depth + interop | ◑ *(2026-06-14: collider auto-fit, blade-element-lite, disturbances, replay envelope verification, sag/current helpers, URDF/MJCF exporters, ros2_control sidecar, mesh visual manifest, slotless URDF/MJCF fixture import; full engine-backed Rapier/MuJoCo parity and external-driveable import still open)* | 3–4 wk |
+| P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; live MuJoCo baseline and broader external corpus remain open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
 | P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
-| P10 Environments & courses | ◑ *(2026-06-15: `forge-validate env`, expanded EnvSpec runtime checks, worker `train.policy` EnvSpec→task adapter, courses/leaderboards/replay verification tables and routes, server-side leaderboard replay verification, Studio fixture course/score panel; full environment generation and public course proof open)* | 3–4 wk |
+| P10 Environments & courses | ◑ *(EnvSpec, generation, routes, course-to-task adapter, replay verification, and Studio fixture surface exist; community race and popular-course live proof remain open)* | 3–4 wk |
 | P11 Platform | ◑ *(2026-06-14: Auth.js GitHub, credits, user-owned models, listings/moderation reports, platform gates, policy signoffs, classroom assignments/submissions with validator grading, policy ONNX metadata, DfM/3MF metadata, owner-scoped object blobs, executable job queue, usage-beta rollups, vendor offer APIs, print quote/link APIs, and Studio commerce/gate rows; external provider integrations still env-gated)* | open |
 | P12 Maintenance twin | ◑ *(2026-06-15: wear models, crash windows, repair-sheet generation with vendor/print handoff links, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and quote-link surfacing; real field-log evidence remains open)* | 3 wk |
 
@@ -45,12 +49,12 @@ R2 = P5–P7, R3 = P7–P9, R4 = P10–P12.
 Scope: make the repository workable — documentation system, the prototype committed,
 licensing groundwork.
 
-- [x] Documentation system in place (`CLAUDE.md`, `CHANGELOG.md`, `docs/` suite)
+- [x] Documentation system in place (`AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, `CHANGELOG.md`, `docs/` suite; rebuilt 2026-07-12)
 - [x] Plan v3.0 adopted as binding; v2.0 archived as historical (2026-06-11)
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
-- [x] **`cad-object-studio.html` prototype committed** byte-exact + tagged `prototype-final` *(2026-06-12; pre-configurator vintage — see prototype/README.md)*
+- [~] **`cad-object-studio.html` prototype committed** byte-exact, but the intended `prototype-final` tag is absent locally/remotely as of 2026-07-12; recreate/push under P0-010/GOV-006 *(pre-configurator vintage — see prototype/README.md)*
 - [x] License files reflecting open-core split (D2/D24): Apache-2.0 (© RNT56) for crates/ + schema/ + examples/; proprietary for the rest *(2026-06-12)*
-- [x] Repo hygiene: `.gitignore` + `.editorconfig` *(2026-06-12)*; default-branch protection = one owner click in GitHub settings
+- [~] Repo hygiene: `.gitignore` + `.editorconfig` exist; default-branch protection, security automation, contributor/security surfaces, and repository metadata remain GOV-001..010.
 
 ## P0 — Freeze & extract
 
@@ -69,7 +73,7 @@ Exit criteria:
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*
 - [x] Core boundary API (bake / tick / validate / patch) frozen and documented *(2026-06-12 — v1; zero-copy refinement cannot change call shapes)*
-- [x] Prototype tagged `prototype-final` and never modified after *(2026-06-12)*
+- [~] Prototype content is hash-recorded and unmodified; annotated `prototype-final` must be recreated and pushed at the verified commit (P0-010/GOV-006).
 
 ## P1 — Core & studio
 
@@ -100,8 +104,8 @@ family #1 — quadruped generator with leg-count/wheelbase/mass sliders.
 [`systems/motion-engine.md`](systems/motion-engine.md).
 
 Exit criteria:
-- [x] A quadruped spec becomes a valid walking model with **zero hand-written code** *(2026-06-12: `forge-gen quadruped` → admitted + BEH-001 walking smoke, grid-tested)*
-- [x] CI green on the full validation suite *(2026-06-12: P2-006 declared-verdict matrix over all first-party contracts, gated in CI)*
+- [x] A quadruped spec becomes a valid walking model with **zero hand-written code** *(2026-07-12: modular printable generator passes the full slider-grid admission test)*
+- [~] CI green on the full validation suite *(complete local suite is green on pinned Rust 1.96.0; PR/post-merge CI proof remains `REC-007`)*
 - [x] Diagnostic format stable and machine-readable *(2026-06-12: check IDs + diagnostic JSON + CTR-008)*
 - [x] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08) *(2026-06-12: D22 — spawn stays; numbers in the decision row)*
 
@@ -131,11 +135,11 @@ metered credits (D3); Brief-25 suite live (D-evals).
 
 Exit criteria:
 - [x] Catalog review loop has an owner-facing API/UI before generated artifacts can consume new live-ingested rows *(2026-06-13: API/UI, audit notes, export-policy filters, owner-token auth, and fixture-backed ingestion adapters live)*
-- [x] ≥ 20/25 Brief-25 briefs admitted without human repair *(2026-06-14: real-validator enforced run is 25/25)*
+- [x] ≥ 20/25 Brief-25 briefs admitted without human repair *(2026-07-12: 25 admitted, 0 drafts/rejects/blocked, 0 repair iterations)*
 - [x] Conversational edits apply in < 3 s *(2026-06-14: deterministic NL→JSON-Patch gateway route uses `forge-validate patch`; reports elapsed ms)*
 - [x] A shared link renders for a logged-out visitor (orbit, explode, blueprint, drive demo) *(2026-06-14: admitted-only immutable share snapshots via `/v1/share/:shareId`, Studio `?share=` viewer mode; legacy fragment shares remain)*
 - [x] Anthropic model strings/limits/pricing pinned from current docs (not from the plan) *(D26)*
-- [x] Brief-25 dashboard tracks admission rate, repair iterations, diversity over time *(2026-06-14: `eval_runs`/`eval_brief_results`, `--record-db`, `/v1/evals/brief25/latest`, Studio summary panel)*
+- [x] Brief-25 dashboard tracks admission rate, repair iterations, diversity over time *(2026-07-12: artifact records the restored 25/25 baseline; focused diagnostic-aware repair coverage protects non-template candidates)*
 
 ## P5 — Image → 3D
 
@@ -158,7 +162,7 @@ disturbance injectors; MJCF/URDF exporters with parity suite; URDF/MJCF **import
 
 Exit criteria:
 - [~] Hover trim agrees across Rapier and MuJoCo within tolerance (deterministic parity fixture green; engine-backed parity open)
-- [~] An external URDF round-trips into a driveable contract (slotless fixture import green; external-driveable conversion open)
+- [x] An external URDF/MJCF fixture round-trips into an admitted driveable contract *(reconciled 2026-07-12: `import_driveable` tests pass; broaden external corpus under QA-007 without reopening this fixture criterion)*
 - [x] Endurance estimate within stated error of bench math; assumptions inspectable in HUD
 - [x] Replay format stable: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)
 
@@ -230,7 +234,7 @@ BOM agent vendor links, DfM + print-service ordering, UGC moderation policy.
 Exit criteria:
 - [ ] First external user publishes a model that strangers equip
 - [ ] First printed structural part handed off through a provider quote link
-- [ ] Moderation policy live (report flow, takedown SLA, repeat-infringer rule)
+- [~] Moderation policy live *(report/action code and 72-hour target exist; named legal/process ownership, appeals/escalation, and exercised SLA remain SEC-007/G6)*
 - [x] Marketplace usage-beta economics recorded (D29); seller payouts/revenue share deferred until real thresholds
 
 ## P12 — Maintenance twin

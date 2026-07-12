@@ -175,7 +175,7 @@ pub fn analyze_mesh(mesh: &MeshBuffers, profiles: &[PrintProfile]) -> Vec<DfmPro
             let best = AxisDirection::all()
                 .into_iter()
                 .map(|up| analyze_orientation(mesh, *profile, up))
-                .min_by(|a, b| compare_orientation(a, b))
+                .min_by(compare_orientation)
                 .unwrap_or_else(|| analyze_orientation(mesh, *profile, AxisDirection::PosY));
             let min_wall_ok = min_wall_m + 1e-12 >= profile.min_wall_m;
             let passed = min_wall_ok && best.bed_fit_ok && best.overhang_ok && best.support_ok;

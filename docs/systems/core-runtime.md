@@ -140,7 +140,7 @@ The cross-target exactness gate, run in CI on every core change:
 - **Crates.io + npm publication** of the open-core artifacts lands with P2's
   validator productization (D2: Apache-2.0).
 - **Desktop:** Tauri consumes the same web bundle; native plugins live in
-  `desktop/`, not in core ([`hardware-bridge.md`](hardware-bridge.md)).
+  `packages/desktop/`, not in core ([`hardware-bridge.md`](hardware-bridge.md)).
 
 ## 7. Dependencies
 

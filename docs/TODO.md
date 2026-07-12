@@ -17,18 +17,23 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 
 ## 0. Critical blockers
 
-- **RESOLVED 2026-06-12** — PRE-002: the owner delivered the prototype; committed
-  byte-exact at `prototype/cad-object-studio.html`, tagged `prototype-final`.
-  **Vintage caveat:** it is the pre-configurator build (no slots/variants/ports/
-  harness — see `prototype/README.md`); P0-007 stays gated on the later ~83 KB
-  build or a re-scoping decision. No critical blockers remain open.
+- **Release blocker (`REC-005`, `REC-007`):** the recovery worktree is locally green,
+  but PR CI, protected merge, post-merge CI, and a manual/scheduled nightly on the
+  final commit are still required before G0 closes.
+- **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
+  live provider/external-user proof remains separate phase and external work.
+- **Governance blocker (`GOV-001..010`):** `main` is unprotected, required checks
+  are not enforced, security automation is incomplete, and no release exists.
+- **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
+  pre-configurator prototype. P0-007 remains owner/rescope-gated because the delivered
+  vintage has no 31-variant slot system.
 
 ## 1. Pre-P0 housekeeping (PRE)
 
-- [x] PRE-001 — Documentation system: `CLAUDE.md`, `CHANGELOG.md`, `docs/` suite *(2026-06-11)*
-- [x] PRE-002 — Prototype committed byte-exact + tagged `prototype-final` *(2026-06-12; sha256 ca93489e… — pre-configurator vintage, see prototype/README.md)*
+- [x] PRE-001 — Documentation system: canonical `AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, changelog, phase/task/execution ledgers, and system docs *(rebuilt 2026-07-12)*
+- [~] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree, but `prototype-final` is absent locally/remotely and must be recreated under P0-010/GOV-006.
 - [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
-- [x] PRE-004 — Repo hygiene *(2026-06-12)*: `.gitignore` (rust/node/python + env/coverage/logs), `.editorconfig` (LF, utf-8, 2-space / rust 4 / tabs for Make). **Branch protection on `main` remains the one owner click** (GitHub → Settings → Branches; no API surface in this session's toolset)
+- [~] PRE-004 — Basic repo hygiene exists (`.gitignore`, `.editorconfig`); active `main` protection/ruleset, security automation, repository metadata, and contributor/security surfaces remain GOV-001..010.
 - [x] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC**; `forge-*` code namespaces stay (minimal churn); formal trademark scan recorded as the owner's pre-P4 action
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
@@ -44,7 +49,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [!] P0-007 — Translate all 31 slot variants — **the delivered vintage has no slot/variant system**; gated on the later ~83 KB configurator build (owner) or a re-scoping decision
 - [x] P0-008 — Extraction harness complete *(2026-06-12)*: counts (`extract-counts.mjs`) + **trajectory tapes** (`extract-trajectories.mjs` → `prototype/trajectories/`, deterministic, CI re-records on drift)
 - [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
-- [~] P0-010 — Freeze recorded (sha256 in prototype/README.md + changelog) and annotated tag `prototype-final` created **locally**; the git proxy 403s tag pushes and no MCP tag tool exists — **owner action:** `git push origin prototype-final` from any clone, or create a GitHub Release named `prototype-final` on commit `0294a9d`
+- [~] P0-010 — Freeze hash is recorded, but `prototype-final` is absent locally and remotely as of 2026-07-12. Verify the intended target (`0294a9d`), recreate the annotated tag, push it, and attach remote evidence (= `GOV-006`).
 
 ### P1 — Core & studio
 Rust core (D21 note: v0 implemented directly in Rust on 2026-06-12; "done" for
@@ -52,7 +57,7 @@ each item still means **oracle parity** once PRE-002 lands — the JS/prototype
 recordings remain the completion criterion):
 - [x] P1-001 — `forge-motion` *(2026-06-12)*: 2-bone IK ✓, mixer ✓, servos ✓, clamps ✓, multirotor/rover drivers ✓; **biped + FPV oracle drivers ported line-faithful from the monolith** (`biped.rs`/`fpv.rs`: idle layers, arrive + heading spring + speed ramp, blended phase gait + monolith legIK, drag-limited flight, tilt servos, per-motor RPM mixer, servo settle, head detents, telltales). **Tape parity at ULP level**: max dev 4.4e-16 (biped) / 7.1e-15 (fpv) vs `prototype/trajectories/`, banded 1e-9 in `tests/tape_parity.rs`; wired into `CoreSession` via `node_world_posed` (nm()'s base+animated euler), golden tick corpus re-pinned (bake hashes unchanged), BEH-001 biped walking smoke live
 - [x] P1-002 — `forge-geometry` *(2026-06-12)*: prototype-exact polygon builders ✓, massprops ✓, AABB ✓, **per-part BVH + Möller tri-tri (XC-09)** ✓ — GEO-003 upgraded to BVH-CONFIRMED mesh intersection (hrx7: 53 AABB candidates → 41 confirmed, 12 false positives silenced) and **GEO-008** sampled animation sweep ticks the real driver and catches motion-only interpenetrations (hrx7: 2 found — thigh shells × pelvis at gait extremes; 127 ms total)
-- [~] P1-003 — `forge-sim`: propulsion/battery/estimator models ✓ (HUD derivations tested); **Rapier world integration + shared-memory worker wiring pending** (P6-001 scope pulled forward only when needed)
+- [x] P1-003 — `forge-sim` propulsion/battery/estimator plus engine-backed Rapier world and browser worker/session wiring *(reconciled 2026-07-12: `forge-sim::rapier`, WASM `RapierSession`, `rapier.worker.ts`, engine tests; real-mid-hardware performance remains P1-017)*
 - [~] P1-004 — `forge-validate`: 15 checks live (CTR-001..008, GEO-001/003v0/004/005/006/007, SIM-001..003, BEH-001v0/002, PRV-001) with diagnostics + report envelope + CLI (run/bake/bom/schema) ✓; remaining catalog rows land per phase
 - [x] P1-005 — WASM facade *(2026-06-12)*: validate/bake/schema/tick/patch in the browser, **plus the typed boundary** — `Bake` handle (meta JSON once; positions/normals/indices as typed-array views over wasm memory, geometry never JSON-round-trips; in-place `patch` re-bake = the configurator primitive) and `Session.pose_view` (zero-copy per-frame poses). **Budgets measured and CI-gated** (`scripts/budgets.mjs`, binding): hrx7 bake **2.0 ms** ≤ 60 · patch→re-bake **2.8 ms** ≤ 10 (was ~10/~10.8 through JSON); facade 298 KB gz ≤ 2 MB. Studio fetches contracts only and bakes/validates in-browser (demo .bake/.report payloads pruned; `pnpm demo:sync`). **Found+fixed: wasm `validate` had trapped since day one** (`std::time` panics on wasm32; no gate exercised the path) → cfg'd report clock (js-sys on wasm) + golden-compare now requires native↔wasm **validator-report equality** (volatile fields normalized) on all four canonical contracts
 - [x] P1-006 — **Golden-number suite live** *(2026-06-12, XC-26)*: core-side FNV-1a/ULP hashing of bake buffers + 600-step scripted tick streams; `forge-golden` binary ↔ WASM facade byte-identical in CI; hashes pinned in time (`crates/forge-wasm/tests/fixtures/golden.jsonl`). **Found+fixed a real D17 divergence on first run** (native vs wasm libm ULPs) → all core transcendentals route through `forge-num` (pure-Rust libm). Monolith trajectory tapes recorded (`prototype/trajectories/`) as the oracle axis for the driver ports (P0-008 trajectory half also done)
@@ -72,10 +77,10 @@ Studio (TypeScript face):
 
 ### P2 — Data-driven models
 - [~] P2-001 — Validator productized: check catalog (CTR-001..008, GEO, SIM, BEH, PRV) + diagnostic JSON stable ✓; in-studio WASM validation live ✓; npm + crates.io publication plumbing pending
-- [~] P2-002 — Draft semantics (D14) *(2026-06-12: validation semantics live end to end)* — CLI `--as-draft` (exit 3) → gateway `asDraft` body flag → HTTP 200 with `verdict: draft` and full diagnostics (a draft is a successful save, not a 422; tested). **Persistence** (editable drafts stored server-side) lands with the data layer (P3-001 Postgres); the cannot-train/export/share gates attach to those surfaces as they ship (P4+/P7)
-- [~] P2-003 — Driver library: multirotor/rover/quadruped with schemars param schemas + CTR-008 enforcement ✓; **biped ✓** *(2026-06-12 — oracle port, tape parity, P1-001)*; arm pending
+- [x] P2-002 — Draft semantics and persistence (D14): CLI/gateway save-as-draft behavior, `generated_artifacts` persistence, Studio draft UX, and admitted-only train/export/deploy/share gates are implemented and tested *(reconciled 2026-07-12)*
+- [x] P2-003 — Driver library: multirotor, rover, quadruped, biped, FPV, and arm parameter schemas/validation; arm damped-least-squares driver is implemented and tested *(reconciled 2026-07-12)*
 - [x] P2-004 — Quadruped driver: trot phase gait, per-leg IK, diagonal pairing, validator smoke ✓ *(2026-06-12)*
-- [x] P2-005 — `forge-gen quadruped`: leg-pairs/wheelbase/track/stand/mass sliders → **admitted, walking contracts with zero hand-written code** (grid-tested 2/3/4 pairs) *(2026-06-12)*
+- [x] P2-005 — `forge-gen quadruped`: the structural body is tiled into printable modules while preserving DfM sovereignty, mass closure, collider budgets, and full-slider-grid admission *(recovered 2026-07-12; `REC-002`)*.
 - [x] P2-006 — CI: declared-verdict matrix on every first-party contract *(2026-06-12)* — `examples/expected-verdicts.json` pins verdict + the exact ERROR check-id set per contract; `scripts/validate-all.mjs` enforces in CI (undeclared contracts and stale expectations both fail)
 - [x] P2-007 — OD-08 measured and recorded as **D22** *(2026-06-12)*: spawn p50 5.3/17.8 ms (16/125 parts) vs in-process 0.7/3.7 ms (`scripts/od08-measure.mjs`) — binary-spawn stays (isolation + bit-equality), napi-rs deferred until a measured hot path demands it
 
@@ -101,7 +106,7 @@ Studio (TypeScript face):
 - [x] P4-007 — Share URLs (D4): read-only contract viewer, no account required *(2026-06-14: admitted-only `share_snapshots`, public `/v1/share/:shareId`, Studio `?share=` mode)*
 - [x] P4-008 — BYO Anthropic key + metered credits plumbing (D3); studio-free tier boundaries *(2026-06-14: BYO key remains opt-in; Auth.js users, credit accounts, usage events, zero-cost template usage, Modal-job debit scaffolding landed)*
 - [x] P4-009 — Brief-25 corpus authored (25 canonical briefs across archetypes/scales/constraints) (= XC-15) *(2026-06-13: `evals/brief25.corpus.json`)*
-- [x] P4-010 — Brief-25 CI + dashboard: admission rate, repair iterations, diversity; re-run on prompt/schema/model change *(2026-06-14: root `pnpm eval:brief25` enforces real-validator 20/25+; current run 25/25; `--record-db`, eval tables/API, Studio summary live)*
+- [x] P4-010 — Brief-25 CI + dashboard: deterministic templates now admit **25/25** without repair; manufacturing repair splits oversized primitives with direct regression coverage, and arm behavior repair emits executable driver parameters *(recovered 2026-07-12; `REC-004`)*.
 - [x] P4-011 — Pin Anthropic model strings/limits/pricing from official Anthropic docs at implementation; record in DECISIONS *(2026-06-13: D26; exposed by `GET /v1/generate/models`)*
 - [x] P4-012 — Draft-state UX in studio (= XC-16) *(2026-06-13: generation panel displays blocked/draft/rejected/admitted states, validator attempts/diagnostics, loads admitted or draft contracts into the scene, and disables share for non-admitted drafts)*
 - [x] P4-013 — Environment generation reuses the pipeline with EnvSpec schema (delivers with P10; seam designed now) *(2026-06-14: schema-generic route/data seam and `forge_sim::runtime::EnvSpec` validation stub landed)*
@@ -119,7 +124,7 @@ Studio (TypeScript face):
 - [~] P5-006 — Burst-GPU integration (Modal/RunPod) + permanent result cache; 5-min SLO *(2026-06-15: Modal task profiles now pin photoscan/COLMAP GPU runtime expectations, 300 s timeout, cache requirement, and command envs; real under-5-minute GPU validation open)*
 
 ### P6 — Sim depth + interop
-- [~] P6-001 — Contract→Rapier compiler: per-node compound colliders within D7 budgets; joint motors honoring torque/velocity limits *(2026-06-14: runtime scene summary and collider-fit report live; full Rapier world open)*
+- [x] P6-001 — Contract→Rapier compiler and engine-backed world: per-node compound colliders, joints/motor limits, stepping, pose export, WASM session, and browser worker are implemented/tested *(reconciled 2026-07-12; live engine parity remains P6-010)*
 - [x] P6-002 — Collider-compound auto-fitter (hulls/primitives per node) (= XC-10) *(2026-06-14: deterministic box/cylinder/hull fit report with per-node budget overflow tests in `forge-sim::heavy`)*
 - [x] P6-003 — Propulsion model: motor n ≈ Kv·V_eff·u, T = C_T·ρ·n²·D⁴, Q = C_Q·ρ·n²·D⁵; thrust-table interpolation; blade-element-lite fallback *(2026-06-14: table path plus blade-element-lite torque/current helper tested)*
 - [x] P6-004 — Battery model: sag (R_int), capacity integration; unit tests against bench math (= XC-07) *(2026-06-14: explicit runtime sag helper + existing HUD powertrain tests)*
@@ -184,7 +189,7 @@ Studio (TypeScript face):
 - [~] P11-005 — BOM agent: live vendor offers for catalog slots *(2026-06-15: `vendor_offers` tables/routes remain live and worker commerce normalization now gates `FORGE_VENDOR_REFRESH_CMD` output into priced, provenanced, rate-limited offers with invalid rows held; gateway wiring to the normalizer and real provider credentials remain open)*
 - [~] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency) *(2026-06-15: `occt.tessellate` now emits DfM report refs, oriented 3MF export refs, print profiles, quote-link-only handoff metadata, and printed-part BOM rows; worker commerce normalization blocks quotes without DfM-passing 3MF/profile artifacts and forces quote-link/off-platform checkout terms; gateway wiring, live provider quote submission, and true OCCT-generated orientation remain open)*
 - [x] P11-007 — UGC moderation policy live: report flow, takedown SLA, repeat-infringer rule *(2026-06-14: `moderation_reports`, 72-hour SLA target, repeat-infringer signal, gateway routes, and Studio report action live; legal/process ownership still outside code)*
-- [x] P11-008 — License-ledger UI + export filter surfaced to users (= XC-17) *(2026-06-14: public `/v1/license-ledger` reports license classes, component/price/citation counts, review counts, and export-policy distribution; Studio platform panel renders the ledger)*
+- [~] P11-008 — License-ledger API/UI is live, but exporter enforcement is incomplete: restricted geometry must actually degrade to dimensioned envelopes with attribution/link-out behavior in STEP/3MF/assembly exports. Track implementation and adversarial tests under `SEC-001`.
 - [x] P11-009 — Marketplace economics decided with usage data (OD-05); record in DECISIONS *(2026-06-14: D29 records usage-data beta, no seller payouts/revenue share/direct checkout at launch, credit cost-plus retained for GPU jobs)*
 
 ### P12 — Maintenance twin
@@ -232,14 +237,14 @@ touched.
 
 | ID | Question | Decide by |
 |---|---|---|
-| OD-01 | Product name (FORGE pending trademark scan) | before public launch (P3/P4 marketing) |
+| OD-01 | ~~Product name~~ resolved as ForgedTTC by D23; formal trademark scan remains `GOV-010` | before public launch |
 | OD-02 | ~~React vs Solid~~ — **resolved by D16** (the face stays React/TS; v3.0) | — |
 | OD-03 | Left/right asymmetric slot UX (contract already supports) | when a build needs it |
 | OD-04 | WASM user-controller sandbox design | post-P7 design review |
 | OD-05 | ~~Marketplace economics (revenue share, skill pricing)~~ — **resolved by D29** as usage-data beta; seller payouts/revenue share deferred until real thresholds | — |
 | OD-06 | Fixed-wing archetype priority | when demand signals |
-| OD-07 | Photoscan alignment UI: before or with P5 GA | during P5 |
-| OD-08 | napi-rs hot-path bindings vs binary-spawn in the gateway | measure in P2 (P2-007) |
+| OD-07 | ~~Photoscan alignment timing~~ resolved: alignment UI landed with P5-004 | — |
+| OD-08 | ~~napi-rs vs binary-spawn~~ resolved by D22/P2-007: keep spawn until measured need | — |
 
 Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
@@ -250,7 +255,89 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] Gamepad input — left/right sticks with deadzone in the drive loop; sliders stay the fallback
 - [x] Patch consequence diff — Δ AUW/TWR/hover line after each configurator patch (D5 diff semantics)
 - [x] Bundle split — three+n8ao chunk (app 78 kB gz; chunk warning gone)
-- [x] Nightly workflow — parity gallery (headless chromium) + cargo-llvm-cov coverage, artifact-uploaded
+- [~] Nightly workflow — browser CLI and quadruped regression are fixed locally; all six parity scenes pass and coverage is 84.34% lines against an enforced 80% floor. A manual/scheduled run on the merged commit remains under `REC-005/007`.
 - [x] Release workflow — tag v* → static forge-validate binary + wasm facade package
 - [x] Incremental re-bake — `bake_incremental` reuses untouched (geom, pose) buffers in `Bake.patch`
 - [x] Property-based tests *(2026-06-12)*: proptest (dev-dep) over the schema heart — parse→serialize fixed point + hash stability across 64 generated docs; patch engine never panics and everything it returns passes the shape gate (incl. bad pointers/out-of-range/odd value types)
+
+## 6. Recovery and truth baseline (REC)
+
+- [x] REC-001 — Fixed Clippy without blanket allows; pinned Rust 1.96.0 in `rust-toolchain.toml` and every workflow; pinned-toolchain fmt, Clippy, and workspace tests pass locally *(2026-07-12)*.
+- [x] REC-002 — Reconciled quadruped geometry with `MFG-004` using modular printable body panels; the full generator slider grid admits without weakening DfM *(2026-07-12)*.
+- [x] REC-003 — Regenerated `qd-mini` from the corrected generator, synchronized the Studio demo and golden fixture, and restored all five declared verdicts *(2026-07-12)*.
+- [x] REC-004 — Restored Brief-25 to 25/25; added diagnostic-aware manufacturing/arm repair and focused oversized-part repair coverage *(2026-07-12)*.
+- [~] REC-005 — Fixed `playwright-core` browser installation and verified all six parity scenes locally; artifact upload is `if: always()`. Remote manual/scheduled proof remains *(2026-07-12)*.
+- [x] REC-006 — `cargo llvm-cov --workspace` passes at 84.34% line coverage; nightly enforces a reviewed 80% line floor *(2026-07-12)*.
+- [~] REC-007 — The 29-step `pnpm verify`, Postgres `pnpm verify:db`, coverage, and browser parity pass locally. PR CI, protected merge, post-merge CI, and remote nightly remain.
+- [x] REC-008 — Reconciled the agent entry, project state, phase/TODO/execution roadmaps, system docs, README verification flow, and changelog to the recovery evidence *(2026-07-12)*.
+
+## 7. Governance, publication, and supply chain (GOV)
+
+- [ ] GOV-001 — Activate a `main` ruleset: PR-only changes, required reviews as appropriate, no force pushes/deletions, and required exact check names.
+- [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
+- [~] GOV-003 — Enabled live vulnerability alerts, Dependabot security updates, secret scanning, and push protection; added grouped weekly dependency updates plus dependency audit/review and JS/Python CodeQL workflows. Merge and first successful remote scans remain *(2026-07-12)*.
+- [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
+- [ ] GOV-005 — Pin release-sensitive GitHub Actions by immutable SHA, restrict allowed actions, review workflow permissions, and add dependency-review/SBOM checks.
+- [ ] GOV-006 — Recreate and remotely publish annotated `prototype-final` at the verified commit; document tag and frozen SHA evidence.
+- [ ] GOV-007 — Define SemVer/compatibility/deprecation policy for ModelSpec, validator CLI/report, WASM, replay, EnvSpec, and worker artifacts.
+- [ ] GOV-008 — Build cross-platform release artifacts, checksums, provenance/attestations, SBOM, release notes, and reproducible release verification.
+- [ ] GOV-009 — Publish or explicitly defer crates.io/npm artifacts; prove clean external install, version output, example validation, and downloaded checksum verification.
+- [ ] GOV-010 — Complete the ForgedTTC trademark/name scan and set accurate GitHub description, topics, homepage, SECURITY, CONTRIBUTING, support, and conduct surfaces before public launch.
+
+## 8. Security, privacy, safety, and legal completion (SEC)
+
+- [ ] SEC-001 — Enforce D10 in actual exporters: attribution manifests, restricted-mesh envelope substitution, link-outs, assembly policy derivation, and adversarial tests.
+- [ ] SEC-002 — Implement prohibited weapons/targeting/munition/interdiction brief refusal and minimal safe refusal logging across deterministic and live generation paths.
+- [ ] SEC-003 — Implement user-scoped export and deletion for photos, models, generated artifacts, object blobs, telemetry, policies, courses, and account data.
+- [ ] SEC-004 — Implement explicit consent/version/withdrawal records for photoscan processing, telemetry sharing, pattern contribution, leaderboards, and training reuse.
+- [ ] SEC-005 — Define retention, legal hold, backup deletion, object tombstone, and audit-event policies; test deletion through primary and backup lifecycles.
+- [ ] SEC-006 — Threat-model auth/session/BYO-key/provider callbacks/object URLs/job payloads/SSRF/prompt injection/zip or model bombs and add negative tests/rate limits.
+- [ ] SEC-007 — Complete P11 dual-use/export-control review, jurisdiction/version records, per-policy signoff, takedown/appeals/escalation ownership, and external-beta gate.
+- [ ] SEC-008 — Harden hardware/update supply chain: signed Desktop/Link artifacts, pairing/revocation, rollback, local-only authority, kill-switch and supervisor fault injection.
+
+## 9. Quality, testing, and product acceptance (QA)
+
+- [x] QA-001 — Added `pnpm verify` as the 29-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle artifacts and are documented in README/AGENTS *(2026-07-12)*.
+- [ ] QA-002 — Add browser E2E coverage for generate/draft/edit/validate/share/catalog/course/listing/job/maintenance flows using real built WASM and an isolated DB.
+- [ ] QA-003 — Add accessibility, keyboard, focus, contrast, reduced-motion, responsive, and viewer-grade browser acceptance; publish the supported-browser matrix.
+- [ ] QA-004 — Test migrations from every supported prior schema with populated data; document backup, rollback/roll-forward, and failed-migration recovery.
+- [ ] QA-005 — Add idempotency, retry, cancellation, timeout, rate-limit, duplicate-delivery, worker-crash, provider-outage, and partial-object-upload tests.
+- [ ] QA-006 — Build the performance matrix: real mid hardware, cold/warm load, large scenes, long replay, concurrent jobs, DB queries, and provider SLOs.
+- [ ] QA-007 — Add fuzz/property/adversarial corpora for imports, JSON Patch, EnvSpec, replay, provider output, catalog citations, export policy, and hardware payloads.
+- [ ] QA-008 — Define golden-artifact review/update procedure so intentional schema/render/physics drift cannot be casually re-pinned.
+- [ ] QA-009 — Add end-to-end backup/restore and disaster-recovery exercises with measured RPO/RTO.
+- [ ] QA-010 — Create external acceptance scripts and evidence templates for builder, photoscan, training, course, lab, print, marketplace, and maintenance milestones.
+
+## 10. Production operations and economics (OPS)
+
+- [ ] OPS-001 — Define supported deployment topology/environments, infrastructure ownership, configuration schema, secrets rotation, and environment promotion.
+- [ ] OPS-002 — Replace mutable images/default dev secrets for deployable profiles; pin images, run non-root/read-only where possible, add health/readiness and resource limits.
+- [ ] OPS-003 — Implement structured logs, request/job correlation, metrics, traces, dashboards, alert routing, and redaction rules across gateway/workers/providers/Desktop.
+- [ ] OPS-004 — Define SLOs and error budgets for API, generation, queue latency, photoscan, training, object storage, auth, and provider handoffs.
+- [ ] OPS-005 — Implement Postgres/object backup, restore verification, retention, capacity, migration, and disaster-recovery runbooks.
+- [ ] OPS-006 — Define job quotas, concurrency, cancellation/refund, idempotency, dead-letter/reconciliation, cost attribution, and runaway-spend kill switches.
+- [ ] OPS-007 — Add provider capability discovery, sandbox/prod separation, timeouts, circuit breakers, rate limits, credential rotation, and degraded-mode UX.
+- [ ] OPS-008 — Define support, incident severity, on-call/escalation, status communication, security reporting, and postmortem processes.
+- [ ] OPS-009 — Instrument unit economics: model/API tokens, GPU/CPU time, storage/egress, vendor/print calls, credits, refunds, and margin by workflow.
+- [ ] OPS-010 — Run load/capacity/cost tests and set launch limits; no Kubernetes or multi-region expansion without measured need and a decision record.
+
+## 11. External and field proof (EXT)
+
+- [ ] EXT-001 — Independent builder completes catalog-backed configure -> validate -> share -> BOM/export flow and records usability/correctness findings.
+- [ ] EXT-002 — Real photographed motor completes TRELLIS/COLMAP -> D13 -> alignment -> reviewed equipable component under the declared SLO.
+- [ ] EXT-003 — Real one-click hover/waypoint training reaches a passing scorecard and the actual ONNX policy flies the twin in-browser.
+- [ ] EXT-004 — Controlled D12 rover then quad pilots prove config/capture/supervisor/kill/recovery and produce signed lab evidence.
+- [ ] EXT-005 — External community course receives independently verified leaderboard submissions and is used directly as a training task.
+- [ ] EXT-006 — First external user publishes an admitted model that an unrelated user equips successfully.
+- [ ] EXT-007 — First DfM-passing structural part reaches a real provider quote link with lawful artifact and profile handoff.
+- [ ] EXT-008 — Real Desktop-captured field event produces ghost divergence, accepted/rejected system-ID update, and actionable repair evidence.
+- [ ] EXT-009 — Conduct post-alpha interviews/metrics review and record which product rung to deepen, defer, or remove before scaling scope.
+
+## 12. Documentation and contributor completion (DOC)
+
+- [x] DOC-001 — Add canonical root `AGENTS.md`, compatibility `CLAUDE.md`, documentation hierarchy, and evidence-first working protocol *(2026-07-12)*.
+- [x] DOC-002 — Add dated `PROJECT-STATE.md` with verified current results, maturity boundary, discrepancies, and go/no-go verdicts *(2026-07-12)*.
+- [x] DOC-003 — Rebuild the complete execution roadmap across phases, recovery, governance, security, quality, operations, external proof, metrics, and releases *(2026-07-12)*.
+- [ ] DOC-004 — Keep README feature/live/gated claims synchronized with evidence and add visible CI/release/security status only after those signals are trustworthy.
+- [ ] DOC-005 — Generate and maintain versioned API/event/artifact documentation (OpenAPI or equivalent), migration guides, examples, and deprecation notes.
+- [ ] DOC-006 — Add contributor setup, architecture decision guide, debugging/runbooks, release guide, security reporting, support boundaries, and first-good-issue workflow.

@@ -68,7 +68,7 @@ The same API is exposed natively via napi-rs where the gateway ever needs hot-pa
 calls; the default server integration is spawning the binary (process isolation +
 guaranteed bit-equality with CI).
 
-## 3. Repository layout *(scaffolded 2026-06-12 — P0-003; `desktop/` and `crates/forge-wasm` zero-copy refinements arrive per phase; `schema/` and `scripts/codegen-contract.mjs` carry the XC-01 pipeline)*
+## 3. Repository layout *(current; `schema/` and `scripts/codegen-contract.mjs` carry the XC-01 pipeline)*
 
 ```
 TTC/
@@ -80,12 +80,11 @@ TTC/
 │   ├── forge-sim/                     # propulsion/battery/estimator, Rapier integration, replay
 │   ├── forge-validate/                # the gatekeeper: checks, CLI, report assembly
 │   └── forge-wasm/                    # single wasm-pack facade (bake/tick/validate/patch) ≤ 2 MB gz
-├── packages/                          # TypeScript face (pnpm + Turborepo)
+├── packages/                          # TypeScript face (pnpm workspace)
 │   ├── studio/                        # React app + Three.js render layer + ONNX playback
-│   └── gateway/                       # Fastify API, registries, orchestrators (spawns forge-validate)
-├── workers/                           # Python 3.12 compute plane
-│   ├── photoscan/  ├── occt/  ├── training/  └── etl/
-├── desktop/                           # FORGE Desktop (Tauri) — ships P8: serial/fs/recorder plugins
+│   ├── gateway/                       # Fastify API, registries, orchestrators (spawns forge-validate)
+│   └── desktop/                       # Tauri shell + lab-gated serial/recorder contracts
+├── workers/                           # Python 3.12 compute plane + deterministic fixture/live adapters
 ├── docs/                              # this documentation system
 └── infra/                             # Docker Compose, CI, deploy scripts
 ```
@@ -102,13 +101,13 @@ the inter-language contract; never hand-mirror types.
 | Layer | Decision |
 |---|---|
 | Core language | **Rust** — `forge-core` workspace, dual-target (native + WASM via single facade crate ≤ 2 MB gz) |
-| Face language | TypeScript strict — React 19 + Zustand; Vite + pnpm + Turborepo beside the cargo workspace; TS types codegen'd from schemars output |
+| Face language | TypeScript strict — React 19 + Zustand; Vite + pnpm workspace beside the cargo workspace; TS types codegen'd from schemars output |
 | 3D | Three.js — WebGL2 baseline, WebGPURenderer behind a flag; thin consumer of core-baked buffers |
 | Client physics | Rapier — same crate natively and as WASM, driven from `forge-sim`; 240 Hz substeps in a worker |
 | In-browser inference | ONNX Runtime Web (WASM/WebGPU EP) |
 | CSG / B-rep | Manifold behind a core trait (native C API / WASM build); OpenCascade **server-side** (STEP I/O, fillets, DfM) |
 | Mesh tooling | meshoptimizer (native + WASM) for decimation/LOD |
-| Gateway | Fastify + TypeBox on Node 22; invokes the `forge-validate` binary (napi-rs for hot paths per OD-08) |
+| Gateway | Fastify + TypeBox on Node 24; invokes the `forge-validate` binary (D22 keeps binary-spawn until a measured hot path justifies change) |
 | Compute | Python 3.12 queue-driven workers (MuJoCo/MJX, SB3, TRELLIS, COLMAP, OCCT) |
 | Data | Postgres 16 + pgvector + graphile-worker; S3-compatible object storage |
 | Training sim | MuJoCo (CPU) → MJX (GPU/JAX) when benchmarks demand (P7-010) |
@@ -134,9 +133,12 @@ leaderboard runs are re-verified server-side as anti-cheat hygiene only.
 
 ## 6. Deployment, surfaces & operations
 
-- **Topology:** Docker Compose on a single Hetzner-class VM (gateway + Postgres +
-  workers) + CDN for the static studio. GPU is burst-only (Modal/RunPod) with
-  permanent result caching. k8s is deliberately out of scope.
+- **Current state:** `infra/docker-compose.yml` is a local/prod-like development
+  profile with development defaults and source mounts. It is not production proof.
+- **Target topology:** a single-VM gateway/Postgres/worker deployment plus CDN/static
+  Studio and burst GPU providers remains the intended first operating shape. It must
+  satisfy OPS-001..010 before being described as production. Kubernetes and
+  multi-region remain out of scope until measured need and a decision record.
 - **Surfaces (D15):** the **browser is primary, permanently** (share URLs are the
   growth loop). Full web studio requires the Chromium floor (COOP/COEP for shared
   memory); Firefox/Safari/iOS are viewer-grade by declaration — say so in user-facing

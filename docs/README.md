@@ -1,21 +1,22 @@
 # FORGE documentation index
 
-Entry point for the whole repository is [`/CLAUDE.md`](../CLAUDE.md) — read it first.
+Entry point for the whole repository is [`/AGENTS.md`](../AGENTS.md) — read it first.
+`/CLAUDE.md` is retained only as a compatibility pointer.
 This index maps the `docs/` tree and gives reading orders by role.
 
 ## Reading order
 
 **Every session (any role):**
-[`/CLAUDE.md`](../CLAUDE.md) → top of [`/CHANGELOG.md`](../CHANGELOG.md) →
-[`ROADMAP.md`](ROADMAP.md) → [`TODO.md`](TODO.md). For parallel execution
-planning, add [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
+[`/AGENTS.md`](../AGENTS.md) → [`PROJECT-STATE.md`](PROJECT-STATE.md) → top of
+[`/CHANGELOG.md`](../CHANGELOG.md) → [`ROADMAP.md`](ROADMAP.md) →
+[`TODO.md`](TODO.md) → [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
 **New to the project:** add [`FORGE-plan.md`](FORGE-plan.md) (the binding v3.0 plan,
 ~35 min), then [`GLOSSARY.md`](GLOSSARY.md) and [`architecture.md`](architecture.md).
 
 **About to implement something:** the relevant `systems/*.md` doc, plus
 [`BEST-PRACTICES.md`](BEST-PRACTICES.md) and the budgets in
-[`architecture.md`](architecture.md) §6. Anything touching admission, exports,
+[`architecture.md`](architecture.md) §7. Anything touching admission, exports,
 hardware, or user content also requires
 [`security-safety-legal.md`](security-safety-legal.md).
 
@@ -23,14 +24,16 @@ hardware, or user content also requires
 
 | Doc | Purpose | Nature |
 |---|---|---|
+| [`PROJECT-STATE.md`](PROJECT-STATE.md) | Dated evidence snapshot, current gates, capability maturity, and go/no-go verdicts | **Living; evidence-backed** |
 | [`FORGE-plan.md`](FORGE-plan.md) | The definitive plan v3.0 — positioning, runtime architecture (Rust core / web face), strategy, engines, roadmap, decisions D1–D18, appendices | **Frozen** planning paper (binding) |
 | [`FORGE-plan-v2.md`](FORGE-plan-v2.md) | v2.0 predecessor plan | **Frozen**, historical — superseded by v3.0 |
 | [`FORGE-vision-and-architecture.md`](FORGE-vision-and-architecture.md) | v1.0 predecessor paper | **Frozen**, historical |
 | [`ROADMAP.md`](ROADMAP.md) | Phases P0–P12: scope, exit-criteria checkboxes, live status | Living |
 | [`TODO.md`](TODO.md) | Every open task across all surfaces, with stable IDs | Living |
-| [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md) | Parallel subworker split for all remaining TODOs, dependencies, blockers, and acceptance gates | Living |
+| [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md) | Complete dependency-ordered program: recovery, releases, phases, security, quality, operations, external/field proof, and acceptance gates | Living |
 | [`DECISIONS.md`](DECISIONS.md) | Binding decision record D1–D16+, open decisions, decision process | Living (append-only semantics) |
 | [`BEST-PRACTICES.md`](BEST-PRACTICES.md) | Doctrine, conventions, code/test/AI-usage standards, git discipline | Living |
+| [`REPOSITORY-GOVERNANCE.md`](REPOSITORY-GOVERNANCE.md) | Exact required checks, ruleset contract, security/dependency operations, and evidence cadence | Living |
 | [`GLOSSARY.md`](GLOSSARY.md) | Project vocabulary | Living |
 | [`architecture.md`](architecture.md) | Runtime split (Rust core / web face), core boundary, repo layout, stack, deployment, budgets | Living |
 | [`security-safety-legal.md`](security-safety-legal.md) | Security model, platform exclusions, legal gates, license export matrix, privacy | Living |

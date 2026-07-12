@@ -4,7 +4,7 @@ This file is the project's memory between working sessions. **Every session — 
 AI agent — appends an entry here before it ends.** Newest entries first. Never rewrite
 or delete prior entries; append corrections as new entries instead.
 
-Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
+Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ```markdown
 ## YYYY-MM-DD — Short imperative title
@@ -17,6 +17,53 @@ Entry format (see [`CLAUDE.md`](CLAUDE.md) §6 for the rules):
 ```
 
 ---
+
+## 2026-07-12 — Restore the truthful local green baseline
+**Session:** Codex agent · branch `codex/recover-truthful-green` · **Phase:** Wave 0 recovery ·
+**TODO items:** REC-001..008, QA-001, P2-005, P4-010
+**Done:** Fixed Clippy and validator CLI regressions; made generated quadrupeds
+modular and printable across the full slider grid; regenerated/synchronized qd-mini
+and its golden; made six-archetype generation DfM/collider/behavior-correct; added
+focused manufacturing repair coverage; restored Brief-25 to 25/25; fixed nightly
+Chromium invocation; enforced an 80% coverage floor against a measured 84.34%; pinned
+Rust 1.96.0; and added passing 29-step non-DB and isolated Postgres verification
+entry points. Local browser parity passes all six scenes at edge F1 0.957–0.995.
+Enabled vulnerability/security updates, secret scanning and push protection; added
+grouped dependency updates, dependency review/audits, JS/Python CodeQL, and an exact
+branch-protection/check-name contract. Upgraded `@auth/core` to remove the sole npm
+advisory; `pnpm audit` is clean.
+**Changed:** Rust core/generator/validator sources and fixtures, gateway generation and
+tests, qd-mini examples, workflows/toolchain, `scripts/verify.mjs`, package scripts,
+README/AGENTS, repository-governance/security automation, and living
+roadmap/state/system documentation.
+**Decisions:** coverage below 80% lines is now a nightly failure; no validator or DfM
+gate was weakened.
+**Next:** Publish this tree through a PR, activate the exact required-check ruleset,
+verify post-merge CI and manual nightly, then complete governance/security/release
+Wave 0 work.
+**Blockers:** remote `main` still points at the old failing commit; it is unprotected,
+has no ruleset/release, and live/field evidence remains outside local recovery.
+
+## 2026-07-12 — Rebuild the complete evidence-first program roadmap
+**Session:** Codex agent · branch main worktree · **Phase:** recovery through P12 ·
+**TODO items:** REC-001..008, GOV-001..010, SEC-001..008, QA-001..010,
+OPS-001..010, EXT-001..009, DOC-001..006, plus reconciled phase rows
+**Done:** Added the canonical root `AGENTS.md`; converted `CLAUDE.md` into a
+compatibility entry; added a dated evidence-backed project-state snapshot; rebuilt
+the execution roadmap from current recovery through trusted-core release, external
+builder proof, live compute, controlled hardware, platform, field maintenance, and
+scale decisions; reconciled stale phase/task states; and added missing governance,
+security, privacy, quality, operations, external-proof, documentation, risk, and
+release work.
+**Changed:** `AGENTS.md`, `CLAUDE.md`,
+`docs/{README.md,PROJECT-STATE.md,ROADMAP.md,TODO.md,EXECUTION-ROADMAP.md,BEST-PRACTICES.md,risk-register.md}`,
+`CHANGELOG.md`.
+**Decisions:** none; this work documents current executable evidence and existing
+decision boundaries.
+**Next:** Execute Wave 0 (`REC-001..008`, `GOV-001..005`, `QA-001`) and refresh
+`PROJECT-STATE.md` with green local/PR/post-merge/nightly evidence.
+**Blockers:** current Clippy/workspace/declared-verdict/Brief-25/CI/nightly failures;
+main is unprotected; publication and live/field gates remain unmet.
 
 ## 2026-06-16 — Draw remaining-work boundary
 **Session:** Codex agent · branch main · **Phase:** cleanup · **TODO items:** none

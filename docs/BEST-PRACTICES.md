@@ -131,12 +131,14 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
 
 ## 9. Git, sessions, and documentation discipline
 
-- **Branches:** work on feature branches (`claude/...` for agent sessions); never
-  force-push shared branches; `main` is protected once code lands.
+- **Branches:** work on scoped feature branches (`codex/<lane>-<scope>` by default);
+  never force-push shared branches. Treat unprotected `main` as a release blocker,
+  not permission for direct feature pushes.
 - **Commits:** imperative subject ≤ 72 chars; body explains *why*; reference TODO IDs
   (e.g. `P0-004`) where applicable. Push with `git push -u origin <branch>`.
-- **Every session ends with a `CHANGELOG.md` entry** (format in
-  [`/CLAUDE.md`](../CLAUDE.md) §6) and updated ROADMAP/TODO checkboxes. This is the
+- **Every session ends with a `CHANGELOG.md` entry** (protocol in
+  [`/AGENTS.md`](../AGENTS.md)) and updated PROJECT-STATE/ROADMAP/TODO entries when
+  affected. This is the
   project's continuity mechanism — treat skipping it as breaking the build.
 - **Docs move with code:** a change that invalidates a doc updates the doc in the same
   PR. New invariants → harness check + doc. New decisions → DECISIONS entry.
@@ -155,3 +157,40 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
   explicit opt-in. Telemetry logs belong to the user; sharing is per-log explicit.
 - Legal gates are entry conditions, not afterthoughts: ToS review before P8,
   dual-use check before P11 policy sharing.
+
+## 11. Evidence and maturity discipline
+
+Use five explicit maturity labels: **contract**, **fixture**, **sandbox**, **live**,
+and **field-proven**. Never use “implemented,” “production slice,” or a checked task
+to imply a higher maturity level than the evidence supports.
+
+- Routes, schemas, tables, buttons, and fixture outputs prove contracts.
+- Deterministic fixture jobs prove local behavior and are permanent test oracles.
+- A command adapter proves a seam, not the provider.
+- A sandbox run needs real credentials, provider output, cost/latency, timeouts,
+  redaction, retry/idempotency, and retained artifacts.
+- A live claim additionally needs deployment, monitoring, recovery, ownership, and
+  support evidence.
+- A field claim needs evidence from the intended user/hardware context.
+
+Status documents are not proof. When code/tests/CI contradict a checkbox, current
+executable evidence wins and the living docs are corrected in the same change.
+
+## 12. Recovery, release, and operations discipline
+
+- Restore the complete truthful green baseline before feature expansion or release.
+- Required gates must fail on missing prerequisites or skipped coverage; build the
+  validator before gateway tests that depend on it.
+- Pin toolchains and release-sensitive actions; do not let “stable” or `latest`
+  silently change release evidence.
+- Release from protected `main` with versioned artifacts, checksums, SBOM/provenance,
+  install/version proof, and post-release smoke.
+- Live providers require sandbox/prod separation, capability discovery, timeout,
+  rate limit, circuit breaker, idempotency, cancellation, cost bound, and degraded UX.
+- Data changes require populated forward-migration proof, backup/restore impact, and
+  roll-forward/rollback procedure.
+- Production readiness includes secrets rotation, non-root/minimal images,
+  observability, SLOs, alert ownership, incident response, retention, deletion, and
+  disaster recovery.
+- Local green is not remote green. Remote green is not a release. A release is not
+  field proof.

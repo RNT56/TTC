@@ -6,6 +6,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
+    "verify": "node scripts/verify.mjs",
+    "verify:db": "pnpm db:migrate && pnpm db:seed-catalog && pnpm db:assert-p3",
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
     "schema:migrate": "cargo run -q -p forge-validate -- migrate",
     "build:wasm": "./scripts/build-wasm.sh",

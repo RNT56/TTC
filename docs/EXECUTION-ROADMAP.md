@@ -1,528 +1,419 @@
-# EXECUTION ROADMAP - remaining work split for parallel subworkers
+# EXECUTION ROADMAP - complete program from recovery to field proof
 
-Source of truth: [`TODO.md`](TODO.md) is still the task ledger and
-[`ROADMAP.md`](ROADMAP.md) is still the phase status ledger. This file is the
-execution overlay: it groups every remaining open, in-progress, or blocked task
-into parallel subworker tracks, names dependencies, and defines the acceptance
-gate for closing work.
+Last rebuilt: **2026-07-12**
 
-Last rebuilt: 2026-06-16 from `TODO.md`, `ROADMAP.md`, and the v3.0 plan.
+Evidence baseline: [`PROJECT-STATE.md`](PROJECT-STATE.md)
 
-## Current Boundary - 2026-06-16
+Vision and phase contract: [`FORGE-plan.md`](FORGE-plan.md)
+Atomic work ledger: [`TODO.md`](TODO.md)
 
-All currently identifiable local development lanes have either been implemented
-or narrowed to a specific external gate. Remaining open rows are intentionally not
-closed by local code alone:
+This document is the master execution overlay. It does not redefine product vision
+or duplicate implementation specifications. It orders all remaining phase,
+stabilization, governance, security, quality, operations, documentation, and external
+proof work into dependency-complete waves and workstreams.
 
-- Owner-input blocked: `P0-007` needs the later configurator build or a rescope
-  decision; `P0-010` needs the owner to push/create `prototype-final`;
-  `P11-000` needs accepted dual-use/export-control policy sharing signoff.
-- Lab/hardware blocked: `P1-017` and `P8-001` through `P8-014` need real
-  mid-hardware, D30/D12 controlled lab execution, field logs, or signed desktop/
-  recorder evidence.
-- External-provider blocked: `P3-004`, `P5-001`, `P5-002`, `P5-006`, `P7-003`,
-  `P9-002`, `P9-003`, `P11-005`, and `P11-006` need configured provider
-  credentials, sandbox runs, live optimizer/simulator evidence, vendor offer
-  providers, or print-provider/oriented-3MF handoff evidence.
-- Conditional: `P7-010` must produce benchmark data before any MJX adoption
-  claim; `P9-005` remains conditional on that benchmark demanding MJX batching.
-- Phase-fed maintenance: `P1-004` catalog/check rows and `P1-014` variant cards
-  remain tied to later concrete catalog/slot-system inputs rather than a missing
-  local implementation path.
+## 1. Program outcomes
 
-## 0. Rules for every subworker
+The program is complete only when all four outcomes are independently true:
 
-- Start from a branch named `codex/<track>-<short-scope>` unless the owner says
-  otherwise.
-- Read `/CLAUDE.md`, the relevant `docs/systems/*.md`, and the TODO rows listed
-  in the track before changing code.
-- Do not edit frozen planning papers: `FORGE-plan.md`, `FORGE-plan-v2.md`, or
-  `FORGE-vision-and-architecture.md`.
-- Mark a TODO `[~]` only when real work starts; mark `[x]` only after code,
-  tests, docs, and changelog are complete.
-- Keep D30/P11 gates fail-closed. D30 accepts controlled D12 lab pilots only;
-  external beta, policy sharing, and external-provider actions must not silently
-  bypass legal, lab, or owner signoff.
-- Each subworker owns its tests. If a dependency is missing, add a deterministic
-  fixture or adapter seam first, then leave the live path gated.
+1. **Trusted build-verification product (R1).** A real builder can configure a robot
+   from reviewed parts, understand every rejection, validate it, share it, and leave
+   with lawful build artifacts and purchasable handoffs.
+2. **Simulation-ready standard (R2).** External robots enter through the contract,
+   compile to verified artifacts, run in engine-backed simulation, and can train a
+   reproducible policy with an honest scorecard.
+3. **Controlled autonomy loop (R3).** A policy moves from SITL to controlled hardware,
+   Desktop records the field session, system ID tightens the twin, and ghost/repair
+   evidence is useful under the D30/D12 safety boundary.
+4. **Evidence platform (R4).** External users publish models/courses/skills, verified
+   activity accumulates, provider handoffs work, moderation operates, and field
+   history improves designs without weakening ownership or safety.
 
-## 1. Dependency waves
+## 2. Current boundary
 
-### Wave A - unblocked foundations
+The broad v0 and most deterministic fixture contracts exist. The local recovery
+baseline is now green; the next task is to publish and govern that exact tree before
+resuming feature breadth.
 
-These tracks can run now without physical rigs or live hardware gates:
+Current release blockers:
 
-- V: validator, publishing, draft persistence, schema/fuzz cleanup.
-- G: geometry/configurator/motion gaps.
-- S: Rapier/MuJoCo engine integration and parity harness.
-- C: compute adapters for ETL/photoscan/OCCT.
-- L: training tasks, SB3, ONNX playback, BC/offline RL.
-- E: environments, courses, and leaderboard UI.
-- P: marketplace, vendors, print handoff, and maintenance dashboards.
+- the recovery tree is uncommitted and remote `main` still carries the old red CI and
+  scheduled-nightly evidence;
+- PR, protected-merge, post-merge, and remote-nightly proof are absent;
+- branch protection, vulnerability alerts, releases, and production evidence are
+  absent.
+- security, operations, release, live-provider, external-user, and field work remains.
 
-### Wave B - external sandboxes
+No downstream phase may claim closure while Wave 0 is incomplete.
 
-These need configured external services but not necessarily physical hardware:
+## 3. Execution principles
 
-- C live GPU photoscan/COLMAP and 5-minute SLO.
-- L live SB3/MuJoCo training and P7-010 MJX benchmark.
-- S engine-backed Rapier/MuJoCo parity.
-- P vendor-offer and print-provider sandboxes.
+- Fix evidence before status text; then update status text in the same change.
+- Preserve validator strength. Generated contracts/templates must satisfy new checks.
+- Keep fixture truth deterministic and keyless; add live paths without replacing the
+  fixture oracle.
+- Split work by contracts and files, not by vague phases.
+- Every live integration has capability discovery, timeouts, rate limits, idempotency,
+  cost bounds, structured errors, audit records, and recovery behavior.
+- Every user/hardware action has authorization, consent, and fail-closed tests.
+- Close one externally useful loop before expanding the next platform surface.
+- Phase completion requires current evidence, not presence of routes or tables.
 
-### Wave C - controlled lab gated
+## 4. Definition of ready and done
 
-These can proceed only under D30's controlled D12 lab rules:
+### A task is ready when
 
-- H WebSerial/WebUSB writes/capture on real devices.
-- H Desktop serialport-rs, background recorder, and signed installers.
-- H reference quad/rover pilots and field demo.
-- H system-ID from bench or flight telemetry.
+- dependencies and owner/external inputs are named;
+- the owning system document and decision boundary are known;
+- acceptance tests and proof type are explicit;
+- no overlapping active lane owns the same files/contracts;
+- credentials, hardware, or spending authority are available when required.
 
-External hardware beta remains out of scope until a later rollout gate is
-accepted from lab evidence.
+### A task is done when
 
-### Wave D - community/external validation
+- implementation, failure handling, tests, docs, and changelog are complete;
+- deterministic and live behavior are clearly distinguished;
+- required local gates pass without hidden skips;
+- required remote checks pass on the final tree;
+- the appropriate proof artifact is stored and linked;
+- TODO and phase status match the evidence.
 
-These close only with real external usage or accepted stand-ins:
+## 5. Program gates
 
-- E verified community course race.
-- P first external marketplace publish/equip.
-- P first printed structural part provider handoff.
-- M crash-to-repair workflow from logged crash data.
+| Gate | Entry requirement | Exit evidence | Blocks |
+|---|---|---|---|
+| G0 Truthful green baseline | none | local full gate, PR CI, post-merge CI, nightly all green | every release/phase close |
+| G1 Trusted-core release | G0 | protected main, versioned release, downloaded checksummed artifacts, install/version proof | public validator claim |
+| G2 R1 external builder | G1 plus catalog/generation readiness | independent builder completes configure/validate/share/BOM flow | broad external beta |
+| G3 Live compute sandbox | G0 plus provider credentials/budget | photoscan, training, sim, provider runs with observability and cost evidence | P5-P7 live claims |
+| G4 Hardware lab | D30 accepted, D12 rig, local provider, physical supervisor | signed lab record, no-auto-arm proof, telemetry and recovery evidence | P8 close |
+| G5 Policy sharing | dual-use/export-control signoff and policy-level signoff | documented accepted gate plus moderation process | skill marketplace |
+| G6 Public platform | G2, privacy/deletion, moderation, operations | external model/course/print activity and support runbook | P10-P11 close |
+| G7 Field loop | G4 plus retention/consent | Desktop log -> ghost -> system ID -> repair evidence | P12 close |
 
-## 2. Parallel subworker tracks
+## 6. Dependency waves
 
-### Track V - validator, releases, schema, and drafts
+### Wave 0 - recover truth and green state
 
-Owns: `P1-004`, `P2-001`, `P2-002`, `XC-02`, `XC-23`, `XC-24`.
+Objective: make `main` trustworthy before new feature work.
 
-Scope:
+Status (2026-07-12): **local recovery complete; remote/governance closeout in
+progress.** `REC-001..004`, `REC-006`, `REC-008`, and `QA-001` are complete.
+`REC-005/007` await PR, protected merge, post-merge CI, and remote nightly evidence;
+`GOV-001..005` remain open.
 
-- Finish the remaining validator check rows as they become concrete in later
-  phases, especially manufacturing, lifecycle, scorecard, replay, and
-  marketplace checks.
-- Package `forge-validate` for npm and crates.io without changing the D17
-  single-implementation contract.
-- Finish editable draft persistence and make draft state authoritative across
-  train/export/share gates.
-- `XC-23` is closed as of 2026-06-14: ModelSpec migrations live in
-  `forge-contract`, are exposed by `forge-validate migrate`, and normalize
-  historical schema markers/field aliases before re-running the shape gate.
-- `XC-24` is closed as of 2026-06-14: generator fuzz seeds live under
-  `evals/fuzz/modelspec-seeds.json`, with `scripts/fuzz-contract-seeds.mjs`
-  checking pinned outcomes and minimizing future regressions.
+Work:
 
-Dependencies:
-
-- Uses D17 native/WASM equality and existing Postgres migrations.
-- Needs track P and track E to expose marketplace/course validator rows, but can
-  land generic check plumbing first.
+- `REC-001..008`: Clippy, generator/DfM, declared verdict, Brief-25 repair,
+  Playwright/nightly, coverage, toolchain pinning, and status reconciliation.
+- `GOV-001..005`: protect main, define required checks, enable security automation,
+  fix known advisory, and harden workflow dependencies.
+- `QA-001`: create a single documented full local gate that reproduces required CI.
 
 Acceptance:
 
-- `pnpm codegen:contract`, `cargo test`, `pnpm test`, and validator
-  native/WASM comparison are green.
-- Draft rows survive restart and are blocked from train/export/share unless
-  admitted.
-- `TODO.md` rows above are either closed or narrowed with a new explicit TODO.
+- `cargo fmt`, Clippy, full Rust tests, WASM cross-build, schema drift, golden numbers,
+  declared verdicts, Brief-25, TypeScript build/tests, Postgres invariants, Python
+  tests, Desktop tests, pilot docs, and diff checks pass;
+- Brief-25 admits at least 20/25 without human repair;
+- PR CI, post-merge CI, and nightly are green;
+- main ruleset is active and references exact passing check names;
+- `PROJECT-STATE.md`, `ROADMAP.md`, and `TODO.md` match the final evidence.
 
-### Track G - geometry, slots, configurator, couplers, and motion
+### Wave 1 - package and prove the trusted core
 
-Owns: `P0-007`, `P1-014`, `P2-003`, `XC-03`, `XC-11`, `XC-12`.
+Objective: turn the strongest asset into a consumable, supported release.
 
-Scope:
+Work:
 
-- If the later configurator prototype arrives, translate all 31 slot variants.
-  If it does not arrive, prepare the rescope patch that records what cannot be
-  recovered from the delivered vintage.
-- Finish variant cards in the Studio configurator over the live `CoreBake`
-  patch/re-bake path.
-- Implement the arm driver with schemars params, validator enforcement, and
-  smoke coverage.
-- Finish lockfile upgrade-diff UI, using the existing contract upgrade diff
-  data instead of inventing a second diff format.
-- Implement procedural connection v2: port graph resolution, couplers sized from
-  equipped variants, fastener sets, and an exact wire-list emitter.
-
-Dependencies:
-
-- `P0-007` is blocked on owner artifact or rescope.
-- Configurator variant cards depend on real slots/components from P3 data.
-- Wire list should feed BOM/export surfaces owned by track P.
+- resolve `P0-007` by obtaining the later prototype or recording a rescope decision;
+- recreate/publish `prototype-final` (`P0-010`/`GOV-006`);
+- finish validator package metadata and publication (`P2-001`);
+- complete `GOV-007..010`: version policy, cross-platform artifacts, checksums/SBOM,
+  release notes, install verification, and support/security entry points;
+- finish real-mid-hardware P1 budgets and remaining configurator truth.
 
 Acceptance:
 
-- At least one first-party slot-equipped contract exercises cards, couplers,
-  fasteners, and wire lists.
-- Arm contract validates and passes a motion smoke test.
-- Studio shows upgrade consequences and variant consequences without losing
-  selection, camera, drive, explode, or jog state.
+- static validator artifacts for supported platforms and WASM package are reproducible;
+- crate/npm publication or explicit deferral is recorded;
+- downloaded artifacts match checksums and report the intended version;
+- public README and repository metadata describe only proven capability;
+- one clean external installation runs validation and produces the expected report.
 
-### Track S - simulation, interop, parity, and performance
+### Wave 2 - close the R1 builder loop
 
-Owns: `P1-003`, `P1-017`, `P6-001`, `P6-010`, P1 and P6 open exit criteria.
+Objective: prove the verify-first wedge with reviewed data and a real user.
 
-Scope:
+Work:
 
-- Build the full Contract-to-Rapier compiler: per-node compound colliders,
-  joints, motors, torque and velocity limits.
-- Wire shared-memory worker execution where the Studio/Rapier split requires it.
-- Complete engine-backed Rapier/MuJoCo parity: drop tests, pendulum periods,
-  hover trim, and gait CoM trajectories.
-- Convert at least one external URDF/MJCF into a driveable contract, not just a
-  slotless static fixture.
-- Finish perf overlay accounting for UI ms and Rapier worker ms; capture the
-  60 fps mid-hardware proof.
-
-Dependencies:
-
-- Uses `forge-sim` runtime summaries, existing exporters/importers, and replay
-  envelope verification.
-- Blocks training realism in track L and co-design tiers in track O.
+- finish live catalog ETL and review persistence (`P3-004`, `P4-016`);
+- close variant/configurator gaps (`P1-014`, `P0-007` decision result);
+- enforce license export substitution in real exporters (`SEC-001`);
+- implement prohibited-brief refusal/logging (`SEC-002`);
+- implement ownership/consent/export/deletion for user content (`SEC-003..005`);
+- finish executable BOM vendor integration enough for a sandbox handoff (`P11-005`);
+- execute `EXT-001`: independent builder acceptance.
 
 Acceptance:
 
-- Hover trim agrees across Rapier and MuJoCo within documented tolerance.
-- External import round-trips into an admitted, driveable contract.
-- Perf artifact records render/core/Rapier/UI budgets on real mid hardware.
+- live-ingested rows cannot bypass citation, review, revision, and license gates;
+- an admitted configuration produces lawful exports and a purchasable BOM;
+- restricted geometry becomes the documented envelope/link-out representation;
+- rejected prohibited briefs are safely logged without storing unnecessary content;
+- an external builder completes the flow without repository knowledge.
 
-### Track C - catalog ETL, photoscan, OCCT, and GPU adapters
+### Wave 3 - close simulation, photoscan, and training truth
 
-Owns: `P3-004`, `P4-016`, `P5-001`, `P5-002`, `P5-006`, P5 open exit criteria.
+Objective: move R2 from adapter contracts to measured live compute.
 
-Scope:
+Work:
 
-- `etl.ingest-component` now routes source-bundle payloads through fetch/extract/
-  geometry adapters and exposes command-backed Claude/OCCT transports; deployable
-  live provider credentials and review persistence remain open.
-- Keyless photoscan outputs now carry TRELLIS/COLMAP-shaped pipeline stage records,
-  D13 fit metrics, COLMAP view graph metadata, and owner-review flags. Live command
-  adapters now normalize TRELLIS/COLMAP outputs into the same D13/cache/SLO contract
-  and fail closed when fit/Hausdorff metrics are missing; real TRELLIS/COLMAP runtime
-  execution remains open.
-- Modal task profiles now pin the photoscan/COLMAP deployment contract: GPU use,
-  300 s timeout, permanent cache, command env, and package expectations. Live Modal
-  image execution and under-5-minute proof remain open.
-- Land real live COLMAP multi-view reconstruction on the deployment image.
-- Prove permanent object-cache behavior and the 5-minute burst-GPU SLO with real
-  GPU evidence.
-- Make a photographed motor become an equipable parametric component end to end:
-  scan, refit, D13 acceptance, alignment, catalog row, review, slot equip.
-
-Dependencies:
-
-- Needs provider credentials or sandbox endpoints for live SLO proof.
-- Needs track G slot/configurator path for final equipable component demo.
+- P5 live photoscan/COLMAP/cache/SLO (`P5-001`, `P5-002`, `P5-006`, `EXT-002`);
+- P6 live Rapier/MuJoCo parity and broader external import corpus (`P6-010`);
+- P7 real SB3/MuJoCo pipeline, ONNX Runtime Web, offline learning, and MJX decision
+  (`P7-003`, `P7-008..010`, `EXT-003`);
+- P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
+  `P9-005`);
+- provider reliability, cost, data-retention, and artifact-integrity work from
+  `OPS-*`, `QA-*`, and `SEC-*`.
 
 Acceptance:
 
-- Live path produces a reviewed component with citations, license, price data,
-  object blobs, refit report, and catalog revision.
-- D13 acceptance is enforced in the live admission path.
-- Cached rerun avoids recompute and keeps artifacts addressable.
+- a photographed motor becomes a reviewed equipable component under five minutes or
+  the SLO is explicitly revised from evidence;
+- real engine baselines pass declared parity tolerances;
+- one-click training produces a scorecard-passing policy overnight on declared
+  hardware and the browser executes the actual ONNX model;
+- MJX adoption/rejection is based on D12 benchmark data;
+- co-design returns at least three admitted Pareto points from engine-backed tiers.
 
-### Track L - learning, policies, scorecards, and telemetry learning
+### Wave 4 - execute the controlled hardware loop
 
-Owns: `P7-001`, `P7-003`, `P7-008`, `P7-009`, `P7-010`, P7 open exit criteria.
+Objective: close R3 without widening hardware authority.
 
-Scope:
+Work:
 
-- P7 task suite v1 environment definitions are live in the worker task catalog as
-  of 2026-06-14 for hover-hold, waypoint chain, gate slalom, velocity tracking,
-  walk-to-target, rough terrain, push recovery, line follow, obstacle course,
-  reach, and track.
-- Replace fixture `train.policy` with live seeded SB3 PPO/SAC runs. External SB3
-  outputs now normalize through the same `p7-scorecard-v1` export gate, but real
-  engine-backed training evidence remains open. The Modal profile declares
-  SB3/MuJoCo/ONNX runtime dependencies and the live command hook for that path.
-- Add ONNX Runtime Web inference so browser playback uses real exportable policy
-  outputs, not only fixture action headers.
-- `train.offline-bc` now builds deterministic telemetry warmstart datasets and
-  normalizes external offline-RL command output into non-exportable warmstarts;
-  live fine-tune remains open.
-- Run the P7-010 MJX benchmark on D12 quad, rover, and legged morphologies before
-  any adoption claim. The worker report now normalizes payload or
-  `FORGE_MJX_BENCH_CMD` evidence and applies the CPU-need, parity, and 3x
-  cost-normalized-throughput adoption rule; real D12 benchmark rows remain open.
-- Scorecard schema and estimator-smoke rejection are live in fixture and external
-  SB3 worker paths; keep them wired through any live trainer.
-
-Dependencies:
-
-- Needs track S engine-backed simulation for credible training.
-- Needs track H telemetry ingest for full BC/offline-RL value, but trainer
-  interfaces can land against fixtures now.
+- all `P8-001..014` tasks;
+- signed Desktop installers/update path;
+- real serialport/WebSerial/WebUSB capture and config with explicit diffs;
+- flashable Link image, pairing, recovery, and update procedure;
+- supervisor, kill switch, fallback, and control-rate measurement;
+- reference rover before reference quad; SITL -> HITL -> constrained evidence;
+- Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
+- `EXT-004` controlled lab acceptance.
 
 Acceptance:
 
-- One-click job trains hover + waypoint and flies the twin in-browser.
-- Hover-class task reaches passing scorecard overnight on one consumer GPU.
-- Sub-threshold and ground-truth-trained policies are blocked from export.
+- D30/D12 gates are technically and procedurally enforced;
+- no command can auto-arm or elevate policy authority;
+- signed evidence covers failure/reconnect/power-loss/kill-switch scenarios;
+- a Desktop-captured log replays with visible measured divergence;
+- an accepted system-ID patch improves or honestly fails to improve the twin;
+- external beta remains disabled until a separate recorded rollout decision.
 
-### Track H - bridge, Desktop, hardware, and safety
+### Wave 5 - prove the community and platform
 
-Owns: `P8-001` through `P8-014`, `XC-19`, `XC-20`, `XC-27`.
+Objective: close R4 with real people and provider handoffs.
 
-Scope:
+Work:
 
-- Keep D30 fail-closed: controlled D12 lab pilots only, with lab mode, local
-  provider, D12 rig allowlist, and physical confirmation.
-- Finish browser WebSerial FC config writes from contract diffs.
-- Finish WebSerial/WebUSB telemetry ingest and Desktop background capture.
-- Complete real flight recorder archives and replay indexing.
-- Build the 60 fps ghost overlay scrubber for 10-minute logs.
-- Connect system-ID fitting to live bench pulls/logs/step responses and patch the
-  contract sim block.
-- Build the flashable FORGE Link image with rosbridge, MAVLink router, ONNX
-  runtime, and pairing-code auth.
-- Finish Studio deployment-ladder UX and safety supervisor hardware loop.
-- Run and document real reference quad and rover pilots.
-- Finish Tauri signed installers/updater, serialport-rs plugin, sidecar recorder,
-  and archive indexing.
-- Produce the P8 field demo: Desktop-captured log replays with visible ghost
-  divergence.
-
-Dependencies and gates:
-
-- `P8-000` is closed for controlled D12 lab pilots by D30; external beta still
-  needs a later rollout gate.
-- Needs D12 rigs and lab confirmation.
-- Needs track L for ONNX runtime/policy handoff and track S for replay parity.
+- public course and verified leaderboard (`EXT-005`);
+- external model publication/equip (`EXT-006`);
+- policy sharing after G5 (`P11-000`, `P11-003`);
+- live vendor and print handoff (`P11-005`, `P11-006`, `EXT-007`);
+- moderation policy ownership, SLA operation, appeals, repeat-infringer process;
+- classroom privacy/accessibility and support proof;
+- production operations, backups, retention, incident response, and cost controls;
+- field maintenance proof (`P12-002`, `P12-004`, `EXT-008`).
 
 Acceptance:
 
-- Lab gate requirements are enforced before any live hardware action.
-- A real quad is configured from its contract via WebSerial.
-- SITL to HITL to tethered is demonstrated and documented on the reference quad.
-- Desktop captures a field log that replays with visible ghost divergence.
-- System-ID updates the contract sim block from real telemetry.
+- a real community course has independently verified competitors;
+- a stranger equips an external user's admitted model;
+- a structural print is handed to a provider through a lawful quote link;
+- moderation is exercised against a test or real report inside the SLA;
+- a real field event produces actionable, reviewed repair evidence;
+- operating dashboards, alerts, restore test, and support runbook are live.
 
-### Track O - co-design optimizer
+### Wave 6 - scale, harden, and decide expansion
 
-Owns: `P9-002`, `P9-003`, `P9-004`, `P9-005`, P9 open exit criteria.
+Objective: decide whether evidence justifies broader investment.
 
-Scope:
+Work:
 
-- Keyless `codesign.evaluate` now has a budgeted CMA/TPE-shaped deterministic
-  search up to 200 candidates plus optimizer metadata, objective constraints,
-  rejection reasons, and Pareto filtering that only returns admitted candidates;
-  live engine-backed CMA-ES and Optuna TPE orchestration remains open.
-- Deterministic multi-fidelity ladder evidence is live for tier 0 native static
-  checks, tier 1 Rapier smoke, tier 2 short MuJoCo rollouts, and tier 3 finalist
-  training; full engine-backed execution for those tiers remains open.
-- Persisted/openable Pareto point UI is live in Studio as of 2026-06-14 for
-  admitted patch candidates; worker-side constrained 200-candidate Pareto depth is
-  live, while engine-backed explorer evaluation remains open.
-- The Modal profile for `codesign.evaluate` now declares MuJoCo/Optuna plus
-  co-design, parity, and MJX command hooks; live engine-backed tier-2/3 execution
-  remains open.
-- Add MJX batching for tier 2/3 only if the P7-010 benchmark report adopts it;
-  batching remains blocked until real D12 quad, D12 rover, and legged evidence
-  passes the report.
-
-Dependencies:
-
-- Requires track S for engine-backed simulation.
-- Requires track L for tier 3 training and MJX benchmark decision.
-- Uses track E courses as objective environments.
+- measure activation, admitted-design rate, time-to-valid-build, provider success,
+  policy scorecard pass rate, field divergence, repair usefulness, and support load;
+- revisit fixed-wing priority, seller economics, broader hardware beta, and any
+  licensed geometry-kernel investment through new decision records;
+- run load/cost/capacity exercises and privacy/security review;
+- address bus factor through contributor docs, ownership, runbooks, and release
+  automation;
+- retire fixtures or UI surfaces that do not support proven user outcomes.
 
 Acceptance:
 
-- "Lightest quad for this course under constraints" returns at least 3 admitted
-  Pareto points overnight.
-- Tier 0 is under 50 ms native; 200-candidate CMA-ES generation completes
-  overnight at tier 2.
-- Every returned point is a fully admitted contract.
+- expansion decisions cite observed product and operating data;
+- no maturity claim depends on fixture counts alone;
+- roadmap is narrowed to the highest-value demonstrated loop.
 
-### Track E - environments, courses, and leaderboards
+## 7. Workstreams
 
-Owns: `P10-001`, `P10-002`, `P10-003`, `P10-004`, `P10-005`, P10 open exit criteria.
+### T - truth, CI, and quality
 
-Scope:
+Owns `REC-*`, `QA-*`, workflow reliability, and current-state reconciliation.
 
-- Finish generated-course schema/versioning polish for EnvSpec.
-- Add archetype-aware reachability to `forge-validate env`.
-- Build full environment generation through the P4 pipeline.
-- Studio now has an editable EnvSpec course form and `?course=<id>` URL
-  selection/copying for public/unlisted courses; direct course fetch/API polish
-  remains open.
-- Finish durable leaderboard slicing by course, archetype, and class.
-- Studio verified-board UI filters are live as of 2026-06-14 using course
-  EnvSpec archetypes and replay verification headers.
-- `replay.verify` now emits course/archetype/class/model/policy dimensions in the
-  verification payload; durable gateway columns remain open.
-- `train.policy` now consumes explicit EnvSpec/course payloads directly as P7 task
-  definitions, preserving course ids in ONNX and scorecard metadata.
-- Preserve server-side replay verification as the only official leaderboard path.
+Required practices:
 
-Dependencies:
+- pin toolchains or intentionally test a version matrix;
+- keep full-gate commands runnable locally;
+- avoid dependency chains that hide downstream failures where parallel jobs are safe;
+- upload diagnostics/eval/parity artifacts on failure;
+- treat warnings and test skips as explicit evidence, not success.
 
-- Uses track V validator migration/check infrastructure.
-- Feeds track L task definitions and track O optimization objectives.
+Exit: G0.
 
-Acceptance:
+### V - validator, contract, packaging, and releases
 
-- A community course races with a verified leaderboard.
-- A popular course becomes an RL task through the course-to-task adapter without
-  conversion work. The worker adapter is live; public/community proof remains open.
+Owns P0/P1/P2 core gaps, publication, schema evolution, fuzz/property/golden gates,
+release artifacts, and compatibility policy.
 
-### Track P - platform, marketplace, vendors, print, and policy sharing
+Exit: G1 plus a documented external install.
 
-Owns: `P11-000`, `P11-002`, `P11-003`, `P11-005`, `P11-006`, P11 open exit criteria.
+### C - catalog, generation, and configuration
 
-Scope:
+Owns P3/P4, reviewed retrieval, live extraction, variants, draft/repair behavior,
+provenance, Brief-25, BOM truth, and R1 acceptance.
 
-- Keep P11 policy sharing fail-closed until dual-use/export-control sanity check
-  is accepted.
-- Finish public marketplace curation and external publish/equip flow.
-- Studio now has a marketplace board with kind/status filters and per-listing
-  usage-beta actions for view, equip, policy download, quote click, and training
-  job events; public curation state remains open.
-- Skills marketplace transfer assessment is now a tested worker helper: direct
-  transfer requires exportable scorecards plus matching archetype and
-  observation/action layout, and non-matching twins receive a fine-tune offer.
-  Public route/Studio wiring and live fine-tune execution remain open.
-- Vendor/print provider normalization is now a tested worker helper:
-  `FORGE_VENDOR_REFRESH_CMD` rows become priced/provenanced/rate-limited offers
-  with invalid rows held, and `FORGE_PRINT_QUOTE_CMD` stays quote-link-only after
-  DfM-passing 3MF/profile evidence. Gateway wiring and real provider accounts
-  remain open.
-- Worker geometry now emits DfM report refs, oriented 3MF refs, print profiles,
-  printed-part BOM rows, and quote-link-only handoff metadata. Finish true
-  OCCT-generated orientation and live print-provider quote submission.
-- Keep direct checkout/payment out of scope unless a new decision changes D29.
+Exit: G2.
 
-Dependencies:
+### M - manufacturing, photoscan, and commerce
 
-- Needs track V for publish-time validator rows.
-- Needs track G wire lists and track D manufacturing checks for printed parts.
-- P11 policy listing requires gate acceptance.
+Owns P5, DfM, license-aware export, OCCT/3MF orientation, photoscan admission,
+vendor offers, and provider quote handoff.
 
-Acceptance:
+Exit: live photo-to-part plus real quote-link handoff.
 
-- First external user publishes an admitted model that strangers can equip.
-- First printed structural part is handed off through a provider quote link.
-- Moderation flow remains live and does not regress.
+### S - simulation, learning, and co-design
 
-### Track D - manufacturing checks and export artifacts
+Owns P6/P7/P9, engine parity, replay, live training, ONNX execution, offline learning,
+MJX evidence, optimizer tiers, and scorecards.
 
-Owns: `XC-18` and the DfM portion of `P11-006`.
+Exit: R2 and the engine-backed P9 objective.
 
-Scope:
+### H - Desktop, bridge, hardware, and safety
 
-- Implement DfM checks in the validator or worker path for printable structural
-  parts: minimum wall, overhang angle, support-volume estimate, and bed fit for
-  FDM/SLA profiles.
-- Produce oriented 3MF/profile artifacts that can be consumed by track P's quote
-  handoff.
-- Surface failing diagnostics with suggested fixes, without implying guarantee
-  or certification.
+Owns P8 and G4. This lane is never a generic external-provider lane; it requires the
+controlled lab, approved rigs, physical confirmation, and a named supervisor.
 
-Dependencies:
+Exit: R3 field-log criterion, not external beta.
 
-- Uses geometry bake outputs and OCCT/worker support from track C where exact
-  B-rep checks are needed.
-- Feeds track V check catalog and track P print handoff.
+### P - courses, marketplace, classroom, and moderation
 
-Acceptance:
+Owns P10/P11, external community proof, policy gates, marketplace usage beta,
+classroom privacy/accessibility, and moderation operations.
 
-- Printable structural parts either pass DfM with an artifact or fail with
-  actionable diagnostics.
-- Printed-parts BOM rows include DfM status and quote-ready artifact references.
+Exit: G5 and G6.
 
-### Track M - maintenance twin and repair workflows
+### F - field evidence and maintenance
 
-Owns: `P12-002`, `P12-004`, P12 open exit criterion.
+Owns P12, telemetry retention, wear, crash investigation, repair usefulness, fleet
+views, and feedback into design/training.
 
-Scope:
+Exit: G7.
 
-- Crash-forensics scrubber UI over ghost separation and last-seconds replay
-  windows is live in Studio as of 2026-06-14 for materialized maintenance records;
-  worker outputs now include computed ghost-divergence RMS/max/status and scrub-frame
-  counts when actual/predicted positions are present.
-- Fleet dashboard is live in Studio as of 2026-06-14 with vehicle counts, due
-  maintenance, next actions, wear, repairs, crash windows, reorder rows, and
-  vendor/print quote handoff links where the platform commerce rows exist.
-- `maintenance.repair-sheet` now preserves vendor offer and print quote handoff
-  links directly on ordered repair steps when those links are supplied.
-- Close the logged-crash exit criterion with real Desktop-captured telemetry and
-  live vendor/print quote rows.
+### X - security, privacy, governance, operations, and documentation
 
-Dependencies:
+Owns `SEC-*`, `GOV-*`, `OPS-*`, and `DOC-*`. These are product work, not cleanup.
+Every functional lane consumes its gates.
 
-- Needs track H real telemetry/flight recorder for non-fixture crash data.
-- Needs track P vendor/print quote links and track D DfM artifacts for repair
-  handoff.
+Exit: no open blocking cross-cutting item for the target release/phase.
 
-Acceptance:
+## 8. Phase closure map
 
-- A logged crash produces a repair sheet ordered by explode chain, with reorder
-  SKUs plus vendor and print quote handoff links where needed. The worker contract
-  is live; real logged-crash evidence remains open.
-- Fleet dashboard reflects the maintenance records produced by worker jobs.
+| Phase | Remaining phase work | Adjacent gates | Closure proof |
+|---|---|---|---|
+| P0 | P0-007, P0-010 | GOV-006, decision hygiene | frozen source and remote annotated tag or explicit rescope |
+| P1 | P1-004, P1-014, P1-017 | REC, QA perf/browser | real-mid-hardware budget and truthful configurator |
+| P2 | P2-001 plus publication/remote proof | REC-007, GOV release | full suite green and published/installed validator |
+| P3 | P3-004 live ETL | SEC citation/license, OPS provider | reviewed live row through BOM/export |
+| P4 | P4-016 live extraction and external R1 proof | SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and external R1 flow succeeds |
+| P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
+| P6 | P6-010 live parity | QA external corpus | real engines and external driveable model |
+| P7 | P7-003, 008, 009, 010 | OPS cost, SEC policy data | live one-click passing policy in browser |
+| P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
+| P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
+| P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
+| P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
+| P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |
 
-### Track R - owner/legal/release gates
+## 9. Release trains
 
-Owns: `P0-010`, `P11-000`, release/handoff gate coordination, and any future
-external hardware rollout gate.
+### Validator/core preview
 
-Scope:
+Scope: schema, validator, CLI, WASM, examples, docs. No hosted product promise.
 
-- Push or release the local `prototype-final` tag for commit `0294a9d`, or record
-  that the owner will do it outside this repo.
-- Preserve the D30 lab-only scope: no external beta without a later rollout gate
-  based on lab evidence.
-- Complete P11 dual-use/export-control sanity check before policy sharing.
-- Coordinate physical rig availability and provider sandbox credentials.
+Required: G0, G1, compatibility statement, checksums/SBOM, install proof.
 
-Dependencies and blockers:
+### Builder alpha
 
-- Contains owner/counsel actions that code subworkers cannot complete alone.
-- Code can prepare fail-closed gates and dry-run fixtures while waiting.
+Scope: local Studio, reviewed catalog, configuration, validation, BOM, share, lawful
+exports. Providers may remain sandboxed and clearly labeled.
 
-Acceptance:
+Required: validator preview, G2, privacy/deletion basics, browser E2E, support path.
 
-- Gate records are accepted in `platform_gate_signoffs` only after real owner/legal
-  approval.
-- Changelog records the signoff source and any scope limits.
+### Simulation/training alpha
 
-## 3. End-to-end closure order
+Scope: external imports, Rapier/MuJoCo, live training, scorecards, ONNX playback.
 
-1. Close V/G/S foundations enough that generated, imported, and scanned models
-   can all be admitted through the same validator.
-2. Close C live photoscan and ETL so catalog truth can come from real sources.
-3. Close L one-click training on real engine-backed simulation.
-4. Close E courses and O co-design using the same replay/task interfaces.
-5. Under D30 lab rules, close H hardware deployment, recorder, ghost, and sys-ID;
-   do not expand to external beta without a later rollout gate.
-6. Close P marketplace/vendor/print flows and M maintenance twin with real or
-   accepted pilot data.
-7. Reconcile the TODO ledger: no `[ ]`, `[~]`, or `[!]` rows remain without either
-   a closed implementation, a new scoped TODO, or an explicit owner decision.
+Required: G3, cost bounds, reproducibility, artifact retention, honest scorecards.
 
-## 4. Coverage map
+### Controlled lab preview
 
-| TODO IDs | Track | Current gate |
-|---|---|---|
-| `P0-007` | G | blocked on later prototype or rescope |
-| `P0-010` | R | owner remote tag/release |
-| `P1-004` | V | remaining checks arrive with later phase rows |
-| `P1-014` | G | variant cards blocked on slot system / P0-007 |
-| `P1-017` | S | perf accounting and hardware proof |
-| `P3-004` | C | live ETL/provider run and durable reviewed row |
-| `P5-001`, `P5-002`, `P5-006` | C | live GPU/COLMAP/SLO |
-| `P7-003`, `P7-008`, `P7-010` | L | live SB3/ONNX/MJX evidence |
-| `P8-001`, `P8-002`, `P8-003`, `P8-004`, `P8-005`, `P8-006`, `P8-007`, `P8-008`, `P8-009`, `P8-010`, `P8-011`, `P8-013`, `P8-014` | H | D30 controlled D12 lab gate |
-| `P8-012` | H | closed 2026-06-15 |
-| `P9-002`, `P9-003`, `P9-005` | O | live optimizer/simulator evidence; MJX conditional |
-| `P9-004` | O | closed 2026-06-16 |
-| `P10-001` through `P10-005` | E | closed 2026-06-16 |
-| `P11-002` | P | closed 2026-06-16 |
-| `P11-000`, `P11-003`, `P11-005`, `P11-006` | P/R/D | policy gate and providers |
-| `P12-002`, `P12-004` | M | closed 2026-06-15 |
-| `XC-03` | G | upgrade-diff UI |
-| `XC-11`, `XC-12` | G | couplers and wire lists |
-| `XC-18` | D | real DfM checks |
-| `XC-19`, `XC-20`, `XC-27` | H | bridge/Desktop hardware work |
-| `XC-23` | V | done 2026-06-14: ModelSpec migration runner and CLI |
-| `XC-24` | V | done 2026-06-14: fuzz corpus and minimizer |
+Scope: D12 rigs only. No general hardware beta.
+
+Required: G4, signed Desktop artifacts, supervisor/runbooks, incident procedure.
+
+### Platform beta
+
+Scope: courses, listings, classroom, usage beta, provider handoffs. No seller payouts
+or direct checkout under D29.
+
+Required: G5, G6, operations/privacy/moderation readiness, external evidence.
+
+## 10. Metrics and review cadence
+
+Track outcomes, not implementation counts:
+
+- percent of user designs admitted and median repair iterations;
+- time from brief/import to valid, purchasable build;
+- catalog citation/review freshness and provider-offer success;
+- photo-to-part D13 pass rate, latency, and cost;
+- engine parity drift and replay reproducibility;
+- training scorecard pass rate, wall time, energy/cost;
+- hardware abort/fallback/reconnect performance and ghost divergence;
+- course verification rate and moderation SLA;
+- print handoff completion and repair-sheet usefulness;
+- CI/nightly reliability, escaped regressions, restore-test age, and support load.
+
+Cadence:
+
+- every PR: task/gate evidence;
+- weekly while active: current-state delta, blockers, provider cost, risks;
+- phase close: full evidence pack and roadmap/TODO reconciliation;
+- release: artifact/security/migration/rollback proof;
+- post-release: smoke, support issues, and metric review before expanding scope.
+
+## 11. Final program acceptance checklist
+
+- [ ] G0 truthful green baseline remains stable.
+- [ ] G1 trusted core is reproducibly released and independently installed.
+- [ ] R1 external builder completes a reviewed lawful build flow.
+- [ ] R2 external robot trains and runs a real policy with honest evidence.
+- [ ] R3 controlled rig produces a Desktop field log and improved/assessed twin.
+- [ ] R4 external users create verified platform activity.
+- [ ] License, privacy, refusal, moderation, and deletion paths are exercised.
+- [ ] Production backup restore, incident response, and observability are proven.
+- [ ] Every phase exit criterion has a current evidence link.
+- [ ] README, project state, roadmap, TODO, decisions, risks, and releases agree.
+- [ ] Expansion decisions are evidence-backed and explicitly recorded.

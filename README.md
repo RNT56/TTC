@@ -39,6 +39,12 @@ studio, a Rust validator, a simulation/export stack, a Python worker plane, and 
 platform layer for sharing, courses, policy scorecards, quote links, and
 maintenance records.
 
+> **Current status (2026-07-12):** advanced deterministic prototype, not a release or
+> production deployment. The full gate and Brief-25 generation gate are currently
+> red; live GPU/provider/hardware/field paths remain gated. See
+> [`docs/PROJECT-STATE.md`](docs/PROJECT-STATE.md) for evidence and
+> [`docs/EXECUTION-ROADMAP.md`](docs/EXECUTION-ROADMAP.md) for the closure plan.
+
 > The product bet: a useful robot model is not just geometry. It is the design,
 > parts, assumptions, validation results, scorecards, quotes, telemetry, and repair
 > history moving together.
@@ -389,21 +395,19 @@ adjust the compose port before running migrations.
 ## Verification Commands
 
 ```bash
-pnpm --filter @forge/gateway typecheck
-pnpm --filter @forge/gateway test
-pnpm --filter @forge/studio typecheck
-pnpm --filter @forge/desktop test
-cargo test -p forge-sim
-cd workers && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=. python3 -m pytest
-git diff --check
+pnpm verify
 ```
 
-Additional gates:
+This is the required non-database local gate: pinned Rust formatting, Clippy, tests,
+WASM/schema/native parity, all TypeScript packages, gateway/Brief-25, prototype
+oracles, budgets, fuzz/parity/release checks, Desktop/pilot invariants, workers, and
+patch hygiene. It fails if a prerequisite or committed generated artifact is stale.
+
+Run the isolated data-plane gate against Postgres/pgvector separately:
 
 ```bash
-pnpm eval:brief25
-pnpm pilot:check
-node scripts/validate-all.mjs
+docker compose -f infra/docker-compose.yml up -d postgres
+DATABASE_URL=postgres://forge:forge-dev-only@localhost:5432/forge pnpm verify:db
 ```
 
 ---
@@ -412,6 +416,7 @@ node scripts/validate-all.mjs
 
 | Path | Purpose |
 |---|---|
+| `AGENTS.md` | Canonical repository working rules, evidence hierarchy, and required gates |
 | `crates/` | Rust contract, validator, geometry, motion, sim, WASM facade |
 | `packages/studio` | React/Three.js browser studio |
 | `packages/gateway` | Fastify API, auth, jobs, blobs, platform routes |
@@ -420,7 +425,7 @@ node scripts/validate-all.mjs
 | `infra/migrations` | Postgres schema for catalog, jobs, artifacts, gates, commerce |
 | `catalog` | Component and reference rig data |
 | `examples` | First-party model contracts |
-| `docs` | Roadmap, system design, decisions, pilot playbooks |
+| `docs` | Current state, phase/task/execution roadmaps, system design, decisions, pilot playbooks |
 | `evals` | Brief-25 generation benchmark |
 | `scripts` | Codegen, migrations, checks, parity, evals |
 
