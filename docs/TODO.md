@@ -21,9 +21,9 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
   post-merge CI/security, and manual nightly evidence are linked in `PROJECT-STATE.md`.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance/release blocker (`GOV-005`, `GOV-007..011`):** the selected-Action
-  repository allowlist, compatibility policy, release/SBOM/provenance/install proof,
-  and public repository surfaces remain open.
+- **Governance/release blocker (`GOV-007..011`):** compatibility policy,
+  release/artifact-SBOM/provenance/install proof, public repository surfaces, and
+  the Linux Desktop dependency route remain open.
 - **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
   pre-configurator prototype. P0-007 remains owner/rescope-gated because the delivered
   vintage has no 31-variant slot system.
@@ -33,7 +33,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] PRE-001 — Documentation system: canonical `AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, changelog, phase/task/execution ledgers, and system docs *(rebuilt 2026-07-12)*
 - [x] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree and published as annotated tag `prototype-final` at `0294a9d` *(remote proof refreshed 2026-07-12 under P0-010/GOV-006)*.
 - [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
-- [~] PRE-004 — Basic repo hygiene, active `main` protection, remote security scans, and immutable Action pins exist; the selected-Action allowlist, repository metadata, and contributor/security surfaces remain GOV work.
+- [~] PRE-004 — Basic repo hygiene, active `main` protection, remote security scans, immutable Action pins, and the selected-Action allowlist exist; repository metadata and contributor/security surfaces remain GOV work.
 - [x] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC**; `forge-*` code namespaces stay (minimal churn); formal trademark scan recorded as the owner's pre-P4 action
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
@@ -277,7 +277,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [x] GOV-003 — Enabled vulnerability alerts, security updates, secret scanning/push protection, weekly grouped updates, dependency review/audits, and JS/Python CodeQL; first PR and post-merge runs are green *(2026-07-12)*.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
-- [~] GOV-005 — All workflow Actions are pinned by immutable SHA, `pnpm verify` rejects mutable refs, explicit read-only defaults and narrow job grants are present, dependency review is required, and security/release workflows generate SPDX SBOMs. Activate and verify the repository selected-Action allowlist after the protected workflow change merges.
+- [x] GOV-005 — All workflow Actions are pinned by immutable SHA; the 30-step local gate and required dependency-review job reject mutable refs; workflows use explicit read-only defaults and narrow job grants; security/release generate SPDX SBOMs; and repository Actions policy allows GitHub-owned Actions plus only the seven reviewed third-party SHAs. Protected PR and post-merge CI/security/SBOM proof is green *(2026-07-12)*.
 - [x] GOV-006 — Recreated and remotely published annotated `prototype-final` at verified commit `0294a9d`; current and historical prototype SHA-256 both equal `ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe` *(2026-07-12)*.
 - [ ] GOV-007 — Define SemVer/compatibility/deprecation policy for ModelSpec, validator CLI/report, WASM, replay, EnvSpec, and worker artifacts.
 - [ ] GOV-008 — Build cross-platform release artifacts, checksums, provenance/attestations, SBOM, release notes, and reproducible release verification.

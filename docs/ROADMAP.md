@@ -22,7 +22,7 @@ live/external/field claims remain gated independently.
 
 | Phase | Status | Est. |
 |---|---|---|
-| Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, and immutable Action pins active 2026-07-12; selected-Action allowlist/repository metadata remain GOV work)* | days |
+| Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, immutable Action pins, and selected-Action allowlist active 2026-07-12; repository metadata remains GOV work)* | days |
 | P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; P0-007 variants require later build/rescope)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ◑ *(implementation/full-suite criterion restored and remote G0 green 2026-07-12; validator publication remains G1/P2-001)* | 3 wk |
@@ -54,7 +54,7 @@ licensing groundwork.
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
 - [x] **`cad-object-studio.html` prototype committed and remotely tagged** byte-exact as annotated `prototype-final` at `0294a9d`; SHA-256 `ca93489e…` verified before publication *(2026-07-12; pre-configurator vintage — see prototype/README.md)*
 - [x] License files reflecting open-core split (D2/D24): Apache-2.0 (© RNT56) for crates/ + schema/ + examples/; proprietary for the rest *(2026-06-12)*
-- [~] Repo hygiene: `.gitignore` + `.editorconfig`, default-branch ruleset `18843164`, remote security scans, and immutable Action pins are active; the selected-Action allowlist, contributor/security surfaces, and repository metadata remain GOV work.
+- [~] Repo hygiene: `.gitignore` + `.editorconfig`, default-branch ruleset `18843164`, remote security scans, immutable Action pins, and the selected-Action allowlist are active; contributor/security surfaces and repository metadata remain GOV work.
 
 ## P0 — Freeze & extract
 

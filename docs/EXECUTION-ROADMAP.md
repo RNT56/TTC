@@ -95,10 +95,10 @@ No downstream phase may claim closure while Wave 0 is incomplete.
 
 Objective: make `main` trustworthy before new feature work.
 
-Status (2026-07-12): **G0 complete.** `REC-001..008`, `GOV-001..004`, and
-`QA-001` are complete with evidence in `PROJECT-STATE.md`. Wave 0 still carries the
-release-sensitive Action/SBOM portion of `GOV-005`; all other remaining work moves
-through G1 and later gates without reopening G0 unless a baseline check regresses.
+Status (2026-07-12): **G0 and Wave 0 complete.** `REC-001..008`, `GOV-001..005`,
+and `QA-001` are complete with evidence in `PROJECT-STATE.md`. All remaining work
+moves through G1 and later gates without reopening G0 unless a baseline check
+regresses.
 
 Work:
 
@@ -129,9 +129,9 @@ Work:
 - retain the published `prototype-final` evidence (`P0-010`/`GOV-006`) as an
   immutable input to release proof;
 - finish validator package metadata and publication (`P2-001`);
-- complete `GOV-005` and `GOV-007..010`: activate the selected-Action allowlist,
-  define version policy, build cross-platform artifacts, checksums/SBOM, release
-  notes, install verification, and support/security entry points;
+- complete `GOV-007..010`: define version policy, build cross-platform artifacts,
+  checksums/artifact SBOM/provenance, release notes, install verification, and
+  support/security entry points;
 - finish real-mid-hardware P1 budgets and remaining configurator truth.
 
 Acceptance:
