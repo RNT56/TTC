@@ -6,6 +6,7 @@
   "description": "FORGE Desktop shell scaffold: Tauri wrapper, bridge plugin contracts, FORGE Link image plan.",
   "scripts": {
     "build": "node scripts/check-desktop.mjs",
+    "check:native": "cargo check --locked --manifest-path src-tauri/Cargo.toml",
     "test": "node scripts/check-desktop.mjs",
     "typecheck": "node scripts/check-desktop.mjs"
   },

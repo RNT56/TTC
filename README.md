@@ -403,6 +403,15 @@ WASM/schema/native parity, all TypeScript packages, gateway/Brief-25, prototype
 oracles, budgets, fuzz/parity/release checks, Desktop/pilot invariants, workers, and
 patch hygiene. It fails if a prerequisite or committed generated artifact is stale.
 
+Compile the real Tauri shell separately (the protected PR gate runs this on macOS):
+
+```bash
+pnpm verify:desktop-native
+```
+
+Linux contributors need the Tauri system prerequisites installed for the equivalent
+native check; the platform-neutral Desktop scaffold remains part of `pnpm verify`.
+
 Run the isolated data-plane gate against Postgres/pgvector separately:
 
 ```bash

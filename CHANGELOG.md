@@ -18,6 +18,22 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-12 — Make the native Desktop shell a protected gate
+**Session:** Codex agent · branch `codex/g0-evidence-closeout` · **Phase:** Wave 0/G1 hardening ·
+**TODO items:** GOV-003, GOV-011, QA-011
+**Done:** Updated the nested Tauri dependency lock to current compatible patches,
+removing two high RustSec advisories; added an independently audited nested-lock CI
+step; committed the app icon required by Tauri's native context; and added
+`desktop native (macOS)` as an exact protected compile check. The upstream GTK3/glib
+0.18 advisory remains a dated Linux-release blocker rather than a false clean claim.
+**Changed:** Desktop icon/config/scripts/lockfile, CI and security workflows,
+repository governance, TODO/project-state evidence, and contributor gates.
+**Decisions:** accept the currently unexercised Tauri/glib warning only through 2026-10-12;
+Linux Desktop release remains blocked until migration or reviewed reachability proof.
+**Next:** Merge the protected check and supply-chain evidence, then execute the G1
+validator release lane.
+**Blockers:** upstream Tauri Linux GTK3/glib chain (`GOV-011`); no released Desktop.
+
 ## 2026-07-12 — Close G0 on protected main
 **Session:** Codex agent · branch `codex/g0-evidence-closeout` · **Phase:** Wave 0 ·
 **TODO items:** REC-005, REC-007, GOV-003

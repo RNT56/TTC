@@ -21,7 +21,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
   post-merge CI/security, and manual nightly evidence are linked in `PROJECT-STATE.md`.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance/release blocker (`GOV-005..010`):** immutable Action pins, compatibility
+- **Governance/release blocker (`GOV-005..011`):** immutable Action pins, compatibility
   policy, release/SBOM/provenance/install proof, public repository surfaces, and
   `prototype-final` resolution remain open.
 - **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
@@ -273,7 +273,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 7. Governance, publication, and supply chain (GOV)
 
-- [x] GOV-001 — Activated repository ruleset `18843164` for `main`: PR-only changes, strict current branches, resolved review threads, no force pushes/deletions, and the five exact merge-blocking checks from `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
+- [x] GOV-001 — Activated repository ruleset `18843164` for `main`: PR-only changes, strict current branches, resolved review threads, no force pushes/deletions, and the six exact merge-blocking checks from `REPOSITORY-GOVERNANCE.md` *(updated 2026-07-12 with native Desktop compile)*.
 - [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [x] GOV-003 — Enabled vulnerability alerts, security updates, secret scanning/push protection, weekly grouped updates, dependency review/audits, and JS/Python CodeQL; first PR and post-merge runs are green *(2026-07-12)*.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
@@ -283,6 +283,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [ ] GOV-008 — Build cross-platform release artifacts, checksums, provenance/attestations, SBOM, release notes, and reproducible release verification.
 - [ ] GOV-009 — Publish or explicitly defer crates.io/npm artifacts; prove clean external install, version output, example validation, and downloaded checksum verification.
 - [ ] GOV-010 — Complete the ForgedTTC trademark/name scan and set accurate GitHub description, topics, homepage, SECURITY, CONTRIBUTING, support, and conduct surfaces before public launch.
+- [!] GOV-011 — Replace Tauri's Linux GTK3/glib 0.18 chain or prove a safe patched route. `glib::VariantStrIter` is not called by FORGE and Desktop is not released, so alert 1 is accepted as a time-bounded upstream risk through **2026-10-12**; Linux Desktop release remains blocked until resolution or reviewed reachability proof.
 
 ## 8. Security, privacy, safety, and legal completion (SEC)
 
@@ -307,6 +308,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [ ] QA-008 — Define golden-artifact review/update procedure so intentional schema/render/physics drift cannot be casually re-pinned.
 - [ ] QA-009 — Add end-to-end backup/restore and disaster-recovery exercises with measured RPO/RTO.
 - [ ] QA-010 — Create external acceptance scripts and evidence templates for builder, photoscan, training, course, lab, print, marketplace, and maintenance milestones.
+- [x] QA-011 — Add a real native Tauri compile gate, commit the required app icon, and require `desktop native (macOS)` on protected PRs; retain scaffold checks for platform-neutral contract validation *(2026-07-12)*.
 
 ## 10. Production operations and economics (OPS)
 

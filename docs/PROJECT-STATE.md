@@ -42,7 +42,7 @@ operational recovery, and field evidence remain incomplete.
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
-| RustSec audit | pass | `anyhow` 1.0.103 clears the unsoundness advisory; remote check publishing is fixed |
+| RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
 
 The repaired generation baseline is intentionally stronger than the minimum:
@@ -64,7 +64,8 @@ Live GitHub evidence checked on 2026-07-12:
 - final dependency audit and both CodeQL languages are green at
   [run 29211399718](https://github.com/RNT56/TTC/actions/runs/29211399718);
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
-  branches, resolved threads, no force pushes/deletions, and five required checks;
+  branches, resolved threads, no force pushes/deletions, and six required checks,
+  including the native macOS Desktop compile;
 - manual nightly parity/coverage passed on the recovery merge at
   [run 29211055558](https://github.com/RNT56/TTC/actions/runs/29211055558); final-commit rerun
   [29211517706](https://github.com/RNT56/TTC/actions/runs/29211517706) also passed and is the closeout record;
@@ -128,9 +129,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **197 tasks: 110 done, 40 in progress, 46 open,
-and 1 explicitly blocked**. All 8 recovery tasks are done. The 87 remaining tasks are
-the phase/live/field program plus 6 governance, 8 security, 9 quality, 10 operations,
+The stable ledger currently contains **199 tasks: 111 done, 40 in progress, 46 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 88 remaining tasks are
+the phase/live/field program plus 7 governance, 8 security, 9 quality, 10 operations,
 9 external-proof, and 3 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

@@ -116,6 +116,7 @@ Acceptance:
 - Brief-25 admits at least 20/25 without human repair;
 - PR CI, post-merge CI, and nightly are green;
 - main ruleset is active and references exact passing check names;
+- the native Desktop shell compiles in its required macOS check;
 - `PROJECT-STATE.md`, `ROADMAP.md`, and `TODO.md` match the final evidence.
 
 ### Wave 1 - package and prove the trusted core

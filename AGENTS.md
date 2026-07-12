@@ -155,7 +155,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review |
-| Desktop/hardware | scaffold/native tests; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
+| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
 | Docs-only | link/reference scan; stable-ID coverage; status/evidence consistency; `git diff --check` |
