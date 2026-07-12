@@ -22,7 +22,7 @@ live/external/field claims remain gated independently.
 
 | Phase | Status | Est. |
 |---|---|---|
-| Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, immutable Action pins, and selected-Action allowlist active 2026-07-12; repository metadata remains GOV work)* | days |
+| Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, immutable Action pins, selected-Action allowlist, and machine-checked compatibility policy active 2026-07-12; repository metadata remains GOV work)* | days |
 | P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; P0-007 variants require later build/rescope)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ◑ *(implementation/full-suite criterion restored and remote G0 green 2026-07-12; validator publication remains G1/P2-001)* | 3 wk |

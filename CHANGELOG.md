@@ -18,6 +18,24 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-12 — Freeze the public compatibility contract
+**Session:** Codex agent · branch `codex/g1-compatibility-policy` · **Phase:** G1 ·
+**TODO items:** GOV-007
+**Done:** Defined compatibility policy 1.0.0 across seven package/data surfaces;
+added a machine-checked source-of-truth matrix; independently versioned validator
+reports, replay tapes, and EnvSpecs; exposed native and WASM version introspection;
+retained the historical replay alias; rejected unsupported replay/EnvSpec majors;
+and passed all 31 local gates plus 89 worker tests.
+**Changed:** Rust validator/simulation/WASM contracts and tests, generated WASM,
+worker replay production/verification, compatibility policy/matrix/checker, root
+entry rules, system docs, roadmaps, state, TODO, and changelog.
+**Decisions:** D31 separates package SemVer from persisted/public format SemVer and
+sets the normal deprecation floor to 90 days plus two minor releases.
+**Next:** Build cross-platform validator/WASM release artifacts with artifact-specific
+SBOMs, provenance/attestations, checksums, and downloaded verification (GOV-008).
+**Blockers:** no validator compatibility blocker; GOV-011 still blocks a Linux
+Desktop release and does not block the standalone validator.
+
 ## 2026-07-12 — Close workflow supply-chain governance
 **Session:** Codex agent · branch `codex/g1-governance-closeout` · **Phase:** G1 ·
 **TODO items:** GOV-005

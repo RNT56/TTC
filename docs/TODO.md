@@ -21,7 +21,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
   post-merge CI/security, and manual nightly evidence are linked in `PROJECT-STATE.md`.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance/release blocker (`GOV-007..011`):** compatibility policy,
+- **Governance/release blocker (`GOV-008..011`):** cross-platform
   release/artifact-SBOM/provenance/install proof, public repository surfaces, and
   the Linux Desktop dependency route remain open.
 - **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
@@ -268,7 +268,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] REC-004 — Restored Brief-25 to 25/25; added diagnostic-aware manufacturing/arm repair and focused oversized-part repair coverage *(2026-07-12)*.
 - [x] REC-005 — Fixed `playwright-core` installation, retained always-uploaded parity artifacts, and proved all six scenes plus enforced coverage in manual merged-main nightly runs *(2026-07-12)*.
 - [x] REC-006 — `cargo llvm-cov --workspace` passes at 84.34% line coverage; nightly enforces a reviewed 80% line floor *(2026-07-12)*.
-- [x] REC-007 — The 30-step local gate, Postgres gate, green PR checks, protected merges, final post-merge CI/security, and manual nightly are linked in `PROJECT-STATE.md` *(30th workflow-pin gate added 2026-07-12)*.
+- [x] REC-007 — The original 30-step recovery gate, Postgres gate, green PR checks, protected merges, final post-merge CI/security, and manual nightly are linked in `PROJECT-STATE.md`; the current gate has 31 steps after GOV-007 compatibility enforcement *(2026-07-12)*.
 - [x] REC-008 — Reconciled the agent entry, project state, phase/TODO/execution roadmaps, system docs, README verification flow, and changelog to the recovery evidence *(2026-07-12)*.
 
 ## 7. Governance, publication, and supply chain (GOV)
@@ -277,9 +277,9 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [x] GOV-003 — Enabled vulnerability alerts, security updates, secret scanning/push protection, weekly grouped updates, dependency review/audits, and JS/Python CodeQL; first PR and post-merge runs are green *(2026-07-12)*.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
-- [x] GOV-005 — All workflow Actions are pinned by immutable SHA; the 30-step local gate and required dependency-review job reject mutable refs; workflows use explicit read-only defaults and narrow job grants; security/release generate SPDX SBOMs; and repository Actions policy allows GitHub-owned Actions plus only the seven reviewed third-party SHAs. Protected PR and post-merge CI/security/SBOM proof is green *(2026-07-12)*.
+- [x] GOV-005 — All workflow Actions are pinned by immutable SHA; the workflow-pin step in the current 31-step local gate and required dependency-review job reject mutable refs; workflows use explicit read-only defaults and narrow job grants; security/release generate SPDX SBOMs; and repository Actions policy allows GitHub-owned Actions plus only the seven reviewed third-party SHAs. Protected PR and post-merge CI/security/SBOM proof is green *(2026-07-12)*.
 - [x] GOV-006 — Recreated and remotely published annotated `prototype-final` at verified commit `0294a9d`; current and historical prototype SHA-256 both equal `ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe` *(2026-07-12)*.
-- [ ] GOV-007 — Define SemVer/compatibility/deprecation policy for ModelSpec, validator CLI/report, WASM, replay, EnvSpec, and worker artifacts.
+- [x] GOV-007 — Defined policy 1.0.0 and a machine-checked seven-surface compatibility matrix for ModelSpec, validator CLI/report, WASM, replay, EnvSpec, and worker artifacts; added CLI/WASM version introspection, independently versioned reports, SemVer replay production with legacy-alias reads, EnvSpec schema-version enforcement, and current/legacy/unsupported tests *(2026-07-12)*.
 - [ ] GOV-008 — Build cross-platform release artifacts, checksums, provenance/attestations, SBOM, release notes, and reproducible release verification.
 - [ ] GOV-009 — Publish or explicitly defer crates.io/npm artifacts; prove clean external install, version output, example validation, and downloaded checksum verification.
 - [ ] GOV-010 — Complete the ForgedTTC trademark/name scan and set accurate GitHub description, topics, homepage, SECURITY, CONTRIBUTING, support, and conduct surfaces before public launch.
@@ -298,7 +298,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 9. Quality, testing, and product acceptance (QA)
 
-- [x] QA-001 — Added `pnpm verify` as the 30-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle/workflow artifacts and are documented in README/AGENTS *(workflow-pin gate added 2026-07-12)*.
+- [x] QA-001 — Added `pnpm verify` as the 31-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle/workflow/compatibility artifacts and are documented in README/AGENTS *(workflow-pin and compatibility gates added 2026-07-12)*.
 - [ ] QA-002 — Add browser E2E coverage for generate/draft/edit/validate/share/catalog/course/listing/job/maintenance flows using real built WASM and an isolated DB.
 - [ ] QA-003 — Add accessibility, keyboard, focus, contrast, reduced-motion, responsive, and viewer-grade browser acceptance; publish the supported-browser matrix.
 - [ ] QA-004 — Test migrations from every supported prior schema with populated data; document backup, rollback/roll-forward, and failed-migration recovery.

@@ -165,7 +165,10 @@ metadata, builds the release binary and `@forge/validate-wasm`, runs
 publication remains owner-token gated and follows the internal crate order:
 `forge-num` → `forge-contract` → `forge-geometry` → `forge-motion` →
 `forge-sim` → `forge-validate` → `forge-wasm`. Versioned together; a report names
-its `validatorVersion` and `target`.
+its independently versioned `reportVersion`, `validatorVersion`, and `target`.
+`forge-validate version --json` and the WASM `version()` export expose the active
+package, ModelSpec, report, replay, and EnvSpec versions. Compatibility and
+deprecation rules are owned by [`../COMPATIBILITY.md`](../COMPATIBILITY.md).
 
 ## 7. Dependencies
 

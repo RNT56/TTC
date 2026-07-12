@@ -29,6 +29,7 @@ export const session_pose_view: (a: number) => any;
 export const session_set_jog: (a: number, b: number, c: number, d: number, e: number) => void;
 export const session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
 export const validate: (a: number, b: number) => [number, number];
+export const version: () => [number, number];
 export const __wbindgen_externrefs: WebAssembly.Table;
 export const __wbindgen_malloc: (a: number, b: number) => number;
 export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

@@ -10,6 +10,7 @@ import hashlib
 import json
 from typing import Any
 
+from forge_workers.contract import LEGACY_REPLAY_FORMAT_VERSION, REPLAY_FORMAT_VERSION
 from forge_workers.queue import Job, registry
 
 
@@ -29,6 +30,12 @@ def verify_replay(payload: dict[str, Any]) -> dict[str, Any]:
     if len(times) != len(frames):
         raise ValueError("replay frames must be objects with numeric t")
     digest = replay_hash(tape)
+    schema_version = tape.get("schemaVersion")
+    # Markerless tapes are retained for the current pre-1.0 worker line. New
+    # producers always emit the SemVer form; replay.v1 is a deprecated alias.
+    format_ok = schema_version in (None, LEGACY_REPLAY_FORMAT_VERSION) or _same_semver_major(
+        schema_version, REPLAY_FORMAT_VERSION
+    )
     expected = payload.get("expectedHash")
     monotonic = all(a < b for a, b in zip(times, times[1:]))
     header = tape.get("header", {})
@@ -39,9 +46,11 @@ def verify_replay(payload: dict[str, Any]) -> dict[str, Any]:
         or header_record.get("contractHash") == expected_contract_hash
     )
     dimensions = _leaderboard_dimensions(payload, header_record)
-    verified = expected in (None, digest) and monotonic and contract_ok
+    verified = expected in (None, digest) and monotonic and contract_ok and format_ok
     reject_reason = None
-    if expected not in (None, digest):
+    if not format_ok:
+        reject_reason = f"unsupported replay schema version: {schema_version}"
+    elif expected not in (None, digest):
         reject_reason = "replay hash mismatch"
     elif not monotonic:
         reject_reason = "replay timestamps are not strictly increasing"
@@ -49,6 +58,7 @@ def verify_replay(payload: dict[str, Any]) -> dict[str, Any]:
         reject_reason = "contract hash mismatch"
     return {
         "artifactKind": "replay",
+        "schemaVersion": schema_version or LEGACY_REPLAY_FORMAT_VERSION,
         "verified": verified,
         "tamperHash": digest,
         "frameCount": len(frames),
@@ -98,6 +108,18 @@ def _first_string(*values: Any) -> str | None:
         if isinstance(value, str) and value:
             return value
     return None
+
+
+def _same_semver_major(value: Any, expected: str) -> bool:
+    if not isinstance(value, str):
+        return False
+    parts = value.split(".")
+    expected_parts = expected.split(".")
+    return (
+        len(parts) == 3
+        and all(part.isascii() and part.isdigit() for part in parts)
+        and parts[0] == expected_parts[0]
+    )
 
 
 @registry.register("replay.verify")

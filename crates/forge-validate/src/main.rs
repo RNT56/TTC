@@ -8,6 +8,7 @@
 //!   forge-validate sim-parity rapier-baseline [--out baseline.json]
 //!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
 //!   forge-validate schema [--out schema.json]
+//!   forge-validate version [--json]
 //!
 //! Exit codes: 0 admitted/ok · 1 usage or I/O error · 2 rejected · 3 draft.
 
@@ -26,9 +27,14 @@ fn main() -> ExitCode {
         Some("env") => cmd_env(&args[1..]),
         Some("sim-parity") => cmd_sim_parity(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
+        Some("version") => cmd_version(&args[1..]),
+        Some("--version") | Some("-V") => {
+            println!("forge-validate {}", forge_validate::VALIDATOR_VERSION);
+            ExitCode::SUCCESS
+        }
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
             );
             ExitCode::from(1)
         }
@@ -388,6 +394,8 @@ struct EnvCounts {
 #[serde(rename_all = "camelCase")]
 struct EnvReport {
     artifact_kind: &'static str,
+    report_version: &'static str,
+    env_spec_schema_version: String,
     target: &'static str,
     validator_version: String,
     results: Vec<forge_sim::runtime::EnvDiagnostic>,
@@ -423,6 +431,8 @@ fn cmd_env(args: &[String]) -> ExitCode {
     };
     let report = EnvReport {
         artifact_kind: "env",
+        report_version: forge_validate::REPORT_FORMAT_VERSION,
+        env_spec_schema_version: env.schema_version.clone(),
         target: "env",
         validator_version: forge_validate::VALIDATOR_VERSION.to_string(),
         results,
@@ -454,6 +464,39 @@ fn cmd_env(args: &[String]) -> ExitCode {
         Verdict::Rejected => ExitCode::from(2),
         Verdict::Draft => ExitCode::from(3),
     }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct VersionInfo {
+    package_version: &'static str,
+    model_spec_schema_version: &'static str,
+    validator_report_version: &'static str,
+    replay_format_version: &'static str,
+    env_spec_schema_version: &'static str,
+}
+
+fn cmd_version(args: &[String]) -> ExitCode {
+    let versions = VersionInfo {
+        package_version: forge_validate::VALIDATOR_VERSION,
+        model_spec_schema_version: forge_contract::SCHEMA_VERSION,
+        validator_report_version: forge_validate::REPORT_FORMAT_VERSION,
+        replay_format_version: forge_sim::runtime::REPLAY_FORMAT_VERSION,
+        env_spec_schema_version: forge_sim::runtime::ENVSPEC_SCHEMA_VERSION,
+    };
+    if args.iter().any(|arg| arg == "--json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&versions).expect("versions serialize")
+        );
+    } else {
+        println!("forge-validate {}", versions.package_version);
+        println!("ModelSpec schema {}", versions.model_spec_schema_version);
+        println!("validator report {}", versions.validator_report_version);
+        println!("replay format {}", versions.replay_format_version);
+        println!("EnvSpec schema {}", versions.env_spec_schema_version);
+    }
+    ExitCode::SUCCESS
 }
 
 #[derive(Serialize)]

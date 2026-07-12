@@ -10,6 +10,7 @@
     "verify:db": "pnpm db:migrate && pnpm db:seed-catalog && pnpm db:assert-p3",
     "verify:desktop-native": "pnpm --filter @forge/desktop check:native",
     "verify:workflows": "node scripts/check-actions-pinned.mjs",
+    "verify:compatibility": "node scripts/check-compatibility.mjs",
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
     "schema:migrate": "cargo run -q -p forge-validate -- migrate",
     "build:wasm": "./scripts/build-wasm.sh",

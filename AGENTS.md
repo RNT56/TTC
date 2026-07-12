@@ -34,7 +34,9 @@ Read in this order for every non-trivial session:
 5. `docs/TODO.md` — atomic task ledger with stable IDs.
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
-8. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+8. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+   EnvSpec, worker artifacts, or version numbers.
+9. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
 
 When documents disagree, use this authority order:
@@ -59,7 +61,7 @@ currently release-ready or production-proven.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
-- the recovery worktree passes the 30-step `pnpm verify` gate and the isolated
+- the recovery worktree passes the 31-step `pnpm verify` gate and the isolated
   Postgres/pgvector `pnpm verify:db` gate on pinned Rust 1.96.0;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
@@ -67,6 +69,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
+- compatibility policy 1.0.0 is machine-checked across seven public format/package
+  boundaries; the CLI/WASM facades expose their active versions;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 

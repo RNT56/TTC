@@ -54,6 +54,7 @@ export interface Diagnostic {
 }
 
 export interface Report {
+  reportVersion: string;
   contractHash: string;
   schemaVersion: string;
   validatorVersion: string;

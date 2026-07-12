@@ -11,6 +11,8 @@ import hashlib
 import json
 from typing import Any
 
+from forge_workers.contract import REPLAY_FORMAT_VERSION
+
 from forge_workers.queue import Job, registry
 
 
@@ -51,7 +53,7 @@ def ingest_telemetry(payload: dict[str, Any]) -> dict[str, Any]:
         frames.append({"t": float(sample["t"]), "state": sample})
     frames.sort(key=lambda frame: frame["t"])
     tape = {
-        "schemaVersion": "replay.v1",
+        "schemaVersion": REPLAY_FORMAT_VERSION,
         "header": {
             "contractHash": payload.get("contractHash"),
             "lockfileHash": payload.get("lockfileHash"),

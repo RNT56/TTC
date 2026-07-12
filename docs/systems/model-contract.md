@@ -96,6 +96,9 @@ pnpm schema:migrate path/to/model.forge.json --out migrated.forge.json
 ```
 
 Breaking schema changes require a DECISIONS entry and a new compatibility row.
+The authoritative support range and change/deprecation rules live in
+[`../COMPATIBILITY.md`](../COMPATIBILITY.md); `compatibility/compatibility.json` is
+checked against source constants by `pnpm verify:compatibility`.
 The lockfile pins catalog revisions inside the document; the emitted schema and
 validator version pin contract shape at validation time. Historical schema
 markers are consumed by migration and omitted from the current typed output.

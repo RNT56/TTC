@@ -3978,8 +3978,10 @@ function shortTime(value: string): string {
 
 function fixtureEnvSpec(): unknown {
   return {
+    schemaVersion: "1.0.0",
     id: "fixture-slalom",
     name: "Fixture slalom",
+    version: "1.0.0",
     kind: "slalom",
     boundsM: [20, 6, 20],
     terrain: { kind: "flat" },
