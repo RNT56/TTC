@@ -31,17 +31,15 @@ The program is complete only when all four outcomes are independently true:
 
 ## 2. Current boundary
 
-The broad v0 and most deterministic fixture contracts exist. The local recovery
-baseline is now green; the next task is to publish and govern that exact tree before
-resuming feature breadth.
+The broad v0 and most deterministic fixture contracts exist. G0 is green on protected
+`main`; the next task is the G1 release and supply-chain contract before broad public
+claims or resumed feature breadth.
 
 Current release blockers:
 
-- the recovery tree is uncommitted and remote `main` still carries the old red CI and
-  scheduled-nightly evidence;
-- PR, protected-merge, post-merge, and remote-nightly proof are absent;
-- first remote security results, immutable Action pins, releases, and production
-  evidence are absent.
+- immutable Action pins, SBOM/provenance/checksum artifacts, compatibility policy,
+  clean external install/version proof, and public support/security surfaces are
+  absent;
 - security, operations, release, live-provider, external-user, and field work remains.
 
 No downstream phase may claim closure while Wave 0 is incomplete.
@@ -97,11 +95,10 @@ No downstream phase may claim closure while Wave 0 is incomplete.
 
 Objective: make `main` trustworthy before new feature work.
 
-Status (2026-07-12): **local recovery complete; remote/governance closeout in
-progress.** `REC-001..004`, `REC-006`, `REC-008`, and `QA-001` are complete.
-`REC-005/007` await green PR checks, protected merge, post-merge CI, and remote
-nightly evidence; `GOV-001/002/004` are complete, `GOV-003` is awaiting first scans,
-and `GOV-005` remains open.
+Status (2026-07-12): **G0 complete.** `REC-001..008`, `GOV-001..004`, and
+`QA-001` are complete with evidence in `PROJECT-STATE.md`. Wave 0 still carries the
+release-sensitive Action/SBOM portion of `GOV-005`; all other remaining work moves
+through G1 and later gates without reopening G0 unless a baseline check regresses.
 
 Work:
 

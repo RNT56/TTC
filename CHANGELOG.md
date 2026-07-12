@@ -18,6 +18,22 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-12 — Close G0 on protected main
+**Session:** Codex agent · branch `codex/g0-evidence-closeout` · **Phase:** Wave 0 ·
+**TODO items:** REC-005, REC-007, GOV-003
+**Done:** Merged recovery PR #11 and RustSec hotfix PR #21 through active ruleset
+`18843164`; verified final post-merge CI, npm/RustSec audits, and JS/Python CodeQL;
+verified manual nightly parity and the enforced coverage floor. The RustSec closeout
+updated `anyhow` to 1.0.103 and granted only `checks:write` to its reporting job.
+G0 is now remotely closed, not merely locally green.
+**Changed:** `Cargo.lock`, security workflow permissions, `PROJECT-STATE.md`, phase
+and execution roadmaps, TODO evidence, and changelog.
+**Decisions:** none; existing G0/G1 and ruleset contracts were followed.
+**Next:** Complete `GOV-005..010` and G1 validator/core release proof, then run the
+external R1 builder loop.
+**Blockers:** no G0 blocker; release, provider, external-user, lab, and field gates
+remain explicit in the roadmap.
+
 ## 2026-07-12 — Restore the truthful local green baseline
 **Session:** Codex agent · branch `codex/recover-truthful-green` · **Phase:** Wave 0 recovery ·
 **TODO items:** REC-001..008, QA-001, P2-005, P4-010

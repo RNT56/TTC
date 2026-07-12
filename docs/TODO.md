@@ -17,14 +17,13 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 
 ## 0. Critical blockers
 
-- **Release blocker (`REC-005`, `REC-007`):** the recovery worktree is locally green,
-  but PR CI, protected merge, post-merge CI, and a manual/scheduled nightly on the
-  final commit are still required before G0 closes.
+- **Recovery baseline:** G0 is closed on protected `main`; local full gates, PR checks,
+  post-merge CI/security, and manual nightly evidence are linked in `PROJECT-STATE.md`.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance blocker (`GOV-003`, `GOV-005..010`):** `main` is protected by the
-  exact-check ruleset; first security runs, immutable Action pins, public repository
-  surfaces, and a verified release remain open.
+- **Governance/release blocker (`GOV-005..010`):** immutable Action pins, compatibility
+  policy, release/SBOM/provenance/install proof, public repository surfaces, and
+  `prototype-final` resolution remain open.
 - **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
   pre-configurator prototype. P0-007 remains owner/rescope-gated because the delivered
   vintage has no 31-variant slot system.
@@ -34,7 +33,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] PRE-001 — Documentation system: canonical `AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, changelog, phase/task/execution ledgers, and system docs *(rebuilt 2026-07-12)*
 - [~] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree, but `prototype-final` is absent locally/remotely and must be recreated under P0-010/GOV-006.
 - [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
-- [~] PRE-004 — Basic repo hygiene and active `main` protection exist; first security runs, immutable Action pins, repository metadata, and contributor/security surfaces remain GOV work.
+- [~] PRE-004 — Basic repo hygiene, active `main` protection, and remote security scans exist; immutable Action pins, repository metadata, and contributor/security surfaces remain GOV work.
 - [x] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC**; `forge-*` code namespaces stay (minimal churn); formal trademark scan recorded as the owner's pre-P4 action
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
@@ -256,7 +255,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] Gamepad input — left/right sticks with deadzone in the drive loop; sliders stay the fallback
 - [x] Patch consequence diff — Δ AUW/TWR/hover line after each configurator patch (D5 diff semantics)
 - [x] Bundle split — three+n8ao chunk (app 78 kB gz; chunk warning gone)
-- [~] Nightly workflow — browser CLI and quadruped regression are fixed locally; all six parity scenes pass and coverage is 84.34% lines against an enforced 80% floor. A manual/scheduled run on the merged commit remains under `REC-005/007`.
+- [x] Nightly workflow — browser CLI fixed; all six parity scenes pass and coverage is 84.34% lines against an enforced 80% floor; manual merged-main evidence is linked in `PROJECT-STATE.md` *(2026-07-12)*.
 - [x] Release workflow — tag v* → static forge-validate binary + wasm facade package
 - [x] Incremental re-bake — `bake_incremental` reuses untouched (geom, pose) buffers in `Bake.patch`
 - [x] Property-based tests *(2026-06-12)*: proptest (dev-dep) over the schema heart — parse→serialize fixed point + hash stability across 64 generated docs; patch engine never panics and everything it returns passes the shape gate (incl. bad pointers/out-of-range/odd value types)
@@ -267,16 +266,16 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] REC-002 — Reconciled quadruped geometry with `MFG-004` using modular printable body panels; the full generator slider grid admits without weakening DfM *(2026-07-12)*.
 - [x] REC-003 — Regenerated `qd-mini` from the corrected generator, synchronized the Studio demo and golden fixture, and restored all five declared verdicts *(2026-07-12)*.
 - [x] REC-004 — Restored Brief-25 to 25/25; added diagnostic-aware manufacturing/arm repair and focused oversized-part repair coverage *(2026-07-12)*.
-- [~] REC-005 — Fixed `playwright-core` browser installation and verified all six parity scenes locally; artifact upload is `if: always()`. Remote manual/scheduled proof remains *(2026-07-12)*.
+- [x] REC-005 — Fixed `playwright-core` installation, retained always-uploaded parity artifacts, and proved all six scenes plus enforced coverage in manual merged-main nightly runs *(2026-07-12)*.
 - [x] REC-006 — `cargo llvm-cov --workspace` passes at 84.34% line coverage; nightly enforces a reviewed 80% line floor *(2026-07-12)*.
-- [~] REC-007 — The 29-step `pnpm verify`, Postgres `pnpm verify:db`, coverage, and browser parity pass locally. PR CI, protected merge, post-merge CI, and remote nightly remain.
+- [x] REC-007 — The 29-step local gate, Postgres gate, green PR checks, protected merges, final post-merge CI/security, and manual nightly are linked in `PROJECT-STATE.md` *(2026-07-12)*.
 - [x] REC-008 — Reconciled the agent entry, project state, phase/TODO/execution roadmaps, system docs, README verification flow, and changelog to the recovery evidence *(2026-07-12)*.
 
 ## 7. Governance, publication, and supply chain (GOV)
 
 - [x] GOV-001 — Activated repository ruleset `18843164` for `main`: PR-only changes, strict current branches, resolved review threads, no force pushes/deletions, and the five exact merge-blocking checks from `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
-- [~] GOV-003 — Enabled live vulnerability alerts, Dependabot security updates, secret scanning, and push protection; added grouped weekly dependency updates plus dependency audit/review and JS/Python CodeQL workflows. Merge and first successful remote scans remain *(2026-07-12)*.
+- [x] GOV-003 — Enabled vulnerability alerts, security updates, secret scanning/push protection, weekly grouped updates, dependency review/audits, and JS/Python CodeQL; first PR and post-merge runs are green *(2026-07-12)*.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
 - [ ] GOV-005 — Pin release-sensitive GitHub Actions by immutable SHA, restrict allowed actions, review workflow permissions, and add dependency-review/SBOM checks.
 - [ ] GOV-006 — Recreate and remotely publish annotated `prototype-final` at the verified commit; document tag and frozen SHA evidence.
