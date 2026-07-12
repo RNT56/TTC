@@ -401,7 +401,14 @@ pnpm verify
 This is the required non-database local gate: pinned Rust formatting, Clippy, tests,
 WASM/schema/native parity, all TypeScript packages, gateway/Brief-25, prototype
 oracles, budgets, fuzz/parity/release checks, Desktop/pilot invariants, workers, and
-patch hygiene. It fails if a prerequisite or committed generated artifact is stale.
+patch hygiene. It also rejects mutable GitHub Action references. It fails if a
+prerequisite or committed generated/workflow artifact is stale.
+
+The fast workflow-only policy check is:
+
+```bash
+pnpm verify:workflows
+```
 
 Compile the real Tauri shell separately (the protected PR gate runs this on macOS):
 

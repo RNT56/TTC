@@ -126,10 +126,12 @@ Objective: turn the strongest asset into a consumable, supported release.
 Work:
 
 - resolve `P0-007` by obtaining the later prototype or recording a rescope decision;
-- recreate/publish `prototype-final` (`P0-010`/`GOV-006`);
+- retain the published `prototype-final` evidence (`P0-010`/`GOV-006`) as an
+  immutable input to release proof;
 - finish validator package metadata and publication (`P2-001`);
-- complete `GOV-007..010`: version policy, cross-platform artifacts, checksums/SBOM,
-  release notes, install verification, and support/security entry points;
+- complete `GOV-005` and `GOV-007..010`: activate the selected-Action allowlist,
+  define version policy, build cross-platform artifacts, checksums/SBOM, release
+  notes, install verification, and support/security entry points;
 - finish real-mid-hardware P1 budgets and remaining configurator truth.
 
 Acceptance:
@@ -332,7 +334,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 
 | Phase | Remaining phase work | Adjacent gates | Closure proof |
 |---|---|---|---|
-| P0 | P0-007, P0-010 | GOV-006, decision hygiene | frozen source and remote annotated tag or explicit rescope |
+| P0 | P0-007 | decision hygiene | later configurator obtained or variant scope explicitly resolved |
 | P1 | P1-004, P1-014, P1-017 | REC, QA perf/browser | real-mid-hardware budget and truthful configurator |
 | P2 | P2-001 plus publication/remote proof | REC-007, GOV release | full suite green and published/installed validator |
 | P3 | P3-004 live ETL | SEC citation/license, OPS provider | reviewed live row through BOM/export |

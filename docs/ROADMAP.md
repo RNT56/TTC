@@ -22,8 +22,8 @@ live/external/field claims remain gated independently.
 
 | Phase | Status | Est. |
 |---|---|---|
-| Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, and security scans active 2026-07-12; immutable Action pins/repository metadata remain GOV work)* | days |
-| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree; P0-007 variants require later build/rescope; `prototype-final` is absent locally/remotely and must be recreated)* | 1.5–2.5 wk |
+| Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, and immutable Action pins active 2026-07-12; selected-Action allowlist/repository metadata remain GOV work)* | days |
+| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; P0-007 variants require later build/rescope)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ◑ *(implementation/full-suite criterion restored and remote G0 green 2026-07-12; validator publication remains G1/P2-001)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs; live ETL remains P3-004/R1 work)* | 2–3 wk |
@@ -52,9 +52,9 @@ licensing groundwork.
 - [x] Documentation system in place (`AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, `CHANGELOG.md`, `docs/` suite; rebuilt 2026-07-12)
 - [x] Plan v3.0 adopted as binding; v2.0 archived as historical (2026-06-11)
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
-- [~] **`cad-object-studio.html` prototype committed** byte-exact, but the intended `prototype-final` tag is absent locally/remotely as of 2026-07-12; recreate/push under P0-010/GOV-006 *(pre-configurator vintage — see prototype/README.md)*
+- [x] **`cad-object-studio.html` prototype committed and remotely tagged** byte-exact as annotated `prototype-final` at `0294a9d`; SHA-256 `ca93489e…` verified before publication *(2026-07-12; pre-configurator vintage — see prototype/README.md)*
 - [x] License files reflecting open-core split (D2/D24): Apache-2.0 (© RNT56) for crates/ + schema/ + examples/; proprietary for the rest *(2026-06-12)*
-- [~] Repo hygiene: `.gitignore` + `.editorconfig`, default-branch ruleset `18843164`, and remote security scans are active; immutable Action pins, contributor/security surfaces, and repository metadata remain GOV work.
+- [~] Repo hygiene: `.gitignore` + `.editorconfig`, default-branch ruleset `18843164`, remote security scans, and immutable Action pins are active; the selected-Action allowlist, contributor/security surfaces, and repository metadata remain GOV work.
 
 ## P0 — Freeze & extract
 
@@ -73,7 +73,7 @@ Exit criteria:
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*
 - [x] Core boundary API (bake / tick / validate / patch) frozen and documented *(2026-06-12 — v1; zero-copy refinement cannot change call shapes)*
-- [~] Prototype content is hash-recorded and unmodified; annotated `prototype-final` must be recreated and pushed at the verified commit (P0-010/GOV-006).
+- [x] Prototype content is hash-recorded and unmodified; annotated `prototype-final` is published at the verified commit (P0-010/GOV-006, 2026-07-12).
 
 ## P1 — Core & studio
 

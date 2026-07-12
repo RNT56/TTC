@@ -1,7 +1,7 @@
 # prototype/ — the executable specification (PRE-002)
 
 **Status: DELIVERED 2026-06-12** by the project owner; committed byte-exact and
-tagged **`prototype-final`**.
+published as the annotated **[`prototype-final`](https://github.com/RNT56/TTC/tree/prototype-final)** tag.
 
 | Fact | Value |
 |---|---|
@@ -29,7 +29,7 @@ rules) and does **not** survive into translations or the product (plan §17.2).
 ## Freeze rules (binding, plan §3 + D21)
 
 1. Committed **byte-exact as received** — never reformatted, never fixed.
-2. Tagged `prototype-final`; never modified after. Corrections of understanding
+2. Tagged and pushed as `prototype-final`; never modified after. Corrections of understanding
    go in docs, never here.
 3. Extraction (P0-008) evaluates **copies** of its code (`scripts/
    extract-counts.mjs` slices the pure builder segment into a Node vm sandbox);
