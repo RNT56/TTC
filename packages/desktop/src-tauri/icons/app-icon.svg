@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">FORGE Desktop icon</title>
+  <desc id="desc">A white angular F built into a green forge frame on a dark background.</desc>
+  <rect width="512" height="512" rx="112" fill="#101820"/>
+  <path d="M120 112h272v64H184v56h160v64H184v104h-64z" fill="#f7f9fa"/>
+  <path d="M344 232h48v168H224v-48h120z" fill="#48d597"/>
+  <circle cx="368" cy="376" r="24" fill="#101820"/>
+</svg>

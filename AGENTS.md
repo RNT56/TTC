@@ -63,8 +63,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Postgres/pgvector `pnpm verify:db` gate on pinned Rust 1.96.0;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
-- those fixes are not yet merged, so remote `main` CI/nightly still reflect the old
-  failing commit;
+- protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
@@ -156,7 +155,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review |
-| Desktop/hardware | scaffold/native tests; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
+| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
 | Docs-only | link/reference scan; stable-ID coverage; status/evidence consistency; `git diff --check` |

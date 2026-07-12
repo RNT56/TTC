@@ -1,9 +1,9 @@
 # PROJECT STATE - evidence snapshot and readiness boundary
 
-Snapshot date: **2026-07-12**  
-Repository: `RNT56/TTC`  
-Remote base: `3745d1f` (`origin/main`)  
-Recovery state: `codex/recover-truthful-green`, pending PR/merge
+Snapshot date: **2026-07-12**
+Repository: `RNT56/TTC`
+Verified main: `02b5561` (`origin/main`)
+Recovery gate: **G0 closed**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -12,21 +12,21 @@ releases, provider readiness, hardware proof, or phase status.
 ## 1. Executive state
 
 ForgedTTC is an advanced deterministic engineering prototype with real implementation
-across all architectural planes. The local recovery tree now has a truthful green
-baseline: core, generation, WASM, browser parity, gateway, Postgres, workers,
-coverage, packaging, and documentation gates pass together.
+across all architectural planes. Protected `main` now has a truthful green baseline:
+core, generation, WASM, browser parity, gateway, Postgres, workers, coverage,
+packaging, dependency audits, and CodeQL pass together.
 
-It is still **not release-ready, production-ready, or field-proven**. The recovery
-has not been merged, remote `main` still reports the previous failures, and default-
-branch governance is absent. Most P5-P12 product surfaces prove contracts or
-fixture workflows; live providers, training, hardware, external users, operational
-recovery, and field evidence remain incomplete.
+It is still **not release-ready, production-ready, or field-proven**. G0 proves a
+trustworthy development baseline, not publication, live operations, external-user
+acceptance, hardware safety, or field outcomes. Most P5-P12 product surfaces prove
+contracts or fixture workflows; live providers, training, hardware, external users,
+operational recovery, and field evidence remain incomplete.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | recovery branch based on remote `3745d1f` | local evidence is current but not yet merged |
+| Git state | clean protected `main` at `02b5561` | local and remote source agree |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | `pnpm verify` | pass: 29 required non-DB gates | fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
@@ -42,6 +42,8 @@ recovery, and field evidence remain incomplete.
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
+| RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
+| CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
 
 The repaired generation baseline is intentionally stronger than the minimum:
 
@@ -54,23 +56,29 @@ The repaired generation baseline is intentionally stronger than the minimum:
 
 ## 3. GitHub and release posture
 
-Live GitHub state checked on 2026-07-12:
+Live GitHub evidence checked on 2026-07-12:
 
-- remote `main` is still `3745d1f`; its latest CI/nightly evidence is red because the
-  recovery tree has not been published;
-- draft recovery PR `#11` is open and its CI/security jobs are queued;
-- active ruleset `18843164` protects `main` with PR-only delivery, strict current
-  branches, resolved threads, no force pushes/deletions, and five required checks;
+- recovery [PR #11](https://github.com/RNT56/TTC/pull/11) and security closeout
+  [PR #21](https://github.com/RNT56/TTC/pull/21) merged through protection;
+- final `main` CI is green at [run 29211399662](https://github.com/RNT56/TTC/actions/runs/29211399662);
+- final dependency audit and both CodeQL languages are green at
+  [run 29211399718](https://github.com/RNT56/TTC/actions/runs/29211399718);
+- [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
+  branches, resolved threads, no force pushes/deletions, and six required checks,
+  including the native macOS Desktop compile;
+- manual nightly parity/coverage passed on the recovery merge at
+  [run 29211055558](https://github.com/RNT56/TTC/actions/runs/29211055558); final-commit rerun
+  [29211517706](https://github.com/RNT56/TTC/actions/runs/29211517706) also passed and is the closeout record;
 - no GitHub Release exists;
 - the only remote tag is `p3-baseline`;
 - `prototype-final` is absent locally and remotely;
 - vulnerability alerts, Dependabot security updates, secret scanning, and push
-  protection are enabled; new update/audit/CodeQL workflows await merge and first run;
+  protection are enabled; dependency review/audit and CodeQL have remote proof;
 - repository description and homepage remain empty.
 
-Consequently G0 is **locally satisfied but not remotely closed**. Required remaining
-proof is green PR checks, protected merge, green post-merge checks, and a green
-manual/scheduled nightly.
+Consequently G0 is **closed**. The next release boundary is G1: compatibility policy,
+immutable workflow inputs, cross-platform artifacts, SBOM/provenance/checksums,
+downloaded install/version proof, and accurate public support/security surfaces.
 
 ## 4. Capability maturity
 
@@ -101,17 +109,16 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 - prohibited-brief refusal/logging and full user-content deletion are not implemented
   (`SEC-002..005`);
 - `prototype-final` must be recreated only after its intended commit is verified;
-- remote governance, security automation, release proof, and external/live/field
-  acceptance remain open.
+- release/supply-chain hardening and external/live/field acceptance remain open.
 
 ## 6. Go/no-go verdicts
 
 | Milestone | Verdict | Blocking evidence |
 |---|---|---|
 | Continue local development | **Go** | complete local gates are green |
-| Open a recovery PR | **Go** | exact tree is locally verified; remote review/checks are the next gate |
+| Merge ordinary feature PRs | **Go through protection** | exact checks and current-branch policy are active |
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
-| Publish validator v0.1 | **No-go** | G0 remote closeout and release contract incomplete |
+| Publish validator v0.1 | **No-go** | G1 release contract and downloaded install proof incomplete |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, refusal/privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
@@ -122,11 +129,12 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-Refresh this snapshot when G0 closes. Attach:
+The stable ledger currently contains **199 tasks: 111 done, 40 in progress, 46 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 88 remaining tasks are
+the phase/live/field program plus 7 governance, 8 security, 9 quality, 10 operations,
+9 external-proof, and 3 documentation tasks; dependency order is owned by
+`EXECUTION-ROADMAP.md`.
 
-- recovery commit and PR URL;
-- green PR and post-merge CI URLs;
-- active ruleset with exact required check names;
-- green manual/scheduled nightly URL and artifacts;
-- dependency/security automation evidence;
-- exact remaining task and phase counts.
+Refresh this snapshot when G1 closes or any current gate regresses. Attach release
+commit/tag, artifact/checksum/SBOM/provenance links, clean external install/version
+proof, rollback notes, security conclusions, and exact remaining task/phase counts.

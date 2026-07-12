@@ -44,6 +44,11 @@ jobs:
         uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Desktop RustSec advisory audit
+        uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: packages/desktop/src-tauri
 
   codeql:
     name: CodeQL (${{ matrix.language }})

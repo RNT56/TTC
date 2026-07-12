@@ -29,6 +29,7 @@ The exact merge-blocking check names are:
 3. `catalog data plane (Postgres)`
 4. `compute workers (Python)`
 5. `dependency review`
+6. `desktop native (macOS)`
 
 Do not casually rename these jobs. Change a required name in two stages: first ship
 the replacement check while the old name is still present, then update the ruleset

@@ -141,3 +141,15 @@ jobs:
           python-version: "3.12"
       - run: pip install -e "workers[dev]"
       - run: python -m pytest workers -q
+
+  desktop-native:
+    name: desktop native (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri -> target
+      - name: compile the native Tauri shell
+        run: cargo check --locked --manifest-path packages/desktop/src-tauri/Cargo.toml

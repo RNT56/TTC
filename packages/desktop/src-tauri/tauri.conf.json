@@ -26,6 +26,7 @@
   "bundle": {
     "active": true,
     "targets": ["dmg", "msi", "appimage", "deb"],
+    "icon": ["icons/icon.png"],
     "category": "DeveloperTool",
     "shortDescription": "FORGE bridge and field recorder shell"
   }
