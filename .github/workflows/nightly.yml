@@ -11,8 +11,8 @@ jobs:
     name: golden-scene parity gallery (P1-015)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.100.0
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
@@ -35,8 +35,8 @@ jobs:
     name: core coverage (>=80% lines)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.100.0
         with:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
