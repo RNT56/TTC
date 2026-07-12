@@ -22,7 +22,7 @@ phase-level state only. Parallel execution order and subworker ownership live in
 
 | Phase | Status | Est. |
 |---|---|---|
-| Pre-P0 housekeeping | ◑ *(implementation hygiene exists; root AGENTS/docs rebuilt 2026-07-12; branch protection/security/repository metadata remain GOV work)* | days |
+| Pre-P0 housekeeping | ◑ *(root AGENTS/docs rebuilt and exact-check main ruleset active 2026-07-12; security scan proof/repository metadata remain GOV work)* | days |
 | P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree; P0-007 variants require later build/rescope; `prototype-final` is absent locally/remotely and must be recreated)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ◑ *(local implementation/full-suite criterion restored 2026-07-12; validator publication and remote G0 evidence remain)* | 3 wk |
@@ -54,7 +54,7 @@ licensing groundwork.
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
 - [~] **`cad-object-studio.html` prototype committed** byte-exact, but the intended `prototype-final` tag is absent locally/remotely as of 2026-07-12; recreate/push under P0-010/GOV-006 *(pre-configurator vintage — see prototype/README.md)*
 - [x] License files reflecting open-core split (D2/D24): Apache-2.0 (© RNT56) for crates/ + schema/ + examples/; proprietary for the rest *(2026-06-12)*
-- [~] Repo hygiene: `.gitignore` + `.editorconfig` exist; default-branch protection, security automation, contributor/security surfaces, and repository metadata remain GOV-001..010.
+- [~] Repo hygiene: `.gitignore` + `.editorconfig` exist and default-branch ruleset `18843164` is active; first security runs, immutable Action pins, contributor/security surfaces, and repository metadata remain GOV work.
 
 ## P0 — Freeze & extract
 

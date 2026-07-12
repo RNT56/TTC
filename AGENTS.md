@@ -66,7 +66,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - those fixes are not yet merged, so remote `main` CI/nightly still reflect the old
   failing commit;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
-- no release, branch ruleset, or protected default branch exists.
+- `main` has an active PR-only exact-check ruleset; no release exists.
 
 Do not repeat these facts without re-running or re-checking them. Update
 `docs/PROJECT-STATE.md` whenever the boundary materially changes.

@@ -22,8 +22,9 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
   final commit are still required before G0 closes.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance blocker (`GOV-001..010`):** `main` is unprotected, required checks
-  are not enforced, security automation is incomplete, and no release exists.
+- **Governance blocker (`GOV-003`, `GOV-005..010`):** `main` is protected by the
+  exact-check ruleset; first security runs, immutable Action pins, public repository
+  surfaces, and a verified release remain open.
 - **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
   pre-configurator prototype. P0-007 remains owner/rescope-gated because the delivered
   vintage has no 31-variant slot system.
@@ -33,7 +34,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] PRE-001 — Documentation system: canonical `AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, changelog, phase/task/execution ledgers, and system docs *(rebuilt 2026-07-12)*
 - [~] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree, but `prototype-final` is absent locally/remotely and must be recreated under P0-010/GOV-006.
 - [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
-- [~] PRE-004 — Basic repo hygiene exists (`.gitignore`, `.editorconfig`); active `main` protection/ruleset, security automation, repository metadata, and contributor/security surfaces remain GOV-001..010.
+- [~] PRE-004 — Basic repo hygiene and active `main` protection exist; first security runs, immutable Action pins, repository metadata, and contributor/security surfaces remain GOV work.
 - [x] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC**; `forge-*` code namespaces stay (minimal churn); formal trademark scan recorded as the owner's pre-P4 action
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
@@ -273,7 +274,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 7. Governance, publication, and supply chain (GOV)
 
-- [ ] GOV-001 — Activate a `main` ruleset: PR-only changes, required reviews as appropriate, no force pushes/deletions, and required exact check names.
+- [x] GOV-001 — Activated repository ruleset `18843164` for `main`: PR-only changes, strict current branches, resolved review threads, no force pushes/deletions, and the five exact merge-blocking checks from `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [x] GOV-002 — Defined exact merge/release check names, safe rename protocol, ruleset behavior, evidence requirements, and nightly/security escalation in `REPOSITORY-GOVERNANCE.md` *(2026-07-12)*.
 - [~] GOV-003 — Enabled live vulnerability alerts, Dependabot security updates, secret scanning, and push protection; added grouped weekly dependency updates plus dependency audit/review and JS/Python CodeQL workflows. Merge and first successful remote scans remain *(2026-07-12)*.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.

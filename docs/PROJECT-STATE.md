@@ -58,8 +58,9 @@ Live GitHub state checked on 2026-07-12:
 
 - remote `main` is still `3745d1f`; its latest CI/nightly evidence is red because the
   recovery tree has not been published;
-- no open PR exists;
-- `main` is unprotected and no repository ruleset is active;
+- draft recovery PR `#11` is open and its CI/security jobs are queued;
+- active ruleset `18843164` protects `main` with PR-only delivery, strict current
+  branches, resolved threads, no force pushes/deletions, and five required checks;
 - no GitHub Release exists;
 - the only remote tag is `p3-baseline`;
 - `prototype-final` is absent locally and remotely;
@@ -68,8 +69,8 @@ Live GitHub state checked on 2026-07-12:
 - repository description and homepage remain empty.
 
 Consequently G0 is **locally satisfied but not remotely closed**. Required remaining
-proof is one PR on this exact tree, green PR checks, an active exact-check ruleset,
-protected merge, green post-merge checks, and a green manual/scheduled nightly.
+proof is green PR checks, protected merge, green post-merge checks, and a green
+manual/scheduled nightly.
 
 ## 4. Capability maturity
 
@@ -109,7 +110,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 |---|---|---|
 | Continue local development | **Go** | complete local gates are green |
 | Open a recovery PR | **Go** | exact tree is locally verified; remote review/checks are the next gate |
-| Directly push/merge ordinary work to `main` | **No-go** | no protection or required checks |
+| Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
 | Publish validator v0.1 | **No-go** | G0 remote closeout and release contract incomplete |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, refusal/privacy, external-user and operational proof incomplete |

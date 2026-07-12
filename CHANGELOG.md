@@ -32,17 +32,17 @@ Enabled vulnerability/security updates, secret scanning and push protection; add
 grouped dependency updates, dependency review/audits, JS/Python CodeQL, and an exact
 branch-protection/check-name contract. Upgraded `@auth/core` to remove the sole npm
 advisory; `pnpm audit` is clean.
+Activated exact-check PR-only ruleset `18843164` for `main` and opened draft PR #11.
 **Changed:** Rust core/generator/validator sources and fixtures, gateway generation and
 tests, qd-mini examples, workflows/toolchain, `scripts/verify.mjs`, package scripts,
 README/AGENTS, repository-governance/security automation, and living
 roadmap/state/system documentation.
 **Decisions:** coverage below 80% lines is now a nightly failure; no validator or DfM
 gate was weakened.
-**Next:** Publish this tree through a PR, activate the exact required-check ruleset,
-verify post-merge CI and manual nightly, then complete governance/security/release
-Wave 0 work.
-**Blockers:** remote `main` still points at the old failing commit; it is unprotected,
-has no ruleset/release, and live/field evidence remains outside local recovery.
+**Next:** Let PR CI/security finish, merge through the active ruleset, verify
+post-merge CI and manual nightly, then complete remaining governance/release work.
+**Blockers:** remote checks are queued; no release exists, and live/field evidence
+remains outside local recovery.
 
 ## 2026-07-12 — Rebuild the complete evidence-first program roadmap
 **Session:** Codex agent · branch main worktree · **Phase:** recovery through P12 ·

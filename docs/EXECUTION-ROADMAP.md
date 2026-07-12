@@ -40,8 +40,8 @@ Current release blockers:
 - the recovery tree is uncommitted and remote `main` still carries the old red CI and
   scheduled-nightly evidence;
 - PR, protected-merge, post-merge, and remote-nightly proof are absent;
-- branch protection, vulnerability alerts, releases, and production evidence are
-  absent.
+- first remote security results, immutable Action pins, releases, and production
+  evidence are absent.
 - security, operations, release, live-provider, external-user, and field work remains.
 
 No downstream phase may claim closure while Wave 0 is incomplete.
@@ -99,8 +99,9 @@ Objective: make `main` trustworthy before new feature work.
 
 Status (2026-07-12): **local recovery complete; remote/governance closeout in
 progress.** `REC-001..004`, `REC-006`, `REC-008`, and `QA-001` are complete.
-`REC-005/007` await PR, protected merge, post-merge CI, and remote nightly evidence;
-`GOV-001..005` remain open.
+`REC-005/007` await green PR checks, protected merge, post-merge CI, and remote
+nightly evidence; `GOV-001/002/004` are complete, `GOV-003` is awaiting first scans,
+and `GOV-005` remains open.
 
 Work:
 
