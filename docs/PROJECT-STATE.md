@@ -26,7 +26,7 @@ operational recovery, and field evidence remain incomplete.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | clean protected `main` at `52e234f` before this G1 branch | PR #22 merged through all required checks; post-merge refresh is queued |
+| Git state | clean protected `main` at `f015c7b` before this closeout branch | PR #23 and exact post-merge CI/security are green |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | `pnpm verify` | pass: 30 required non-DB gates | immutable Action pins, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
@@ -60,10 +60,11 @@ Live GitHub evidence checked on 2026-07-12:
 
 - recovery [PR #11](https://github.com/RNT56/TTC/pull/11) and security closeout
   [PR #21](https://github.com/RNT56/TTC/pull/21), then native Desktop
-  [PR #22](https://github.com/RNT56/TTC/pull/22), merged through protection;
-- final `main` CI is green at [run 29211399662](https://github.com/RNT56/TTC/actions/runs/29211399662);
-- final dependency audit and both CodeQL languages are green at
-  [run 29211399718](https://github.com/RNT56/TTC/actions/runs/29211399718);
+  [PR #22](https://github.com/RNT56/TTC/pull/22) and workflow/SBOM
+  [PR #23](https://github.com/RNT56/TTC/pull/23), merged through protection;
+- final `main` CI is green at [run 29212860968](https://github.com/RNT56/TTC/actions/runs/29212860968);
+- final dependency audits, source SPDX SBOM, and both CodeQL languages are green at
+  [run 29212860990](https://github.com/RNT56/TTC/actions/runs/29212860990);
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -77,6 +78,9 @@ Live GitHub evidence checked on 2026-07-12:
   protection are enabled; dependency review/audit and CodeQL have remote proof;
 - Dependabot alert 1 for the upstream Tauri Linux glib chain is dismissed as
   `tolerable_risk` only through 2026-10-12; GOV-011 still blocks Linux release;
+- repository Actions policy is `selected`: GitHub-owned Actions plus seven exact
+  third-party SHAs are allowed, broad verified-creator access is disabled, and the
+  green runs above executed under that policy;
 - repository description and homepage remain empty.
 
 Consequently G0 is **closed**. The next release boundary is G1: compatibility policy,
@@ -131,9 +135,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **199 tasks: 114 done, 39 in progress, 44 open,
-and 2 explicitly blocked**. All 8 recovery tasks are done. The 85 remaining tasks are
-the phase/live/field program plus 6 governance, 8 security, 9 quality, 10 operations,
+The stable ledger currently contains **199 tasks: 115 done, 38 in progress, 44 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 84 remaining tasks are
+the phase/live/field program plus 5 governance, 8 security, 9 quality, 10 operations,
 9 external-proof, and 3 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

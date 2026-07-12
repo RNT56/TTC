@@ -18,6 +18,21 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-12 — Close workflow supply-chain governance
+**Session:** Codex agent · branch `codex/g1-governance-closeout` · **Phase:** G1 ·
+**TODO items:** GOV-005
+**Done:** Merged PR #23 through all six required checks; activated repository
+selected-Action policy with GitHub-owned Actions plus seven exact third-party SHAs;
+disabled broad verified-creator access; and proved post-merge CI, both dependency
+audits, both CodeQL languages, and the validated SPDX artifact under that policy.
+**Changed:** living governance, project-state, roadmap, TODO, and changelog evidence.
+**Decisions:** source SBOM is now release-blocking evidence, but artifact-specific
+SBOM/provenance/download proof remains GOV-008.
+**Next:** Execute GOV-007 compatibility/deprecation policy, then the cross-platform
+validator release and external install proof in GOV-008/009.
+**Blockers:** GOV-011 blocks Linux Desktop release; other live/lab/field blockers
+remain unchanged.
+
 ## 2026-07-12 — Publish the frozen prototype and pin workflow execution
 **Session:** Codex agent · branch `codex/g1-release-foundations` · **Phase:** G1 ·
 **TODO items:** PRE-002, P0-010, GOV-005, GOV-006

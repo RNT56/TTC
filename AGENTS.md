@@ -65,6 +65,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
 - the byte-exact prototype is published as annotated tag `prototype-final`;
+- workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
+  security workflow emits a validated SPDX source SBOM;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
