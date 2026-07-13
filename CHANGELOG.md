@@ -18,6 +18,50 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Route vendor offers through the bounded worker queue
+**Session:** Codex agent · branch `codex/p11-commerce-worker-bridge` · **Phase:** Wave
+2 R1 builder loop · **TODO items:** P11-005 [~]
+**Done:** Replaced the legacy direct gateway vendor HTTP lane with an explicit
+`sandbox|worker` route contract. Worker execution requires non-empty component IDs,
+a 1..200-character idempotency key, the local provider, and configured
+`FORGE_VENDOR_REFRESH_CMD`; the dedicated commerce route and generic job entry point
+enforce the same provider, idempotency, component-count, timeout, and allowed-field
+contract, so neither can accept inline provider offers. The registered Python handler
+fails closed if its command disappears,
+normalizes at most 50 rows under a 120-second ceiling, sanitizes held rows, and bounds
+public credential-free HTTPS links, finite nonnegative prices, three-letter
+currencies, availability, rate limits, and provenance. The Postgres worker revalidates
+accepted output and inserts offers inside the same transaction as job success. Studio
+uses the queue only when capability discovery reports the command configured and
+otherwise retains the deterministic sandbox handoff. The machine compatibility
+matrix now exact-matches all 16 gateway queue kinds. Client job idempotency keys are
+domain-separated owner digests: exact retries return the original job without
+duplicate materialization, different request content conflicts, and the same client
+key cannot cross tenant boundaries or suppress another owner's credit debit. If
+transactional materialization rejects an output, success and all inserts roll back,
+the runner records a failed job, and the worker loop continues. `pnpm verify` passes
+all 32 gates with 61/61 real-validator gateway tests, 25/25 Brief-25, and 115/115
+worker tests; `pnpm audit --audit-level=high` reports no known
+vulnerabilities.
+**Changed:** gateway route/job capability and tests; Studio commerce client/action;
+worker commerce registration, normalization, transactional materialization, and
+tests; migration 0020, protected Postgres gateway idempotency/concurrency and worker
+materialization acceptance, and CI data-plane wiring;
+compatibility matrix/check; canonical agent guidance, best practices,
+threat/risk/state/roadmap/task/execution/architecture, and gateway/worker/platform
+system documentation.
+**Decisions:** none. The slice follows D27 fixture-first expansion and D29's
+off-platform quote/link beta, adds no dependency, and does not create payment,
+checkout, provider, or live authority.
+**Next:** deliver the slice through the exact-check ruleset and use its 20-migration
+Postgres job/materialization proof as acceptance; after protected post-merge evidence,
+the next P11-005 step is a credentialed vendor sandbox with deployed egress, quotas,
+telemetry, retry/recovery, billing, and current terms evidence.
+**Blockers:** none for contract/fixture delivery. Local Postgres proof is unavailable
+because the existing Docker VM is unhealthy; do not repair or reset that user-owned
+runtime in this lane. Credentialed provider and production-operations proof require
+external owner/deployment authority.
+
 ## 2026-07-13 — Add the bounded native Anthropic ETL transport
 **Session:** Codex agent · branch `codex/p4-native-anthropic-etl` · **Phase:** Wave 2
 R1 builder loop · **TODO items:** P3-004 [~], P4-016 [~]

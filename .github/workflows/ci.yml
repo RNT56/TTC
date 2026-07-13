@@ -126,13 +126,21 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
       - run: pnpm install --frozen-lockfile
+      - run: python -m pip install -e "workers[queue]"
       - name: migrate catalog schema
         run: pnpm db:migrate
       - name: seed reviewed catalog fixtures
         run: pnpm db:seed-catalog
       - name: assert P3 catalog invariants
         run: pnpm db:assert-p3
+      - name: assert commerce job idempotency against Postgres
+        run: pnpm db:assert-commerce-jobs
+      - name: assert transactional commerce worker materialization
+        run: python workers/integration/assert_commerce_postgres.py
 
   workers:
     name: compute workers (Python)

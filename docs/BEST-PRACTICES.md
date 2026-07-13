@@ -194,6 +194,21 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
   its current hold remains active.
 - Legal gates are entry conditions, not afterthoughts: ToS review before P8,
   dual-use check before P11 policy sharing.
+- Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
+  enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
+  provider output or add a second direct-live HTTP path. Require the deployment
+  command again at worker execution time, sanitize rejected rows, and revalidate
+  every accepted URL, price, currency, availability, rate-limit, and provenance
+  field in the same transaction that marks the job successful.
+- Scope client idempotency keys to authenticated ownership before persistence. Bind
+  one key to one canonical kind/provider/input tuple, reject request drift, and do
+  not rematerialize domain rows on an exact retry. A globally unique caller string is
+  not tenant isolation and must never suppress another owner's charge or return
+  another owner's job.
+- Preserve the synchronous deterministic commerce path as explicitly `sandbox`.
+  A configured command, queued row, or materialized offer is contract evidence until
+  a credentialed sandbox also proves provider output, billing, retries, monitoring,
+  recovery, and current vendor terms.
 
 ## 11. Evidence and maturity discipline
 

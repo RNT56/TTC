@@ -193,3 +193,48 @@ test("direct job and object-library entry points enforce the same bounded payloa
     /archive uploads are not accepted/,
   );
 });
+
+test("job idempotency keys are owner-scoped digests before persistence", async () => {
+  const persistedKeys: string[] = [];
+  const db: GatewayDb = {
+    async query<T = unknown>(text, params = []) {
+      if (text.includes("INSERT INTO credit_accounts")) {
+        return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
+      }
+      if (text.includes("INSERT INTO jobs")) {
+        persistedKeys.push(String(params[3]));
+        return {
+          rows: [{
+            id: String(params[6]),
+            owner_user_id: params[0],
+            kind: params[1],
+            status: "queued",
+            provider: params[2],
+            input: JSON.parse(String(params[4])),
+            output: null,
+            error: null,
+            cost_credits: params[5],
+            created_at: "2026-07-13T00:00:00.000Z",
+            inserted: true,
+          } as T],
+          rowCount: 1,
+        };
+      }
+      throw new Error(`unexpected idempotency test query: ${text}`);
+    },
+  };
+  const input = {
+    kind: "codesign.evaluate" as const,
+    provider: "local" as const,
+    payload: { objective: "fixture" },
+    idempotencyKey: "same-user-supplied-key",
+  };
+  await createJob(db, { id: "owner-a", name: null, email: null, image: null }, input);
+  await createJob(db, { id: "owner-b", name: null, email: null, image: null }, input);
+
+  assert.equal(persistedKeys.length, 2);
+  assert.match(persistedKeys[0], /^[a-f0-9]{64}$/);
+  assert.match(persistedKeys[1], /^[a-f0-9]{64}$/);
+  assert.notEqual(persistedKeys[0], input.idempotencyKey);
+  assert.notEqual(persistedKeys[0], persistedKeys[1]);
+});

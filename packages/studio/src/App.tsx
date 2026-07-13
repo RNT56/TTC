@@ -1447,7 +1447,17 @@ export default function App() {
     setPlatformMessage(null);
     try {
       const componentIds = vendorComponentIds(maintenanceRecords);
-      const result = await refreshVendorOffers({ componentIds });
+      const useWorker = jobCapabilities?.live.vendorRefresh.configured === true;
+      const result = await refreshVendorOffers({
+        componentIds,
+        execution: useWorker ? "worker" : "sandbox",
+        idempotencyKey: useWorker ? globalThis.crypto.randomUUID() : undefined,
+      });
+      if ("job" in result) {
+        setPlatformMessage(`vendor refresh ${result.job.id} queued through normalized worker`);
+        await refreshPlatform();
+        return;
+      }
       setVendorOffers(result.offers);
       setPlatformMessage(`vendor links ${result.offers.length} · quote/link handoff only`);
       setVendorOffers(await listVendorOffers());

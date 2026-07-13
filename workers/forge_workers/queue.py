@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import json
 import hashlib
+import ipaddress
+import math
 import os
 import time
+import urllib.parse
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, Sequence
 
@@ -96,6 +99,7 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
     store.record_event(job.id, "started", {"task": job.task, "attempt": max(1, job.attempts)})
     try:
         output = handlers.dispatch(job)
+        accepted = store.mark_succeeded(job.id, output)
     except Exception as exc:  # noqa: BLE001 - queue workers must fail closed.
         error = f"{type(exc).__name__}: {exc}"
         accepted = store.mark_failed(job.id, error)
@@ -105,7 +109,6 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
             {"error": error} if accepted else {"reason": "job no longer running"},
         )
     else:
-        accepted = store.mark_succeeded(job.id, output)
         store.record_event(
             job.id,
             "succeeded" if accepted else "discarded",
@@ -245,6 +248,42 @@ class PostgresQueueStore:
         output: dict[str, Any],
     ) -> None:
         artifact_kind = output.get("artifactKind")
+        if artifact_kind == "vendor-offer-refresh":
+            offers = _materializable_vendor_offers(output)
+            provider = _required_bounded_string(output.get("provider"), "vendor refresh provider", 120)
+            rate_limit = _materializable_rate_limit(output.get("rateLimit"))
+            refresh_provenance = _materializable_refresh_provenance(output.get("provenance"))
+            for offer in offers:
+                provenance = {
+                    **offer["provenance"],
+                    "jobId": job_id,
+                    "provider": provider,
+                    "rateLimit": rate_limit,
+                    "refreshProvenance": refresh_provenance,
+                    "refreshedBy": str(owner_user_id) if owner_user_id is not None else None,
+                    "normalizedBy": "forge-workers",
+                }
+                self._conn.execute(
+                    """
+                    INSERT INTO vendor_offers (
+                      component_id, vendor, sku, url, price, currency,
+                      availability, source, provenance
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                    """,
+                    [
+                        offer["componentId"],
+                        offer["vendor"],
+                        offer["sku"],
+                        offer["url"],
+                        offer["price"],
+                        offer["currency"],
+                        offer["availability"],
+                        offer["source"],
+                        self._jsonb(provenance),
+                    ],
+                )
+            return
         if artifact_kind == "photoscan":
             artifact_blob_id = self._upsert_artifact_blob(
                 owner_user_id=owner_user_id,
@@ -434,3 +473,133 @@ def _artifact_object_key(owner_user_id: str | None, purpose: str, cache_key: str
     safe_key = _safe_segment(cache_key)
     digest = hashlib.sha256(cache_key.encode("utf-8")).hexdigest()[:16]
     return f"users/{owner}/{safe_purpose}/{safe_key}-{digest}"
+
+
+def _materializable_vendor_offers(output: dict[str, Any]) -> list[dict[str, Any]]:
+    raw_offers = output.get("offers")
+    if not isinstance(raw_offers, list) or len(raw_offers) > 50:
+        raise RuntimeError("vendor refresh result has an invalid offers array")
+    offers: list[dict[str, Any]] = []
+    for index, raw in enumerate(raw_offers):
+        if not isinstance(raw, dict):
+            raise RuntimeError(f"vendor refresh offer {index} is not an object")
+        component_id = _required_bounded_string(raw.get("componentId"), f"vendor offer {index} componentId", 200)
+        vendor = _required_bounded_string(raw.get("vendor"), f"vendor offer {index} vendor", 120)
+        sku = _optional_bounded_string(raw.get("sku"), f"vendor offer {index} sku", 160)
+        url = _required_public_https(raw.get("url"), f"vendor offer {index} URL")
+        price = raw.get("price")
+        if (
+            isinstance(price, bool)
+            or not isinstance(price, (int, float))
+            or not math.isfinite(float(price))
+            or float(price) < 0
+        ):
+            raise RuntimeError(f"vendor refresh offer {index} has invalid price")
+        currency = _required_bounded_string(raw.get("currency"), f"vendor offer {index} currency", 3).upper()
+        if len(currency) != 3 or not currency.isalpha():
+            raise RuntimeError(f"vendor refresh offer {index} has invalid currency")
+        availability = raw.get("availability")
+        if availability not in {"in-stock", "backorder", "out-of-stock", "unknown"}:
+            raise RuntimeError(f"vendor refresh offer {index} has invalid availability")
+        source = raw.get("source")
+        if source not in {"catalog", "live", "sandbox"}:
+            raise RuntimeError(f"vendor refresh offer {index} has invalid source")
+        provenance = _object(raw.get("provenance"))
+        source_url = _required_public_https(
+            provenance.get("sourceUrl"),
+            f"vendor offer {index} provenance sourceUrl",
+        )
+        retrieved_at = _optional_bounded_string(
+            provenance.get("retrievedAt"),
+            f"vendor offer {index} provenance retrievedAt",
+            64,
+        )
+        rate_limit_key = _required_bounded_string(
+            provenance.get("rateLimitKey"),
+            f"vendor offer {index} provenance rateLimitKey",
+            160,
+        )
+        offers.append(
+            {
+                "componentId": component_id,
+                "vendor": vendor,
+                "sku": sku,
+                "url": url,
+                "price": round(float(price), 4),
+                "currency": currency,
+                "availability": availability,
+                "source": source,
+                "provenance": {
+                    "sourceUrl": source_url,
+                    "retrievedAt": retrieved_at,
+                    "rateLimitKey": rate_limit_key,
+                },
+            }
+        )
+    return offers
+
+
+def _materializable_rate_limit(value: Any) -> dict[str, int]:
+    raw = _object(value)
+    requests_per_minute = raw.get("requestsPerMinute")
+    cache_ttl_s = raw.get("cacheTtlS")
+    if (
+        isinstance(requests_per_minute, bool)
+        or not isinstance(requests_per_minute, int)
+        or not 1 <= requests_per_minute <= 600
+        or isinstance(cache_ttl_s, bool)
+        or not isinstance(cache_ttl_s, int)
+        or not 1 <= cache_ttl_s <= 86_400
+    ):
+        raise RuntimeError("vendor refresh result has an invalid rateLimit")
+    return {"requestsPerMinute": requests_per_minute, "cacheTtlS": cache_ttl_s}
+
+
+def _materializable_refresh_provenance(value: Any) -> dict[str, str | None]:
+    raw = _object(value)
+    source_url = raw.get("sourceUrl")
+    if source_url is not None:
+        source_url = _required_public_https(source_url, "vendor refresh provenance sourceUrl")
+    retrieved_at = _optional_bounded_string(
+        raw.get("retrievedAt"),
+        "vendor refresh provenance retrievedAt",
+        64,
+    )
+    return {"sourceUrl": source_url, "retrievedAt": retrieved_at}
+
+
+def _required_bounded_string(value: Any, label: str, max_length: int) -> str:
+    if not isinstance(value, str) or not value.strip() or len(value.strip()) > max_length:
+        raise RuntimeError(f"{label} is invalid")
+    return value.strip()
+
+
+def _optional_bounded_string(value: Any, label: str, max_length: int) -> str | None:
+    if value is None:
+        return None
+    return _required_bounded_string(value, label, max_length)
+
+
+def _required_public_https(value: Any, label: str) -> str:
+    raw = _required_bounded_string(value, label, 2000)
+    try:
+        parsed = urllib.parse.urlsplit(raw)
+        hostname = (parsed.hostname or "").rstrip(".").lower()
+        if (
+            parsed.scheme != "https"
+            or not hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.fragment
+            or hostname == "localhost"
+            or hostname.endswith((".localhost", ".local"))
+        ):
+            raise RuntimeError(f"{label} is invalid")
+        try:
+            if not ipaddress.ip_address(hostname).is_global:
+                raise RuntimeError(f"{label} is invalid")
+        except ValueError:
+            pass
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(f"{label} is invalid") from exc
+    return raw

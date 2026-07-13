@@ -47,6 +47,10 @@ for (const table of [
   "classroom_submissions",
   "telemetry_logs",
   "maintenance_records",
+  "vendor_offers",
+  "print_quote_requests",
+  "print_quote_offers",
+  "marketplace_usage_rollups",
   "generation_refusals",
   "user_consent_events",
   "legal_hold_events",
@@ -114,6 +118,38 @@ try {
     failures++;
   } else {
     console.log("ok generation_refusals: valid minimal audit row accepted transactionally");
+  }
+} finally {
+  await client.query("ROLLBACK");
+}
+
+const commerceWorkerConstraint = await one(`
+  SELECT count(*) AS n
+    FROM pg_constraint
+   WHERE conrelid = 'jobs'::regclass
+     AND conname = 'jobs_kind_check'
+     AND pg_get_constraintdef(oid) LIKE '%commerce.vendor-refresh%'
+`);
+if (commerceWorkerConstraint !== 1) {
+  console.error("FAIL jobs_kind_check does not admit commerce.vendor-refresh");
+  failures++;
+} else {
+  console.log("ok jobs_kind_check: commerce.vendor-refresh is admitted");
+}
+
+await client.query("BEGIN");
+try {
+  const commerceJob = await client.query(
+    `INSERT INTO jobs (kind, status, provider, idempotency_key, input)
+     VALUES ('commerce.vendor-refresh', 'queued', 'local', $1, $2::jsonb)
+     RETURNING id`,
+    ["db-assert-commerce-vendor-refresh", JSON.stringify({ componentIds: ["cmp_motor_fixture"] })],
+  );
+  if (commerceJob.rowCount !== 1 || !commerceJob.rows[0]?.id) {
+    console.error("FAIL commerce.vendor-refresh job was not accepted");
+    failures++;
+  } else {
+    console.log("ok commerce.vendor-refresh: valid local job accepted transactionally");
   }
 } finally {
   await client.query("ROLLBACK");

@@ -173,6 +173,7 @@ const jobKindSchema = Type.Union([
   Type.Literal("bridge.config-diff"),
   Type.Literal("bridge.telemetry-ingest"),
   Type.Literal("bridge.supervisor-check"),
+  Type.Literal("commerce.vendor-refresh"),
   Type.Literal("maintenance.estimate-wear"),
   Type.Literal("maintenance.crash-forensics"),
   Type.Literal("maintenance.repair-sheet"),
@@ -281,7 +282,7 @@ const vendorOfferInputSchema = Type.Object(
     sku: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
     url: Type.String({ minLength: 1, maxLength: 2000 }),
     price: Type.Optional(Type.Number({ minimum: 0 })),
-    currency: Type.Optional(Type.String({ minLength: 3, maxLength: 8 })),
+    currency: Type.Optional(Type.String({ pattern: "^[A-Za-z]{3}$" })),
     availability: Type.Optional(vendorAvailabilitySchema),
   },
   { additionalProperties: false },
@@ -2558,6 +2559,9 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           {
             componentIds: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 200 }), { maxItems: 50 })),
             offers: Type.Optional(Type.Array(vendorOfferInputSchema, { maxItems: 50 })),
+            execution: Type.Optional(Type.Union([Type.Literal("sandbox"), Type.Literal("worker")])),
+            idempotencyKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+            timeoutS: Type.Optional(Type.Number({ minimum: 1, maximum: 120 })),
           },
           { additionalProperties: false },
         ),
@@ -2577,38 +2581,33 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             currency?: string;
             availability?: string;
           }[];
+          execution?: "sandbox" | "worker";
+          idempotencyKey?: string;
+          timeoutS?: number;
         };
-        const endpoint = process.env.FORGE_VENDOR_OFFER_ENDPOINT?.trim();
-        let offers = body.offers ?? [];
-        let source: "live" | "sandbox" = "sandbox";
-        if (endpoint) {
-          const endpointUrl = parseExternalHttpsUrl(endpoint, "vendor offer endpoint");
-          const { value: remote } = await fetchBoundedJson(endpointUrl.href, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ componentIds: body.componentIds ?? [], offers }),
-          }, {
-            label: "vendor offer endpoint",
-            allowedHosts: [endpointUrl.hostname],
-            maxResponseBytes: 512 * 1024,
+        if ((body.execution ?? "sandbox") === "worker") {
+          if (!body.componentIds?.length) {
+            return reply.status(400).send({ error: "vendor refresh worker requires componentIds" });
+          }
+          if (body.offers !== undefined) {
+            return reply.status(400).send({ error: "vendor refresh worker does not accept inline offers" });
+          }
+          if (!body.idempotencyKey) {
+            return reply.status(400).send({ error: "vendor refresh worker requires an idempotencyKey" });
+          }
+          const job = await createJob(db, user, {
+            kind: "commerce.vendor-refresh",
+            provider: "local",
+            payload: {
+              componentIds: body.componentIds,
+              timeoutS: body.timeoutS ?? 120,
+            },
+            idempotencyKey: body.idempotencyKey,
           });
-          if (!isRecord(remote) || !Array.isArray(remote.offers)) {
-            throw Object.assign(new Error("vendor offer endpoint returned invalid JSON"), { statusCode: 503 });
-          }
-          if (remote.offers.length > 50) {
-            throw Object.assign(new Error("vendor offer endpoint returned too many offers"), { statusCode: 503 });
-          }
-          offers = remote.offers.filter(isRecord).map((offer) => ({
-            componentId: String(offer.componentId ?? ""),
-            vendor: String(offer.vendor ?? "unknown"),
-            sku: typeof offer.sku === "string" ? offer.sku : undefined,
-            url: String(offer.url ?? ""),
-            price: typeof offer.price === "number" ? offer.price : undefined,
-            currency: typeof offer.currency === "string" ? offer.currency : undefined,
-            availability: typeof offer.availability === "string" ? offer.availability : "unknown",
-          }));
-          source = "live";
-        } else if (offers.length === 0 && body.componentIds?.length) {
+          return reply.status(202).send({ job });
+        }
+        let offers = body.offers ?? [];
+        if (offers.length === 0 && body.componentIds?.length) {
           const base = parseExternalHttpsUrl(
             process.env.FORGE_VENDOR_OFFER_BASE_URL ?? "https://vendor.example.invalid/components",
             "vendor offer base URL",
@@ -2633,10 +2632,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
               ...offer,
               url,
               availability: offer.availability,
-              source,
+              source: "sandbox",
               provenance: {
                 refreshedBy: user.id,
-                endpointConfigured: Boolean(endpoint),
+                normalizedBy: "gateway-sandbox",
                 quoteLinkOnly: true,
               },
             }),
@@ -2644,7 +2643,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         }
         await recordUsageEvent(db, user, {
           eventKind: "vendor-offer-refresh",
-          provider: endpoint ? "live" : "sandbox",
+          provider: "sandbox",
           units: { offers: inserted.length },
           idempotencyKey: null,
         });

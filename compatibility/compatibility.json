@@ -63,6 +63,24 @@
     "workerArtifacts": {
       "current": "0.2.0",
       "supportedMajors": [0],
+      "queueKinds": [
+        "etl.ingest-component",
+        "occt.tessellate",
+        "photoscan.single",
+        "photoscan.multiview",
+        "train.policy",
+        "train.sysid-fit",
+        "replay.verify",
+        "codesign.evaluate",
+        "bridge.config-diff",
+        "bridge.telemetry-ingest",
+        "bridge.supervisor-check",
+        "commerce.vendor-refresh",
+        "maintenance.estimate-wear",
+        "maintenance.crash-forensics",
+        "maintenance.repair-sheet",
+        "maintenance.fleet-summary"
+      ],
       "versionRule": "forge-workers package SemVer until an artifact family receives an independent schema version"
     }
   },

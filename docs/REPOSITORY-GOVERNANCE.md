@@ -35,6 +35,16 @@ Do not casually rename these jobs. Change a required name in two stages: first s
 the replacement check while the old name is still present, then update the ruleset
 and this document, then remove the old check.
 
+The Postgres job must apply every migration, seed the reviewed catalog, run the P3/
+user-data/consent/lifecycle assertions owned by `pnpm verify:db`, and execute any
+cross-language transactional materializer acceptance added by the changed surface.
+For P11-005 that includes `pnpm db:assert-commerce-jobs`, which executes the exact
+gateway upsert under concurrent retry, request drift, and cross-owner key reuse, plus
+Python 3.12 and `workers/integration/assert_commerce_postgres.py`, which prove valid
+offer commit and corrupt-output rollback plus failed-job recovery against the same
+database service. A schema-only insert is not sufficient evidence for gateway or
+worker persistence behavior.
+
 ## Release-blocking checks
 
 The following are not required on every PR, but must be green on the release commit:

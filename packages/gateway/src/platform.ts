@@ -64,6 +64,7 @@ export const JOB_KINDS = [
   "bridge.config-diff",
   "bridge.telemetry-ingest",
   "bridge.supervisor-check",
+  "commerce.vendor-refresh",
   "maintenance.estimate-wear",
   "maintenance.crash-forensics",
   "maintenance.repair-sheet",
@@ -654,6 +655,19 @@ function blobCacheKey(user: CurrentUser, input: { cacheKey?: string | null; sha2
   if (input.cacheKey) return `${safeObjectSegment(user.id)}:${input.cacheKey}`;
   if (input.sha256) return `${safeObjectSegment(user.id)}:sha256:${input.sha256.toLowerCase()}`;
   return null;
+}
+
+function scopedJobIdempotencyKey(userId: string, key: string): string {
+  return createHash("sha256")
+    .update("forge-job-idempotency-v1\0")
+    .update(userId)
+    .update("\0")
+    .update(key)
+    .digest("hex");
+}
+
+function newJobId(): string {
+  return `job-${randomUUID().replaceAll("-", "").slice(0, 20)}`;
 }
 
 function defaultObjectKey(user: CurrentUser, purpose: string, sha: string | null): string {
@@ -1332,10 +1346,10 @@ export async function jobCapabilities(db: GatewayDb): Promise<JobCapabilities> {
         "FORGE_ONNX_RUNTIME_WEB=1 is required",
       ),
       vendorRefresh: capability(
-        envConfigured("FORGE_VENDOR_OFFER_ENDPOINT") || envEnabled("FORGE_VENDOR_REFRESH_SANDBOX"),
-        envConfigured("FORGE_VENDOR_OFFER_ENDPOINT"),
-        envConfigured("FORGE_VENDOR_OFFER_ENDPOINT") ? "http-endpoint" : "sandbox",
-        "FORGE_VENDOR_OFFER_ENDPOINT or FORGE_VENDOR_REFRESH_SANDBOX=1 is required",
+        envConfigured("FORGE_VENDOR_REFRESH_CMD") || envEnabled("FORGE_VENDOR_REFRESH_SANDBOX"),
+        envConfigured("FORGE_VENDOR_REFRESH_CMD"),
+        envConfigured("FORGE_VENDOR_REFRESH_CMD") ? "worker-command" : "sandbox",
+        "FORGE_VENDOR_REFRESH_CMD or FORGE_VENDOR_REFRESH_SANDBOX=1 is required",
       ),
       printQuotes: capability(
         envConfigured("FORGE_PRINT_QUOTE_ENDPOINT") || envEnabled("FORGE_PRINT_QUOTE_SANDBOX"),
@@ -1911,6 +1925,48 @@ type CreateJobInput = {
   idempotencyKey?: string | null;
 };
 
+function assertCommerceVendorRefreshJob(input: CreateJobInput): void {
+  if (input.provider !== "local") {
+    throw Object.assign(new Error("commerce vendor refresh jobs must use the local worker provider"), {
+      statusCode: 400,
+    });
+  }
+  if (typeof input.idempotencyKey !== "string" || !input.idempotencyKey.trim()) {
+    throw Object.assign(new Error("commerce vendor refresh jobs require an idempotency key"), { statusCode: 400 });
+  }
+  if (!isRecord(input.payload)) {
+    throw Object.assign(new Error("commerce vendor refresh jobs require a bounded payload"), { statusCode: 400 });
+  }
+  const allowedKeys = new Set(["componentIds", "timeoutS"]);
+  if (Object.keys(input.payload).some((key) => !allowedKeys.has(key))) {
+    throw Object.assign(new Error("commerce vendor refresh job payload contains unsupported fields"), {
+      statusCode: 400,
+    });
+  }
+  const componentIds = input.payload.componentIds;
+  if (
+    !Array.isArray(componentIds)
+    || componentIds.length < 1
+    || componentIds.length > 50
+    || componentIds.some((value) => (
+      typeof value !== "string" || !value.trim() || value.length > 200
+    ))
+  ) {
+    throw Object.assign(new Error("commerce vendor refresh jobs require 1..50 bounded componentIds"), {
+      statusCode: 400,
+    });
+  }
+  const timeoutS = input.payload.timeoutS;
+  if (
+    timeoutS !== undefined
+    && (typeof timeoutS !== "number" || !Number.isFinite(timeoutS) || timeoutS < 1 || timeoutS > 120)
+  ) {
+    throw Object.assign(new Error("commerce vendor refresh job timeoutS must be between 1 and 120"), {
+      statusCode: 400,
+    });
+  }
+}
+
 export async function createJob(
   db: GatewayDb,
   user: CurrentUser,
@@ -1925,6 +1981,9 @@ export async function createJob(
     input.idempotencyKey.length < 1 || input.idempotencyKey.length > 200
   )) {
     throw Object.assign(new Error("job idempotency key is outside the supported range"), { statusCode: 400 });
+  }
+  if (input.kind === "commerce.vendor-refresh") {
+    assertCommerceVendorRefreshJob(input);
   }
   const requirements = [] as {
     purpose: "photoscan.processing" | "training.reuse";
@@ -1959,6 +2018,14 @@ async function createJobUnchecked(
   input: CreateJobInput,
 ): Promise<JobRecord> {
   const provider = input.provider ?? "fixture";
+  const databaseIdempotencyKey = input.idempotencyKey == null
+    ? null
+    : scopedJobIdempotencyKey(user.id, input.idempotencyKey);
+  if (input.kind === "commerce.vendor-refresh") {
+    if (!envConfigured("FORGE_VENDOR_REFRESH_CMD")) {
+      throw Object.assign(new Error("commerce vendor refresh worker is not configured"), { statusCode: 409 });
+    }
+  }
   const costCredits = provider === "modal" ? 1 : 0;
   if (ADMITTED_MODEL_JOB_KINDS.has(input.kind)) {
     await assertAdmittedModelReference(db, user, modelIdFrom(input.payload), `${input.kind} job`);
@@ -1966,7 +2033,7 @@ async function createJobUnchecked(
   await assertHardwareGateForJob(db, input.kind, provider, input.payload ?? {});
   await ensureCreditAccount(db, user);
   if (costCredits > 0) {
-    const debitKey = input.idempotencyKey ? `${input.idempotencyKey}:credit` : randomUUID();
+    const debitKey = databaseIdempotencyKey ? `${databaseIdempotencyKey}:credit` : randomUUID();
     const debit = await db.query(
       `INSERT INTO credit_ledger (user_id, delta_credits, reason, source_kind, source_id, idempotency_key)
        VALUES ($1, $2, $3, 'job', $4, $5)
@@ -1984,47 +2051,74 @@ async function createJobUnchecked(
     }
   }
   if (provider !== "fixture") {
-    const result = await db.query<Parameters<typeof mapJob>[0]>(
+    const proposedJobId = newJobId();
+    const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
       `INSERT INTO jobs (
-         owner_user_id, kind, status, provider, idempotency_key, input, output, cost_credits
+         id, owner_user_id, kind, status, provider, idempotency_key, input, output, cost_credits
        )
-       VALUES ($1, $2, 'queued', $3, $4, $5::jsonb, NULL, $6)
+       VALUES ($7, $1, $2, 'queued', $3, $4, $5::jsonb, NULL, $6)
        ON CONFLICT (idempotency_key) DO UPDATE
-       SET idempotency_key = jobs.idempotency_key
-       RETURNING id, owner_user_id, kind, status, provider, input, output, error, cost_credits, created_at`,
+       SET idempotency_key = EXCLUDED.idempotency_key
+       WHERE jobs.owner_user_id = EXCLUDED.owner_user_id
+         AND jobs.kind = EXCLUDED.kind
+         AND jobs.provider = EXCLUDED.provider
+         AND jobs.input = EXCLUDED.input
+       RETURNING id, owner_user_id, kind, status, provider, input, output, error,
+                 cost_credits, created_at, id = $7 AS inserted`,
       [
         user.id,
         input.kind,
         provider,
-        input.idempotencyKey ?? null,
+        databaseIdempotencyKey,
         json(input.payload ?? {}),
         costCredits,
+        proposedJobId,
       ],
     );
+    if (!result.rows[0]) {
+      throw Object.assign(new Error("job idempotency key is already bound to a different request"), {
+        statusCode: 409,
+      });
+    }
     return mapJob(result.rows[0]);
   }
 
   const fixtureOutput = fixtureJobOutput(input.kind, input.payload ?? {});
-  const result = await db.query<Parameters<typeof mapJob>[0]>(
+  const proposedJobId = newJobId();
+  const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
     `INSERT INTO jobs (
-       owner_user_id, kind, status, provider, idempotency_key, input, output, cost_credits, started_at, finished_at
+       id, owner_user_id, kind, status, provider, idempotency_key, input, output,
+       cost_credits, started_at, finished_at
      )
-     VALUES ($1, $2, 'succeeded', $3, $4, $5::jsonb, $6::jsonb, $7, now(), now())
+     VALUES ($8, $1, $2, 'succeeded', $3, $4, $5::jsonb, $6::jsonb, $7, now(), now())
      ON CONFLICT (idempotency_key) DO UPDATE
-     SET output = EXCLUDED.output
-     RETURNING id, owner_user_id, kind, status, provider, input, output, error, cost_credits, created_at`,
+     SET idempotency_key = EXCLUDED.idempotency_key
+     WHERE jobs.owner_user_id = EXCLUDED.owner_user_id
+       AND jobs.kind = EXCLUDED.kind
+       AND jobs.provider = EXCLUDED.provider
+       AND jobs.input = EXCLUDED.input
+     RETURNING id, owner_user_id, kind, status, provider, input, output, error,
+               cost_credits, created_at, id = $8 AS inserted`,
     [
       user.id,
       input.kind,
       provider,
-      input.idempotencyKey ?? null,
+      databaseIdempotencyKey,
       json(input.payload ?? {}),
       json(fixtureOutput),
       costCredits,
+      proposedJobId,
     ],
   );
+  if (!result.rows[0]) {
+    throw Object.assign(new Error("job idempotency key is already bound to a different request"), {
+      statusCode: 409,
+    });
+  }
   const job = mapJob(result.rows[0]);
-  await materializeJobOutput(db, user, job);
+  if (result.rows[0].inserted) {
+    await materializeJobOutput(db, user, job);
+  }
   return job;
 }
 

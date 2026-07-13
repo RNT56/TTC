@@ -1,7 +1,7 @@
 import pytest
 
 from forge_workers import register_all_handlers
-from forge_workers.queue import HandlerRegistry, Job, run_once, registry
+from forge_workers.queue import HandlerRegistry, Job, PostgresQueueStore, run_once, registry
 from forge_workers.training.tasks import task_ids
 
 
@@ -46,11 +46,135 @@ def test_all_standard_tasks_register():
         "bridge.config-diff",
         "bridge.telemetry-ingest",
         "bridge.supervisor-check",
+        "commerce.vendor-refresh",
         "maintenance.estimate-wear",
         "maintenance.crash-forensics",
         "maintenance.repair-sheet",
         "maintenance.fleet-summary",
     }.issubset(set(registry.tasks()))
+
+
+def test_vendor_refresh_task_routes_through_the_registered_normalizer(monkeypatch):
+    monkeypatch.setenv("FORGE_VENDOR_REFRESH_CMD", "fixture-vendor-refresh")
+    monkeypatch.setattr(
+        "forge_workers.commerce.run_json_command",
+        lambda _env, payload, *, timeout_s: payload,
+    )
+    register_all_handlers()
+    result = registry.dispatch(
+        Job(
+            id="vendor-job",
+            task="commerce.vendor-refresh",
+            payload={
+                "componentId": "cmp_motor",
+                "offers": [
+                    {
+                        "vendor": "Fixture Vendor",
+                        "sku": "MOTOR-1",
+                        "url": "https://vendor.example.test/motor-1",
+                        "price": 19.5,
+                        "currency": "usd",
+                        "availability": "in_stock",
+                    }
+                ],
+            },
+            idempotency_key="vendor-refresh-1",
+        )
+    )
+
+    assert result["artifactKind"] == "vendor-offer-refresh"
+    assert result["heldOffers"] == []
+    assert result["offers"][0]["componentId"] == "cmp_motor"
+    assert result["offers"][0]["currency"] == "USD"
+    assert result["offers"][0]["availability"] == "in-stock"
+
+
+def test_vendor_refresh_materialization_revalidates_and_records_job_provenance(monkeypatch):
+    monkeypatch.setenv("FORGE_VENDOR_REFRESH_CMD", "fixture-vendor-refresh")
+    monkeypatch.setattr(
+        "forge_workers.commerce.run_json_command",
+        lambda _env, payload, *, timeout_s: payload,
+    )
+    register_all_handlers()
+    output = registry.dispatch(
+        Job(
+            id="vendor-job",
+            task="commerce.vendor-refresh",
+            payload={
+                "componentId": "cmp_motor",
+                "offers": [
+                    {
+                        "vendor": "Fixture Vendor",
+                        "sku": "MOTOR-1",
+                        "url": "https://vendor.example.test/motor-1",
+                        "price": 19.5,
+                        "currency": "USD",
+                        "availability": "in-stock",
+                    }
+                ],
+            },
+            idempotency_key="vendor-refresh-1",
+        )
+    )
+
+    class CaptureConnection:
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, sql, params):
+            self.calls.append((sql, params))
+
+    connection = CaptureConnection()
+    store = object.__new__(PostgresQueueStore)
+    store._conn = connection
+    store._jsonb = lambda value: value
+    store._materialize_job_output(
+        job_id="vendor-job",
+        owner_user_id="user-fixture",
+        job_input={"componentId": "cmp_motor"},
+        output=output,
+    )
+
+    assert len(connection.calls) == 1
+    sql, params = connection.calls[0]
+    assert "INSERT INTO vendor_offers" in sql
+    assert params[:8] == [
+        "cmp_motor",
+        "Fixture Vendor",
+        "MOTOR-1",
+        "https://vendor.example.test/motor-1",
+        19.5,
+        "USD",
+        "in-stock",
+        "live",
+    ]
+    assert params[8]["jobId"] == "vendor-job"
+    assert params[8]["refreshedBy"] == "user-fixture"
+    assert params[8]["normalizedBy"] == "forge-workers"
+
+    bad_output = {**output, "offers": [{**output["offers"][0], "url": "https://127.0.0.1/private"}]}
+    with pytest.raises(RuntimeError, match="URL is invalid"):
+        store._materialize_job_output(
+            job_id="bad-vendor-job",
+            owner_user_id="user-fixture",
+            job_input={},
+            output=bad_output,
+        )
+    assert len(connection.calls) == 1
+
+
+def test_vendor_refresh_queue_handler_fails_closed_without_a_command(monkeypatch):
+    monkeypatch.delenv("FORGE_VENDOR_REFRESH_CMD", raising=False)
+    register_all_handlers()
+    with pytest.raises(RuntimeError, match="FORGE_VENDOR_REFRESH_CMD is required"):
+        registry.dispatch(
+            Job(
+                id="vendor-job-unconfigured",
+                task="commerce.vendor-refresh",
+                payload={"componentIds": ["cmp_motor"]},
+                idempotency_key="vendor-refresh-unconfigured",
+            )
+        )
 
 
 def test_run_once_claims_and_marks_success():
@@ -81,6 +205,28 @@ def test_run_once_marks_handler_failure_without_raising():
     assert store.failed is not None
     assert store.failed[0] == "job-2"
     assert "ValueError: bad payload" in store.failed[1]
+    assert [event for _, event, _ in store.events] == ["started", "failed"]
+
+
+def test_run_once_marks_materialization_failure_without_stopping_the_worker():
+    handlers = HandlerRegistry()
+
+    @handlers.register("unit.materialize-fail")
+    def _output(_job: Job) -> dict:
+        return {"artifactKind": "corrupt"}
+
+    class MaterializationFailureStore(FakeStore):
+        def mark_succeeded(self, job_id: str, output: dict) -> bool:
+            raise RuntimeError("materialization rejected")
+
+    store = MaterializationFailureStore(
+        Job(id="job-materialize-fail", task="unit.materialize-fail", payload={}, idempotency_key="idem-fail")
+    )
+    assert run_once(store, handlers)
+    assert store.succeeded is None
+    assert store.failed is not None
+    assert store.failed[0] == "job-materialize-fail"
+    assert "RuntimeError: materialization rejected" in store.failed[1]
     assert [event for _, event, _ in store.events] == ["started", "failed"]
 
 

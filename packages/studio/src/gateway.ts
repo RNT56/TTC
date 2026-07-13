@@ -842,8 +842,11 @@ export function refreshVendorOffers(input: {
     currency?: string;
     availability?: string;
   }>;
-}): Promise<{ offers: VendorOfferRecord[] }> {
-  return requestJson<{ offers: VendorOfferRecord[] }>("/v1/commerce/vendor-offers/refresh", {
+  execution?: "sandbox" | "worker";
+  idempotencyKey?: string;
+  timeoutS?: number;
+}): Promise<{ offers: VendorOfferRecord[] } | { job: JobRecord }> {
+  return requestJson<{ offers: VendorOfferRecord[] } | { job: JobRecord }>("/v1/commerce/vendor-offers/refresh", {
     method: "POST",
     body: JSON.stringify(input),
   });

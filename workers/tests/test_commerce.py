@@ -1,6 +1,8 @@
 import json
 import sys
 
+import pytest
+
 from forge_workers.commerce import refresh_vendor_offers, request_print_quote
 
 
@@ -50,6 +52,7 @@ def test_vendor_refresh_normalizes_external_offer_with_provenance(tmp_path, monk
     assert result["rateLimit"] == {"requestsPerMinute": 12, "cacheTtlS": 900}
     assert result["heldOffers"] == []
     assert result["offers"][0]["price"] == 29.95
+    assert result["offers"][0]["availability"] == "in-stock"
     assert result["offers"][0]["provenance"]["sourceUrl"] == "https://vendor.example/catalog/mtr-1"
 
 
@@ -72,10 +75,44 @@ def test_vendor_refresh_holds_invalid_offer_rows(monkeypatch):
 
     assert result["offers"] == []
     assert result["heldOffers"][0]["reasons"] == [
-        "offer URL must be http(s)",
+        "offer URL must be credential-free public HTTPS",
         "non-negative price missing",
-        "provenance sourceUrl must be http(s)",
+        "provenance sourceUrl must be credential-free public HTTPS",
     ]
+    assert "input" not in result["heldOffers"][0]
+
+
+def test_vendor_refresh_fails_closed_on_oversized_or_nonfinite_provider_truth(monkeypatch):
+    monkeypatch.delenv("FORGE_VENDOR_REFRESH_CMD", raising=False)
+    with pytest.raises(RuntimeError, match="offer limit"):
+        refresh_vendor_offers({"offers": [{}] * 51})
+
+    result = refresh_vendor_offers(
+        {
+            "offers": [
+                {
+                    "componentId": "cmp_motor",
+                    "vendor": "Example Parts",
+                    "url": "https://127.0.0.1/private",
+                    "price": "NaN",
+                    "currency": "US dollars",
+                }
+            ],
+            "rateLimit": {"requestsPerMinute": 100_000, "cacheTtlS": -1},
+        }
+    )
+
+    assert result["offers"] == []
+    assert result["rateLimit"] == {"requestsPerMinute": 600, "cacheTtlS": 1}
+    assert result["heldOffers"][0]["componentId"] == "cmp_motor"
+    assert result["heldOffers"][0]["reasons"] == [
+        "offer URL must be credential-free public HTTPS",
+        "non-negative price missing",
+        "provenance sourceUrl must be credential-free public HTTPS",
+    ]
+
+    with pytest.raises(RuntimeError, match="timeoutS"):
+        refresh_vendor_offers({"timeoutS": "NaN", "offers": []})
 
 
 def test_print_quote_blocks_without_dfm_and_artifacts(monkeypatch):
