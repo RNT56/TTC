@@ -2,11 +2,20 @@
 // (TypeBox); heavy work goes to the queue or the validator binary; compute
 // workers have no public surface.
 import { Type } from "@sinclair/typebox";
+import fastifyRateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { getCurrentUser, handleAuthRequest, requireUser, type CurrentUser } from "./auth.js";
+import {
+  assertAuthConfiguration,
+  assertTrustedRequestOrigin,
+  getCurrentUser,
+  handleAuthRequest,
+  requestRateLimitIdentity,
+  requireUser,
+  type CurrentUser,
+} from "./auth.js";
 import { deleteUserData, exportUserData } from "./accountData.js";
 import {
   CONSENT_POLICIES,
@@ -98,6 +107,20 @@ import {
   refuseProhibitedBrief,
   type ProhibitedBriefSurface,
 } from "./safety.js";
+import {
+  DEFAULT_RATE_LIMIT_POLICY,
+  DEFAULT_REQUEST_BODY_BYTES,
+  InMemoryRateLimiter,
+  MAX_OBJECT_BYTES,
+  assertBoundedJson,
+  constantTimeEqual,
+  fetchBoundedJson,
+  parseExternalHttpsUrl,
+  redactSensitiveText,
+  secretFingerprint,
+  type RateLimitClass,
+  type RateLimitPolicy,
+} from "./security.js";
 import { runBake, runBom, runEnvSpec, runValidator, validatorBin } from "./validator.js";
 
 export interface ServerOptions {
@@ -110,6 +133,8 @@ export interface ServerOptions {
   anthropicBaseUrl?: string;
   persistGeneratedArtifacts?: boolean;
   deleteObjects?: ObjectDeletionAdapter;
+  rateLimitPolicy?: RateLimitPolicy | null;
+  rateLimitNow?: () => number;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -273,7 +298,6 @@ const generationBodySchema = Type.Object(
     provider: Type.Optional(generationProviderSchema),
     seed: Type.Optional(Type.Integer({ minimum: 0 })),
     maxRepairIterations: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
-    anthropicApiKey: Type.Optional(Type.String({ minLength: 1, maxLength: 4096 })),
   },
   { additionalProperties: false },
 );
@@ -308,9 +332,8 @@ type CourseRow = {
   created_at: Date | string;
 };
 
-function unavailable(error: unknown): { error: string; detail: string } {
-  const detail = error instanceof Error ? error.message : String(error);
-  return { error: "catalog database unavailable", detail: detail.slice(0, 500) };
+function unavailable(): { error: string; detail: string } {
+  return { error: "service unavailable", detail: "request could not be completed" };
 }
 
 function routeError(error: unknown): { statusCode: number; body: unknown } {
@@ -322,12 +345,41 @@ function routeError(error: unknown): { statusCode: number; body: unknown } {
   if (lifecycle) return lifecycle;
   const mapped = validatorError(error);
   if (mapped) return mapped;
-  return { statusCode: 503, body: unavailable(error) };
+  const statusCode = typeof (error as { statusCode?: unknown } | null)?.statusCode === "number"
+    ? Number((error as { statusCode: number }).statusCode)
+    : 503;
+  if (statusCode >= 400 && statusCode < 500) {
+    const message = error instanceof Error ? redactSensitiveText(error.message).slice(0, 300) : "request rejected";
+    return { statusCode, body: { error: message } };
+  }
+  return { statusCode: 503, body: unavailable() };
 }
 
 function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): boolean {
-  if (!reviewToken) return true;
-  return request.headers.authorization === `Bearer ${reviewToken}`;
+  if (!reviewToken) return process.env.NODE_ENV !== "production";
+  const authorization = request.headers.authorization;
+  return typeof authorization === "string" && constantTimeEqual(authorization, `Bearer ${reviewToken}`);
+}
+
+function rateLimitClass(request: FastifyRequest): RateLimitClass {
+  const path = request.url.split("?", 1)[0] ?? request.url;
+  if (path === "/auth" || path.startsWith("/auth/")) return "auth";
+  if (
+    path.startsWith("/v1/generate") ||
+    path === "/v1/courses/generate" ||
+    (path.startsWith("/v1/models/") && path.endsWith("/edit"))
+  ) return "generation";
+  if (
+    path.startsWith("/v1/jobs") ||
+    path.startsWith("/v1/photoscan") ||
+    path.startsWith("/v1/policies") ||
+    path.startsWith("/v1/commerce/") ||
+    path === "/v1/validate" ||
+    path === "/v1/bake" ||
+    path === "/v1/bom"
+  ) return "job";
+  if (path.startsWith("/v1/blobs")) return "object";
+  return "public";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -567,7 +619,7 @@ async function executeGeneration(
   const generationRequest: GenerationRequest = {
     ...body,
     provider: (body.provider ?? "template") as GenerationProvider,
-    anthropicApiKey: generationApiKeyHeader(request) ?? body.anthropicApiKey,
+    anthropicApiKey: generationApiKeyHeader(request),
   };
   await refuseProhibitedBrief(db, generationRequest.prompt, {
     surface,
@@ -615,12 +667,59 @@ async function executeGeneration(
 }
 
 export function buildServer(options: ServerOptions = {}): FastifyInstance {
-  const app = Fastify({ logger: false });
+  assertAuthConfiguration();
+  const app = Fastify({
+    logger: false,
+    bodyLimit: DEFAULT_REQUEST_BODY_BYTES,
+    trustProxy: false,
+    routerOptions: { maxParamLength: 2_000 },
+  });
+  const rateLimitPolicy = options.rateLimitPolicy === null
+    ? null
+    : options.rateLimitPolicy ?? DEFAULT_RATE_LIMIT_POLICY;
+  const limiter = rateLimitPolicy === null
+    ? null
+    : new InMemoryRateLimiter(rateLimitPolicy, options.rateLimitNow);
+  app.addHook("onRequest", async (request, reply) => {
+    try {
+      assertTrustedRequestOrigin(request);
+      const kind = rateLimitClass(request);
+      if (limiter && kind !== "auth") {
+        const result = limiter.consume(kind, requestRateLimitIdentity(request));
+        reply.header("x-ratelimit-limit", result.limit);
+        reply.header("x-ratelimit-remaining", result.remaining);
+      }
+    } catch (error) {
+      const statusCode = Number((error as { statusCode?: number }).statusCode ?? 503);
+      const retryAfter = Number((error as { retryAfterSeconds?: number }).retryAfterSeconds ?? 0);
+      if (retryAfter > 0) reply.header("retry-after", retryAfter);
+      const message = statusCode >= 500
+        ? "request could not be completed"
+        : redactSensitiveText(error instanceof Error ? error.message : "request rejected").slice(0, 300);
+      return reply.status(statusCode).send({ error: message });
+    }
+  });
+  app.addHook("preValidation", async (request) => {
+    if (request.body !== undefined) assertBoundedJson(request.body, "request body");
+    const path = request.url.split("?", 1)[0] ?? request.url;
+    if (
+      (path === "/v1/generate" || path === "/v1/generate/stream") &&
+      isRecord(request.body) &&
+      Object.hasOwn(request.body, "anthropicApiKey")
+    ) {
+      throw Object.assign(new Error("BYO provider keys are accepted only in the x-forge-anthropic-key header"), {
+        statusCode: 400,
+      });
+    }
+  });
   app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_request, body, done) => {
     done(null, body);
   });
   const db = options.db ?? gatewayDb();
   const reviewToken = options.reviewToken ?? process.env.FORGE_REVIEW_TOKEN ?? null;
+  if (process.env.NODE_ENV === "production" && reviewToken !== null && reviewToken.length < 32) {
+    throw new Error("production FORGE_REVIEW_TOKEN must contain at least 32 characters");
+  }
   const deleteObjects =
     options.deleteObjects ??
     ((objects) => deleteStoredObjects(objectStorageConfigFromEnv(), objects));
@@ -632,8 +731,29 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     validatorPresent: existsSync(validatorBin()),
   }));
 
-  app.all("/auth", async (request, reply) => handleAuthRequest(request, reply));
-  app.all("/auth/*", async (request, reply) => handleAuthRequest(request, reply));
+  app.register(async (authApp) => {
+    if (rateLimitPolicy !== null) {
+      await authApp.register(fastifyRateLimit, {
+        global: true,
+        max: rateLimitPolicy.limits.auth,
+        timeWindow: rateLimitPolicy.windowMs,
+        cache: 20_000,
+        keyGenerator: (request) => secretFingerprint(requestRateLimitIdentity(request)),
+        errorResponseBuilder: () => ({ statusCode: 429, error: "rate limit exceeded" }),
+      });
+    }
+    const authRouteOptions = {
+      config: {
+        rateLimit: {
+          max: rateLimitPolicy?.limits.auth ?? DEFAULT_RATE_LIMIT_POLICY.limits.auth,
+          timeWindow: rateLimitPolicy?.windowMs ?? DEFAULT_RATE_LIMIT_POLICY.windowMs,
+          groupId: "auth",
+        },
+      },
+    };
+    authApp.all("/auth", authRouteOptions, async (request, reply) => handleAuthRequest(request, reply));
+    authApp.all("/auth/*", authRouteOptions, async (request, reply) => handleAuthRequest(request, reply));
+  });
 
   app.get("/v1/me", async (request, reply) => {
     try {
@@ -1143,8 +1263,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         body: Type.Object(
           {
             purpose: blobPurposeSchema,
-            contentType: Type.Optional(Type.String({ minLength: 1, maxLength: 160 })),
-            byteSize: Type.Optional(Type.Integer({ minimum: 0 })),
+            contentType: Type.Optional(Type.String({
+              minLength: 1,
+              maxLength: 160,
+              pattern: "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\\/-]*$",
+            })),
+            byteSize: Type.Integer({ minimum: 0, maximum: MAX_OBJECT_BYTES }),
             sha256: Type.Optional(sha256Schema),
             cacheKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
             metadata: Type.Optional(Type.Record(Type.String({ minLength: 1, maxLength: 80 }), Type.Unknown())),
@@ -1181,8 +1305,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           bucket: blob.bucket,
           objectKey: blob.objectKey,
           contentType: blob.contentType,
+          byteSize: blob.byteSize,
           expiresInSeconds: body.expiresInSeconds,
         });
+        reply.header("cache-control", "no-store");
         return reply.status(201).send({ blob, upload });
       } catch (error) {
         const mapped = routeError(error);
@@ -1242,8 +1368,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           bucket: blob.bucket,
           objectKey: blob.objectKey,
           contentType: blob.contentType,
+          byteSize: blob.byteSize,
           expiresInSeconds: body.expiresInSeconds,
         });
+        reply.header("cache-control", "no-store");
         return reply.send({ blob, access });
       } catch (error) {
         const mapped = routeError(error);
@@ -2454,17 +2582,21 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         let offers = body.offers ?? [];
         let source: "live" | "sandbox" = "sandbox";
         if (endpoint) {
-          const response = await fetch(endpoint, {
+          const endpointUrl = parseExternalHttpsUrl(endpoint, "vendor offer endpoint");
+          const { value: remote } = await fetchBoundedJson(endpointUrl.href, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ componentIds: body.componentIds ?? [], offers }),
+          }, {
+            label: "vendor offer endpoint",
+            allowedHosts: [endpointUrl.hostname],
+            maxResponseBytes: 512 * 1024,
           });
-          if (!response.ok) {
-            throw Object.assign(new Error(`vendor offer endpoint failed: ${response.status}`), { statusCode: 503 });
-          }
-          const remote = await response.json();
           if (!isRecord(remote) || !Array.isArray(remote.offers)) {
             throw Object.assign(new Error("vendor offer endpoint returned invalid JSON"), { statusCode: 503 });
+          }
+          if (remote.offers.length > 50) {
+            throw Object.assign(new Error("vendor offer endpoint returned too many offers"), { statusCode: 503 });
           }
           offers = remote.offers.filter(isRecord).map((offer) => ({
             componentId: String(offer.componentId ?? ""),
@@ -2477,11 +2609,15 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           }));
           source = "live";
         } else if (offers.length === 0 && body.componentIds?.length) {
+          const base = parseExternalHttpsUrl(
+            process.env.FORGE_VENDOR_OFFER_BASE_URL ?? "https://vendor.example.invalid/components",
+            "vendor offer base URL",
+          );
           offers = body.componentIds.map((componentId) => ({
             componentId,
             vendor: "sandbox-vendor-link",
             sku: componentId,
-            url: `${(process.env.FORGE_VENDOR_OFFER_BASE_URL ?? "https://vendor.example.invalid/components").replace(/\/$/, "")}/${encodeURIComponent(componentId)}`,
+            url: new URL(`${base.pathname.replace(/\/$/, "")}/${encodeURIComponent(componentId)}`, base).href,
             availability: "unknown",
           }));
         }
@@ -2491,9 +2627,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const inserted = [];
         for (const offer of offers) {
           if (!offer.componentId || !offer.vendor || !offer.url) continue;
+          const url = parseExternalHttpsUrl(offer.url, "vendor offer URL", { errorStatusCode: 400 }).href;
           inserted.push(
             await insertVendorOffer(db, {
               ...offer,
+              url,
               availability: offer.availability,
               source,
               provenance: {
@@ -2579,15 +2717,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const endpoint = process.env.FORGE_PRINT_QUOTE_ENDPOINT?.trim();
         let offer = isRecord(body.offer) ? body.offer : {};
         if (endpoint) {
-          const response = await fetch(endpoint, {
+          const endpointUrl = parseExternalHttpsUrl(endpoint, "print quote endpoint");
+          const { value: remote } = await fetchBoundedJson(endpointUrl.href, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ ...body, objectKey: blob.objectKey, bucket: blob.bucket, checkout: "off-platform" }),
+          }, {
+            label: "print quote endpoint",
+            allowedHosts: [endpointUrl.hostname],
+            maxResponseBytes: 512 * 1024,
           });
-          if (!response.ok) {
-            throw Object.assign(new Error(`print quote endpoint failed: ${response.status}`), { statusCode: 503 });
-          }
-          const remote = await response.json();
           if (!isRecord(remote) || !isRecord(remote.offer)) {
             throw Object.assign(new Error("print quote endpoint returned invalid JSON"), { statusCode: 503 });
           }
@@ -2605,7 +2744,9 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           offer: {
             provider: typeof offer.provider === "string" ? offer.provider : undefined,
             providerQuoteId: typeof offer.providerQuoteId === "string" ? offer.providerQuoteId : null,
-            quoteUrl: typeof offer.quoteUrl === "string" ? offer.quoteUrl : undefined,
+            quoteUrl: typeof offer.quoteUrl === "string"
+              ? parseExternalHttpsUrl(offer.quoteUrl, "print quote URL", { errorStatusCode: 400 }).href
+              : undefined,
             price: typeof offer.price === "number" ? offer.price : null,
             currency: typeof offer.currency === "string" ? offer.currency : null,
             leadTimeDays: typeof offer.leadTimeDays === "number" ? offer.leadTimeDays : null,
@@ -3244,7 +3385,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         );
         return reply.send({ items });
       } catch (error) {
-        return reply.status(503).send(unavailable(error));
+        return reply.status(503).send(unavailable());
       }
     },
   );
@@ -3288,7 +3429,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         }
         return reply.send(item);
       } catch (error) {
-        return reply.status(503).send(unavailable(error));
+        return reply.status(503).send(unavailable());
       }
     },
   );

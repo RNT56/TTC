@@ -2,7 +2,8 @@
 
 Source: plan §17 (binding), expanded into actionable gates and checklists. Anything
 touching admission, exports, hardware deployment, or user content must comply with
-this document.
+this document. Authentication, network, secret, upload, worker, callback, abuse, and
+archive controls are owned by [`THREAT-MODEL.md`](THREAT-MODEL.md).
 
 ## 1. Security model
 
@@ -20,12 +21,30 @@ deployment carries its ladder history. Provenance fields are validated
 **Surface minimization.** Compute workers have no public network surface (queue-driven
 only). One stateful service (Postgres) bounds the audit surface. Server secrets never
 reach the client; BYO Anthropic keys are client-held and sent per request to the
-generation endpoint, which forwards them to Anthropic but never persists or returns
-them.
+generation endpoint in `x-forge-anthropic-key`, which forwards them to Anthropic but
+never persists, logs, or returns them. JSON body keys and server-key fallback on the
+HTTP surface are refused.
 
 **Bridge safety = security.** The bridge never auto-arms; ladder transitions require
 deliberate physical confirmation; pairing-code auth for FORGE Link; the supervisor
 (≥ 200 Hz) can always veto the policy (~50 Hz advisory) and owns the fallback (D9).
+
+### 1.1 Application threat boundary (SEC-006)
+
+The deterministic gateway/worker boundary now fails closed on production auth
+misconfiguration, untrusted origin/host input, oversized or structurally hostile JSON,
+private/redirecting/unbounded external endpoints, unconstrained worker commands,
+unsafe object declarations, secret reflection/persistence, and unexpected release
+archive contents. Prompt/retrieval/provider text stays untrusted data; reviewed
+catalog policy, local refusal, allowlisted results, and the validator remain the hard
+authorities.
+
+These controls establish contract/fixture maturity. They do not prove deployed secret
+custody, connection-time egress enforcement against DNS rebinding, multi-replica rate
+or cost quotas, provider/APM log redaction, container isolation, callback authenticity,
+or incident/rotation/restore exercises. The canonical assets, actors, trust-boundary
+table, negative-test matrix, deployment checklist, and residual risks are in
+[`THREAT-MODEL.md`](THREAT-MODEL.md).
 
 ## 2. Platform exclusions (absolute)
 
@@ -174,6 +193,10 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 - [x] User content → versioned retention, time-bounded legal holds, pseudonymous
       tombstones, catalogued backup deletion/retry, and pre-restore suppression
       semantics (`SEC-005`, contract/fixture, 2026-07-13; live DR remains `OPS-005`)
-- [ ] Auth/provider/object/job surfaces → threat model, rate limits, negative tests, redaction, and credential rotation (`SEC-006`)
+- [x] Auth/provider/object/job/worker/release surfaces → canonical threat model,
+      fail-closed production config, header-only ephemeral keys, bounded JSON/network/
+      process/object/archive behavior, classed single-process rate limits, redaction,
+      negative tests, and explicit rotation/deployment guidance (`SEC-006`,
+      contract/fixture, 2026-07-13; distributed/live operations remain `OPS-*`)
 - [ ] Policy sharing → current dual-use/export-control gate, per-policy signoff, moderation ownership, and external rollout decision (`SEC-007`)
 - [ ] Desktop/Link release → signed artifacts, update rollback, pairing/revocation, and fault-injection evidence (`SEC-008`)

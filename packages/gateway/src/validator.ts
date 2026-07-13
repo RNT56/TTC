@@ -44,7 +44,7 @@ async function runSubcommand(
       execFile(
         validatorBin(),
         [subcommand, contractPath, outFlag, reportPath, ...catalogFlags(), ...extraFlags],
-        { timeout: 30_000 },
+        { timeout: 30_000, maxBuffer: 1024 * 1024, killSignal: "SIGKILL" },
         (error, _stdout, stderrBuf) => {
           const code =
             error && typeof (error as NodeJS.ErrnoException).code === "string"
@@ -80,7 +80,7 @@ export async function runPatch(contractJson: string, patchJson: string): Promise
       execFile(
         validatorBin(),
         ["patch", contractPath, patchPath, "--out", outPath],
-        { timeout: 30_000 },
+        { timeout: 30_000, maxBuffer: 1024 * 1024, killSignal: "SIGKILL" },
         (error, _stdout, stderrBuf) => {
           const code =
             error && typeof (error as NodeJS.ErrnoException).code === "string"

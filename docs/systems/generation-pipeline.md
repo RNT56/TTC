@@ -57,8 +57,9 @@ not require live Claude keys or exemplar copying. The opt-in Anthropic provider 
 `forge_emit_modelspec` is forced via `tool_choice`, its `input_schema` is the
 schemars-emitted ModelSpec schema, and repair calls switch to the D26 repair model
 with validator diagnostics in context. Keys are supplied per request through
-`x-forge-anthropic-key` or `anthropicApiKey`, or by deployment-owned
-`ANTHROPIC_API_KEY`; the gateway never returns the key. Every candidate is run
+`x-forge-anthropic-key` only. The HTTP surface rejects a JSON `anthropicApiKey`, does
+not fall back to deployment `ANTHROPIC_API_KEY`, and never persists, logs, or returns
+the key. Every candidate is run
 through `forge-validate`; rejected contracts may be repaired up to three times;
 exhausted attempts are re-run with D14 draft semantics and returned with
 diagnostics. The route stamps generated contracts with model version, prompt hash,
@@ -99,6 +100,24 @@ starts with a prompt hash rather than prompt content. If the audit insert fails,
 request fails closed and no provider or mutation runs. Migration `0015` is additive,
 requires no backfill, and is verified by the Postgres gate for both table presence
 and absence of raw-content/credential columns.
+
+### 2.2 Untrusted context and provider boundary (SEC-006)
+
+The user brief, retrieved catalog/pattern text, repair diagnostics, and provider tool
+input are untrusted data. Prompt construction places the instruction boundary before
+the data, labels catalog/pattern rows as never-instructions, and encloses retrieval,
+brief, and repair inputs in explicit data delimiters. This reduces instruction
+confusion; it does not establish provider trust.
+
+The hard boundary is local: pre-provider prohibited-brief refusal, approved catalog
+revisions and export policy, bounded JSON/tool output, allowlisted provider fields,
+and the real validator. Anthropic transport is exact-host HTTPS, public-address
+checked, redirect-free, limited to 60 seconds and 4 MiB, and returns generic failures.
+Production must additionally enforce egress at connection time because application
+DNS validation cannot eliminate rebinding. Generated-artifact, usage, and model
+persistence select explicit fields and regression tests prove the ephemeral key does
+not enter their query parameters. The complete residual-risk and deployment contract
+is [`../THREAT-MODEL.md`](../THREAT-MODEL.md).
 
 ## 3. Conversational editing (P4-005)
 
@@ -175,7 +194,9 @@ fuzz briefs (adversarial, dimensional extremes) with failures minimized into
 regression cases (XC-24); patch-editing round-trip tests; provenance completeness
 (PRV-001) on every admitted artifact; prohibited/safe brief classification,
 normalization evasion, direct-library defense, all guarded HTTP surfaces, provider
-non-invocation, audit failure, and prompt/key redaction (`SEC-002`).
+non-invocation, audit failure, prompt/key redaction (`SEC-002`); untrusted-context
+ordering, provider key persistence/reflection, env-fallback refusal, SSRF/DNS/
+redirect/content/timeout/byte bounds, and provider-output JSON bombs (`SEC-006`).
 
 ## 10. Phase mapping & backlog
 

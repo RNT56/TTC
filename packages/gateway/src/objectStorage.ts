@@ -5,6 +5,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { MAX_OBJECT_BYTES } from "./security.js";
 
 export type ObjectAccessAction = "upload" | "download";
 
@@ -33,6 +34,7 @@ export interface PresignObjectInput {
   bucket: string;
   objectKey: string;
   contentType?: string | null;
+  byteSize?: number | null;
   expiresInSeconds?: number;
   now?: Date;
 }
@@ -43,6 +45,12 @@ export interface StoredObjectRef {
 }
 
 export type ObjectDeletionAdapter = (objects: readonly StoredObjectRef[]) => Promise<void>;
+
+function assertObjectKey(objectKey: string): void {
+  if (!objectKey || objectKey.startsWith("/") || /(?:^|\/)\.\.(?:\/|$)|[\0\r\n]/.test(objectKey)) {
+    throw new Error("object key is invalid");
+  }
+}
 
 function objectStorageClient(config: ObjectStorageConfig): S3Client {
   return new S3Client({
@@ -57,7 +65,8 @@ function objectStorageClient(config: ObjectStorageConfig): S3Client {
 }
 
 export function objectStorageConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ObjectStorageConfig {
-  return {
+  const production = env.NODE_ENV === "production";
+  const config = {
     endpoint: env.FORGE_OBJECT_ENDPOINT ?? "http://localhost:9000",
     region: env.FORGE_OBJECT_REGION ?? env.AWS_REGION ?? "us-east-1",
     bucket: env.FORGE_OBJECT_BUCKET ?? "forge-artifacts",
@@ -65,8 +74,44 @@ export function objectStorageConfigFromEnv(env: NodeJS.ProcessEnv = process.env)
     secretAccessKey:
       env.FORGE_OBJECT_SECRET_ACCESS_KEY ?? env.AWS_SECRET_ACCESS_KEY ?? env.MINIO_ROOT_PASSWORD ?? "forge-dev-only",
     forcePathStyle: (env.FORGE_OBJECT_FORCE_PATH_STYLE ?? "1") !== "0",
-    deleteTimeoutMs: Math.max(1000, Number(env.FORGE_OBJECT_DELETE_TIMEOUT_MS ?? 15_000) || 15_000),
+    deleteTimeoutMs: Math.min(120_000, Math.max(1000, Number(env.FORGE_OBJECT_DELETE_TIMEOUT_MS ?? 15_000) || 15_000)),
   };
+  let endpoint: URL;
+  try {
+    endpoint = new URL(config.endpoint);
+  } catch {
+    throw new Error("FORGE_OBJECT_ENDPOINT must be an absolute HTTP(S) URL");
+  }
+  if (
+    !["http:", "https:"].includes(endpoint.protocol) ||
+    endpoint.username ||
+    endpoint.password ||
+    endpoint.search ||
+    endpoint.hash
+  ) {
+    throw new Error("FORGE_OBJECT_ENDPOINT must be a credential-free HTTP(S) endpoint");
+  }
+  if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(config.bucket)) {
+    throw new Error("FORGE_OBJECT_BUCKET must be an S3-compatible bucket name");
+  }
+  if (production) {
+    if (!env.FORGE_OBJECT_ENDPOINT || !env.FORGE_OBJECT_BUCKET) {
+      throw new Error("production object storage endpoint and bucket must be explicit");
+    }
+    if (
+      !env.FORGE_OBJECT_ACCESS_KEY_ID ||
+      !env.FORGE_OBJECT_SECRET_ACCESS_KEY ||
+      config.accessKeyId === "forge" ||
+      config.secretAccessKey === "forge-dev-only" ||
+      config.secretAccessKey.length < 16
+    ) {
+      throw new Error("production object storage requires explicit non-development credentials");
+    }
+    if (endpoint.protocol !== "https:" && env.FORGE_OBJECT_ALLOW_INSECURE_INTERNAL !== "1") {
+      throw new Error("production object storage must use HTTPS unless the internal transport exception is explicit");
+    }
+  }
+  return config;
 }
 
 export async function presignObjectAccess(
@@ -74,6 +119,20 @@ export async function presignObjectAccess(
   input: PresignObjectInput,
 ): Promise<ObjectAccessContract> {
   const expiresInSeconds = Math.min(Math.max(input.expiresInSeconds ?? 900, 60), 3600);
+  if (input.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+  assertObjectKey(input.objectKey);
+  if (input.action === "upload") {
+    if (!Number.isSafeInteger(input.byteSize) || Number(input.byteSize) < 0 || Number(input.byteSize) > MAX_OBJECT_BYTES) {
+      throw new Error("object upload requires a bounded declared byte size");
+    }
+    if (
+      typeof input.contentType !== "string" ||
+      input.contentType.length > 160 ||
+      !/^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\/-]*$/.test(input.contentType)
+    ) {
+      throw new Error("object upload requires a valid content type");
+    }
+  }
   const client = objectStorageClient(config);
   const command =
     input.action === "upload"
@@ -81,12 +140,20 @@ export async function presignObjectAccess(
           Bucket: input.bucket,
           Key: input.objectKey,
           ContentType: input.contentType ?? "application/octet-stream",
+          ContentLength: input.byteSize ?? undefined,
         })
       : new GetObjectCommand({
           Bucket: input.bucket,
           Key: input.objectKey,
+          ResponseContentDisposition: "attachment",
+          ResponseContentType: "application/octet-stream",
         });
-  const url = await getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+  let url: string;
+  try {
+    url = await getSignedUrl(client, command, { expiresIn: expiresInSeconds });
+  } finally {
+    client.destroy();
+  }
   const now = input.now ?? new Date();
   return {
     action: input.action,
@@ -107,7 +174,11 @@ export async function deleteStoredObjects(
   objects: readonly StoredObjectRef[],
 ): Promise<void> {
   const unique = new Map<string, StoredObjectRef>();
-  for (const object of objects) unique.set(`${object.bucket}\0${object.objectKey}`, object);
+  for (const object of objects) {
+    if (object.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+    assertObjectKey(object.objectKey);
+    unique.set(`${object.bucket}\0${object.objectKey}`, object);
+  }
   const byBucket = new Map<string, string[]>();
   for (const object of unique.values()) {
     const keys = byBucket.get(object.bucket) ?? [];

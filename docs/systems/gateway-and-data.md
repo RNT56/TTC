@@ -23,6 +23,12 @@ stateful service (Postgres) + object storage; local-first means most studio use 
 touches the gateway at all. napi-rs bindings exist as a hot-path option — measured
 against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 
+Every HTTP body and direct job/object/provider entry point is also structurally and
+resource bounded. Route schemas express product shape; the SEC-006 guards separately
+bound bytes, depth, nodes, keys, strings, time, destinations, and process output.
+Neither layer substitutes for the other. The canonical security contract is
+[`../THREAT-MODEL.md`](../THREAT-MODEL.md).
+
 ## 3. API surface
 
 | Area | Routes | Phase |
@@ -54,6 +60,15 @@ transactional jobs (job row commits atomically with the domain row that caused i
 photos, policies, telemetry logs, renders. Authenticated `/v1/blobs` registration
 creates owner-scoped `object_blobs` rows and returns AWS-compatible presigned
 upload/download contracts. Content-hash rows are idempotent per owner.
+Client registration requires and caps declared objects at 2 GiB, validates purpose/MIME and bounded
+metadata, rejects archive MIME/name classes, and never extracts user uploads.
+Presigned upload contracts bind declared length/type; presign and delete operations
+reject database-supplied buckets outside the configured boundary and validate keys
+before network I/O. Downloads are forced as `application/octet-stream` attachments;
+URLs expire within one hour and API responses are non-cacheable. Production requires
+explicit endpoint/bucket/access/secret configuration and HTTPS unless a reviewed
+internal-transport exception is set. Object-store IAM, encryption, prefix isolation,
+and actual received-byte policy remain deployment controls.
 Fixture job outputs currently materialize to `photoscan_artifacts`,
 `policy_artifacts`, `telemetry_logs`, `replay_artifacts`, and
 `maintenance_records`; `local` and `modal` jobs persist as queued rows for the
@@ -76,7 +91,10 @@ filters by status and export policy; `PATCH /v1/reviews/:id` records approve/rej
 reviewer, audit note, decision payload, reviewed time, and the export policy the
 row may flow through. When `FORGE_REVIEW_TOKEN` is set, review routes require
 `Authorization: Bearer <token>`; when unset, anonymous-local review mode stays
-available for the single-user local slice. The gateway treats the database as
+available for the single-user local slice. Production routes fail closed when it is
+absent; configured production tokens require at least 32 characters and complete
+bearer values use constant-shape comparison. Named revocable operator roles remain a
+future platform requirement before delegated administration. The gateway treats the database as
 optional for local validator-only use: review routes return 503 when the catalog
 database is unavailable, while validation/bake/BOM routes keep working from the
 binary and file catalog.
@@ -84,7 +102,12 @@ binary and file catalog.
 Auth is pulled forward for P4/P11: Auth.js core runs under Fastify at `/auth/*`,
 using GitHub OAuth and the Auth.js Postgres adapter schema. Local deterministic
 tests and automation can opt into header auth with `FORGE_DEV_AUTH=1`; public share
-reads never require authentication.
+reads never require authentication. Production startup requires an explicit
+credential-free HTTPS public origin and a non-development `AUTH_SECRET` of at least
+32 characters; GitHub OAuth credentials are an all-or-nothing pair and development
+header auth is forbidden. Auth.js receives a gateway-rebuilt URL/Host rather than
+caller forwarding headers, its CSRF behavior remains enabled, and unsafe cookie-
+authenticated requests require the configured origin.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
 transaction and returns format 1.2.0 across every explicit owner-scoped table,
@@ -130,9 +153,9 @@ policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` run
 the validator-gated synthesis loop with deterministic multi-archetype templates by
 default and an injectable adapter for live providers. Callers can opt into live
 Anthropic synthesis with
-`provider: "anthropic"` and a per-request `x-forge-anthropic-key` header or
-`anthropicApiKey` body field; deployments may instead provide `ANTHROPIC_API_KEY`
-for managed-key environments. The live path uses a forced client tool call whose
+`provider: "anthropic"` and a per-request `x-forge-anthropic-key` header. The HTTP
+surface rejects `anthropicApiKey` in JSON and does not read a deployment
+`ANTHROPIC_API_KEY` fallback. The live path uses a forced client tool call whose
 schema is the emitted ModelSpec JSON Schema, then feeds each candidate through the
 same validator/repair/draft loop. The JSON response returns attempt history,
 diagnostics, the admitted/draft/rejected contract, the validator report, and the
@@ -154,6 +177,16 @@ ID, contract JSON, validator report, attempts, approved-catalog context, and D26
 model pins. Authenticated generation also creates a user-owned `model_registry` row.
 This allowed-generation history is distinct from the minimal refusal ledger; a
 prohibited request never creates a generated artifact.
+Persistence selects these fields explicitly; the ephemeral provider credential is
+not serialized into generated artifacts, usage events, model lineage, responses, or
+errors. A regression test inspects all three persistence query parameter sets.
+
+Outbound Anthropic/vendor/print traffic is credential-free HTTPS, exact-host
+allowlisted where configured, public-address checked, redirect-free, content-type
+checked, and bounded by timeout, streamed bytes, and JSON structure. This reduces
+SSRF and provider-response bombs but does not eliminate DNS rebinding between the
+application check and socket connection; live deployment requires connection-time
+egress firewall/proxy enforcement.
 
 Migration `0015_generation_refusals.sql` is additive and has no backfill or object-
 storage impact. Expected storage is one small metadata row per refusal plus timestamp
@@ -200,9 +233,14 @@ about results, not produce different ones), not as the only place truth exists.
 
 ## 8. Observability & ops
 
-pino structured logs; Sentry; OpenTelemetry optional. Docker Compose on one
-Hetzner-class VM (gateway + Postgres + workers) + CDN for the studio; GPU burst-only.
-Backups: Postgres snapshots + object-storage lifecycle rules *(proposed)*.
+The current deterministic gateway disables Fastify logging. Production structured
+allowlist logging, trace/error tooling, secret-seeded log inspection, alerting, and
+retention remain `OPS-*`; raw authorization/cookies, bodies, provider output,
+presigned URLs, and private content must never be fields. Docker Compose on one
+Hetzner-class VM (gateway + Postgres + workers) + CDN for the studio remains a
+proposed first deployment; GPU is burst-only. Backups require the D35/OPS-005 catalog,
+deletion, restore-suppression, encryption, and recovery evidence rather than generic
+snapshot claims.
 
 The local Compose Studio keeps `/v1` and `/auth` same-origin and sets
 `FORGE_GATEWAY_PROXY=http://gateway:8080` for Vite's server-side proxy. Do not point
@@ -229,9 +267,21 @@ append-only enforcement, and deletion residue against real transactions. The obj
 smoke uploads a unique payload through MinIO, invokes the
 production batch-deletion adapter, and requires a 404 afterward.
 
+SEC-006 additionally tests production auth/object/admin failure, origin and header-
+only key behavior, secret persistence/reflection, recursive JSON bombs, direct job/
+object bounds, private-address and DNS/redirect/content/byte refusal, provider prompt
+injection containment, peer-IP/per-class limiter isolation that ignores unverified
+cookie/header identities, and safe generic errors. Auth routes additionally use the
+official Fastify 5-compatible `@fastify/rate-limit` plugin in their route scope so the
+framework and CodeQL can verify the authorization throttle; other classes retain the
+bounded classed store. Both are in-memory and single-process; shared atomic account/
+IP/provider rate/concurrency/spend quotas
+are required before multi-replica or billable-provider operation.
+
 ## 10. Open questions
 
-napi-rs hot-path vs binary-spawn (OD-08 — measure at P2-007; binary-spawn is the
-default until numbers say otherwise); SSE vs WebSocket for generation streaming (SSE
-assumed *(proposed)*); rate limiting strategy for anonymous share views;
+napi-rs hot-path vs binary-spawn (OD-08 resolved in favor of binary spawn); SSE vs
+WebSocket for generation streaming (SSE assumed *(proposed)*); distributed rate,
+concurrency, and cost quota backend including anonymous shares; named operator RBAC;
+connection-time egress enforcement; object quarantine before any future importer;
 object-storage provider pick (Hetzner vs R2 — cost decision at first deploy).

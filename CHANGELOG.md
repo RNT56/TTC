@@ -18,6 +18,67 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Close the SEC-006 contract and fixture boundary
+**Session:** Codex agent · branch `codex/sec006-threat-boundaries` · **Phase:** Wave 2 ·
+**TODO items:** SEC-006
+**Done:** Closed SEC-006 at contract/fixture maturity. Exact implementation head
+`1f7cf41` passed all 32 local gates plus PR #31 CI `29251276475`, security
+`29251276469`, Postgres/pgvector, TypeScript/gateway, Rust, Python, native Desktop,
+dependency review/audit, source SPDX, both CodeQL languages, and the PR-level CodeQL
+result. CodeQL's Fastify per-route model now follows the shared Auth.js rate-policy
+object directly; the runtime regression independently proves one forged-cookie request
+gets `200` and a rotated-cookie request from the same peer gets `429` under the scoped
+limiter.
+**Changed:** SEC-006 rate-policy plumbing and current-boundary, roadmap, execution,
+task, and changelog evidence.
+**Decisions:** none. The local Docker VM failure is not hidden, but the exact-tree
+remote database gate supplies the required acceptance proof. Production egress,
+shared quotas, log/secret drills, rotation, workload isolation, and incident evidence
+remain separate operations maturity gates.
+**Next:** merge PR #31 through protection, verify exact post-merge CI/security, then
+start the next dependency-complete Wave 2 builder-loop slice.
+**Blockers:** none for SEC-006 contract/fixture acceptance; protected merge and
+post-merge verification are workflow steps still to execute.
+
+## 2026-07-13 — Bound every application trust edge
+**Session:** Codex agent · branch `codex/sec006-threat-boundaries` · **Phase:** Wave 1/2 ·
+**TODO items:** PRE-004, P2-001, SEC-006, QA-001
+**Done:** Delivered the public-surface/ModelSpec 2.2/SEC-001..005 v0.2 stack through
+protected PR #30 at `d34b6fd`, closing PRE-004 and P2-001 with the registry deferral
+still explicit. Implemented the SEC-006 contract/fixture boundary: fail-closed
+production Auth.js configuration and trusted origin, built-in CSRF retention,
+development/admin authority controls, header-only request-ephemeral Anthropic keys,
+key persistence/reflection/env-fallback regression proof, recursive JSON and direct
+job/object limits, HTTPS/host/DNS/redirect/type/full-body-deadline/byte provider
+guards, delimiter-safe prompt data, configured-bucket/key-bound object presign and
+deletion, short-lived forced-download URLs, bounded validator and worker commands,
+peer-IP classed rate limits immune to forged session-cookie rotation, generic redacted
+errors, and exact bounded
+release archive preflight that rejects links, devices, FIFOs, and every other
+non-regular member before extraction. Added the canonical threat model with live
+deployment and residual-risk gates. `pnpm verify` passes all 32 steps with 59/59 real-
+validator gateway tests, 25/25 Brief-25, 104/104 workers, and all 4 archive-policy
+tests; the published v0.1.0 assets also pass the hardened verifier.
+**Changed:** gateway auth/security/generation/object/platform/server/validator code,
+tests, dependency manifest, and lockfile; worker network/command adapters and tests;
+release verifier/archive policy;
+committed-range patch-hygiene enforcement; `AGENTS.md`, threat/security/system/
+release/governance/risk/state/roadmap/task docs.
+**Decisions:** no new product authority. Added `@fastify/rate-limit` 11.1.x, the
+official Fastify 5-compatible line, only inside the Auth.js route scope so authorization
+throttling is framework-enforced and CodeQL-visible; the classed store retains the
+other four surfaces. Both are deliberately only single-process proof; production
+requires connection-time egress enforcement, shared
+rate/concurrency/spend state, secret/log/rotation drills, workload isolation, and
+incident/restore evidence. No inbound callback or user-archive importer exists.
+**Next:** obtain the exact-tree remote Postgres and remaining protected checks, then
+mark SEC-006 done, reconcile the evidence, merge, and proceed to the next autonomous
+Wave 2/quality slice.
+**Blockers:** local `pnpm verify:db` failed before migration with `ECONNRESET`; Docker
+Desktop's VM log reports filesystem inconsistency and no free space to extend its
+disk. The migrations are unchanged and PR #30's Postgres proof is green, but SEC-006
+will not close until the required remote Postgres check passes on this exact tree.
+
 ## 2026-07-13 — Publish and independently verify validator v0.1.0
 **Session:** Codex agent · branch `codex/v02-contract-security-stack` · **Phase:** G1 ·
 **TODO items:** GOV-008, GOV-009, OPS-011

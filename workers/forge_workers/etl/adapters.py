@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol
 
 from forge_workers.external import run_json_command
+from forge_workers.net_security import AddressResolver, fetch_public_https
 
 
 @dataclass(frozen=True)
@@ -76,9 +77,20 @@ class FixtureSourceFetcher:
 
 
 class HttpSourceFetcher:
-    def __init__(self, *, timeout_s: float = 10.0, min_interval_s: float = 1.0):
-        self.timeout_s = timeout_s
-        self.min_interval_s = min_interval_s
+    def __init__(
+        self,
+        *,
+        timeout_s: float = 10.0,
+        min_interval_s: float = 1.0,
+        max_bytes: int = 2 * 1024 * 1024,
+        resolver: AddressResolver | None = None,
+        opener: Any | None = None,
+    ):
+        self.timeout_s = max(1.0, min(float(timeout_s), 120.0))
+        self.min_interval_s = max(0.0, min(float(min_interval_s), 60.0))
+        self.max_bytes = max(1024, min(int(max_bytes), 8 * 1024 * 1024))
+        self.resolver = resolver
+        self.opener = opener
         self._last_fetch = 0.0
 
     def fetch(self, source_url: str) -> SourceBundle:
@@ -87,9 +99,19 @@ class HttpSourceFetcher:
         if wait_s > 0:
             time.sleep(wait_s)
         request = urllib.request.Request(source_url, headers={"User-Agent": "ForgedTTC-catalog-etl/0.1"})
-        with urllib.request.urlopen(request, timeout=self.timeout_s) as response:
-            raw = response.read()
-            content_type = response.headers.get("content-type", "application/octet-stream")
+        options: dict[str, Any] = {}
+        if self.resolver is not None:
+            options["resolver"] = self.resolver
+        if self.opener is not None:
+            options["opener"] = self.opener
+        raw, content_type = fetch_public_https(
+            request,
+            label="catalog source",
+            timeout_s=self.timeout_s,
+            max_bytes=self.max_bytes,
+            allowed_content_types=("text/*", "application/json", "application/ld+json", "application/xml"),
+            **options,
+        )
         self._last_fetch = time.monotonic()
         body = raw.decode("utf-8", errors="replace")
         return SourceBundle(

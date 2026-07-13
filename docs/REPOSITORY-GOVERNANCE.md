@@ -65,6 +65,13 @@ surface.
 - Security and release workflows generate a validated SPDX JSON source SBOM. Release
   publication still requires artifact-specific SBOM, provenance, and downloaded
   verification under GOV-008.
+- Release verification inspects every native/WASM archive under exact entry
+  allowlists plus compressed/member byte ceilings before extraction or installation;
+  traversal, absolute/drive/backslash paths, duplicates, or extra members fail.
+- Authentication, provider/network, secret, upload/object, worker/command, callback,
+  abuse-control, log, or archive changes must update `THREAT-MODEL.md` and its
+  negative-test matrix in the same PR. Deterministic application guards never replace
+  the listed live deployment controls.
 - Low-or-higher advisories fail the security audit. Exceptions require a dated owner,
   expiry, exploitability analysis, compensating control, and TODO/decision record.
 - Secret alerts are triaged immediately: revoke/rotate first, then remove exposure and
