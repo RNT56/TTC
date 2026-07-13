@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
@@ -42,4 +42,27 @@ const entries = execFileSync("tar", ["-tzf", join(dir, wasm)], { encoding: "utf8
 for (const required of ["package/package.json", "package/forge_wasm.js", "package/forge_wasm_bg.wasm"]) {
   if (!entries.split("\n").includes(required)) throw new Error(`WASM package missing ${required}`);
 }
-console.log(`verified downloaded validator release v${manifest.version}: checksums, SPDX, Linux smoke, WASM contents`);
+const consumer = mkdtempSync(join(tmpdir(), "forge-wasm-consumer-"));
+try {
+  writeFileSync(join(consumer, "package.json"), '{"name":"forge-release-consumer","private":true,"type":"module"}\n');
+  execFileSync(
+    "npm",
+    ["install", "--ignore-scripts", "--no-audit", "--no-fund", join(dir, wasm)],
+    { cwd: consumer, stdio: "inherit" },
+  );
+  writeFileSync(
+    join(consumer, "verify.mjs"),
+    `import { readFile } from "node:fs/promises";
+import init, { version } from "@forge/validate-wasm";
+const bytes = await readFile(new URL("./node_modules/@forge/validate-wasm/forge_wasm_bg.wasm", import.meta.url));
+await init({ module_or_path: bytes });
+const info = JSON.parse(version());
+if (info.packageVersion !== process.argv[2]) throw new Error(\`WASM version mismatch: \${info.packageVersion}\`);
+console.log(\`clean WASM consumer reports \${info.packageVersion}\`);
+`,
+  );
+  execFileSync(process.execPath, ["verify.mjs", manifest.version], { cwd: consumer, stdio: "inherit" });
+} finally {
+  rmSync(consumer, { recursive: true, force: true });
+}
+console.log(`verified downloaded validator release v${manifest.version}: checksums, SPDX, Linux smoke, clean WASM install`);

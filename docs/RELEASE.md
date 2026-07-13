@@ -33,7 +33,8 @@ Release only after that proof succeeds.
    limitations, and no broader product claim than the evidence permits.
 4. Dependency audits and CodeQL are green on the exact release commit.
 5. Run `.github/workflows/release.yml` manually first. Download its aggregate
-   artifact and verify it again outside the workflow:
+   artifact and verify it again outside the workflow. This also installs the WASM
+   tarball into a clean temporary npm consumer and checks its runtime version:
 
    ```bash
    gh run download <run-id> --name forgedttc-validator-release-<sha> --dir /tmp/forgedttc-release

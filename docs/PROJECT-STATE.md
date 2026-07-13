@@ -42,7 +42,7 @@ operational recovery, and field evidence remain incomplete.
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
-| G1 release workflow candidate | local pass; remote proof pending | four platform/package outputs, deterministic assembly, dual SPDX, manifest/checksums, attestation step, and downloaded Linux/WASM verification are implemented on `codex/g1-release-artifacts` |
+| G1 release workflow candidate | local pass; remote proof pending | four platform/package outputs, deterministic assembly, dual SPDX, manifest/checksums, attestation step, downloaded Linux verification, and clean installed WASM consumer proof are implemented on `codex/g1-release-artifacts` |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
