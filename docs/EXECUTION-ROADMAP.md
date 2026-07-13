@@ -33,15 +33,17 @@ The program is complete only when all four outcomes are independently true:
 
 The broad v0 and most deterministic fixture contracts exist. G0 and G1 are green on
 protected `main`: annotated validator v0.1.0 and its nine assets were produced by the
-release workflow, downloaded after publication, and independently verified. The next
-ordered task is protected delivery of the locally green SEC-006 application-threat
-boundary, followed by the dependency-complete Wave 2 builder loop.
+release workflow, downloaded after publication, and independently verified. SEC-006
+contract/fixture acceptance is complete on green PR #31; its protected merge and
+post-merge proof are the final handoff into the dependency-complete Wave 2 builder
+loop.
 
 Current Wave 1/2 blockers:
 
 - public support/security surfaces, ModelSpec 2.2, and SEC-001..005 are protected on
-  `main` through PR #30; SEC-006 remains a local contract/fixture candidate until its
-  exact-check PR and post-merge proof complete;
+  `main` through PR #30; SEC-006 is contract/fixture complete with exact local,
+  Postgres, CI, security, dependency, SBOM, CodeQL, and Desktop proof on PR #31, but
+  is not protected-main evidence until merge and post-merge checks complete;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -165,10 +167,9 @@ Work:
 - consume the delivered XC-28 equipped semantics in live catalog/retrieval flows;
 - retain the completed local license-export enforcement (`SEC-001`) and inspect its
   manifest/envelope proof against real OCCT artifacts in the provider sandbox;
-- retain the completed local prohibited-brief refusal/minimal-audit boundary and add
-  the SEC-006 application bounds plus production egress, shared quotas, log/secret
-  drills, provider monitoring, and adversarial evidence (`SEC-002`, `SEC-006`,
-  `OPS-*`);
+- retain the completed prohibited-brief refusal/minimal-audit and SEC-006 application
+  boundaries, then add production egress, shared quotas, log/secret drills, provider
+  monitoring, and adversarial deployment evidence (`SEC-002`, `SEC-006`, `OPS-*`);
 - retain the completed local owner-scoped export/primary deletion, append-only
   purpose/subject consent-withdrawal, and retention/legal-hold/tombstone/restore-
   suppression boundaries (`SEC-003..005`); production backup adapters, deletion

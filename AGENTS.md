@@ -70,10 +70,10 @@ production-proven or ready for live-provider, external-beta, or field claims.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
-- the SEC-006 candidate passes the 32-step `pnpm verify` gate on pinned Rust 1.96.0;
-  the last exact Postgres/pgvector proof is protected PR #30, while the local
-  SEC-006 rerun is pending a healthy Docker engine and must pass the required remote
-  Postgres check before the task closes;
+- the SEC-006 contract/fixture boundary passes the 32-step `pnpm verify` gate on
+  pinned Rust 1.96.0 and its exact-tree Postgres/pgvector, CI, security, dependency,
+  SBOM, CodeQL, and native Desktop checks are green on PR #31; protected merge and
+  post-merge proof remain before it becomes `main` evidence;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -95,11 +95,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   expiry adapters, and pre-restore suppression; production backup/restore remains
   `OPS-005` and is not implied by deterministic local evidence;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
-- the SEC-006 candidate adds pinned-origin authentication, header-only ephemeral
-  provider credentials, bounded JSON/network/process/object/archive boundaries,
-  prompt-injection containment, classed rate limits, and adversarial tests; production
-  egress enforcement, distributed quotas, secret rotation, and incident exercises
-  remain operations gates;
+- the completed SEC-006 contract/fixture boundary adds pinned-origin authentication,
+  header-only ephemeral provider credentials, bounded JSON/network/process/object/
+  archive boundaries, prompt-injection containment, classed rate limits, and
+  adversarial tests; production egress enforcement, distributed quotas, secret
+  rotation, and incident exercises remain operations gates;
 - `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
   and its nine-asset GitHub Release were built from protected `1093842`, attested,
   downloaded after publication, and independently re-verified;

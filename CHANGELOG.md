@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Close the SEC-006 contract and fixture boundary
+**Session:** Codex agent · branch `codex/sec006-threat-boundaries` · **Phase:** Wave 2 ·
+**TODO items:** SEC-006
+**Done:** Closed SEC-006 at contract/fixture maturity. Exact implementation head
+`1f7cf41` passed all 32 local gates plus PR #31 CI `29251276475`, security
+`29251276469`, Postgres/pgvector, TypeScript/gateway, Rust, Python, native Desktop,
+dependency review/audit, source SPDX, both CodeQL languages, and the PR-level CodeQL
+result. CodeQL's Fastify per-route model now follows the shared Auth.js rate-policy
+object directly; the runtime regression independently proves one forged-cookie request
+gets `200` and a rotated-cookie request from the same peer gets `429` under the scoped
+limiter.
+**Changed:** SEC-006 rate-policy plumbing and current-boundary, roadmap, execution,
+task, and changelog evidence.
+**Decisions:** none. The local Docker VM failure is not hidden, but the exact-tree
+remote database gate supplies the required acceptance proof. Production egress,
+shared quotas, log/secret drills, rotation, workload isolation, and incident evidence
+remain separate operations maturity gates.
+**Next:** merge PR #31 through protection, verify exact post-merge CI/security, then
+start the next dependency-complete Wave 2 builder-loop slice.
+**Blockers:** none for SEC-006 contract/fixture acceptance; protected merge and
+post-merge verification are workflow steps still to execute.
+
 ## 2026-07-13 — Bound every application trust edge
 **Session:** Codex agent · branch `codex/sec006-threat-boundaries` · **Phase:** Wave 1/2 ·
 **TODO items:** PRE-004, P2-001, SEC-006, QA-001
