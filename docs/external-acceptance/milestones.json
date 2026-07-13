@@ -1,0 +1,601 @@
+{
+  "schemaVersion": "forge.external-acceptance-registry.v1",
+  "evidenceVersion": "forge.external-acceptance.v1",
+  "maturityVocabulary": [
+    "contract",
+    "fixture",
+    "sandbox",
+    "live",
+    "field-proven"
+  ],
+  "dataPolicy": {
+    "repositoryStoresRawEvidence": false,
+    "repositoryStoresSecrets": false,
+    "publicRecord": "A minimized manifest or report may contain pseudonymous roles, content-addressed evidence references, measured outcomes, findings, limitations, and signoffs only.",
+    "privateRecord": "Raw photos, telemetry, participant identity, credentials, provider payloads, and signed originals belong in an access-controlled evidence store governed by consent, retention, export, deletion, and legal-hold policy."
+  },
+  "milestones": [
+    {
+      "id": "builder",
+      "title": "Independent builder acceptance",
+      "taskIds": ["QA-010", "EXT-001"],
+      "programGate": "G2",
+      "targetMaturity": "field-proven",
+      "allowedEnvironments": ["sandbox", "live"],
+      "requiredRoles": ["participant", "facilitator", "acceptance-owner"],
+      "independentRoles": ["participant"],
+      "requiredSignoffs": ["participant", "acceptance-owner"],
+      "requiredAuthorityRefs": ["participant-consent", "data-handling-notice"],
+      "requiredMeasurements": ["elapsedMinutes", "repairIterations", "usabilityFindings", "correctnessFindings"],
+      "prerequisites": [
+        "The participant has no repository knowledge and receives only the supported product entry point and acceptance script.",
+        "The selected catalog rows are reviewed, revision-pinned, cited, and license-classified.",
+        "QA-002 remains green on the exact product revision under test.",
+        "A support contact and safe data-handling notice are available."
+      ],
+      "stopConditions": [
+        "The participant needs repository access, source edits, hidden fixture knowledge, or direct database manipulation.",
+        "A validator, ownership, review, citation, license, privacy, or authorization gate is bypassed.",
+        "A secret or raw participant identifier appears in the acceptance manifest.",
+        "The tested deployment changes after the run begins without starting a new run."
+      ],
+      "steps": [
+        {
+          "id": "builder-open-supported-entry",
+          "title": "Open from the supported product entry",
+          "instruction": "Give the participant the documented URL or packaged entry point, no repository instructions, and record whether they can identify the starting action.",
+          "requiredEvidenceKinds": ["screen-recording-digest", "observation-log"]
+        },
+        {
+          "id": "builder-configure-reviewed-parts",
+          "title": "Configure reviewed catalog parts",
+          "instruction": "Select and equip reviewed, cited, revision-pinned parts and record every compatibility explanation or confusing state.",
+          "requiredEvidenceKinds": ["contract", "lockfile", "catalog-review-record", "observation-log"]
+        },
+        {
+          "id": "builder-validate-and-repair",
+          "title": "Validate and understand repair guidance",
+          "instruction": "Run the sovereign validator, resolve or explain diagnostics through supported UI, and retain the exact versioned report.",
+          "requiredEvidenceKinds": ["validator-report", "screen-recording-digest"]
+        },
+        {
+          "id": "builder-share-boundary",
+          "title": "Share the admitted design",
+          "instruction": "Create a read-only share and prove anonymous viewing while private owner routes remain inaccessible.",
+          "requiredEvidenceKinds": ["share-receipt", "authorization-check"]
+        },
+        {
+          "id": "builder-bom-export",
+          "title": "Produce BOM and lawful export",
+          "instruction": "Generate the BOM and export package; inspect SKUs, prices, citations, review state, attribution, and restricted-geometry fallbacks.",
+          "requiredEvidenceKinds": ["bom", "export-manifest", "license-manifest"]
+        },
+        {
+          "id": "builder-correctness-review",
+          "title": "Review physical and purchasing correctness",
+          "instruction": "Compare configured facts and artifacts against their cited sources and record correctness findings without silently correcting the evidence.",
+          "requiredEvidenceKinds": ["correctness-review", "finding-log"]
+        },
+        {
+          "id": "builder-usability-debrief",
+          "title": "Complete independent debrief and signoff",
+          "instruction": "Record task completion, elapsed time, confusion, assistance, failures, limitations, and independent participant attestation.",
+          "requiredEvidenceKinds": ["participant-attestation", "finding-log", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "photoscan",
+      "title": "Real photo-to-reviewed-part acceptance",
+      "taskIds": ["QA-010", "EXT-002", "P5-001", "P5-002", "P5-006"],
+      "programGate": "G3",
+      "targetMaturity": "sandbox",
+      "allowedEnvironments": ["sandbox", "live"],
+      "requiredRoles": ["object-owner", "catalog-reviewer", "acceptance-owner"],
+      "independentRoles": [],
+      "requiredSignoffs": ["object-owner", "catalog-reviewer", "acceptance-owner"],
+      "requiredAuthorityRefs": ["object-ownership", "photoscan-processing-consent", "data-handling-notice"],
+      "requiredMeasurements": ["wallTimeSeconds", "providerCost", "fitCoveragePercent", "hausdorffPercent", "cacheOutcome"],
+      "prerequisites": [
+        "The photographed motor is real, owned or authorized, non-sensitive, and consented for this processing purpose.",
+        "The provider sandbox, budget, retention behavior, timeout, and deletion path are known.",
+        "D13 thresholds and catalog admission rules are unchanged and machine-enforced."
+      ],
+      "stopConditions": [
+        "Ownership or photoscan-processing consent is missing, stale, or withdrawn.",
+        "The provider exceeds its time, byte, cost, retry, or destination boundary.",
+        "A failed D13 result is relabeled parametric or a row bypasses human review.",
+        "Raw photos, credentials, or private provider payloads are copied into Git evidence."
+      ],
+      "steps": [
+        {
+          "id": "photoscan-authority-and-capture",
+          "title": "Verify authority and capture protocol",
+          "instruction": "Verify ownership and purpose-specific consent, then record the reproducible single-image or multiview capture protocol.",
+          "requiredEvidenceKinds": ["consent-receipt", "capture-protocol", "source-photo-digest"]
+        },
+        {
+          "id": "photoscan-provider-run",
+          "title": "Run the real reconstruction provider",
+          "instruction": "Execute TRELLIS or COLMAP through the bounded sandbox adapter and retain provider, model, latency, cost, retry, and redaction evidence.",
+          "requiredEvidenceKinds": ["provider-receipt", "job-log", "reconstruction-artifact"]
+        },
+        {
+          "id": "photoscan-cache-and-integrity",
+          "title": "Verify cache and artifact integrity",
+          "instruction": "Prove source-keyed cache behavior, object integrity, provenance, and safe retry or cancellation behavior.",
+          "requiredEvidenceKinds": ["cache-record", "artifact-integrity-report", "provenance-record"]
+        },
+        {
+          "id": "photoscan-d13-refit",
+          "title": "Measure D13 primitive refit",
+          "instruction": "Measure fit coverage and Hausdorff residual; retain mesh-class fallback when either threshold fails.",
+          "requiredEvidenceKinds": ["d13-report", "refit-artifact"]
+        },
+        {
+          "id": "photoscan-owner-alignment",
+          "title": "Complete owner alignment",
+          "instruction": "Align scale, axes, datum ports, and envelope in the supported Studio flow and preserve the editable candidate.",
+          "requiredEvidenceKinds": ["alignment-record", "candidate-component"]
+        },
+        {
+          "id": "photoscan-catalog-review",
+          "title": "Review citations, license, and physical facts",
+          "instruction": "A catalog reviewer inspects identity, dimensions, mass, citations, confidence, license, and source conflicts before approval.",
+          "requiredEvidenceKinds": ["catalog-review-record", "citation-audit", "license-record"]
+        },
+        {
+          "id": "photoscan-equip-and-validate",
+          "title": "Equip and validate the reviewed component",
+          "instruction": "Equip the immutable reviewed revision in a real model, validate it, and record BOM/export behavior.",
+          "requiredEvidenceKinds": ["contract", "lockfile", "validator-report", "bom"]
+        },
+        {
+          "id": "photoscan-slo-and-deletion",
+          "title": "Assess SLO and data lifecycle",
+          "instruction": "Compare end-to-end time and cost to the declared SLO and exercise or verify the photo/export/deletion lifecycle without overclaiming provider erasure.",
+          "requiredEvidenceKinds": ["slo-report", "deletion-receipt", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "training",
+      "title": "Real training and browser-policy acceptance",
+      "taskIds": ["QA-010", "EXT-003", "P7-003", "P7-008", "P7-009", "P7-010"],
+      "programGate": "G3",
+      "targetMaturity": "sandbox",
+      "allowedEnvironments": ["sandbox", "live"],
+      "requiredRoles": ["training-operator", "scorecard-reviewer", "acceptance-owner"],
+      "independentRoles": [],
+      "requiredSignoffs": ["training-operator", "scorecard-reviewer", "acceptance-owner"],
+      "requiredAuthorityRefs": ["training-data-authority", "provider-budget-approval", "data-handling-notice"],
+      "requiredMeasurements": ["wallTimeSeconds", "providerCost", "trainingSeed", "scorecardValue", "browserInferenceRateHz"],
+      "prerequisites": [
+        "The admitted model, exact task, observation/action contract, randomization grid, success threshold, and budget are frozen before training.",
+        "The real SB3/MuJoCo provider path and output retention/deletion behavior are configured.",
+        "Ground-truth-only policies remain non-exportable."
+      ],
+      "stopConditions": [
+        "Task, scorecard threshold, seed policy, or evaluation corpus changes after results are observed.",
+        "Training data lacks authority or crosses its consent/retention boundary.",
+        "The exported artifact lacks lineage, I/O header, estimator evidence, or integrity hash.",
+        "Browser playback uses a fixture controller instead of the recorded ONNX artifact."
+      ],
+      "steps": [
+        {
+          "id": "training-freeze-inputs",
+          "title": "Freeze task and reproducibility inputs",
+          "instruction": "Record model hash, task version, simulator, estimator, observation/action layout, seed policy, randomization, threshold, hardware, and budget.",
+          "requiredEvidenceKinds": ["task-spec", "training-plan", "contract", "validator-report"]
+        },
+        {
+          "id": "training-live-run",
+          "title": "Run the real training pipeline",
+          "instruction": "Execute the bounded SB3/MuJoCo training adapter with progress, cancellation, timeout, resource, latency, and cost evidence.",
+          "requiredEvidenceKinds": ["job-log", "provider-receipt", "training-metrics"]
+        },
+        {
+          "id": "training-reproduce-evaluation",
+          "title": "Reproduce held-out evaluation",
+          "instruction": "Evaluate on the frozen scorecard corpus and retain per-seed outcomes, failure cases, and aggregate statistics.",
+          "requiredEvidenceKinds": ["scorecard", "evaluation-log", "replay-tape"]
+        },
+        {
+          "id": "training-export-policy",
+          "title": "Export the actual policy artifact",
+          "instruction": "Export ONNX with versioned I/O header, model/task lineage, estimator status, checksums, and admission decision.",
+          "requiredEvidenceKinds": ["onnx-policy", "onnx-header", "provenance-record", "artifact-integrity-report"]
+        },
+        {
+          "id": "training-browser-playback",
+          "title": "Run the exact ONNX artifact in browser",
+          "instruction": "Load the exact exported policy into the production Studio and prove hover or waypoint behavior, inference rate, supervisor state, and replay hash.",
+          "requiredEvidenceKinds": ["browser-playback-log", "screen-recording-digest", "replay-verification"]
+        },
+        {
+          "id": "training-failure-and-recovery",
+          "title": "Exercise failure and recovery",
+          "instruction": "Record at least one bounded cancellation, retry, provider outage, or non-passing scorecard path without relabeling it success.",
+          "requiredEvidenceKinds": ["failure-drill", "recovery-log"]
+        },
+        {
+          "id": "training-review",
+          "title": "Review scorecard and economics",
+          "instruction": "A reviewer confirms the passing threshold, actual artifact identity, reproducibility limits, wall time, cost, and any revised SLO.",
+          "requiredEvidenceKinds": ["scorecard-review", "cost-report", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "course",
+      "title": "External course and verified leaderboard acceptance",
+      "taskIds": ["QA-010", "EXT-005"],
+      "programGate": "G6",
+      "targetMaturity": "field-proven",
+      "allowedEnvironments": ["live"],
+      "requiredRoles": ["course-author", "competitor", "independent-verifier", "moderator", "acceptance-owner"],
+      "independentRoles": ["competitor", "independent-verifier"],
+      "requiredSignoffs": ["course-author", "independent-verifier", "acceptance-owner"],
+      "requiredAuthorityRefs": ["course-publication-consent", "leaderboard-publication-consent", "moderation-policy"],
+      "requiredMeasurements": ["submissionCount", "verifiedSubmissionCount", "verificationLatencySeconds", "moderationResponseSeconds"],
+      "prerequisites": [
+        "The course EnvSpec, scoring rules, task conversion, replay verifier, publication notice, and moderation path are versioned and public.",
+        "At least one competitor and the replay verifier are independent from the course author.",
+        "Leaderboard publication consent is explicit and current."
+      ],
+      "stopConditions": [
+        "A score is published without server-side replay verification or current consent.",
+        "The verifier, course definition, or scoring rule changes without invalidating affected results.",
+        "A prohibited course bypasses the pre-generation safety guard or moderation path.",
+        "Raw identity, credential, or private replay data is copied into the public evidence manifest."
+      ],
+      "steps": [
+        {
+          "id": "course-publish-versioned-spec",
+          "title": "Publish the versioned course",
+          "instruction": "Publish the admitted EnvSpec, task conversion, scoring rules, policy, provenance, and content hash.",
+          "requiredEvidenceKinds": ["env-spec", "course-record", "task-spec", "publication-receipt"]
+        },
+        {
+          "id": "course-independent-discovery",
+          "title": "Complete independent discovery",
+          "instruction": "An external competitor finds and enters the course through the supported public surface without repository assistance.",
+          "requiredEvidenceKinds": ["participant-attestation", "observation-log"]
+        },
+        {
+          "id": "course-submit-replay",
+          "title": "Submit a real replay",
+          "instruction": "The competitor completes the course and submits a replay bound to course, model, policy, and contract hashes.",
+          "requiredEvidenceKinds": ["replay-tape", "submission-receipt"]
+        },
+        {
+          "id": "course-server-verification",
+          "title": "Verify the submission independently",
+          "instruction": "The server and independent verifier reproduce the result, reject tampering, and retain exact verification output.",
+          "requiredEvidenceKinds": ["replay-verification", "tamper-negative", "verifier-attestation"]
+        },
+        {
+          "id": "course-leaderboard-publication",
+          "title": "Publish consented leaderboard result",
+          "instruction": "Publish only the consented pseudonymous result and prove withdrawal or privacy controls remain available.",
+          "requiredEvidenceKinds": ["leaderboard-record", "consent-receipt", "authorization-check"]
+        },
+        {
+          "id": "course-training-reuse",
+          "title": "Use the course directly as a training task",
+          "instruction": "Resolve the published course into the versioned training task without hand-copying or semantic drift.",
+          "requiredEvidenceKinds": ["task-resolution-report", "training-job-receipt"]
+        },
+        {
+          "id": "course-moderation-drill",
+          "title": "Exercise moderation and support",
+          "instruction": "Submit a bounded test report, exercise triage/appeal ownership, and measure response against the declared SLA.",
+          "requiredEvidenceKinds": ["moderation-record", "support-record", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "lab",
+      "title": "Controlled D12 hardware lab acceptance",
+      "taskIds": ["QA-010", "EXT-004", "SEC-008"],
+      "programGate": "G4",
+      "targetMaturity": "field-proven",
+      "allowedEnvironments": ["controlled-lab"],
+      "requiredRoles": ["operator", "supervisor", "observer", "acceptance-owner"],
+      "independentRoles": [],
+      "requiredSignoffs": ["operator", "supervisor", "observer", "acceptance-owner"],
+      "requiredAuthorityRefs": ["D30-approval", "D12-rig-confirmation", "telemetry-consent", "physical-confirmation", "incident-owner"],
+      "requiredMeasurements": ["policyRateHz", "supervisorRateHz", "killLatencyMs", "reconnectSeconds", "ghostDivergence"],
+      "prerequisites": [
+        "D30 remains accepted only for controlled D12 lab pilots; external beta is disabled.",
+        "The reference rover must complete the declared ladder before the reference quad attempt begins.",
+        "Lab mode, local provider, D12 rig allowlist, physical confirmation, supervisor, kill switch, incident owner, and telemetry consent are all current.",
+        "Props are removed for quad HITL and physical restraint is installed before tethered hover."
+      ],
+      "stopConditions": [
+        "Any path attempts to auto-arm, elevate policy authority, skip physical confirmation, or use a non-D12 rig.",
+        "The supervisor, kill switch, telemetry, observer, physical boundary, or local authority path is unavailable.",
+        "A validator, config-diff, battery, geofence, speed, attitude, rate, replay-order, or hash gate fails.",
+        "The incident owner calls stop; evidence capture never outranks physical safety."
+      ],
+      "steps": [
+        {
+          "id": "lab-preflight-authority",
+          "title": "Verify lab authority and stop conditions",
+          "instruction": "Record D30, lab mode, local provider, D12 rig, personnel, physical confirmation, consent, emergency plan, and signed preflight checklist.",
+          "requiredEvidenceKinds": ["lab-approval", "preflight-checklist", "consent-receipt"]
+        },
+        {
+          "id": "lab-rover-sitl",
+          "title": "Complete rover SITL",
+          "instruction": "Validate the admitted reference rover, policy scorecard, export, supervisor configuration, and replay before hardware connection.",
+          "requiredEvidenceKinds": ["validator-report", "scorecard", "replay-verification", "supervisor-config"]
+        },
+        {
+          "id": "lab-rover-hitl",
+          "title": "Complete rover HITL",
+          "instruction": "With wheels off ground, review the config diff, confirm stop fallback, measure command rates, and prove no-auto-arm.",
+          "requiredEvidenceKinds": ["config-diff", "timing-report", "no-auto-arm-proof", "deployment-log"]
+        },
+        {
+          "id": "lab-rover-constrained",
+          "title": "Complete constrained rover run",
+          "instruction": "Use the bounded course, exercise supervisor veto, kill, reconnect, power-loss recovery, telemetry, replay, ghost, and system-ID review.",
+          "requiredEvidenceKinds": ["supervisor-fault-drill", "kill-switch-report", "recovery-log", "telemetry-digest", "ghost-report", "sysid-review"]
+        },
+        {
+          "id": "lab-rover-signoff",
+          "title": "Sign off rover evidence",
+          "instruction": "All required lab roles sign the rover record before any quad stage starts.",
+          "requiredEvidenceKinds": ["signed-lab-record"]
+        },
+        {
+          "id": "lab-quad-sitl",
+          "title": "Complete quad SITL",
+          "instruction": "Validate the admitted reference quad, policy scorecard, supervisor envelope, and replay before hardware connection.",
+          "requiredEvidenceKinds": ["validator-report", "scorecard", "replay-verification", "supervisor-config"]
+        },
+        {
+          "id": "lab-quad-hitl",
+          "title": "Complete props-removed quad HITL",
+          "instruction": "With props removed, review config diff, prove firmware authority, measure policy/supervisor rates, fallback, physical confirmation, and no-auto-arm.",
+          "requiredEvidenceKinds": ["config-diff", "timing-report", "no-auto-arm-proof", "deployment-log"]
+        },
+        {
+          "id": "lab-quad-tethered",
+          "title": "Complete tethered quad run",
+          "instruction": "Photographically attest restraint, exercise supervisor veto and kill, measure recovery, capture telemetry, verify replay, inspect ghost divergence, and review system-ID output.",
+          "requiredEvidenceKinds": ["restraint-digest", "supervisor-fault-drill", "kill-switch-report", "recovery-log", "telemetry-digest", "ghost-report", "sysid-review"]
+        },
+        {
+          "id": "lab-failure-review",
+          "title": "Review failures and incident readiness",
+          "instruction": "Record every stop, anomaly, fallback, missed deadline, reconnect, power loss, and incident escalation without deleting failed attempts.",
+          "requiredEvidenceKinds": ["failure-log", "incident-record", "recovery-review"]
+        },
+        {
+          "id": "lab-final-signoff",
+          "title": "Complete signed controlled-lab record",
+          "instruction": "All required roles sign the final evidence pack; explicitly state that external hardware beta remains disabled.",
+          "requiredEvidenceKinds": ["signed-lab-record", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "print",
+      "title": "Lawful structural-print handoff acceptance",
+      "taskIds": ["QA-010", "EXT-007", "P11-006"],
+      "programGate": "G6",
+      "targetMaturity": "sandbox",
+      "allowedEnvironments": ["sandbox", "live"],
+      "requiredRoles": ["model-owner", "manufacturing-reviewer", "acceptance-owner"],
+      "independentRoles": [],
+      "requiredSignoffs": ["model-owner", "manufacturing-reviewer", "acceptance-owner"],
+      "requiredAuthorityRefs": ["license-export-approval", "provider-terms-review", "spend-approval"],
+      "requiredMeasurements": ["quotedPrice", "quoteLatencySeconds", "wallMarginMm", "bedMarginMm", "supportVolume"],
+      "prerequisites": [
+        "The structural part belongs to an admitted model and passes the selected manufacturing profile.",
+        "The assembly license ledger, provider terms, spend ceiling, exporter integrity check, and restricted-geometry behavior are current.",
+        "The provider path is a quote/link handoff; no direct checkout or seller payout is implied."
+      ],
+      "stopConditions": [
+        "DfM, license, attribution, restriction, manifest-hash, provider-destination, price, or profile validation fails.",
+        "Restricted geometry reaches the provider instead of an allowed envelope/link-out representation.",
+        "A stale, malformed, or unbounded provider response becomes purchase truth.",
+        "A quote is represented as an order, final price, or successful manufacture."
+      ],
+      "steps": [
+        {
+          "id": "print-freeze-admitted-part",
+          "title": "Freeze admitted structural part",
+          "instruction": "Record model, part, revision, geometry, mass, material, provenance, and validator identity before manufacturing evaluation.",
+          "requiredEvidenceKinds": ["contract", "validator-report", "part-manifest"]
+        },
+        {
+          "id": "print-dfm-profile",
+          "title": "Run DfM against an exact profile",
+          "instruction": "Measure wall, overhang, support, bed fit, orientation, and profile identity; failed checks remain failures.",
+          "requiredEvidenceKinds": ["dfm-report", "manufacturing-profile", "orientation-report"]
+        },
+        {
+          "id": "print-license-export",
+          "title": "Apply license-aware export",
+          "instruction": "Derive assembly policy, emit attribution manifest where required, and substitute restricted geometry with the documented envelope/link-out.",
+          "requiredEvidenceKinds": ["license-manifest", "export-manifest", "restricted-fallback-proof"]
+        },
+        {
+          "id": "print-artifact-integrity",
+          "title": "Verify artifact integrity",
+          "instruction": "Bind the lawful artifact, manufacturing profile, manifest, and provider request with content hashes and allowlisted metadata.",
+          "requiredEvidenceKinds": ["artifact-integrity-report", "provider-request-digest"]
+        },
+        {
+          "id": "print-provider-quote",
+          "title": "Obtain a real provider quote link",
+          "instruction": "Execute the bounded provider sandbox/live handoff and retain quote URL, normalized price/currency, latency, expiry, terms, and response provenance.",
+          "requiredEvidenceKinds": ["provider-receipt", "quote-record", "terms-record"]
+        },
+        {
+          "id": "print-negative-boundaries",
+          "title": "Exercise restricted and invalid handoffs",
+          "instruction": "Prove missing/contradictory license evidence, unsafe URLs, bad hashes, and malformed price/profile data fail before provider authority.",
+          "requiredEvidenceKinds": ["negative-test-report", "authorization-check"]
+        },
+        {
+          "id": "print-review",
+          "title": "Review quote usability and limitations",
+          "instruction": "A manufacturing reviewer confirms the provider received only lawful artifacts and records cost, latency, limitations, and whether physical manufacture remains unproven.",
+          "requiredEvidenceKinds": ["manufacturing-review", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "marketplace",
+      "title": "Independent publish-and-equip marketplace acceptance",
+      "taskIds": ["QA-010", "EXT-006", "SEC-007"],
+      "programGate": "G6",
+      "targetMaturity": "field-proven",
+      "allowedEnvironments": ["live"],
+      "requiredRoles": ["publisher", "equipper", "moderator", "acceptance-owner"],
+      "independentRoles": ["equipper"],
+      "requiredSignoffs": ["publisher", "equipper", "acceptance-owner"],
+      "requiredAuthorityRefs": ["model-publication-consent", "pattern-contribution-choice", "moderation-policy", "external-beta-approval"],
+      "requiredMeasurements": ["publishMinutes", "equipMinutes", "validatorOutcome", "moderationResponseSeconds"],
+      "prerequisites": [
+        "G2, privacy/deletion, moderation, support, and the explicit external-beta gate are satisfied for this bounded test.",
+        "The publisher and equipper are unrelated; the equipper receives no repository or private-owner access.",
+        "Only an admitted, reviewable model with current license/provenance evidence may be listed."
+      ],
+      "stopConditions": [
+        "A draft, rejected, prohibited, unlicensed, unreviewed, or unauthorized model becomes public.",
+        "The equipper receives publisher-private data, repository help, or bypass authority.",
+        "Pattern contribution, publication, policy use, or leaderboard consent is inferred from another purpose.",
+        "Moderation, takedown, appeal, export, or deletion ownership is unavailable."
+      ],
+      "steps": [
+        {
+          "id": "marketplace-publisher-authority",
+          "title": "Verify publisher authority",
+          "instruction": "Record ownership, publication consent, pattern-contribution choice, current notices, and account export/deletion path.",
+          "requiredEvidenceKinds": ["consent-receipt", "ownership-record", "privacy-check"]
+        },
+        {
+          "id": "marketplace-admission-review",
+          "title": "Verify admission and policy evidence",
+          "instruction": "Validate model, lockfile, catalog reviews, provenance, license/export policy, and prohibited-content guard before listing.",
+          "requiredEvidenceKinds": ["validator-report", "lockfile", "license-manifest", "safety-check"]
+        },
+        {
+          "id": "marketplace-publish",
+          "title": "Publish through the governed listing path",
+          "instruction": "Create, review, approve, and list the model while retaining owner/reviewer separation and audit history.",
+          "requiredEvidenceKinds": ["listing-record", "catalog-review-record", "audit-record"]
+        },
+        {
+          "id": "marketplace-independent-discovery",
+          "title": "Complete independent discovery",
+          "instruction": "An unrelated equipper discovers the listed model from the public surface without repository or publisher-private access.",
+          "requiredEvidenceKinds": ["participant-attestation", "authorization-check", "observation-log"]
+        },
+        {
+          "id": "marketplace-equip-and-validate",
+          "title": "Equip and validate independently",
+          "instruction": "The equipper opens, equips, configures, validates, and inspects consequences using only supported product controls.",
+          "requiredEvidenceKinds": ["equipped-contract", "validator-report", "consequence-report"]
+        },
+        {
+          "id": "marketplace-artifact-boundary",
+          "title": "Verify public and private artifact boundaries",
+          "instruction": "Confirm share/listing data are public as declared and owner review, jobs, account, and private blobs remain inaccessible.",
+          "requiredEvidenceKinds": ["authorization-check", "public-record-digest"]
+        },
+        {
+          "id": "marketplace-moderation-drill",
+          "title": "Exercise report, takedown, and appeal",
+          "instruction": "Run a bounded moderation drill with named owner, SLA, takedown, appeal, escalation, and repeat-infringer paths.",
+          "requiredEvidenceKinds": ["moderation-record", "appeal-record", "support-record"]
+        },
+        {
+          "id": "marketplace-debrief",
+          "title": "Complete independent debrief",
+          "instruction": "Publisher and equipper record usability, correctness, privacy, moderation, and support findings; no payout or direct-checkout claim is created.",
+          "requiredEvidenceKinds": ["participant-attestation", "finding-log", "acceptance-report"]
+        }
+      ]
+    },
+    {
+      "id": "maintenance",
+      "title": "Field event to repair-evidence acceptance",
+      "taskIds": ["QA-010", "EXT-008", "P12-002", "P12-004"],
+      "programGate": "G7",
+      "targetMaturity": "field-proven",
+      "allowedEnvironments": ["controlled-lab", "live"],
+      "requiredRoles": ["vehicle-owner", "maintenance-reviewer", "acceptance-owner"],
+      "independentRoles": [],
+      "requiredSignoffs": ["vehicle-owner", "maintenance-reviewer", "acceptance-owner"],
+      "requiredAuthorityRefs": ["telemetry-consent", "field-log-ownership", "retention-policy", "repair-review"],
+      "requiredMeasurements": ["captureDurationSeconds", "ghostDivergence", "sysidBeforeError", "sysidAfterError", "repairUsefulnessScore"],
+      "prerequisites": [
+        "A real Desktop-captured event belongs to the consenting owner and is bound to an admitted model, deployment, firmware/config, and timestamped contract hash.",
+        "Retention, export, deletion, sharing, and training-reuse choices are explicit and independent.",
+        "The system-ID proposal and repair sheet remain review artifacts, never automatic hardware authority."
+      ],
+      "stopConditions": [
+        "Telemetry ownership, consent, integrity, time order, contract hash, or retention authority is missing or withdrawn.",
+        "A system-ID change auto-applies, bypasses validation, or worsens the declared held-out metric without explicit rejection.",
+        "Repair evidence invents damage, parts, price, license, or provider truth.",
+        "Raw identifying telemetry or secrets are copied into the repository evidence record."
+      ],
+      "steps": [
+        {
+          "id": "maintenance-capture-field-event",
+          "title": "Capture a real field event",
+          "instruction": "Desktop records the real event with consent, owner, model/deployment hashes, firmware/config identity, monotonic time, and integrity evidence.",
+          "requiredEvidenceKinds": ["telemetry-digest", "capture-record", "consent-receipt", "provenance-record"]
+        },
+        {
+          "id": "maintenance-replay-verify",
+          "title": "Verify replay integrity",
+          "instruction": "Reproduce the tape against the exact twin, verify timestamp order and hashes, and retain explicit gaps or corrupt segments.",
+          "requiredEvidenceKinds": ["replay-verification", "integrity-report"]
+        },
+        {
+          "id": "maintenance-ghost-divergence",
+          "title": "Measure ghost divergence",
+          "instruction": "Render measured versus simulated motion and quantify divergence using the declared metric and time window.",
+          "requiredEvidenceKinds": ["ghost-report", "screen-recording-digest"]
+        },
+        {
+          "id": "maintenance-sysid-proposal",
+          "title": "Generate a reviewable system-ID proposal",
+          "instruction": "Fit bounded parameters from authorized data and emit a patch with provenance, confidence, before/after held-out error, and affected assumptions.",
+          "requiredEvidenceKinds": ["sysid-report", "model-patch", "evaluation-log"]
+        },
+        {
+          "id": "maintenance-sysid-decision",
+          "title": "Accept or reject the proposal",
+          "instruction": "A reviewer explicitly accepts or rejects the patch after validation, compatibility, replay, and policy re-evaluation; no auto-apply is allowed.",
+          "requiredEvidenceKinds": ["sysid-review", "validator-report", "policy-reevaluation"]
+        },
+        {
+          "id": "maintenance-impact-and-repair",
+          "title": "Produce impact and repair evidence",
+          "instruction": "Identify the bounded event window, affected assembly, inspection steps, sourced replacement parts, lawful quote links, and uncertainty.",
+          "requiredEvidenceKinds": ["impact-report", "repair-sheet", "bom", "quote-record"]
+        },
+        {
+          "id": "maintenance-usefulness-review",
+          "title": "Review repair usefulness",
+          "instruction": "The owner and reviewer score whether the evidence changed inspection or repair action and record false positives, omissions, and unresolved uncertainty.",
+          "requiredEvidenceKinds": ["maintenance-review", "finding-log"]
+        },
+        {
+          "id": "maintenance-lifecycle-close",
+          "title": "Close data lifecycle and acceptance",
+          "instruction": "Verify retention, sharing, export, deletion, and training-reuse choices; record what remains in backups without overclaiming erasure.",
+          "requiredEvidenceKinds": ["lifecycle-report", "acceptance-report"]
+        }
+      ]
+    }
+  ]
+}

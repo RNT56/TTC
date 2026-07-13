@@ -38,8 +38,9 @@ open.
 |---|---|---|
 | Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest verified runtime descendant `c80accb` and QA-008 anchor `2589503` are green; annotated `v0.1.0` published | PR #38 closes deterministic QA-002 product acceptance without changing queued-commerce, live-provider, external-user, hardware, or field maturity |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 33 required non-DB gates locally at QA-002 implementation head `6a8ce28`; protected `c80accb` passed exact CI/security | golden review joins Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene at the protected finish line |
+| `pnpm verify` | pass: 34 required non-DB gates locally on the QA-010 branch after frozen dependency install; protected remote proof remains pending | external acceptance joins golden review, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 61 gateway tests, Brief-25 25/25, oracles, budgets, fuzz, sim, packaging, pilots, 115 worker tests, and patch hygiene without requiring a participant/provider/hardware fixture; the worker suite also passes 115/115 separately under required Python 3.12.7 |
 | Golden artifact review | protected through PR #36: 14 registered families, 10/10 policy tests, 1 registry change covered by 1 new record | parent/current registries are unioned against same-patch weakening; record history and ownership cannot be redirected or overlapped; the frozen prototype is immutable; registered drift needs an append-only record with exact path, class, rationale, impact, evidence, and reviewer focus |
+| External acceptance policy | QA-010 implementation in progress: 8 milestone contracts/templates and 9/9 focused tests pass locally | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
@@ -223,6 +224,7 @@ decision; none is a hidden release claim.
 | Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
 | Desktop/hardware | fail-closed scaffold and pilot documents | signed apps, serial/capture, Link image, lab pilots, field logs |
 | Maintenance | deterministic wear/crash/repair/fleet contracts | Desktop-captured field evidence and operating fleet data |
+| External acceptance governance | versioned QA-010 registry/CLI/templates are implemented and focused-policy green on this branch | protected PR/post-merge proof for the kit, then separately executed and reviewed `EXT-001..008` runs with intended people/providers/hardware |
 
 ## 5. Reconciled truth and remaining discrepancies
 
@@ -246,8 +248,10 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   transactionally revalidated offer materialization with protected 20-migration,
   concurrency, and rollback proof; a real vendor sandbox with egress, quota,
   monitoring, recovery, billing, and terms evidence remains P11-005 work;
-- QA-002 deterministic builder acceptance is protected on `main`; accessibility,
-  performance, and independent-builder proof remain QA-003/006/010 and EXT-001;
+- QA-002 deterministic builder acceptance is protected on `main`; QA-010's
+  machine-checked external scripts/evidence templates are implemented locally but do
+  not close until protected delivery, and accessibility, performance, and the actual
+  independent-builder run remain QA-003/006 and EXT-001;
 - external/live/field acceptance remains open; public support/v0.2 delivery and the
   standalone v0.1.0 release/supply-chain gate are closed.
 
@@ -269,7 +273,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **200 tasks: 132 done, 37 in progress, 30 open,
+The stable ledger currently contains **200 tasks: 132 done, 38 in progress, 29 open,
 and 1 explicitly blocked**. All 8 recovery tasks are done. The 68 remaining tasks are
 the phase/live/field program plus 2 governance, 2 security, 7 quality, 10 operations,
 9 external-proof, and 2 documentation tasks; dependency order is owned by

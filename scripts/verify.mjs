@@ -35,6 +35,7 @@ try {
   run("Immutable workflow action pins", "node", ["scripts/check-actions-pinned.mjs"]);
   run("Compatibility matrix and version contracts", "node", ["scripts/check-compatibility.mjs"]);
   run("Golden artifact review policy", "pnpm", ["verify:goldens"]);
+  run("External acceptance evidence policy", "pnpm", ["verify:external-acceptance"]);
   run("Rust formatting", "cargo", ["fmt", "--all", "--check"]);
   run("Rust Clippy", "cargo", ["clippy", "--workspace", "--", "-D", "warnings"]);
   run("Rust workspace tests", "cargo", ["test", "--workspace"]);

@@ -34,19 +34,21 @@ Read in this order for every non-trivial session:
 5. `docs/TODO.md` — atomic task ledger with stable IDs.
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
-8. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
+8. `docs/EXTERNAL-ACCEPTANCE.md` before preparing, executing, reviewing, publishing,
+   or using evidence from an external user, provider, course, print, lab, or field run.
+9. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
    physics, validator, corpus, or committed generated-runtime artifact.
-9. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
+10. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
    outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
    or release archive handling.
-10. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+11. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-11. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+12. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
-12. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+13. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-13. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-14. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+14. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+15. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -87,9 +89,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   security workflow emits a validated SPDX source SBOM;
 - compatibility policy 1.0.0 is machine-checked across twelve public format/package
   boundaries; the CLI/WASM facades expose their active versions;
-- QA-008 is protected through PR #36: `pnpm verify` has 33 steps and fourteen
-  registered golden artifact families; the frozen prototype is immutable and any
-  registered re-pin requires a new append-only evidence record;
+- QA-008 is protected through PR #36: the protected baseline has 33 local steps and
+  fourteen registered golden artifact families; the frozen prototype is immutable
+  and any registered re-pin requires a new append-only evidence record. This QA-010
+  branch adds a 34th machine-checked external-acceptance policy step; it remains in
+  progress until exact protected PR and post-merge evidence exist;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -291,6 +295,31 @@ Application threat boundary (SEC-006):
   multi-replica or billable-provider claim. The complete control/residual-risk matrix
   is owned by `docs/THREAT-MODEL.md`.
 
+External acceptance boundary (QA-010/EXT-001..008):
+
+- the versioned registry and CLI under `docs/external-acceptance/` and `scripts/`
+  define and structurally validate builder, photoscan, training, course, controlled
+  lab, print, marketplace, and maintenance evidence; generated templates are not
+  proof and cannot close an external task;
+- initialize run packs outside the repository. Git may contain only a reviewed,
+  minimized record with pseudonymous roles, exact revision/deployment, content-
+  addressed evidence references, measurements, findings, limitations, and signoffs;
+  never raw identity, photos, telemetry, provider payloads, signatures, signed URLs,
+  or credentials;
+- freeze revision, environment, participants, authority, criteria, and thresholds
+  before a run. Preserve `failed` and `stopped` outcomes; a changed product,
+  deployment, participant, or criterion starts a new linked run;
+- independent builders, competitors, verifiers, and equippers receive no repository
+  access, private owner state, hidden fixture knowledge, direct database authority,
+  or implementation coaching. They may not also fill owner/facilitator roles;
+- a structurally valid manifest proves evidence completeness only. The acceptance
+  owner must resolve and hash-check retained artifacts, inspect role separation and
+  authority, bind the exact protected revision/checks, review limitations, and then
+  reconcile the owning `EXT-*`, phase, gate, maturity, risks, and changelog;
+- controlled hardware evidence remains D30/D12-only: rover before quad, local
+  provider, physical confirmation, no-auto-arm, supervisor and kill authority,
+  telemetry consent, signed lab record, and external beta disabled.
+
 ## 5. Session protocol
 
 1. Check `git status --short --branch`, current branch/worktree, recent commits, and
@@ -370,6 +399,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
+| External acceptance/evidence | `pnpm verify:external-acceptance`; initialize packs outside Git; freeze exact revision/environment/roles/authority; execute the registered milestone script; preserve pass/fail/stop evidence; validate the completed manifest; semantically inspect retained hashes/signoffs; required protected checks; no maturity/task closure from a template or structural pass alone |
 | Docs-only | link/reference scan; stable-ID coverage; status/evidence consistency; `git diff --check` |
 
 Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
@@ -395,6 +425,9 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 12. Decisions, exceptions, and owner reordering are recorded in `docs/DECISIONS.md`.
 13. Secrets are request- or service-scoped, never persisted or reflected; outbound
     destinations, resource use, and archive contents fail closed under explicit bounds.
+14. External evidence is pseudonymous, content-addressed, consent/retention-aware,
+    and revision-bound; generated templates and self-attestation never substitute for
+    the intended independent person, real provider, controlled rig, or field event.
 
 ## 9. Dependency and supply-chain policy
 
@@ -417,6 +450,9 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - `docs/EXECUTION-ROADMAP.md` owns sequencing, workstreams, gates, and handoffs.
 - `docs/GOLDEN-ARTIFACTS.md` and its machine registry own re-pin procedure,
   immutable-oracle policy, regeneration commands, and append-only review evidence.
+- `docs/EXTERNAL-ACCEPTANCE.md` and its machine registry own external scripts,
+  evidence shape, independence, data minimization, stop outcomes, and task-close
+  review; raw acceptance material stays outside Git.
 - System docs own implementation contracts; `DECISIONS.md` owns binding choices;
   `risk-register.md` owns risks and watch triggers.
 - Use executable commands and explicit acceptance evidence.

@@ -23,6 +23,10 @@ jobs:
         run: |
           node --test scripts/golden-artifact-policy.test.mjs
           node scripts/check-golden-artifacts.mjs
+      - name: external acceptance evidence policy
+        run: |
+          node --test scripts/external-acceptance-policy.test.mjs
+          node scripts/external-acceptance.mjs check
       - uses: dtolnay/rust-toolchain@c0e9df88980754dd93e5833b8dcb1b304c1fe173 # 1.96.0
         with:
           components: rustfmt, clippy
