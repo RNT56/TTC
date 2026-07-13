@@ -18,6 +18,27 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-12 — Build the release artifact verification chain
+**Session:** Codex agent · branch `codex/g1-release-artifacts` · **Phase:** G1 ·
+**TODO items:** GOV-008
+**Done:** Implemented Linux x86_64, macOS x86_64, Windows x86_64, and WASM build
+jobs; deterministic archive assembly; source/artifact SPDX; SHA-256 manifest;
+GitHub build-provenance attestation; annotated-tag/version enforcement; aggregate
+download verification; clean temporary npm consumer installation; explicit registry
+deferral; and the release/rollback/publication runbooks. The full 31-step local gate
+passes, and the assembly/checksum/SPDX/Linux-smoke/WASM inspection chain passes with
+local generated inputs.
+**Changed:** release workflow, packaging/assembly/metadata/verification scripts,
+WASM pack output, package commands, release notes/runbooks, agent entry, governance,
+state, execution roadmap, TODO, docs index, and changelog.
+**Decisions:** no new architectural decision; D31 version domains and the existing
+G1 evidence gate control this workflow.
+**Next:** Merge GOV-007, rebase/merge this stacked slice, run the release workflow
+manually on protected `main`, download the aggregate artifact, and record exact
+attestation/checksum/binary/WASM install proof before closing GOV-008/009.
+**Blockers:** GitHub-hosted runner start degradation delays PR proof; no local code
+or packaging blocker.
+
 ## 2026-07-12 — Freeze the public compatibility contract
 **Session:** Codex agent · branch `codex/g1-compatibility-policy` · **Phase:** G1 ·
 **TODO items:** GOV-007

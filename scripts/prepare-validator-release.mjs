@@ -19,6 +19,7 @@ const args = process.argv.slice(2);
 const outArg = args.indexOf("--out");
 const outDir = resolve(root, outArg >= 0 ? args[outArg + 1] : "dist-release");
 const skipBuilds = args.includes("--skip-builds");
+const wasmOnly = args.includes("--wasm-only");
 const keepOut = args.includes("--keep-out");
 const npmPackageName = process.env.FORGE_WASM_NPM_PACKAGE ?? "@forge/validate-wasm";
 
@@ -119,11 +120,13 @@ console.log(
 );
 
 if (!skipBuilds) {
-  run("cargo", ["build", "--release", "-p", "forge-validate"]);
-  copyIfExists(
-    join(root, "target", "release", process.platform === "win32" ? "forge-validate.exe" : "forge-validate"),
-    join(outDir, process.platform === "win32" ? "forge-validate-windows.exe" : "forge-validate"),
-  );
+  if (!wasmOnly) {
+    run("cargo", ["build", "--release", "-p", "forge-validate"]);
+    copyIfExists(
+      join(root, "target", "release", process.platform === "win32" ? "forge-validate.exe" : "forge-validate"),
+      join(outDir, process.platform === "win32" ? "forge-validate-windows.exe" : "forge-validate"),
+    );
+  }
 
   run("pnpm", [
     "exec",
@@ -177,6 +180,7 @@ copyIfExists(join(root, "NOTICE"), join(wasmPkgDir, "NOTICE"));
 copyIfExists(join(root, "README.md"), join(wasmPkgDir, "README.md"));
 
 run("npm", ["pack", "--dry-run", wasmPkgDir]);
+run("npm", ["pack", wasmPkgDir, "--pack-destination", outDir]);
 
 const manifest = {
   version,
