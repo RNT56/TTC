@@ -13,6 +13,7 @@ files until the failure is classified.
 | Gateway failure | build `forge-validate`, then `pnpm --filter @forge/gateway test` | request, response, spawned-validator stderr |
 | Studio failure | `pnpm --filter @forge/studio typecheck`; build; focused browser reproduction | URL/state, console error, screenshot only when visual |
 | Builder browser E2E failure | inspect `artifacts/e2e/qa002-browser-e2e.json`; rerun `DATABASE_URL=... pnpm verify:db` on the exact SHA | failed flow, WASM asset, service tail, screenshot, isolated DB migration count |
+| Browser support/accessibility failure | inspect `artifacts/e2e/qa003-browser-support.json`; rebuild Studio; rerun the failed engine with `FORGE_BROWSER_SUPPORT=1 FORGE_BROWSER_ENGINES=<engine> pnpm verify:browser-support`, then rerun all three | source revision, engine/version, tier, failed semantic/interaction/contrast/target/layout assertion, screenshot |
 | External acceptance policy/run failure | `pnpm verify:external-acceptance`; validate the private manifest with `node scripts/external-acceptance.mjs validate <path>` | exact revision/deployment, failed/stopped step, authority, content hashes, bounded findings/incidents, signoffs, limitations; no raw private evidence in Git |
 | Worker failure | `PYTHONPATH=workers python3 -m pytest workers/tests/<file> -q` | job kind, sanitized payload, deterministic output/error |
 | Database failure | `docker compose -f infra/docker-compose.yml up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
@@ -34,6 +35,12 @@ files until the failure is classified.
 - QA-002 must not be pointed at a shared or production database. Its runner requires
   the explicit marker set by `pnpm verify:db`, creates a unique development identity,
   and records only bounded service-log tails on failure.
+- A focused QA-003 engine run is diagnostic only. Closure requires the unmodified
+  Chromium, Firefox, and WebKit list, and WebKit remains a Safari compatibility proxy
+  rather than Apple-device proof. Firefox/WebKit must keep positive schematic draw
+  counts and no dynamic scene/Three.js requests; a blank semantic shell is not a
+  pass. Follow [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md) before changing tiers or
+  tolerances.
 - External acceptance failures are retained as `failed` or `stopped`; never change
   the revision, environment, participant, authority, criterion, or threshold in place
   to obtain a pass. Start a new linked run, keep private/raw evidence outside Git, and

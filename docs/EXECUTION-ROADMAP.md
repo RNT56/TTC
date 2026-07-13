@@ -40,6 +40,10 @@ exist at contract/fixture maturity through PRs #33/#34; docs-only evidence PR #3
 green at `4fe0df6`. QA-008 golden review is protected through PR #36 at `2589503`.
 QA-002 deterministic builder acceptance is protected through PR #38 at `c80accb`.
 QA-010 external-acceptance governance is protected through PR #40 at `8708de7`.
+QA-003's production-bundle Chromium/Firefox/WebKit accessibility and viewer-grade
+candidate passes locally: Chromium uses full WebGL, while Firefox/WebKit draw the
+core-baked Canvas2D schematic without loading scene/Three.js chunks. It has no
+protected evidence anchor yet.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
@@ -64,6 +68,12 @@ Current Wave 1/2 boundary:
   photoscan, training, course, D30/D12 lab, print, marketplace, and maintenance. It
   is closed through PR #40 at `8708de7`; the kit never substitutes for an intended
   participant, real provider, controlled rig, or field event;
+- QA-003 locally proves the real-WASM share/configurator journey across Chromium,
+  Firefox, and WebKit, including semantic names, skip/focus behavior, keyboard
+  orbit/equip/explode/blueprint, contrast, target size, responsive containment, and
+  reduced motion. Full WebGL is Chromium-only; Firefox/WebKit prove positive
+  schematic drawing and absence of WebGL presentation chunks. Required PR/post-merge
+  evidence and task closeout remain pending;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -202,6 +212,9 @@ Work:
   acceptance (`P11-005`);
 - retain closed QA-002 as the deterministic regression gate on every required
   data-plane run;
+- protect QA-003's three-engine accessibility/viewer-grade matrix without treating
+  its Canvas2D fallback as full 3D, or WebKit/a narrow viewport as Apple-device,
+  screen-reader, or mobile field proof;
 - execute the protected QA-010 builder script for `EXT-001` with an independent
   participant who has no repository knowledge.
 
@@ -322,6 +335,9 @@ Required practices:
 - treat warnings and test skips as explicit evidence, not success.
 - require the machine registry and a new append-only record before any protected
   schema/render/physics/validator/corpus/generated-runtime artifact re-pin.
+- retain the unmodified Chromium/Firefox/WebKit QA-003 matrix and its exact-revision
+  evidence for Studio semantics, interaction, layout, motion, renderer/presentation-
+  asset isolation, or support-tier changes.
 
 Exit: G0.
 
@@ -393,10 +409,10 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | Phase | Remaining phase work | Adjacent gates | Closure proof |
 |---|---|---|---|
 | P0 | none | decision hygiene | closed by D32; no fabricated historical variants |
-| P1 | P1-004, P1-017 | REC, QA perf/browser; QA-008 protected | real-mid-hardware budget; XC-28 configurator truth complete; registered re-pins are review-gated |
+| P1 | P1-004, P1-017 | REC, QA perf/browser; QA-003 local candidate; QA-008 protected | real-mid-hardware budget; XC-28 configurator truth complete; protected cross-engine accessibility evidence; registered re-pins are review-gated |
 | P2 | none | explicit registry deferral remains policy, not incomplete phase work | closed: v0.1 published/installed and v0.2 exact checks/post-merge proof |
 | P3 | P3-004 credentialed ETL sandbox and persistence | D36 native transport, SEC citation/license, OPS provider | one real extracted row is deduped, persisted immutably, owner-reviewed, and consumed through BOM/export with recovery evidence |
-| P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002 protected | Brief-25 >=20 remains green, deterministic browser E2E is protected, and an external R1 flow succeeds without bypassing review |
+| P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002 protected, QA-003 candidate | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | P6-010 live parity | QA external corpus | real engines and external driveable model |
 | P7 | P7-003, 008, 009, 010 | OPS cost, SEC policy data | live one-click passing policy in browser |
@@ -419,7 +435,8 @@ Required: G0, G1, compatibility statement, checksums/SBOM, install proof.
 Scope: local Studio, reviewed catalog, configuration, validation, BOM, share, lawful
 exports. Providers may remain sandboxed and clearly labeled.
 
-Required: validator preview, G2, privacy/deletion basics, browser E2E, support path.
+Required: validator preview, G2, privacy/deletion basics, browser E2E, protected
+supported-browser/accessibility matrix, and support path.
 
 ### Simulation/training alpha
 

@@ -1,7 +1,7 @@
 // Document/UI state only — loop and geometry state stays out of React
 // (BEST-PRACTICES §5; the render loop lives in scene.ts, truth in the core).
 import { create } from "zustand";
-import type { PartPick, QualityTier } from "./scene";
+import type { PartPick, QualityTier } from "./sceneController";
 import type { CoreSessionMode } from "./wasm";
 import type { BakeArtifact, Report } from "./types";
 

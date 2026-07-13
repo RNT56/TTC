@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { StudioScene } from "./scene";
+import type { SceneController } from "./sceneController";
+import { ViewerScene } from "./viewerScene";
 import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass, Report } from "./types";
 import {
@@ -213,6 +214,37 @@ const GENERATION_ARCHETYPES: GenerationArchetype[] = [
   "fixedwing",
 ];
 const ANTHROPIC_KEY_STORAGE_KEY = "forge.studio.anthropicKey";
+const MUTED = "#7d899b";
+
+interface BrowserSupport {
+  tier: "full-studio" | "viewer-grade";
+  surface: "desktop" | "chromium" | "non-chromium" | "mobile";
+  summary: string;
+}
+
+function detectBrowserSupport(): BrowserSupport {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return { tier: "viewer-grade", surface: "non-chromium", summary: "viewer capability pending" };
+  }
+  const desktop = "__TAURI_INTERNALS__" in window;
+  const ua = navigator.userAgent;
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  const chromium = /(?:Chrome|Chromium|Edg|OPR)\//.test(ua);
+  const isolated =
+    typeof SharedArrayBuffer !== "undefined" &&
+    (globalThis as typeof globalThis & { crossOriginIsolated?: boolean }).crossOriginIsolated === true;
+  if (desktop) {
+    return { tier: "full-studio", surface: "desktop", summary: "full Studio · Desktop power surface" };
+  }
+  if (chromium && !mobile && isolated) {
+    return { tier: "full-studio", surface: "chromium", summary: "full Studio · isolated desktop Chromium" };
+  }
+  return {
+    tier: "viewer-grade",
+    surface: mobile ? "mobile" : "non-chromium",
+    summary: "viewer grade · schematic view, orbit, equip, explode, blueprint, and local validation",
+  };
+}
 
 function readSessionValue(key: string): string {
   if (typeof window === "undefined") return "";
@@ -225,7 +257,7 @@ function readSessionValue(key: string): string {
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sceneRef = useRef<StudioScene | null>(null);
+  const sceneRef = useRef<SceneController | null>(null);
   const sessionRef = useRef<CoreSession | null>(null);
   /** long-lived bake handle — the patch → re-bake loop (P1-005/P1-014) */
   const bakeRef = useRef<CoreBake | null>(null);
@@ -309,6 +341,13 @@ export default function App() {
   const [briefEval, setBriefEval] = useState<unknown | null>(null);
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === "undefined" ? 1280 : window.innerWidth,
+  );
+  const [reducedMotion, setReducedMotion] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const reducedMotionRef = useRef(reducedMotion);
+  const [viewerAnnouncement, setViewerAnnouncement] = useState(
+    "Interactive viewer ready. Use arrow keys to orbit, Page Up or Page Down to zoom, E to explode, and B for blueprint.",
   );
 
   const refreshReviews = useCallback(async (status: ReviewStatus) => {
@@ -746,7 +785,24 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const scene = new StudioScene(canvas);
+    let disposed = false;
+    let cleanup: (() => void) | null = null;
+    void (async () => {
+    const browserSupport = detectBrowserSupport();
+    const scene: SceneController = browserSupport.tier === "viewer-grade"
+      ? new ViewerScene(canvas)
+      : new (await import("./scene")).StudioScene(canvas, "high");
+    if (disposed) {
+      scene.dispose();
+      return;
+    }
+    // Viewer-grade engines intentionally use the dependency-light Canvas2D
+    // schematic. The full Three.js/WebGL bundle is loaded only for full Studio;
+    // contract, bake, simulation, and validator truth are unchanged.
+    if (browserSupport.tier === "viewer-grade") {
+      useStudio.getState().setTier("low");
+    }
+    scene.setReducedMotion(reducedMotionRef.current);
     sceneRef.current = scene;
     const onResize = () =>
       scene.resize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight);
@@ -810,7 +866,7 @@ export default function App() {
         scene.setPose(sessionRef.current.nodeNames, sessionRef.current.poseView());
         coreAccum += performance.now() - t0;
         // follow camera (P1-013): orbit target eases toward the driver
-        if (!st.paused) scene.followFocus(sessionRef.current.focus(), dt);
+        if (!st.paused && !reducedMotionRef.current) scene.followFocus(sessionRef.current.focus(), dt);
       }
       if (fpsAccum >= 0.5) {
         const stats = scene.stats();
@@ -888,10 +944,12 @@ export default function App() {
       select: (partIndex: number | null) => scene.setSelected(partIndex),
       setTier: (t: "high" | "medium" | "low") => scene.setTier(t),
       stats: () => scene.stats(),
+      camera: () => scene.cameraState(),
+      quality: () => scene.qualityState(),
       loaded: () => Boolean(useStudio.getState().artifact),
     };
 
-    return () => {
+    cleanup = () => {
       window.removeEventListener("resize", onResize);
       sessionRef.current?.dispose();
       sessionRef.current = null;
@@ -899,6 +957,11 @@ export default function App() {
       bakeRef.current = null;
       scene.dispose();
       sceneRef.current = null;
+    };
+    })();
+    return () => {
+      disposed = true;
+      cleanup?.();
     };
   }, [loadDemo]);
 
@@ -989,6 +1052,18 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      reducedMotionRef.current = query.matches;
+      setReducedMotion(query.matches);
+      sceneRef.current?.setReducedMotion(query.matches);
+    };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (jogDrag.current) return; // a jog drag ate this gesture
     const rect = e.currentTarget.getBoundingClientRect();
@@ -997,6 +1072,54 @@ export default function App() {
       -((e.clientY - rect.top) / rect.height) * 2 + 1,
     );
     s.setSelected(pick ?? null);
+  };
+
+  const onCanvasKeyDown = (event: React.KeyboardEvent<HTMLCanvasElement>) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    let message: string | null = null;
+    switch (event.key) {
+      case "ArrowLeft":
+        scene.nudgeCamera(-0.12, 0);
+        message = "Orbited left";
+        break;
+      case "ArrowRight":
+        scene.nudgeCamera(0.12, 0);
+        message = "Orbited right";
+        break;
+      case "ArrowUp":
+        scene.nudgeCamera(0, 0.1);
+        message = "Orbited up";
+        break;
+      case "ArrowDown":
+        scene.nudgeCamera(0, -0.1);
+        message = "Orbited down";
+        break;
+      case "PageUp":
+        scene.nudgeCamera(0, 0, 0.88);
+        message = "Zoomed in";
+        break;
+      case "PageDown":
+        scene.nudgeCamera(0, 0, 1.14);
+        message = "Zoomed out";
+        break;
+      case "e":
+      case "E": {
+        const next = Math.max(0, Math.min(1, s.explode + (event.shiftKey ? -0.1 : 0.1)));
+        s.setExplode(next);
+        message = `Explode ${Math.round(next * 100)} percent`;
+        break;
+      }
+      case "b":
+      case "B":
+        s.setBlueprint(!s.blueprint);
+        message = `Blueprint ${s.blueprint ? "off" : "on"}`;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    setViewerAnnouncement(message);
   };
 
   // teach-pendant jog (P1-013): drag the selected node, X→yaw, Y→pitch
@@ -1577,18 +1700,47 @@ export default function App() {
   const repairPin = generationModels.find((model) => model.role === "repair");
   const shareDisabled = !s.contractJson || s.report?.verdict !== "admitted";
   const configurator = configuratorContract(s.contractJson);
+  const browserSupport = detectBrowserSupport();
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
+    <>
+      <a className="skip-link" href="#studio-controls">Skip to Studio controls</a>
+      <main
+        id="studio-workspace"
+        data-testid="studio-workspace"
+        data-layout={narrow ? "narrow" : "wide"}
+        style={{ position: "relative", width: "100vw", height: "100vh" }}
+      >
       <canvas
         ref={canvasRef}
+        data-testid="studio-viewer"
+        data-renderer={browserSupport.tier === "viewer-grade" ? "schematic-2d" : "webgl"}
+        role="region"
+        aria-roledescription={browserSupport.tier === "viewer-grade"
+          ? "interactive robot schematic"
+          : "interactive 3D robot viewer"}
+        aria-label="Interactive robot assembly viewer"
+        aria-describedby="viewer-keyboard-help"
+        tabIndex={0}
         onClick={onCanvasClick}
+        onKeyDown={onCanvasKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         style={{ width: "100%", height: "100%", display: "block" }}
       />
+      <p id="viewer-keyboard-help" className="sr-only">
+        Use arrow keys to orbit, Page Up and Page Down to zoom, E and Shift E to change explode,
+        and B to toggle blueprint.
+      </p>
+      <div className="sr-only" role="status" aria-live="polite" data-testid="viewer-announcement">
+        {viewerAnnouncement}
+      </div>
 
       <div
+        id="studio-controls"
+        role="region"
+        aria-labelledby="studio-title"
+        tabIndex={-1}
         style={{
           ...panel,
           top: 12,
@@ -1599,9 +1751,22 @@ export default function App() {
           overflow: "auto",
         }}
       >
-        <div style={{ color: "#8fa3bf", marginBottom: 6 }}>ForgedTTC STUDIO</div>
+        <h1 id="studio-title" style={{ color: "#8fa3bf", margin: "0 0 6px", fontSize: 14 }}>
+          ForgedTTC Studio
+        </h1>
+        <div
+          data-testid="browser-support"
+          data-tier={browserSupport.tier}
+          data-surface={browserSupport.surface}
+          data-reduced-motion={String(reducedMotion)}
+          role="status"
+          style={{ color: MUTED, marginBottom: 6 }}
+        >
+          {browserSupport.summary}{reducedMotion ? " · reduced motion" : ""}
+        </div>
         <select
           data-testid="demo-model"
+          aria-label="demo model"
           value={s.modelId}
           onChange={(e) => {
             s.setModelId(e.target.value);
@@ -1615,12 +1780,12 @@ export default function App() {
             </option>
           ))}
         </select>
-        <div style={{ color: "#6b7686", marginTop: 4 }}>
+        <div style={{ color: MUTED, marginTop: 4 }}>
           {s.artifact
             ? `${s.artifact.counts.parts} parts · ${s.artifact.counts.faces} faces`
             : "loading…"}
         </div>
-        <div style={{ color: "#6b7686" }}>drop a .forge.json to validate in-browser</div>
+        <div data-testid="studio-help" style={{ color: MUTED }}>drop a .forge.json to validate in-browser</div>
         <button
           data-testid="share-model"
           onClick={() => void share()}
@@ -1630,7 +1795,7 @@ export default function App() {
         >
           share
         </button>
-        {shareUrl && <div data-testid="share-url" style={{ color: "#6b7686", wordBreak: "break-word" }}>{shareUrl}</div>}
+        {shareUrl && <div data-testid="share-url" role="status" style={{ color: MUTED, wordBreak: "break-word" }}>{shareUrl}</div>}
 
         {configurator.slots.length > 0 && (
           <details data-testid="variant-configurator" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
@@ -1640,7 +1805,7 @@ export default function App() {
             {configurator.slots.map((slot, slotIndex) => (
               <div key={slot.id} style={{ marginTop: 8 }}>
                 <div style={{ color: "#cfd6df" }}>{slot.label}</div>
-                <div style={{ color: "#6b7686" }}>{slot.mountNodes.join(", ") || "no mount"}</div>
+                <div style={{ color: "#7d899b" }}>{slot.mountNodes.join(", ") || "no mount"}</div>
                 <div style={{ display: "grid", gap: 5, marginTop: 5 }}>
                   {slot.variants.map((variant) => {
                     const equipped = slot.equippedVariantId === variant.id;
@@ -1671,7 +1836,7 @@ export default function App() {
                         <span style={{ display: "block", color: equipped ? "#39c8ff" : "#cfd6df" }}>
                           {equipped ? "equipped · " : ""}{variant.name ?? variant.id}
                         </span>
-                        <span style={{ display: "block", color: "#6b7686", whiteSpace: "normal" }}>
+                        <span style={{ display: "block", color: "#7d899b", whiteSpace: "normal" }}>
                           {variantConsequence(variant, configurator.lockfile)}
                         </span>
                       </button>
@@ -1699,7 +1864,7 @@ export default function App() {
               refresh
             </button>
           </div>
-          <div data-testid="account-identity" style={{ color: "#6b7686", wordBreak: "break-word" }}>
+          <div data-testid="account-identity" style={{ color: "#7d899b", wordBreak: "break-word" }}>
             {me?.authenticated ? me.user?.email ?? me.user?.name ?? me.user?.id : "not signed in"}
           </div>
           {modelError && <div data-testid="model-error" style={{ color: "#e6a23c", wordBreak: "break-word" }}>{modelError}</div>}
@@ -1718,6 +1883,7 @@ export default function App() {
           {models.length > 0 && (
             <select
               data-testid="model-select"
+              aria-label="saved model"
               value={activeModelId ?? ""}
               onChange={(event) => setActiveModelId(event.target.value || null)}
               style={{ ...selectStyle, width: "100%", marginTop: 6 }}
@@ -1732,6 +1898,7 @@ export default function App() {
           <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
             <input
               data-testid="model-edit-prompt"
+              aria-label="model edit instruction"
               value={editPrompt}
               onChange={(event) => setEditPrompt(event.target.value)}
               style={{ ...inputStyle, flex: 1 }}
@@ -1751,10 +1918,11 @@ export default function App() {
             style={{ width: "100%", display: "block" }}
           />
         </label>
-        <label style={{ display: "block", marginTop: 6, color: "#6b7686" }}>
+        <label style={{ display: "block", marginTop: 6, color: "#7d899b" }}>
           quality{" "}
           <select
             value={s.tier}
+            disabled={browserSupport.tier === "viewer-grade"}
             onChange={(e) => {
               const t = e.target.value as "high" | "medium" | "low";
               s.setTier(t);
@@ -1817,7 +1985,7 @@ export default function App() {
               )}
             </div>
             {s.jogging && (
-              <div style={{ color: "#6b7686", marginTop: 4 }}>
+              <div style={{ color: "#7d899b", marginTop: 4 }}>
                 {s.selected ? `drag to jog ${s.selected.node}` : "select a part to jog its node"}
               </div>
             )}
@@ -1839,6 +2007,7 @@ export default function App() {
           </div>
           <textarea
             data-testid="generation-prompt"
+            aria-label="generation brief"
             value={generationPrompt}
             onChange={(event) => setGenerationPrompt(event.target.value)}
             rows={3}
@@ -1936,7 +2105,7 @@ export default function App() {
               </label>
             )}
           </div>
-          <div style={{ color: "#6b7686", marginTop: 5, wordBreak: "break-word" }}>
+          <div style={{ color: "#7d899b", marginTop: 5, wordBreak: "break-word" }}>
             {generationProvider === "anthropic"
               ? generationModelsError
                 ? `models unavailable · ${generationModelsError}`
@@ -1962,7 +2131,7 @@ export default function App() {
             </div>
           )}
           {generationStages.length > 0 && (
-            <div style={{ marginTop: 5, color: "#6b7686" }}>
+            <div style={{ marginTop: 5, color: "#7d899b" }}>
               {generationStages.slice(-5).map((stage, index) => (
                 <div key={`${String(stage.stage ?? "stage")}-${index}`}>
                   {String(stage.stage ?? "stage")}
@@ -1973,7 +2142,7 @@ export default function App() {
           )}
           {generationResult && (
             <div style={{ marginTop: 6 }}>
-              <div style={{ color: "#6b7686" }}>
+              <div style={{ color: "#7d899b" }}>
                 {generationResult.context.retrievedComponents.length} approved rows ·{" "}
                 {generationResult.context.retrievedPatterns.length} patterns · prefix{" "}
                 {generationResult.context.promptPrefix.hash.slice(0, 8)}
@@ -2015,7 +2184,7 @@ export default function App() {
                 style={{ display: "none" }}
               />
             </label>
-            <span style={{ color: scanUploadBusy ? "#e6a23c" : "#6b7686", flex: 1 }}>
+            <span style={{ color: scanUploadBusy ? "#e6a23c" : "#7d899b", flex: 1 }}>
               {scanUploadBusy ? "uploading" : scanUploadMessage ?? `${scanImageRefs.length} uploaded`}
             </span>
             {scanImageRefs.length > 0 && (
@@ -2068,13 +2237,13 @@ export default function App() {
             ))}
           </div>
           {jobsError && <div style={{ color: "#e6a23c", marginTop: 5 }}>{jobsError}</div>}
-          {policyPlaybackMessage && <div style={{ color: "#6b7686", marginTop: 5 }}>{policyPlaybackMessage}</div>}
+          {policyPlaybackMessage && <div style={{ color: "#7d899b", marginTop: 5 }}>{policyPlaybackMessage}</div>}
           {jobs.slice(0, 5).map((job) => (
             <div data-testid={`job-row-${job.kind}`} key={job.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
               <div style={{ color: verdictColor(job.status === "succeeded" ? "admitted" : "draft") }}>
                 {job.kind} · {job.status}
               </div>
-              <div style={{ color: "#6b7686" }}>{job.provider} · {job.id}</div>
+              <div style={{ color: "#7d899b" }}>{job.provider} · {job.id}</div>
               <JobDetails
                 job={job}
                 onApplyPatch={(ops) => void applyPatch(ops)}
@@ -2164,6 +2333,7 @@ export default function App() {
             <span style={{ color: "#8fa3bf", flex: 1 }}>catalog review</span>
             <select
               data-testid="review-status-filter"
+              aria-label="catalog review status"
               value={reviewStatus}
               onChange={(e) => setReviewFilter(e.target.value as ReviewStatus)}
               style={selectStyle}
@@ -2187,9 +2357,9 @@ export default function App() {
             {reviewError ? (
               <div style={{ color: "#e6a23c" }}>gateway · {reviewError}</div>
             ) : reviewBusy && reviews.length === 0 ? (
-              <div style={{ color: "#6b7686" }}>loading…</div>
+              <div style={{ color: "#7d899b" }}>loading…</div>
             ) : reviews.length === 0 ? (
-              <div style={{ color: "#6b7686" }}>0 rows</div>
+              <div style={{ color: "#7d899b" }}>0 rows</div>
             ) : (
               reviews.map((item) => (
                 <ReviewItem
@@ -2230,7 +2400,7 @@ export default function App() {
           )}
           {hud.hoverCurrentA !== undefined && <Row k="I @ hover" v={`${hud.hoverCurrentA.toFixed(1)} A`} />}
           {hud.enduranceMin !== undefined && <Row k="endurance" v={`${hud.enduranceMin.toFixed(1)} min`} />}
-          <details style={{ marginTop: 6, color: "#6b7686" }}>
+          <details style={{ marginTop: 6, color: "#7d899b" }}>
             <summary>assumptions ({hud.assumptions.length})</summary>
             <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
               {hud.assumptions.map((a) => (
@@ -2265,8 +2435,8 @@ export default function App() {
                   ])
                 }
                 style={{
-                  width: 18,
-                  height: 18,
+                  width: 28,
+                  height: 28,
                   background: c,
                   border: c === s.selected!.color ? "2px solid #fff" : "1px solid #2a2f38",
                   cursor: "pointer",
@@ -2275,6 +2445,7 @@ export default function App() {
             ))}
           </div>
           <select
+            aria-label="selected part material"
             value={s.selected.material}
             onChange={(e) =>
               void applyPatch([
@@ -2301,6 +2472,8 @@ export default function App() {
       {s.report && (
         <div
           data-testid="validator-report"
+          role="status"
+          aria-live="polite"
           style={{
             ...panel,
             bottom: 12,
@@ -2315,7 +2488,7 @@ export default function App() {
             forge-validate {s.report.validatorVersion} · {s.report.target} → {s.report.verdict.toUpperCase()}
           </div>
           {s.report.results.length === 0 ? (
-            <div style={{ color: "#6b7686" }}>0 errors · 0 warnings — gatekeeper clean</div>
+            <div style={{ color: "#7d899b" }}>0 errors · 0 warnings — gatekeeper clean</div>
           ) : (
             <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
               {[...s.report.results]
@@ -2327,7 +2500,7 @@ export default function App() {
                   </li>
                 ))}
               {s.report.results.length > 8 && (
-                <li style={{ color: "#6b7686" }}>… +{s.report.results.length - 8} more</li>
+                <li style={{ color: "#7d899b" }}>… +{s.report.results.length - 8} more</li>
               )}
             </ul>
           )}
@@ -2341,7 +2514,7 @@ export default function App() {
           ...panel,
           bottom: 12,
           right: 12,
-          color: "#6b7686",
+          color: "#7d899b",
           textAlign: "right",
           display: narrow ? "none" : undefined,
         }}
@@ -2350,7 +2523,8 @@ export default function App() {
         <div>render {s.perf.frameMs.toFixed(1)} ms · core {s.perf.coreMs.toFixed(2)} ms</div>
         <div>{s.perf.drawCalls} draw calls</div>
       </div>
-    </div>
+      </main>
+    </>
   );
 }
 
@@ -2360,6 +2534,8 @@ const btn: React.CSSProperties = {
   border: "1px solid #2a2f38",
   borderRadius: 4,
   fontSize: 11,
+  minHeight: 28,
+  padding: "4px 8px",
   cursor: "pointer",
 };
 
@@ -2414,13 +2590,13 @@ const textareaStyle: React.CSSProperties = {
 
 const fieldLabel: React.CSSProperties = {
   display: "block",
-  color: "#6b7686",
+  color: "#7d899b",
 };
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-      <span style={{ color: "#6b7686" }}>{k}</span>
+      <span style={{ color: "#7d899b" }}>{k}</span>
       <span>{v}</span>
     </div>
   );
@@ -2449,7 +2625,7 @@ function GenerationStatusBadge({ status }: { status: GenerationStatus }) {
 
 function GenerationAttemptList({ attempts }: { attempts: GenerationAttempt[] }) {
   if (attempts.length === 0) {
-    return <div style={{ color: "#6b7686", marginTop: 4 }}>0 attempts</div>;
+    return <div style={{ color: "#7d899b", marginTop: 4 }}>0 attempts</div>;
   }
   return (
     <div style={{ marginTop: 5, maxHeight: 170, overflow: "auto", scrollbarWidth: "thin" }}>
@@ -2464,13 +2640,13 @@ function GenerationAttemptList({ attempts }: { attempts: GenerationAttempt[] }) 
             <summary style={{ color: verdictColor(attempt.verdict), cursor: "pointer" }}>
               #{attempt.index + 1} {attempt.phase} · {attempt.verdict}
             </summary>
-            <div style={{ color: "#6b7686", wordBreak: "break-word" }}>
+            <div style={{ color: "#7d899b", wordBreak: "break-word" }}>
               {attempt.modelId} · {attempt.contractHash.slice(0, 10)}
               {attempt.stopReason ? ` · ${attempt.stopReason}` : ""}
             </div>
-            {usage && <div style={{ color: "#6b7686" }}>{usage}</div>}
+            {usage && <div style={{ color: "#7d899b" }}>{usage}</div>}
             {attempt.diagnostics.length === 0 ? (
-              <div style={{ color: "#6b7686" }}>0 diagnostics</div>
+              <div style={{ color: "#7d899b" }}>0 diagnostics</div>
             ) : (
               <ul style={{ margin: "3px 0 0 16px", padding: 0 }}>
                 {attempt.diagnostics.slice(0, 4).map((diagnostic, index) => (
@@ -2482,7 +2658,7 @@ function GenerationAttemptList({ attempts }: { attempts: GenerationAttempt[] }) 
                   </li>
                 ))}
                 {attempt.diagnostics.length > 4 && (
-                  <li style={{ color: "#6b7686" }}>… +{attempt.diagnostics.length - 4} more</li>
+                  <li style={{ color: "#7d899b" }}>… +{attempt.diagnostics.length - 4} more</li>
                 )}
               </ul>
             )}
@@ -2495,7 +2671,7 @@ function GenerationAttemptList({ attempts }: { attempts: GenerationAttempt[] }) 
 
 function BriefEvalSummary({ value }: { value: unknown | null }) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return <div style={{ color: "#6b7686" }}>no stored run</div>;
+    return <div style={{ color: "#7d899b" }}>no stored run</div>;
   }
   const artifact = value as {
     summary?: {
@@ -2512,7 +2688,7 @@ function BriefEvalSummary({ value }: { value: unknown | null }) {
         ? `${counts.admitted ?? 0} admitted · ${counts.draft ?? 0} draft · ${counts.rejected ?? 0} rejected`
         : "stored run"}
       {gate ? ` · gate ${gate.admittedWithoutHumanRepairActual ?? 0}/${gate.admittedWithoutHumanRepairTarget ?? 20}` : ""}
-      {artifact.completedAt ? <div style={{ color: "#6b7686" }}>{artifact.completedAt}</div> : null}
+      {artifact.completedAt ? <div style={{ color: "#7d899b" }}>{artifact.completedAt}</div> : null}
     </div>
   );
 }
@@ -2571,7 +2747,7 @@ function ConsentPanel({
   return (
     <details style={{ ...artifactRowStyle, marginTop: 6 }}>
       <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>privacy authority · {events.filter((event) => event.active).length} active</summary>
-      <div style={{ color: "#6b7686", marginTop: 5 }}>
+      <div style={{ color: "#7d899b", marginTop: 5 }}>
         Each purpose is independent. Granting scan processing never grants sharing, contribution, leaderboard publication, or training reuse.
       </div>
       {policies.map((policy) => {
@@ -2598,10 +2774,10 @@ function ConsentPanel({
                 <button onClick={action} disabled={busy} style={btn}>{label}</button>
               ) : null}
             </div>
-            <div style={{ color: "#6b7686" }}>
+            <div style={{ color: "#7d899b" }}>
               v{policy.policyVersion} · {subjectIds.length > 0 ? `${subjectIds.length} owned subject${subjectIds.length === 1 ? "" : "s"}` : "no current subject"}
             </div>
-            <div style={{ color: "#6b7686" }}>{policy.notice}</div>
+            <div style={{ color: "#7d899b" }}>{policy.notice}</div>
           </div>
         );
       })}
@@ -2648,20 +2824,20 @@ function ArtifactRegistry({
         </button>
       </div>
       {error ? <div style={{ color: "#e6a23c", marginTop: 4 }}>gateway · {error}</div> : null}
-      {message ? <div style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
+      {message ? <div style={{ color: "#7d899b", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
       {busy &&
       photoscanArtifacts.length === 0 &&
       policyArtifacts.length === 0 &&
       replayArtifacts.length === 0 &&
       telemetryLogs.length === 0 &&
       maintenanceRecords.length === 0 ? (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>loading…</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>loading…</div>
       ) : photoscanArtifacts.length === 0 &&
         policyArtifacts.length === 0 &&
         replayArtifacts.length === 0 &&
         telemetryLogs.length === 0 &&
         maintenanceRecords.length === 0 ? (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>0 materialized outputs</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>0 materialized outputs</div>
       ) : null}
       {photoscanArtifacts.slice(0, 3).map((artifact) => (
         <PhotoscanArtifactRow
@@ -3044,7 +3220,7 @@ function MaintenanceDashboard({
               key={`${action.vehicleId}-${action.action}-${index}`}
               style={{ display: "grid", gridTemplateColumns: "72px minmax(0, 1fr)", gap: 8 }}
             >
-              <span style={{ color: "#6b7686" }}>{action.vehicleId ?? "vehicle"}</span>
+              <span style={{ color: "#7d899b" }}>{action.vehicleId ?? "vehicle"}</span>
               <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>{action.action ?? "review"}</span>
             </div>
           ))}
@@ -3179,7 +3355,7 @@ function RepairSummary({
             key={`${record.id}-${step.order ?? index}`}
             style={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr) auto", gap: 6, marginTop: 3 }}
           >
-            <span style={{ color: "#6b7686" }}>{step.order ?? index + 1}</span>
+            <span style={{ color: "#7d899b" }}>{step.order ?? index + 1}</span>
             <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>
               {step.action ?? "inspect"}{step.reorderSku ? ` · ${step.reorderSku}` : ""}
             </span>
@@ -3300,7 +3476,7 @@ function MaintenanceRecordRow({ record }: { record: MaintenanceRecord }) {
 
 function CapabilitySummary({ capabilities }: { capabilities: JobCapabilities | null }) {
   if (!capabilities) {
-    return <div style={{ color: "#6b7686", marginTop: 5 }}>capabilities unavailable</div>;
+    return <div style={{ color: "#7d899b", marginTop: 5 }}>capabilities unavailable</div>;
   }
   const liveReady = Object.entries(capabilities.live)
     .filter(([, state]) => state.configured)
@@ -3481,7 +3657,7 @@ function PlatformPanel({
         ]}
       />
       {error ? <div data-testid="platform-error" style={{ color: "#e6a23c", marginTop: 4, wordBreak: "break-word" }}>{error}</div> : null}
-      {message ? <div data-testid="platform-message" style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
+      {message ? <div data-testid="platform-message" style={{ color: "#7d899b", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 6 }}>
         <button data-testid="course-create" onClick={onCreateCourse} disabled={busy} style={btn}>
           course
@@ -3522,6 +3698,7 @@ function PlatformPanel({
         <div style={{ color: "#8fa3bf" }}>course editor</div>
         <input
           data-testid="course-name"
+          aria-label="course name"
           value={courseName}
           onChange={(event) => onCourseNameChange(event.target.value)}
           placeholder="Course name"
@@ -3529,6 +3706,7 @@ function PlatformPanel({
         />
         <select
           data-testid="course-visibility"
+          aria-label="course visibility"
           value={courseVisibility}
           onChange={(event) => onCourseVisibilityChange(toCourseVisibility(event.target.value))}
           style={{ ...selectStyle, width: "100%", marginTop: 5 }}
@@ -3541,6 +3719,7 @@ function PlatformPanel({
         </select>
         <textarea
           data-testid="course-env"
+          aria-label="course environment specification"
           value={courseEnvJson}
           onChange={(event) => onCourseEnvJsonChange(event.target.value)}
           spellCheck={false}
@@ -3581,9 +3760,9 @@ function PlatformPanel({
           </button>
         </div>
       ) : (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>0 courses</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>0 courses</div>
       )}
-      {courseShareUrl ? <div style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{courseShareUrl}</div> : null}
+      {courseShareUrl ? <div style={{ color: "#7d899b", marginTop: 4, wordBreak: "break-word" }}>{courseShareUrl}</div> : null}
       <LeaderboardBoard
         course={activeCourse}
         runs={leaderboardRuns}
@@ -3596,6 +3775,7 @@ function PlatformPanel({
       />
       {classroomAssignments.length > 0 ? (
         <select
+          aria-label="classroom assignment"
           value={activeAssignmentId ?? ""}
           onChange={(event) => onAssignmentChange(event.target.value || null)}
           style={{ ...selectStyle, width: "100%", marginTop: 6 }}
@@ -3607,7 +3787,7 @@ function PlatformPanel({
           ))}
         </select>
       ) : (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>0 assignments</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>0 assignments</div>
       )}
       {classroomSubmissions.slice(0, 3).map((submission) => {
         const grade = asRecord(submission.grade);
@@ -3638,7 +3818,7 @@ function PlatformPanel({
           onUsage={onRecordListingUsage}
         />
       ) : (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>0 listed marketplace items</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>0 listed marketplace items</div>
       )}
       {licenseLedger.length > 0 ? (
         licenseLedger.slice(0, 3).map((entry) => (
@@ -3661,7 +3841,7 @@ function PlatformPanel({
           </div>
         ))
       ) : (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>0 license ledger rows</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>0 license ledger rows</div>
       )}
       {vendorOffers.slice(0, 3).map((offer) => (
         <div key={offer.id} style={artifactRowStyle}>
@@ -3754,7 +3934,7 @@ function MarketplaceBoard({
     <div data-testid="marketplace-board" style={artifactRowStyle}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ color: "#8fa3bf", flex: 1 }}>marketplace</span>
-        <span style={{ color: "#6b7686" }}>{listings.length} shown</span>
+        <span style={{ color: "#7d899b" }}>{listings.length} shown</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 5 }}>
         <select
@@ -3783,7 +3963,7 @@ function MarketplaceBoard({
         </select>
       </div>
       {listings.length === 0 ? (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>0 matching listings</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>0 matching listings</div>
       ) : (
         listings.slice(0, 5).map((listing) => {
           const primary = marketplacePrimaryAction(listing);
@@ -3893,7 +4073,7 @@ function LeaderboardBoard({
     <div style={artifactRowStyle}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ color: "#8fa3bf", flex: 1 }}>leaderboard</span>
-        <span style={{ color: "#6b7686" }}>
+        <span style={{ color: "#7d899b" }}>
           {verifiedCount}/{rows.length} verified
         </span>
       </div>
@@ -3907,6 +4087,7 @@ function LeaderboardBoard({
       />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginTop: 6 }}>
         <select
+          aria-label="leaderboard archetype"
           value={archetypeFilter}
           onChange={(event) => onArchetypeFilter(event.target.value)}
           style={{ ...selectStyle, width: "100%" }}
@@ -3919,6 +4100,7 @@ function LeaderboardBoard({
           ))}
         </select>
         <select
+          aria-label="leaderboard class"
           value={classFilter}
           onChange={(event) => onClassFilter(event.target.value)}
           style={{ ...selectStyle, width: "100%" }}
@@ -3931,6 +4113,7 @@ function LeaderboardBoard({
           ))}
         </select>
         <select
+          aria-label="leaderboard verification status"
           value={statusFilter}
           onChange={(event) => onStatusFilter(toLeaderboardStatusFilter(event.target.value))}
           style={{ ...selectStyle, width: "100%" }}
@@ -3941,7 +4124,7 @@ function LeaderboardBoard({
         </select>
       </div>
       {visibleRows.length === 0 ? (
-        <div style={{ color: "#6b7686", marginTop: 4 }}>{rows.length === 0 ? "0 runs" : "0 runs match filters"}</div>
+        <div style={{ color: "#7d899b", marginTop: 4 }}>{rows.length === 0 ? "0 runs" : "0 runs match filters"}</div>
       ) : (
         visibleRows.slice(0, 8).map((row) => (
           <div key={row.run.id} style={artifactRowStyle}>
@@ -4053,7 +4236,7 @@ function JobDetails({
   }
   const output = job.output;
   if (!output) {
-    return <div style={{ color: "#6b7686" }}>no output yet</div>;
+    return <div style={{ color: "#7d899b" }}>no output yet</div>;
   }
   if (!isKnownJobOutput(output)) {
     return <JsonPreview value={output} />;
@@ -4073,7 +4256,7 @@ function JobDetails({
             ]}
           />
           {output.primitiveRefit?.length ? (
-            <div style={{ color: "#6b7686" }}>
+            <div style={{ color: "#7d899b" }}>
               refit {output.primitiveRefit.map((row) => `${row.kind ?? "primitive"} ${formatConfidence(row.confidence)}`).join(" · ")}
             </div>
           ) : null}
@@ -4095,7 +4278,7 @@ function JobDetails({
             ]}
           />
           {scorecard?.robustness ? <RobustnessGrid values={scorecard.robustness} /> : null}
-          <div style={{ color: "#6b7686" }}>
+          <div style={{ color: "#7d899b" }}>
             {(output.io?.observations?.length ?? 0)} obs · {(output.io?.actions?.length ?? 0)} actions
           </div>
           <button onClick={() => onPlayPolicy(output)} style={{ ...btn, marginTop: 4 }}>
@@ -4110,7 +4293,7 @@ function JobDetails({
     case "codesign":
       return (
         <div style={jobDetailStyle}>
-          <div style={{ color: "#6b7686" }}>
+          <div style={{ color: "#7d899b" }}>
             {(output.pareto?.length ?? 0)} Pareto · {(output.candidates?.length ?? 0)} candidates
           </div>
           <ParetoPlot candidates={output.pareto ?? output.candidates ?? []} />
@@ -4203,7 +4386,7 @@ function JobDetails({
         <div style={jobDetailStyle}>
           <MiniRows rows={[["steps", output.steps?.length ?? 0], ["reorder", output.reorderCount ?? 0]]} />
           {output.steps?.slice(0, 3).map((step) => (
-            <div key={`${step.order}-${step.partIndex}`} style={{ color: "#6b7686" }}>
+            <div key={`${step.order}-${step.partIndex}`} style={{ color: "#7d899b" }}>
               {step.order}. {step.action ?? "inspect"} {step.reorderSku ? `· ${step.reorderSku}` : ""}
             </div>
           ))}
@@ -4214,7 +4397,7 @@ function JobDetails({
         <div style={jobDetailStyle}>
           <MiniRows rows={[["vehicles", output.vehicleCount ?? 0], ["critical", output.criticalCount ?? 0], ["due", output.serviceDueCount ?? 0]]} />
           {output.nextActions?.slice(0, 3).map((action) => (
-            <div key={`${action.vehicleId}-${action.action}`} style={{ color: "#6b7686" }}>
+            <div key={`${action.vehicleId}-${action.action}`} style={{ color: "#7d899b" }}>
               {action.vehicleId ?? "vehicle"} · {action.action ?? "review"}
             </div>
           ))}
@@ -4244,7 +4427,7 @@ function MiniRows({ rows }: { rows: [string, unknown][] }) {
         .filter(([, value]) => value !== undefined && value !== null && value !== "")
         .map(([key, value]) => (
           <div key={key} style={{ display: "grid", gridTemplateColumns: "72px minmax(0, 1fr)", gap: 8 }}>
-            <span style={{ color: "#6b7686" }}>{key}</span>
+            <span style={{ color: "#7d899b" }}>{key}</span>
             <span style={{ color: "#cfd6df", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{String(value)}</span>
           </div>
         ))}
@@ -4301,7 +4484,7 @@ function CodeLines({ lines }: { lines: string[] }) {
 function JsonPreview({ value }: { value: unknown }) {
   return (
     <details style={jobDetailStyle}>
-      <summary style={{ color: "#6b7686", cursor: "pointer" }}>{artifactKind(value) ?? "json"} output</summary>
+      <summary style={{ color: "#7d899b", cursor: "pointer" }}>{artifactKind(value) ?? "json"} output</summary>
       <pre style={{ margin: 0, color: "#8fa3bf", whiteSpace: "pre-wrap", maxHeight: 110, overflow: "auto" }}>
         {JSON.stringify(value, null, 2)}
       </pre>
@@ -4388,7 +4571,7 @@ function verdictColor(verdict: string): string {
     case "running":
       return "#39c8ff";
     default:
-      return "#6b7686";
+      return "#7d899b";
   }
 }
 
@@ -4446,10 +4629,10 @@ function ReviewItem({
           {Math.round(item.confidence * 100)}%
         </span>
       </div>
-      <div style={{ color: "#6b7686", wordBreak: "break-word" }}>
+      <div style={{ color: "#7d899b", wordBreak: "break-word" }}>
         {item.artifactKind} · {item.reason}
       </div>
-      <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{item.artifactId}</div>
+      <div style={{ color: "#7d899b", wordBreak: "break-word" }}>{item.artifactId}</div>
       {item.status === "needs_review" ? (
         <>
           <select
@@ -4493,7 +4676,7 @@ function ReviewItem({
           </div>
         </>
       ) : (
-        <div style={{ color: "#6b7686", marginTop: 5 }}>
+        <div style={{ color: "#7d899b", marginTop: 5 }}>
           {item.status}
           {item.reviewer ? ` · ${item.reviewer}` : ""}
           {item.exportPolicy ? ` · ${item.exportPolicy}` : ""}

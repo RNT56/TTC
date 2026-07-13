@@ -15,8 +15,9 @@ ship when the loop beneath them is real.
 
 ## 2. Sharing (P4 — D4)
 
-Read-only contract URLs: any model renders for anyone with the link — orbit, explode,
-blueprint, drive demo — **no account required**, viewer-grade on every browser
+Read-only contract URLs: any model presents for anyone with the link — full WebGL on
+the Chromium floor or a core-baked Canvas2D schematic at viewer grade, with orbit,
+explode, blueprint, and local validation — **no account required**, viewer-grade on every browser
 (D15; sharing is the standing argument for the web face). Implementation: public
 share id → contract snapshot (hash-pinned + lockfile) → the studio's viewer mode.
 Drafts cannot be shared (D14).

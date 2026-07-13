@@ -18,6 +18,105 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Separate viewer grade from WebGL
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Protected run `29281411617` disproved N8AO as the sole Firefox blocker:
+QA-002 and all ten other checks passed, while Firefox again stalled before paint at
+the remaining synchronous WebGL renderer boundary. Added a dependency-light
+Canvas2D viewer scene that projects core-baked part centers, preserves orbit,
+explode, blueprint, selection, equipped-variant rebuild/revalidation, picking, and
+live pose consumption without creating a second source of physical truth. Full
+Studio dynamically loads Three.js/WebGL only on the Chromium/Tauri tier; Firefox and
+WebKit remain fixed-low viewer grade and do not request those chunks. The local
+three-engine matrix now asserts renderer identity, presentation-asset isolation, and
+positive draw counts in addition to the existing real-WASM, semantic, keyboard,
+focus, contrast, target, responsive, and reduced-motion contract. All 34 required
+non-database repository gates pass on the synchronized tree, including 61 gateway
+tests, Brief-25 25/25, native/fresh-WASM parity, 115 worker tests, release packaging,
+and patch hygiene.
+**Changed:** Scene-controller boundary; Canvas2D schematic renderer; dynamic full-
+Studio scene loading; browser evidence; agent entry point; current-state, roadmap,
+TODO, execution, system, governance, debugging, risk, README, and support guidance.
+**Decisions:** none; this implements D15's declared viewer-grade distinction
+honestly. Canvas2D presentation is not full 3D and never changes core truth.
+**Next:** publish the corrected head and require a new protected PR run with exact
+passing evidence.
+**Blockers:** none.
+
+## 2026-07-13 — Defer advanced rendering on viewer-grade engines
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Used protected rerun `29280441449` to disprove the initial assumption that
+disabling AO after scene construction was sufficient: QA-002 and ten other checks
+passed, but Firefox again stalled before React painted because the advanced pipeline
+was still constructed eagerly. Viewer-grade scenes now receive their initial tier at
+construction and do not instantiate N8AO/EffectComposer unless a user explicitly
+raises quality. The three-engine gate and the full viewer interaction contract remain
+unchanged. Focused Firefox and the full three-engine matrix pass locally with the
+advanced-pipeline state asserted per engine. The first full repository rerun exposed
+a transient existing macOS process-termination race at worker step 33; its focused
+test and all 115 worker tests passed immediately afterward, and a fresh full rerun
+passed all 34 required non-database gates.
+**Changed:** Studio scene lifecycle plus synchronized browser-support, testing,
+README, and changelog guidance.
+**Decisions:** none; lazy optional presentation preserves validator sovereignty and
+the declared viewer-grade capability rather than treating a CI timeout as support.
+**Next:** publish the corrected head and require a new protected PR run with exact
+passing evidence.
+**Blockers:** none.
+
+## 2026-07-13 — Keep viewer-grade Studio usable under software WebGL
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Reconciled protected PR run `29279497748`: QA-002, every security job, and
+four CI jobs passed, while QA-003 exposed a Firefox Linux software-rendering stall
+before the accessible Studio surface painted. Preserved the three-engine hard gate
+and changed viewer-grade engines to start at the low presentation tier (AO off,
+device-pixel ratio 1); the acceptance artifact now records and asserts the initial
+quality tier. Validator, bake, contract, and simulation truth remain unchanged, and
+users can still opt into higher visual quality.
+The focused Firefox rerun and full Chromium/Firefox/WebKit matrix pass locally, and
+all 34 non-database repository gates pass on the corrected tree.
+**Changed:** Studio viewer boot policy; QA-003 evidence; browser-support, testing,
+README, and changelog guidance.
+**Decisions:** none; this applies the existing XC-22 quality ladder to the declared
+viewer-grade boundary instead of weakening the engine matrix or its assertions.
+**Next:** publish the corrected head and require fresh protected three-engine
+evidence before merge.
+**Blockers:** none.
+
+## 2026-07-13 — Gate accessible viewer-grade browser support
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Added a fail-closed production-bundle acceptance matrix for Chromium
+148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Every engine loaded the real hashed
+WASM facade, admitted an inline equipped-variant fixture, and passed semantic names/
+landmarks, skip/focus indication, keyboard orbit/equip/explode/blueprint, live
+announcements, WCAG AA fixture contrast (5.41:1 muted, 12.13:1 controls), and 28 px
+critical targets. Chromium additionally passed 390 x 844 containment with zero
+horizontal overflow and the reduced-motion contract. Studio now exposes semantic
+regions and labels, a skip link, visible 3 px focus, keyboard camera controls,
+stronger muted text, reduced-motion behavior, explicit support tiers, and a local
+non-SAB session boundary. The required Postgres job installs all three engines and
+uploads both QA-002 and QA-003 evidence. The ledger remains 200 tasks: 133 done, 38
+in progress, 28 open, and 1 blocked; QA-003 is not complete before protected proof.
+All 34 non-database repository gates pass after the browser run, including 61
+gateway tests, Brief-25 25/25, native/fresh-WASM parity, packaging, 115 worker tests,
+and patch hygiene. A 61-file Markdown scan checked 181 local links with zero broken.
+**Changed:** Studio shell/scene accessibility and interaction; three-engine browser
+runner and required workflow; browser-support contract; README; canonical agent,
+system, testing, debugging, governance, risk, project-state, phase/execution roadmap,
+and TODO guidance.
+**Decisions:** none; full Studio remains the isolated desktop Chromium/Tauri tier,
+Firefox/WebKit/mobile remain viewer grade, and proxy evidence grants no Apple-device,
+screen-reader, external-user, or field claim. Added risk R22 for accessibility/
+viewer regressions hidden by visual success.
+**Next:** publish through protected PR/main, reconcile exact PR/post-merge runs and
+evidence, then mark QA-003 `[x]`.
+**Blockers:** none for deterministic QA-003 delivery; real assistive-technology,
+vendor-device, performance, and independent-user evidence retain their later gates.
+
 ## 2026-07-13 — Record protected external-acceptance governance
 **Session:** Codex agent · branch `codex/qa010-postmerge-evidence` · **Phase:** QA /
 external and field proof · **TODO items:** QA-010 [x]

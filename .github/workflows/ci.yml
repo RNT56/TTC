@@ -151,18 +151,23 @@ jobs:
       - name: prepare validator and browser prerequisites
         run: |
           chmod +x target/debug/forge-validate
-          pnpm exec playwright-core install --with-deps chromium
+          pnpm exec playwright-core install --with-deps chromium firefox webkit
       - run: python -m pip install -e "workers[queue]"
       - name: isolated Postgres and real-browser acceptance
         env:
           FORGE_BROWSER_E2E: "1"
         run: pnpm verify:db
+      - name: accessibility and supported-browser acceptance
+        env:
+          FORGE_BROWSER_SUPPORT: "1"
+          FORGE_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: pnpm verify:browser-support
       - name: assert transactional commerce worker materialization
         run: python workers/integration/assert_commerce_postgres.py
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
-          name: qa002-browser-e2e
+          name: browser-acceptance-evidence
           path: artifacts/e2e
 
   workers:

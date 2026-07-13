@@ -74,8 +74,9 @@ filesystem plugin supersedes OPFS for log archives (P8-013).
 ## 5. Browser floor & surfaces (D15)
 
 Browser is the primary surface, permanently. Full studio requires the Chromium floor
-(COOP/COEP for shared memory). Firefox/Safari: viewer-grade — feature-detect and
-degrade with *stated* capability messaging, not silent breakage. iOS: viewer. The
+(COOP/COEP for shared memory). Firefox/Safari: viewer-grade — use the dependency-light
+Canvas2D schematic projected from core-baked part centers, with *stated* capability
+messaging and no Three.js/WebGL chunk load. iOS: viewer. The
 share-URL viewer (D4) must work everywhere viewer-grade. FORGE Desktop wraps this
 same bundle for the bridge/power jobs.
 
@@ -103,12 +104,27 @@ materialization. It writes structured evidence under `artifacts/e2e` and a full-
 screenshot on failure. `pnpm verify:db` owns the supported setup/order and the required
 Postgres CI job installs Chromium and downloads the exact validator artifact.
 
-Remaining browser work belongs to QA-003/006: open → orbit → equip → explode input
-coverage, accessibility/keyboard/focus/contrast/reduced-motion/responsive and viewer-
-grade matrices, pane snapshots, and real-hardware performance acceptance.
+`FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` is QA-003's separate
+production-bundle compatibility and accessibility harness. Chromium, Firefox, and
+WebKit each load an admitted fragment through real WASM and prove semantic landmarks,
+accessible control names, skip/focus behavior, keyboard orbit/equip/explode/
+blueprint, validator sovereignty after equip, contrast, and critical target size.
+Chromium additionally proves the full WebGL asset path, 390 x 844 containment, and
+reduced-motion behavior. Firefox/WebKit prove positive schematic draw counts and the
+absence of dynamic scene/Three.js requests. The
+machine-readable result records the exact revision and engine versions under
+`artifacts/e2e`; the required Postgres job uploads both browser suites. Support tiers,
+commands, and non-claims are owned by [`../BROWSER-SUPPORT.md`](../BROWSER-SUPPORT.md).
+
+QA-006 still owns pane snapshots and real-hardware performance acceptance. QA-003's
+semantic proxies do not replace representative screen-reader, Apple/mobile device,
+or independent-user review.
 
 ## 9. Open questions
 
-Pane system build-vs-adopt (dockable layout libs vs thin custom); photoscan
-alignment UI ship timing (OD-07); viewer-grade fallback for non-SAB browsers (the
-share viewer must run there — likely single-threaded facade build *(proposed)*).
+Pane system build-vs-adopt (dockable layout libs vs thin custom); photoscan alignment
+UI ship timing (OD-07). Viewer-grade non-SAB execution is no longer an open design
+question: `CoreSession` falls back to the local WASM session, and the core-baked
+Canvas2D scene keeps viewing/configuration independent of WebGL in Firefox/WebKit.
+QA-003 exercises both boundaries. Real Safari/iOS and assistive-technology coverage
+remain acceptance work rather than architecture ambiguity.

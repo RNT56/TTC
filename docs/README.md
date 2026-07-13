@@ -25,7 +25,9 @@ logs, or release archives additionally require
 legal-hold, backup, restore, or tombstone work additionally requires
 [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md). Any schema, render, physics, validator,
 corpus, or committed generated-runtime re-pin additionally requires
-[`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md).
+[`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md). Studio semantics, interaction,
+responsive behavior, motion, worker fallback, or browser claims additionally require
+[`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md).
 
 ## Document map
 
@@ -48,6 +50,7 @@ corpus, or committed generated-runtime re-pin additionally requires
 | [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md) | Retention classes, legal-hold authority, primary deletion, backup expiry/restore, tombstones, audit events, operator commands, and maturity boundary | Living operating contract |
 | [`THREAT-MODEL.md`](THREAT-MODEL.md) | Assets, actors, trust boundaries, auth/secrets/network/input/object/worker/archive controls, negative-test matrix, deployment checklist, and residual risks | Living security contract |
 | [`DEBUGGING.md`](DEBUGGING.md) | Failure routing, evidence preservation, reproduction, redaction, and safety escalation | Living runbook |
+| [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md) | Full-Studio/viewer-grade policy, accessibility and keyboard contract, engine matrix, evidence commands, and claim limits | Living; required-CI evidence contract |
 | [`TRADEMARK-SEARCH.md`](TRADEMARK-SEARCH.md) | Dated exact-name search evidence and remaining legal-clearance boundary | Living governance evidence |
 | [`GLOSSARY.md`](GLOSSARY.md) | Project vocabulary | Living |
 | [`architecture.md`](architecture.md) | Runtime split (Rust core / web face), core boundary, repo layout, stack, deployment, budgets | Living |

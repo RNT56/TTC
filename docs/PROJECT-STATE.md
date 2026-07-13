@@ -7,6 +7,7 @@ Latest verified protected runtime descendant: `c80accb` (PR #38; QA-002 browser 
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
+QA-003 browser/accessibility candidate: **local only; protected anchor pending**
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -53,6 +54,7 @@ open.
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
 | QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb` | exact PR CI `29272067712`/security `29272067617` and post-merge CI `29272532186`/security `29272531705` prove the production bundle, real WASM, 20 migrations, catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed owner listing, job, and materialized maintenance; no live-provider or external-user claim |
+| QA-003 browser/accessibility candidate | local three-engine production-bundle matrix passes; protected PR/post-merge evidence pending | real WASM and validator admission pass in Chromium, Firefox, and WebKit for semantic landmarks/names, skip and focus indication, keyboard orbit/equip/explode/blueprint, AA contrast, critical targets, and declared support tiers. Chromium uses full WebGL and proves narrow containment/reduced motion; Firefox/WebKit draw the core-baked Canvas2D schematic without loading scene/Three.js chunks. WebKit/mobile remain proxies, not Apple-device, assistive-technology, or external-user proof |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
@@ -226,7 +228,7 @@ decision; none is a hidden release claim.
 | Capability | Current maturity | What is still needed |
 |---|---|---|
 | Contract/validator/WASM | v0.1.0 released with protected-main/tag attestations and post-publication install proof; ModelSpec 2.2 equipped semantics are protected on `main` | registry publication only after an explicit owner/credential decision |
-| Studio inspection/editing | protected deterministic implementation with truthful variant cards, stable-source selection, and complete QA-002 real-WASM/isolated-DB browser acceptance | accessibility, real performance matrix, and external-user proof |
+| Studio inspection/editing | protected deterministic implementation with truthful variant cards, stable-source selection, and complete QA-002 real-WASM/isolated-DB browser acceptance; QA-003's three-engine semantic/keyboard/focus/contrast/target/responsive/reduced-motion candidate passes locally | protected QA-003 PR/post-merge evidence, representative assistive-technology and vendor-device review, real performance matrix, and external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation, D10 exporter enforcement, and native bounded Anthropic ETL contract | credentialed ETL sandbox, real-result persistence/review operations, provider recovery, and live OCCT artifact audit |
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
@@ -263,8 +265,11 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   concurrency, and rollback proof; a real vendor sandbox with egress, quota,
   monitoring, recovery, billing, and terms evidence remains P11-005 work;
 - QA-002 deterministic builder acceptance and QA-010's machine-checked external
-  scripts/evidence templates are protected on `main`; accessibility, performance,
-  and the actual independent-builder run remain QA-003/006 and EXT-001;
+  scripts/evidence templates are protected on `main`; QA-003's production-bundle
+  three-engine semantic/keyboard/focus/contrast/target/responsive/reduced-motion
+  candidate passes locally but still needs protected exact-tree evidence. Real
+  assistive-technology/device review, performance, and the actual independent-builder
+  run remain QA-003/006 and EXT-001;
 - external/live/field acceptance remains open; public support/v0.2 delivery and the
   standalone v0.1.0 release/supply-chain gate are closed.
 
@@ -286,7 +291,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **200 tasks: 133 done, 37 in progress, 29 open,
+The stable ledger currently contains **200 tasks: 133 done, 38 in progress, 28 open,
 and 1 explicitly blocked**. All 8 recovery tasks are done. The 67 remaining tasks are
 the phase/live/field program plus 2 governance, 2 security, 6 quality, 10 operations,
 9 external-proof, and 2 documentation tasks; dependency order is owned by

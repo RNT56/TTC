@@ -16,17 +16,16 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { N8AOPass } from "n8ao";
 import { classMaterialFor } from "./materials";
 import type { BakeArtifact, BakedPart, MaterialClass } from "./types";
+import type {
+  CameraPose,
+  PartPick,
+  QualityTier,
+  SceneController,
+  SceneQualityState,
+} from "./sceneController";
 
 /** XC-22 quality ladder (P1-016): what each tier turns on. */
-export type QualityTier = "high" | "medium" | "low";
-
-export interface PartPick {
-  partIndex: number;
-  sourcePath: string;
-  node: string;
-  material: string;
-  color: string;
-}
+export type { PartPick, QualityTier } from "./sceneController";
 
 interface PartHandle {
   batch: THREE.BatchedMesh;
@@ -88,7 +87,7 @@ const EDGE_FRAG = /* glsl */ `
   }
 `;
 
-export class StudioScene {
+export class StudioScene implements SceneController {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera: THREE.PerspectiveCamera;
@@ -114,16 +113,17 @@ export class StudioScene {
   private edgeScene = new THREE.Scene();
   private edgeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   // AO + quality tiers (P1-016 / XC-22)
-  private composer: EffectComposer;
-  private aoPass: N8AOPass;
-  private tier: QualityTier = "high";
+  private composer: EffectComposer | null = null;
+  private aoPass: N8AOPass | null = null;
+  private tier: QualityTier;
   /** last render frame duration, ms (perf overlay, P1-017) */
   lastFrameMs = 0;
   onFrame?: (dt: number) => void;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, initialTier: QualityTier = "high") {
+    this.tier = initialTier;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(initialTier === "low" ? 1 : Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene.background = NORMAL_BG;
@@ -215,15 +215,25 @@ export class StudioScene {
     this.edgeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.edgeMaterial);
     this.edgeScene.add(this.edgeQuad);
 
-    // shaded pipeline: render → N8AO → output (blueprint keeps its own path)
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.aoPass = new N8AOPass(this.scene, this.camera);
-    this.aoPass.configuration.gammaCorrection = false; // OutputPass owns color space
-    this.aoPass.configuration.aoRadius = 0.08; // model scale is 0.4–2 m
-    this.aoPass.configuration.distanceFalloff = 0.4;
-    this.composer.addPass(this.aoPass);
-    this.composer.addPass(new OutputPass());
+    // Viewer-grade engines start without constructing the advanced AO pipeline.
+    // On software WebGL, merely initializing N8AO can block the accessible viewer
+    // before React paints. Higher tiers create it lazily when explicitly selected.
+    if (initialTier !== "low") this.ensureAoPipeline();
+  }
+
+  private ensureAoPipeline(): N8AOPass {
+    if (this.aoPass && this.composer) return this.aoPass;
+    const composer = new EffectComposer(this.renderer);
+    composer.addPass(new RenderPass(this.scene, this.camera));
+    const aoPass = new N8AOPass(this.scene, this.camera);
+    aoPass.configuration.gammaCorrection = false; // OutputPass owns color space
+    aoPass.configuration.aoRadius = 0.08; // model scale is 0.4–2 m
+    aoPass.configuration.distanceFalloff = 0.4;
+    composer.addPass(aoPass);
+    composer.addPass(new OutputPass());
+    this.composer = composer;
+    this.aoPass = aoPass;
+    return aoPass;
   }
 
   /** XC-22 ladder: AO quality → shadows → pixel ratio. */
@@ -231,15 +241,17 @@ export class StudioScene {
     this.tier = tier;
     const dpr = window.devicePixelRatio || 1;
     if (tier === "high") {
-      this.aoPass.enabled = true;
-      this.aoPass.configuration.halfRes = false;
+      const aoPass = this.ensureAoPipeline();
+      aoPass.enabled = true;
+      aoPass.configuration.halfRes = false;
       this.renderer.setPixelRatio(Math.min(dpr, 2));
     } else if (tier === "medium") {
-      this.aoPass.enabled = true;
-      this.aoPass.configuration.halfRes = true;
+      const aoPass = this.ensureAoPipeline();
+      aoPass.enabled = true;
+      aoPass.configuration.halfRes = true;
       this.renderer.setPixelRatio(Math.min(dpr, 1.5));
     } else {
-      this.aoPass.enabled = false;
+      if (this.aoPass) this.aoPass.enabled = false;
       this.renderer.setPixelRatio(1);
     }
     // pixel ratio changes the drawing-buffer size
@@ -249,6 +261,14 @@ export class StudioScene {
 
   getTier(): QualityTier {
     return this.tier;
+  }
+
+  qualityState(): SceneQualityState {
+    return {
+      tier: this.tier,
+      renderer: "webgl",
+      advancedEffectsInitialized: this.composer !== null && this.aoPass !== null,
+    };
   }
 
   /** Upload the core's bake artifact. Zero client-side geometry computation. */
@@ -444,13 +464,7 @@ export class StudioScene {
   /** Pin the camera exactly — parity gallery & tests (P1-015). Same orbit
    * convention as the monolith: eye = target + dist·(cos el·sin yaw, sin el,
    * cos el·cos yaw), Y-up. Disables damping so the pose holds. */
-  setCameraPose(p: {
-    yaw: number;
-    el: number;
-    dist: number;
-    target: [number, number, number];
-    fovDeg?: number;
-  }): void {
+  setCameraPose(p: CameraPose): void {
     const ce = Math.cos(p.el);
     this.controls.target.set(p.target[0], p.target[1], p.target[2]);
     this.camera.position.set(
@@ -463,6 +477,31 @@ export class StudioScene {
       this.camera.updateProjectionMatrix();
     }
     this.controls.enableDamping = false;
+    this.controls.update();
+  }
+
+  /** Keyboard-accessible orbit/zoom. Values are relative deltas around the
+   * current orbit target so the canvas never needs presentation-only camera
+   * truth outside this render layer. */
+  nudgeCamera(azimuthRad: number, elevationRad: number, zoomFactor = 1): void {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.theta += azimuthRad;
+    spherical.phi = THREE.MathUtils.clamp(spherical.phi - elevationRad, 0.08, Math.PI - 0.08);
+    spherical.radius = THREE.MathUtils.clamp(spherical.radius * zoomFactor, 0.08, 20);
+    this.camera.position.copy(this.controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    this.controls.update();
+  }
+
+  cameraState(): { position: [number, number, number]; target: [number, number, number] } {
+    return {
+      position: [this.camera.position.x, this.camera.position.y, this.camera.position.z],
+      target: [this.controls.target.x, this.controls.target.y, this.controls.target.z],
+    };
+  }
+
+  setReducedMotion(reduced: boolean): void {
+    this.controls.enableDamping = !reduced;
     this.controls.update();
   }
 
@@ -512,8 +551,8 @@ export class StudioScene {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     const buf = this.renderer.getDrawingBufferSize(new THREE.Vector2());
-    this.composer.setSize(buf.x, buf.y);
-    this.aoPass.setSize(buf.x, buf.y);
+    this.composer?.setSize(buf.x, buf.y);
+    this.aoPass?.setSize(buf.x, buf.y);
     this.normalTarget?.dispose();
     this.normalTarget = null; // lazily rebuilt at the new size
   }
@@ -531,7 +570,7 @@ export class StudioScene {
   private renderFrame(): void {
     this.renderer.info.reset();
     if (!this.blueprint) {
-      if (this.aoPass.enabled) {
+      if (this.aoPass?.enabled && this.composer) {
         this.composer.render();
       } else {
         this.renderer.render(this.scene, this.camera);
@@ -586,6 +625,7 @@ export class StudioScene {
   dispose(): void {
     this.disposed = true;
     this.normalTarget?.dispose();
+    this.composer?.dispose();
     this.renderer.dispose();
   }
 }

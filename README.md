@@ -461,6 +461,25 @@ ten builder-loop flows, proves anonymous share/private-route separation, and wri
 `artifacts/e2e/qa002-browser-e2e.json`. Use only a disposable isolated database; the
 runner refuses to start without the explicit gate marker supplied by `verify:db`.
 
+Run the separate QA-003 accessibility and supported-browser matrix with:
+
+```bash
+pnpm --filter @forge/studio build
+pnpm exec playwright-core install chromium firefox webkit
+FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support
+```
+
+The full web Studio tier targets cross-origin-isolated desktop Chromium-family
+browsers. Firefox and WebKit carry a viewer-grade contract: real-WASM local
+validation plus a core-baked Canvas2D schematic, share open, orbit, equipped-variant
+change, explode, blueprint, keyboard/focus, semantics, contrast, and critical target
+checks. Viewer-grade engines do not download the Three.js/WebGL scene bundle, so an
+unreliable graphics stack cannot block validation or configuration. Mobile is
+declared viewer grade but currently has only a 390 x 844 responsive proxy, not vendor-device
+proof; Playwright WebKit is not an Apple Safari/iOS certification. See
+[`docs/BROWSER-SUPPORT.md`](docs/BROWSER-SUPPORT.md) for the complete matrix,
+accessibility contract, evidence fields, and claim limits.
+
 ---
 
 ## Repo Map
