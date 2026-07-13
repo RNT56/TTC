@@ -45,6 +45,12 @@ offer commit and corrupt-output rollback plus failed-job recovery against the sa
 database service. A schema-only insert is not sufficient evidence for gateway or
 worker persistence behavior.
 
+The required `forge-core (Rust)` job also runs the golden-artifact policy against the
+cumulative PR patch. Registered schema/render/physics/validator/corpus/generated
+runtime changes must have a new append-only review record; the frozen prototype HTML
+is immutable. The machine inventory and review procedure are owned by
+[`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md).
+
 ## Release-blocking checks
 
 The following are not required on every PR, but must be green on the release commit:

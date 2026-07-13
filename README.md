@@ -406,8 +406,15 @@ pnpm verify
 This is the required non-database local gate: pinned Rust formatting, Clippy, tests,
 WASM/schema/native parity, all TypeScript packages, gateway/Brief-25, prototype
 oracles, budgets, fuzz/parity/release checks, Desktop/pilot invariants, workers, and
-patch hygiene. It also rejects mutable GitHub Action references. It fails if a
-prerequisite or committed generated/workflow artifact is stale.
+patch hygiene. It also rejects mutable GitHub Action references and registered golden
+artifact changes without a new append-only review record. It fails if a prerequisite
+or committed generated/workflow artifact is stale.
+
+Inspect the golden registry or run its focused policy gate with:
+
+```bash
+pnpm verify:goldens
+```
 
 The fast workflow-only policy check is:
 
@@ -446,7 +453,7 @@ DATABASE_URL=postgres://forge:forge-dev-only@localhost:5432/forge pnpm verify:db
 | `infra/migrations` | Postgres schema for catalog, jobs, artifacts, gates, commerce |
 | `catalog` | Component and reference rig data |
 | `examples` | First-party model contracts |
-| `docs` | Current state, phase/task/execution roadmaps, system design, decisions, pilot playbooks |
+| `docs` | Current state, phase/task/execution roadmaps, system design, decisions, golden review records, pilot playbooks |
 | `evals` | Brief-25 generation benchmark |
 | `scripts` | Codegen, migrations, checks, parity, evals |
 

@@ -23,7 +23,8 @@ files until the failure is classified.
   behavior; add it to the appropriate regression corpus.
 - Distinguish unavailable prerequisites from passing tests. A skip is not proof.
 - Treat schema/codegen, generated WASM, trajectory, render, and simulation drift as a
-  review event. Identify the intentional decision before re-pinning.
+  review event. Identify the intentional decision before re-pinning, then follow
+  [`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md) and add a new append-only record.
 - Redact secrets, provider payloads, user photos, telemetry identifiers, and signed
   URLs before sharing logs.
 - For remote-only failures, download artifacts and reproduce at the exact SHA. Do not

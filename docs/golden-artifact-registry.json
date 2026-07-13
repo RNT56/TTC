@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "golden-artifact-registry.v1",
+  "recordDirectory": "docs/golden-updates",
+  "immutablePaths": [
+    "prototype/cad-object-studio.html"
+  ],
+  "artifacts": [
+    {
+      "id": "golden-policy-registry",
+      "classification": "fixture",
+      "paths": [
+        "docs/golden-artifact-registry.json"
+      ],
+      "owner": "validator/core quality workstream",
+      "sourceOfTruth": "reviewed repository inventory of protected evidence artifacts",
+      "regenerate": "Edit deliberately with a golden update record; never generate from the changed tree alone",
+      "verify": [
+        "pnpm verify:goldens"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "modelspec-schema-and-types",
+      "classification": "schema",
+      "paths": [
+        "schema/forge-modelspec.schema.json",
+        "packages/studio/src/contract.gen.ts"
+      ],
+      "owner": "crates/forge-contract",
+      "sourceOfTruth": "Rust contract types emitted through forge-validate schema and TypeScript codegen",
+      "regenerate": "pnpm codegen:contract",
+      "verify": [
+        "pnpm verify:compatibility",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
+      "id": "native-wasm-golden-numbers",
+      "classification": "physics",
+      "paths": [
+        "crates/forge-wasm/tests/fixtures/golden.jsonl"
+      ],
+      "owner": "crates/forge-wasm",
+      "sourceOfTruth": "forge-golden reports over the four canonical ModelSpec contracts",
+      "regenerate": "cargo run -q -p forge-wasm --bin forge-golden -- examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json > crates/forge-wasm/tests/fixtures/golden.jsonl",
+      "verify": [
+        "cargo test -p forge-wasm --test golden_pinned",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "frozen-prototype-counts",
+      "classification": "fixture",
+      "paths": [
+        "prototype/extracted-counts.json"
+      ],
+      "owner": "prototype oracle",
+      "sourceOfTruth": "read-only extraction from the immutable prototype HTML",
+      "regenerate": "node scripts/extract-counts.mjs prototype/cad-object-studio.html --out prototype/extracted-counts.json",
+      "verify": [
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "frozen-prototype-trajectories",
+      "classification": "physics",
+      "paths": [
+        "prototype/trajectories/**"
+      ],
+      "owner": "crates/forge-motion",
+      "sourceOfTruth": "read-only deterministic execution of the immutable prototype drivers",
+      "regenerate": "node scripts/extract-trajectories.mjs",
+      "verify": [
+        "cargo test -p forge-motion --test tape_parity",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "translated-prototype-contracts",
+      "classification": "fixture",
+      "paths": [
+        "examples/hrx7.forge.json",
+        "examples/vx2-hornet.forge.json"
+      ],
+      "owner": "crates/forge-contract",
+      "sourceOfTruth": "deterministic translation from the immutable prototype",
+      "regenerate": "node scripts/translate-monolith.mjs",
+      "verify": [
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
+      "id": "declared-validator-verdicts",
+      "classification": "validator",
+      "paths": [
+        "examples/expected-verdicts.json"
+      ],
+      "owner": "crates/forge-validate",
+      "sourceOfTruth": "reviewed stable validator verdicts and error check IDs for every first-party contract",
+      "regenerate": "Review forge-validate reports and edit expectations only after classifying the invariant change",
+      "verify": [
+        "node scripts/validate-all.mjs",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
+      "id": "sim-export-goldens",
+      "classification": "physics",
+      "paths": [
+        "crates/forge-sim/tests/fixtures/vx2-mini.mjcf.xml",
+        "crates/forge-sim/tests/fixtures/vx2-mini.urdf"
+      ],
+      "owner": "crates/forge-sim",
+      "sourceOfTruth": "forge-sim exporters over examples/vx2-mini.forge.json",
+      "regenerate": "cargo test -p forge-sim --test write_fixtures -- --ignored",
+      "verify": [
+        "cargo test -p forge-sim",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
+      "id": "sim-parity-baseline",
+      "classification": "physics",
+      "paths": [
+        "crates/forge-sim/tests/fixtures/mujoco-parity-baseline.json"
+      ],
+      "owner": "crates/forge-sim",
+      "sourceOfTruth": "reviewed engine-backed MuJoCo measurements with fixture identity and threshold metadata",
+      "regenerate": "Capture a fresh engine-backed baseline through the P6 parity workflow; never hand-edit measured rows",
+      "verify": [
+        "pnpm sim:parity:check",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "render-parity-evidence",
+      "classification": "render",
+      "paths": [
+        "docs/assets/parity/**"
+      ],
+      "owner": "packages/studio",
+      "sourceOfTruth": "deterministic parity-gallery captures and structural edge metrics",
+      "regenerate": "pnpm -r build && pnpm parity -- --out artifacts/parity; copy only reviewed composites and metrics into docs/assets/parity",
+      "verify": [
+        "pnpm parity",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "brief25-corpus",
+      "classification": "fixture",
+      "paths": [
+        "evals/brief25.corpus.json"
+      ],
+      "owner": "packages/gateway generation",
+      "sourceOfTruth": "reviewed Brief-25 coverage vocabulary and acceptance corpus",
+      "regenerate": "Edit only with a corpus-version and coverage rationale; there is no auto-accept command",
+      "verify": [
+        "pnpm eval:brief25:check",
+        "pnpm eval:brief25",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "modelspec-fuzz-corpus",
+      "classification": "fixture",
+      "paths": [
+        "evals/fuzz/modelspec-seeds.json"
+      ],
+      "owner": "crates/forge-validate",
+      "sourceOfTruth": "minimized reviewed ModelSpec failures with pinned verdict and diagnostic IDs",
+      "regenerate": "node scripts/fuzz-contract-seeds.mjs --help; add only a minimized case preserving the target diagnostic",
+      "verify": [
+        "pnpm fuzz:contract:check",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
+      "id": "committed-wasm-facade",
+      "classification": "generated-runtime",
+      "paths": [
+        "packages/studio/src/wasm-pkg/**"
+      ],
+      "owner": "crates/forge-wasm",
+      "sourceOfTruth": "the pinned Rust/WASM toolchain and forge-wasm facade source",
+      "regenerate": "pnpm build:wasm",
+      "verify": [
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
+      "id": "studio-demo-mirrors",
+      "classification": "generated-runtime",
+      "paths": [
+        "packages/studio/public/demo/**"
+      ],
+      "owner": "packages/studio",
+      "sourceOfTruth": "the canonical first-party contracts under examples/",
+      "regenerate": "pnpm demo:sync",
+      "verify": [
+        "pnpm --filter @forge/studio build",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    }
+  ]
+}

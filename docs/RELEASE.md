@@ -65,7 +65,7 @@ passed the same verifier on macOS using the macOS x86_64 payload.
 
 ## Pre-release
 
-1. `main` is protected, clean, and green in CI, security, nightly, and the 32-step
+1. `main` is protected, clean, and green in CI, security, nightly, and the 33-step
    local gate.
 2. Cargo, npm/WASM, compatibility-matrix, release-note, and tag versions agree.
 3. `docs/releases/v<version>.md` lists compatibility, migrations, rollback, known

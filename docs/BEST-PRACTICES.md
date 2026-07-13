@@ -102,6 +102,12 @@ comments only for constraints the code cannot show.
 
 A red harness blocks merge. Flaky tests are bugs, not noise.
 
+Golden files are evidence, not an escape hatch. Change the owning implementation,
+model, or measurement first; inspect the semantic delta; then follow
+[`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md), use the registered regeneration path,
+and add a new append-only update record. Never regenerate an expectation merely
+because its test failed, and never edit the frozen prototype oracle.
+
 ## 7. Performance budget discipline
 
 Budgets ([`architecture.md`](architecture.md) §7) are acceptance criteria — including

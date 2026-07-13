@@ -35,16 +35,19 @@ The broad v0 and most deterministic fixture contracts exist. G0 and G1 are green
 protected `main`: annotated validator v0.1.0 and its nine assets were produced by the
 release workflow, downloaded after publication, and independently verified. SEC-006
 contract/fixture acceptance is protected on `main` through PR #31 with exact
-post-merge CI/security proof; docs-only PR #32 and its post-merge CI/security are
-also green. The native Anthropic ETL transport now exists at contract/fixture
-maturity (D36), but no credentialed provider or end-to-end reviewed-row proof exists.
-The next ordered work continues the dependency-complete Wave 2 builder loop.
+post-merge CI/security proof. Native Anthropic ETL and queued vendor normalization
+exist at contract/fixture maturity through PRs #33/#34; docs-only evidence PR #35 is
+green at `4fe0df6`. No credentialed provider, end-to-end reviewed row, or real vendor
+operation is proven. This QA-008 candidate adds machine-enforced golden review; the
+next ordered work otherwise continues the dependency-complete Wave 2 builder loop.
 
 Current Wave 1/2 boundary:
 
 - public support/security surfaces, ModelSpec 2.2, and SEC-001..006 are protected on
   `main` through PRs #30/#31 with exact local, Postgres, CI, security, dependency,
   SBOM, CodeQL, Desktop, and post-merge proof;
+- native ETL and the idempotent transactional commerce queue are protected at
+  contract/fixture maturity through PRs #33/#34, with evidence reconciled by PR #35;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -298,6 +301,8 @@ Required practices:
 - avoid dependency chains that hide downstream failures where parallel jobs are safe;
 - upload diagnostics/eval/parity artifacts on failure;
 - treat warnings and test skips as explicit evidence, not success.
+- require the machine registry and a new append-only record before any protected
+  schema/render/physics/validator/corpus/generated-runtime artifact re-pin.
 
 Exit: G0.
 
@@ -369,7 +374,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | Phase | Remaining phase work | Adjacent gates | Closure proof |
 |---|---|---|---|
 | P0 | none | decision hygiene | closed by D32; no fabricated historical variants |
-| P1 | P1-004, P1-017 | REC, QA perf/browser | real-mid-hardware budget; XC-28 configurator truth complete |
+| P1 | P1-004, P1-017 | REC, QA perf/browser; QA-008 golden-review candidate | real-mid-hardware budget; XC-28 configurator truth complete; registered re-pins are review-gated after protected QA-008 delivery |
 | P2 | none | explicit registry deferral remains policy, not incomplete phase work | closed: v0.1 published/installed and v0.2 exact checks/post-merge proof |
 | P3 | P3-004 credentialed ETL sandbox and persistence | D36 native transport, SEC citation/license, OPS provider | one real extracted row is deduped, persisted immutably, owner-reviewed, and consumed through BOM/export with recovery evidence |
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and an external R1 flow succeeds without bypassing review |

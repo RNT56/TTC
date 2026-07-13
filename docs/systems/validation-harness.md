@@ -183,7 +183,10 @@ canonical scene; the **golden-number suite** (XT-001) guarding native↔WASM
 exactness; schema compatibility matrix; **generator fuzzing** with every failure
 minimized into a permanent regression case (XC-24); **Brief-25** generation suite
 with dashboard (D-evals — lives with the generation pipeline but is enforced here as
-a CI gate).
+a CI gate). The inventory, immutable-oracle rule, regeneration procedure, and
+append-only review records for these artifacts are owned by
+[`../GOLDEN-ARTIFACTS.md`](../GOLDEN-ARTIFACTS.md) and enforced by
+`pnpm verify:goldens`.
 
 Live 2026-06-14: XC-24 has a deterministic ModelSpec fuzz seed corpus at
 [`evals/fuzz/modelspec-seeds.json`](../../evals/fuzz/modelspec-seeds.json) and an

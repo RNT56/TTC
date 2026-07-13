@@ -123,9 +123,10 @@ line; new producers must emit `schemaVersion: "1.0.0"`.
 Every compatibility-affecting pull request must update the machine matrix and this
 document, add or modify migration/compatibility fixtures, run
 `pnpm verify:compatibility`, regenerate schema/TypeScript/WASM outputs when relevant,
-and record the user-visible effect in `CHANGELOG.md`. Never infer support from a
-lenient parser: a version is supported only when it is listed in the matrix and
-covered by an acceptance test.
+add the review evidence required by [`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md) when
+a registered artifact changes, and record the user-visible effect in `CHANGELOG.md`.
+Never infer support from a lenient parser: a version is supported only when it is
+listed in the matrix and covered by an acceptance test.
 
 Release notes must include a compatibility section with supported input ranges,
 new deprecations, removals, migration commands, and rollback notes. GOV-008 owns the
