@@ -35,9 +35,12 @@ Do not casually rename these jobs. Change a required name in two stages: first s
 the replacement check while the old name is still present, then update the ruleset
 and this document, then remove the old check.
 
-The Postgres job must apply every migration, seed the reviewed catalog, run the P3/
-user-data/consent/lifecycle assertions owned by `pnpm verify:db`, and execute any
-cross-language transactional materializer acceptance added by the changed surface.
+The Postgres job must apply every migration, run QA-004's clean/every-populated-
+predecessor/checksum/idempotency/failure/concurrency acceptance, seed the reviewed
+catalog, run the P3/user-data/consent/lifecycle assertions owned by `pnpm verify:db`,
+and execute any cross-language transactional materializer acceptance added by the
+changed surface. Its uploaded evidence must include
+`qa004-migration-acceptance.json` bound to the exact checkout.
 It must also run QA-002 through a production Studio preview with same-origin gateway
 proxying, the exact downloaded validator artifact, real built WASM, headless Chromium,
 and the isolated Postgres service. The uploaded JSON evidence or failure screenshot

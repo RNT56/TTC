@@ -44,6 +44,10 @@ QA-003 deterministic supported-browser/accessibility acceptance is protected thr
 PR #42 at `9c1802b`: Chromium uses full WebGL, while Firefox/WebKit draw the
 core-baked Canvas2D schematic without loading scene/Three.js chunks. Exact PR and
 post-merge CI/security plus the clean merge artifact are green.
+QA-004 is the active dependency-complete quality lane: D37, the transactional
+checksum/gap-refusing runner, the complete populated predecessor matrix, and the
+database recovery runbook are implemented locally; required protected Postgres and
+post-merge evidence remain before closure.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
@@ -339,6 +343,10 @@ Required practices:
 - retain the unmodified Chromium/Firefox/WebKit QA-003 matrix and its exact-revision
   evidence for Studio semantics, interaction, layout, motion, renderer/presentation-
   asset isolation, or support-tier changes.
+- retain D37's advisory-lock, contiguous-checksum, per-migration transaction, clean
+  plus every populated predecessor, idempotency, failure-recovery, and concurrency
+  assertions in the required Postgres job; database rollback guidance lives in
+  `MIGRATIONS.md`, while production DR remains OPS-005.
 
 Exit: G0.
 

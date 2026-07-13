@@ -57,6 +57,15 @@ claim physical provider-backup deletion. Data-lifecycle 1.0.0 governs retention
 classes, legal-hold events, backup catalog/expiry states, tombstones, restore checks,
 and pseudonymous audit evidence.
 
+The internal Postgres schema uses an ordered migration prefix rather than an
+independent SemVer surface. D37 and [`MIGRATIONS.md`](MIGRATIONS.md) support every
+exact checked-in predecessor prefix during the pre-1.0 line. Recorded filenames and
+checksums are immutable compatibility evidence: gaps, missing source, or checksum
+drift are unsupported integrity failures and must never be repaired by editing the
+ledger. Retiring a prefix or introducing destructive persisted-data semantics still
+requires this policy's decision, backup-impact, release-note, and migration/recovery
+procedure.
+
 ModelSpec 2.2 adds `slots[].equippedVariantId`. For a 2.1 slot with exactly one
 alternative, `forge-validate migrate <file> --to current` records and equips that
 sole alternative. Migration refuses to guess when a legacy slot has multiple

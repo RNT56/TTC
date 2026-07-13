@@ -454,8 +454,13 @@ pnpm exec playwright-core install --with-deps chromium
 DATABASE_URL=postgres://forge:forge-dev-only@localhost:5432/forge pnpm verify:db
 ```
 
-This applies and seeds the schema, runs every Postgres invariant, then launches the
-production Studio bundle and gateway for QA-002. The browser gate requires the real
+This first runs QA-004's clean plus every populated predecessor, checksum,
+idempotency, failure-recovery, and concurrent-run acceptance, then seeds the current
+schema, runs every Postgres invariant, and launches the production Studio bundle and
+gateway for QA-002. QA-004 writes
+`artifacts/e2e/qa004-migration-acceptance.json`; deployment, backup impact,
+roll-forward, application rollback, and failure triage are defined in
+[`docs/MIGRATIONS.md`](docs/MIGRATIONS.md). The browser gate requires the real
 `target/debug/forge-validate`, loads the committed built WASM facade, exercises the
 ten builder-loop flows, proves anonymous share/private-route separation, and writes
 `artifacts/e2e/qa002-browser-e2e.json`. Use only a disposable isolated database; the

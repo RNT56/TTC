@@ -156,6 +156,7 @@ jobs:
       - name: isolated Postgres and real-browser acceptance
         env:
           FORGE_BROWSER_E2E: "1"
+          FORGE_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
         run: pnpm verify:db
       - name: accessibility and supported-browser acceptance
         env:

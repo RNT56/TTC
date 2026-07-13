@@ -271,8 +271,10 @@ semantically reviewed, and bound to exact protected checks.
   install/version proof, and post-release smoke.
 - Live providers require sandbox/prod separation, capability discovery, timeout,
   rate limit, circuit breaker, idempotency, cancellation, cost bound, and degraded UX.
-- Data changes require populated forward-migration proof, backup/restore impact, and
-  roll-forward/rollback procedure.
+- Data changes follow D37 and [`MIGRATIONS.md`](MIGRATIONS.md): prove the clean path
+  and every supported populated predecessor, exact checksum/idempotency history,
+  atomic failure recovery, concurrent serialization, backup/restore impact, and the
+  roll-forward/application-rollback procedure.
 - Production readiness includes secrets rotation, non-root/minimal images,
   observability, SLOs, alert ownership, incident response, retention, deletion, and
   disaster recovery.

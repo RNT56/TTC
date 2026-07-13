@@ -65,7 +65,7 @@ passed the same verifier on macOS using the macOS x86_64 payload.
 
 ## Pre-release
 
-1. `main` is protected, clean, and green in CI, security, nightly, and the 33-step
+1. `main` is protected, clean, and green in CI, security, nightly, and the 35-step
    local gate.
 2. Cargo, npm/WASM, compatibility-matrix, release-note, and tag versions agree.
 3. `docs/releases/v<version>.md` lists compatibility, migrations, rollback, known
@@ -95,6 +95,10 @@ its signing, update, and Linux dependency gates are separate.
 
 ## Failure and rollback
 
+- Database changes follow D37 and [`MIGRATIONS.md`](MIGRATIONS.md): retain the
+  additive schema on normal application rollback, refuse edited/gapped ledger
+  history, use a new forward migration for a committed defect, and restore only from
+  a verified eligible backup under the reviewed recovery plan.
 - Before publication: fix the source and rerun; never replace files inside a passed
   artifact or reuse a failed tag.
 - After a bad GitHub Release: mark it withdrawn, document the affected checksums,

@@ -44,14 +44,16 @@ Read in this order for every non-trivial session:
 11. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
    outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
    or release archive handling.
-12. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+12. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
+    persisted-data compatibility, backup impact, or database recovery behavior.
+13. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-13. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+14. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
-14. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+15. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-15. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-16. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+16. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+17. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -99,8 +101,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - QA-008 is protected through PR #36: fourteen registered golden artifact families
   are machine-governed, the frozen prototype is immutable, and any registered re-pin
   requires a new append-only evidence record. QA-010 is protected through PR #40:
-  the baseline now has 34 local steps and a machine-checked external-acceptance
-  policy across eight milestones;
+  its 34th step machine-checks external-acceptance policy across eight milestones;
+  the QA-004 implementation candidate adds a 35th migration-runner policy step;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -113,6 +115,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   post-merge CI/security plus the clean exact-revision artifact are green; this does
   not prove Apple/mobile devices, assistive technologies, external users, or field
   maturity;
+- QA-004 is in implementation under D37: a shared advisory-lock runner validates an
+  exact contiguous checksummed prefix and commits each migration with its ledger row
+  atomically; the clean/all-populated-predecessor, failure/recovery, idempotency, and
+  concurrency harness plus `docs/MIGRATIONS.md` are present, but protected Postgres
+  and post-merge evidence remain before the task closes;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
@@ -409,7 +416,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
-| Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes |
+| Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
@@ -463,6 +470,8 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - `docs/ROADMAP.md` owns phase status and exit criteria.
 - `docs/TODO.md` owns stable atomic tasks.
 - `docs/EXECUTION-ROADMAP.md` owns sequencing, workstreams, gates, and handoffs.
+- `docs/MIGRATIONS.md` owns the supported Postgres prefix, transactional runner,
+  backup-impact, deployment, rollback/roll-forward, and failed-migration runbook.
 - `docs/GOLDEN-ARTIFACTS.md` and its machine registry own re-pin procedure,
   immutable-oracle policy, regeneration commands, and append-only review evidence.
 - `docs/EXTERNAL-ACCEPTANCE.md` and its machine registry own external scripts,
