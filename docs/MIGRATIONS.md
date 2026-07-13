@@ -80,6 +80,14 @@ authority from `0016`, and lifecycle authority from `0017`. Migration `0019` is
 exercised with deliberately reversed `0018` sequence values so causal backfill, not
 insertion order, owns authority chronology.
 
+Migration `0021` adds the D38 fault boundary. Its populated predecessor acceptance
+must prove that legacy running rows are safely requeued before the lease constraint,
+existing objects remain readable as complete, new client objects are staged by the
+gateway, and all new constraints/indexes survive idempotent rerun. The same isolated
+database then runs `db:assert-upload-faults` and `db:assert-queue-faults`; they write
+`artifacts/e2e/qa005-upload-acceptance.json` and
+`artifacts/e2e/qa005-fault-acceptance.json` respectively.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -127,6 +135,12 @@ path before deploy, not after a failure.
    version compatibility, and any object-store coupling.
 7. Stop or drain writers when the migration plan requires it. Hardware, provider,
    and worker queues keep their own fail-closed procedures.
+
+For `0021`, stop every old Python worker before migration. Confirm no provider can
+continue writing through an old process, record queued/running counts, and let the
+migration requeue tokenless legacy running rows. Deploy the D38-capable gateway and
+workers together; do not resume queue consumption until the lease-state invariant and
+the QA-005 upload/queue assertions pass.
 
 ### Apply and verify
 
@@ -183,6 +197,14 @@ new writes that the older application cannot understand and drain/cancel incompa
 jobs. Migration-specific rules remain in the owning system docs; for example,
 `0020` requires commerce jobs to stop and drain while the expanded job-kind
 constraint stays in place.
+
+After `0021`, an older worker is not application-compatible: it cannot create the
+required token/expiry when setting a row to `running`. To roll the application back,
+stop enqueueing and all workers, drain or explicitly cancel live attempts with the
+D38 version, deploy the prior gateway only if it will not create new staged uploads,
+retain the additive columns/constraints, and roll forward to the D38 worker before
+queue service resumes. Do not drop lease/upload evidence or mark staged rows complete
+as a rollback shortcut.
 
 Use roll-forward for a committed schema defect: add a new migration that restores
 the intended invariant and preserves evidence. Use backup restore only under the

@@ -89,8 +89,8 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Browser -> gateway | headers, cookies, origin, body, identifiers | Fastify/Auth.js/route authorization | pinned origin, built-in CSRF, bounded parsing, schema, owner checks, rate class |
 | Gateway -> Postgres | API intent and provider-derived data | transaction/service functions | parameterized SQL, ownership, serializable locks where authority races, bounded JSON |
 | Gateway -> provider | URL, DNS, remote response | bounded transport adapter | exact HTTPS host, no credentials/fragments/redirects, resolution check, timeout, byte/type/JSON caps |
-| Gateway -> object store | owner key, MIME, declared size | presign/deletion adapter | explicit config, scoped key, signed length/type, short expiry, forced download, delete-before-commit |
-| Queue -> worker | job payload and deployment config | worker dispatcher/adapter | kind allowlist, consent and cancellation, bounded JSON/network/process/result |
+| Gateway -> object store | owner key, MIME, declared size/checksum | presign/inspection/deletion adapter | explicit config, scoped key, declared length/type plus signed checksum, staged-until-inspected completion, short expiry, forced download, delete-before-commit |
+| Queue -> worker | job payload and deployment config | worker dispatcher/adapter | kind allowlist, consent/cancellation, bounded JSON/network/process/result, opaque expiring attempt fence |
 | Provider/command -> validator | arbitrary contract/artifact/result | validator and license/admission gates | allowlisted result fields, provenance, bounded process, sovereign verdict |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
@@ -171,6 +171,15 @@ The gateway domain-separates the client key with authenticated owner identity be
 persistence, binds reuse to exact kind/provider/input, rejects drift with 409, and
 does not repeat fixture materialization. This prevents guessed global keys from
 returning another tenant's row or suppressing that tenant's credit debit.
+
+D38 makes non-fixture execution explicitly at-least-once. A claim increments the
+attempt count and assigns an opaque token plus expiry; the persisted 1-second to
+8-hour timeout is injected into the handler. Only that same unexpired token may
+retry, fail, succeed, or materialize. Expired work can be reclaimed under a new
+token; stale duplicates, cancelled attempts, and late timeout results are discarded.
+Provider outage, rate limit, process timeout, and partial-object failures have stable
+codes plus deterministic 5-second exponential backoff capped at 15 minutes and the
+row's attempt ceiling. Unknown handler faults terminate rather than retry blindly.
 
 Native Anthropic ETL accepts at most 4 MiB request JSON, 2 MiB response bytes, and
 512 KiB of tool input. The fixed request uses 8,192 output tokens and a 1..120-second
@@ -299,8 +308,13 @@ Endpoints cannot contain credentials, query strings, or fragments.
 Object keys reject absolute/traversal/control forms. Presign and delete operations
 accept only the configured bucket and validate every key before network I/O, even
 when the reference came from the database. Client upload registration requires a
-bounded declared size, and upload signatures bind that content length and the content
-type; URLs expire in 60..3,600 seconds and responses carry `Cache-Control: no-store`.
+bounded declared size, MIME type, and SHA-256; the upload contract carries length/type,
+the signature binds the checksum, and new rows remain `staged`.
+`POST /v1/blobs/:id/complete` performs a server-side HEAD
+with checksum mode and compare-and-sets `complete` only if exact received metadata
+matches the unchanged declaration. Partial, mismatched, checksum-less, or raced
+objects stay staged and cannot be downloaded or authorize photoscan. URLs expire in
+60..3,600 seconds and responses carry `Cache-Control: no-store`.
 Downloads are forced as attachments with `application/octet-stream` to prevent active-
 content rendering. Metadata registration validates purpose, MIME, safe integer size,
 owner scope, and bounded metadata.
@@ -403,9 +417,9 @@ and tracing defaults separately; application tests cannot prove those external l
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |
 | Native ETL provider output | exact endpoint/version/model, forced supported-subset strict tool, bounded response and local canonical-row validation/provenance tests | credentialed adversarial sandbox through persistence/review/BOM/export plus outage, billing, retention, and recovery evidence |
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
-| Malicious upload/archive | MIME/name refusal; forced download; exact release archive allowlist/caps | quarantine scanner for any future importer |
+| Malicious/partial upload or archive | checksum-bound PUT, staged-until-exact HEAD completion, staged download/consent refusal, MIME/name refusal, forced download, exact release archive allowlist/caps | provider IAM/checksum audit and quarantine scanner for any future importer |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |
-| Provider replay/late result | cancelled-output discard and consent authority tests | future callback signature/replay suite or queue authenticity proof |
+| Provider replay/late result | lease-fenced expiry/reclaim, stale duplicate discard, one-time materialization, retry ceiling, and cancellation authority tests | multi-replica outage/partition drill, dead-letter reconciliation, or callback signature/replay suite |
 | Abuse/cost exhaustion | deterministic class/identity/reset tests | shared limiter, cost/concurrency quotas, alert exercise |
 | Supply-chain archive poisoning | exact contents, traversal and expanded-size tests; checksum/SBOM/install smoke | repeated post-publication verification and incident rollback drill |
 
@@ -439,7 +453,8 @@ Before any production/live-provider claim:
 | DNS rebinding between validation and connect | application resolver does not pin the socket destination | operations: egress proxy/firewall and connection logs |
 | Single-process rate limiter | no cross-replica atomic state or durable quota | operations: shared rate/cost/concurrency control |
 | Shared owner token | not named RBAC; coarse revocation and audit identity | platform/security before delegated operators |
-| Uploaded content is declared, not fully inspected | no quarantine/content scanner; import intentionally absent | security/compute before any archive or active-content importer |
+| Uploaded bytes are integrity-checked, not semantically quarantined | exact length/type/checksum does not detect malicious valid-format content; import intentionally absent | security/compute before any archive or active-content importer |
+| Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |
 | Process/container isolation | process bounds do not provide a full OS sandbox | operations: non-root container, seccomp/sandbox, limits, egress |

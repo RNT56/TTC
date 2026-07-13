@@ -6,7 +6,7 @@ GPU/provider stacks remain adapter-backed · **Phases:** P3/P4 (ETL), P5
 (photoscan), P6 (OCCT full), P7 (training), P11 (commerce) ·
 **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
-(fixture-first expansion), D36 (native ETL boundary)
+(fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue)
 
 ## 1. Purpose
 
@@ -28,8 +28,12 @@ container image per worker family.
 Live 2026-06-14: `workers/forge_workers/runner.py` imports and registers the
 deterministic handlers used by the Docker Compose worker service. The gateway-owned
 job table is the current queue contract for local P4-P12; the runner claims
-`local`/`modal` jobs with `FOR UPDATE SKIP LOCKED`, records attempts/events, and
-marks outputs or fail-closed errors back onto the row. Successful artifact jobs are
+`local`/`modal` jobs with `FOR UPDATE SKIP LOCKED`, records attempts/events, and,
+under D38, assigns a per-attempt opaque token and expiry. The persisted timeout is
+passed into command/network adapters and is also the result deadline; only the current
+unexpired token may schedule a retry, fail,
+succeed, or materialize output. Expired attempts can be reclaimed under a new token,
+while stale/duplicate/cancelled completions are discarded. Successful artifact jobs are
 materialized into the same sidecar tables as synchronous gateway fixture jobs.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
@@ -226,6 +230,16 @@ job. It proves a valid worker result commits job success plus one offer, while a
 mixed valid/corrupt result rolls back job success and all offer inserts, then records
 the job failed without stopping the runner.
 
+QA-005 adds deterministic worker coverage for owner/request idempotency, bounded
+retry, rate-limit hints, provider outage, process timeout, partial-object faults,
+cancellation, max-attempt exhaustion, and persisted-timeout authority. Protected
+Postgres acceptance in `workers/integration/assert_queue_faults_postgres.py` forces an
+attempt lease to expire, reclaims it through a second store, rejects the stale first
+result, materializes the winner once, and exercises outage recovery, rate-limit
+exhaustion, partial recovery, and cancellation. It writes
+`artifacts/e2e/qa005-fault-acceptance.json`; this is isolated deterministic fault
+injection, not a production outage drill.
+
 ## 7. Phase mapping & backlog
 
 P3/P4: ETL fixture, command, and native Anthropic contract paths exist
@@ -247,15 +261,17 @@ for durable S3/MinIO storage.
 
 D34 withdrawal is authoritative over worker completion. Photoscan/training
 withdrawal changes matching queued or running jobs to `cancelled`; the Postgres
-worker may mark success/failure and materialize output only while the row is still
-`running`. A late result from already-started compute is recorded as discarded and
-cannot overwrite cancellation or enter artifact tables. This prevents the local
+worker clears the attempt lease and may mark success/failure and materialize output
+only while the row is still `running` under the same unexpired token. A late result
+from already-started compute is recorded as discarded and cannot overwrite
+cancellation or enter artifact tables. This prevents the local
 data-plane race but does not claim that an external provider can stop work already
 in flight.
 
 ## 8. Open questions
 
-Production lease hardening beyond the local `jobs` table; TRELLIS-class model pick
-and hosting at P5 (the field moves fast — pin at implementation); live
+Multi-replica queue capacity, heartbeat policy for tasks that legitimately exceed one
+attempt deadline, dead-letter/reconciliation operations, and queue SLOs; TRELLIS-class
+model pick and hosting at P5 (the field moves fast — pin at implementation); live
 SB3/MuJoCo/MJX/OCCT dependency pinning and benchmark evidence; review queue UI
 ownership beyond the existing gateway/studio scaffolds.

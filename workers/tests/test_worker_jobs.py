@@ -1,6 +1,13 @@
 import pytest
 
 from forge_workers import register_all_handlers
+from forge_workers.faults import (
+    JobTimeoutError,
+    PartialObjectUploadError,
+    ProviderRateLimitError,
+    ProviderUnavailableError,
+    retry_delay_seconds,
+)
 from forge_workers.queue import HandlerRegistry, Job, PostgresQueueStore, run_once, registry
 from forge_workers.training.tasks import task_ids
 
@@ -8,8 +15,9 @@ from forge_workers.training.tasks import task_ids
 class FakeStore:
     def __init__(self, job: Job | None):
         self.job = job
-        self.succeeded: tuple[str, dict] | None = None
-        self.failed: tuple[str, str] | None = None
+        self.succeeded: tuple[Job, dict] | None = None
+        self.failed: tuple[Job, str, str] | None = None
+        self.retried: tuple[Job, str, str, float] | None = None
         self.events: list[tuple[str, str, dict]] = []
         self.claimed_tasks: list[str] = []
 
@@ -19,13 +27,20 @@ class FakeStore:
         self.job = None
         return job
 
-    def mark_succeeded(self, job_id: str, output: dict) -> bool:
-        self.succeeded = (job_id, output)
+    def mark_succeeded(self, job: Job, output: dict) -> bool:
+        self.succeeded = (job, output)
         return True
 
-    def mark_failed(self, job_id: str, error: str) -> bool:
-        self.failed = (job_id, error)
+    def mark_failed(self, job: Job, error: str, code: str) -> bool:
+        self.failed = (job, error, code)
         return True
+
+    def mark_retryable(self, job: Job, error: str, code: str, retry_after_seconds: float) -> str:
+        self.retried = (job, error, code, retry_after_seconds)
+        if job.attempts >= job.max_attempts:
+            self.failed = (job, error, code)
+            return "failed"
+        return "queued"
 
     def record_event(self, job_id: str, event: str, payload: dict) -> None:
         self.events.append((job_id, event, payload))
@@ -187,7 +202,9 @@ def test_run_once_claims_and_marks_success():
     store = FakeStore(Job(id="job-1", task="unit.echo", payload={"value": 42}, idempotency_key="idem-1"))
     assert run_once(store, handlers)
     assert store.claimed_tasks == ["unit.echo"]
-    assert store.succeeded == ("job-1", {"seen": 42})
+    assert store.succeeded is not None
+    assert store.succeeded[0].id == "job-1"
+    assert store.succeeded[1] == {"seen": 42}
     assert store.failed is None
     assert [event for _, event, _ in store.events] == ["started", "succeeded"]
 
@@ -203,8 +220,9 @@ def test_run_once_marks_handler_failure_without_raising():
     assert run_once(store, handlers)
     assert store.succeeded is None
     assert store.failed is not None
-    assert store.failed[0] == "job-2"
+    assert store.failed[0].id == "job-2"
     assert "ValueError: bad payload" in store.failed[1]
+    assert store.failed[2] == "handler-failed"
     assert [event for _, event, _ in store.events] == ["started", "failed"]
 
 
@@ -216,7 +234,7 @@ def test_run_once_marks_materialization_failure_without_stopping_the_worker():
         return {"artifactKind": "corrupt"}
 
     class MaterializationFailureStore(FakeStore):
-        def mark_succeeded(self, job_id: str, output: dict) -> bool:
+        def mark_succeeded(self, job: Job, output: dict) -> bool:
             raise RuntimeError("materialization rejected")
 
     store = MaterializationFailureStore(
@@ -225,7 +243,7 @@ def test_run_once_marks_materialization_failure_without_stopping_the_worker():
     assert run_once(store, handlers)
     assert store.succeeded is None
     assert store.failed is not None
-    assert store.failed[0] == "job-materialize-fail"
+    assert store.failed[0].id == "job-materialize-fail"
     assert "RuntimeError: materialization rejected" in store.failed[1]
     assert [event for _, event, _ in store.events] == ["started", "failed"]
 
@@ -238,7 +256,7 @@ def test_run_once_discards_output_when_withdrawal_cancelled_the_running_job():
         return {"mustNotMaterialize": True}
 
     class CancelledStore(FakeStore):
-        def mark_succeeded(self, job_id: str, output: dict) -> bool:
+        def mark_succeeded(self, job: Job, output: dict) -> bool:
             self.succeeded = None
             return False
 
@@ -246,7 +264,91 @@ def test_run_once_discards_output_when_withdrawal_cancelled_the_running_job():
     assert run_once(store, handlers)
     assert store.succeeded is None
     assert [event for _, event, _ in store.events] == ["started", "discarded"]
-    assert store.events[-1][2]["reason"] == "job no longer running"
+    assert store.events[-1][2]["reason"] == "job lease is no longer current"
+
+
+@pytest.mark.parametrize(
+    ("fault", "code"),
+    [
+        (ProviderUnavailableError(), "provider-unavailable"),
+        (JobTimeoutError(), "worker-timeout"),
+        (PartialObjectUploadError(), "partial-object-upload"),
+    ],
+)
+def test_retryable_faults_schedule_a_new_bounded_attempt(fault, code):
+    handlers = HandlerRegistry()
+
+    @handlers.register("unit.transient")
+    def _transient(_job: Job) -> dict:
+        raise fault
+
+    job = Job(
+        id=f"job-{code}",
+        task="unit.transient",
+        payload={},
+        idempotency_key=f"idem-{code}",
+        attempts=1,
+        lease_token="lease-current",
+    )
+    store = FakeStore(job)
+    assert run_once(store, handlers)
+    assert store.failed is None
+    assert store.retried is not None
+    assert store.retried[2] == code
+    assert store.retried[3] == 5.0
+    assert [event for _, event, _ in store.events] == ["started", "retry-scheduled"]
+    assert store.events[-1][2]["code"] == code
+
+
+def test_rate_limit_hint_controls_retry_and_attempt_ceiling_fails_closed():
+    handlers = HandlerRegistry()
+
+    @handlers.register("unit.rate-limited")
+    def _rate_limited(_job: Job) -> dict:
+        raise ProviderRateLimitError(37)
+
+    job = Job(
+        id="job-rate-limit",
+        task="unit.rate-limited",
+        payload={},
+        idempotency_key="idem-rate-limit",
+        attempts=3,
+        max_attempts=3,
+        lease_token="lease-final",
+    )
+    store = FakeStore(job)
+    assert run_once(store, handlers)
+    assert store.retried is not None
+    assert store.retried[2:] == ("provider-rate-limited", 37.0)
+    assert store.failed is not None
+    assert store.failed[2] == "provider-rate-limited"
+    assert [event for _, event, _ in store.events] == ["started", "failed"]
+
+
+def test_retry_delay_is_deterministic_and_caps_untrusted_hints():
+    assert retry_delay_seconds(1) == 5.0
+    assert retry_delay_seconds(2) == 10.0
+    assert retry_delay_seconds(3, 37) == 37.0
+    assert retry_delay_seconds(99, 999_999) == 900.0
+
+
+def test_persisted_attempt_timeout_overrides_untrusted_payload_hint():
+    handlers = HandlerRegistry()
+
+    @handlers.register("unit.timeout")
+    def _observe_timeout(job: Job) -> dict:
+        return {"timeoutS": job.payload["timeoutS"]}
+
+    result = handlers.dispatch(
+        Job(
+            id="job-timeout-authority",
+            task="unit.timeout",
+            payload={"timeoutS": 999_999},
+            idempotency_key="idem-timeout-authority",
+            timeout_seconds=17,
+        )
+    )
+    assert result == {"timeoutS": 17}
 
 
 def test_photoscan_single_emits_candidate_review_row():

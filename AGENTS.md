@@ -123,6 +123,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   all 19 populated predecessors, preservation/idempotency, failure recovery, history
   refusal, and concurrent apply-once behavior. Production backup/restore, capacity,
   and measured RPO/RTO remain OPS-005;
+- QA-005 is implementation-complete locally but remains in progress until exact
+  protected PR and post-merge evidence pass. D38/migration 0021 add expiring opaque
+  attempt leases, bounded retries, cancellation and stale-result fencing, stable fault
+  codes, and staged client objects that cannot be downloaded or authorize photoscan
+  until length, MIME type, and SHA-256 match the server-inspected object;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
@@ -171,7 +176,7 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Admission | `crates/forge-validate` | The validator is sovereign; fix artifacts, never weaken checks to green them |
 | Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction; support tiers and accessibility acceptance are owned by `docs/BROWSER-SUPPORT.md` |
 | API/data/platform | `packages/gateway`, `infra/migrations` | Validate writes, scope ownership, fail closed, preserve audit history |
-| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface |
+| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
@@ -320,6 +325,27 @@ Application threat boundary (SEC-006):
   multi-replica or billable-provider claim. The complete control/residual-risk matrix
   is owned by `docs/THREAT-MODEL.md`.
 
+Queue and client-upload fault boundary (D38/QA-005):
+
+- non-fixture jobs are at-least-once. A claim increments the bounded attempt count,
+  assigns an opaque token and expiry, and passes the persisted timeout to the handler;
+  only that current unexpired token may retry, fail, succeed, or materialize output;
+- an expired lease is reclaimable under a new token. A stale duplicate, cancelled
+  attempt, timed-out completion, or result arriving after another attempt wins is
+  discarded. Cancellation clears the lease; it always outranks worker completion;
+- provider outage, rate limit, process timeout, and incomplete-object faults use
+  stable codes and deterministic bounded backoff. Unknown/invalid results fail
+  terminally; max-attempt exhaustion cannot silently requeue forever;
+- authenticated client objects start `staged`. Upload contracts carry declared size
+  and MIME type, while the signature binds the checksum;
+  `POST /v1/blobs/:id/complete` independently inspects the stored object and
+  compare-and-sets `complete` only for the unchanged declaration.
+  Staged/mismatched objects cannot be downloaded or grant photoscan authority;
+- these controls prove deterministic/local and isolated-Postgres recovery only.
+  Multi-replica capacity, durable dead-letter operations, provider circuit breakers,
+  shared quotas, object-provider incident drills, and SLO evidence remain OPS-003,
+  OPS-004, OPS-006, OPS-007, QA-006, and QA-009.
+
 External acceptance boundary (QA-010/EXT-001..008):
 
 - the versioned registry and CLI under `docs/external-acceptance/` and `scripts/`
@@ -417,9 +443,9 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
-| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
+| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
-| Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes |
+| Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |

@@ -463,6 +463,9 @@ function platformMemoryDb(): GatewayDb {
           content_type: previous?.content_type ?? params[4],
           byte_size: previous?.byte_size ?? (fullBlobRegistration ? params[5] : null),
           sha256: previous?.sha256 ?? (fullBlobRegistration ? params[6] : null),
+          upload_status: previous?.upload_status ?? (fullBlobRegistration ? "staged" : "complete"),
+          verified_at: previous?.verified_at ?? (fullBlobRegistration ? null : now),
+          verification_error_code: previous?.verification_error_code ?? null,
           metadata: {
             ...(previous?.metadata as Record<string, unknown> | undefined),
             ...(parseJsonParam(fullBlobRegistration ? params[7] : params[5]) as Record<string, unknown>),
@@ -472,6 +475,25 @@ function platformMemoryDb(): GatewayDb {
         objectBlobs.set(id, row);
         if (cacheKey) objectBlobCache.set(cacheKey, id);
         return { rows: [row as T], rowCount: existingId ? 0 : 1 };
+      }
+      if (text.includes("UPDATE object_blobs") && text.includes("SET upload_status = 'staged'")) {
+        const row = objectBlobs.get(String(params[0]));
+        if (row && row.owner_user_id === params[1]) {
+          row.upload_status = "staged";
+          row.verified_at = null;
+          row.verification_error_code = params[2];
+        }
+        return { rows: [], rowCount: row ? 1 : 0 } as { rows: T[]; rowCount: number };
+      }
+      if (text.includes("UPDATE object_blobs") && text.includes("SET upload_status = 'complete'")) {
+        const row = objectBlobs.get(String(params[0]));
+        if (row && row.owner_user_id === params[1]) {
+          row.upload_status = "complete";
+          row.verified_at ??= now;
+          row.verification_error_code = null;
+          return { rows: [row as T], rowCount: 1 };
+        }
+        return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
       }
       if (text.includes("FROM object_blobs")) {
         const row = objectBlobs.get(String(params[0]));
@@ -1964,7 +1986,23 @@ test(
   async () => {
     const previousDevAuth = process.env.FORGE_DEV_AUTH;
     process.env.FORGE_DEV_AUTH = "1";
-    const app = buildServer({ db: platformMemoryDb() });
+    let firstUploadInspection = true;
+    const app = buildServer({
+      db: platformMemoryDb(),
+      inspectObject: async (_config, object) => {
+        const first = object.objectKey.includes("ab".repeat(32));
+        const inspection = {
+          byteSize: first ? 12345 : 11321,
+          contentType: "image/jpeg",
+          sha256: first ? "ab".repeat(32) : "cd".repeat(32),
+        };
+        if (first && firstUploadInspection) {
+          firstUploadInspection = false;
+          return { ...inspection, byteSize: inspection.byteSize - 1 };
+        }
+        return inspection;
+      },
+    });
     try {
       const unauthenticated = await app.inject({ method: "GET", url: "/v1/models" });
       assert.equal(unauthenticated.statusCode, 401);
@@ -2124,6 +2162,18 @@ test(
       assert.equal(licenseLedgerBody.ledger[0].componentCount, 2);
       assert.equal(licenseLedgerBody.ledger[0].exportPolicies["full-geometry-ok"], 2);
 
+    const checksumRequired = await app.inject({
+      method: "POST",
+      url: "/v1/blobs",
+      headers: authHeaders,
+      payload: {
+        purpose: "photoscan-source",
+        contentType: "image/jpeg",
+        byteSize: 12345,
+      },
+    });
+    assert.equal(checksumRequired.statusCode, 400, checksumRequired.body);
+
     const sourceBlob = await app.inject({
       method: "POST",
       url: "/v1/blobs",
@@ -2144,10 +2194,43 @@ test(
     assert.equal(sourceBlobBody.blob.contentType, "image/jpeg");
     assert.equal(sourceBlobBody.blob.byteSize, 12345);
     assert.equal(sourceBlobBody.blob.metadata.purpose, "photoscan-source");
+    assert.equal((sourceBlobBody.blob as { uploadStatus?: string }).uploadStatus, "staged");
     assert.match(sourceBlobBody.blob.objectKey, /^users\/user-platform\/photoscan-source\/abab/);
     assert.equal(sourceBlobBody.upload.method, "PUT");
     assert.equal(sourceBlobBody.upload.headers["content-type"], "image/jpeg");
+    assert.equal(
+      sourceBlobBody.upload.headers["x-amz-checksum-sha256"],
+      Buffer.from("ab".repeat(32), "hex").toString("base64"),
+    );
     assert.match(sourceBlobBody.upload.url, /X-Amz-Signature=/);
+
+    const stagedDownload = await app.inject({
+      method: "POST",
+      url: `/v1/blobs/${sourceBlobBody.blob.id}/access`,
+      headers: authHeaders,
+      payload: { action: "download" },
+    });
+    assert.equal(stagedDownload.statusCode, 409, stagedDownload.body);
+    const partialCompletion = await app.inject({
+      method: "POST",
+      url: `/v1/blobs/${sourceBlobBody.blob.id}/complete`,
+      headers: authHeaders,
+      payload: {},
+    });
+    assert.equal(partialCompletion.statusCode, 409, partialCompletion.body);
+    assert.equal(
+      (partialCompletion.json() as { code: string }).code,
+      "partial-object-upload",
+      partialCompletion.body,
+    );
+    const completedSource = await app.inject({
+      method: "POST",
+      url: `/v1/blobs/${sourceBlobBody.blob.id}/complete`,
+      headers: authHeaders,
+      payload: {},
+    });
+    assert.equal(completedSource.statusCode, 200, completedSource.body);
+    assert.equal((completedSource.json() as { blob: { uploadStatus: string } }).blob.uploadStatus, "complete");
 
     const duplicateBlob = await app.inject({
       method: "POST",
@@ -2177,6 +2260,13 @@ test(
     });
     assert.equal(secondSourceBlob.statusCode, 201, secondSourceBlob.body);
     const secondSourceBlobId = (secondSourceBlob.json() as { blob: { id: string } }).blob.id;
+    const completedSecondSource = await app.inject({
+      method: "POST",
+      url: `/v1/blobs/${secondSourceBlobId}/complete`,
+      headers: authHeaders,
+      payload: {},
+    });
+    assert.equal(completedSecondSource.statusCode, 200, completedSecondSource.body);
     const photoscanWithoutConsent = await app.inject({
       method: "POST",
       url: "/v1/photoscan",

@@ -18,6 +18,35 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Fence compute attempts and verify client uploads
+**Session:** Codex agent · branch `codex/qa005-fault-acceptance` · **Phase:** QA /
+worker and object reliability · **TODO items:** QA-005 [~]
+**Done:** Implemented D38 and additive migration 0021. Non-fixture jobs now use
+bounded at-least-once attempts with opaque expiring tokens, persisted handler
+deadlines, deterministic transient-fault backoff, attempt ceilings, cancellation-
+first completion, stale/duplicate-result discard, and transactional one-winner
+materialization. Client object registration now requires exact length/MIME/SHA-256,
+returns a checksum-bound presigned PUT in `staged` state, rejects idempotency
+declaration drift, and requires server-side exact metadata inspection before download
+or photoscan consent. Added isolated-Postgres fault scripts and made both queue and
+upload acceptance part of `pnpm verify:db`. All 35 required local gates pass,
+including 122/122 worker tests, 63/63 gateway tests/build, 2/2 migration-policy tests,
+compatibility, WASM/native parity, packaging, Python syntax compile, and cumulative
+patch hygiene. The ledger remains 200 tasks: 135 done, 38 in progress, 26 open, and
+1 blocked.
+**Changed:** Queue store/runner/fault taxonomy and external adapters; object-storage,
+gateway, consent, and platform boundaries; migration 0021; protected DB workflow and
+fault artifacts; AGENTS entry point; migration/compatibility/governance/threat/system/
+best-practice/risk/state/roadmap/TODO/README documentation.
+**Decisions:** D38 defines at-least-once worker authority and staged-until-verified
+client uploads. It does not claim multi-replica operations, provider/object-store
+incident recovery, dead-letter reconciliation, shared quotas, SLOs, or production DR.
+**Next:** run the full 35-step local gate, publish the exact candidate through the
+protected PR-only ruleset, inspect QA-005's revision-bound Postgres artifact, and
+close `[x]` only after exact PR and post-merge CI/security pass.
+**Blockers:** no implementation blocker. Local Docker/Postgres is unavailable and was
+not modified; the required protected Postgres job owns database fault proof.
+
 ## 2026-07-13 — Close protected Postgres migration acceptance
 **Session:** Codex agent · branch `codex/qa004-postmerge-evidence` · **Phase:** QA /
 data operations · **TODO items:** QA-004 [x]

@@ -8,6 +8,7 @@ import {
 import type { CurrentUser } from "./auth.js";
 import type { GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
+import type { StoredObjectInspection } from "./objectStorage.js";
 import { MAX_OBJECT_BYTES, assertBoundedJson } from "./security.js";
 import { runPatch, runValidator, type ValidateResult } from "./validator.js";
 
@@ -81,6 +82,12 @@ export interface JobRecord {
   input: unknown;
   output: unknown;
   error: string | null;
+  lastErrorCode: string | null;
+  attempts: number;
+  maxAttempts: number;
+  timeoutSeconds: number;
+  availableAt: string;
+  leaseExpiresAt: string | null;
   costCredits: number;
   createdAt: string;
 }
@@ -119,6 +126,9 @@ export interface ObjectBlobRecord {
   contentType: string | null;
   byteSize: number | null;
   sha256: string | null;
+  uploadStatus: "staged" | "complete";
+  verifiedAt: string | null;
+  verificationErrorCode: string | null;
   metadata: unknown;
   createdAt: string;
 }
@@ -372,6 +382,12 @@ function mapJob(row: {
   input: unknown;
   output: unknown;
   error: string | null;
+  last_error_code?: string | null;
+  attempts?: string | number;
+  max_attempts?: string | number;
+  timeout_seconds?: string | number;
+  available_at?: Date | string;
+  lease_expires_at?: Date | string | null;
   cost_credits: string | number;
   created_at: Date | string;
 }): JobRecord {
@@ -384,6 +400,12 @@ function mapJob(row: {
     input: row.input,
     output: row.output,
     error: row.error,
+    lastErrorCode: row.last_error_code ?? null,
+    attempts: Number(row.attempts ?? 0),
+    maxAttempts: Number(row.max_attempts ?? 3),
+    timeoutSeconds: Number(row.timeout_seconds ?? 3600),
+    availableAt: nowIso(row.available_at ?? row.created_at),
+    leaseExpiresAt: row.lease_expires_at == null ? null : nowIso(row.lease_expires_at),
     costCredits: Number(row.cost_credits),
     createdAt: nowIso(row.created_at),
   };
@@ -399,6 +421,9 @@ function mapObjectBlob(row: {
   content_type: string | null;
   byte_size: string | number | null;
   sha256: string | null;
+  upload_status?: "staged" | "complete";
+  verified_at?: Date | string | null;
+  verification_error_code?: string | null;
   metadata: unknown;
   created_at: Date | string;
 }): ObjectBlobRecord {
@@ -412,6 +437,9 @@ function mapObjectBlob(row: {
     contentType: row.content_type,
     byteSize: row.byte_size === null ? null : Number(row.byte_size),
     sha256: row.sha256,
+    uploadStatus: row.upload_status ?? "complete",
+    verifiedAt: row.verified_at == null ? null : nowIso(row.verified_at),
+    verificationErrorCode: row.verification_error_code ?? null,
     metadata: row.metadata,
     createdAt: nowIso(row.created_at),
   };
@@ -874,6 +902,11 @@ export async function registerObjectBlob(
   )) {
     throw Object.assign(new Error("object byte size is outside the supported range"), { statusCode: 400 });
   }
+  if (input.cacheKey !== undefined && input.cacheKey !== null && (
+    input.cacheKey.length < 1 || input.cacheKey.length > 200
+  )) {
+    throw Object.assign(new Error("object cache key is outside the supported range"), { statusCode: 400 });
+  }
   assertBoundedJson(input.metadata ?? {}, "object metadata", {
     maxBytes: 128 * 1024,
     maxDepth: 12,
@@ -881,32 +914,43 @@ export async function registerObjectBlob(
     maxObjectKeys: 256,
   });
   const sha = input.sha256?.toLowerCase() ?? null;
+  if (sha !== null && !/^[a-f0-9]{64}$/.test(sha)) {
+    throw Object.assign(new Error("object SHA-256 is invalid"), { statusCode: 400 });
+  }
   const cacheKey = blobCacheKey(user, { cacheKey: input.cacheKey, sha256: sha });
   const metadata = isRecord(input.metadata) ? input.metadata : {};
   const result = await db.query<Parameters<typeof mapObjectBlob>[0]>(
     `INSERT INTO object_blobs (
        owner_user_id, visibility, cache_key, bucket, object_key,
-       content_type, byte_size, sha256, metadata
+       content_type, byte_size, sha256, upload_status, verified_at,
+       verification_error_code, metadata
      )
-     VALUES ($1, 'private', $2, $3, $4, $5, $6, $7, $8::jsonb)
+     VALUES ($1, 'private', $2, $3, $4, $5, $6, $7, 'staged', NULL, NULL, $8::jsonb)
      ON CONFLICT (cache_key) DO UPDATE
-     SET metadata = object_blobs.metadata || EXCLUDED.metadata,
-         content_type = COALESCE(object_blobs.content_type, EXCLUDED.content_type),
-         byte_size = COALESCE(object_blobs.byte_size, EXCLUDED.byte_size),
-         sha256 = COALESCE(object_blobs.sha256, EXCLUDED.sha256)
+     SET metadata = object_blobs.metadata || EXCLUDED.metadata
+     WHERE object_blobs.owner_user_id = EXCLUDED.owner_user_id
+       AND object_blobs.content_type IS NOT DISTINCT FROM EXCLUDED.content_type
+       AND object_blobs.byte_size IS NOT DISTINCT FROM EXCLUDED.byte_size
+       AND object_blobs.sha256 IS NOT DISTINCT FROM EXCLUDED.sha256
      RETURNING id, owner_user_id, visibility, cache_key, bucket, object_key,
-               content_type, byte_size, sha256, metadata, created_at`,
+               content_type, byte_size, sha256, upload_status, verified_at,
+               verification_error_code, metadata, created_at`,
     [
       user.id,
       cacheKey,
       input.bucket,
       defaultObjectKey(user, input.purpose, sha),
-      input.contentType ?? null,
+      contentType,
       input.byteSize ?? null,
       sha,
       json({ ...metadata, purpose: input.purpose }),
     ],
   );
+  if (!result.rows[0]) {
+    throw Object.assign(new Error("object cache key is already bound to a different declaration"), {
+      statusCode: 409,
+    });
+  }
   const blob = mapObjectBlob(result.rows[0]);
   if (blob.ownerUserId !== user.id) {
     throw Object.assign(new Error("object blob cache key is not owned by the current user"), { statusCode: 403 });
@@ -921,7 +965,8 @@ export async function getOwnedObjectBlob(
 ): Promise<ObjectBlobRecord | null> {
   const result = await db.query<Parameters<typeof mapObjectBlob>[0]>(
     `SELECT id, owner_user_id, visibility, cache_key, bucket, object_key,
-            content_type, byte_size, sha256, metadata, created_at
+            content_type, byte_size, sha256, upload_status, verified_at,
+            verification_error_code, metadata, created_at
        FROM object_blobs
       WHERE id = $1
         AND owner_user_id = $2
@@ -929,6 +974,69 @@ export async function getOwnedObjectBlob(
     [blobId, user.id],
   );
   return result.rows[0] ? mapObjectBlob(result.rows[0]) : null;
+}
+
+export async function completeObjectBlobUpload(
+  db: GatewayDb,
+  user: CurrentUser,
+  blobId: string,
+  inspection: StoredObjectInspection,
+): Promise<ObjectBlobRecord> {
+  const blob = await getOwnedObjectBlob(db, user, blobId);
+  if (!blob) throw Object.assign(new Error("object blob not found"), { statusCode: 404 });
+  let errorCode: string | null = null;
+  if (blob.byteSize === null || inspection.byteSize !== blob.byteSize) {
+    errorCode = "partial-object-upload";
+  } else if (blob.contentType !== null && inspection.contentType !== blob.contentType.toLowerCase()) {
+    errorCode = "object-content-type-mismatch";
+  } else if (blob.sha256 !== null && inspection.sha256 !== blob.sha256.toLowerCase()) {
+    errorCode = "object-checksum-mismatch";
+  }
+  if (errorCode) {
+    const update = await db.query<{ id: string }>(
+      `UPDATE object_blobs
+          SET upload_status = 'staged',
+              verified_at = NULL,
+              verification_error_code = $3
+        WHERE id = $1 AND owner_user_id = $2
+          AND byte_size IS NOT DISTINCT FROM $4
+          AND content_type IS NOT DISTINCT FROM $5
+          AND sha256 IS NOT DISTINCT FROM $6
+        RETURNING id`,
+      [blob.id, user.id, errorCode, blob.byteSize, blob.contentType, blob.sha256],
+    );
+    if ((update.rowCount ?? update.rows.length) === 0) {
+      throw Object.assign(new Error("object declaration changed during upload verification"), {
+        statusCode: 409,
+        code: "object-declaration-changed",
+      });
+    }
+    throw Object.assign(new Error("object upload is incomplete or does not match its declaration"), {
+      statusCode: 409,
+      code: errorCode,
+    });
+  }
+  const result = await db.query<Parameters<typeof mapObjectBlob>[0]>(
+    `UPDATE object_blobs
+        SET upload_status = 'complete',
+            verified_at = COALESCE(verified_at, now()),
+            verification_error_code = NULL
+      WHERE id = $1 AND owner_user_id = $2
+        AND byte_size IS NOT DISTINCT FROM $3
+        AND content_type IS NOT DISTINCT FROM $4
+        AND sha256 IS NOT DISTINCT FROM $5
+      RETURNING id, owner_user_id, visibility, cache_key, bucket, object_key,
+                content_type, byte_size, sha256, upload_status, verified_at,
+                verification_error_code, metadata, created_at`,
+    [blob.id, user.id, blob.byteSize, blob.contentType, blob.sha256],
+  );
+  if (!result.rows[0]) {
+    throw Object.assign(new Error("object declaration changed during upload verification"), {
+      statusCode: 409,
+      code: "object-declaration-changed",
+    });
+  }
+  return mapObjectBlob(result.rows[0]);
 }
 
 export async function listPhotoscanArtifacts(
@@ -1925,6 +2033,22 @@ type CreateJobInput = {
   idempotencyKey?: string | null;
 };
 
+function jobTimeoutSeconds(input: CreateJobInput): number {
+  const defaults: Partial<Record<JobKind, number>> = {
+    "commerce.vendor-refresh": 120,
+    "photoscan.single": 300,
+    "photoscan.multiview": 300,
+    "train.policy": 28_800,
+    "train.sysid-fit": 3600,
+    "codesign.evaluate": 28_800,
+  };
+  const hinted = isRecord(input.payload) ? input.payload.timeoutS : undefined;
+  if (typeof hinted === "number" && Number.isFinite(hinted)) {
+    return Math.max(1, Math.min(28_800, Math.floor(hinted)));
+  }
+  return defaults[input.kind] ?? 3600;
+}
+
 function assertCommerceVendorRefreshJob(input: CreateJobInput): void {
   if (input.provider !== "local") {
     throw Object.assign(new Error("commerce vendor refresh jobs must use the local worker provider"), {
@@ -2052,11 +2176,13 @@ async function createJobUnchecked(
   }
   if (provider !== "fixture") {
     const proposedJobId = newJobId();
+    const timeoutSeconds = jobTimeoutSeconds(input);
     const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
       `INSERT INTO jobs (
-         id, owner_user_id, kind, status, provider, idempotency_key, input, output, cost_credits
+         id, owner_user_id, kind, status, provider, idempotency_key, input, output,
+         cost_credits, timeout_seconds, available_at
        )
-       VALUES ($7, $1, $2, 'queued', $3, $4, $5::jsonb, NULL, $6)
+       VALUES ($7, $1, $2, 'queued', $3, $4, $5::jsonb, NULL, $6, $8, now())
        ON CONFLICT (idempotency_key) DO UPDATE
        SET idempotency_key = EXCLUDED.idempotency_key
        WHERE jobs.owner_user_id = EXCLUDED.owner_user_id
@@ -2064,7 +2190,8 @@ async function createJobUnchecked(
          AND jobs.provider = EXCLUDED.provider
          AND jobs.input = EXCLUDED.input
        RETURNING id, owner_user_id, kind, status, provider, input, output, error,
-                 cost_credits, created_at, id = $7 AS inserted`,
+                 last_error_code, attempts, max_attempts, timeout_seconds, available_at,
+                 lease_expires_at, cost_credits, created_at, id = $7 AS inserted`,
       [
         user.id,
         input.kind,
@@ -2073,6 +2200,7 @@ async function createJobUnchecked(
         json(input.payload ?? {}),
         costCredits,
         proposedJobId,
+        timeoutSeconds,
       ],
     );
     if (!result.rows[0]) {
@@ -2098,7 +2226,8 @@ async function createJobUnchecked(
        AND jobs.provider = EXCLUDED.provider
        AND jobs.input = EXCLUDED.input
      RETURNING id, owner_user_id, kind, status, provider, input, output, error,
-               cost_credits, created_at, id = $8 AS inserted`,
+               last_error_code, attempts, max_attempts, timeout_seconds, available_at,
+               lease_expires_at, cost_credits, created_at, id = $8 AS inserted`,
     [
       user.id,
       input.kind,
@@ -2124,7 +2253,9 @@ async function createJobUnchecked(
 
 export async function listJobs(db: GatewayDb, user: CurrentUser, limit: number): Promise<JobRecord[]> {
   const result = await db.query<Parameters<typeof mapJob>[0]>(
-    `SELECT id, owner_user_id, kind, status, provider, input, output, error, cost_credits, created_at
+    `SELECT id, owner_user_id, kind, status, provider, input, output, error,
+            last_error_code, attempts, max_attempts, timeout_seconds, available_at,
+            lease_expires_at, cost_credits, created_at
        FROM jobs
       WHERE owner_user_id = $1
       ORDER BY created_at DESC
@@ -2136,7 +2267,9 @@ export async function listJobs(db: GatewayDb, user: CurrentUser, limit: number):
 
 export async function getOwnedJob(db: GatewayDb, user: CurrentUser, jobId: string): Promise<JobRecord | null> {
   const result = await db.query<Parameters<typeof mapJob>[0]>(
-    `SELECT id, owner_user_id, kind, status, provider, input, output, error, cost_credits, created_at
+    `SELECT id, owner_user_id, kind, status, provider, input, output, error,
+            last_error_code, attempts, max_attempts, timeout_seconds, available_at,
+            lease_expires_at, cost_credits, created_at
        FROM jobs
       WHERE owner_user_id = $1
         AND id = $2
@@ -2451,11 +2584,15 @@ export async function persistBrief25Eval(db: GatewayDb, artifact: unknown): Prom
 
 export function validatorError(error: unknown): { statusCode: number; body: unknown } | null {
   if (isRecord(error) && typeof error.statusCode === "number") {
+    const code = typeof error.code === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(error.code)
+      ? error.code
+      : null;
     return {
       statusCode: error.statusCode,
       body: {
         error: error.message ?? "request failed",
         report: "report" in error ? error.report : undefined,
+        ...(code ? { code } : {}),
       },
     };
   }

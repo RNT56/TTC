@@ -19,10 +19,13 @@ const evidencePath = join(outDir, "qa004-migration-acceptance.json");
 const databaseUrl = process.env.DATABASE_URL?.trim();
 const runSuffix = `${process.pid}-${randomUUID().slice(0, 8)}`;
 const migrations = loadMigrations(join(root, "infra", "migrations"));
+const d38MigrationPosition = migrations.findIndex((migration) =>
+  migration.filename.startsWith("0021_job_leases_and_upload_verification")) + 1;
 const noLog = () => undefined;
 
 if (!databaseUrl) throw new Error("DATABASE_URL is required for migration acceptance");
 assert.ok(migrations.length >= 2, "migration acceptance requires a current and a prior schema");
+assert.ok(d38MigrationPosition > 0, "migration acceptance requires the D38 migration");
 
 function git(...args) {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -161,14 +164,15 @@ async function populatePredecessor(client, prefix) {
 
   if (prefix >= 6) {
     fixtureFamilies.push("platform");
+    const legacyJobStatus = prefix < d38MigrationPosition ? "running" : "queued";
     await client.query(
       "INSERT INTO users (id, name, email) VALUES ($1, 'QA-004 user', $2)",
       [ids.user, `qa004-${prefix}@example.test`],
     );
     await client.query(
       `INSERT INTO jobs (id, owner_user_id, kind, status, provider, input)
-       VALUES ($1, $2, 'etl.ingest-component', 'queued', 'fixture', '{"qa004":true}'::jsonb)`,
-      [ids.job, ids.user],
+       VALUES ($1, $2, 'etl.ingest-component', $3, 'fixture', '{"qa004":true}'::jsonb)`,
+      [ids.job, ids.user, legacyJobStatus],
     );
     await client.query(
       `INSERT INTO object_blobs (id, bucket, object_key, metadata)
@@ -286,17 +290,33 @@ async function assertFixturePreserved(client, prefix, fixture) {
     });
   }
   if (prefix >= 6) {
+    const legacyJobWasRequeued = prefix < d38MigrationPosition;
     const platform = (
       await client.query(
         `SELECT
+           (SELECT status FROM jobs WHERE id = $1) AS job_status,
            (SELECT attempts FROM jobs WHERE id = $1) AS attempts,
+           (SELECT lease_token FROM jobs WHERE id = $1) AS lease_token,
+           (SELECT lease_expires_at FROM jobs WHERE id = $1) AS lease_expires_at,
+           (SELECT last_error_code FROM jobs WHERE id = $1) AS last_error_code,
            (SELECT visibility FROM object_blobs WHERE id = $2) AS visibility,
+           (SELECT upload_status FROM object_blobs WHERE id = $2) AS upload_status,
            (SELECT archetype FROM leaderboard_runs WHERE id = $3) AS archetype,
            (SELECT class_key FROM leaderboard_runs WHERE id = $3) AS class_key`,
         [ids.job, ids.blob, ids.leaderboard],
       )
     ).rows[0];
-    assert.deepEqual(platform, { attempts: 0, visibility: "private", archetype: null, class_key: null });
+    assert.deepEqual(platform, {
+      job_status: "queued",
+      attempts: 0,
+      lease_token: null,
+      lease_expires_at: null,
+      last_error_code: legacyJobWasRequeued ? "lease-migration-requeue" : null,
+      visibility: "private",
+      upload_status: "complete",
+      archetype: null,
+      class_key: null,
+    });
   }
   if (prefix >= 16) {
     const rows = (

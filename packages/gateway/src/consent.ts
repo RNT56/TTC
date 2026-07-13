@@ -174,6 +174,20 @@ async function assertOwnedSubject(
     if (subjectId !== user.id) throw Object.assign(new Error("account consent must target the current user"), { statusCode: 403 });
     return;
   }
+  if (subjectKind === "object-blob") {
+    const owned = await db.query<{ id: string; upload_status?: string }>(
+      `SELECT id, upload_status FROM object_blobs WHERE id = $1 AND owner_user_id = $2 LIMIT 1`,
+      [subjectId, user.id],
+    );
+    if (!owned.rows[0]) throw Object.assign(new Error("object-blob not found"), { statusCode: 404 });
+    if (purpose === "photoscan.processing" && (owned.rows[0].upload_status ?? "complete") !== "complete") {
+      throw Object.assign(new Error("photoscan source upload is not verified complete"), {
+        statusCode: 409,
+        code: "UPLOAD_INCOMPLETE",
+      });
+    }
+    return;
+  }
   const ownershipSql: Record<Exclude<ConsentSubjectKind, "account">, string> = {
     "object-blob": "SELECT id FROM object_blobs WHERE id = $1 AND owner_user_id = $2 LIMIT 1",
     "telemetry-log": "SELECT id FROM telemetry_logs WHERE id = $1 AND owner_user_id = $2 LIMIT 1",
@@ -267,7 +281,9 @@ async function applyWithdrawal(
   switch (purpose) {
     case "photoscan.processing":
       await db.query(
-        `UPDATE jobs SET status = 'cancelled', error = 'photoscan consent withdrawn', finished_at = now()
+        `UPDATE jobs SET status = 'cancelled', error = 'photoscan consent withdrawn',
+                         last_error_code = 'consent-withdrawn', finished_at = now(),
+                         lease_token = NULL, lease_expires_at = NULL
           WHERE owner_user_id = $1 AND kind IN ('photoscan.single', 'photoscan.multiview')
             AND status IN ('queued', 'running')
             AND COALESCE(input -> 'sourceBlobIds', '[]'::jsonb) @> to_jsonb(ARRAY[$2]::text[])`,
@@ -296,7 +312,9 @@ async function applyWithdrawal(
       return;
     case "training.reuse":
       await db.query(
-        `UPDATE jobs SET status = 'cancelled', error = 'training reuse consent withdrawn', finished_at = now()
+        `UPDATE jobs SET status = 'cancelled', error = 'training reuse consent withdrawn',
+                         last_error_code = 'consent-withdrawn', finished_at = now(),
+                         lease_token = NULL, lease_expires_at = NULL
           WHERE owner_user_id = $1 AND kind = 'train.policy' AND status IN ('queued', 'running')
             AND COALESCE(input -> 'telemetryLogIds', '[]'::jsonb) @> to_jsonb(ARRAY[$2]::text[])`,
         [user.id, subjectId],

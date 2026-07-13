@@ -47,8 +47,11 @@ post-merge CI/security plus the clean merge artifact are green.
 QA-004 deterministic migration acceptance is protected through PR #44 at `e362c54`:
 D37's transactional checksum/gap-refusing runner, all 19 populated predecessors,
 failure recovery, concurrency, and the database runbook have exact PR and post-merge
-CI/security plus a clean exact-revision artifact. QA-005 is the next dependency-
-complete local quality lane; production backup/DR remains OPS-005/QA-009.
+CI/security plus a clean exact-revision artifact. QA-005 now has a local D38/migration
+0021 candidate with lease-fenced at-least-once attempts, bounded retry/cancellation/
+timeout fault semantics, and staged exact-checksum uploads. It remains in progress
+until exact protected Postgres/CI/security and post-merge evidence pass; production
+backup/DR and queue/object-store operations remain OPS-005/QA-009 and OPS-003..007.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
@@ -353,6 +356,10 @@ Required practices:
   plus every populated predecessor, idempotency, failure-recovery, and concurrency
   assertions in the required Postgres job; database rollback guidance lives in
   `MIGRATIONS.md`, while production DR remains OPS-005.
+- retain D38's current-token/current-expiry completion predicate, deterministic retry
+  ceiling/backoff, cancellation-first lease clearing, staged-until-inspected object
+  state, and exact QA-005 Postgres artifact. Never turn a stale-result discard or
+  structural fixture into multi-replica/live recovery proof.
 
 Exit: G0.
 

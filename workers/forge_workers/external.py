@@ -16,6 +16,7 @@ import tempfile
 import time
 from typing import Any
 
+from forge_workers.faults import JobTimeoutError, ProviderUnavailableError
 from forge_workers.net_security import assert_bounded_json
 
 MAX_COMMAND_INPUT_BYTES = 4 * 1024 * 1024
@@ -89,14 +90,14 @@ def run_json_command(env_name: str, payload: dict[str, Any], *, timeout_s: float
                 break
             time.sleep(0.05)
         if timed_out:
-            raise RuntimeError(f"{env_name} timed out")
+            raise JobTimeoutError(f"{env_name} timed out")
         if overflow:
             raise RuntimeError(f"{env_name} output exceeds the byte limit")
         stdout_bytes = _read_bounded(stdout, MAX_COMMAND_OUTPUT_BYTES, f"{env_name} stdout")
         _read_bounded(stderr, MAX_COMMAND_ERROR_BYTES, f"{env_name} stderr")
         returncode = int(proc.returncode or 0)
     if returncode != 0:
-        raise RuntimeError(f"{env_name} failed (exit {returncode})")
+        raise ProviderUnavailableError(f"{env_name} failed (exit {returncode})")
     try:
         result = json.loads(stdout_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:

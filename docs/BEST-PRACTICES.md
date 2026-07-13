@@ -77,7 +77,9 @@ buffers zero-copy); no per-frame allocation in render-path code; React only in
 **Python (compute workers):** 3.12; queue-driven, idempotent jobs (safe to retry);
 no public network surface; pinned dependencies; payloads validated against the
 emitted JSON Schema; every job logs structured progress and writes results to object
-storage + Postgres transactionally.
+storage + Postgres transactionally. At-least-once attempts require an opaque expiring
+lease, bounded attempt ceiling/backoff, persisted timeout authority, and compare-and-
+set completion; a stale or cancelled attempt never commits.
 
 **General:** small modules with explicit public APIs; pure functions for geometry and
 math (testable headlessly); deterministic seeds threaded through anything stochastic;
@@ -230,6 +232,15 @@ every user-facing capability claim.
   not rematerialize domain rows on an exact retry. A globally unique caller string is
   not tenant isolation and must never suppress another owner's charge or return
   another owner's job.
+- Treat upload registration as intent, not proof. Require declared length, MIME type,
+  and SHA-256; return length/type in the contract and bind the checksum into the
+  presigned PUT; keep the row staged; then inspect the stored object server-side and
+  atomically complete only the unchanged exact
+  declaration. Never let staged bytes authorize processing or download.
+- Classify transient worker faults narrowly. Provider outage/rate limit, process
+  timeout, and explicitly incomplete upstream objects may retry under deterministic
+  bounded backoff; invalid output and unknown faults fail terminally. Reclaim expiry
+  with a new fence token and record late duplicates as discarded, not succeeded.
 - Preserve the synchronous deterministic commerce path as explicitly `sandbox`.
   A configured command, queued row, or materialized offer is contract evidence until
   a credentialed sandbox also proves provider output, billing, retries, monitoring,

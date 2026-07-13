@@ -1,6 +1,7 @@
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -35,6 +36,7 @@ export interface PresignObjectInput {
   objectKey: string;
   contentType?: string | null;
   byteSize?: number | null;
+  sha256?: string | null;
   expiresInSeconds?: number;
   now?: Date;
 }
@@ -45,6 +47,15 @@ export interface StoredObjectRef {
 }
 
 export type ObjectDeletionAdapter = (objects: readonly StoredObjectRef[]) => Promise<void>;
+export interface StoredObjectInspection {
+  byteSize: number;
+  contentType: string | null;
+  sha256: string | null;
+}
+export type ObjectInspectionAdapter = (
+  config: ObjectStorageConfig,
+  object: StoredObjectRef,
+) => Promise<StoredObjectInspection>;
 
 function assertObjectKey(objectKey: string): void {
   if (!objectKey || objectKey.startsWith("/") || /(?:^|\/)\.\.(?:\/|$)|[\0\r\n]/.test(objectKey)) {
@@ -62,6 +73,17 @@ function objectStorageClient(config: ObjectStorageConfig): S3Client {
       secretAccessKey: config.secretAccessKey,
     },
   });
+}
+
+function normalizedSha256(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const normalized = value.toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(normalized)) throw new Error("object SHA-256 is invalid");
+  return normalized;
+}
+
+function sha256Base64(value: string): string {
+  return Buffer.from(value, "hex").toString("base64");
 }
 
 export function objectStorageConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ObjectStorageConfig {
@@ -133,6 +155,7 @@ export async function presignObjectAccess(
       throw new Error("object upload requires a valid content type");
     }
   }
+  const sha256 = normalizedSha256(input.sha256);
   const client = objectStorageClient(config);
   const command =
     input.action === "upload"
@@ -141,6 +164,7 @@ export async function presignObjectAccess(
           Key: input.objectKey,
           ContentType: input.contentType ?? "application/octet-stream",
           ContentLength: input.byteSize ?? undefined,
+          ChecksumSHA256: sha256 ? sha256Base64(sha256) : undefined,
         })
       : new GetObjectCommand({
           Bucket: input.bucket,
@@ -161,12 +185,50 @@ export async function presignObjectAccess(
     url,
     headers:
       input.action === "upload"
-        ? { "content-type": input.contentType ?? "application/octet-stream" }
+        ? {
+            "content-type": input.contentType ?? "application/octet-stream",
+            ...(sha256 ? { "x-amz-checksum-sha256": sha256Base64(sha256) } : {}),
+          }
         : {},
     expiresAt: new Date(now.getTime() + expiresInSeconds * 1000).toISOString(),
     bucket: input.bucket,
     objectKey: input.objectKey,
   };
+}
+
+export async function inspectStoredObject(
+  config: ObjectStorageConfig,
+  object: StoredObjectRef,
+): Promise<StoredObjectInspection> {
+  if (object.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+  assertObjectKey(object.objectKey);
+  const client = objectStorageClient(config);
+  try {
+    const result = await client.send(
+      new HeadObjectCommand({
+        Bucket: object.bucket,
+        Key: object.objectKey,
+        ChecksumMode: "ENABLED",
+      }),
+      { abortSignal: AbortSignal.timeout(config.deleteTimeoutMs) },
+    );
+    if (!Number.isSafeInteger(result.ContentLength) || Number(result.ContentLength) < 0) {
+      throw new Error("object storage returned an invalid byte length");
+    }
+    let sha256: string | null = null;
+    if (result.ChecksumSHA256) {
+      const decoded = Buffer.from(result.ChecksumSHA256, "base64");
+      if (decoded.byteLength !== 32) throw new Error("object storage returned an invalid SHA-256 checksum");
+      sha256 = decoded.toString("hex");
+    }
+    return {
+      byteSize: Number(result.ContentLength),
+      contentType: result.ContentType?.split(";", 1)[0]?.trim().toLowerCase() ?? null,
+      sha256,
+    };
+  } finally {
+    client.destroy();
+  }
 }
 
 export async function deleteStoredObjects(

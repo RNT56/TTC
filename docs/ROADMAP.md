@@ -54,6 +54,14 @@ atomic recovery, history refusal, and concurrent apply-once. Production
 backup/restore, disaster recovery, capacity, and measured RPO/RTO remain OPS-005 and
 QA-009.
 
+QA-005 is now an unprotected implementation candidate under D38/migration 0021:
+opaque expiring attempt leases, bounded retry/error semantics, cancellation/stale-
+result fencing, and staged exact-checksum upload completion pass all 35 local gates.
+The task remains `[~]` until the exact candidate and protected merge both pass the
+isolated-Postgres fault matrix and attached revision-bound evidence. Production queue
+operations, provider/object-store incident drills, shared quotas, and SLOs remain
+separate OPS/QA gates.
+
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(repository hygiene/public surfaces are protected; qualified confusing-similarity/common-law/class name review remains PRE-005/GOV-010)* | days |

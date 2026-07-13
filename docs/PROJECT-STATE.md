@@ -8,6 +8,7 @@ QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
 QA-003 browser/accessibility evidence anchor: `9c1802b` (PR #42)
+QA-005 fault-acceptance candidate: local `codex/qa005-fault-acceptance`; protected evidence pending
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -56,6 +57,7 @@ open.
 | QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb` | exact PR CI `29272067712`/security `29272067617` and post-merge CI `29272532186`/security `29272531705` prove the production bundle, real WASM, 20 migrations, catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed owner listing, job, and materialized maintenance; no live-provider or external-user claim |
 | QA-003 browser/accessibility acceptance | complete at deterministic supported-browser maturity through PR #42 and protected `9c1802b` | exact PR CI `29282669499`/security `29282669468` and post-merge CI `29283250843`/security `29283250865` pass. The clean merge artifact records real WASM/validator admission and all semantic, skip/focus, keyboard orbit/equip/explode/blueprint, AA contrast, critical-target, responsive, reduced-motion, renderer, asset-isolation, and positive-draw assertions across Chromium 148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Chromium is full WebGL at 33 draws; Firefox/WebKit are core-baked Canvas2D at 17 draws with no scene/Three.js chunks. WebKit/narrow checks remain proxies, not Apple/mobile-device, assistive-technology, external-user, or field proof |
 | QA-004 migration acceptance | complete through PR #44 and protected `e362c54` | exact PR CI `29286731035`/security `29286731271` and post-merge CI `29287274236`/security `29287274293` pass. The clean merge artifact binds source/checkout to `e362c54`, applies 20/20 clean migrations, preserves and idempotently reruns all 19 populated predecessors, and proves atomic rollback/corrected roll-forward, checksum/gap refusal, advisory serialization, and apply once. Production backup/restore/RPO/RTO remains OPS-005 |
+| QA-005 fault acceptance candidate | in progress; all 35 required local gates pass, protected evidence pending | D38/migration 0021 add expiring attempt fences, bounded retry/error taxonomy, timeout authority, cancellation/stale-result refusal, and staged exact-checksum upload completion. 122 worker, 63 gateway, and 2 migration-policy tests pass within the complete gate; the protected Postgres job must still prove crash reclaim, one-time materialization, outage/rate/partial recovery, cancellation, and exact upload/consent behavior on the candidate revision before closure |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
@@ -289,6 +291,11 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   transactionally revalidated offer materialization with protected 20-migration,
   concurrency, and rollback proof; a real vendor sandbox with egress, quota,
   monitoring, recovery, billing, and terms evidence remains P11-005 work;
+- QA-005's local candidate now fences each at-least-once attempt with an opaque
+  expiry, bounds transient retry, rejects stale/cancelled completion, and keeps client
+  uploads staged until server-inspected length/type/checksum match. This is not yet a
+  protected claim, and production partitions, dead-letter operations, object-provider
+  incidents, queue SLOs, and shared quotas remain OPS/QA work;
 - QA-002 deterministic builder acceptance, QA-003's production-bundle three-engine
   semantic/keyboard/focus/contrast/target/responsive/reduced-motion matrix, and
   QA-010's machine-checked external scripts/evidence templates are protected on
@@ -315,7 +322,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **200 tasks: 135 done, 37 in progress, 27 open,
+The stable ledger currently contains **200 tasks: 135 done, 38 in progress, 26 open,
 and 1 explicitly blocked**. All 8 recovery tasks are done. The 65 remaining tasks are
 the phase/live/field program plus 2 governance, 2 security, 4 quality, 10 operations,
 9 external-proof, and 2 documentation tasks; dependency order is owned by
