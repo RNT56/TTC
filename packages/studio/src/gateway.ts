@@ -529,7 +529,7 @@ async function requestJson<T>(
     ...init,
     credentials: "include",
     headers: {
-      "content-type": "application/json",
+      ...(typeof init?.body === "string" ? { "content-type": "application/json" } : {}),
       ...(reviewToken ? { authorization: `Bearer ${reviewToken}` } : {}),
       ...devAuthHeaders(),
       ...init?.headers,

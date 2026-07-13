@@ -21,6 +21,11 @@ version; any mismatch falls back to the local fail-closed verdict. The displayed
 `target` therefore states whether the active verdict is `wasm` or `native` rather than
 implying offline catalog authority.
 
+The shared gateway client advertises `application/json` only for requests that
+actually carry a string JSON body. Bodyless mutations such as admitted-model sharing
+must reach the route's authorization and status guard; an empty JSON content type
+would make Fastify reject the transport before those product invariants execute.
+
 ## 2. State architecture (the one rule that matters)
 
 **Truth stays in the core; loop state stays out of React.** The core facade owns

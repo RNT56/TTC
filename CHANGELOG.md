@@ -18,6 +18,18 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Let bodyless mutations reach their product guards
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Corrected the Studio API client after browser evidence showed bodyless model
+sharing was rejected by Fastify's empty-JSON parser before the draft-status guard.
+JSON content type is now sent only with an actual string body, so the server can emit
+the intended fail-closed `only admitted models can be shared` refusal.
+**Changed:** Studio gateway transport contract and Studio system guidance.
+**Decisions:** none; the admitted-only sharing invariant is unchanged.
+**Next:** rerun the exact-head isolated browser gate from its fifth flow.
+**Blockers:** none.
+
 ## 2026-07-13 — Retry the visible account bootstrap in browser acceptance
 **Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [~]
