@@ -26,17 +26,28 @@ evidence after its macOS 15 Intel full-LTO build/smoke produced no artifact in
 5h10m; selected the supported macOS 26 Intel runner without changing the x86_64
 artifact, smoke, SBOM, checksum, or attestation contract; and added a one-hour
 native-job ceiling so this failure mode cannot silently consume a full runner day.
-When the macOS 26 full-LTO branch experiment also crossed 50 minutes, compared clean
-local arm64 profiles: thin LTO cut wall time from 34.62s to 19.25s while both binaries
-passed version and canonical-admission smoke; native size changed from 2,735,488 to
-3,456,528 bytes, below no binding native-size limit.
-**Changed:** release workflow, release runbook, risk register, task ledger, project
-state counts, and changelog.
+When macOS 26 full-LTO branch run `29227763639` hit the 60-minute job ceiling before
+staging/upload, compared clean local arm64 profiles: thin LTO cut wall time from
+34.62s to 19.25s while both binaries passed version and canonical-admission smoke.
+Native size changed from 2,735,488 to 3,456,528 bytes; no binding native-size budget
+exists. Thin-LTO run `29230415603` then built/smoked Linux, Windows, macOS Intel, and
+WASM successfully; all PR CI/security checks passed. Its aggregate verifier exposed
+that Actions artifact transfer had normalized the staged Linux binary to non-
+executable mode before deterministic archive assembly. Assembly now restores the
+declared native mode before archiving, uses timestamp-free gzip output, and
+verification explicitly rejects a Linux archive without executable bits. The actual
+downloaded inputs from that failed run reassemble with mode 0755, and repeated Linux/
+macOS tarballs are byte-identical. The thin profile and permission fix pass all 31
+required local gates and clean WASM installation.
+**Changed:** release workflow/profile, binary assembly and downloaded verification,
+release runbook, risk register, task ledger, project state counts, and changelog.
 **Decisions:** no architectural decision; OPS-011 uses a measured thin-LTO release
 profile and runner migration, with `macos-15-intel` retained through August 2027.
-**Next:** Deliver the runner migration through protected `main`, rerun the manual
-release workflow, download and verify the aggregate artifact, then create `v0.1.0`.
-**Blockers:** none; GOV-008 remains open until protected macOS 26 and aggregate proof.
+**Next:** Rerun the protected branch workflow with normalized archive permissions,
+deliver through protected `main`, download and independently verify the aggregate
+artifact, then create `v0.1.0`.
+**Blockers:** GOV-008 remains open until the corrected aggregate verifier and
+downloaded artifact pass; native runner migration itself is now remotely proven.
 
 ## 2026-07-12 — Build the release artifact verification chain
 **Session:** Codex agent · branch `codex/g1-release-artifacts` · **Phase:** G1 ·

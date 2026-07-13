@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
@@ -30,6 +30,7 @@ try {
   execFileSync("tar", ["-xzf", join(dir, linux), "-C", temp]);
   const folder = join(temp, linux.replace(/\.tar\.gz$/, ""));
   const binary = join(folder, "forge-validate");
+  if ((statSync(binary).mode & 0o111) === 0) throw new Error("Linux bundle binary is not executable");
   const version = execFileSync(binary, ["--version"], { encoding: "utf8" }).trim();
   if (version !== `forge-validate ${manifest.version}`) throw new Error(`version mismatch: ${version}`);
   execFileSync(binary, ["run", example], { stdio: "inherit" });

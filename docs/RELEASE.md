@@ -12,8 +12,17 @@ matrix job has a 60-minute ceiling. `macos-15-intel` is the rollback image throu
 August 2027, but it is not the default: protected manual run `29216053372` spent
 5h10m in full-LTO build/smoke without producing a macOS artifact. The release profile
 uses thin LTO after a clean local comparison showed materially lower wall time while
-preserving version and canonical-admission smoke. Any runner or profile change must
-preserve the same artifact, smoke, SBOM, checksum, and downloaded-attestation proof.
+preserving version and canonical-admission smoke; macOS 26 full-LTO branch run
+`29227763639` subsequently hit the one-hour ceiling before artifact upload. Any
+runner or profile change must preserve the same artifact, smoke, SBOM, checksum, and
+downloaded-attestation proof.
+
+GitHub Actions artifact transfer does not preserve staged executable bits. The Linux
+aggregate must therefore normalize `forge-validate` to mode 0755 immediately before
+creating the deterministic tarball; the verifier checks that the extracted payload
+still has an execute bit before running it. Manual thin-LTO run `29230415603` is the
+negative proof: every platform build passed, but aggregate verification failed with
+`EACCES` before this normalization was added.
 
 ## Outputs
 
