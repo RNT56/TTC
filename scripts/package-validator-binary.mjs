@@ -11,7 +11,7 @@ const value = (flag) => {
 };
 const binary = resolve(value("--binary"));
 const out = resolve(value("--out"));
-const platform = value("--platform").toLowerCase().replace("macos", "macos");
+const platform = value("--platform").toLowerCase();
 const arch = value("--arch").toLowerCase().replace("x64", "x86_64").replace("arm64", "aarch64");
 const cargoToml = readFileSync("Cargo.toml", "utf8");
 const version = cargoToml.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
