@@ -27,6 +27,11 @@ validator/corpus/generated-runtime families are machine-registered, the frozen
 prototype is immutable, and intentional re-pins require append-only review evidence.
 Exact PR and post-merge CI/security are green at protected `2589503`.
 
+Protected QA-002 PR #38 closes the deterministic builder browser loop at `c80accb`:
+the production Studio bundle, real WASM, exact validator, and isolated Postgres pass
+all ten named flows in exact-head and post-merge CI. Live-provider and independent-
+user proof remain separate.
+
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(repository hygiene/public surfaces are protected; qualified confusing-similarity/common-law/class name review remains PRE-005/GOV-010)* | days |
@@ -34,7 +39,7 @@ Exact PR and post-merge CI/security are green at protected `2589503`.
 | P1 Core & studio | ◑ *(6/7 criteria met; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ● **done** *(full validation suite restored; validator v0.1.0 published and independently verified; v0.2 protected through PR #30; registry publication explicitly deferred to an owner-credential decision)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs, and native bounded Anthropic ETL contract; credentialed extraction through reviewed persistence remains P3-004/R1 work)* | 2–3 wk |
-| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate restored to 25/25; SEC-002..006 are protected at contract/fixture maturity through PR #31; D36 native ETL is contract/fixture only; credentialed extraction, deployed egress/quotas/backup/DR, and external R1 proof remain gated)* | 3–4 wk |
+| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate is 25/25 and QA-002's ten-flow real-WASM/isolated-DB browser loop is protected through PR #38; SEC-002..006 remain contract/fixture, D36 native ETL is contract/fixture only, and credentialed extraction, deployed egress/quotas/backup/DR, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
 | P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; live MuJoCo baseline and broader external corpus remain open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
@@ -148,7 +153,7 @@ Exit criteria:
 - [x] ≥ 20/25 Brief-25 briefs admitted without human repair *(2026-07-12: 25 admitted, 0 drafts/rejects/blocked, 0 repair iterations)*
 - [x] Conversational edits apply in < 3 s *(2026-06-14: deterministic NL→JSON-Patch gateway route uses `forge-validate patch`; reports elapsed ms)*
 - [x] A shared link renders for a logged-out visitor (orbit, explode, blueprint, drive demo) *(2026-06-14: admitted-only immutable share snapshots via `/v1/share/:shareId`, Studio `?share=` viewer mode; legacy fragment shares remain)*
-- [~] Required browser acceptance covers generation, drafts, editing, real-WASM validation, anonymous share, reviewed catalog, courses, listings, jobs, and maintenance against isolated Postgres *(QA-002 implementation candidate complete locally; exact remote/protected evidence pending)*
+- [x] Required browser acceptance covers generation, drafts, editing, real-WASM validation, anonymous share, reviewed catalog, courses, listings, jobs, and maintenance against isolated Postgres *(QA-002: exact implementation head `6a8ce28` passed CI `29272067712` and security `29272067617`; protected merge `c80accb` passed post-merge CI `29272532186` and security `29272531705`, with a 10/10 structured artifact)*
 - [x] Anthropic model strings/limits/pricing pinned from current docs (not from the plan) *(D26)*
 - [x] Brief-25 dashboard tracks admission rate, repair iterations, diversity over time *(2026-07-12: artifact records the restored 25/25 baseline; focused diagnostic-aware repair coverage protects non-template candidates)*
 

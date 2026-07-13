@@ -38,8 +38,10 @@ contract/fixture acceptance is protected on `main` through PR #31 with exact
 post-merge CI/security proof. Native Anthropic ETL and queued vendor normalization
 exist at contract/fixture maturity through PRs #33/#34; docs-only evidence PR #35 is
 green at `4fe0df6`. QA-008 golden review is protected through PR #36 at `2589503`.
-No credentialed provider, end-to-end reviewed row, or real vendor operation is
-proven. The next ordered work continues the dependency-complete Wave 2 builder loop.
+QA-002 deterministic builder acceptance is protected through PR #38 at `c80accb`.
+No credentialed provider-sourced reviewed row or real vendor operation is proven. The
+next ordered work continues Wave 2 with credentialed catalog acceptance and the
+QA-010 -> EXT-001 independent-builder path.
 
 Current Wave 1/2 boundary:
 
@@ -50,10 +52,10 @@ Current Wave 1/2 boundary:
   contract/fixture maturity through PRs #33/#34, with evidence reconciled by PR #35;
 - QA-008 machine-registers protected evidence artifacts and requires append-only
   review records for intentional re-pins through PR #36;
-- QA-002 has a dependency-complete browser acceptance candidate: the production
-  Studio bundle, real built WASM, downloaded validator, gateway, and isolated
-  Postgres exercise the ten builder-loop flows under the required data-plane job;
-  exact remote and protected post-merge evidence remain before closure;
+- QA-002 is closed at deterministic product-acceptance maturity: exact PR and
+  post-merge evidence prove the production Studio bundle, real built WASM, downloaded
+  validator, gateway, isolated Postgres, and all ten builder-loop flows through PR
+  #38; this does not substitute for independent-user proof;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -190,10 +192,10 @@ Work:
   gateway-to-worker vendor-normalization path with its protected 20-migration proof;
   finish a credentialed, observable, recoverable vendor sandbox and purchasable BOM
   acceptance (`P11-005`);
-- close QA-002 by proving the production Studio builder loop against isolated
-  Postgres on the exact protected tree; this is deterministic product acceptance,
-  not external-user acceptance;
-- execute `EXT-001`: independent builder acceptance.
+- retain closed QA-002 as the deterministic regression gate on every required
+  data-plane run;
+- author the independent-builder script/evidence template under `QA-010`, then
+  execute `EXT-001` without repository knowledge.
 
 Acceptance:
 
