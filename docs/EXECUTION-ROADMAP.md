@@ -45,18 +45,21 @@ PR #42 at `9c1802b`: Chromium uses full WebGL, while Firefox/WebKit draw the
 core-baked Canvas2D schematic without loading scene/Three.js chunks. Exact PR and
 post-merge CI/security plus the clean merge artifact are green.
 QA-004 deterministic migration acceptance is protected through PR #44 at `e362c54`:
-D37's transactional checksum/gap-refusing runner, all 19 populated predecessors,
-failure recovery, concurrency, and the database runbook have exact PR and post-merge
-CI/security plus a clean exact-revision artifact. QA-005 now has a local D38/migration
-0021 candidate with lease-fenced at-least-once attempts, bounded retry/cancellation/
-timeout fault semantics, and staged exact-checksum uploads. It remains in progress
-until exact protected Postgres/CI/security and post-merge evidence pass; production
-backup/DR and queue/object-store operations remain OPS-005/QA-009 and OPS-003..007.
+D37's transactional checksum/gap-refusing runner, all 19 then-current populated
+predecessors, failure recovery, concurrency, and the database runbook have exact PR
+and post-merge proof. QA-005 deterministic fault acceptance is protected through PR
+#46 at `7970005`: D38/migration 0021 lease-fenced attempts, bounded retry/
+cancellation/timeout behavior, staged exact-checksum uploads, and the clean 21-
+migration plus 20-predecessor matrix have exact PR and post-merge CI/security and
+revision-bound artifacts. Production backup/DR, multi-replica queues, object-store
+operations, shared quotas, and SLOs remain OPS-005/QA-009 and OPS-003..007.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
-next ordered work continues Wave 2 with credentialed catalog acceptance and the
-EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
-the actual EXT-001 run still requires a qualified independent participant and frozen
-protected revision/environment.
+product dependency path continues Wave 2 with credentialed catalog acceptance and the
+EXT-001 independent-builder path. While those external prerequisites are absent, the
+next dependency-complete local lane is QA-007's cross-boundary adversarial corpus.
+QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
+requires a qualified independent participant and frozen protected revision/
+environment.
 
 Current Wave 1/2 boundary:
 
@@ -88,6 +91,12 @@ Current Wave 1/2 boundary:
   preservation/idempotency, atomic recovery, history refusal, and concurrent
   apply-once behavior; production backups, restore drills, capacity, and measured
   RPO/RTO retain OPS-005/QA-009;
+- QA-005 is closed at deterministic isolated-Postgres maturity through PR #46:
+  exact PR/post-merge evidence proves current unexpired attempt authority, crash
+  reclaim, bounded outage/rate retries, cancellation/stale-result refusal, one-winner
+  materialization, staged-object refusal, and exact verified upload completion;
+  multi-replica, deployed provider/object-store, incident, quota, dead-letter, and SLO
+  evidence retains OPS/QA ownership;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is

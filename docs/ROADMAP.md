@@ -54,13 +54,13 @@ atomic recovery, history refusal, and concurrent apply-once. Production
 backup/restore, disaster recovery, capacity, and measured RPO/RTO remain OPS-005 and
 QA-009.
 
-QA-005 is now an unprotected implementation candidate under D38/migration 0021:
-opaque expiring attempt leases, bounded retry/error semantics, cancellation/stale-
-result fencing, and staged exact-checksum upload completion pass all 35 local gates.
-The task remains `[~]` until the exact candidate and protected merge both pass the
-isolated-Postgres fault matrix and attached revision-bound evidence. Production queue
-operations, provider/object-store incident drills, shared quotas, and SLOs remain
-separate OPS/QA gates.
+Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
+D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
+clean revision-bound artifacts prove opaque expiring attempt leases, bounded outage/
+rate retries, cancellation and stale-result fencing, one-winner materialization, and
+partial-upload refusal followed by exact staged-upload completion. Production queue
+operations, multi-replica capacity, provider/object-store incident drills, shared
+quotas, dead-letter operations, and SLOs remain separate OPS/QA gates.
 
 | Phase | Status | Est. |
 |---|---|---|
