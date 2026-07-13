@@ -34,21 +34,24 @@ Read in this order for every non-trivial session:
 5. `docs/TODO.md` — atomic task ledger with stable IDs.
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
-8. `docs/EXTERNAL-ACCEPTANCE.md` before preparing, executing, reviewing, publishing,
+8. `docs/BROWSER-SUPPORT.md` before changing Studio semantics, focus, keyboard or
+   pointer interaction, responsive layout, motion, browser detection, worker/local
+   fallback, or browser-support claims.
+9. `docs/EXTERNAL-ACCEPTANCE.md` before preparing, executing, reviewing, publishing,
    or using evidence from an external user, provider, course, print, lab, or field run.
-9. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
+10. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
    physics, validator, corpus, or committed generated-runtime artifact.
-10. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
+11. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
    outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
    or release archive handling.
-11. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+12. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-12. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+13. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
-13. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+14. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-14. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-15. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+15. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+16. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -102,6 +105,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
   deterministic product acceptance, not live-provider or external-user proof;
+- QA-003 is an active candidate: the production share/configurator journey passes
+  locally in Chromium, Firefox, and WebKit with real WASM plus semantic, keyboard,
+  focus, contrast, target-size, responsive, and reduced-motion assertions. This is
+  not protected or complete until exact PR and post-merge evidence is reconciled;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
@@ -148,7 +155,7 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Motion/drivers | `crates/forge-motion` | Versioned data-driven drivers; no executable code in contracts |
 | Simulation/export/import | `crates/forge-sim` | Rapier interactive; MuJoCo training-canonical; parity on upgrades |
 | Admission | `crates/forge-validate` | The validator is sovereign; fix artifacts, never weaken checks to green them |
-| Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction |
+| Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction; support tiers and accessibility acceptance are owned by `docs/BROWSER-SUPPORT.md` |
 | API/data/platform | `packages/gateway`, `infra/migrations` | Validate writes, scope ownership, fail closed, preserve audit history |
 | Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
@@ -394,7 +401,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
-| Studio | `pnpm --filter @forge/studio typecheck`; build; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; accessibility/perf check when relevant |
+| Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |

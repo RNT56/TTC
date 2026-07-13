@@ -14,6 +14,7 @@
     "verify:goldens": "node --test scripts/golden-artifact-policy.test.mjs && node scripts/check-golden-artifacts.mjs",
     "verify:external-acceptance": "node --test scripts/external-acceptance-policy.test.mjs && node scripts/external-acceptance.mjs check",
     "verify:browser-e2e": "node scripts/browser-e2e.mjs",
+    "verify:browser-support": "node scripts/browser-support.mjs",
     "codegen:contract": "cargo run -q -p forge-validate -- schema --out schema/forge-modelspec.schema.json && node scripts/codegen-contract.mjs",
     "schema:migrate": "cargo run -q -p forge-validate -- migrate",
     "build:wasm": "./scripts/build-wasm.sh",

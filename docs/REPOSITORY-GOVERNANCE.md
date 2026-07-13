@@ -42,6 +42,14 @@ It must also run QA-002 through a production Studio preview with same-origin gat
 proxying, the exact downloaded validator artifact, real built WASM, headless Chromium,
 and the isolated Postgres service. The uploaded JSON evidence or failure screenshot
 must remain attached to the exact workflow run.
+After QA-002, the same required job runs QA-003's separate production-bundle matrix
+in Chromium, Firefox, and WebKit. It must retain the default three-engine list,
+record the exact source revision and Studio/browser versions, exercise the real-WASM
+share/configurator keyboard journey, and fail on semantic, focus, contrast,
+target-size, responsive, reduced-motion, page-error, or support-tier drift. The
+uploaded `browser-acceptance-evidence` artifact contains both QA-002 and QA-003
+records; WebKit is a compatibility proxy, not an Apple-device claim. The policy and
+local commands are owned by [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md).
 For P11-005 that includes `pnpm db:assert-commerce-jobs`, which executes the exact
 gateway upsert under concurrent retry, request drift, and cross-owner key reuse, plus
 Python 3.12 and `workers/integration/assert_commerce_postgres.py`, which prove valid

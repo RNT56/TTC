@@ -18,6 +18,37 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Gate accessible viewer-grade browser support
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Added a fail-closed production-bundle acceptance matrix for Chromium
+148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Every engine loaded the real hashed
+WASM facade, admitted an inline equipped-variant fixture, and passed semantic names/
+landmarks, skip/focus indication, keyboard orbit/equip/explode/blueprint, live
+announcements, WCAG AA fixture contrast (5.41:1 muted, 12.13:1 controls), and 28 px
+critical targets. Chromium additionally passed 390 x 844 containment with zero
+horizontal overflow and the reduced-motion contract. Studio now exposes semantic
+regions and labels, a skip link, visible 3 px focus, keyboard camera controls,
+stronger muted text, reduced-motion behavior, explicit support tiers, and a local
+non-SAB session boundary. The required Postgres job installs all three engines and
+uploads both QA-002 and QA-003 evidence. The ledger remains 200 tasks: 133 done, 38
+in progress, 28 open, and 1 blocked; QA-003 is not complete before protected proof.
+All 34 non-database repository gates pass after the browser run, including 61
+gateway tests, Brief-25 25/25, native/fresh-WASM parity, packaging, 115 worker tests,
+and patch hygiene. A 61-file Markdown scan checked 181 local links with zero broken.
+**Changed:** Studio shell/scene accessibility and interaction; three-engine browser
+runner and required workflow; browser-support contract; README; canonical agent,
+system, testing, debugging, governance, risk, project-state, phase/execution roadmap,
+and TODO guidance.
+**Decisions:** none; full Studio remains the isolated desktop Chromium/Tauri tier,
+Firefox/WebKit/mobile remain viewer grade, and proxy evidence grants no Apple-device,
+screen-reader, external-user, or field claim. Added risk R22 for accessibility/
+viewer regressions hidden by visual success.
+**Next:** publish through protected PR/main, reconcile exact PR/post-merge runs and
+evidence, then mark QA-003 `[x]`.
+**Blockers:** none for deterministic QA-003 delivery; real assistive-technology,
+vendor-device, performance, and independent-user evidence retain their later gates.
+
 ## 2026-07-13 — Record protected external-acceptance governance
 **Session:** Codex agent · branch `codex/qa010-postmerge-evidence` · **Phase:** QA /
 external and field proof · **TODO items:** QA-010 [x]

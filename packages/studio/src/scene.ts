@@ -466,6 +466,31 @@ export class StudioScene {
     this.controls.update();
   }
 
+  /** Keyboard-accessible orbit/zoom. Values are relative deltas around the
+   * current orbit target so the canvas never needs presentation-only camera
+   * truth outside this render layer. */
+  nudgeCamera(azimuthRad: number, elevationRad: number, zoomFactor = 1): void {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.theta += azimuthRad;
+    spherical.phi = THREE.MathUtils.clamp(spherical.phi - elevationRad, 0.08, Math.PI - 0.08);
+    spherical.radius = THREE.MathUtils.clamp(spherical.radius * zoomFactor, 0.08, 20);
+    this.camera.position.copy(this.controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    this.controls.update();
+  }
+
+  cameraState(): { position: [number, number, number]; target: [number, number, number] } {
+    return {
+      position: [this.camera.position.x, this.camera.position.y, this.camera.position.z],
+      target: [this.controls.target.x, this.controls.target.y, this.controls.target.z],
+    };
+  }
+
+  setReducedMotion(reduced: boolean): void {
+    this.controls.enableDamping = !reduced;
+    this.controls.update();
+  }
+
   setGridVisible(visible: boolean): void {
     this.grid.visible = visible;
   }

@@ -8,6 +8,20 @@
       html, body, #root { margin: 0; height: 100%; background: #0d0f12; color: #cfd6df;
         font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
       * { box-sizing: border-box; }
+      :focus-visible { outline: 3px solid #39c8ff; outline-offset: 2px; }
+      .skip-link { position: fixed; z-index: 1000; top: 8px; left: 8px; padding: 8px 10px;
+        color: #0d0f12; background: #39c8ff; border-radius: 4px; transform: translateY(-160%); }
+      .skip-link:focus { transform: translateY(0); }
+      .sr-only { position: absolute !important; width: 1px !important; height: 1px !important;
+        padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+      button, select, input:not([type="checkbox"]):not([type="radio"]) { min-height: 28px; }
+      select, input[type="range"] { height: 28px; }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important; scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important; }
+      }
     </style>
   </head>
   <body>
