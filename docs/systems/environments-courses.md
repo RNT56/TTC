@@ -16,7 +16,8 @@ loop commercially).
 
 ```
 {
-  meta:      { id, name, version, provenance, license },
+  schemaVersion: "1.0.0",
+  id, name, version, provenance, license,
   terrain:   heightfield | primitive composition,
   obstacles: [{ kind: gate | block | ..., pose, dims }],
   spawns:    [{ pose, archetypeFilter? }],
@@ -25,7 +26,8 @@ loop commercially).
 }
 ```
 
-Same conventions as ModelSpec (Y-up meters, semver, provenance). Generated via the
+`schemaVersion` governs the EnvSpec shape; `version` is the individual course
+document revision. Same conventions as ModelSpec (Y-up meters, semver, provenance). Generated via the
 P4 pipeline with a smaller schema (orchestrator is schema-generic by design, P4-013).
 
 ## 3. The course gatekeeper (P10-002)
@@ -47,6 +49,11 @@ XC-25) before a time enters the official board, as **anti-cheat hygiene** rather
 than as the only place truth exists. A client-provided `verified: true` claim is
 recorded only as a claim; official `verified` is computed from tape hash,
 monotonic timestamps, and optional contract-hash checks.
+
+Replay producers emit `schemaVersion: "1.0.0"`. Native and worker readers retain
+the historical `replay.v1` spelling during the deprecation window and reject unknown
+format majors. The exact window and removal conditions are in
+[`../COMPATIBILITY.md`](../COMPATIBILITY.md).
 
 Live Studio board UI (2026-06-14) shows the selected course's verified/held runs
 with filters for EnvSpec-derived archetype, verification-header class, and official

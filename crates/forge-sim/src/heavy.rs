@@ -679,6 +679,7 @@ mod tests {
         let env = EnvSpec {
             id: "gate-course".to_string(),
             name: "Gate course".to_string(),
+            schema_version: crate::runtime::ENVSPEC_SCHEMA_VERSION.to_string(),
             version: "1.0.0".to_string(),
             kind: "course".to_string(),
             bounds_m: [10.0, 5.0, 10.0],

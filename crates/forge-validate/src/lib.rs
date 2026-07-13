@@ -65,6 +65,9 @@ mod clock {
 }
 
 pub const VALIDATOR_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Version of the serialized validator report contract. This is independent
+/// from the validator package version and follows the compatibility policy.
+pub const REPORT_FORMAT_VERSION: &str = "1.0.0";
 /// Per-model face budget (default quality tier) — provisional until P1 profiling.
 pub const DEFAULT_FACE_BUDGET: usize = 50_000;
 
@@ -160,6 +163,7 @@ pub enum Verdict {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Report {
+    pub report_version: String,
     pub contract_hash: String,
     pub lockfile_hash: String,
     pub schema_version: String,
@@ -271,6 +275,7 @@ pub fn run_full(doc: &str, catalog: &dyn CatalogSource, opts: &Options) -> Repor
     };
 
     Report {
+        report_version: REPORT_FORMAT_VERSION.to_string(),
         contract_hash,
         lockfile_hash,
         schema_version,
@@ -1455,6 +1460,7 @@ mod tests {
     #[test]
     fn demo_contract_is_admitted() {
         let report = run_full(GOOD, &EmptyCatalog, &Options::default());
+        assert_eq!(report.report_version, REPORT_FORMAT_VERSION);
         let errors: Vec<_> = report
             .results
             .iter()

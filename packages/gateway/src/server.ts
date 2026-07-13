@@ -404,6 +404,7 @@ function buildTemplateEnvSpec(body: CourseGenerationBody): Record<string, unknow
   const g1 = arm ? [1, 0.5, lateral] : [4, gateY, lateral];
   const g2 = arm ? [1.4, 0.65, 0.4 + lateral] : [7, gateY, 1.2 + lateral];
   return {
+    schemaVersion: "1.0.0",
     id: `course-${slugify(title)}-${hash.slice(0, 10)}`,
     name: title,
     version: "1.0.0",

@@ -2,7 +2,7 @@
 
 Snapshot date: **2026-07-12**
 Repository: `RNT56/TTC`
-Verified main: `02b5561` (`origin/main`)
+Verified main: `137c440` (`origin/main`)
 Recovery gate: **G0 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -26,14 +26,15 @@ operational recovery, and field evidence remain incomplete.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | clean protected `main` at `f015c7b` before this closeout branch | PR #23 and exact post-merge CI/security are green |
+| Git state | clean protected `main` at `137c440` before the GOV-007 branch | PR #25 and exact post-merge CI/security are green |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 30 required non-DB gates | immutable Action pins, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify` | pass: 31 required non-DB gates | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify:compatibility` | pass: 7/7 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 26/26 | includes direct oversized-part repair regression coverage |
-| Worker tests | pass: 88/88 | deterministic Python plane healthy locally |
+| Worker tests | pass: 89/89 | includes current and unsupported replay-format behavior |
 | Postgres/pgvector gate | pass | all 14 migrations, seed, and P3 invariants pass against the Compose service |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
@@ -61,10 +62,11 @@ Live GitHub evidence checked on 2026-07-12:
 - recovery [PR #11](https://github.com/RNT56/TTC/pull/11) and security closeout
   [PR #21](https://github.com/RNT56/TTC/pull/21), then native Desktop
   [PR #22](https://github.com/RNT56/TTC/pull/22) and workflow/SBOM
-  [PR #23](https://github.com/RNT56/TTC/pull/23), merged through protection;
-- final `main` CI is green at [run 29212860968](https://github.com/RNT56/TTC/actions/runs/29212860968);
+  [PR #23](https://github.com/RNT56/TTC/pull/23), followed by governance evidence
+  [PR #25](https://github.com/RNT56/TTC/pull/25), merged through protection;
+- final `main` CI is green at [run 29213288206](https://github.com/RNT56/TTC/actions/runs/29213288206);
 - final dependency audits, source SPDX SBOM, and both CodeQL languages are green at
-  [run 29212860990](https://github.com/RNT56/TTC/actions/runs/29212860990);
+  [run 29213288195](https://github.com/RNT56/TTC/actions/runs/29213288195);
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -83,9 +85,10 @@ Live GitHub evidence checked on 2026-07-12:
   green runs above executed under that policy;
 - repository description and homepage remain empty.
 
-Consequently G0 is **closed**. The next release boundary is G1: compatibility policy,
-immutable workflow inputs, cross-platform artifacts, SBOM/provenance/checksums,
-downloaded install/version proof, and accurate public support/security surfaces.
+Consequently G0 is **closed**, and the GOV-007 compatibility contract is locally
+complete pending its protected merge. The remaining G1 boundary is cross-platform
+artifacts, artifact SBOM/provenance/checksums, downloaded install/version proof, and
+accurate public support/security surfaces.
 
 ## 4. Capability maturity
 
@@ -135,9 +138,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **199 tasks: 115 done, 38 in progress, 44 open,
-and 2 explicitly blocked**. All 8 recovery tasks are done. The 84 remaining tasks are
-the phase/live/field program plus 5 governance, 8 security, 9 quality, 10 operations,
+The stable ledger currently contains **199 tasks: 116 done, 38 in progress, 43 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 83 remaining tasks are
+the phase/live/field program plus 4 governance, 8 security, 9 quality, 10 operations,
 9 external-proof, and 3 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

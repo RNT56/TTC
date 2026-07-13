@@ -17,6 +17,20 @@ pub mod session;
 
 use forge_validate::{run_full, EmptyCatalog, Options};
 
+/// Machine-readable facade and data-contract versions for loaders and support
+/// tooling. Package SemVer governs the exported WASM API; data formats retain
+/// their independent versions.
+pub fn version_json() -> String {
+    serde_json::json!({
+        "packageVersion": env!("CARGO_PKG_VERSION"),
+        "modelSpecSchemaVersion": forge_contract::SCHEMA_VERSION,
+        "validatorReportVersion": forge_validate::REPORT_FORMAT_VERSION,
+        "replayFormatVersion": forge_sim::runtime::REPLAY_FORMAT_VERSION,
+        "envSpecSchemaVersion": forge_sim::runtime::ENVSPEC_SCHEMA_VERSION,
+    })
+    .to_string()
+}
+
 /// Run the full validation suite; returns the report JSON (`target: "wasm"`).
 pub fn validate_json(contract_json: &str) -> String {
     let opts = Options {
@@ -169,6 +183,11 @@ mod wasm_bindings {
     #[wasm_bindgen]
     pub fn schema() -> String {
         super::schema_json()
+    }
+
+    #[wasm_bindgen]
+    pub fn version() -> String {
+        super::version_json()
     }
 
     /// Golden-number report (XT-001): must equal the native binary's output

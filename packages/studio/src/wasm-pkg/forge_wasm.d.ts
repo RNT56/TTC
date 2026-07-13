@@ -112,6 +112,8 @@ export function schema(): string;
 
 export function validate(contract_json: string): string;
 
+export function version(): string;
+
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
@@ -144,6 +146,7 @@ export interface InitOutput {
     readonly session_set_jog: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
     readonly validate: (a: number, b: number) => [number, number];
+    readonly version: () => [number, number];
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

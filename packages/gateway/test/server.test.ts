@@ -2055,10 +2055,11 @@ test(
     assert.equal(generatedCourse.statusCode, 201, generatedCourse.body);
     const generatedBody = generatedCourse.json() as {
       id: string;
-      envSpec: { version: string; provenance: { promptHash: string } };
+      envSpec: { schemaVersion: string; version: string; provenance: { promptHash: string } };
       generation: { archetype: string; provider: string };
     };
     assert.equal(generatedBody.envSpec.version, "1.0.0");
+    assert.equal(generatedBody.envSpec.schemaVersion, "1.0.0");
     assert.equal(generatedBody.generation.archetype, "multirotor");
     assert.match(generatedBody.envSpec.provenance.promptHash, /^[a-f0-9]{64}$/);
     const courses = await app.inject({ method: "GET", url: "/v1/courses" });

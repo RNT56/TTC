@@ -7,6 +7,14 @@
 use forge_contract::ModelSpec;
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
+
+/// Serialized replay-tape contract. `replay.v1` remains a read-only legacy
+/// alias during the documented deprecation window.
+pub const REPLAY_FORMAT_VERSION: &str = "1.0.0";
+pub const LEGACY_REPLAY_FORMAT_VERSION: &str = "replay.v1";
+/// EnvSpec schema contract. `EnvSpec.version` is the document revision and is
+/// intentionally separate from this format version.
+pub const ENVSPEC_SCHEMA_VERSION: &str = "1.0.0";
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -187,7 +195,14 @@ pub fn verify_replay(tape: &ReplayTape, expected_hash: Option<&str>) -> ReplayVe
     let hash_ok = expected_hash
         .map(|expected| expected == tape_hash)
         .unwrap_or(true);
-    let reject_reason = if tape.frames.is_empty() {
+    let format_supported = same_semver_major(&tape.schema_version, REPLAY_FORMAT_VERSION)
+        || tape.schema_version == LEGACY_REPLAY_FORMAT_VERSION;
+    let reject_reason = if !format_supported {
+        Some(format!(
+            "unsupported replay schema version '{}' (supported major: 1, current: {}, legacy: {})",
+            tape.schema_version, REPLAY_FORMAT_VERSION, LEGACY_REPLAY_FORMAT_VERSION
+        ))
+    } else if tape.frames.is_empty() {
         Some("replay has no frames".to_string())
     } else if !monotonic {
         Some("replay timestamps are not strictly increasing".to_string())
@@ -271,6 +286,8 @@ pub struct EnvWin {
 pub struct EnvSpec {
     pub id: String,
     pub name: String,
+    #[serde(default = "default_envspec_schema_version")]
+    pub schema_version: String,
     #[serde(default = "default_envspec_version")]
     pub version: String,
     pub kind: String,
@@ -305,6 +322,16 @@ pub struct EnvDiagnostic {
 
 pub fn validate_envspec(env: &EnvSpec) -> Vec<EnvDiagnostic> {
     let mut diagnostics = Vec::new();
+    if !same_semver_major(&env.schema_version, ENVSPEC_SCHEMA_VERSION) {
+        diagnostics.push(diag(
+            "ENV-000",
+            "error",
+            format!(
+                "unsupported EnvSpec schema version '{}' (supported major: 1)",
+                env.schema_version
+            ),
+        ));
+    }
     if env.id.trim().is_empty() || env.name.trim().is_empty() {
         diagnostics.push(diag("ENV-001", "error", "EnvSpec id/name are required"));
     }
@@ -426,6 +453,14 @@ fn inside_bounds(p: [f64; 3], bounds: [f64; 3]) -> bool {
 
 fn default_envspec_version() -> String {
     "0.1.0".to_string()
+}
+
+fn default_envspec_schema_version() -> String {
+    ENVSPEC_SCHEMA_VERSION.to_string()
+}
+
+fn same_semver_major(value: &str, expected: &str) -> bool {
+    valid_semver(value) && value.split('.').next() == expected.split('.').next()
 }
 
 fn valid_semver(value: &str) -> bool {
@@ -666,6 +701,20 @@ mod tests {
             verify_replay(&bad_time, None).reject_reason.as_deref(),
             Some("replay timestamps are not strictly increasing")
         );
+
+        let unsupported = ReplayTape {
+            schema_version: "2.0.0".to_string(),
+            frames: vec![ReplayFrame {
+                t: 0.0,
+                state: serde_json::Value::Null,
+            }],
+        };
+        let verification = verify_replay(&unsupported, None);
+        assert!(!verification.verified);
+        assert!(verification
+            .reject_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("unsupported replay schema version")));
     }
 
     #[test]
@@ -673,6 +722,7 @@ mod tests {
         let env = EnvSpec {
             id: "course-a".to_string(),
             name: "Course A".to_string(),
+            schema_version: ENVSPEC_SCHEMA_VERSION.to_string(),
             version: "1.0.0".to_string(),
             kind: "slalom".to_string(),
             bounds_m: [10.0, 3.0, 10.0],
@@ -704,6 +754,15 @@ mod tests {
         assert!(diagnostics
             .iter()
             .any(|diag| { diag.check == "ENV-001" && diag.message.contains("semantic") }));
+
+        let bad_schema = EnvSpec {
+            schema_version: "2.0.0".to_string(),
+            ..bad_version
+        };
+        let diagnostics = validate_envspec(&bad_schema);
+        assert!(diagnostics
+            .iter()
+            .any(|diag| diag.check == "ENV-000" && diag.message.contains("unsupported")));
     }
 
     #[test]
@@ -711,6 +770,7 @@ mod tests {
         let env = EnvSpec {
             id: "course-b".to_string(),
             name: "Course B".to_string(),
+            schema_version: ENVSPEC_SCHEMA_VERSION.to_string(),
             version: "1.0.0".to_string(),
             kind: "slalom".to_string(),
             bounds_m: [20.0, 6.0, 20.0],
@@ -758,6 +818,7 @@ mod tests {
         let env = EnvSpec {
             id: "course-c".to_string(),
             name: "Course C".to_string(),
+            schema_version: ENVSPEC_SCHEMA_VERSION.to_string(),
             version: "1.0.0".to_string(),
             kind: "rover".to_string(),
             bounds_m: [12.0, 4.0, 6.0],

@@ -18,6 +18,13 @@ import jsonschema
 SCHEMA_ENV_VAR = "FORGE_SCHEMA"
 _REPO_RELATIVE = Path("schema") / "forge-modelspec.schema.json"
 
+# Worker output envelopes follow the worker package SemVer until each public
+# artifact family has its own independently versioned schema. Replay already
+# has that public boundary and therefore carries a separate format version.
+WORKER_ARTIFACT_FORMAT_VERSION = "0.1.0"
+REPLAY_FORMAT_VERSION = "1.0.0"
+LEGACY_REPLAY_FORMAT_VERSION = "replay.v1"
+
 
 def schema_path() -> Path:
     """Locate the emitted schema: $FORGE_SCHEMA, else walk up to the repo root."""

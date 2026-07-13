@@ -37,9 +37,9 @@ claims or resumed feature breadth.
 
 Current release blockers:
 
-- immutable Action pins, SBOM/provenance/checksum artifacts, compatibility policy,
-  clean external install/version proof, and public support/security surfaces are
-  absent;
+- artifact SBOM/provenance/checksum outputs, clean external install/version proof,
+  and public support/security surfaces are absent; immutable Action pins and the
+  compatibility policy/matrix are complete;
 - security, operations, release, live-provider, external-user, and field work remains.
 
 No downstream phase may claim closure while Wave 0 is incomplete.
@@ -129,7 +129,8 @@ Work:
 - retain the published `prototype-final` evidence (`P0-010`/`GOV-006`) as an
   immutable input to release proof;
 - finish validator package metadata and publication (`P2-001`);
-- complete `GOV-007..010`: define version policy, build cross-platform artifacts,
+- retain completed `GOV-007` policy/matrix enforcement; complete `GOV-008..010`:
+  build cross-platform artifacts,
   checksums/artifact SBOM/provenance, release notes, install verification, and
   support/security entry points;
 - finish real-mid-hardware P1 budgets and remaining configurator truth.
