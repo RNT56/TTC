@@ -249,7 +249,7 @@ try {
   await page.locator(`[data-testid="review-policy-${reviewId}"]`).selectOption("full-geometry-ok");
   await page.locator(`[data-testid="review-note-${reviewId}"]`).fill("QA-002 deterministic catalog acceptance");
   await page.locator(`[data-testid="review-approve-${reviewId}"]`).click();
-  await pendingReview.waitFor({ state: "detached", timeout: browserTimeoutMs });
+  await page.locator(`[data-testid="review-item-${reviewId}"]`).waitFor({ state: "detached", timeout: browserTimeoutMs });
   await page.locator('[data-testid="review-status-filter"]').selectOption("approved");
   const approvedReview = page.locator(`[data-testid="review-item-${reviewId}"]`);
   await approvedReview.waitFor({ state: "visible", timeout: browserTimeoutMs });
