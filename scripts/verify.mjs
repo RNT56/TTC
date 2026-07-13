@@ -146,7 +146,7 @@ try {
   run("Validator release packaging", "pnpm", ["release:validator:check"]);
   run("Pilot and hardware-policy invariants", "pnpm", ["pilot:check"]);
   run("Python worker tests", "pnpm", ["--filter", "@forge/workers", "test"]);
-  run("Whitespace and patch hygiene", "git", ["diff", "--check"]);
+  run("Whitespace and patch hygiene", "node", ["scripts/check-patch-hygiene.mjs"]);
 
   console.log(`\nverify: ${step} required local gates passed`);
 } catch (error) {

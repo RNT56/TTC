@@ -302,7 +302,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 9. Quality, testing, and product acceptance (QA)
 
-- [x] QA-001 — Added `pnpm verify` as the 32-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle/workflow/compatibility/archive artifacts and are documented in README/AGENTS *(archive policy added 2026-07-13)*.
+- [x] QA-001 — Added `pnpm verify` as the 32-step non-DB gate and `pnpm verify:db` for isolated Postgres/pgvector invariants; both fail on missing prerequisites or stale generated/oracle/workflow/compatibility/archive artifacts and are documented in README/AGENTS. The final hygiene step checks both the working tree and the cumulative committed branch range so a clean checkout cannot vacuously pass *(archive and committed-range policy updated 2026-07-13)*.
 - [ ] QA-002 — Add browser E2E coverage for generate/draft/edit/validate/share/catalog/course/listing/job/maintenance flows using real built WASM and an isolated DB.
 - [ ] QA-003 — Add accessibility, keyboard, focus, contrast, reduced-motion, responsive, and viewer-grade browser acceptance; publish the supported-browser matrix.
 - [ ] QA-004 — Test migrations from every supported prior schema with populated data; document backup, rollback/roll-forward, and failed-migration recovery.

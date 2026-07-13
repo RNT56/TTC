@@ -263,8 +263,9 @@ Application threat boundary (SEC-006):
    mark tasks done rather than deleting them.
 7. Add a newest-first `CHANGELOG.md` entry containing evidence, affected IDs, next
    step, and blockers.
-8. Before handoff, run `git diff --check`, inspect the complete diff, and report both
-   passing and failing gates.
+8. Before handoff, run `git diff --check`, run the cumulative committed-range check
+   through `node scripts/check-patch-hygiene.mjs`, inspect the complete diff, and
+   report both passing and failing gates.
 
 Shared checkout rules:
 

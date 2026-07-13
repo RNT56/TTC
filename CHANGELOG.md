@@ -39,7 +39,8 @@ validator gateway tests, 25/25 Brief-25, 104/104 workers, and all 4 archive-poli
 tests; the published v0.1.0 assets also pass the hardened verifier.
 **Changed:** gateway auth/security/generation/object/platform/server/validator code and
 tests; worker network/command adapters and tests; release verifier/archive policy;
-`AGENTS.md`, threat/security/system/release/governance/risk/state/roadmap/task docs.
+committed-range patch-hygiene enforcement; `AGENTS.md`, threat/security/system/
+release/governance/risk/state/roadmap/task docs.
 **Decisions:** no new product authority. The in-memory limiter is deliberately only
 single-process proof; production requires connection-time egress enforcement, shared
 rate/concurrency/spend state, secret/log/rotation drills, workload isolation, and
