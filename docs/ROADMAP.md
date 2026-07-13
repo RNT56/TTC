@@ -16,16 +16,18 @@ and D17 deletes an entire class of client/server consistency work.
 phase-level state only. Parallel execution order and subworker ownership live in
 [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
-**Recovery gate (2026-07-12): G0 closed.** Protected `main` has green local, PR,
-post-merge CI/security, and manual-nightly evidence. Release work now starts at G1;
-live/external/field claims remain gated independently.
+**Recovery/release gates: G0 closed 2026-07-12; G1 closed 2026-07-13.** Protected
+`main` has green local, PR, post-merge CI/security, and manual-nightly evidence.
+Standalone validator v0.1.0 was built and attested from protected `1093842`, published
+from an annotated tag, downloaded after publication, and independently verified.
+Live/external/field claims remain gated independently.
 
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, immutable Action pins, selected-Action allowlist, and machine-checked compatibility policy active 2026-07-12; repository metadata remains GOV work)* | days |
-| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; D32 closed historical variant parity honestly and XC-28 implements product variants separately)* | 1.5–2.5 wk |
-| P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
-| P2 Data-driven models | ◑ *(implementation/full-suite criterion restored and remote G0 green 2026-07-12; validator publication remains G1/P2-001)* | 3 wk |
+| P0 Freeze & extract | ● **done** *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; D32 closed historical variant parity honestly and XC-28 implements product variants separately)* | 1.5–2.5 wk |
+| P1 Core & studio | ◑ *(6/7 criteria met; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
+| P2 Data-driven models | ◑ *(implementation/full-suite criterion restored; validator v0.1.0 is published and independently verified, while v0.2 protected delivery and optional owner-credential registry publication remain P2-001 work)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs; live ETL remains P3-004/R1 work)* | 2–3 wk |
 | P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate restored to 25/25; local SEC-002..005 refusal, export/deletion, consent, hold, tombstone, retention, and restore-suppression boundaries pass 2026-07-13; live extraction, production backup/DR operations, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
@@ -108,7 +110,7 @@ family #1 — quadruped generator with leg-count/wheelbase/mass sliders.
 
 Exit criteria:
 - [x] A quadruped spec becomes a valid walking model with **zero hand-written code** *(2026-07-12: modular printable generator passes the full slider-grid admission test)*
-- [~] CI green on the full validation suite *(complete local suite is green on pinned Rust 1.96.0; PR/post-merge CI proof remains `REC-007`)*
+- [~] CI green on the full validation suite *(complete local suite is green on pinned Rust 1.96.0 and the v0.1 protected baseline is proven; protected v0.2 PR/post-merge proof remains)*
 - [x] Diagnostic format stable and machine-readable *(2026-06-12: check IDs + diagnostic JSON + CTR-008)*
 - [x] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08) *(2026-06-12: D22 — spawn stays; numbers in the decision row)*
 

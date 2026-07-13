@@ -1,7 +1,7 @@
 # Repository governance and required checks
 
 Owner: repository maintainers  
-Last reviewed: **2026-07-12**
+Last reviewed: **2026-07-13**
 
 This is the executable contract for default-branch protection, check stability,
 dependency/security triage, and release escalation. It complements `AGENTS.md`; it

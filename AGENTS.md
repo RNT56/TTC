@@ -61,8 +61,9 @@ the same change. Never make code imitate a stale checkbox.
 ## 3. Current boundary
 
 The repository contains a broad deterministic v0 across the Rust core, React Studio,
-Fastify gateway, Postgres data plane, Python workers, and Tauri shell. It is not
-currently release-ready or production-proven.
+Fastify gateway, Postgres data plane, Python workers, and Tauri shell. The standalone
+validator v0.1.0 is released and independently verified; the broader product is not
+production-proven or ready for live-provider, external-beta, or field claims.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
@@ -89,7 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   expiry adapters, and pre-restore suppression; production backup/restore remains
   `OPS-005` and is not implied by deterministic local evidence;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
-- `main` has an active PR-only exact-check ruleset; no release exists.
+- `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
+  and its nine-asset GitHub Release were built from protected `1093842`, attested,
+  downloaded after publication, and independently re-verified;
+- crates.io/npm publication remains explicitly deferred to owner-scoped credentials;
+  the local v0.2 stack is green but still requires protected delivery.
 
 Do not repeat these facts without re-running or re-checking them. Update
 `docs/PROJECT-STATE.md` whenever the boundary materially changes.

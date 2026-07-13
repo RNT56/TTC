@@ -1,7 +1,7 @@
 # ForgedTTC preliminary name search
 
-Search date: **2026-07-13**  
-Scope: exact wordmark screening, United States and European Union  
+Search date: **2026-07-13**
+Scope: exact wordmark screening, United States and European Union
 Status: **no exact `ForgedTTC` record found; not comprehensive legal clearance**
 
 ## Evidence

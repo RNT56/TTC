@@ -21,9 +21,11 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
   post-merge CI/security, and manual nightly evidence are linked in `PROJECT-STATE.md`.
 - **P4 deterministic gate restored:** Brief-25 admits 25/25 without human repair;
   live provider/external-user proof remains separate phase and external work.
-- **Governance/release blocker (`GOV-008..011`):** cross-platform
-  release/artifact-SBOM/provenance/install proof, public repository surfaces, and
-  the Linux Desktop dependency route remain open.
+- **Release gate closed 2026-07-13 (`GOV-008..009`, `OPS-011`):** protected-main and
+  annotated-tag workflows, nine public assets, SPDX/checksums/provenance, and
+  post-publication binary/WASM verification are green. Public repository surfaces
+  still require protected v0.2 delivery; the Linux Desktop dependency route remains
+  `GOV-011` blocked.
 - **Resolved historical blocker 2026-07-13 (D32):** PRE-002 delivered the byte-exact
   pre-configurator prototype. The delivered vintage has no 31-variant slot system, so
   P0-007 is closed without fabricated parity; real equipped-variant semantics are
@@ -34,7 +36,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] PRE-001 — Documentation system: canonical `AGENTS.md`, compatibility `CLAUDE.md`, `PROJECT-STATE.md`, changelog, phase/task/execution ledgers, and system docs *(rebuilt 2026-07-12)*
 - [x] PRE-002 — Prototype committed byte-exact with sha256 `ca93489e…`; the pre-configurator vintage is frozen in-tree and published as annotated tag `prototype-final` at `0294a9d` *(remote proof refreshed 2026-07-12 under P0-010/GOV-006)*.
 - [x] PRE-003 — Licensing *(2026-06-12, owner-delegated → **D24**)*: root `LICENSE` (open-core split, © RNT56), `LICENSES/Apache-2.0.txt` (canonical text), `NOTICE`; Apache zone = crates/ + schema/ + examples/; everything else proprietary; zone-2 package.json marked; cargo workspace already declared Apache-2.0
-- [~] PRE-004 — Repo hygiene, active `main` protection, remote security scans, immutable Action pins, selected-Action allowlist, accurate metadata/topics, issue/PR templates, and contributor/security/support/conduct surfaces exist; release publication remains GOV work.
+- [~] PRE-004 — Repo hygiene, active `main` protection, remote security scans, immutable Action pins, selected-Action allowlist, accurate metadata/topics, issue/PR templates, and contributor/security/support/conduct surfaces exist; validator v0.1.0 is published, while protected delivery of the public support surfaces remains in the v0.2 stack.
 - [~] PRE-005 — Naming *(2026-06-12, owner decision → **D23**)*: the product is **ForgedTTC** and `forge-*` code namespaces stay. USPTO/EUIPO exact-name searches found no `ForgedTTC` record on 2026-07-13; confusing-similarity/common-law/class review by qualified counsel remains before filing or broad launch.
 - [x] PRE-006 — Plan v3.0 adopted; docs suite upgraded; v2.0 archived *(2026-06-11)*
 
@@ -77,7 +79,7 @@ Studio (TypeScript face):
 - [~] P1-017 — Perf overlay *(2026-06-12)*: fps + render ms + **draw calls + core-tick ms** live (honest per-frame accounting across blueprint's multi-pass — `info.autoReset` off); measured on SwiftShader (software floor): render 0.5 ms · core ≤ 0.05 ms · 9 draws. Rapier split lands with the worker (P6); UI ms pending
 
 ### P2 — Data-driven models
-- [~] P2-001 — Validator productized: check catalog (CTR-001..008, GEO, SIM, BEH, PRV) + diagnostic JSON stable ✓; in-studio WASM validation live ✓; npm + crates.io publication plumbing pending
+- [~] P2-001 — Validator productized: check catalog (CTR-001..008, GEO, SIM, BEH, PRV) + diagnostic JSON stable ✓; in-studio WASM validation live ✓; protected-main/tag-built v0.1.0 binaries and WASM tarball are published and externally verified ✓; crates.io/npm registry publication remains an explicit owner-credential deferral and v0.2 protected delivery is pending.
 - [x] P2-002 — Draft semantics and persistence (D14): CLI/gateway save-as-draft behavior, `generated_artifacts` persistence, Studio draft UX, and admitted-only train/export/deploy/share gates are implemented and tested *(reconciled 2026-07-12)*
 - [x] P2-003 — Driver library: multirotor, rover, quadruped, biped, FPV, and arm parameter schemas/validation; arm damped-least-squares driver is implemented and tested *(reconciled 2026-07-12)*
 - [x] P2-004 — Quadruped driver: trot phase gait, per-leg IK, diagonal pairing, validator smoke ✓ *(2026-06-12)*
@@ -281,9 +283,9 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [x] GOV-004 — Upgraded direct `@auth/core` from 0.34.3 to 0.41.2, removing transitive `cookie@0.6.0`; `pnpm audit` reports no known vulnerabilities and gateway build/tests pass *(2026-07-12)*.
 - [x] GOV-005 — All workflow Actions are pinned by immutable SHA; the workflow-pin step in the current 31-step local gate and required dependency-review job reject mutable refs; workflows use explicit read-only defaults and narrow job grants; security/release generate SPDX SBOMs; and repository Actions policy allows GitHub-owned Actions plus only the seven reviewed third-party SHAs. Protected PR and post-merge CI/security/SBOM proof is green *(2026-07-12)*.
 - [x] GOV-006 — Recreated and remotely published annotated `prototype-final` at verified commit `0294a9d`; current and historical prototype SHA-256 both equal `ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe` *(2026-07-12)*.
-- [x] GOV-007 — Defined policy 1.0.0 and a machine-checked seven-surface compatibility matrix for ModelSpec, validator CLI/report, WASM, replay, EnvSpec, and worker artifacts; added CLI/WASM version introspection, independently versioned reports, SemVer replay production with legacy-alias reads, EnvSpec schema-version enforcement, and current/legacy/unsupported tests *(2026-07-12)*.
-- [~] GOV-008 — Cross-platform CLI/WASM matrix, deterministic archive assembly, source/artifact SPDX, checksums, manifest, GitHub provenance attestation, release notes, host-native downloaded smoke verification, annotated-tag enforcement, and release runbook are implemented. Manual branch run `29236010204` passed every build and aggregate job at `02f912d`; its downloaded bundle independently passed checksums, SPDX, macOS binary/example, and clean WASM-consumer verification. Protected-main rerun, annotated `v0.1.0`, GitHub Release, and post-publication download proof remain *(updated 2026-07-13)*.
-- [~] GOV-009 — crates.io/npm v0.1.0 publication is explicitly deferred behind protected GitHub Release proof and owner-scoped registry credentials; clean binary version/example/checksum verification and a clean temporary npm consumer install are executable in the release verifier. Exact downloaded workflow evidence and final registry disposition remain *(2026-07-13)*.
+- [x] GOV-007 — Defined policy 1.0.0 and a machine-checked matrix now covering twelve public format/package surfaces: ModelSpec, validator CLI/report, WASM, replay, EnvSpec, worker artifacts, license exports, user-data export, consent, deletion receipts, and data lifecycle; added CLI/WASM version introspection, independent report versions, SemVer replay aliases, EnvSpec enforcement, and compatibility tests *(2026-07-12; expanded through SEC-005 on 2026-07-13)*.
+- [x] GOV-008 — Cross-platform CLI/WASM matrix, deterministic archive assembly, source/artifact SPDX, checksums, manifest, GitHub provenance attestation, release notes, host-native downloaded smoke verification, annotated-tag enforcement, and release runbook are complete. Protected-main run `29241883791` passed every build/aggregate step at `1093842` and its downloaded aggregate passed independently; annotated tag `v0.1.0` then drove green publication run `29244972303`, which created the nine-asset Release and passed a second independent post-publication download verification *(2026-07-13)*.
+- [x] GOV-009 — Validator v0.1.0 GitHub publication and clean external install/version proof are complete. Every published asset was downloaded; checksums, artifact SPDX, macOS binary/example, and a clean WASM consumer passed. crates.io/npm registry publication is explicitly deferred because no owner-scoped registry credentials or publication decision were supplied; no workflow received registry secrets *(2026-07-13)*.
 - [~] GOV-010 — Accurate GitHub description/homepage/12 topics and SECURITY, CONTRIBUTING, SUPPORT, conduct, issue/PR templates, README status/badges, and dated USPTO/EUIPO exact-name evidence are complete *(2026-07-13)*; confusing-similarity/common-law/class review by qualified counsel remains before filing or broad launch.
 - [!] GOV-011 — Replace Tauri's Linux GTK3/glib 0.18 chain or prove a safe patched route. `glib::VariantStrIter` is not called by FORGE and Desktop is not released, so Dependabot alert 1 is dismissed as `tolerable_risk` only through **2026-10-12** with the same rationale in its remote audit trail; Linux Desktop release remains blocked until resolution or reviewed reachability proof.
 
@@ -324,7 +326,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [ ] OPS-008 — Define support, incident severity, on-call/escalation, status communication, security reporting, and postmortem processes.
 - [ ] OPS-009 — Instrument unit economics: model/API tokens, GPU/CPU time, storage/egress, vendor/print calls, credits, refunds, and margin by workflow.
 - [ ] OPS-010 — Run load/capacity/cost tests and set launch limits; no Kubernetes or multi-region expansion without measured need and a decision record.
-- [~] OPS-011 — Migrate the x86_64 validator release lane from `macos-15-intel` to `macos-26-intel`, use the measured thin-LTO release profile, retain a 60-minute native-job ceiling and the macOS 15 rollback through August 2027, and record protected before/after evidence. Baseline run `29216053372` stalled for 5h10m; macOS 26 full-LTO run `29227763639` hit the ceiling; thin run `29230415603` exposed lost archive execute bits. Corrected thin run `29236010204` then passed every native/WASM/aggregate job at `02f912d`, and its downloaded aggregate passed independent macOS verification. Protected merge and final main rerun remain *(updated 2026-07-13)*.
+- [x] OPS-011 — Migrated the x86_64 validator release lane from `macos-15-intel` to `macos-26-intel`, selected measured thin LTO, retained a 60-minute native-job ceiling and the macOS 15 rollback through August 2027, normalized transferred executable modes, and recorded the full before/after chain. Baseline `29216053372` stalled for 5h10m; full-LTO `29227763639` hit the ceiling; thin `29230415603` exposed lost execute bits; corrected branch `29236010204`, protected main `29241883791`, and annotated-tag publication `29244972303` all passed, with independent aggregate and public-release verification *(2026-07-13)*.
 
 ## 11. External and field proof (EXT)
 

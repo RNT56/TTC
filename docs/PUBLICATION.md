@@ -1,8 +1,8 @@
 # Package publication boundary
 
 Owner: repository maintainers  
-Current decision: **defer crates.io and npm registry publication for v0.1.0 until the
-GitHub release proof is complete**
+Current decision: **defer crates.io and npm registry publication for v0.1.0 because
+no owner-scoped registry credentials or explicit publication decision were supplied**
 
 The Apache-2.0 crates and WASM package are intentionally packageable, but package
 registries are not the first proof boundary. The first public artifact is the
@@ -27,11 +27,13 @@ checksummed, SBOM-backed, attested GitHub Release produced by `release.yml`.
 ## v0.1.0 disposition
 
 crates.io and npm are **explicitly deferred**, not silently omitted. The GitHub
-Release remains installable and independently verifiable. After its proof is linked,
-the maintainer either supplies protected registry credentials and publishes in the
-order above, or retains the deferral in the release notes. A registry failure never
-causes replacement of an existing version; fix forward with a patch release.
+Release is published, installable, and independently verified; protected-main run
+`29241883791`, tag run `29244972303`, and the public nine-asset release are recorded
+in `PROJECT-STATE.md` and `RELEASE.md`. A future registry publication requires an
+explicit maintainer decision plus owner-scoped protected credentials, then follows
+the order above. A registry failure never causes replacement of an existing version;
+fix forward with a patch release.
 
-GOV-009 closes only when the final disposition and clean downloaded install evidence
-are recorded in `PROJECT-STATE.md`. See [`RELEASE.md`](RELEASE.md) for artifact and
+GOV-009 closed when that final disposition and clean downloaded install evidence were
+recorded in `PROJECT-STATE.md`. See [`RELEASE.md`](RELEASE.md) for artifact and
 rollback mechanics and [`COMPATIBILITY.md`](COMPATIBILITY.md) for support promises.

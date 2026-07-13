@@ -101,10 +101,12 @@ They must not be used as substitutes for their schema version.
 5. Security or safety removals may be faster only with a published advisory,
    maintainer decision, affected-version range, and fail-closed replacement.
 
-The historical `replay.v1` spelling is deprecated now, but its removal clock has not
-started because no public validator release exists. Markerless worker replay inputs
-remain readable only for the pre-1.0 worker line; new producers must emit
-`schemaVersion: "1.0.0"`.
+The historical `replay.v1` spelling remains readable but deprecated. Its removal
+clock started with public validator `v0.1.0` on 2026-07-13, which contains the
+replacement replay 1.x spelling. It therefore cannot be removed before both
+2026-10-11 and two subsequent minor releases, and any removal still needs the proof
+above. Markerless worker replay inputs remain readable only for the pre-1.0 worker
+line; new producers must emit `schemaVersion: "1.0.0"`.
 
 ## Required change procedure
 

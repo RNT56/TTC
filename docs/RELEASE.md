@@ -7,6 +7,20 @@ Current candidate: **v0.2.0**
 The release workflow is the only supported artifact builder. A local build is useful
 for diagnosis, but it is not release evidence.
 
+## Published baseline
+
+Validator `v0.1.0` is the first verified public baseline. Protected-main manual run
+[`29241883791`](https://github.com/RNT56/TTC/actions/runs/29241883791) passed every
+platform, both SPDX SBOMs, checksum/payload verification, provenance attestation, and
+aggregate upload at commit `1093842`; its downloaded aggregate passed independently.
+Annotated tag `v0.1.0` then drove publication run
+[`29244972303`](https://github.com/RNT56/TTC/actions/runs/29244972303), which published
+the [nine-asset GitHub Release](https://github.com/RNT56/TTC/releases/tag/v0.1.0).
+Every public asset was downloaded after publication and the verifier again passed
+checksums, artifact SPDX, macOS binary/version/canonical admission, and a clean WASM
+consumer. crates.io/npm publication was explicitly deferred because no owner-scoped
+registry credentials or publication decision were supplied.
+
 The x86_64 macOS lane uses GitHub's supported `macos-26-intel` image and every native
 matrix job has a 60-minute ceiling. `macos-15-intel` is the rollback image through
 August 2027, but it is not the default: protected manual run `29216053372` spent

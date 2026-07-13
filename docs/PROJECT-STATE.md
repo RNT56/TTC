@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
 Verified main: `1093842` (`origin/main`)
-Recovery gate: **G0 closed**
+Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -16,8 +16,9 @@ across all architectural planes. Protected `main` now has a truthful green basel
 core, generation, WASM, browser parity, gateway, Postgres, workers, coverage,
 packaging, dependency audits, and CodeQL pass together.
 
-It is still **not release-ready, production-ready, or field-proven**. G0 proves a
-trustworthy development baseline, not publication, live operations, external-user
+The standalone validator v0.1.0 is now **released and independently install-verified**.
+The broader ForgedTTC product remains **not production-ready or field-proven**: G0/G1
+prove a trustworthy baseline and release, not live operations, external-user
 acceptance, hardware safety, or field outcomes. Most P5-P12 product surfaces prove
 contracts or fixture workflows; live providers, training, hardware, external users,
 operational recovery, and field evidence remain incomplete.
@@ -26,7 +27,7 @@ operational recovery, and field evidence remain incomplete.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | protected `main` at `1093842` | release runner/verification PR #29 is merged with green post-merge CI/security; no `v0.1.0` tag/release exists yet |
+| Git state | protected `main` at `1093842`; annotated `v0.1.0` published | PR #29, post-merge CI/security, protected-main manual release, tag release, and post-publication download verification are green |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | `pnpm verify` | pass: 31 required non-DB gates on the SEC-005 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 on the SEC-005 candidate | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
@@ -42,8 +43,7 @@ operational recovery, and field evidence remain incomplete.
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
-| Release packaging dry run | pass | local artifact construction works; no public release exists |
-| G1 release workflow candidate | protected-main native/WASM jobs pass; aggregate pending | corrected branch run `29236010204` and its independent download passed; PR #29 merged at `1093842`, post-merge CI/security are green, and protected-main run `29241883791` has green contract/native/WASM jobs while aggregate attestation/verification is queued; tag/Release remain |
+| Validator v0.1.0 release | pass; G1 closed | protected-main run `29241883791` and tag run `29244972303` passed every contract/native/WASM/SPDX/checksum/attestation step; the public nine-asset Release was downloaded and independently re-verified on macOS |
 | XC-28 equipped variants | local v0.2 candidate; protected proof pending | ModelSpec 2.2 explicit selection, migration refusal for ambiguous legacy slots, selected-only physical consumers, stable source pointers, Studio cards, all 31 local gates, rebuilt WASM, and a real-browser switch/HUD proof pass on `codex/xc28-equipped-variants` |
 | SEC-002 prohibited briefs | local v0.2 candidate; protected proof pending | versioned pre-retrieval/provider/mutation refusal across five HTTP surfaces and direct APIs, bounded explicit-exclusion handling, minimal non-content audit rows, fail-closed storage, full 31-step and Postgres gates on `codex/sec002-prohibited-briefs` |
 | SEC-003 user data | local v0.2 candidate; protected proof pending | explicit primary-row purge, secret exclusion, S3-compatible delete-before-commit, Postgres zero-residue and MinIO 404 proof pass; SEC-005 extends the boundary to user-data 1.2.0, deletion receipt 2.0.0, and restore suppression |
@@ -82,9 +82,8 @@ Live GitHub evidence checked on 2026-07-13:
   [29211517706](https://github.com/RNT56/TTC/actions/runs/29211517706) also passed and is the closeout record;
 - corrected G1 branch [run 29236010204](https://github.com/RNT56/TTC/actions/runs/29236010204)
   passed Linux, macOS Intel, Windows, WASM, aggregate verification, and provenance at
-  `02f912d`; its downloaded aggregate independently passed on macOS, but this is not
-  yet protected-main or tagged-release evidence;
-- no GitHub Release exists;
+  `02f912d`; its downloaded aggregate independently passed on macOS and established
+  the pre-merge positive proof;
 - annotated [`prototype-final`](https://github.com/RNT56/TTC/tree/prototype-final)
   resolves to commit `0294a9d`; its frozen file SHA-256 is `ca93489e…`;
 - vulnerability alerts, Dependabot security updates, secret scanning, and push
@@ -96,7 +95,8 @@ Live GitHub evidence checked on 2026-07-13:
   green runs above executed under that policy;
 - repository description, README homepage, and 12 focused topics are set; security,
   contribution, support, conduct, issue/PR, debugging, release, and publication
-  surfaces are implemented on `codex/g1-public-surfaces` pending protected delivery.
+  surfaces are assembled in `codex/v02-contract-security-stack` pending protected
+  delivery.
 - compatibility [PR #26](https://github.com/RNT56/TTC/pull/26), release-artifact
   [PR #27](https://github.com/RNT56/TTC/pull/27), and runner/download verification
   [PR #29](https://github.com/RNT56/TTC/pull/29) are merged on protected `main` at
@@ -111,21 +111,30 @@ Live GitHub evidence checked on 2026-07-13:
   passed every native/WASM/aggregate job; its downloaded aggregate independently
   passed checksum, SPDX, macOS binary/example, and clean WASM-consumer verification;
 - protected-main manual release run
-  [29241883791](https://github.com/RNT56/TTC/actions/runs/29241883791) has green
-  contract, Linux, Windows, macOS, and WASM jobs; aggregate attestation/verification
-  is queued at this snapshot;
-- no `v0.1.0` tag or GitHub Release exists.
+  [29241883791](https://github.com/RNT56/TTC/actions/runs/29241883791) passed the
+  contract, Linux, Windows, macOS, WASM, both SPDX SBOMs, checksums, downloaded-payload
+  verification, provenance attestation, and aggregate upload at exact `1093842`; its
+  downloaded aggregate then passed the verifier outside Actions;
+- annotated tag `v0.1.0` points to `1093842`; tag
+  [run 29244972303](https://github.com/RNT56/TTC/actions/runs/29244972303) rebuilt and
+  verified every platform and published the non-draft
+  [nine-asset GitHub Release](https://github.com/RNT56/TTC/releases/tag/v0.1.0);
+- every published asset was downloaded after publication. `SHA256SUMS`, artifact
+  SPDX, macOS x86_64 `forge-validate 0.1.0`, canonical admission, and a clean
+  `@forge/validate-wasm` 0.1.0 consumer all passed independently;
+- crates.io/npm publication is deliberately deferred: no registry token is present,
+  and no owner decision authorized a credentialed registry publication.
 
-Consequently G0 is **closed** and GOV-007 is protected-main complete. The remaining
-G1 boundary is protected delivery and a protected-main release rerun, the annotated
-`v0.1.0` tag and verified GitHub Release with post-publication download proof, plus
-protected delivery of the public support/security surfaces.
+Consequently G0 and G1 are **closed**. The remaining Wave 1 boundary is protected
+delivery of the public support/security surfaces and the green XC-28/SEC-001..005
+v0.2 stack; registry publication is an explicit owner-credential deferral, not a
+hidden release claim.
 
 ## 4. Capability maturity
 
 | Capability | Current maturity | What is still needed |
 |---|---|---|
-| Contract/validator/WASM | deterministic local implementation; ModelSpec 2.2 equipped semantics are locally proven | protected v0.2 delivery/publication, checksummed release, clean external install |
+| Contract/validator/WASM | v0.1.0 released with protected-main/tag attestations and post-publication install proof; ModelSpec 2.2 equipped semantics are locally proven | protected v0.2 delivery; registry publication only after an explicit owner/credential decision |
 | Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation plus D10 exporter enforcement | live ETL/review operations and live OCCT artifact audit |
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, SEC-002 refusal/audit, and local D34/D35 consent/lifecycle authority | live model/extraction operation, production monitoring/adversarial evaluation, OPS-005 backup/DR, external R1 proof |
@@ -151,7 +160,8 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   purpose/subject consent-withdrawal, and retention/hold/tombstone/restore suppression
   are locally implemented; production backup/provider deletion/restore/DR remains
   open under `OPS-005`;
-- release/supply-chain hardening and external/live/field acceptance remain open.
+- public support-surface/v0.2 protected delivery plus external/live/field acceptance
+  remain open; the standalone v0.1.0 release/supply-chain gate is closed.
 
 ## 6. Go/no-go verdicts
 
@@ -160,7 +170,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Continue local development | **Go** | complete local gates are green |
 | Merge ordinary feature PRs | **Go through protection** | exact checks and current-branch policy are active |
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
-| Publish validator v0.1 | **No-go** | branch artifact/download proof is green; protected-main rerun, annotated tag, GitHub Release, and post-publication download proof remain |
+| Publish validator v0.1 | **Complete** | protected-main and tag workflows, annotated tag, nine assets, checksums/SPDX/provenance, and post-publication binary/WASM verification are green |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
@@ -171,12 +181,12 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **200 tasks: 116 done, 39 in progress, 43 open,
-and 2 explicitly blocked**. All 8 recovery tasks are done. The 84 remaining tasks are
-the phase/live/field program plus 4 governance, 8 security, 9 quality, 11 operations,
-9 external-proof, and 3 documentation tasks; dependency order is owned by
+The stable ledger currently contains **199 tasks: 126 done, 39 in progress, 33 open,
+and 1 explicitly blocked**. All 8 recovery tasks are done. The 73 remaining tasks are
+the phase/live/field program plus 2 governance, 3 security, 9 quality, 10 operations,
+9 external-proof, and 2 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 
-Refresh this snapshot when G1 closes or any current gate regresses. Attach release
-commit/tag, artifact/checksum/SBOM/provenance links, clean external install/version
-proof, rollback notes, security conclusions, and exact remaining task/phase counts.
+Refresh this snapshot when the v0.2 stack reaches protected `main` or any current gate
+regresses. Preserve the v0.1.0 tag/run/asset evidence and record exact remaining
+task/phase counts after every status transition.

@@ -42,10 +42,11 @@ studio, a Rust validator, a simulation/export stack, a Python worker plane, and 
 platform layer for sharing, courses, policy scorecards, quote links, and
 maintenance records.
 
-> **Current status (2026-07-13):** advanced deterministic prototype, not a release or
-> production deployment. Protected `main`, its dependency/security scans, the full
-> local gate, and Brief-25 are green; compatibility and release-artifact work is
-> progressing through protected PRs. Live GPU/provider/hardware/field paths remain gated. See
+> **Current status (2026-07-13):** the standalone validator
+> [`v0.1.0`](https://github.com/RNT56/TTC/releases/tag/v0.1.0) is released with
+> checksums, SPDX SBOMs, provenance, and independent binary/WASM install proof. The
+> broader product remains an advanced deterministic prototype, not a production
+> deployment; live GPU/provider/hardware/field paths remain gated. See
 > [`docs/PROJECT-STATE.md`](docs/PROJECT-STATE.md) for evidence and
 > [`docs/EXECUTION-ROADMAP.md`](docs/EXECUTION-ROADMAP.md) for the closure plan.
 

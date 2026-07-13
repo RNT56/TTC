@@ -18,6 +18,30 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Publish and independently verify validator v0.1.0
+**Session:** Codex agent · branch `codex/v02-contract-security-stack` · **Phase:** G1 ·
+**TODO items:** GOV-008, GOV-009, OPS-011
+**Done:** Protected-main manual release run `29241883791` passed the release contract,
+Linux, Windows, macOS Intel, WASM, both SPDX SBOMs, checksums, downloaded-payload
+verification, provenance attestation, and aggregate upload at exact commit `1093842`.
+Its downloaded aggregate independently passed checksums, artifact SPDX, the macOS
+binary/version/canonical example, and a clean WASM consumer. Created and pushed
+annotated tag `v0.1.0`; tag run `29244972303` rebuilt every platform and published the
+non-draft nine-asset GitHub Release. Downloaded every public asset after publication
+and repeated the same independent binary/WASM verifier successfully. Rebuilt the
+public-surface/XC-28/SEC-001..005 v0.2 stack on exact protected main without duplicate
+pre-squash release commits; its full 31-step and Postgres/pgvector gates pass.
+**Changed:** canonical agent boundary, project/phase/task/execution/release/risk/v0.2
+living documentation, plus the protected v0.2 integration history.
+**Decisions:** crates.io/npm publication is explicitly deferred because no
+owner-scoped registry credentials or publication decision were supplied; the verified
+GitHub Release is the G1 publication boundary.
+**Next:** deliver the green v0.2 stack through the exact-check ruleset, then continue
+SEC-006 and later Wave 2 work without overstating live/provider/field maturity.
+**Blockers:** no G1 blocker remains. Qualified trademark review, Linux Desktop's
+time-bounded glib route, production providers/operations, external users, and hardware
+evidence remain separate tasks.
+
 ## 2026-07-13 — Prove the corrected release bundle on and off CI
 **Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
 **TODO items:** GOV-008, OPS-011
