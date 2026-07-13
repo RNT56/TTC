@@ -102,6 +102,23 @@ def ingest_with_adapters(
     conflicts = [str(c) for c in extraction.get("sourceConflicts", [])]
     result = ingest_row(row, conflicts=conflicts)
     result["sourceBundle"] = bundle.to_json()
+    provenance = extraction.get("extractionProvenance")
+    if isinstance(provenance, dict):
+        result["extractionProvenance"] = copy.deepcopy(provenance)
+        if provenance.get("kind") == "llm-extraction":
+            result["reviewQueue"].append(
+                asdict(
+                    ReviewQueueRecord(
+                        artifact_id=str(row.get("id", "")),
+                        artifact_kind="component",
+                        reason="provider extraction requires human catalog review",
+                        confidence=float(row.get("confidence", 0.0)),
+                        payload=row,
+                    )
+                )
+            )
+            result["publishable"] = False
+            result["needsReview"] = True
     return result
 
 

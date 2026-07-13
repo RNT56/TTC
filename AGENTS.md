@@ -70,10 +70,10 @@ production-proven or ready for live-provider, external-beta, or field claims.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
-- the SEC-006 contract/fixture boundary passes the 32-step `pnpm verify` gate on
-  pinned Rust 1.96.0 and its exact-tree Postgres/pgvector, CI, security, dependency,
-  SBOM, CodeQL, and native Desktop checks are green through protected PR #31 and
-  exact post-merge CI `29251978420`/security `29251978330` at `d952f60`;
+- the SEC-006 contract/fixture runtime evidence is anchored at protected PR #31 and
+  exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; docs-only
+  descendant `b48f8a0` also passed CI `29252793587` and security `29252793485`, so
+  later documentation descendants must not be mistaken for a new runtime proof;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -86,7 +86,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
   lockfile, BOM, WASM, and Studio;
-- protected `main` at `d952f60` contains ModelSpec 2.2/XC-28, D10 manufacturing-
+- the protected runtime lineage contains ModelSpec 2.2/XC-28, D10 manufacturing-
   license enforcement, and SEC-002 pre-retrieval/provider prohibited-brief refusal
   with non-content audit rows plus the SEC-006 application boundary; none of these
   prove live-provider operations;
@@ -101,6 +101,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   archive boundaries, prompt-injection containment, classed rate limits, and
   adversarial tests; production egress enforcement, distributed quotas, secret
   rotation, and incident exercises remain operations gates;
+- the P3/P4 ETL adapter now has a native Anthropic Messages API contract using the
+  pinned Haiku 4.5 snapshot, forced strict tool use, exact-host bounded HTTPS,
+  delimiter-safe untrusted-source prompts, local canonical-row validation, and
+  extraction provenance. Fixture and deployment-command paths remain first; no
+  credentialed sandbox call, live OCCT artifact, or provider operation is implied;
 - `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
   and its nine-asset GitHub Release were built from protected `1093842`, attested,
   downloaded after publication, and independently re-verified;
@@ -243,6 +248,11 @@ Application threat boundary (SEC-006):
 - prompt and retrieval text are untrusted data. Local prohibited-brief refusal,
   reviewed-catalog policy, bounded tool output, allowlisted provider results, and the
   sovereign validator remain the hard controls;
+- worker ETL credentials come only from deployment configuration, stay in the
+  `x-api-key` header, and are absent from request JSON, command payloads, persistence,
+  and errors. The native provider envelope uses Anthropic's supported strict-schema
+  subset; its JSON string is reparsed under local byte/depth/node/type/license/price/
+  citation checks before it can reach catalog admission or review;
 - the in-memory classed limiter is valid for deterministic and single-process proof
   only. Shared atomic rate, concurrency, and spend controls are required before a
   multi-replica or billable-provider claim. The complete control/residual-risk matrix

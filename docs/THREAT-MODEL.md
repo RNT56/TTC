@@ -67,6 +67,7 @@ provider, or hardware authority is a threat-model change and cannot inherit a ge
 |---|---|
 | OAuth/session/verification records | never expose; origin/CSRF-bound mutation; revocable |
 | Anthropic BYO keys | request-ephemeral; header-only; provider-bound; never persisted, logged, returned, or read from a server fallback by the HTTP generation surface |
+| Anthropic ETL service key | deployment-only; native worker transport uses it only in the exact provider header after fixture/command paths; never enters job or command JSON, row provenance, errors, or product logs |
 | Object-store and operator credentials | server-only; explicit production config; rotate without changing public records |
 | Models, photos, telemetry, replays, policies | tenant isolation, consent, retention, export/delete authority |
 | Catalog/license/review rows | immutable revision/review evidence; no unreviewed generated use |
@@ -161,6 +162,12 @@ stderr; run for 1 second to 8 hours; use temporary files instead of unbounded pi
 and kill the process group on timeout or overflow. Exit failures never reflect
 provider stdout/stderr. Output must be a bounded JSON object.
 
+Native Anthropic ETL accepts at most 4 MiB request JSON, 2 MiB response bytes, and
+512 KiB of tool input. The fixed request uses 8,192 output tokens and a 1..120-second
+timeout. The strict tool envelope contains only `canonicalRowJson` and
+`sourceConflicts`; local parsing re-applies byte/depth/node/non-finite/prototype-key
+guards and catalog identity, mass, confidence, license, price, and citation checks.
+
 These are admission ceilings, not capacity promises. Infrastructure must also cap
 concurrent requests, worker concurrency, CPU, memory, disk, queue depth, and job cost.
 
@@ -179,7 +186,21 @@ Do not add key fingerprints to ordinary product records: they still correlate a
 secret across requests. If abuse investigation requires a correlation identifier,
 derive and retain it only in a separately reviewed, time-bounded security event.
 
-### 7.2 Service secrets and rotation
+### 7.2 Anthropic ETL service key
+
+The queue worker does not accept a user key in a job payload. Fixture injection runs
+first; `FORGE_CLAUDE_EXTRACT_CMD` runs second and receives only
+`apiKeyConfigured: true|false`; only the native third path reads deployment
+`ANTHROPIC_API_KEY`. It calls the fixed `api.anthropic.com/v1/messages` endpoint and
+puts the value only in `x-api-key`. The request body, canonical row, extraction
+provenance, review result, and generic error path contain no key or fingerprint.
+
+This is a service credential, not the HTTP BYO credential of §7.1. Production must
+give it a separate least-privilege secret identity, provider account/budget boundary,
+rotation drill, and seeded-secret scan. Repository tests prove application data flow
+and error redaction only; no real provider/proxy/APM log has been inspected.
+
+### 7.3 Service secrets and rotation
 
 - Store production secrets in a deployment secret manager, not repository files,
   Compose defaults, client bundles, command arguments, or logs.
@@ -225,6 +246,9 @@ diagnostics are untrusted data. Generation wraps user briefs, retrieval material
 repair data in explicit data delimiters and places the instruction boundary before
 the untrusted text. Markup-significant characters are escaped so data cannot close
 its prompt container. Catalog and pattern text is labeled data, never instructions.
+Native ETL applies the same delimiter escaping to the complete captured source bundle
+before the provider call. Its strict envelope is reparsed locally; the provider is not
+allowed to approve, persist, publish, or select a callback or follow-up URL.
 
 This mitigates instruction confusion but does not prove model compliance. The hard
 controls are:
@@ -351,10 +375,11 @@ and tracing defaults separately; application tests cannot prove those external l
 |---|---|---|
 | Host-header/origin/CSRF confusion | pinned-origin config, forwarded-header stripping, unsafe cookie-origin tests, Auth.js CSRF enabled | deployed proxy/TLS/cookie inspection |
 | Dev/admin auth bypass | production startup negatives, dev-header refusal, absent/short owner-token failures | named roles and revocation drill |
-| Secret persistence/reflection | header-only key rejection, no env fallback, query-parameter audit, redaction/error tests | provider/proxy/APM log inspection and key rotation drill |
+| Secret persistence/reflection | HTTP BYO header-only rejection/no env fallback/query audit plus ETL header-only body/command/error tests | provider/proxy/APM log inspection and separate BYO/service-key rotation drills |
 | JSON/parameter bombs | byte/depth/node/key/string/non-finite/cycle tests; direct job/object tests | load/concurrency/memory exercise |
 | SSRF/redirect/rebinding | private-range, allowlist, DNS, redirect, type, timeout/body tests | egress proxy/firewall connection-time proof |
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |
+| Native ETL provider output | exact endpoint/version/model, forced supported-subset strict tool, bounded response and local canonical-row validation/provenance tests | credentialed adversarial sandbox through persistence/review/BOM/export plus outage, billing, retention, and recovery evidence |
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
 | Malicious upload/archive | MIME/name refusal; forced download; exact release archive allowlist/caps | quarantine scanner for any future importer |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |

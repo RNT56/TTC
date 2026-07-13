@@ -2,7 +2,8 @@
 
 Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
-Verified main: `d952f60` (`origin/main`)
+Runtime/security evidence anchor: `d952f60` (PR #31)
+Latest verified protected descendant before this slice: `b48f8a0` (PR #32; docs-only)
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -23,19 +24,24 @@ acceptance, hardware safety, or field outcomes. Most P5-P12 product surfaces pro
 contracts or fixture workflows; live providers, training, hardware, external users,
 operational recovery, and field evidence remain incomplete.
 
+The native Anthropic ETL path on this tree is likewise **contract/fixture**, not live:
+its bounded transport and local validation are tested without a real credential or
+provider call. Credentialed sandbox extraction, persistence of a real reviewed row,
+provider observability/recovery, and live OCCT remain open.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | protected `main` at `d952f60`; annotated `v0.1.0` published | PR #31 delivered SEC-006 through all required checks after PR #30's ModelSpec 2.2 and SEC-001..005 stack; v0.1.0 release evidence remains anchored to `1093842` |
+| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; docs-only protected descendant `b48f8a0` also green; annotated `v0.1.0` published | PR #31 delivered SEC-006 through all required checks; PR #32 reconciled that evidence without changing runtime; v0.1.0 release evidence remains anchored to `1093842` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 32 required non-DB gates on the protected SEC-006 tree | adds exact release-archive extraction policy to Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and diff |
+| `pnpm verify` | pass: 32 required non-DB gates on this native-ETL tree; the protected SEC-006 anchor also passed 32/32 | Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene are green; protected remote proof for this slice is still required |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 59/59 with the real validator in the full gate | adds production auth/object/admin negatives, origin/header-only credentials, secret non-persistence, JSON/job/object/SSRF/rate/error bounds to SEC-002..005 evidence |
-| Worker tests | pass: 104/104; Python 3.12 remains the required release environment | adds public-HTTPS/redirect/content/byte guards, bounded JSON, command output/timeout/process-group controls, and secret-safe failures |
+| Worker tests | pass: 110/110 on this tree; Python 3.12 remains the required release environment | includes the SEC-006 network/process bounds plus native Anthropic ETL cases covering exact transport, strict schema, containment, captured-source-only provenance URLs, local row validation, command precedence, and fail-closed provider output |
 | Postgres/pgvector gate | pass in PR #31 and post-merge CI `29251978420` at `d952f60` | all 19 migrations and lifecycle assertions pass remotely; the local Docker VM remains unhealthy, but no migration ran or evidence was skipped locally |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
@@ -50,6 +56,7 @@ operational recovery, and field evidence remain incomplete.
 | SEC-004 consent | protected on `main` through PR #30 | consent ledger 1.0.0, five independent purposes, serialized action authority, late-output discard, bounded withdrawal effects, Studio controls, monotonic chronology, Postgres and browser proof |
 | SEC-005 data lifecycle | protected contract/fixture on `main` through PR #30 | six retention classes, holds/locks/causal order, tombstones, exact backup manifests, restore suppression, retry/lease recovery, populated/clean/idempotent 19-migration proof; live backup/DR remains OPS-005 |
 | SEC-006 application threats | protected contract/fixture complete on `main` through PR #31 | pinned-origin Auth.js/CSRF boundary, production config failure, header-only ephemeral provider key with persistence/reflection regression, bounded JSON/network/process/object/archive controls, prompt-injection containment, framework-visible plus classed rate limits, 32/32 local gate with 59/59 gateway and 104/104 workers, archive/published-release proof, exact-tree remote Postgres, CI/security, dependency, SBOM, CodeQL, and Desktop proof; deployed egress/distributed quotas/rotation/incident evidence remain operations work |
+| Native Anthropic catalog ETL | contract/fixture implementation on this tree (D36), P3-004/P4-016 remain in progress | fixture and command precedence; fixed Messages endpoint/API/model; header-only deployment key; forced strict supported-subset envelope; bounded request/response/tool input; local identity/mass/confidence/license/price/citation validation; source/model/API provenance; no credentialed sandbox, live persistence, billing/recovery, or OCCT proof |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -83,9 +90,17 @@ Live GitHub evidence checked on 2026-07-13:
   it merged through protection at exact `d952f60`;
 - post-merge `main` CI [run 29251978420](https://github.com/RNT56/TTC/actions/runs/29251978420)
   and security [run 29251978330](https://github.com/RNT56/TTC/actions/runs/29251978330)
-  completed successfully at exact merge `d952f60` and are the current exact-commit
+  completed successfully at exact merge `d952f60` and are the SEC-006 exact-commit
   evidence, including Postgres, TypeScript/gateway, both CodeQL languages, dependency
   audits, source SPDX, and native Desktop;
+- evidence reconciliation [PR #32](https://github.com/RNT56/TTC/pull/32) merged as
+  docs-only `b48f8a0`; descendant CI
+  [29252793587](https://github.com/RNT56/TTC/actions/runs/29252793587) and security
+  [29252793485](https://github.com/RNT56/TTC/actions/runs/29252793485) passed workers,
+  Postgres, Rust, TypeScript/gateway, native Desktop, both CodeQL languages,
+  dependency audits, and source SPDX. These runs prove the descendant is green; the
+  SEC-006 runtime evidence remains anchored at `d952f60` rather than creating a
+  documentation-hash loop;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -147,8 +162,8 @@ decision; none is a hidden release claim.
 |---|---|---|
 | Contract/validator/WASM | v0.1.0 released with protected-main/tag attestations and post-publication install proof; ModelSpec 2.2 equipped semantics are protected on `main` | registry publication only after an explicit owner/credential decision |
 | Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
-| Catalog/BOM/license ledger | fixture/local Postgres implementation plus D10 exporter enforcement | live ETL/review operations and live OCCT artifact audit |
-| Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, and protected SEC-006 key/network/input/prompt bounds | live model/extraction, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
+| Catalog/BOM/license ledger | fixture/local Postgres implementation, D10 exporter enforcement, and native bounded Anthropic ETL contract | credentialed ETL sandbox, real-result persistence/review operations, provider recovery, and live OCCT artifact audit |
+| Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | real Rapier, exporters/importers, pinned parity | live MuJoCo baseline and broader external model proof |
 | Training/policy | fixture scorecards and external command seams | real SB3/MuJoCo training and ONNX Runtime browser inference |
@@ -174,6 +189,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 - SEC-006 deterministically bounds application trust surfaces; connection-time
   egress, distributed rate/cost state, external-log inspection, workload isolation,
   rotation, and incident drills remain operations evidence;
+- native Anthropic ETL is implemented and adversarially tested without a credential;
+  real provider output through dedupe, immutable catalog persistence, owner review,
+  BOM, and lawful export remains the P3-004/P4-016 R1 acceptance path;
 - external/live/field acceptance remains open; public support/v0.2 delivery and the
   standalone v0.1.0 release/supply-chain gate are closed.
 

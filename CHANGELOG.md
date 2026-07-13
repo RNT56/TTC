@@ -18,6 +18,35 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Add the bounded native Anthropic ETL transport
+**Session:** Codex agent · branch `codex/p4-native-anthropic-etl` · **Phase:** Wave 2
+R1 builder loop · **TODO items:** P3-004 [~], P4-016 [~]
+**Done:** Added a no-new-dependency native Anthropic Messages API path behind the
+existing deterministic fixture and deployment-command precedence. The worker pins
+the exact endpoint, API version, Haiku 4.5 snapshot, token/time/byte budgets, forced
+strict tool choice, delimiter-safe untrusted source input, header-only service key,
+local canonical-row validation, and model/API/source provenance. The provider emits
+only a strict supported-subset envelope; local code rejects malformed, non-finite,
+deep, uncited, unlicensed, or incomplete candidates before the existing P3 gate.
+Focused adapter/security tests pass 18/18 and the complete worker suite passes
+110/110 without making a provider call. After installing the frozen worktree
+dependencies, the complete 32-step `pnpm verify` gate also passes; the first attempt
+had stopped at TypeScript build only because the new worktree had no `node_modules`.
+**Changed:** ETL adapters and ingest result provenance; focused worker security tests;
+`AGENTS.md`; threat, risk, decision, project-state, roadmap, task, execution, component-
+database, generation, compute-worker, and changelog documentation.
+**Decisions:** D36 records the native ETL authority boundary. Official Anthropic
+Messages, API versioning, strict-tool/structured-output limits, and Haiku model docs
+were rechecked on 2026-07-13. The adapter uses the standard library and adds no
+runtime dependency.
+**Next:** publish through the exact-check ruleset, then execute the next dependency-
+complete R1 slice; credentialed ETL acceptance must
+eventually prove a real row through dedupe, immutable persistence, owner review, BOM,
+and lawful export.
+**Blockers:** none for contract/fixture delivery. A credentialed sandbox/live claim
+requires owner-supplied provider authority plus deployed egress, quota, log, billing,
+outage, retention, and recovery evidence.
+
 ## 2026-07-13 — Prove SEC-006 on protected main
 **Session:** Codex agent · branch `codex/sec006-postmerge-evidence` · **Phase:** Wave 2 ·
 **TODO items:** SEC-006
