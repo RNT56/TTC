@@ -18,6 +18,24 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Record protected golden-review evidence
+**Session:** Codex agent · branch `codex/qa008-postmerge-evidence` · **Phase:** QA
+cross-cutting · **TODO items:** QA-008 [x], QA-001
+**Done:** Golden-review PR #36 passed all required checks at exact implementation
+head `4497c83`, including CI `29264389481`, security `29264386113`, the new
+cumulative-patch policy in `forge-core (Rust)`, Postgres, workers, TypeScript/gateway,
+native Desktop, dependency review/audits, source SPDX, and both CodeQL languages. It
+merged through the exact-check ruleset as `2589503`; exact post-merge CI
+`29264679254` and security `29264678863` are green on that protected SHA. QA-008 is
+closed without changing any provider, user-acceptance, hardware, or field maturity.
+**Changed:** canonical agent boundary, project-state evidence ledger, phase/execution
+roadmaps, and REC/GOV/QA task ledgers.
+**Decisions:** none. D17 and D32 remain binding; this records protected evidence only.
+**Next:** begin the smallest dependency-complete QA-002 browser-E2E builder-loop
+slice using real built WASM and an isolated database.
+**Blockers:** none for QA-008. Live provider, external-user, and field gates remain
+independently open.
+
 ## 2026-07-13 — Require evidence for every golden re-pin
 **Session:** Codex agent · branch `codex/qa008-golden-review-policy` · **Phase:** QA
 cross-cutting · **TODO items:** QA-008 [~], QA-001

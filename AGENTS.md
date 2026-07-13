@@ -76,8 +76,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
   latest verified protected runtime descendant is queued-commerce PR #34 at
   `18f54fd`, with CI `29260837182` and security `29260833090` green;
-- docs-only PR #35 is the latest verified protected descendant at `4fe0df6`, with
-  exact post-merge CI `29262255427` and security `29262256860` green;
+- QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
+  post-merge CI `29264679254` and security `29264678863` green; this advances the
+  quality/governance boundary, not runtime maturity;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -86,10 +87,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   security workflow emits a validated SPDX source SBOM;
 - compatibility policy 1.0.0 is machine-checked across twelve public format/package
   boundaries; the CLI/WASM facades expose their active versions;
-- this QA-008 tree expands `pnpm verify` to 33 steps and registers fourteen golden
-  artifact families; the frozen prototype is immutable and any registered re-pin
-  requires a new append-only evidence record. Protected proof for this slice remains
-  pending until its PR and post-merge checks pass;
+- QA-008 is protected through PR #36: `pnpm verify` has 33 steps and fourteen
+  registered golden artifact families; the frozen prototype is immutable and any
+  registered re-pin requires a new append-only evidence record;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,

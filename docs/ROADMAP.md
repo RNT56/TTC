@@ -22,10 +22,10 @@ Standalone validator v0.1.0 was built and attested from protected `1093842`, pub
 from an annotated tag, downloaded after publication, and independently verified.
 Live/external/field claims remain gated independently.
 
-This QA-008 candidate adds a 33rd local gate: fourteen schema/render/physics/
+Protected QA-008 PR #36 adds a 33rd local gate: fourteen schema/render/physics/
 validator/corpus/generated-runtime families are machine-registered, the frozen
 prototype is immutable, and intentional re-pins require append-only review evidence.
-It remains candidate evidence until protected PR and post-merge checks pass.
+Exact PR and post-merge CI/security are green at protected `2589503`.
 
 | Phase | Status | Est. |
 |---|---|---|

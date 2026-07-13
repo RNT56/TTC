@@ -37,9 +37,9 @@ release workflow, downloaded after publication, and independently verified. SEC-
 contract/fixture acceptance is protected on `main` through PR #31 with exact
 post-merge CI/security proof. Native Anthropic ETL and queued vendor normalization
 exist at contract/fixture maturity through PRs #33/#34; docs-only evidence PR #35 is
-green at `4fe0df6`. No credentialed provider, end-to-end reviewed row, or real vendor
-operation is proven. This QA-008 candidate adds machine-enforced golden review; the
-next ordered work otherwise continues the dependency-complete Wave 2 builder loop.
+green at `4fe0df6`. QA-008 golden review is protected through PR #36 at `2589503`.
+No credentialed provider, end-to-end reviewed row, or real vendor operation is
+proven. The next ordered work continues the dependency-complete Wave 2 builder loop.
 
 Current Wave 1/2 boundary:
 
@@ -48,6 +48,8 @@ Current Wave 1/2 boundary:
   SBOM, CodeQL, Desktop, and post-merge proof;
 - native ETL and the idempotent transactional commerce queue are protected at
   contract/fixture maturity through PRs #33/#34, with evidence reconciled by PR #35;
+- QA-008 machine-registers protected evidence artifacts and requires append-only
+  review records for intentional re-pins through PR #36;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -374,7 +376,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | Phase | Remaining phase work | Adjacent gates | Closure proof |
 |---|---|---|---|
 | P0 | none | decision hygiene | closed by D32; no fabricated historical variants |
-| P1 | P1-004, P1-017 | REC, QA perf/browser; QA-008 golden-review candidate | real-mid-hardware budget; XC-28 configurator truth complete; registered re-pins are review-gated after protected QA-008 delivery |
+| P1 | P1-004, P1-017 | REC, QA perf/browser; QA-008 protected | real-mid-hardware budget; XC-28 configurator truth complete; registered re-pins are review-gated |
 | P2 | none | explicit registry deferral remains policy, not incomplete phase work | closed: v0.1 published/installed and v0.2 exact checks/post-merge proof |
 | P3 | P3-004 credentialed ETL sandbox and persistence | D36 native transport, SEC citation/license, OPS provider | one real extracted row is deduped, persisted immutably, owner-reviewed, and consumed through BOM/export with recovery evidence |
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and an external R1 flow succeeds without bypassing review |
