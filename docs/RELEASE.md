@@ -36,10 +36,13 @@ Every successful manual or tag run produces one aggregate Actions artifact with:
 - `release-manifest.json`, `SHA256SUMS`, and release notes.
 
 The aggregate job creates a GitHub build-provenance attestation over every payload.
-It then verifies all checksums from the assembled artifact, extracts the Linux bundle
-into a clean temporary directory, checks `--version`, admits the canonical example,
-and inspects the packed WASM package. Tag runs attach the same files to a GitHub
-Release only after that proof succeeds.
+It then verifies all checksums from the assembled artifact, requires all three native
+bundles, extracts the bundle matching the verification host into a clean temporary
+directory, checks `--version`, admits the canonical example, and installs the packed
+WASM package into a clean consumer. Tag runs attach the same files to a GitHub Release
+only after that proof succeeds. Manual run `29236010204` is the branch-level positive
+proof: every build and aggregate job passed, and its downloaded artifact independently
+passed the same verifier on macOS using the macOS x86_64 payload.
 
 ## Pre-release
 

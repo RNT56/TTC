@@ -18,6 +18,29 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Prove the corrected release bundle on and off CI
+**Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
+**TODO items:** GOV-008, OPS-011
+**Done:** Manual branch run `29236010204` passed the release contract, Linux,
+macOS Intel, Windows, WASM, aggregate checksum/SPDX verification, and provenance
+attestation at exact commit `02f912d1dbe1a07f6ea29055ad55c5ae29eca279`.
+Downloaded the aggregate artifact outside Actions and independently verified every
+checksum, both SPDX documents, the macOS x86_64 binary version and canonical example,
+and a clean WASM consumer install. That external check found the verifier had
+hard-coded the Linux archive despite documenting a user-runnable download command;
+verification now requires all three native bundles and selects the current host's
+binary for smoke execution. The same downloaded aggregate then passed end to end on
+Apple Silicon through the advertised macOS x86_64 payload.
+**Changed:** downloaded release verifier, release runbook, task/state evidence, and
+changelog.
+**Decisions:** none; the release remains x86_64 on each native OS, and verification
+now follows that declared platform matrix.
+**Next:** Deliver the verifier correction through protected PR #29, rerun the manual
+workflow on the resulting protected `main`, independently download/verify it, then
+create annotated tag `v0.1.0`.
+**Blockers:** no artifact or runner blocker; protected-main and tag publication proof
+remain deliberately incomplete.
+
 ## 2026-07-13 — Bound and migrate the Intel macOS release lane
 **Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
 **TODO items:** GOV-008, OPS-011
