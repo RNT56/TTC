@@ -1,0 +1,27 @@
+name: Product or engineering proposal
+description: Propose a roadmap change grounded in a user outcome and evidence.
+title: "proposal: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who is blocked, in which workflow, and what evidence shows it matters?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Verifiable outcome
+      description: State the acceptance evidence, not only the desired implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Safety, privacy, compatibility, licensing, and operational boundaries
+  - type: input
+    id: roadmap
+    attributes:
+      label: Related TODO, phase, or decision

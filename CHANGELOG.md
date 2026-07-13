@@ -72,6 +72,22 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Establish honest public project surfaces
+**Session:** Codex agent · branch `codex/g1-public-surfaces` · **Phase:** G1 ·
+**TODO items:** PRE-004, PRE-005, GOV-010, DOC-004, DOC-006
+**Done:** Set a bounded prototype description, README homepage, and 12 repository
+topics; corrected the stale red-gate README claim and added live main CI/security
+badges; added security, contribution, support, conduct, issue/PR, and debugging
+surfaces; and recorded exact-name USPTO/EUIPO searches with zero `ForgedTTC` results.
+**Changed:** live GitHub metadata, README, community health files/templates,
+debugging and trademark evidence, docs index, project state, TODO, and changelog.
+**Decisions:** exact-name absence is preliminary evidence only; confusing-similarity,
+classes, common-law use, geography, and filing remain professional legal work.
+**Next:** Deliver these surfaces after the compatibility/release stack, then curate a
+real first-good-issue and obtain launch-stage trademark review before broad promotion.
+**Blockers:** qualified trademark clearance is external; current exact-name search
+found no conflict.
+
 ## 2026-07-12 — Build the release artifact verification chain
 **Session:** Codex agent · branch `codex/g1-release-artifacts` · **Phase:** G1 ·
 **TODO items:** GOV-008

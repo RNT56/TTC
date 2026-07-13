@@ -23,6 +23,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/RNT56/TTC/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/RNT56/TTC/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/RNT56/TTC/actions/workflows/security.yml"><img alt="Security" src="https://github.com/RNT56/TTC/actions/workflows/security.yml/badge.svg?branch=main"></a>
+  <br>
   <img alt="Rust core" src="https://img.shields.io/badge/core-Rust-172331?style=for-the-badge&labelColor=10161f">
   <img alt="React studio" src="https://img.shields.io/badge/studio-React%20%2B%20Three.js-172331?style=for-the-badge&labelColor=10161f">
   <img alt="Gateway" src="https://img.shields.io/badge/gateway-Fastify%20%2B%20Postgres-172331?style=for-the-badge&labelColor=10161f">
@@ -39,9 +42,10 @@ studio, a Rust validator, a simulation/export stack, a Python worker plane, and 
 platform layer for sharing, courses, policy scorecards, quote links, and
 maintenance records.
 
-> **Current status (2026-07-12):** advanced deterministic prototype, not a release or
-> production deployment. The full gate and Brief-25 generation gate are currently
-> red; live GPU/provider/hardware/field paths remain gated. See
+> **Current status (2026-07-13):** advanced deterministic prototype, not a release or
+> production deployment. Protected `main`, its dependency/security scans, the full
+> local gate, and Brief-25 are green; compatibility and release-artifact work is
+> progressing through protected PRs. Live GPU/provider/hardware/field paths remain gated. See
 > [`docs/PROJECT-STATE.md`](docs/PROJECT-STATE.md) for evidence and
 > [`docs/EXECUTION-ROADMAP.md`](docs/EXECUTION-ROADMAP.md) for the closure plan.
 

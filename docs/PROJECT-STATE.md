@@ -88,7 +88,9 @@ Live GitHub evidence checked on 2026-07-13:
 - repository Actions policy is `selected`: GitHub-owned Actions plus seven exact
   third-party SHAs are allowed, broad verified-creator access is disabled, and the
   green runs above executed under that policy;
-- repository description and homepage remain empty.
+- repository description, README homepage, and 12 focused topics are set; security,
+  contribution, support, conduct, issue/PR, debugging, release, and publication
+  surfaces are implemented on `codex/g1-public-surfaces` pending protected delivery.
 
 Consequently G0 is **closed**, and the GOV-007 compatibility contract is locally
 complete pending its protected merge. The remaining G1 boundary is cross-platform

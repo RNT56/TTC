@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible defect without sensitive data.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Security vulnerabilities must use private reporting, not this form.
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      placeholder: git SHA, tag, or artifact version
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options: [validator/core, WASM, Studio, gateway/data, workers, Desktop/hardware, release/docs]
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Commands, minimal non-sensitive input, and deterministic steps.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Logs, diagnostics, screenshots, or validator report with secrets and personal data removed.
