@@ -229,7 +229,6 @@ function platformMemoryDb(): GatewayDb {
   ];
   let nextModel = 1;
   let nextShare = 1;
-  let nextJob = 1;
   let nextBlob = 1;
   let nextPhotoscan = 1;
   let nextPolicy = 1;
@@ -415,23 +414,38 @@ function platformMemoryDb(): GatewayDb {
       if (text.includes("INSERT INTO jobs")) {
         const idempotencyKey = params[3] ? String(params[3]) : null;
         const existingId = idempotencyKey ? jobIdempotency.get(idempotencyKey) : undefined;
-        const id = existingId ?? `job-${nextJob++}`;
+        const input = parseJsonParam(params[4]);
+        if (existingId) {
+          const existing = jobs.get(existingId);
+          if (
+            !existing
+            || existing.owner_user_id !== params[0]
+            || existing.kind !== params[1]
+            || existing.provider !== params[2]
+            || JSON.stringify(existing.input) !== JSON.stringify(input)
+          ) {
+            return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+          }
+          return { rows: [{ ...existing, inserted: false } as T], rowCount: 1 };
+        }
         const queued = text.includes("'queued'");
+        const id = existingId ?? String(params[queued ? 6 : 7]);
         const row = {
           id,
           owner_user_id: params[0],
           kind: params[1],
           status: queued ? "queued" : "succeeded",
           provider: params[2],
-          input: parseJsonParam(params[4]),
+          input,
           output: queued ? null : parseJsonParam(params[5]),
           error: null,
           cost_credits: queued ? params[5] : params[6],
           created_at: now,
+          inserted: true,
         };
         jobs.set(id, row);
         if (idempotencyKey) jobIdempotency.set(idempotencyKey, id);
-        return { rows: [row as T], rowCount: existingId ? 0 : 1 };
+        return { rows: [row as T], rowCount: 1 };
       }
       if (text.includes("INSERT INTO object_blobs")) {
         const cacheKey = params[1] ? String(params[1]) : null;
@@ -2261,7 +2275,15 @@ test(
 	    assert.equal(printQuotes.statusCode, 200, printQuotes.body);
 	    assert.equal((printQuotes.json() as { quotes: unknown[] }).quotes.length, 1);
 
-	    const job = await app.inject({
+    const artifactsBeforeIdempotentJob = await app.inject({
+      method: "GET",
+      url: "/v1/photoscan/artifacts",
+      headers: authHeaders,
+    });
+    assert.equal(artifactsBeforeIdempotentJob.statusCode, 200, artifactsBeforeIdempotentJob.body);
+    const artifactsBeforeCount = (artifactsBeforeIdempotentJob.json() as { artifacts: unknown[] }).artifacts.length;
+
+    const job = await app.inject({
       method: "POST",
       url: "/v1/jobs",
       headers: authHeaders,
@@ -2287,6 +2309,16 @@ test(
     });
     assert.equal(duplicateJob.statusCode, 201, duplicateJob.body);
     assert.equal((duplicateJob.json() as { job: { id: string } }).job.id, jobId);
+    const artifactsAfterIdempotentRetry = await app.inject({
+      method: "GET",
+      url: "/v1/photoscan/artifacts",
+      headers: authHeaders,
+    });
+    assert.equal(artifactsAfterIdempotentRetry.statusCode, 200, artifactsAfterIdempotentRetry.body);
+    assert.equal(
+      (artifactsAfterIdempotentRetry.json() as { artifacts: unknown[] }).artifacts.length,
+      artifactsBeforeCount + 1,
+    );
 
     const queuedLocalJob = await app.inject({
       method: "POST",
@@ -2841,6 +2873,193 @@ test(
     }
   },
 );
+
+test("vendor refresh worker route is explicit, local-only, and idempotent", async () => {
+  const previousDevAuth = process.env.FORGE_DEV_AUTH;
+  const previousVendorCommand = process.env.FORGE_VENDOR_REFRESH_CMD;
+  const previousVendorSandbox = process.env.FORGE_VENDOR_REFRESH_SANDBOX;
+  process.env.FORGE_DEV_AUTH = "1";
+  delete process.env.FORGE_VENDOR_REFRESH_CMD;
+  delete process.env.FORGE_VENDOR_REFRESH_SANDBOX;
+  const app = buildServer({ db: platformMemoryDb() });
+  try {
+    const unconfigured = await app.inject({
+      method: "POST",
+      url: "/v1/commerce/vendor-offers/refresh",
+      headers: authHeaders,
+      payload: {
+        execution: "worker",
+        componentIds: ["cmp_motor_fixture"],
+        idempotencyKey: "vendor-refresh-fixture",
+      },
+    });
+    assert.equal(unconfigured.statusCode, 409, unconfigured.body);
+    assert.match(unconfigured.body, /worker is not configured/);
+
+    process.env.FORGE_VENDOR_REFRESH_CMD = "vendor-refresh-fixture-command";
+    const capabilities = await app.inject({
+      method: "GET",
+      url: "/v1/jobs/capabilities",
+      headers: authHeaders,
+    });
+    assert.equal(capabilities.statusCode, 200, capabilities.body);
+    const vendorCapability = (capabilities.json() as {
+      live: { vendorRefresh: { configured: boolean; mode: string } };
+    }).live.vendorRefresh;
+    assert.equal(vendorCapability.configured, true);
+    assert.equal(vendorCapability.mode, "worker-command");
+
+    const missingIdempotency = await app.inject({
+      method: "POST",
+      url: "/v1/commerce/vendor-offers/refresh",
+      headers: authHeaders,
+      payload: { execution: "worker", componentIds: ["cmp_motor_fixture"] },
+    });
+    assert.equal(missingIdempotency.statusCode, 400, missingIdempotency.body);
+    assert.match(missingIdempotency.body, /idempotencyKey/);
+
+    const inlineProviderTruth = await app.inject({
+      method: "POST",
+      url: "/v1/commerce/vendor-offers/refresh",
+      headers: authHeaders,
+      payload: {
+        execution: "worker",
+        componentIds: ["cmp_motor_fixture"],
+        offers: [],
+        idempotencyKey: "vendor-refresh-inline-rejected",
+      },
+    });
+    assert.equal(inlineProviderTruth.statusCode, 400, inlineProviderTruth.body);
+    assert.match(inlineProviderTruth.body, /does not accept inline offers/);
+
+    const directMissingIdempotency = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "commerce.vendor-refresh",
+        provider: "local",
+        payload: { componentIds: ["cmp_motor_fixture"] },
+      },
+    });
+    assert.equal(directMissingIdempotency.statusCode, 400, directMissingIdempotency.body);
+    assert.match(directMissingIdempotency.body, /require an idempotency key/);
+
+    const directInlineBypass = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "commerce.vendor-refresh",
+        provider: "local",
+        idempotencyKey: "vendor-refresh-direct-inline",
+        payload: { componentIds: ["cmp_motor_fixture"], offers: [] },
+      },
+    });
+    assert.equal(directInlineBypass.statusCode, 400, directInlineBypass.body);
+    assert.match(directInlineBypass.body, /unsupported fields/);
+
+    const directUnboundedComponents = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "commerce.vendor-refresh",
+        provider: "local",
+        idempotencyKey: "vendor-refresh-direct-unbounded",
+        payload: { componentIds: Array.from({ length: 51 }, (_, index) => `cmp-${index}`) },
+      },
+    });
+    assert.equal(directUnboundedComponents.statusCode, 400, directUnboundedComponents.body);
+    assert.match(directUnboundedComponents.body, /1\.\.50 bounded componentIds/);
+
+    const directInvalidTimeout = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "commerce.vendor-refresh",
+        provider: "local",
+        idempotencyKey: "vendor-refresh-direct-timeout",
+        payload: { componentIds: ["cmp_motor_fixture"], timeoutS: 121 },
+      },
+    });
+    assert.equal(directInvalidTimeout.statusCode, 400, directInvalidTimeout.body);
+    assert.match(directInvalidTimeout.body, /timeoutS must be between 1 and 120/);
+
+    const enqueue = () => app.inject({
+      method: "POST",
+      url: "/v1/commerce/vendor-offers/refresh",
+      headers: authHeaders,
+      payload: {
+        execution: "worker",
+        componentIds: ["cmp_motor_fixture"],
+        timeoutS: 30,
+        idempotencyKey: "vendor-refresh-fixture",
+      },
+    });
+    const first = await enqueue();
+    assert.equal(first.statusCode, 202, first.body);
+    const firstJob = (first.json() as { job: { id: string; kind: string; provider: string; status: string } }).job;
+    assert.equal(firstJob.kind, "commerce.vendor-refresh");
+    assert.equal(firstJob.provider, "local");
+    assert.equal(firstJob.status, "queued");
+    const repeated = await enqueue();
+    assert.equal(repeated.statusCode, 202, repeated.body);
+    assert.equal((repeated.json() as { job: { id: string } }).job.id, firstJob.id);
+
+    const driftedRequest = await app.inject({
+      method: "POST",
+      url: "/v1/commerce/vendor-offers/refresh",
+      headers: authHeaders,
+      payload: {
+        execution: "worker",
+        componentIds: ["cmp_different_request"],
+        idempotencyKey: "vendor-refresh-fixture",
+      },
+    });
+    assert.equal(driftedRequest.statusCode, 409, driftedRequest.body);
+    assert.match(driftedRequest.body, /already bound to a different request/);
+
+    const secondOwner = await app.inject({
+      method: "POST",
+      url: "/v1/commerce/vendor-offers/refresh",
+      headers: {
+        ...authHeaders,
+        "x-forge-user-id": "user-platform-second",
+        "x-forge-user-email": "platform-second@example.test",
+      },
+      payload: {
+        execution: "worker",
+        componentIds: ["cmp_motor_fixture"],
+        idempotencyKey: "vendor-refresh-fixture",
+      },
+    });
+    assert.equal(secondOwner.statusCode, 202, secondOwner.body);
+    assert.notEqual((secondOwner.json() as { job: { id: string } }).job.id, firstJob.id);
+
+    const fixtureBypass = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "commerce.vendor-refresh",
+        provider: "fixture",
+        payload: { componentIds: ["cmp_motor_fixture"] },
+      },
+    });
+    assert.equal(fixtureBypass.statusCode, 400, fixtureBypass.body);
+    assert.match(fixtureBypass.body, /must use the local worker provider/);
+  } finally {
+    await app.close();
+    if (previousDevAuth === undefined) delete process.env.FORGE_DEV_AUTH;
+    else process.env.FORGE_DEV_AUTH = previousDevAuth;
+    if (previousVendorCommand === undefined) delete process.env.FORGE_VENDOR_REFRESH_CMD;
+    else process.env.FORGE_VENDOR_REFRESH_CMD = previousVendorCommand;
+    if (previousVendorSandbox === undefined) delete process.env.FORGE_VENDOR_REFRESH_SANDBOX;
+    else process.env.FORGE_VENDOR_REFRESH_SANDBOX = previousVendorSandbox;
+  }
+});
 
 test("review queue lists pending catalog items", async () => {
   const db: GatewayDb = {

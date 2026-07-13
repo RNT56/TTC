@@ -1,6 +1,8 @@
 # Platform — sharing, marketplace, classroom, maintenance twin
 
-**Status:** P4 sharing/accounts/model registry live; P11/P12 gates, usage beta, and quote/link commerce scaffolds live behind local routes · **Phases:** P4 (sharing), P11 (platform), P12 (maintenance
+**Status:** P4 sharing/accounts/model registry live; P11/P12 gates, usage beta,
+queued vendor-normalization contract, and quote/link commerce scaffolds exist behind
+local routes · **Phases:** P4 (sharing), P11 (platform), P12 (maintenance
 twin) · **Home:** gateway + studio · **Plan refs:** §2, §14.2, §16
 (v3.0) · **Decisions:** D2, D3, D4, D10, D15, D29, D12-adjacent
 
@@ -86,17 +88,28 @@ print-service APIs (Craftcloud-class aggregators) — the BOM gains a "printed p
 section, closing *build it* for custom geometry. Liability posture: we transmit
 geometry and recommended profiles; the service and the user own print outcomes.
 
-Live 2026-06-14: `vendor_offers`, `print_quote_requests`, and
+Implemented locally 2026-06-14: `vendor_offers`, `print_quote_requests`, and
 `print_quote_offers` back `GET /v1/commerce/vendor-offers`, `POST
 /v1/commerce/vendor-offers/refresh`, `GET /v1/commerce/print-quotes`, and `POST
 /v1/commerce/print-quotes`. Provider checkout is always off-platform; no payment or
 payout ledger exists in this slice. Live 2026-06-15: geometry worker outputs now
 carry DfM report references, oriented 3MF object keys, print profiles, printed-part
 BOM rows, and quote-link-only handoff metadata for DfM-passing parts.
-Commerce worker normalization now gives the live-provider lane a tested contract:
-`FORGE_VENDOR_REFRESH_CMD` rows must be priced, provenanced, and rate-limit-scoped,
-while `FORGE_PRINT_QUOTE_CMD` only returns quote links after DfM-passing
-3MF/profile artifacts and always marks checkout as off-platform.
+Contract/fixture 2026-07-13: the vendor refresh route has two explicit executions.
+`sandbox` synchronously persists only caller-supplied or deterministic link rows with
+source `sandbox`. `worker` accepts 1..50 component IDs, a required idempotency key,
+and a 1..120-second ceiling; it enqueues only the local
+`commerce.vendor-refresh` kind and returns `202 { job }`. The legacy direct gateway
+vendor HTTP endpoint is retired. Studio chooses the queue only when capability
+discovery reports `FORGE_VENDOR_REFRESH_CMD` configured.
+
+The registered worker requires that command again at execution, admits at most 50
+priced/provenanced/rate-scoped rows, sanitizes held diagnostics, and revalidates every
+accepted field before `vendor_offers` inserts inside the job-success transaction.
+Any corrupt accepted row rolls the transaction back. `FORGE_PRINT_QUOTE_CMD` remains
+a normalization helper contract: it only returns quote links after DfM-passing
+3MF/profile artifacts and always marks checkout off-platform. Neither command seam is
+credentialed provider evidence.
 
 ## 6. Maintenance twin (P12)
 

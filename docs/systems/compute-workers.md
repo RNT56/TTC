@@ -1,8 +1,9 @@
 # Compute Workers (Python plane) — implementation doc
 
 **Status:** Deterministic worker plane implemented across all families; native
-Anthropic ETL at contract/fixture maturity; live GPU/provider stacks remain adapter-
-backed · **Phases:** P3/P4 (ETL), P5 (photoscan), P6 (OCCT full), P7 (training) ·
+Anthropic ETL and queued vendor normalization at contract/fixture maturity; live
+GPU/provider stacks remain adapter-backed · **Phases:** P3/P4 (ETL), P5
+(photoscan), P6 (OCCT full), P7 (training), P11 (commerce) ·
 **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
 (fixture-first expansion), D36 (native ETL boundary)
@@ -35,6 +36,9 @@ Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and
 `FORGE_MJX_BENCH_CMD`; commerce providers use `FORGE_VENDOR_REFRESH_CMD` and
 `FORGE_PRINT_QUOTE_CMD`. Absent commands keep the deterministic fixture path as CI
+truth for fixture-capable families. Queued `commerce.vendor-refresh` is deliberately
+different: its handler requires `FORGE_VENDOR_REFRESH_CMD` at execution and fails the
+job if it is absent, so a live-intent job cannot silently become inline fixture
 truth. `workers/forge_workers/modal_app.py` provides an optional Modal entrypoint
 without importing Modal on local/CI runs and now exposes JSON-serializable task
 profiles for burst-GPU deployment planning.
@@ -169,12 +173,23 @@ service summaries from deterministic telemetry/build payloads. Vendor and print
 quote links are attached by the platform commerce APIs rather than direct carts.
 
 ### 3.7 `workers/commerce` — provider handoffs (P11)
-`refresh_vendor_offers` normalizes live vendor rows into priced, provenanced,
+`refresh_vendor_offers` normalizes provider rows into priced, provenanced,
 rate-limited offers and holds malformed rows instead of persisting partial purchase
 truth. `request_print_quote` requires DfM-passing 3MF/profile artifacts before it
 normalizes print-service quote links, and every offer carries off-platform checkout
-terms. The gateway tables/routes own persistence; the worker helper owns provider
-shape normalization for sandbox/live adapters.
+terms. The gateway tables/routes own enqueue authority and synchronous sandbox
+links; the worker owns the only provider-command shape normalization path.
+
+`commerce.vendor-refresh` is registered with the queue runner. It bounds execution
+to 120 seconds and output to 50 offers; accepts only bounded component/vendor/SKU,
+finite nonnegative price, three-letter currency, normalized availability, public
+credential-free HTTPS offer/provenance links, bounded rate limits, and sanitized held
+rows. `PostgresQueueStore` repeats these checks, bounds top-level provenance, and
+inserts all accepted rows in the same transaction that marks the job successful.
+If revalidation fails, that transaction rolls back, the queue runner records a
+bounded failed-job error in a separate transition, and polling continues with no
+offer inserts. An empty accepted set may succeed with held diagnostics; it is never a
+purchasable-BOM claim.
 
 ## 4. GPU burst policy
 
@@ -204,6 +219,12 @@ strict-schema compatibility, local row validation, extraction provenance, missin
 duplicate tool rejection, captured-source-only provenance URLs, redirect/private-DNS
 failure, and reflected-error redaction. See
 [`../THREAT-MODEL.md`](../THREAT-MODEL.md).
+
+Commerce persistence additionally runs
+`python workers/integration/assert_commerce_postgres.py` in the protected Postgres
+job. It proves a valid worker result commits job success plus one offer, while a
+mixed valid/corrupt result rolls back job success and all offer inserts, then records
+the job failed without stopping the runner.
 
 ## 7. Phase mapping & backlog
 

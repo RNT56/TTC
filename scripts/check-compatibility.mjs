@@ -27,6 +27,14 @@ function typescriptConstant(path, name) {
   return match[1];
 }
 
+function typescriptStringArray(path, name) {
+  const match = read(path).match(new RegExp(`export const ${name}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as const`));
+  requireValue(match, `${path}: missing ${name}`);
+  const residual = match[1].replace(/"[^"\\]*(?:\\.[^"\\]*)*"/g, "").replace(/[\s,]/g, "");
+  requireValue(!residual, `${path}: ${name} must contain only string literals`);
+  return [...match[1].matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)].map((entry) => entry[1]);
+}
+
 requireValue(semver.test(matrix.policyVersion), "policyVersion must be SemVer");
 requireValue(semver.test(matrix.productVersion), "productVersion must be SemVer");
 
@@ -94,6 +102,12 @@ for (const [name, version] of Object.entries(expected)) {
   );
 }
 requireValue(matrix.productVersion === workspaceVersion, "productVersion must match the Cargo workspace version");
+
+const gatewayJobKinds = typescriptStringArray("packages/gateway/src/platform.ts", "JOB_KINDS");
+requireValue(
+  JSON.stringify(matrix.surfaces.workerArtifacts.queueKinds) === JSON.stringify(gatewayJobKinds),
+  "workerArtifacts.queueKinds must exactly match gateway JOB_KINDS",
+);
 
 const workerContract = read("workers/forge_workers/contract.py");
 for (const [name, version] of [

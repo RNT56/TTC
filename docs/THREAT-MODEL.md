@@ -162,6 +162,16 @@ stderr; run for 1 second to 8 hours; use temporary files instead of unbounded pi
 and kill the process group on timeout or overflow. Exit failures never reflect
 provider stdout/stderr. Output must be a bounded JSON object.
 
+Queued vendor refresh adds a narrower contract: 1..50 component IDs, a required
+1..200-character idempotency key, a 1..120-second timeout, local provider only, and
+at most 50 normalized rows. The worker requires `FORGE_VENDOR_REFRESH_CMD` again at
+execution; disappearance is a failed job, never fixture fallback. Rejected rows retain
+only bounded index/component/vendor/SKU/reason summaries, not raw provider payloads.
+The gateway domain-separates the client key with authenticated owner identity before
+persistence, binds reuse to exact kind/provider/input, rejects drift with 409, and
+does not repeat fixture materialization. This prevents guessed global keys from
+returning another tenant's row or suppressing that tenant's credit debit.
+
 Native Anthropic ETL accepts at most 4 MiB request JSON, 2 MiB response bytes, and
 512 KiB of tool input. The fixed request uses 8,192 output tokens and a 1..120-second
 timeout. The strict tool envelope contains only `canonicalRowJson` and
@@ -239,6 +249,14 @@ an exact host.
 No provider response may choose a new callback, download, redirect, or object-store
 destination without passing the same policy again.
 
+The direct gateway vendor HTTP adapter is removed. A deployment-owned vendor command
+may perform network I/O outside the application HTTP client, so process byte/time
+bounds do not constrain its destinations. Production must run it in an isolated,
+least-privilege worker with connection-time egress allowlisting, DNS/metadata/private-
+range denial, provider quotas, and secret-safe telemetry. Returned offer and
+provenance links must be bounded, credential-free public HTTPS and are stored as
+references only; the gateway/worker does not fetch them.
+
 ## 9. Prompt, retrieval, and provider-result injection
 
 Prompts, retrieved component rows, pattern summaries, provider tool input, and
@@ -257,6 +275,10 @@ controls are:
 - generation can consume only approved, license-permitted catalog revisions;
 - provider tool JSON is structurally bounded;
 - provider and external exporter fields are allowlisted;
+- vendor provider rows are normalized once, then revalidated inside the same
+  transaction that inserts offers and marks the job successful; any corrupt accepted
+  row rolls back both state transitions, after which the runner marks the job failed
+  and continues polling instead of terminating the worker;
 - candidate contracts always pass the real validator;
 - rejected candidates cannot train, share, export, deploy, or silently become
   admitted through UI state;

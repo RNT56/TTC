@@ -70,10 +70,10 @@ production-proven or ready for live-provider, external-beta, or field claims.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
-- the SEC-006 contract/fixture runtime evidence is anchored at protected PR #31 and
-  exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; docs-only
-  descendant `b48f8a0` also passed CI `29252793587` and security `29252793485`, so
-  later documentation descendants must not be mistaken for a new runtime proof;
+- the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
+  and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
+  latest verified protected runtime descendant before this slice is native-ETL PR
+  #33 at `12b65d2`, with CI `29255595803` and security `29255595829` green;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -101,11 +101,16 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   archive boundaries, prompt-injection containment, classed rate limits, and
   adversarial tests; production egress enforcement, distributed quotas, secret
   rotation, and incident exercises remain operations gates;
-- the P3/P4 ETL adapter now has a native Anthropic Messages API contract using the
+- the protected P3/P4 ETL adapter has a native Anthropic Messages API contract using the
   pinned Haiku 4.5 snapshot, forced strict tool use, exact-host bounded HTTPS,
   delimiter-safe untrusted-source prompts, local canonical-row validation, and
   extraction provenance. Fixture and deployment-command paths remain first; no
   credentialed sandbox call, live OCCT artifact, or provider operation is implied;
+- this P11-005 slice adds a locally verified queued vendor-refresh contract: the
+  gateway may enqueue only an idempotent local `commerce.vendor-refresh` job, the
+  worker alone may invoke `FORGE_VENDOR_REFRESH_CMD`, and accepted offers are
+  revalidated and materialized transactionally. It is not protected, credentialed,
+  sandbox, live, or provider-recovery evidence until the corresponding gates exist;
 - `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
   and its nine-asset GitHub Release were built from protected `1093842`, attested,
   downloaded after publication, and independently re-verified;
@@ -253,6 +258,22 @@ Application threat boundary (SEC-006):
   and errors. The native provider envelope uses Anthropic's supported strict-schema
   subset; its JSON string is reparsed under local byte/depth/node/type/license/price/
   citation checks before it can reach catalog admission or review;
+- live vendor results never travel directly from an HTTP route into purchase truth.
+  The gateway queues only a local, idempotent `commerce.vendor-refresh` job; the
+  dedicated commerce route and generic job entry point share the same bounded
+  component/timeout/no-inline-offer contract; the worker requires
+  `FORGE_VENDOR_REFRESH_CMD`, sanitizes held rows, and bounds offer count, strings,
+  price, currency, availability, public HTTPS links, rate limits, timeout, and
+  provenance;
+- successful vendor offers are validated a second time and inserted inside the same
+  Postgres transaction that marks the job successful. Any invalid accepted row rolls
+  back the job success and every offer insert; the runner then marks the job failed
+  without stopping the worker loop. Sandbox links remain a separate, synchronous,
+  explicitly `sandbox` path and may never be labeled provider truth;
+- client job idempotency is owner-scoped before persistence using a domain-separated
+  digest. Exact retries return the original job without rematerializing fixture
+  outputs; reusing a key for a different kind/provider/input returns conflict, and a
+  second owner may safely use the same client key;
 - the in-memory classed limiter is valid for deterministic and single-process proof
   only. Shared atomic rate, concurrency, and spend controls are required before a
   multi-replica or billable-provider claim. The complete control/residual-risk matrix
@@ -328,7 +349,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
-| Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review |
+| Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review; run `pnpm db:assert-commerce-jobs` and `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |

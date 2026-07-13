@@ -41,10 +41,10 @@ Neither layer substitutes for the other. The canonical security contract is
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
-| Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `maintenance.*`; fixture outputs materialize sidecar rows where tables exist | P5+ |
+| Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `commerce.vendor-refresh`, `maintenance.*`; fixture/worker outputs materialize sidecar rows where tables exist | P5+ |
 | Policies/replays/photoscan | consent-gated `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; consent-gated telemetry-reuse `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
 | Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
-| Platform | `GET/POST/PATCH /v1/listings`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/evals/brief25/latest` | P11/P12 |
+| Platform | `GET/POST/PATCH /v1/listings`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/commerce/vendor-offers`; `POST /v1/commerce/vendor-offers/refresh`; `GET /v1/evals/brief25/latest` | P11/P12 |
 
 Conventions *(proposed)*: versioned prefix `/v1`; SSE for long-running streams
 (generation, jobs); presigned S3 URLs for all binary upload/download; idempotency
@@ -75,6 +75,18 @@ Fixture job outputs currently materialize to `photoscan_artifacts`,
 Docker Compose worker to claim and materialize. Photoscan result caches and policy
 ONNX outputs also upsert owner-scoped `object_blobs` rows and link those rows from
 their artifact tables.
+The local-only `commerce.vendor-refresh` kind is command-gated at enqueue and worker
+execution. Successful normalized rows materialize to `vendor_offers` in the same
+worker transaction as job success; a corrupt accepted row rolls back both state
+changes. The route requires idempotency and cannot enqueue fixture/modal providers or
+inline provider offers. The generic `/v1/jobs` entry point applies the same provider,
+idempotency, component-count, timeout, and allowed-field checks, so it cannot bypass
+the dedicated commerce route. Synchronous deterministic links stay source `sandbox`.
+All client job idempotency keys are persisted as domain-separated owner digests.
+Conflict lookup also requires exact kind, provider, and canonical JSON input: an
+exact retry returns the original row, a drifted request returns 409, a fixture retry
+does not materialize twice, and one owner's key cannot collide with another owner's
+job or credit debit.
 Classroom assignments/submissions, moderation reports, and policy-sharing signoffs
 are local P11 tables; submissions store the exact validator report and deterministic
 grade object used by the production admission gate.
@@ -85,6 +97,18 @@ supported predecessor, then rerun to prove checksum/idempotency behavior. Back u
 before deploy, stop the application if a migration fails, inspect
 `schema_migrations`, and roll forward with corrected additive SQL; never edit an
 already-recorded migration checksum.
+
+Migration `0020_commerce_worker_jobs.sql` additively extends `jobs_kind_check` with
+`commerce.vendor-refresh`; it does not rewrite existing rows or touch object storage.
+Older workers leave the new kind queued because they do not register it. Application
+rollback must first stop enqueueing, then drain or explicitly cancel all queued/
+running commerce jobs before deploying an older gateway/worker. Keep the migration
+and constraint in place; removing the enum member is safe only after proving no such
+row exists, and requires a new forward migration rather than editing 0020.
+`pnpm db:assert-commerce-jobs` runs the built gateway against migrated Postgres and
+proves that simultaneous/sequential exact retries converge, request drift conflicts,
+owner scope holds, and raw client keys never persist; the in-memory route suite is not
+used as a substitute for that SQL evidence.
 
 Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
 filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,
@@ -181,12 +205,16 @@ Persistence selects these fields explicitly; the ephemeral provider credential i
 not serialized into generated artifacts, usage events, model lineage, responses, or
 errors. A regression test inspects all three persistence query parameter sets.
 
-Outbound Anthropic/vendor/print traffic is credential-free HTTPS, exact-host
-allowlisted where configured, public-address checked, redirect-free, content-type
-checked, and bounded by timeout, streamed bytes, and JSON structure. This reduces
-SSRF and provider-response bombs but does not eliminate DNS rebinding between the
-application check and socket connection; live deployment requires connection-time
-egress firewall/proxy enforcement.
+Gateway/native-worker-managed Anthropic and print HTTP traffic is credential-free
+HTTPS, exact-host allowlisted where configured, public-address checked,
+redirect-free, content-type checked, and bounded by timeout, streamed bytes, and JSON
+structure. Vendor refresh no longer has a direct gateway HTTP path. Its deployment-
+owned command runs behind bounded JSON/time/process output controls, but that command
+owns its network client; production must sandbox it and enforce destinations at the
+connection-time egress proxy/firewall. ForgedTTC validates returned vendor links as
+credential-free public HTTPS references and never server-fetches them. These controls
+do not by themselves prove provider identity, DNS ownership, current terms, or a
+credentialed sandbox.
 
 Migration `0015_generation_refusals.sql` is additive and has no backfill or object-
 storage impact. Expected storage is one small metadata row per refusal plus timestamp
@@ -210,9 +238,11 @@ decision records. Run `pnpm lifecycle:ops -- help` for the operator surface and
 `photoscan.multiview` · `train.policy` · `train.sysid-fit` · `replay.verify`
 (leaderboards — anti-cheat re-verification, D17) · `codesign.evaluate` ·
 `bridge.config-diff` · `bridge.telemetry-ingest` · `bridge.supervisor-check` ·
+`commerce.vendor-refresh` ·
 `maintenance.estimate-wear` · `maintenance.crash-forensics` ·
 `maintenance.repair-sheet` · `maintenance.fleet-summary`. The local
-runner registers fixture-backed handlers for all names; Modal/GPU work sits behind
+runner registers handlers for all names; commerce is local-command-only rather than
+fixture-backed, and Modal/GPU work sits behind
 adapters. Fixture jobs complete synchronously for deterministic CI; non-fixture
 jobs remain queued until claimed by the Python worker. Every job carries
 `{userId, provider, payload, idempotencyKey}`.

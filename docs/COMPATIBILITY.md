@@ -29,7 +29,7 @@ package to adopt that same number.
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; public families must gain an independent `schemaVersion` before external publication | current minor line |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds; public families must gain an independent `schemaVersion` before external publication | current minor line |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
@@ -70,6 +70,16 @@ locally prohibited generation-family inputs; successful response shapes are
 unchanged, and SSE emits the same safe body as an error event after a hash-only start
 event. Clients must not depend on refused prompt echoing or on fields outside the
 documented code/policy-version/category/refusal-ID response.
+
+The worker queue kind list is also an internal cross-process contract. The gateway
+source and `workerArtifacts.queueKinds` matrix must match exactly.
+`commerce.vendor-refresh` is an additive kind introduced by migration 0020; its
+artifact envelope already belongs to worker package 0.2.0, so this wiring does not
+change the artifact version. Older workers safely leave the unknown kind queued.
+Rollback must stop enqueueing and drain or cancel every commerce job before deploying
+an older gateway/worker; retain migration 0020 and roll forward. Removing the kind or
+changing its persisted meaning requires a new migration, compatibility fixture, and
+the normal deprecation/breaking-change procedure.
 
 ## Change classification
 

@@ -57,6 +57,12 @@ plus migrations 0017..0019.
 Provider-specific backup deletion is an injected operations adapter; no worker or UI
 may mark a physical copy deleted. Full contract: [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md).
 
+The separate P11 commerce queue boundary is migration 0020: the Fastify gateway
+enqueues an idempotent local `commerce.vendor-refresh` row, the Python worker alone
+invokes and normalizes the deployment command, and Postgres transactionally
+materializes accepted `vendor_offers` with job success. The gateway has no parallel
+direct-live vendor HTTP path.
+
 Full port methodology, boundary signatures, and golden-number suite:
 [`systems/core-runtime.md`](systems/core-runtime.md).
 
