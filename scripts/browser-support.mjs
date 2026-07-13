@@ -158,6 +158,12 @@ async function inspectPage(page, engine, origin) {
   }));
   assert.equal(support.tier, engine === "chromium" ? "full-studio" : "viewer-grade");
   assert.equal(support.reducedMotion, "false");
+  const quality = await page.getByLabel("quality").inputValue();
+  assert.equal(
+    quality,
+    engine === "chromium" ? "high" : "low",
+    `${engine}: initial quality must match the declared browser tier`,
+  );
 
   const semantics = await page.evaluate(() => {
     const visible = (element) => {
@@ -304,6 +310,7 @@ async function inspectPage(page, engine, origin) {
 
   return {
     support,
+    quality,
     wasmUrl: new URL(wasmUrls[0]).pathname,
     semantics,
     skipLink,

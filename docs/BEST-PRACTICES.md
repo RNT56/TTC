@@ -105,7 +105,9 @@ comments only for constraints the code cannot show.
 10. **Browser support and accessibility** — run the production share/configurator
     journey with real WASM in Chromium, Firefox, and WebKit; assert semantics,
     accessible names, skip/focus behavior, keyboard orbit/equip/explode/blueprint,
-    contrast, critical target size, narrow layout, and reduced motion. Keep the
+    contrast, critical target size, narrow layout, reduced motion, and tier-appropriate
+    initial quality. Viewer-grade engines start low with AO off so software-rendered
+    WebGL cannot block the accessible contract. Keep the
     full-Studio/viewer-grade boundary and vendor-device limitations synchronized with
     [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md); a proxy engine is not a real-device or
     screen-reader certification (QA-003).

@@ -18,6 +18,26 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Keep viewer-grade Studio usable under software WebGL
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Reconciled protected PR run `29279497748`: QA-002, every security job, and
+four CI jobs passed, while QA-003 exposed a Firefox Linux software-rendering stall
+before the accessible Studio surface painted. Preserved the three-engine hard gate
+and changed viewer-grade engines to start at the low presentation tier (AO off,
+device-pixel ratio 1); the acceptance artifact now records and asserts the initial
+quality tier. Validator, bake, contract, and simulation truth remain unchanged, and
+users can still opt into higher visual quality.
+The focused Firefox rerun and full Chromium/Firefox/WebKit matrix pass locally, and
+all 34 non-database repository gates pass on the corrected tree.
+**Changed:** Studio viewer boot policy; QA-003 evidence; browser-support, testing,
+README, and changelog guidance.
+**Decisions:** none; this applies the existing XC-22 quality ladder to the declared
+viewer-grade boundary instead of weakening the engine matrix or its assertions.
+**Next:** publish the corrected head and require fresh protected three-engine
+evidence before merge.
+**Blockers:** none.
+
 ## 2026-07-13 — Gate accessible viewer-grade browser support
 **Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
 Studio support · **TODO items:** QA-003 [~]
