@@ -4,6 +4,16 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { arch, platform, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import {
+  MAX_NATIVE_ARCHIVE_BYTES,
+  MAX_NATIVE_BINARY_BYTES,
+  MAX_NATIVE_METADATA_BYTES,
+  MAX_WASM_ARCHIVE_BYTES,
+  MAX_WASM_MEMBER_BYTES,
+  listArchiveEntries,
+  readArchiveMember,
+  validateArchiveEntries,
+} from "./archive-policy.mjs";
 
 const args = process.argv.slice(2);
 const value = (flag) => {
@@ -50,9 +60,23 @@ if (!native) throw new Error(`native bundle unavailable for ${platform()} ${arch
 const temp = mkdtempSync(join(tmpdir(), "forge-release-verify-"));
 try {
   const archive = join(dir, native.name);
+  const folderName = native.name.replace(/(?:\.tar\.gz|\.zip)$/, "");
+  const compressed = native.name.endsWith(".tar.gz");
+  const member = `${folderName}/${native.binary}`;
+  const metadataMembers = ["INSTALL.md", "LICENSE", "NOTICE", "artifact-manifest.json"]
+    .map((name) => `${folderName}/${name}`);
+  const entries = listArchiveEntries(archive, compressed, MAX_NATIVE_ARCHIVE_BYTES, `${native.target} bundle`);
+  validateArchiveEntries(entries, [folderName, ...metadataMembers, member], `${native.target} bundle`);
+  for (const metadataMember of metadataMembers) {
+    readArchiveMember(archive, metadataMember, compressed, MAX_NATIVE_METADATA_BYTES, `${native.target} metadata`);
+  }
+  readArchiveMember(archive, member, compressed, MAX_NATIVE_BINARY_BYTES, `${native.target} binary`);
   execFileSync("tar", [native.name.endsWith(".zip") ? "-xf" : "-xzf", archive, "-C", temp]);
-  const folder = join(temp, native.name.replace(/(?:\.tar\.gz|\.zip)$/, ""));
+  const folder = join(temp, folderName);
   const binary = join(folder, native.binary);
+  if (!statSync(binary).isFile() || statSync(binary).size > MAX_NATIVE_BINARY_BYTES) {
+    throw new Error(`${native.target} bundle binary is not a bounded regular file`);
+  }
   if (platform() !== "win32" && (statSync(binary).mode & 0o111) === 0) {
     throw new Error(`${native.target} bundle binary is not executable`);
   }
@@ -64,9 +88,21 @@ try {
 }
 const wasm = names.find((name) => /^forge-validate-wasm-.*\.tgz$/.test(name));
 if (!wasm) throw new Error("WASM package missing");
-const entries = execFileSync("tar", ["-tzf", join(dir, wasm)], { encoding: "utf8" });
-for (const required of ["package/package.json", "package/forge_wasm.js", "package/forge_wasm_bg.wasm"]) {
-  if (!entries.split("\n").includes(required)) throw new Error(`WASM package missing ${required}`);
+const wasmArchive = join(dir, wasm);
+const wasmAllowed = [
+  "package/LICENSE",
+  "package/NOTICE",
+  "package/README.md",
+  "package/package.json",
+  "package/forge_wasm.js",
+  "package/forge_wasm.d.ts",
+  "package/forge_wasm_bg.wasm",
+  "package/forge_wasm_bg.wasm.d.ts",
+];
+const wasmEntries = listArchiveEntries(wasmArchive, true, MAX_WASM_ARCHIVE_BYTES, "WASM package");
+validateArchiveEntries(wasmEntries, wasmAllowed, "WASM package");
+for (const member of wasmAllowed) {
+  readArchiveMember(wasmArchive, member, true, MAX_WASM_MEMBER_BYTES, `WASM member ${member}`);
 }
 const consumer = mkdtempSync(join(tmpdir(), "forge-wasm-consumer-"));
 try {

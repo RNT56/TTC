@@ -142,6 +142,7 @@ try {
 
   run("Contract fuzz corpus", "pnpm", ["fuzz:contract:check"]);
   run("Pinned simulation parity", "pnpm", ["sim:parity:check"]);
+  run("Archive extraction policy", "node", ["--test", "scripts/archive-policy.test.mjs"]);
   run("Validator release packaging", "pnpm", ["release:validator:check"]);
   run("Pilot and hardware-policy invariants", "pnpm", ["pilot:check"]);
   run("Python worker tests", "pnpm", ["--filter", "@forge/workers", "test"]);

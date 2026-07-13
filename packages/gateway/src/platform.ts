@@ -8,6 +8,7 @@ import {
 import type { CurrentUser } from "./auth.js";
 import type { GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
+import { MAX_OBJECT_BYTES, assertBoundedJson } from "./security.js";
 import { runPatch, runValidator, type ValidateResult } from "./validator.js";
 
 export type ModelStatus = "admitted" | "draft" | "rejected";
@@ -832,6 +833,39 @@ export async function registerObjectBlob(
     cacheKey?: string | null;
   },
 ): Promise<ObjectBlobRecord> {
+  if (!/^[A-Za-z0-9._:-]{1,80}$/.test(input.purpose)) {
+    throw Object.assign(new Error("object purpose is invalid"), { statusCode: 400 });
+  }
+  const contentType = input.contentType?.split(";", 1)[0]?.trim().toLowerCase() ?? null;
+  const archiveTypes = new Set([
+    "application/zip",
+    "application/x-7z-compressed",
+    "application/x-rar-compressed",
+    "application/x-tar",
+    "application/gzip",
+  ]);
+  const originalName = isRecord(input.metadata) && typeof input.metadata.originalName === "string"
+    ? input.metadata.originalName.toLowerCase()
+    : "";
+  if ((contentType && archiveTypes.has(contentType)) || /\.(?:zip|7z|rar|tar|tgz|tar\.gz)$/.test(originalName)) {
+    throw Object.assign(new Error("archive uploads are not accepted by the current object boundary"), {
+      statusCode: 400,
+    });
+  }
+  if (contentType && !/^[a-z0-9][a-z0-9!#$&^_.+\/-]{0,159}$/.test(contentType)) {
+    throw Object.assign(new Error("object content type is invalid"), { statusCode: 400 });
+  }
+  if (input.byteSize !== undefined && input.byteSize !== null && (
+    !Number.isSafeInteger(input.byteSize) || input.byteSize < 0 || input.byteSize > MAX_OBJECT_BYTES
+  )) {
+    throw Object.assign(new Error("object byte size is outside the supported range"), { statusCode: 400 });
+  }
+  assertBoundedJson(input.metadata ?? {}, "object metadata", {
+    maxBytes: 128 * 1024,
+    maxDepth: 12,
+    maxNodes: 5_000,
+    maxObjectKeys: 256,
+  });
   const sha = input.sha256?.toLowerCase() ?? null;
   const cacheKey = blobCacheKey(user, { cacheKey: input.cacheKey, sha256: sha });
   const metadata = isRecord(input.metadata) ? input.metadata : {};
@@ -1882,6 +1916,16 @@ export async function createJob(
   user: CurrentUser,
   input: CreateJobInput,
 ): Promise<JobRecord> {
+  assertBoundedJson(input.payload ?? {}, "job payload", {
+    maxBytes: 512 * 1024,
+    maxDepth: 16,
+    maxNodes: 20_000,
+  });
+  if (input.idempotencyKey != null && (
+    input.idempotencyKey.length < 1 || input.idempotencyKey.length > 200
+  )) {
+    throw Object.assign(new Error("job idempotency key is outside the supported range"), { statusCode: 400 });
+  }
   const requirements = [] as {
     purpose: "photoscan.processing" | "training.reuse";
     subjectKind: "object-blob" | "telemetry-log";

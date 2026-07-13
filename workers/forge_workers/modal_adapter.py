@@ -10,9 +10,12 @@ import hashlib
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+from forge_workers.net_security import assert_bounded_json, fetch_public_https
 
 
 def stable_json(value: Any) -> str:
@@ -67,12 +70,20 @@ class ModalGpuAdapter:
                 method="POST",
             )
             try:
-                with urllib.request.urlopen(request, timeout=float(os.getenv("FORGE_MODAL_TIMEOUT_S", "30"))) as response:
-                    result = json.loads(response.read().decode("utf-8"))
-            except urllib.error.URLError as exc:
-                raise RuntimeError(f"Modal backend request failed: {exc}") from exc
+                raw, _content_type = fetch_public_https(
+                    request,
+                    label="Modal backend",
+                    timeout_s=float(os.getenv("FORGE_MODAL_TIMEOUT_S", "30")),
+                    max_bytes=4 * 1024 * 1024,
+                    allowed_content_types=("application/json", "application/problem+json"),
+                    allowed_hosts=((urllib.parse.urlsplit(endpoint).hostname or ""),),
+                )
+                result = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError, urllib.error.URLError) as exc:
+                raise RuntimeError("Modal backend returned invalid JSON") from exc
             if not isinstance(result, dict):
                 raise RuntimeError("Modal backend returned non-object JSON")
+            assert_bounded_json(result, label="Modal backend response", max_bytes=4 * 1024 * 1024)
             result.setdefault("provider", "modal")
             result.setdefault("task", task)
             result.setdefault("cacheKey", body["cacheKey"])
