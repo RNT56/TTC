@@ -112,6 +112,7 @@ jobs:
   data-plane:
     name: catalog data plane (Postgres)
     runs-on: ubuntu-latest
+    needs: core
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -139,17 +140,26 @@ jobs:
         with:
           python-version: "3.12"
       - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: forge-validate
+          path: target/debug
+      - name: prepare validator and browser prerequisites
+        run: |
+          chmod +x target/debug/forge-validate
+          pnpm exec playwright-core install --with-deps chromium
       - run: python -m pip install -e "workers[queue]"
-      - name: migrate catalog schema
-        run: pnpm db:migrate
-      - name: seed reviewed catalog fixtures
-        run: pnpm db:seed-catalog
-      - name: assert P3 catalog invariants
-        run: pnpm db:assert-p3
-      - name: assert commerce job idempotency against Postgres
-        run: pnpm db:assert-commerce-jobs
+      - name: isolated Postgres and real-browser acceptance
+        env:
+          FORGE_BROWSER_E2E: "1"
+        run: pnpm verify:db
       - name: assert transactional commerce worker materialization
         run: python workers/integration/assert_commerce_postgres.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: qa002-browser-e2e
+          path: artifacts/e2e
 
   workers:
     name: compute workers (Python)

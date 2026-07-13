@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Gate the complete builder loop in a real browser
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~], QA-001
+**Done:** Added a fail-closed Playwright-core harness for the complete QA-002 surface:
+authenticated production-bundle startup, real built-WASM validation, approved catalog
+rows from Postgres, staged template generation, persisted draft/share refusal,
+deterministic edit/revalidation, admitted anonymous share with private model 401,
+EnvSpec course creation, governed listing creation, fixture job success, and
+Postgres-materialized maintenance rendering. The required Postgres job now downloads
+the exact validator artifact from `forge-core (Rust)`, installs Chromium, runs the
+entire `pnpm verify:db` contract including the browser harness, and uploads structured
+evidence or a failure screenshot. Local Studio/gateway typechecks and production
+builds pass; the harness's undeclared-database refusal, 10/10 golden-policy tests, and
+62 immutable workflow references pass. QA-002 remains in progress until the isolated
+remote database/browser run and protected post-merge evidence are green.
+**Changed:** browser E2E runner and selectors, production-preview same-origin proxy,
+Postgres CI composition, root verification commands, canonical agent/governance/
+debugging/best-practice/system guidance, and living state/roadmap/task ledgers.
+**Decisions:** none. The harness uses deterministic fixture providers only, adds no
+credential or live-provider authority, and does not change a registered golden.
+**Next:** obtain the exact PR-head Postgres/Chromium evidence, merge through the
+required ruleset, verify post-merge CI/security, then reconcile QA-002 to `[x]`.
+**Blockers:** local Postgres remains unavailable because the existing Docker VM is
+unhealthy and was not modified; the required isolated CI service is the acceptance
+path. No external credential, hardware, or spending authority is required.
+
 ## 2026-07-13 — Record protected golden-review evidence
 **Session:** Codex agent · branch `codex/qa008-postmerge-evidence` · **Phase:** QA
 cross-cutting · **TODO items:** QA-008 [x], QA-001

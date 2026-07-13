@@ -22,9 +22,10 @@ holds document/UI state: open contract, selection, pane layout, equip state, job
 notifications. React renders panes and forms — never the 3D frame, and never
 geometry math.
 
-In the local Compose profile the Studio calls `/v1` and `/auth` on its own origin;
-Vite proxies those paths to the gateway service through `FORGE_GATEWAY_PROXY`. This
-preserves cookie/header behavior without inventing a second CORS security surface.
+In the local Compose profile and production-preview acceptance surface, the Studio
+calls `/v1` and `/auth` on its own origin; Vite proxies those paths to the gateway
+service through `FORGE_GATEWAY_PROXY`. This preserves cookie/header behavior without
+inventing a second CORS security surface.
 
 ## 3. Surfaces by phase
 
@@ -79,10 +80,19 @@ Runtime Web, recorder views (P8).
 
 ## 8. Testing
 
-Playwright smoke flows per phase exit criterion (open → orbit → equip → explode;
-share-link logged-out view at P4); state-architecture lint (no geometry/physics math
-in React paths *(proposed: eslint rule)*); pane snapshot tests; perf overlay
-assertions on canonical scenes.
+`pnpm verify:browser-e2e` is the QA-002 production-bundle acceptance harness. Against
+an explicitly marked, migrated isolated database it proves authenticated startup,
+the real built-WASM request and in-browser validator verdict, approved catalog
+rendering, streamed deterministic generation, persisted draft share refusal,
+deterministic edit/revalidation, admitted anonymous share while private models return
+401, course and governed listing persistence, fixture job success, and maintenance
+materialization. It writes structured evidence under `artifacts/e2e` and a full-page
+screenshot on failure. `pnpm verify:db` owns the supported setup/order and the required
+Postgres CI job installs Chromium and downloads the exact validator artifact.
+
+Remaining browser work belongs to QA-003/006: open → orbit → equip → explode input
+coverage, accessibility/keyboard/focus/contrast/reduced-motion/responsive and viewer-
+grade matrices, pane snapshots, and real-hardware performance acceptance.
 
 ## 9. Open questions
 

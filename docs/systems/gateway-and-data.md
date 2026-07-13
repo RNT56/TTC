@@ -293,8 +293,12 @@ pnpm --filter @forge/gateway test:object-storage
 The first command builds the gateway, creates a complete owner fixture in populated
 Postgres, exports it, asserts credential redaction, deletes it, checks zero primary
 residue, and then proves all five consent grant/withdraw histories, effects,
-append-only enforcement, and deletion residue against real transactions. The object
-smoke uploads a unique payload through MinIO, invokes the
+append-only enforcement, and deletion residue against real transactions. It then
+runs QA-002 through the production Studio bundle, exact validator binary, built WASM,
+and headless Chromium against that isolated database. The runner covers all ten
+builder-loop surfaces, emits `artifacts/e2e/qa002-browser-e2e.json`, captures a
+screenshot on failure, and refuses an implicit or unmarked database. The object smoke
+uploads a unique payload through MinIO, invokes the
 production batch-deletion adapter, and requires a 404 afterward.
 
 SEC-006 additionally tests production auth/object/admin failure, origin and header-

@@ -5,6 +5,7 @@ Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
 Latest verified protected runtime descendant: `18f54fd` (PR #34; queued commerce)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
+QA-002 browser-builder candidate: local implementation, protected evidence pending
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -49,6 +50,7 @@ open.
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
+| QA-002 builder browser E2E | implementation candidate; local typecheck/production builds/policy checks pass, isolated Postgres acceptance pending | fail-closed Playwright-core runner covers production bundle + built WASM validation, generation, draft refusal, edit, anonymous share/private 401, approved catalog, course, listing, job, and materialized maintenance; no live-provider or external-user claim |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
@@ -197,7 +199,7 @@ decision; none is a hidden release claim.
 | Capability | Current maturity | What is still needed |
 |---|---|---|
 | Contract/validator/WASM | v0.1.0 released with protected-main/tag attestations and post-publication install proof; ModelSpec 2.2 equipped semantics are protected on `main` | registry publication only after an explicit owner/credential decision |
-| Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
+| Studio inspection/editing | deterministic local implementation with truthful variant cards, stable-source selection, and a complete QA-002 browser-E2E candidate | exact protected isolated-DB E2E evidence, accessibility, real performance matrix, external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation, D10 exporter enforcement, and native bounded Anthropic ETL contract | credentialed ETL sandbox, real-result persistence/review operations, provider recovery, and live OCCT artifact audit |
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |

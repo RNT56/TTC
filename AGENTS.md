@@ -90,6 +90,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - QA-008 is protected through PR #36: `pnpm verify` has 33 steps and fourteen
   registered golden artifact families; the frozen prototype is immutable and any
   registered re-pin requires a new append-only evidence record;
+- QA-002's implementation candidate puts the production Studio bundle, real built
+  WASM, downloaded validator artifact, gateway, and isolated Postgres through the
+  ten-flow builder acceptance under `pnpm verify:db`; do not call it complete until
+  exact remote and protected post-merge evidence are recorded;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
@@ -357,11 +361,11 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
-| Studio | `pnpm --filter @forge/studio typecheck`; build; browser smoke for changed interaction; accessibility/perf check when relevant |
+| Studio | `pnpm --filter @forge/studio typecheck`; build; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; accessibility/perf check when relevant |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
-| Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review; run `pnpm db:assert-commerce-jobs` and `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes |
+| Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |

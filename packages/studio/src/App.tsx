@@ -1600,6 +1600,7 @@ export default function App() {
         </div>
         <div style={{ color: "#6b7686" }}>drop a .forge.json to validate in-browser</div>
         <button
+          data-testid="share-model"
           onClick={() => void share()}
           disabled={shareDisabled}
           title={shareDisabled ? "only admitted contracts can be shared" : "copy share URL"}
@@ -1607,7 +1608,7 @@ export default function App() {
         >
           share
         </button>
-        {shareUrl && <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{shareUrl}</div>}
+        {shareUrl && <div data-testid="share-url" style={{ color: "#6b7686", wordBreak: "break-word" }}>{shareUrl}</div>}
 
         {configurator.slots.length > 0 && (
           <details data-testid="variant-configurator" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
@@ -1676,12 +1677,12 @@ export default function App() {
               refresh
             </button>
           </div>
-          <div style={{ color: "#6b7686", wordBreak: "break-word" }}>
+          <div data-testid="account-identity" style={{ color: "#6b7686", wordBreak: "break-word" }}>
             {me?.authenticated ? me.user?.email ?? me.user?.name ?? me.user?.id : "not signed in"}
           </div>
-          {modelError && <div style={{ color: "#e6a23c", wordBreak: "break-word" }}>{modelError}</div>}
+          {modelError && <div data-testid="model-error" style={{ color: "#e6a23c", wordBreak: "break-word" }}>{modelError}</div>}
           <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-            <button onClick={() => void saveCurrentModel()} disabled={modelBusy || !s.contractJson} style={btn}>
+            <button data-testid="model-save" onClick={() => void saveCurrentModel()} disabled={modelBusy || !s.contractJson} style={btn}>
               save
             </button>
             <button
@@ -1694,6 +1695,7 @@ export default function App() {
           </div>
           {models.length > 0 && (
             <select
+              data-testid="model-select"
               value={activeModelId ?? ""}
               onChange={(event) => setActiveModelId(event.target.value || null)}
               style={{ ...selectStyle, width: "100%", marginTop: 6 }}
@@ -1707,15 +1709,16 @@ export default function App() {
           )}
           <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
             <input
+              data-testid="model-edit-prompt"
               value={editPrompt}
               onChange={(event) => setEditPrompt(event.target.value)}
               style={{ ...inputStyle, flex: 1 }}
             />
-            <button onClick={() => void editActiveModel()} disabled={modelBusy || !activeModelId} style={btn}>
+            <button data-testid="model-edit-run" onClick={() => void editActiveModel()} disabled={modelBusy || !activeModelId} style={btn}>
               edit
             </button>
           </div>
-          {editMessage && <div style={{ color: editMessage.includes("ms") ? "#7dd87d" : "#e6a23c" }}>{editMessage}</div>}
+          {editMessage && <div data-testid="model-edit-status" style={{ color: editMessage.includes("ms") ? "#7dd87d" : "#e6a23c" }}>{editMessage}</div>}
         </div>
 
         <label style={{ display: "block", marginTop: 8 }}>
@@ -2037,7 +2040,7 @@ export default function App() {
               ["maintenance.repair-sheet", "repair"],
               ["maintenance.fleet-summary", "fleet"],
             ].map(([kind, label]) => (
-              <button key={kind} onClick={() => void runFixtureJob(kind)} style={btn}>
+              <button data-testid={`job-run-${kind}`} key={kind} onClick={() => void runFixtureJob(kind)} style={btn}>
                 {label}
               </button>
             ))}
@@ -2045,7 +2048,7 @@ export default function App() {
           {jobsError && <div style={{ color: "#e6a23c", marginTop: 5 }}>{jobsError}</div>}
           {policyPlaybackMessage && <div style={{ color: "#6b7686", marginTop: 5 }}>{policyPlaybackMessage}</div>}
           {jobs.slice(0, 5).map((job) => (
-            <div key={job.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
+            <div data-testid={`job-row-${job.kind}`} key={job.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
               <div style={{ color: verdictColor(job.status === "succeeded" ? "admitted" : "draft") }}>
                 {job.kind} · {job.status}
               </div>
@@ -2275,6 +2278,7 @@ export default function App() {
 
       {s.report && (
         <div
+          data-testid="validator-report"
           style={{
             ...panel,
             bottom: 12,
@@ -2994,7 +2998,7 @@ function MaintenanceDashboard({
   }).length;
 
   return (
-    <div style={artifactRowStyle}>
+    <div data-testid="maintenance-dashboard" style={artifactRowStyle}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ color: "#8fa3bf", flex: 1 }}>fleet dashboard</span>
         <span style={{ color: warningCount > 0 ? "#e6a23c" : "#7dd87d" }}>
@@ -3436,7 +3440,7 @@ function PlatformPanel({
     return kindMatch && statusMatch;
   });
   return (
-    <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+    <div data-testid="platform-panel" style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ color: "#8fa3bf", flex: 1 }}>platform</span>
         <button onClick={onRefresh} disabled={busy} style={btn}>
@@ -3454,16 +3458,16 @@ function PlatformPanel({
           ["print quotes", printQuotes.length],
         ]}
       />
-      {error ? <div style={{ color: "#e6a23c", marginTop: 4, wordBreak: "break-word" }}>{error}</div> : null}
-      {message ? <div style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
+      {error ? <div data-testid="platform-error" style={{ color: "#e6a23c", marginTop: 4, wordBreak: "break-word" }}>{error}</div> : null}
+      {message ? <div data-testid="platform-message" style={{ color: "#6b7686", marginTop: 4, wordBreak: "break-word" }}>{message}</div> : null}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 6 }}>
-        <button onClick={onCreateCourse} disabled={busy} style={btn}>
+        <button data-testid="course-create" onClick={onCreateCourse} disabled={busy} style={btn}>
           course
         </button>
         <button onClick={onSubmitRun} disabled={busy || !activeCourseId} style={btn}>
           score
         </button>
-        <button onClick={onCreateListing} disabled={busy || !activeModelId} style={btn}>
+        <button data-testid="listing-create" onClick={onCreateListing} disabled={busy || !activeModelId} style={btn}>
           list
         </button>
         <button onClick={onCreatePolicyListing} disabled={busy || !activeModelId} style={btn}>
@@ -3495,12 +3499,14 @@ function PlatformPanel({
       <div style={artifactRowStyle}>
         <div style={{ color: "#8fa3bf" }}>course editor</div>
         <input
+          data-testid="course-name"
           value={courseName}
           onChange={(event) => onCourseNameChange(event.target.value)}
           placeholder="Course name"
           style={{ ...inputStyle, marginTop: 5 }}
         />
         <select
+          data-testid="course-visibility"
           value={courseVisibility}
           onChange={(event) => onCourseVisibilityChange(toCourseVisibility(event.target.value))}
           style={{ ...selectStyle, width: "100%", marginTop: 5 }}
@@ -3512,6 +3518,7 @@ function PlatformPanel({
           ))}
         </select>
         <textarea
+          data-testid="course-env"
           value={courseEnvJson}
           onChange={(event) => onCourseEnvJsonChange(event.target.value)}
           spellCheck={false}
@@ -3536,6 +3543,7 @@ function PlatformPanel({
       {courses.length > 0 ? (
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 4, marginTop: 6 }}>
           <select
+            data-testid="course-select"
             value={activeCourseId ?? ""}
             onChange={(event) => onCourseChange(event.target.value || null)}
             style={{ ...selectStyle, width: "100%" }}
@@ -3721,7 +3729,7 @@ function MarketplaceBoard({
   onUsage: (listing: ListingRecord, event: MarketplaceUsageEvent) => void;
 }) {
   return (
-    <div style={artifactRowStyle}>
+    <div data-testid="marketplace-board" style={artifactRowStyle}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <span style={{ color: "#8fa3bf", flex: 1 }}>marketplace</span>
         <span style={{ color: "#6b7686" }}>{listings.length} shown</span>
@@ -3758,7 +3766,7 @@ function MarketplaceBoard({
         listings.slice(0, 5).map((listing) => {
           const primary = marketplacePrimaryAction(listing);
           return (
-            <div key={listing.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
+            <div data-testid={`listing-row-${listing.id}`} key={listing.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: 4, alignItems: "center" }}>
                 <span style={{ color: "#cfd6df", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {listing.title}

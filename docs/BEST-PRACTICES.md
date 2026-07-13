@@ -99,6 +99,9 @@ comments only for constraints the code cannot show.
 7. **Regression** — physics trajectory tolerance bands; minimized fuzz failures
    become permanent cases (XC-24).
 8. **Brief-25** — generation quality as CI with a metrics dashboard (D-evals).
+9. **Browser E2E** — production Studio bundle + real built WASM + gateway/validator
+   + isolated Postgres for the complete builder loop; public-share and private-route
+   authorization must be proven in separate browser contexts (QA-002).
 
 A red harness blocks merge. Flaky tests are bugs, not noise.
 
