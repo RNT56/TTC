@@ -731,6 +731,10 @@ function platformMemoryDb(): GatewayDb {
         return { rows: [row as T], rowCount: 1 };
       }
       if (text.includes("FROM marketplace_listings")) {
+        if (text.includes("owner_user_id = $1")) {
+          const rows = listings.filter((row) => row.owner_user_id === params[0]);
+          return { rows: rows as T[], rowCount: rows.length };
+        }
         const rows = listings.filter((row) => row.status === params[0] && (params[1] === null || row.listing_kind === params[1]));
         return { rows: rows as T[], rowCount: rows.length };
       }
@@ -2701,6 +2705,16 @@ test(
     assert.equal(listing.statusCode, 201, listing.body);
     assert.equal((listing.json() as { status: string }).status, "review");
     const listingId = (listing.json() as { id: string }).id;
+    const unauthenticatedOwnedListings = await app.inject({
+      method: "GET",
+      url: "/v1/listings/mine",
+    });
+    assert.equal(unauthenticatedOwnedListings.statusCode, 401, unauthenticatedOwnedListings.body);
+    const ownedListings = await app.inject({ method: "GET", url: "/v1/listings/mine", headers: authHeaders });
+    assert.equal(ownedListings.statusCode, 200, ownedListings.body);
+    const ownedListingRows = (ownedListings.json() as { listings: { id: string; status: string }[] })
+      .listings;
+    assert.deepEqual(ownedListingRows.map((row) => [row.id, row.status]), [[listingId, "review"]]);
     const reviewListings = await app.inject({ method: "GET", url: "/v1/listings?status=review" });
     assert.equal(reviewListings.statusCode, 200, reviewListings.body);
     assert.equal((reviewListings.json() as { listings: unknown[] }).listings.length, 1);

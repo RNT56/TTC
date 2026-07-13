@@ -148,6 +148,7 @@ Exit criteria:
 - [x] ≥ 20/25 Brief-25 briefs admitted without human repair *(2026-07-12: 25 admitted, 0 drafts/rejects/blocked, 0 repair iterations)*
 - [x] Conversational edits apply in < 3 s *(2026-06-14: deterministic NL→JSON-Patch gateway route uses `forge-validate patch`; reports elapsed ms)*
 - [x] A shared link renders for a logged-out visitor (orbit, explode, blueprint, drive demo) *(2026-06-14: admitted-only immutable share snapshots via `/v1/share/:shareId`, Studio `?share=` viewer mode; legacy fragment shares remain)*
+- [~] Required browser acceptance covers generation, drafts, editing, real-WASM validation, anonymous share, reviewed catalog, courses, listings, jobs, and maintenance against isolated Postgres *(QA-002 implementation candidate complete locally; exact remote/protected evidence pending)*
 - [x] Anthropic model strings/limits/pricing pinned from current docs (not from the plan) *(D26)*
 - [x] Brief-25 dashboard tracks admission rate, repair iterations, diversity over time *(2026-07-12: artifact records the restored 25/25 baseline; focused diagnostic-aware repair coverage protects non-template candidates)*
 

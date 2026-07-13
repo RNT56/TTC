@@ -38,6 +38,10 @@ and this document, then remove the old check.
 The Postgres job must apply every migration, seed the reviewed catalog, run the P3/
 user-data/consent/lifecycle assertions owned by `pnpm verify:db`, and execute any
 cross-language transactional materializer acceptance added by the changed surface.
+It must also run QA-002 through a production Studio preview with same-origin gateway
+proxying, the exact downloaded validator artifact, real built WASM, headless Chromium,
+and the isolated Postgres service. The uploaded JSON evidence or failure screenshot
+must remain attached to the exact workflow run.
 For P11-005 that includes `pnpm db:assert-commerce-jobs`, which executes the exact
 gateway upsert under concurrent retry, request drift, and cross-owner key reuse, plus
 Python 3.12 and `workers/integration/assert_commerce_postgres.py`, which prove valid

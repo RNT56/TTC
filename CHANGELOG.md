@@ -18,6 +18,104 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Bind owner listing reads to the framework limiter
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~], SEC-006
+**Done:** Resolved the high-severity CodeQL finding on the new owner-listing query by
+binding the route to the official Fastify limiter as well as the existing shared
+public-surface limiter. Focused coverage proves the route refuses the second request
+under a one-request policy.
+**Changed:** Owner-listing route composition, security coverage, and gateway testing
+guidance.
+**Decisions:** none; the request budget remains fail-closed and identity-keyed.
+**Next:** rerun full local and exact-head CI/security/browser acceptance, then inspect
+the replacement Advanced Security check before marking PR #38 ready.
+**Blockers:** none.
+
+## 2026-07-13 — Keep governed owner listings visible after refresh
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Corrected the listing read boundary exposed by protected browser evidence.
+Authenticated owners can now reload their own persisted listings across review and
+historical states without receiving the global curation queue; Studio deduplicates
+those rows with the public listed marketplace. The gateway test proves anonymous
+refusal and exact owner-scoped review-row retrieval.
+**Changed:** Owner listing API, gateway coverage, Studio marketplace refresh, and
+gateway/platform system contracts.
+**Decisions:** none; public discovery remains listed-only and review authority remains
+separate from listing ownership.
+**Next:** rerun the exact-head isolated browser gate from governed listing rendering.
+**Blockers:** none.
+
+## 2026-07-13 — Let bodyless mutations reach their product guards
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Corrected the Studio API client after browser evidence showed bodyless model
+sharing was rejected by Fastify's empty-JSON parser before the draft-status guard.
+JSON content type is now sent only with an actual string body, so the server can emit
+the intended fail-closed `only admitted models can be shared` refusal.
+**Changed:** Studio gateway transport contract and Studio system guidance.
+**Decisions:** none; the admitted-only sharing invariant is unchanged.
+**Next:** rerun the exact-head isolated browser gate from its fifth flow.
+**Blockers:** none.
+
+## 2026-07-13 — Retry the visible account bootstrap in browser acceptance
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Hardened the production-preview harness against an observed transient boot
+race where the first account request failed while other panels initialized. The gate
+now retries only through Studio's visible, idempotent account refresh action and still
+requires the exact test identity before any accepted flow begins.
+**Changed:** Stable account-refresh selector and browser authentication bootstrap.
+**Decisions:** none; authorization semantics and test-header scope are unchanged.
+**Next:** rerun exact-head isolated Postgres/browser acceptance and inspect the next
+structured artifact.
+**Blockers:** none.
+
+## 2026-07-13 — Bind catalog-aware reports to the browser contract
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Corrected the Studio contract-load boundary exposed by the isolated browser
+gate: the local WASM validator still runs on every load, while a catalog-aware gateway
+report is retained only when its non-empty contract hash, report format, schema, and
+validator versions exactly match the WASM result. Generated catalog models now retain
+their sovereign native admission instead of being falsely rejected by WASM's
+intentional empty catalog, and mismatched/stale reports fail closed to the local
+verdict.
+**Changed:** Studio report selection and the Studio system contract.
+**Decisions:** none; the platform catalog remains server-owned and the UI truthfully
+displays the active report target.
+**Next:** rerun the exact-head isolated Postgres/browser acceptance and continue only
+from its structured evidence.
+**Blockers:** none for the deterministic gate; live-provider and external-user proof
+remain separate.
+
+## 2026-07-13 — Gate the complete builder loop in a real browser
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~], QA-001
+**Done:** Added a fail-closed Playwright-core harness for the complete QA-002 surface:
+authenticated production-bundle startup, real built-WASM validation, approved catalog
+rows from Postgres, staged template generation, persisted draft/share refusal,
+deterministic edit/revalidation, admitted anonymous share with private model 401,
+EnvSpec course creation, governed listing creation, fixture job success, and
+Postgres-materialized maintenance rendering. The required Postgres job now downloads
+the exact validator artifact from `forge-core (Rust)`, installs Chromium, runs the
+entire `pnpm verify:db` contract including the browser harness, and uploads structured
+evidence or a failure screenshot. Local Studio/gateway typechecks and production
+builds pass; the harness's undeclared-database refusal, 10/10 golden-policy tests, and
+62 immutable workflow references pass. QA-002 remains in progress until the isolated
+remote database/browser run and protected post-merge evidence are green.
+**Changed:** browser E2E runner and selectors, production-preview same-origin proxy,
+Postgres CI composition, root verification commands, canonical agent/governance/
+debugging/best-practice/system guidance, and living state/roadmap/task ledgers.
+**Decisions:** none. The harness uses deterministic fixture providers only, adds no
+credential or live-provider authority, and does not change a registered golden.
+**Next:** obtain the exact PR-head Postgres/Chromium evidence, merge through the
+required ruleset, verify post-merge CI/security, then reconcile QA-002 to `[x]`.
+**Blockers:** local Postgres remains unavailable because the existing Docker VM is
+unhealthy and was not modified; the required isolated CI service is the acceptance
+path. No external credential, hardware, or spending authority is required.
+
 ## 2026-07-13 — Record protected golden-review evidence
 **Session:** Codex agent · branch `codex/qa008-postmerge-evidence` · **Phase:** QA
 cross-cutting · **TODO items:** QA-008 [x], QA-001

@@ -529,7 +529,7 @@ async function requestJson<T>(
     ...init,
     credentials: "include",
     headers: {
-      "content-type": "application/json",
+      ...(typeof init?.body === "string" ? { "content-type": "application/json" } : {}),
       ...(reviewToken ? { authorization: `Bearer ${reviewToken}` } : {}),
       ...devAuthHeaders(),
       ...init?.headers,
@@ -972,6 +972,16 @@ export async function listListings(kind?: string, limit = 10, status?: string): 
   if (status) params.set("status", status);
   const body = await requestJson<{ listings: ListingRecord[] }>(`/v1/listings?${params}`);
   return body.listings;
+}
+
+export async function listOwnedListings(limit = 50): Promise<ListingRecord[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const body = await requestJson<{ listings: ListingRecord[] } | { error: string }>(
+    `/v1/listings/mine?${params}`,
+    undefined,
+    { okStatuses: [401] },
+  );
+  return "listings" in body ? body.listings : [];
 }
 
 export function createListing(input: {

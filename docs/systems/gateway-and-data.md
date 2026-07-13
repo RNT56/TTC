@@ -44,7 +44,7 @@ Neither layer substitutes for the other. The canonical security contract is
 | Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `commerce.vendor-refresh`, `maintenance.*`; fixture/worker outputs materialize sidecar rows where tables exist | P5+ |
 | Policies/replays/photoscan | consent-gated `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; consent-gated telemetry-reuse `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
 | Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
-| Platform | `GET/POST/PATCH /v1/listings`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/commerce/vendor-offers`; `POST /v1/commerce/vendor-offers/refresh`; `GET /v1/evals/brief25/latest` | P11/P12 |
+| Platform | `GET/POST/PATCH /v1/listings`; owner-scoped `GET /v1/listings/mine`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/commerce/vendor-offers`; `POST /v1/commerce/vendor-offers/refresh`; `GET /v1/evals/brief25/latest` | P11/P12 |
 
 Conventions *(proposed)*: versioned prefix `/v1`; SSE for long-running streams
 (generation, jobs); presigned S3 URLs for all binary upload/download; idempotency
@@ -293,8 +293,15 @@ pnpm --filter @forge/gateway test:object-storage
 The first command builds the gateway, creates a complete owner fixture in populated
 Postgres, exports it, asserts credential redaction, deletes it, checks zero primary
 residue, and then proves all five consent grant/withdraw histories, effects,
-append-only enforcement, and deletion residue against real transactions. The object
-smoke uploads a unique payload through MinIO, invokes the
+append-only enforcement, and deletion residue against real transactions. It then
+runs QA-002 through the production Studio bundle, exact validator binary, built WASM,
+and headless Chromium against that isolated database. The runner covers all ten
+builder-loop surfaces, including authenticated reload of an owner's governed listing
+without granting review-queue access. That owner query is bounded by both the shared
+public-surface limiter and an official route-scoped Fastify limiter. The runner emits
+`artifacts/e2e/qa002-browser-e2e.json`, captures a
+screenshot on failure, and refuses an implicit or unmarked database. The object smoke
+uploads a unique payload through MinIO, invokes the
 production batch-deletion adapter, and requires a 404 afterward.
 
 SEC-006 additionally tests production auth/object/admin failure, origin and header-

@@ -50,6 +50,10 @@ Current Wave 1/2 boundary:
   contract/fixture maturity through PRs #33/#34, with evidence reconciled by PR #35;
 - QA-008 machine-registers protected evidence artifacts and requires append-only
   review records for intentional re-pins through PR #36;
+- QA-002 has a dependency-complete browser acceptance candidate: the production
+  Studio bundle, real built WASM, downloaded validator, gateway, and isolated
+  Postgres exercise the ten builder-loop flows under the required data-plane job;
+  exact remote and protected post-merge evidence remain before closure;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -186,6 +190,9 @@ Work:
   gateway-to-worker vendor-normalization path with its protected 20-migration proof;
   finish a credentialed, observable, recoverable vendor sandbox and purchasable BOM
   acceptance (`P11-005`);
+- close QA-002 by proving the production Studio builder loop against isolated
+  Postgres on the exact protected tree; this is deterministic product acceptance,
+  not external-user acceptance;
 - execute `EXT-001`: independent builder acceptance.
 
 Acceptance:
@@ -379,7 +386,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P1 | P1-004, P1-017 | REC, QA perf/browser; QA-008 protected | real-mid-hardware budget; XC-28 configurator truth complete; registered re-pins are review-gated |
 | P2 | none | explicit registry deferral remains policy, not incomplete phase work | closed: v0.1 published/installed and v0.2 exact checks/post-merge proof |
 | P3 | P3-004 credentialed ETL sandbox and persistence | D36 native transport, SEC citation/license, OPS provider | one real extracted row is deduped, persisted immutably, owner-reviewed, and consumed through BOM/export with recovery evidence |
-| P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and an external R1 flow succeeds without bypassing review |
+| P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002 protected | Brief-25 >=20 remains green, deterministic browser E2E is protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | P6-010 live parity | QA external corpus | real engines and external driveable model |
 | P7 | P7-003, 008, 009, 010 | OPS cost, SEC policy data | live one-click passing policy in browser |

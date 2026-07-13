@@ -435,8 +435,16 @@ Run the isolated data-plane gate against Postgres/pgvector separately:
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d postgres
+pnpm exec playwright-core install --with-deps chromium
 DATABASE_URL=postgres://forge:forge-dev-only@localhost:5432/forge pnpm verify:db
 ```
+
+This applies and seeds the schema, runs every Postgres invariant, then launches the
+production Studio bundle and gateway for QA-002. The browser gate requires the real
+`target/debug/forge-validate`, loads the committed built WASM facade, exercises the
+ten builder-loop flows, proves anonymous share/private-route separation, and writes
+`artifacts/e2e/qa002-browser-e2e.json`. Use only a disposable isolated database; the
+runner refuses to start without the explicit gate marker supplied by `verify:db`.
 
 ---
 

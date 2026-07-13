@@ -43,13 +43,16 @@ via the `?share=` query parameter. Draft and rejected artifacts fail closed.
   thresholds justify a new decision. Pattern-library contribution terms per D2
   (marketplace listings opt-in by default).
 
-Live 2026-06-14: `marketplace_listings` plus `GET/POST /v1/listings` provide the
+Live 2026-06-14: `marketplace_listings` plus public `GET /v1/listings`, authenticated
+owner-scoped `GET /v1/listings/mine`, and `POST /v1/listings` provide the
 local listing scaffold. Listing creation is authenticated and requires an admitted
 model report; policy/skill listings require an explicit dual-use/export-control
 signoff recorded in `policy_signoffs` after the `p11.policy-sharing` platform gate
 is accepted. `POST /v1/listings/:id/usage` records usage-beta views, equips, quote
-clicks, policy downloads, and training jobs into marketplace rollups. Studio now
-renders a kind/status-filtered marketplace board with row-level usage/equip actions.
+clicks, policy downloads, and training jobs into marketplace rollups. Studio merges
+public listed rows with the signed-in owner's persisted review/draft/history rows and
+renders a kind/status-filtered marketplace board with row-level usage/equip actions;
+ordinary owners do not receive the global review queue.
 Worker-side policy transfer assessment now enforces the skill-transfer promise:
 direct transfer requires an exportable scorecard plus matching archetype and
 observation/action layouts; non-matching buyer twins receive a fine-tune offer
