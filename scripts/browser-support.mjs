@@ -158,12 +158,18 @@ async function inspectPage(page, engine, origin) {
   }));
   assert.equal(support.tier, engine === "chromium" ? "full-studio" : "viewer-grade");
   assert.equal(support.reducedMotion, "false");
-  const quality = await page.getByLabel("quality").inputValue();
+  const selectedQuality = await page.getByLabel("quality").inputValue();
+  const sceneQuality = await page.evaluate(() => window.__forgeParity.quality());
   assert.equal(
-    quality,
+    selectedQuality,
     engine === "chromium" ? "high" : "low",
     `${engine}: initial quality must match the declared browser tier`,
   );
+  assert.deepEqual(sceneQuality, {
+    tier: engine === "chromium" ? "high" : "low",
+    advancedEffectsInitialized: engine === "chromium",
+  });
+  const quality = { selected: selectedQuality, ...sceneQuality };
 
   const semantics = await page.evaluate(() => {
     const visible = (element) => {

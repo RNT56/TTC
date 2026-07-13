@@ -32,8 +32,9 @@ promise: the admitted share/view/configure path above must work with the local W
 validator, while unlisted hosted or hardware workflows may work but are not part of
 that browser's acceptance contract. Viewer-grade engines start on the low visual
 quality tier (AO off and device-pixel ratio 1) so software-rendered WebGL cannot
-block the accessible viewer surface; users may opt into a higher presentation tier.
-This does not change contract, bake, simulation, or validator truth.
+block the accessible viewer surface. The advanced AO pipeline is created lazily only
+if the user opts into a higher presentation tier. This does not change contract,
+bake, simulation, or validator truth.
 
 ## 2. Accessibility and interaction contract
 
@@ -85,8 +86,9 @@ bundle. It starts an isolated preview, opens one compressed admitted contract pe
 engine, requires the hashed WASM asset and validator admission, exercises the shared
 journey, and writes `artifacts/e2e/qa003-browser-support.json`. The evidence records
 the source and checkout revisions and whether the local worktree was dirty, Studio
-version, engine/version, capability tier, WASM asset, initial quality tier,
-semantics, keyboard results, critical target dimensions, contrast ratios, and
+version, engine/version, capability tier, selected/scene quality and
+advanced-pipeline state, WASM asset, semantics, keyboard results, critical target
+dimensions, contrast ratios, and
 Chromium-only responsive/reduced-motion results. A failed engine writes a bounded
 error plus a full-page screenshot when one is available.
 
@@ -112,7 +114,8 @@ external-acceptance procedure and preserve its limitations explicitly.
 - Preserve viewer-grade operation when `SharedArrayBuffer` or cross-origin isolation
   is unavailable. The local `CoreSession` fallback is intentional and fail-visible.
 - Keep viewer-grade engines usable under software-rendered WebGL: start low with AO
-  disabled, prove that tier in the matrix, and treat optional visual quality as a
+  disabled, do not initialize the advanced pipeline before the accessible viewer is
+  usable, prove that tier in the matrix, and treat optional visual quality as a
   presentation choice rather than a prerequisite for validation or configuration.
 - Reproduce failures at the exact revision and engine version from the evidence
   file. Attach the bounded evidence/screenshot; do not treat a single-engine rerun as

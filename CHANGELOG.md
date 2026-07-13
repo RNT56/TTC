@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Defer advanced rendering on viewer-grade engines
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Used protected rerun `29280441449` to disprove the initial assumption that
+disabling AO after scene construction was sufficient: QA-002 and ten other checks
+passed, but Firefox again stalled before React painted because the advanced pipeline
+was still constructed eagerly. Viewer-grade scenes now receive their initial tier at
+construction and do not instantiate N8AO/EffectComposer unless a user explicitly
+raises quality. The three-engine gate and the full viewer interaction contract remain
+unchanged. Focused Firefox and the full three-engine matrix pass locally with the
+advanced-pipeline state asserted per engine. The first full repository rerun exposed
+a transient existing macOS process-termination race at worker step 33; its focused
+test and all 115 worker tests passed immediately afterward, and a fresh full rerun
+passed all 34 required non-database gates.
+**Changed:** Studio scene lifecycle plus synchronized browser-support, testing,
+README, and changelog guidance.
+**Decisions:** none; lazy optional presentation preserves validator sovereignty and
+the declared viewer-grade capability rather than treating a CI timeout as support.
+**Next:** publish the corrected head and require a new protected PR run with exact
+passing evidence.
+**Blockers:** none.
+
 ## 2026-07-13 — Keep viewer-grade Studio usable under software WebGL
 **Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
 Studio support · **TODO items:** QA-003 [~]

@@ -474,9 +474,9 @@ browsers. Firefox and WebKit carry a viewer-grade contract: real-WASM local
 validation plus share open, orbit, equipped-variant change, explode, blueprint,
 keyboard/focus, semantics, contrast, and critical target checks. Viewer-grade
 engines start on the low presentation tier with AO off so software-rendered WebGL
-does not block validation or configuration; users may raise quality explicitly.
-Mobile is declared
-viewer grade but currently has only a 390 x 844 responsive proxy, not vendor-device
+does not block validation or configuration; the advanced pipeline initializes only
+if users raise quality explicitly. Mobile is declared viewer grade but currently has
+only a 390 x 844 responsive proxy, not vendor-device
 proof; Playwright WebKit is not an Apple Safari/iOS certification. See
 [`docs/BROWSER-SUPPORT.md`](docs/BROWSER-SUPPORT.md) for the complete matrix,
 accessibility contract, evidence fields, and claim limits.

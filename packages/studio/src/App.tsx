@@ -785,14 +785,14 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const browserSupport = detectBrowserSupport();
-    const scene = new StudioScene(canvas);
+    const initialTier = browserSupport.tier === "viewer-grade" ? "low" : "high";
+    const scene = new StudioScene(canvas, initialTier);
     // Viewer-grade engines intentionally start on the deterministic low tier.
     // This avoids asking software-rendered WebGL implementations to compile the
     // N8AO pipeline before the accessible share/view/configure surface is usable.
     // Users may still opt into a higher tier; validator and bake truth are
     // unchanged because quality only affects presentation.
     if (browserSupport.tier === "viewer-grade") {
-      scene.setTier("low");
       useStudio.getState().setTier("low");
     }
     scene.setReducedMotion(reducedMotionRef.current);
@@ -938,6 +938,7 @@ export default function App() {
       setTier: (t: "high" | "medium" | "low") => scene.setTier(t),
       stats: () => scene.stats(),
       camera: () => scene.cameraState(),
+      quality: () => scene.qualityState(),
       loaded: () => Boolean(useStudio.getState().artifact),
     };
 
