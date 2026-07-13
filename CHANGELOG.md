@@ -18,6 +18,25 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Record protected builder-loop acceptance
+**Session:** Codex agent · branch `codex/qa002-postmerge-evidence` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [x]
+**Done:** Closed QA-002 at deterministic product-acceptance maturity. Exact PR head
+`6a8ce28` passed CI `29272067712`, security `29272067617`, the resolved PR-level
+CodeQL check, and a structured 10/10 real-WASM/isolated-Postgres browser artifact.
+Protected squash `c80accb` then passed post-merge CI `29272532186` and security
+`29272531705`, including the ten flows, 20 migrations, transactional commerce
+materialization, Rust, workers, TypeScript/gateway, native Desktop, audits, source
+SPDX, and both CodeQL languages.
+**Changed:** Canonical agent boundary, project-state evidence ledger, phase/execution
+roadmaps, and QA task status.
+**Decisions:** none; fixture/deterministic closure does not imply live-provider,
+external-user, hardware, or field maturity.
+**Next:** create QA-010's independent-builder script/evidence template, then execute
+EXT-001 while continuing the credentialed P3-004/P4-016 catalog lane separately.
+**Blockers:** external acceptance requires an independent participant; credentialed
+catalog proof requires owner-scoped provider/deployment authority.
+
 ## 2026-07-13 — Bind owner listing reads to the framework limiter
 **Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [~], SEC-006

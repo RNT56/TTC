@@ -74,8 +74,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is queued-commerce PR #34 at
-  `18f54fd`, with CI `29260837182` and security `29260833090` green;
+  latest verified protected runtime descendant is QA-002 PR #38 at `c80accb`, with
+  CI `29272532186` and security `29272531705` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -90,10 +90,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - QA-008 is protected through PR #36: `pnpm verify` has 33 steps and fourteen
   registered golden artifact families; the frozen prototype is immutable and any
   registered re-pin requires a new append-only evidence record;
-- QA-002's implementation candidate puts the production Studio bundle, real built
-  WASM, downloaded validator artifact, gateway, and isolated Postgres through the
-  ten-flow builder acceptance under `pnpm verify:db`; do not call it complete until
-  exact remote and protected post-merge evidence are recorded;
+- QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
+  downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
+  flows under `pnpm verify:db` on the exact PR head and merge commit; this is
+  deterministic product acceptance, not live-provider or external-user proof;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,

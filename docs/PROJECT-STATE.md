@@ -3,9 +3,9 @@
 Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected runtime descendant: `18f54fd` (PR #34; queued commerce)
+Latest verified protected runtime descendant: `c80accb` (PR #38; QA-002 browser loop)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
-QA-002 browser-builder candidate: local implementation, protected evidence pending
+QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -36,9 +36,9 @@ open.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; runtime descendant `18f54fd` and repository descendant `2589503` are green; annotated `v0.1.0` published | PR #36 adds protected QA-008 quality/governance enforcement without changing the queued-commerce, SEC-006, or release maturity anchors |
+| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest verified runtime descendant `c80accb` and QA-008 anchor `2589503` are green; annotated `v0.1.0` published | PR #38 closes deterministic QA-002 product acceptance without changing queued-commerce, live-provider, external-user, hardware, or field maturity |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 33 required non-DB gates locally at implementation head `4497c83`; protected `2589503` passed exact CI/security | golden review joins Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene at the protected finish line |
+| `pnpm verify` | pass: 33 required non-DB gates locally at QA-002 implementation head `6a8ce28`; protected `c80accb` passed exact CI/security | golden review joins Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene at the protected finish line |
 | Golden artifact review | protected through PR #36: 14 registered families, 10/10 policy tests, 1 registry change covered by 1 new record | parent/current registries are unioned against same-patch weakening; record history and ownership cannot be redirected or overlapped; the frozen prototype is immutable; registered drift needs an append-only record with exact path, class, rationale, impact, evidence, and reviewer focus |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
@@ -46,11 +46,11 @@ open.
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 61/61 with the real validator in the full gate | includes worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
 | Worker tests | pass: 115/115 on this tree; Python 3.12 remains the required release environment | adds registered commerce dispatch, missing-command failure, bounded normalization, sanitized holds, transactional materialization revalidation, and worker-loop survival/failure recording to native ETL and SEC-006 coverage |
-| Postgres/pgvector gate | pass on protected QA-008 descendant CI `29264679254` for 20 migrations | migration 0020 additively admits the commerce job kind; the exact gateway upsert converges under concurrent retry, rejects drift, isolates owners, and the worker proves valid commit plus corrupt-output rollback; the local Docker VM remains unhealthy and was not modified |
+| Postgres/pgvector gate | pass on protected QA-002 merge CI `29272532186` for 20 migrations | migration 0020 commerce invariants, transactional worker materialization, and the complete real-browser acceptance share one isolated database; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
-| QA-002 builder browser E2E | implementation candidate; local typecheck/production builds/policy checks pass, isolated Postgres acceptance pending | fail-closed Playwright-core runner covers production bundle + built WASM validation, generation, draft refusal, edit, anonymous share/private 401, approved catalog, course, listing, job, and materialized maintenance; no live-provider or external-user claim |
+| QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb` | exact PR CI `29272067712`/security `29272067617` and post-merge CI `29272532186`/security `29272531705` prove the production bundle, real WASM, 20 migrations, catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed owner listing, job, and materialized maintenance; no live-provider or external-user claim |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
@@ -139,6 +139,18 @@ Live GitHub evidence checked on 2026-07-13:
   golden-policy step, Rust, Postgres, workers, TypeScript/gateway, native Desktop,
   dependency audits, source SPDX, and both CodeQL languages. This closes QA-008
   without adding provider, user-acceptance, hardware, or field authority;
+- builder acceptance [PR #38](https://github.com/RNT56/TTC/pull/38) passed exact-head
+  CI [29272067712](https://github.com/RNT56/TTC/actions/runs/29272067712) and security
+  [29272067617](https://github.com/RNT56/TTC/actions/runs/29272067617) at `6a8ce28`,
+  including the green replacement PR-level CodeQL result after the owner-listing
+  route was bound to the official framework limiter. It merged through protection as
+  `c80accb`; exact post-merge CI
+  [29272532186](https://github.com/RNT56/TTC/actions/runs/29272532186) and security
+  [29272531705](https://github.com/RNT56/TTC/actions/runs/29272531705) passed all ten
+  structured browser flows, 20 migrations, transactional commerce materialization,
+  Rust, workers, TypeScript/gateway, native Desktop, audits, source SPDX, and both
+  CodeQL languages. This closes QA-002 at deterministic product-acceptance maturity,
+  not external-user or live-provider maturity;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -199,7 +211,7 @@ decision; none is a hidden release claim.
 | Capability | Current maturity | What is still needed |
 |---|---|---|
 | Contract/validator/WASM | v0.1.0 released with protected-main/tag attestations and post-publication install proof; ModelSpec 2.2 equipped semantics are protected on `main` | registry publication only after an explicit owner/credential decision |
-| Studio inspection/editing | deterministic local implementation with truthful variant cards, stable-source selection, and a complete QA-002 browser-E2E candidate | exact protected isolated-DB E2E evidence, accessibility, real performance matrix, external-user proof |
+| Studio inspection/editing | protected deterministic implementation with truthful variant cards, stable-source selection, and complete QA-002 real-WASM/isolated-DB browser acceptance | accessibility, real performance matrix, and external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation, D10 exporter enforcement, and native bounded Anthropic ETL contract | credentialed ETL sandbox, real-result persistence/review operations, provider recovery, and live OCCT artifact audit |
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
@@ -234,6 +246,8 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   transactionally revalidated offer materialization with protected 20-migration,
   concurrency, and rollback proof; a real vendor sandbox with egress, quota,
   monitoring, recovery, billing, and terms evidence remains P11-005 work;
+- QA-002 deterministic builder acceptance is protected on `main`; accessibility,
+  performance, and independent-builder proof remain QA-003/006/010 and EXT-001;
 - external/live/field acceptance remains open; public support/v0.2 delivery and the
   standalone v0.1.0 release/supply-chain gate are closed.
 
@@ -255,9 +269,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **200 tasks: 130 done, 37 in progress, 32 open,
-and 1 explicitly blocked**. All 8 recovery tasks are done. The 70 remaining tasks are
-the phase/live/field program plus 2 governance, 2 security, 9 quality, 10 operations,
+The stable ledger currently contains **200 tasks: 132 done, 37 in progress, 30 open,
+and 1 explicitly blocked**. All 8 recovery tasks are done. The 68 remaining tasks are
+the phase/live/field program plus 2 governance, 2 security, 7 quality, 10 operations,
 9 external-proof, and 2 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 
