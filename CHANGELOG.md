@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Close protected Postgres migration acceptance
+**Session:** Codex agent · branch `codex/qa004-postmerge-evidence` · **Phase:** QA /
+data operations · **TODO items:** QA-004 [x]
+**Done:** Closed QA-004 through protected main. Exact implementation head `f44ee86`
+passed PR #44 CI `29286731035` and security `29286731271`, including the required
+Postgres data plane, dependency review/audit, source SPDX, native Desktop, workers,
+Rust, TypeScript/gateway, and both CodeQL languages. The downloaded PR artifact
+passed QA-004 on PostgreSQL 16.14 with pgvector 0.8.5. Protected squash `e362c54`
+then passed post-merge CI `29287274236` and security `29287274293`. Its clean artifact
+binds source and checkout exactly to `e362c54`, applies all 20 current migrations on
+a clean database, preserves realistic populated data through every predecessor
+prefix `0001`..`0019`, and proves unchanged reruns, atomic rollback plus corrected
+roll-forward, checksum/gap refusal, advisory serialization, and apply-once
+concurrency. The ledger is now 200 tasks: 135 done, 37 in progress, 27 open, and 1
+blocked.
+**Changed:** Canonical agent entry point; project-state evidence ledger; phase and
+execution roadmaps; QA-004 task status; migration evidence boundary; changelog.
+**Decisions:** none; D37 remains active, and deterministic isolated-Postgres proof
+does not close OPS-005 production backup/restore, capacity, RPO/RTO, or disaster
+recovery.
+**Next:** execute QA-005's dependency-complete fault-behavior matrix while
+credentialed providers, qualified external participants, production operations, and
+hardware retain their separate prerequisites.
+**Blockers:** none for QA-004. OPS-005 and QA-009 remain open for real encrypted
+backups, restore exercises, capacity, and measured RPO/RTO.
+
 ## 2026-07-13 — Make Postgres migration history executable
 **Session:** Codex agent · branch `codex/qa004-migration-acceptance` · **Phase:** QA /
 data operations · **TODO items:** QA-004 [~], QA-001

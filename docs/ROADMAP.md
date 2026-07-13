@@ -46,12 +46,13 @@ Firefox/WebKit draw the dependency-light core-baked schematic without loading th
 WebGL presentation chunks. These proxies do not constitute Apple/mobile-device,
 assistive-technology, external-user, or field proof.
 
-QA-004 is now in implementation under D37. The 35th local policy gate covers the
-transactional/checksummed migration runner, while required Postgres acceptance is
-defined for a clean install and every populated checked-in predecessor prefix plus
-idempotency, atomic recovery, history refusal, and concurrent serialization. It
-remains `[~]` until exact PR and protected post-merge database/security evidence is
-green and inspected; production backup/restore and measured RPO/RTO remain OPS-005.
+Protected QA-004 PR #44 closes deterministic migration acceptance under D37 at
+`e362c54`. The 35th policy gate protects the transactional/checksummed runner; exact
+PR and post-merge CI/security plus the clean merge artifact prove a 20-migration
+clean install, every populated predecessor `0001`..`0019`, preservation/idempotency,
+atomic recovery, history refusal, and concurrent apply-once. Production
+backup/restore, disaster recovery, capacity, and measured RPO/RTO remain OPS-005 and
+QA-009.
 
 | Phase | Status | Est. |
 |---|---|---|

@@ -101,8 +101,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - QA-008 is protected through PR #36: fourteen registered golden artifact families
   are machine-governed, the frozen prototype is immutable, and any registered re-pin
   requires a new append-only evidence record. QA-010 is protected through PR #40:
-  its 34th step machine-checks external-acceptance policy across eight milestones;
-  the QA-004 implementation candidate adds a 35th migration-runner policy step;
+  its 34th step machine-checks external-acceptance policy across eight milestones.
+  QA-004 is protected through PR #44, whose 35th step machine-checks the migration
+  runner policy;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -115,11 +116,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   post-merge CI/security plus the clean exact-revision artifact are green; this does
   not prove Apple/mobile devices, assistive technologies, external users, or field
   maturity;
-- QA-004 is in implementation under D37: a shared advisory-lock runner validates an
-  exact contiguous checksummed prefix and commits each migration with its ledger row
-  atomically; the clean/all-populated-predecessor, failure/recovery, idempotency, and
-  concurrency harness plus `docs/MIGRATIONS.md` are present, but protected Postgres
-  and post-merge evidence remain before the task closes;
+- QA-004 is protected through PR #44 at `e362c54`: D37's advisory-lock runner
+  validates an exact contiguous checksummed prefix and commits each migration with
+  its ledger row atomically. Exact PR and post-merge CI/security are green; the clean
+  merge artifact binds source/checkout to `e362c54` and proves 20/20 clean install,
+  all 19 populated predecessors, preservation/idempotency, failure recovery, history
+  refusal, and concurrent apply-once behavior. Production backup/restore, capacity,
+  and measured RPO/RTO remain OPS-005;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,

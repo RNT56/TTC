@@ -44,10 +44,11 @@ QA-003 deterministic supported-browser/accessibility acceptance is protected thr
 PR #42 at `9c1802b`: Chromium uses full WebGL, while Firefox/WebKit draw the
 core-baked Canvas2D schematic without loading scene/Three.js chunks. Exact PR and
 post-merge CI/security plus the clean merge artifact are green.
-QA-004 is the active dependency-complete quality lane: D37, the transactional
-checksum/gap-refusing runner, the complete populated predecessor matrix, and the
-database recovery runbook are implemented locally; required protected Postgres and
-post-merge evidence remain before closure.
+QA-004 deterministic migration acceptance is protected through PR #44 at `e362c54`:
+D37's transactional checksum/gap-refusing runner, all 19 populated predecessors,
+failure recovery, concurrency, and the database runbook have exact PR and post-merge
+CI/security plus a clean exact-revision artifact. QA-005 is the next dependency-
+complete local quality lane; production backup/DR remains OPS-005/QA-009.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
@@ -79,6 +80,11 @@ Current Wave 1/2 boundary:
   containment, reduced motion, positive drawing, and renderer/asset isolation. Full
   WebGL is Chromium-only; Apple/mobile devices, assistive technologies, external
   users, and field behavior retain separate gates;
+- QA-004 is closed at deterministic isolated-Postgres maturity through PR #44:
+  exact PR/post-merge evidence proves clean and every populated predecessor,
+  preservation/idempotency, atomic recovery, history refusal, and concurrent
+  apply-once behavior; production backups, restore drills, capacity, and measured
+  RPO/RTO retain OPS-005/QA-009;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
