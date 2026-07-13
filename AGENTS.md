@@ -72,8 +72,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant before this slice is native-ETL PR
-  #33 at `12b65d2`, with CI `29255595803` and security `29255595829` green;
+  latest verified protected runtime descendant is queued-commerce PR #34 at
+  `18f54fd`, with CI `29260837182` and security `29260833090` green;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -106,11 +106,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   delimiter-safe untrusted-source prompts, local canonical-row validation, and
   extraction provenance. Fixture and deployment-command paths remain first; no
   credentialed sandbox call, live OCCT artifact, or provider operation is implied;
-- this P11-005 slice adds a locally verified queued vendor-refresh contract: the
-  gateway may enqueue only an idempotent local `commerce.vendor-refresh` job, the
-  worker alone may invoke `FORGE_VENDOR_REFRESH_CMD`, and accepted offers are
-  revalidated and materialized transactionally. It is not protected, credentialed,
-  sandbox, live, or provider-recovery evidence until the corresponding gates exist;
+- protected P11-005 contract/fixture work now gives vendor refresh one idempotent
+  local `commerce.vendor-refresh` queue path: the worker alone may invoke
+  `FORGE_VENDOR_REFRESH_CMD`, and accepted offers are revalidated and materialized
+  transactionally. This does not prove a credentialed provider sandbox, deployed
+  egress/quotas/telemetry/recovery, billing, current terms, or purchasable BOM use;
 - `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
   and its nine-asset GitHub Release were built from protected `1093842`, attested,
   downloaded after publication, and independently re-verified;

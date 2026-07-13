@@ -178,9 +178,9 @@ Work:
   suppression boundaries (`SEC-003..005`); production backup adapters, deletion
   receipts, sandbox restores, and measured RPO/RTO remain `OPS-005`;
 - retain the deterministic sandbox handoff and locally completed single
-  gateway-to-worker vendor-normalization path; obtain protected 20-migration proof,
-  then finish a credentialed, observable, recoverable vendor sandbox and purchasable
-  BOM acceptance (`P11-005`);
+  gateway-to-worker vendor-normalization path with its protected 20-migration proof;
+  finish a credentialed, observable, recoverable vendor sandbox and purchasable BOM
+  acceptance (`P11-005`);
 - execute `EXT-001`: independent builder acceptance.
 
 Acceptance:
@@ -324,8 +324,8 @@ Current P11-005 handoff: the gateway queues only local idempotent component refr
 requests with owner-scoped, request-bound retry keys; the Python worker owns the
 command invocation and normalization; Postgres owns transactional offer
 materialization. The synchronous sandbox path stays separate. The lane does not exit
-until protected migration proof and a real provider sandbox cover egress, quotas,
-telemetry, retry/recovery, billing, terms, and BOM use.
+until a real provider sandbox covers egress, quotas, telemetry, retry/recovery,
+billing, terms, and BOM use.
 
 Exit: live photo-to-part plus real quote-link handoff.
 

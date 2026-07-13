@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant before this slice: `12b65d2` (PR #33; native ETL)
+Latest verified protected runtime descendant: `18f54fd` (PR #34; queued commerce)
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -24,10 +24,9 @@ acceptance, hardware safety, or field outcomes. Most P5-P12 product surfaces pro
 contracts or fixture workflows; live providers, training, hardware, external users,
 operational recovery, and field evidence remain incomplete.
 
-The native Anthropic ETL path is protected at **contract/fixture**, not live:
-its bounded transport and local validation are tested without a real credential or
-provider call. This tree adds the P11-005 queued vendor normalizer at the same
-contract/fixture boundary. No vendor credential or provider call was made; sandbox
+The native Anthropic ETL and queued vendor-normalizer paths are protected at
+**contract/fixture**, not live. Their bounded transports, normalization, persistence,
+and local validation are tested without a real credential or provider call. Sandbox
 provider output, recovery/observability, billing, and current-terms evidence remain
 open.
 
@@ -35,16 +34,16 @@ open.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest protected runtime descendant `12b65d2` is green; annotated `v0.1.0` published | PR #33 delivered native ETL contract/fixture work without changing the SEC-006 evidence anchor; v0.1.0 release evidence remains anchored to `1093842` |
+| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest protected runtime descendant `18f54fd` is green; annotated `v0.1.0` published | PR #34 delivered queued commerce contract/fixture work without changing the SEC-006 evidence anchor; v0.1.0 release evidence remains anchored to `1093842` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 32 required non-DB gates on this queued-commerce tree; protected native-ETL `12b65d2` also passed CI/security | Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene are green; protected remote proof for this slice is still required |
+| `pnpm verify` | pass: 32 required non-DB gates locally; protected queued-commerce `18f54fd` also passed CI/security | Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene are green locally and at the protected finish line |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 61/61 with the real validator in the full gate | includes worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
 | Worker tests | pass: 115/115 on this tree; Python 3.12 remains the required release environment | adds registered commerce dispatch, missing-command failure, bounded normalization, sanitized holds, transactional materialization revalidation, and worker-loop survival/failure recording to native ETL and SEC-006 coverage |
-| Postgres/pgvector gate | pass through protected native-ETL post-merge CI `29255595803` for 19 migrations; 20-migration proof for this slice pending PR CI | migration 0020 additively admits the commerce job kind; pending protected assertions execute the exact gateway upsert under concurrent retry/drift/cross-owner cases and the worker success/corrupt-output transactions; the local Docker VM remains unhealthy and was not modified |
+| Postgres/pgvector gate | pass on protected queued-commerce post-merge CI `29260837182` for 20 migrations | migration 0020 additively admits the commerce job kind; the exact gateway upsert converges under concurrent retry, rejects drift, isolates owners, and the worker proves valid commit plus corrupt-output rollback; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
@@ -59,7 +58,7 @@ open.
 | SEC-005 data lifecycle | protected contract/fixture on `main` through PR #30 | six retention classes, holds/locks/causal order, tombstones, exact backup manifests, restore suppression, retry/lease recovery, populated/clean/idempotent 19-migration proof; live backup/DR remains OPS-005 |
 | SEC-006 application threats | protected contract/fixture complete on `main` through PR #31 | pinned-origin Auth.js/CSRF boundary, production config failure, header-only ephemeral provider key with persistence/reflection regression, bounded JSON/network/process/object/archive controls, prompt-injection containment, framework-visible plus classed rate limits, 32/32 local gate with 59/59 gateway and 104/104 workers, archive/published-release proof, exact-tree remote Postgres, CI/security, dependency, SBOM, CodeQL, and Desktop proof; deployed egress/distributed quotas/rotation/incident evidence remain operations work |
 | Native Anthropic catalog ETL | protected contract/fixture through PR #33 at `12b65d2` (D36), P3-004/P4-016 remain in progress | fixture and command precedence; fixed Messages endpoint/API/model; header-only deployment key; forced strict supported-subset envelope; bounded request/response/tool input; local identity/mass/confidence/license/price/citation validation; source/model/API provenance; no credentialed sandbox, live persistence, billing/recovery, or OCCT proof |
-| Queued vendor refresh | contract/fixture implementation on this tree, P11-005 remains in progress | explicit local-only queue path; owner-scoped request-bound idempotency; command required at enqueue and execution; bounded normalized output; second transactional validation before `vendor_offers`; no direct gateway live HTTP bypass, credentialed provider, deployed quota/monitoring/recovery, billing, or current-terms proof |
+| Queued vendor refresh | protected contract/fixture through PR #34 at `18f54fd`; P11-005 remains in progress | explicit local-only queue path; owner-scoped request-bound idempotency; command required at enqueue and execution; bounded normalized output; second transactional validation before `vendor_offers`; no direct gateway live HTTP bypass, credentialed provider, deployed quota/monitoring/recovery, billing, or current-terms proof |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -111,6 +110,15 @@ Live GitHub evidence checked on 2026-07-13:
   19-migration Postgres gate, workers, Rust, TypeScript/gateway, native Desktop,
   audits, source SPDX, and both CodeQL languages. This proves the bounded native ETL
   contract/fixture descendant, not a credentialed provider call;
+- queued commerce [PR #34](https://github.com/RNT56/TTC/pull/34) merged at
+  `18f54fd`; exact post-merge CI
+  [29260837182](https://github.com/RNT56/TTC/actions/runs/29260837182) and security
+  [29260833090](https://github.com/RNT56/TTC/actions/runs/29260833090) passed all 20
+  migrations, concurrent gateway retry/request-binding/owner-scope acceptance,
+  worker success/corrupt-output rollback, 115 worker tests, 61 gateway tests,
+  Brief-25 25/25, Rust, native Desktop, audits, source SPDX, and both CodeQL
+  languages. This proves the queue and transactional normalizer at contract/fixture
+  maturity, not a credentialed vendor operation;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -180,7 +188,7 @@ decision; none is a hidden release claim.
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
-| Commerce/printing | synchronous sandbox links plus locally verified queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | protected 20-migration proof, credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
+| Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
 | Desktop/hardware | fail-closed scaffold and pilot documents | signed apps, serial/capture, Link image, lab pilots, field logs |
 | Maintenance | deterministic wear/crash/repair/fleet contracts | Desktop-captured field evidence and operating fleet data |
 
@@ -203,9 +211,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
   real provider output through dedupe, immutable catalog persistence, owner review,
   BOM, and lawful export remains the P3-004/P4-016 R1 acceptance path;
 - queued vendor refresh now has one local-only, idempotent gateway-to-worker path and
-  transactionally revalidated offer materialization; protected 20-migration proof and
-  a real vendor sandbox with egress, quota, monitoring, recovery, billing, and terms
-  evidence remain P11-005 work;
+  transactionally revalidated offer materialization with protected 20-migration,
+  concurrency, and rollback proof; a real vendor sandbox with egress, quota,
+  monitoring, recovery, billing, and terms evidence remains P11-005 work;
 - external/live/field acceptance remains open; public support/v0.2 delivery and the
   standalone v0.1.0 release/supply-chain gate are closed.
 
