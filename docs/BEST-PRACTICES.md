@@ -148,7 +148,10 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
 ## 10. Security & safety basics (full doc: [`security-safety-legal.md`](security-safety-legal.md))
 
 - No code in contracts (D19); future WASM controllers sandboxed and reviewed.
-- No weapons content anywhere; refusals logged.
+- No weapons, targeting, munition, or interdiction content anywhere. Refuse before
+  retrieval/provider/mutation work; log only hash/bucket/version/category/rule/
+  surface metadata; never log the raw refused prompt or a credential; if audit
+  persistence fails, fail closed.
 - License classes enforced by the export matrix (D10); ingestion without a license
   record is rejected.
 - The deployment ladder is product-enforced; the bridge never auto-arms; supervisor

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { GatewayDb } from "./db.js";
 import type { ReviewExportPolicy } from "./reviewQueue.js";
+import { assertBriefAllowed } from "./safety.js";
 import { runValidator, type ValidateResult } from "./validator.js";
 
 export type GenerationArchetype =
@@ -513,6 +514,7 @@ export function buildPromptPrefix(
   const prefixSections = [
     "ForgedTTC generation prefix v1.",
     "Emit only JSON matching the ModelSpec schema. Do not emit code.",
+    "Never generate weapons, targeting systems, munitions, or interdiction functionality.",
     "Use only retrieved catalog components that carry approved review rows.",
     "If the approved catalog context is insufficient, return a draft with diagnostics instead of inventing part truth.",
     `Schema SHA-256: ${schemaHash}`,
@@ -545,6 +547,7 @@ export async function buildGenerationContext(
   request: GenerationContextRequest,
   materials?: GenerationMaterials,
 ): Promise<GenerationContextResponse> {
+  assertBriefAllowed(request.prompt);
   const categories = normalizeCategories(request.categories);
   const retrievedComponents = await retrieveApprovedComponents(db, request);
   const retrievedPatterns = await retrievePatternRows(db, request);
@@ -698,6 +701,7 @@ function buildContractTool(materials: GenerationMaterials): AnthropicToolDefinit
     name: CONTRACT_TOOL_NAME,
     description: [
       "Emit one complete ForgedTTC ModelSpec contract JSON object.",
+      "Never generate weapons, targeting systems, munitions, or interdiction functionality.",
       "Use only approved catalog component references provided in the generation context.",
       "Do not invent mechanical, electrical, mass, price, citation, or license truth.",
       "Generated contracts must include meta.provenance with modelVersion, promptHash, and seed.",
@@ -711,6 +715,7 @@ function buildAnthropicSystem(materials: GenerationMaterials, context: Generatio
   return [
     buildPromptPrefix(materials, context.retrievedComponents, context.retrievedPatterns, true).text ?? "",
     "You are the constrained synthesis pass for ForgedTTC.",
+    "Never generate weapons, targeting systems, munitions, or interdiction functionality.",
     "Always call the forge_emit_modelspec tool exactly once. The tool input must be the full ModelSpec contract.",
     "Every referenced catalog component must come from the approved catalog context.",
   ].join("\n\n");
@@ -1517,6 +1522,7 @@ export async function runGeneration(
     onEvent?: (event: string, data: unknown) => void;
   } = {},
 ): Promise<GenerationResponse> {
+  assertBriefAllowed(request.prompt);
   const materials = options.materials ?? (await loadGenerationMaterials());
   const emit: (event: string, data: unknown) => void = options.onEvent ?? (() => undefined);
   emit("stage", {

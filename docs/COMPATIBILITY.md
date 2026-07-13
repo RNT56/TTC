@@ -42,6 +42,13 @@ alternatives; set `equippedVariantId` explicitly, then rerun migration. Unselect
 alternatives never contribute parts, catalog refs, simulation values, BOM rows, or
 lockfile requirements.
 
+The `/v1` gateway API remains a pre-1.0 internal surface pending `DOC-005`. The v0.2
+gateway adds a structured HTTP 422 refusal with code `SAFETY_PROHIBITED_BRIEF` for
+locally prohibited generation-family inputs; successful response shapes are
+unchanged, and SSE emits the same safe body as an error event after a hash-only start
+event. Clients must not depend on refused prompt echoing or on fields outside the
+documented code/policy-version/category/refusal-ID response.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

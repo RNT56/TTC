@@ -35,6 +35,18 @@ direction are refused **and the refusal is logged**. The prototype's "combat" na
 flavor does not survive into the product — purge it during P0 translation (check
 naming in translated contracts).
 
+Implementation evidence (2026-07-13, `SEC-002`): a versioned deterministic guard now
+runs before retrieval/provider/mutation work on generation context, synchronous and
+streaming generation, course generation, and model edits; direct generation APIs
+also refuse independently. It records only a prompt hash and length bucket,
+policy/detector versions, category/rule IDs, surface, provider/archetype, optional
+owner, and timestamp in `generation_refusals`. The schema has no raw-prompt or
+credential column, responses do not echo content, stream starts expose only a hash,
+and audit-store failure prevents all downstream work. Provider instructions remain
+defense in depth, not the enforcement boundary. This proves the local/fixture and
+live-provider entry contract; production alerting, abuse-rate controls, policy review,
+and external adversarial evaluation remain `OPS-*`/`SEC-006` work.
+
 ## 3. Legal gates (entry conditions, not posture)
 
 | Gate | When | What must happen before the phase ships |
@@ -103,7 +115,10 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 - [x] Bridge/deployment surface → D30 accepted for controlled D12 lab pilots only;
       no auto-arm path; physical confirmation; supervisor
       authority preserved; D9 rates stated in UX copy
-- [ ] Generation surface → weapons-brief refusal path intact and logged (`SEC-002`)
+- [x] Generation surface → deterministic pre-retrieval/provider refusal on context,
+      generation/stream, course-generation, model-edit, and direct-library paths;
+      minimal non-content audit row; secret/prompt redaction; audit failure fail-closed
+      (`SEC-002`, 2026-07-13)
 - [ ] User content (photos/logs/models) → ownership, consent, export, retention, and deletion semantics honored (`SEC-003..005`)
 - [ ] Auth/provider/object/job surfaces → threat model, rate limits, negative tests, redaction, and credential rotation (`SEC-006`)
 - [ ] Policy sharing → current dual-use/export-control gate, per-policy signoff, moderation ownership, and external rollout decision (`SEC-007`)

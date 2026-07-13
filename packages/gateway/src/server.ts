@@ -68,6 +68,11 @@ import {
   type PlatformGateStatus,
 } from "./platform.js";
 import { objectStorageConfigFromEnv, presignObjectAccess } from "./objectStorage.js";
+import {
+  prohibitedBriefResponse,
+  refuseProhibitedBrief,
+  type ProhibitedBriefSurface,
+} from "./safety.js";
 import { runBake, runBom, runEnvSpec, runValidator, validatorBin } from "./validator.js";
 
 export interface ServerOptions {
@@ -275,6 +280,8 @@ function unavailable(error: unknown): { error: string; detail: string } {
 }
 
 function routeError(error: unknown): { statusCode: number; body: unknown } {
+  const safety = prohibitedBriefResponse(error);
+  if (safety) return safety;
   const mapped = validatorError(error);
   if (mapped) return mapped;
   return { statusCode: 503, body: unavailable(error) };
@@ -516,6 +523,7 @@ async function executeGeneration(
   request: FastifyRequest,
   options: ServerOptions,
   user: CurrentUser | null = null,
+  surface: Extract<ProhibitedBriefSurface, "generation" | "stream"> = "generation",
   onEvent?: (event: string, data: unknown) => void,
 ): Promise<Awaited<ReturnType<typeof runGeneration>>> {
   const generationRequest: GenerationRequest = {
@@ -523,6 +531,12 @@ async function executeGeneration(
     provider: (body.provider ?? "template") as GenerationProvider,
     anthropicApiKey: generationApiKeyHeader(request) ?? body.anthropicApiKey,
   };
+  await refuseProhibitedBrief(db, generationRequest.prompt, {
+    surface,
+    ownerUserId: user?.id ?? null,
+    provider: generationRequest.provider ?? null,
+    archetype: generationRequest.archetype ?? null,
+  });
   const result = await runGeneration(db, generationRequest, {
     materials: options.generationMaterials,
     adapter: options.generationAdapter,
@@ -693,10 +707,18 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         includePrefixText?: boolean;
       };
       try {
+        const user = await getCurrentUser(request, db);
+        await refuseProhibitedBrief(db, body.prompt, {
+          surface: "context",
+          ownerUserId: user?.id ?? null,
+          provider: null,
+          archetype: body.archetype ?? null,
+        });
         const context = await buildGenerationContext(db, body, options.generationMaterials);
         return reply.send(context);
       } catch (error) {
-        return reply.status(503).send(unavailable(error));
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
       }
     },
   );
@@ -714,7 +736,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       try {
         const body = request.body as GenerationRequest;
         const user = await getCurrentUser(request, db);
-        const result = await executeGeneration(db, body, request, options, user);
+        const result = await executeGeneration(db, body, request, options, user, "generation");
         return reply.status(result.verdict === "blocked" ? 409 : 200).send(result);
       } catch (error) {
         const mapped = routeError(error);
@@ -736,12 +758,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         connection: "keep-alive",
       });
       reply.raw.write(sse("start", {
-        prompt: body.prompt,
+        promptHash: sha256(body.prompt.trim()),
         provider: body.provider ?? "template",
       }));
       try {
         const user = await getCurrentUser(request, db);
-        const result = await executeGeneration(db, body, request, options, user, (event, data) => {
+        const result = await executeGeneration(db, body, request, options, user, "stream", (event, data) => {
           reply.raw.write(sse(event, data));
         });
         reply.raw.write(sse("complete", result));
@@ -836,6 +858,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const user = await requireUser(request, db);
         const { id } = request.params as { id: string };
         const { prompt } = request.body as { prompt: string };
+        await refuseProhibitedBrief(db, prompt, {
+          surface: "model-edit",
+          ownerUserId: user.id,
+          provider: "template",
+          archetype: null,
+        });
         const result = await editModel(db, user, id, prompt);
         return reply.send(result);
       } catch (error) {
@@ -1510,6 +1538,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       try {
         const user = await requireUser(request, db);
         const body = request.body as CourseGenerationBody;
+        await refuseProhibitedBrief(db, body.prompt, {
+          surface: "course-generation",
+          ownerUserId: user.id,
+          provider: body.provider ?? "template",
+          archetype: body.archetype ?? null,
+        });
         const envSpec = buildTemplateEnvSpec(body);
         const validation = await runEnvSpec(JSON.stringify(envSpec), false);
         if (validation.exitCode === -1 || validation.report === null) {

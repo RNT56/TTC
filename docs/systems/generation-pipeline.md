@@ -69,6 +69,37 @@ pins, approved-catalog context, owner scope when authenticated, and zero-cost us
 studio: intent parse, retrieval, skeleton/slot pass, part/detail pass,
 validation/repair pass, admission, and draft admission.
 
+### 2.1 Platform-exclusion refusal boundary (SEC-002)
+
+Weapons, targeting, munitions, and interdiction requests are rejected before any
+catalog/pattern retrieval, synthesis adapter, Anthropic transport, model mutation, or
+EnvSpec construction. The gateway applies the same logged guard to
+`/v1/generate/context`, `/v1/generate`, `/v1/generate/stream`,
+`/v1/models/:id/edit`, and `/v1/courses/generate`; `buildGenerationContext` and
+`runGeneration` also assert the policy directly so non-HTTP callers cannot bypass it.
+The model/tool system text repeats the exclusion, but provider behavior is defense in
+depth and can never turn a locally refused brief into an allowed one.
+
+The detector is deterministic and versioned. It normalizes Unicode and punctuation,
+recognizes spaced-letter evasion for prohibited terms, and emits only category and
+rule identifiers. Benign engineering phrases such as target waypoints, inspection
+cameras, and sorting arms are regression-tested to avoid broad keyword blocking.
+Changing its rules or normalization is a safety-policy change: update the detector
+version, tests, this contract, and the changelog together.
+
+Refusals are written to `generation_refusals` before execution with only:
+
+- prompt SHA-256 and a coarse length bucket;
+- policy and detector versions plus matched category/rule IDs;
+- entry surface, requested provider/archetype, optional owner, and timestamp.
+
+The raw refused prompt, request body, and provider credential have no table columns
+and never appear in the structured `SAFETY_PROHIBITED_BRIEF` response. Streaming
+starts with a prompt hash rather than prompt content. If the audit insert fails, the
+request fails closed and no provider or mutation runs. Migration `0015` is additive,
+requires no backfill, and is verified by the Postgres gate for both table presence
+and absence of raw-content/credential columns.
+
 ## 3. Conversational editing (P4-005)
 
 "Make the arms 20 % longer" / "swap to ducted props" compile to **JSON-Patch
@@ -142,7 +173,9 @@ Brief-25 (the centerpiece); generation context tests; adapter-fixture ingestion 
 must be repairable-or-surfaced — no diagnostic the orchestrator can't route);
 fuzz briefs (adversarial, dimensional extremes) with failures minimized into
 regression cases (XC-24); patch-editing round-trip tests; provenance completeness
-(PRV-001) on every admitted artifact.
+(PRV-001) on every admitted artifact; prohibited/safe brief classification,
+normalization evasion, direct-library defense, all guarded HTTP surfaces, provider
+non-invocation, audit failure, and prompt/key redaction (`SEC-002`).
 
 ## 10. Phase mapping & backlog
 

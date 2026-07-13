@@ -28,14 +28,14 @@ operational recovery, and field evidence remain incomplete.
 |---|---|---|
 | Git state | protected `main` at `781dac6` | GOV-007 compatibility PR #26 and G1 artifact-contract PR #27 are merged; no `v0.1.0` tag/release exists |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 31 required non-DB gates on the XC-28 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
-| `pnpm verify:compatibility` | pass: 7/7 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, and deprecation floor cannot drift from the machine matrix |
+| `pnpm verify` | pass: 31 required non-DB gates on the SEC-002 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify:compatibility` | pass: 8/8 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license-export boundary, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
-| Gateway tests | pass: 26/26 | includes direct oversized-part repair regression coverage |
-| Worker tests | pass: 89/89 | includes current and unsupported replay-format behavior |
-| Postgres/pgvector gate | pass | all 14 migrations, seed, and P3 invariants pass against the Compose service |
+| Gateway tests | pass: 32/32, no skips | includes direct oversized-part repair plus SEC-002 safe/prohibited, every-surface, provider non-invocation, redaction, and audit-failure coverage |
+| Worker tests | pass: 99/99 | includes current/unsupported replay formats and license-aware export enforcement |
+| Postgres/pgvector gate | pass | all 15 migrations, seed, P3/refusal-schema invariants, populated forward migration, clean install, and unchanged rerun pass against the Compose service |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
@@ -44,6 +44,7 @@ operational recovery, and field evidence remain incomplete.
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
 | G1 release workflow candidate | branch run and external download pass | run `29236010204` passed all native/WASM/aggregate jobs at `02f912d`; the aggregate then passed independent checksum, SPDX, macOS binary/example, and clean WASM-consumer verification; protected-main rerun/tag/Release remain |
 | XC-28 equipped variants | local v0.2 candidate; protected proof pending | ModelSpec 2.2 explicit selection, migration refusal for ambiguous legacy slots, selected-only physical consumers, stable source pointers, Studio cards, all 31 local gates, rebuilt WASM, and a real-browser switch/HUD proof pass on `codex/xc28-equipped-variants` |
+| SEC-002 prohibited briefs | local v0.2 candidate; protected proof pending | versioned pre-retrieval/provider/mutation refusal across five HTTP surfaces and direct APIs, bounded explicit-exclusion handling, minimal non-content audit rows, fail-closed storage, full 31-step and Postgres gates on `codex/sec002-prohibited-briefs` |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -96,9 +97,13 @@ Live GitHub evidence checked on 2026-07-13:
   [PR #27](https://github.com/RNT56/TTC/pull/27) are merged on protected `main` at
   `781dac6`; the first main release run exposed the macOS runner/profile bottleneck;
 - runner remediation [PR #29](https://github.com/RNT56/TTC/pull/29) selects
-  `macos-26-intel`, a 60-minute ceiling, and measured thin LTO. Its manual run
-  [29230415603](https://github.com/RNT56/TTC/actions/runs/29230415603) and required
-  CI/security checks are queued; GitHub reports no platform incident;
+  `macos-26-intel`, a 60-minute ceiling, and measured thin LTO. Run
+  [29230415603](https://github.com/RNT56/TTC/actions/runs/29230415603) proved every
+  platform build/smoke and all required CI/security checks, then found that Actions
+  transfer had removed the Linux execute bit before aggregate archiving. Fix
+  `02f912d` normalizes and verifies native modes and uses timestamp-free gzip;
+  corrected run [29236010204](https://github.com/RNT56/TTC/actions/runs/29236010204)
+  and refreshed PR checks are queued;
 - no `v0.1.0` tag or GitHub Release exists.
 
 Consequently G0 is **closed** and GOV-007 is protected-main complete. The remaining
@@ -114,7 +119,7 @@ surfaces.
 | Contract/validator/WASM | deterministic local implementation; ModelSpec 2.2 equipped semantics are locally proven | protected v0.2 delivery/publication, checksummed release, clean external install |
 | Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation plus D10 exporter enforcement | live ETL/review operations and live OCCT artifact audit |
-| Text generation | 25/25 deterministic template implementation plus opt-in provider seam | live model/extraction operation, refusal/logging, external R1 proof |
+| Text generation | 25/25 deterministic template implementation, opt-in provider seam, and locally proven SEC-002 refusal/audit boundary | live model/extraction operation, production monitoring/adversarial evaluation, user-content privacy, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | real Rapier, exporters/importers, pinned parity | live MuJoCo baseline and broader external model proof |
 | Training/policy | fixture scorecards and external command seams | real SB3/MuJoCo training and ONNX Runtime browser inference |
@@ -133,8 +138,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 - D10 export enforcement is locally implemented; real OCCT artifacts and provider
   operations still need sandbox/live evidence under P6/P11;
-- prohibited-brief refusal/logging and full user-content deletion are not implemented
-  (`SEC-002..005`);
+- prohibited-brief refusal/logging is locally implemented; user-scoped export,
+  deletion, consent, retention, and backup-lifecycle behavior remain open
+  (`SEC-003..005`);
 - release/supply-chain hardening and external/live/field acceptance remain open.
 
 ## 6. Go/no-go verdicts
@@ -146,7 +152,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
 | Publish validator v0.1 | **No-go** | branch artifact/download proof is green; protected-main rerun, annotated tag, GitHub Release, and post-publication download proof remain |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
-| Claim Text-to-CAD GA/product readiness | **No-go** | live provider, refusal/privacy, external-user and operational proof incomplete |
+| Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
 | Enable live provider billing | **No-go** | provider, recovery, cost, and privacy evidence incomplete |
 | Execute controlled D12 lab work | **Conditional go** | only under D30 gates and documented physical supervision |

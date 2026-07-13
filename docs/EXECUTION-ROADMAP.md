@@ -155,7 +155,8 @@ Work:
 - consume the delivered XC-28 equipped semantics in live catalog/retrieval flows;
 - retain the completed local license-export enforcement (`SEC-001`) and inspect its
   manifest/envelope proof against real OCCT artifacts in the provider sandbox;
-- implement prohibited-brief refusal/logging (`SEC-002`);
+- retain the completed local prohibited-brief refusal/minimal-audit boundary and add
+  production monitoring/adversarial evidence (`SEC-002`, `SEC-006`, `OPS-*`);
 - implement ownership/consent/export/deletion for user content (`SEC-003..005`);
 - finish executable BOM vendor integration enough for a sandbox handoff (`P11-005`);
 - execute `EXT-001`: independent builder acceptance.

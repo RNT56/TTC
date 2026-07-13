@@ -64,7 +64,11 @@ are local P11 tables; submissions store the exact validator report and determini
 grade object used by the production admission gate.
 
 Migrations: forward-only SQL in `infra/migrations`, run on deploy; schema changes
-reviewed like code.
+reviewed like code. A new change must be exercised on a clean database and a populated
+supported predecessor, then rerun to prove checksum/idempotency behavior. Back up
+before deploy, stop the application if a migration fails, inspect
+`schema_migrations`, and roll forward with corrected additive SQL; never edit an
+already-recorded migration checksum.
 
 Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
 filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,
@@ -96,10 +100,28 @@ diagnostics, the admitted/draft/rejected contract, the validator report, and the
 uses `text/event-stream` and emits start plus final complete/error events; per-pass
 slot/diagnostic streaming remains proposed for the richer studio UX.
 
+All generation-family entry points first apply the SEC-002 platform-exclusion guard.
+Refused briefs never reach retrieval, provider transport, model edit, or course
+construction. `generation_refusals` stores only hash/bucket/version/category/rule/
+surface/provider/archetype/owner metadata; there is deliberately no raw prompt or
+credential column. The write is part of the authority boundary: if it fails, the
+request returns unavailable and no downstream action runs. SSE start events expose a
+prompt hash rather than content.
+
 Generated-artifact persistence is in Postgres table `generated_artifacts`: prompt,
 provider, archetype/categories, seed, stable contract hash, prompt hash, final model
 ID, contract JSON, validator report, attempts, approved-catalog context, and D26
 model pins. Authenticated generation also creates a user-owned `model_registry` row.
+This allowed-generation history is distinct from the minimal refusal ledger; a
+prohibited request never creates a generated artifact.
+
+Migration `0015_generation_refusals.sql` is additive and has no backfill or object-
+storage impact. Expected storage is one small metadata row per refusal plus timestamp
+and owner indexes. Application rollback may stop writing new rows but must retain the
+audit table and its evidence; dropping or purging it requires an explicit privacy/
+legal retention decision and an export/backup first. A partially interrupted deploy
+is recovered by keeping the application stopped, restoring if the database itself is
+damaged, and rerunning the unchanged idempotent migration before traffic resumes.
 
 ## 5. Job queue taxonomy
 

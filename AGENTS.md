@@ -78,6 +78,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
   lockfile, BOM, WASM, and Studio;
+- the local v0.2 stack enforces D10 manufacturing-license policy and SEC-002
+  pre-retrieval/provider prohibited-brief refusal with non-content audit rows; both
+  still await protected delivery and do not prove live-provider operations;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
@@ -121,6 +124,22 @@ License-export boundary (D10/SEC-001):
 - external OCCT output is untrusted. It must prove the requested manifest hash and
   required attribution/restriction behavior; exporters retain only allowlisted
   metadata and policy-safe artifact references.
+
+Prohibited-brief boundary (SEC-002):
+
+- screen briefs before catalog/pattern retrieval, synthesis, provider transport,
+  course generation, or model editing. The guarded surfaces are context, generation,
+  streaming generation, course generation, and model edit; direct generation-library
+  callers retain an independent assertion;
+- the versioned deterministic detector is the admission boundary. Prompt instructions
+  and provider moderation are defense in depth and never override a local refusal;
+- refusal rows contain only the prompt SHA-256, length bucket, policy/detector
+  versions, matched categories/rule IDs, surface, requested provider/archetype, and
+  optional owner. Never persist or return the raw refused prompt or a provider key;
+- refusal auditing is fail-closed: if the metadata row cannot be written, no
+  retrieval, synthesis, provider, edit, or environment-generation action may run.
+  Rule changes require benign-language, adversarial-normalization, secret-redaction,
+  audit-failure, and every-surface regression tests.
 
 ## 5. Session protocol
 
@@ -205,8 +224,9 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 3. Never bypass or weaken the validator to make generated content pass.
 4. No code in contracts. Future user controllers require the reviewed sandbox path.
 5. No fast-math or unrecorded nondeterminism in the core.
-6. No weapons, targeting, munitions, or interdiction functionality. Refuse and log
-   prohibited briefs.
+6. No weapons, targeting, munitions, or interdiction functionality. Refuse before
+   retrieval/provider work and log only the minimal non-content audit record; an
+   audit-write failure must fail closed.
 7. Generated, trained, imported, exported, and deployed artifacts carry provenance.
 8. License/export policy is enforced in actual exporters, not only displayed.
 9. User photos, models, and telemetry require explicit ownership, consent, retention,

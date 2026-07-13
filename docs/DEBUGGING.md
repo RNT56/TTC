@@ -13,7 +13,7 @@ files until the failure is classified.
 | Gateway failure | build `forge-validate`, then `pnpm --filter @forge/gateway test` | request, response, spawned-validator stderr |
 | Studio failure | `pnpm --filter @forge/studio typecheck`; build; focused browser reproduction | URL/state, console error, screenshot only when visual |
 | Worker failure | `PYTHONPATH=workers python3 -m pytest workers/tests/<file> -q` | job kind, sanitized payload, deterministic output/error |
-| Database failure | `docker compose up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
+| Database failure | `docker compose -f infra/docker-compose.yml up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
 | Release failure | follow `docs/RELEASE.md`; inspect the exact job and downloaded aggregate | run ID, SHA, manifest, checksum, attestation |
 | Hardware failure | stop authority, disarm physically, preserve logs, follow D30/D12 runbook | rig ID, confirmation state, supervisor/FC events |
 

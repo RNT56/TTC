@@ -81,8 +81,11 @@ its signing, update, and Linux dependency gates are separate.
 - After a bad GitHub Release: mark it withdrawn, document the affected checksums,
   publish a patch version, and retain the audit trail. Do not silently overwrite an
   asset with the same name.
-- Validator v0.2.0 has no database migration. Rollback removes the binary/package and
-  restores v0.1.0. ModelSpec 2.2 migration is document-local: single-variant 2.1 slots
-  migrate deterministically, while multi-variant slots require an explicit equipped
-  choice. Persisted ModelSpec/replay/EnvSpec support remains governed by
+- Standalone validator v0.2.0 rollback removes the binary/package and restores
+  v0.1.0. ModelSpec 2.2 migration is document-local: single-variant 2.1 slots migrate
+  deterministically, while multi-variant slots require an explicit equipped choice.
+  A hosted gateway at this repository version also applies additive migration
+  `0015_generation_refusals.sql`; application rollback retains that audit table and
+  its rows unless an explicit retention/privacy decision authorizes an exported and
+  backed-up purge. Persisted ModelSpec/replay/EnvSpec support remains governed by
   [`COMPATIBILITY.md`](COMPATIBILITY.md).

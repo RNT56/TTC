@@ -72,6 +72,37 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Refuse prohibited briefs before execution
+**Session:** Codex agent · branch `codex/sec002-prohibited-briefs` · **Phase:** P4/P10 ·
+**TODO items:** SEC-002
+**Done:** Added a versioned deterministic platform-exclusion guard for weapons,
+targeting, munitions, and interdiction briefs before catalog/pattern retrieval,
+template or Anthropic synthesis, model edits, and course generation. The five HTTP
+surfaces log a minimal refusal record before execution; direct generation APIs also
+assert independently. Bounded explicit exclusions such as “no targeting modules”
+remain valid, while mixed/obfuscated requests remain refused. Responses and SSE
+events never echo the refused prompt or provider key, and audit-store failure prevents
+all downstream work.
+**Evidence:** `pnpm verify` passes all 31 local gates with 8 compatibility surfaces,
+32/32 gateway tests with the real validator and no skips, Brief-25 at 25/25, and
+99/99 worker tests. `pnpm verify:db` applies all 15 migrations to the populated
+Compose database; a clean scratch database passes migration/seed/invariants, and an
+unchanged rerun skips every checksum-pinned migration. Schema assertions prove that
+`generation_refusals` has no raw-prompt or credential columns. Focused tests cover
+benign robotics language, explicit safety exclusions, mixed and spaced/punctuated
+evasion, all guarded routes, direct calls, provider non-invocation, redaction, and
+audit failure.
+**Changed:** canonical agent/best-practice/compatibility/release guidance, gateway
+generation/server/safety code and tests, additive migration 0015 plus DB invariants,
+and the security, generation, data, roadmap, state, task, and v0.2 release documents.
+**Decisions:** none; implements the existing absolute platform exclusion without
+changing its scope.
+**Next:** implement `SEC-003` user-scoped export/deletion as the next dependency-
+complete privacy slice while the G1 v0.1 release proof and protected v0.2 delivery
+remain ordered ahead of publication.
+**Blockers:** no local SEC-002 blocker; protected delivery remains dependency-ordered
+behind the v0.1 release and the stacked XC-28/SEC-001 v0.2 work.
+
 ## 2026-07-13 — Enforce lawful manufacturing exports
 **Session:** Codex agent · branch `codex/sec001-license-exports` · **Phase:** P3/P11 ·
 **TODO items:** SEC-001, P11-008
