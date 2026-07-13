@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Close protected queue and upload fault acceptance
+**Session:** Codex agent · branch `codex/qa005-protected-evidence` · **Phase:** QA /
+worker and object reliability · **TODO items:** QA-005 [x]
+**Done:** Closed QA-005 through protected main. Exact implementation head `5663900`
+passed PR #46 CI `29291536114` and security `29291536115`, including the required
+Postgres data plane, dependency review/audit, source SPDX, native Desktop, workers,
+Rust, TypeScript/gateway, both CodeQL languages, and the aggregate check. The PR
+artifact bound source `5663900` to synthetic merge `99024b8` and passed both QA-005
+matrices. Protected squash `7970005` then passed post-merge CI `29292041469` and
+security `29292041441`. Its downloaded clean artifact binds source and checkout
+exactly to `7970005`, applies 21/21 clean migrations and all 20 populated
+predecessors, and proves crash reclaim, two-attempt one-time materialization,
+stale/cancelled-result discard, bounded outage recovery, terminal rate exhaustion
+with its 17 s hint, partial-upload refusal/retry, exact metadata completion, and
+verified consent/job success. The ledger is now 200 tasks: 136 done, 37 in progress,
+26 open, and 1 blocked.
+**Changed:** Canonical agent entry point; project-state evidence ledger; phase and
+execution roadmaps; QA-005 task status; changelog.
+**Decisions:** none; D38 remains active. Deterministic isolated-Postgres proof does
+not claim multi-replica queues, deployed object storage, provider incident recovery,
+shared quotas, dead-letter operations, production SLOs, or disaster recovery.
+**Next:** execute QA-007's dependency-complete fuzz/property/adversarial corpus while
+QA-006 real-hardware/provider performance and QA-009 production DR retain their
+separate prerequisites.
+**Blockers:** none for QA-005. Credentialed providers, qualified external
+participants, production operations, and controlled hardware remain prerequisites
+for their own roadmap lanes.
+
 ## 2026-07-13 — Fence compute attempts and verify client uploads
 **Session:** Codex agent · branch `codex/qa005-fault-acceptance` · **Phase:** QA /
 worker and object reliability · **TODO items:** QA-005 [~]

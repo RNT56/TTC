@@ -81,8 +81,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is QA-002 PR #38 at `c80accb`, with
-  CI `29272532186` and security `29272531705` green;
+  latest verified protected runtime descendant is QA-005 PR #46 at `7970005`, with
+  CI `29292041469` and security `29292041441` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -103,7 +103,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   requires a new append-only evidence record. QA-010 is protected through PR #40:
   its 34th step machine-checks external-acceptance policy across eight milestones.
   QA-004 is protected through PR #44, whose 35th step machine-checks the migration
-  runner policy;
+  runner policy. QA-005 is protected through PR #46; the same isolated-Postgres job
+  now proves its D38 queue and staged-upload recovery matrix;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -123,11 +124,14 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   all 19 populated predecessors, preservation/idempotency, failure recovery, history
   refusal, and concurrent apply-once behavior. Production backup/restore, capacity,
   and measured RPO/RTO remain OPS-005;
-- QA-005 is implementation-complete locally but remains in progress until exact
-  protected PR and post-merge evidence pass. D38/migration 0021 add expiring opaque
-  attempt leases, bounded retries, cancellation and stale-result fencing, stable fault
-  codes, and staged client objects that cannot be downloaded or authorize photoscan
-  until length, MIME type, and SHA-256 match the server-inspected object;
+- QA-005 is protected through PR #46 at `7970005`. Exact implementation head
+  `5663900`, PR CI `29291536114`/security `29291536115`, synthetic merge `99024b8`,
+  and post-merge CI `29292041469`/security `29292041441` are green. The clean
+  revision-bound artifact proves 21 migrations plus D38 crash reclaim, one-winner
+  materialization, bounded outage/rate retries, cancellation/stale-result refusal,
+  partial-upload recovery, and exact staged-upload completion. This is deterministic
+  isolated-Postgres maturity, not multi-replica, deployed object-provider, or SLO
+  evidence;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
