@@ -28,14 +28,15 @@ operational recovery, and field evidence remain incomplete.
 |---|---|---|
 | Git state | protected `main` at `781dac6` | GOV-007 compatibility PR #26 and G1 artifact-contract PR #27 are merged; no `v0.1.0` tag/release exists |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 31 required non-DB gates on the SEC-002 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
-| `pnpm verify:compatibility` | pass: 8/8 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license-export boundary, and deprecation floor cannot drift from the machine matrix |
+| `pnpm verify` | pass: 31 required non-DB gates on the SEC-003 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify:compatibility` | pass: 10/10 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/delete-receipt boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
-| Gateway tests | pass: 32/32, no skips | includes direct oversized-part repair plus SEC-002 safe/prohibited, every-surface, provider non-invocation, redaction, and audit-failure coverage |
+| Gateway tests | pass: 36/36, no skips | includes SEC-002 refusal and SEC-003 export/delete authorization, secret exclusion, complete purge, storage handoff/failure, and successful-route coverage |
 | Worker tests | pass: 99/99 | includes current/unsupported replay formats and license-aware export enforcement |
-| Postgres/pgvector gate | pass | all 15 migrations, seed, P3/refusal-schema invariants, populated forward migration, clean install, and unchanged rerun pass against the Compose service |
+| Postgres/pgvector gate | pass | all 15 migrations, seed, P3/refusal invariants, and a populated user fixture export/delete/zero-residue lifecycle pass; prior clean-install/idempotent proof remains current |
+| S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
@@ -45,6 +46,7 @@ operational recovery, and field evidence remain incomplete.
 | G1 release workflow candidate | branch run and external download pass | run `29236010204` passed all native/WASM/aggregate jobs at `02f912d`; the aggregate then passed independent checksum, SPDX, macOS binary/example, and clean WASM-consumer verification; protected-main rerun/tag/Release remain |
 | XC-28 equipped variants | local v0.2 candidate; protected proof pending | ModelSpec 2.2 explicit selection, migration refusal for ambiguous legacy slots, selected-only physical consumers, stable source pointers, Studio cards, all 31 local gates, rebuilt WASM, and a real-browser switch/HUD proof pass on `codex/xc28-equipped-variants` |
 | SEC-002 prohibited briefs | local v0.2 candidate; protected proof pending | versioned pre-retrieval/provider/mutation refusal across five HTTP surfaces and direct APIs, bounded explicit-exclusion handling, minimal non-content audit rows, fail-closed storage, full 31-step and Postgres gates on `codex/sec002-prohibited-briefs` |
+| SEC-003 user data | local v0.2 candidate; protected proof pending | user-data export 1.0.0, deletion receipt 1.0.0, explicit primary-row purge, secret exclusion, S3-compatible delete-before-commit, Postgres zero-residue and MinIO 404 proof on `codex/sec003-user-export-delete`; SEC-004/005 still own consent and backup lifecycle |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -138,9 +140,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 - D10 export enforcement is locally implemented; real OCCT artifacts and provider
   operations still need sandbox/live evidence under P6/P11;
-- prohibited-brief refusal/logging is locally implemented; user-scoped export,
-  deletion, consent, retention, and backup-lifecycle behavior remain open
-  (`SEC-003..005`);
+- prohibited-brief refusal/logging and user-scoped export/primary deletion are locally
+  implemented; consent/withdrawal, retention, legal holds, tombstones, and backup
+  deletion/restoration remain open (`SEC-004..005`);
 - release/supply-chain hardening and external/live/field acceptance remain open.
 
 ## 6. Go/no-go verdicts

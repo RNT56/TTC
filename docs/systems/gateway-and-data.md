@@ -1,8 +1,8 @@
 # Gateway & Data Plane — implementation doc
 
-**Status:** validation/BOM/review/generation/auth/model/share/job/platform APIs live · **Phases:** P2 (validation service), grows through P12 ·
+**Status:** validation/BOM/review/generation/auth/model/share/job/platform and primary user-data lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33
 
 ## 1. Purpose
 
@@ -28,7 +28,7 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 | Area | Routes | Phase |
 |---|---|---|
 | Validation | `POST /v1/validate` (contract → report); `POST /v1/bake`; `POST /v1/bom`; `GET /v1/schema` | P2/P3 |
-| Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits` | P4/P11 |
+| Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits`; `GET /v1/account/export`; exact-confirmation `DELETE /v1/account` | P4/P11 |
 | Registry: models | `GET/POST /v1/models`; `GET /v1/models/:id`; `POST /v1/models/:id/edit`; `POST /v1/models/:id/share`; `GET /v1/share/:shareId` (public read-only, D4) | P4 |
 | Generation | `POST /v1/generate/context`; `POST /v1/generate`; `POST /v1/generate/stream` (staged SSE); `GET /v1/generate/models` (D26 model pins) | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
@@ -84,6 +84,19 @@ Auth is pulled forward for P4/P11: Auth.js core runs under Fastify at `/auth/*`,
 using GitHub OAuth and the Auth.js Postgres adapter schema. Local deterministic
 tests and automation can opt into header auth with `FORGE_DEV_AUTH=1`; public share
 reads never require authentication.
+
+User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
+transaction and returns format 1.0.0 across every explicit owner-scoped table. It
+lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
+access/refresh/ID tokens, session and verification tokens, and provider keys.
+`DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
+user in a serializable transaction, removes user/derived rows explicitly rather than
+trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the
+bounded storage call succeeds (`FORGE_OBJECT_DELETE_TIMEOUT_MS`, default 15 seconds).
+Receipt 1.0.0 proves primary Postgres/object deletion only;
+SEC-005 owns legal holds, tombstones, retention and backup expiry/restore behavior.
+No migration is required for SEC-003; it operates against the existing ownership
+columns and adds an executable populated-database lifecycle gate.
 
 Generation operations consume only approved review rows with non-blocked export
 policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
@@ -161,7 +174,18 @@ Backups: Postgres snapshots + object-storage lifecycle rules *(proposed)*.
 Route schema round-trips (TypeBox gives this nearly free); admission-gate integration
 tests (invalid contract → 422 with diagnostics; draft semantics); share-URL
 anonymous-access test (P4 exit criterion); job idempotency tests; queue
-claim/fail-closed tests; poison-message handling.
+claim/fail-closed tests; poison-message handling. User-data changes additionally run:
+
+```bash
+pnpm verify:db
+docker compose -f infra/docker-compose.yml up -d minio
+pnpm --filter @forge/gateway test:object-storage
+```
+
+The first command builds the gateway, creates a complete owner fixture in populated
+Postgres, exports it, asserts credential redaction, deletes it, and checks zero
+primary residue. The object smoke uploads a unique payload through MinIO, invokes the
+production batch-deletion adapter, and requires a 404 afterward.
 
 ## 10. Open questions
 

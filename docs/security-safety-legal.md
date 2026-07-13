@@ -96,6 +96,18 @@ live provider artifact audit.
   geometry attribution without consent. Consent flags travel with the harvester
   (XC-13).
 
+Implementation evidence (2026-07-13, `SEC-003`): authenticated user-data export
+1.0.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+models/shares, photoscan records, object metadata and download endpoints, jobs,
+replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
+maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
+session/verification tokens, and provider keys are excluded. Exact-confirmation
+account deletion locks the owner, explicitly removes content that `SET NULL` would
+orphan, deletes S3-compatible payloads before commit, and returns a versioned receipt
+only after both stores succeed. Populated Postgres and MinIO upload/delete/404 proof
+pass locally. This is primary-store proof; consent withdrawal is SEC-004 and legal
+holds, tombstones, retention, and backup deletion/restoration are SEC-005.
+
 ## 6. Operating reality (what we tell users)
 
 The studio surfaces, but does not adjudicate, airspace and robotics rules — EU drone
@@ -119,7 +131,11 @@ not promise any policy is safe in the open world**, and the UX says so at every 
       generation/stream, course-generation, model-edit, and direct-library paths;
       minimal non-content audit row; secret/prompt redaction; audit failure fail-closed
       (`SEC-002`, 2026-07-13)
-- [ ] User content (photos/logs/models) → ownership, consent, export, retention, and deletion semantics honored (`SEC-003..005`)
+- [x] User content → owner-scoped versioned export, secret exclusion, explicit
+      primary-row purge, S3-compatible deletion, and storage-failure rollback
+      (`SEC-003`, 2026-07-13)
+- [ ] User content → explicit consent/withdrawal plus retention, legal-hold,
+      tombstone, backup-deletion, and restore semantics (`SEC-004..005`)
 - [ ] Auth/provider/object/job surfaces → threat model, rate limits, negative tests, redaction, and credential rotation (`SEC-006`)
 - [ ] Policy sharing → current dual-use/export-control gate, per-policy signoff, moderation ownership, and external rollout decision (`SEC-007`)
 - [ ] Desktop/Link release → signed artifacts, update rollback, pairing/revocation, and fault-injection evidence (`SEC-008`)

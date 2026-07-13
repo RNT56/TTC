@@ -158,6 +158,13 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
   authority is absolute (D9).
 - Photos: processing rights only; deletion on request; never training data without
   explicit opt-in. Telemetry logs belong to the user; sharing is per-log explicit.
+- User export enumerates every owner-scoped dataset from a repeatable snapshot and
+  excludes auth/session/verification/provider secrets. Blob payloads remain behind
+  authenticated per-object download contracts.
+- Primary account deletion is an explicit serializable purge, not a user-row cascade:
+  lock the owner, remove owned/derived rows, delete S3-compatible payloads before
+  commit, and roll back database changes if storage fails. A primary receipt never
+  claims that backups or legal holds have expired (D33/SEC-003..005).
 - Legal gates are entry conditions, not afterthoughts: ToS review before P8,
   dual-use check before P11 policy sharing.
 

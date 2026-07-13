@@ -72,6 +72,39 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Make user export and primary deletion complete
+**Session:** Codex agent · branch `codex/sec003-user-export-delete` · **Phase:** P4/P11 ·
+**TODO items:** SEC-003
+**Done:** Added authenticated user-data export format 1.0.0 across account metadata,
+generated artifacts, models/shares, object blobs/photoscan, jobs, replays, policies,
+courses/leaderboards, marketplace/classroom activity, telemetry/maintenance, quote
+requests, refusals, and pattern contributions. Export reads a repeatable snapshot,
+points binary payloads to authenticated blob-download routes, and excludes OAuth
+access/refresh/ID tokens, session/verification tokens, and provider keys.
+Exact-confirmation account deletion now locks the owner in a serializable transaction,
+explicitly purges rows that user deletion previously orphaned through `SET NULL`,
+batches S3-compatible payload deletion before commit, rolls back database changes on
+storage failure, and returns primary-only deletion receipt 1.0.0.
+**Evidence:** `pnpm verify` passes all 31 gates with 10 compatibility surfaces,
+36/36 gateway tests using the real validator with no skips, Brief-25 at 25/25, and
+99/99 worker tests. Expanded `pnpm verify:db` builds the gateway, exports a populated
+owner fixture, proves secret exclusion, deletes it, and finds zero named primary
+residue. `pnpm --filter @forge/gateway test:object-storage` uploads a unique MinIO
+object, exercises the production delete adapter, and requires a 404 afterward.
+**Changed:** gateway account-data/transaction/object-storage code and route tests;
+Postgres and MinIO acceptance scripts; compatibility matrix/checker; root
+`AGENTS.md`; D33; best-practice, security, gateway/platform, state, roadmap,
+execution, task, risk, release, and v0.2 release-note documentation.
+**Decisions:** D33 makes export and primary deletion explicit, versioned,
+secret-minimizing, and fail-closed, while reserving consent and backup lifecycle for
+SEC-004/005.
+**Next:** implement `SEC-004` consent/version/withdrawal records and enforcement on
+photoscan processing, telemetry sharing, pattern contribution, leaderboards, and
+training reuse, then close SEC-005 retention/hold/tombstone/backup proof.
+**Blockers:** no local SEC-003 blocker; protected v0.2 delivery remains ordered behind
+the queued G1 release proof and stacked XC-28/SEC-001/SEC-002 commits. A primary
+deletion receipt intentionally does not claim backup erasure.
+
 ## 2026-07-13 — Refuse prohibited briefs before execution
 **Session:** Codex agent · branch `codex/sec002-prohibited-briefs` · **Phase:** P4/P10 ·
 **TODO items:** SEC-002

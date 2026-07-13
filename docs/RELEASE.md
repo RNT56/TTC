@@ -87,5 +87,9 @@ its signing, update, and Linux dependency gates are separate.
   A hosted gateway at this repository version also applies additive migration
   `0015_generation_refusals.sql`; application rollback retains that audit table and
   its rows unless an explicit retention/privacy decision authorizes an exported and
-  backed-up purge. Persisted ModelSpec/replay/EnvSpec support remains governed by
+  backed-up purge. SEC-003 adds no migration: reverting the gateway removes the
+  account export/delete routes but cannot restore primary rows or objects already
+  deleted through them. A deletion receipt does not prove backup erasure; backup
+  retention/restore behavior remains blocked on SEC-005. Persisted
+  ModelSpec/replay/EnvSpec support remains governed by
   [`COMPATIBILITY.md`](COMPATIBILITY.md).

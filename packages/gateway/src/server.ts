@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { getCurrentUser, handleAuthRequest, requireUser, type CurrentUser } from "./auth.js";
+import { deleteUserData, exportUserData } from "./accountData.js";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import { recordGeneratedArtifact } from "./generatedArtifacts.js";
 import {
@@ -67,7 +68,12 @@ import {
   type PlatformGateKey,
   type PlatformGateStatus,
 } from "./platform.js";
-import { objectStorageConfigFromEnv, presignObjectAccess } from "./objectStorage.js";
+import {
+  deleteStoredObjects,
+  objectStorageConfigFromEnv,
+  presignObjectAccess,
+  type ObjectDeletionAdapter,
+} from "./objectStorage.js";
 import {
   prohibitedBriefResponse,
   refuseProhibitedBrief,
@@ -84,6 +90,7 @@ export interface ServerOptions {
   anthropicTransport?: AnthropicTransport;
   anthropicBaseUrl?: string;
   persistGeneratedArtifacts?: boolean;
+  deleteObjects?: ObjectDeletionAdapter;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -581,10 +588,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_request, body, done) => {
     done(null, body);
   });
-  const db = options.db ?? {
-    query: (text, params) => gatewayDb().query(text, params),
-  } satisfies GatewayDb;
+  const db = options.db ?? gatewayDb();
   const reviewToken = options.reviewToken ?? process.env.FORGE_REVIEW_TOKEN ?? null;
+  const deleteObjects =
+    options.deleteObjects ??
+    ((objects) => deleteStoredObjects(objectStorageConfigFromEnv(), objects));
 
   app.get("/healthz", async () => ({
     ok: true,
@@ -608,6 +616,43 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply.status(mapped.statusCode).send(mapped.body);
     }
   });
+
+  app.get("/v1/account/export", async (request, reply) => {
+    try {
+      const user = await requireUser(request, db);
+      const exported = await exportUserData(db, user);
+      reply.header(
+        "content-disposition",
+        `attachment; filename="forgedttc-user-data-${user.id.replace(/[^a-zA-Z0-9_-]/g, "_")}.json"`,
+      );
+      return reply.send(exported);
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.delete(
+    "/v1/account",
+    {
+      schema: {
+        body: Type.Object(
+          { confirmation: Type.Literal("DELETE MY ACCOUNT") },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const receipt = await deleteUserData(db, user, deleteObjects);
+        return reply.send({ receipt });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
 
   app.post(
     "/v1/validate",

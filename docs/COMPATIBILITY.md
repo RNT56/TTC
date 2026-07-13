@@ -25,6 +25,8 @@ package to adopt that same number.
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
+| user-data export | 1.0.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields are never part of the format | major 1 |
+| account-deletion receipt | 1.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; public families must gain an independent `schemaVersion` before external publication | current minor line |
 
 `forge-validate version --json` and the WASM `version()` export report the active
@@ -34,6 +36,14 @@ reads; replay producers emit `1.0.0`, while readers temporarily accept the histo
 `replay.v1` alias. Manufacturing exports carry a separately versioned license export
 manifest that binds every assembly asset to its ledger class, disposition,
 attribution/link-out evidence, and the derived assembly policy.
+
+`GET /v1/account/export` emits user-data export 1.0.0. It includes explicit
+owner-scoped database datasets plus authenticated per-blob download endpoints, but
+never OAuth access/refresh/ID tokens, session or verification tokens, or provider
+API keys. `DELETE /v1/account` emits deletion receipt 1.0.0 only after the primary
+database transaction and S3-compatible object deletion succeed. Its
+`backupLifecycle` field explicitly does not claim backup erasure; SEC-005 governs
+retention, holds, tombstones, backup expiration, and restoration tests.
 
 ModelSpec 2.2 adds `slots[].equippedVariantId`. For a 2.1 slot with exactly one
 alternative, `forge-validate migrate <file> --to current` records and equips that

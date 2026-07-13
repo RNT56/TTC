@@ -7,7 +7,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "verify": "node scripts/verify.mjs",
-    "verify:db": "pnpm db:migrate && pnpm db:seed-catalog && pnpm db:assert-p3",
+    "verify:db": "pnpm db:migrate && pnpm db:seed-catalog && pnpm db:assert-p3 && pnpm db:assert-user-data",
     "verify:desktop-native": "pnpm --filter @forge/desktop check:native",
     "verify:workflows": "node scripts/check-actions-pinned.mjs",
     "verify:compatibility": "node scripts/check-compatibility.mjs",
@@ -27,6 +27,7 @@
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:seed-catalog": "node scripts/db-seed-catalog.mjs",
     "db:assert-p3": "node scripts/db-assert-p3.mjs",
+    "db:assert-user-data": "pnpm --filter @forge/gateway build && node scripts/db-assert-user-data.mjs",
     "pilot:check": "node scripts/check-pilot-docs.mjs"
   },
   "devDependencies": {

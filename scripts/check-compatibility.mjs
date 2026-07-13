@@ -21,6 +21,12 @@ function manifestVersion(path) {
   return match[1];
 }
 
+function typescriptConstant(path, name) {
+  const match = read(path).match(new RegExp(`export const ${name}\\s*=\\s*"([^"]+)"`));
+  requireValue(match, `${path}: missing ${name}`);
+  return match[1];
+}
+
 requireValue(semver.test(matrix.policyVersion), "policyVersion must be SemVer");
 requireValue(semver.test(matrix.productVersion), "productVersion must be SemVer");
 
@@ -32,6 +38,8 @@ const required = [
   "replay",
   "envSpec",
   "licenseExportManifest",
+  "userDataExport",
+  "accountDeletionReceipt",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -58,6 +66,14 @@ const expected = {
   wasmFacade: workspaceVersion,
   replay: sourceConstant("crates/forge-sim/src/runtime.rs", "REPLAY_FORMAT_VERSION"),
   envSpec: sourceConstant("crates/forge-sim/src/runtime.rs", "ENVSPEC_SCHEMA_VERSION"),
+  userDataExport: typescriptConstant(
+    "packages/gateway/src/accountData.ts",
+    "USER_DATA_EXPORT_VERSION",
+  ),
+  accountDeletionReceipt: typescriptConstant(
+    "packages/gateway/src/accountData.ts",
+    "ACCOUNT_DELETION_RECEIPT_VERSION",
+  ),
   workerArtifacts: workerVersion,
 };
 

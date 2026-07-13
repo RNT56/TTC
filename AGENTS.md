@@ -35,7 +35,7 @@ Read in this order for every non-trivial session:
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
 8. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
-   EnvSpec, worker artifacts, or version numbers.
+   EnvSpec, exports/deletion receipts, worker artifacts, or version numbers.
 9. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
 10. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
@@ -72,7 +72,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
-- compatibility policy 1.0.0 is machine-checked across seven public format/package
+- compatibility policy 1.0.0 is machine-checked across ten public format/package
   boundaries; the CLI/WASM facades expose their active versions;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
@@ -81,6 +81,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the local v0.2 stack enforces D10 manufacturing-license policy and SEC-002
   pre-retrieval/provider prohibited-brief refusal with non-content audit rows; both
   still await protected delivery and do not prove live-provider operations;
+- SEC-003 locally proves versioned owner-scoped export plus primary Postgres and
+  S3-compatible deletion; consent/withdrawal, retention, legal holds, tombstones,
+  and backup lifecycle remain SEC-004/005 and are not implied by that receipt;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
@@ -140,6 +143,23 @@ Prohibited-brief boundary (SEC-002):
   retrieval, synthesis, provider, edit, or environment-generation action may run.
   Rule changes require benign-language, adversarial-normalization, secret-redaction,
   audit-failure, and every-surface regression tests.
+
+User-data lifecycle boundary (D33/SEC-003):
+
+- `GET /v1/account/export` is an authenticated repeatable-read snapshot. Keep its
+  format versioned, enumerate new owner-scoped tables explicitly, provide blob
+  download endpoints, and never include OAuth access/refresh/ID tokens, session or
+  verification tokens, or provider API keys;
+- `DELETE /v1/account` requires the exact confirmation phrase, a serializable owner
+  lock, explicit purge of every owned/derived row, and S3-compatible payload deletion
+  before commit. Do not rely on `ON DELETE SET NULL`, which anonymizes ownership but
+  leaves user content behind;
+- object deletion failure rolls the database transaction back. Test success,
+  authorization, malformed confirmation, secret exclusion, storage failure, a real
+  populated Postgres lifecycle, and an S3-compatible upload/delete/404 smoke;
+- a successful receipt proves primary database/object deletion only. Never claim
+  legal-hold, tombstone, retention-expiry, or backup deletion until SEC-005 has
+  executable restore/lifecycle evidence.
 
 ## 5. Session protocol
 
@@ -210,6 +230,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review |
+| User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
