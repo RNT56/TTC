@@ -110,6 +110,18 @@ Equipped-variant boundary (D32/XC-28):
 - flattened baked parts carry source JSON Pointers. Studio patches those pointers and
   preserves inspection state by source identity, not by unstable flattened index.
 
+License-export boundary (D10/SEC-001):
+
+- manufacturing export jobs require a complete license ledger record for every
+  assembly asset; missing, unknown, contradictory, or unsafe link evidence fails
+  before a provider runs;
+- `open` geometry may export in full, `attribution` geometry also requires the
+  versioned license manifest, and `no-redistribution`/`view-only` geometry is replaced
+  by a dimensioned envelope plus datum ports and an HTTPS BOM link-out;
+- external OCCT output is untrusted. It must prove the requested manifest hash and
+  required attribution/restriction behavior; exporters retain only allowlisted
+  metadata and policy-safe artifact references.
+
 ## 5. Session protocol
 
 1. Check `git status --short --branch`, current branch/worktree, recent commits, and

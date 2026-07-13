@@ -72,6 +72,32 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Enforce lawful manufacturing exports
+**Session:** Codex agent · branch `codex/sec001-license-exports` · **Phase:** P3/P11 ·
+**TODO items:** SEC-001, P11-008
+**Done:** Made D10 authoritative in the gateway fixture and Python worker export
+paths. Every assembly asset now requires compatible ledger evidence; the most
+restrictive asset derives the assembly policy; attribution binds a versioned 1.0
+manifest; and no-redistribution/view-only geometry becomes a dimensioned envelope
+with datum ports and an HTTPS BOM link-out instead of a printable artifact. External
+OCCT commands receive the manifest/hash, must prove attribution embedding or
+restricted-geometry exclusion, and can return only allowlisted metadata and safe
+artifact references.
+**Evidence:** `pnpm verify` passes all 31 local gates with 8 compatibility surfaces,
+27/27 gateway tests with the real validator and no skips, and 99/99 worker tests.
+Focused tests cover open/attribution/restricted and mixed assemblies, missing and
+contradictory ledger data, incomplete envelopes/datums, unsafe URLs, manifest proof
+mismatch, and an adversarial provider attempting to smuggle raw restricted geometry.
+**Changed:** canonical agent entry, compatibility matrix/checker, gateway license
+export fixture, worker license/export modules and tests, release notes, and owning
+catalog/compute/security/state/roadmap documentation.
+**Decisions:** none; implements active D10 and D31 without changing their meaning.
+**Next:** implement `SEC-002` prohibited-brief refusal and minimal safe logging while
+the dependency-ordered G1 v0.1 release proof remains queued.
+**Blockers:** protected delivery remains ordered behind G1/v0.1 and GitHub-hosted
+runner availability; live OCCT artifact inspection remains separate sandbox evidence,
+not a claim made by this deterministic/adapter slice.
+
 ## 2026-07-13 — Make equipped alternatives physically sovereign
 **Session:** Codex agent · branch `codex/xc28-equipped-variants` · **Phase:** P1/P3 ·
 **TODO items:** P1-014, XC-28, P2-001

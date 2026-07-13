@@ -31,6 +31,7 @@ const required = [
   "wasmFacade",
   "replay",
   "envSpec",
+  "licenseExportManifest",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -78,6 +79,18 @@ for (const [name, version] of [
     `worker ${name} does not match compatibility matrix`,
   );
 }
+requireValue(
+  workerContract.includes(
+    `LICENSE_EXPORT_MANIFEST_FORMAT_VERSION = "${matrix.surfaces.licenseExportManifest.current}"`,
+  ),
+  "worker license export manifest version does not match compatibility matrix",
+);
+requireValue(
+  read("packages/gateway/src/licenseExports.ts").includes(
+    `LICENSE_EXPORT_MANIFEST_FORMAT_VERSION = "${matrix.surfaces.licenseExportManifest.current}"`,
+  ),
+  "gateway license export manifest version does not match compatibility matrix",
+);
 
 const legacyReplay = sourceConstant(
   "crates/forge-sim/src/runtime.rs",

@@ -24,6 +24,7 @@ _REPO_RELATIVE = Path("schema") / "forge-modelspec.schema.json"
 WORKER_ARTIFACT_FORMAT_VERSION = "0.2.0"
 REPLAY_FORMAT_VERSION = "1.0.0"
 LEGACY_REPLAY_FORMAT_VERSION = "replay.v1"
+LICENSE_EXPORT_MANIFEST_FORMAT_VERSION = "1.0.0"
 
 
 def schema_path() -> Path:

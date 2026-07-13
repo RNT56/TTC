@@ -113,7 +113,7 @@ surfaces.
 |---|---|---|
 | Contract/validator/WASM | deterministic local implementation; ModelSpec 2.2 equipped semantics are locally proven | protected v0.2 delivery/publication, checksummed release, clean external install |
 | Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
-| Catalog/BOM/license ledger | fixture/local Postgres implementation | live ETL/review operations and actual exporter enforcement |
+| Catalog/BOM/license ledger | fixture/local Postgres implementation plus D10 exporter enforcement | live ETL/review operations and live OCCT artifact audit |
 | Text generation | 25/25 deterministic template implementation plus opt-in provider seam | live model/extraction operation, refusal/logging, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | real Rapier, exporters/importers, pinned parity | live MuJoCo baseline and broader external model proof |
@@ -131,8 +131,8 @@ The 2026-07-12 recovery reconciled stale claims about Rapier, driveable imports,
 draft persistence, arm support, qd-mini admission, Brief-25, test counts, verification
 commands, and the agent entry point. Remaining known gaps are now explicit backlog:
 
-- P11's license/export policy still lacks restricted-geometry envelope substitution
-  in actual exporters (`SEC-001`);
+- D10 export enforcement is locally implemented; real OCCT artifacts and provider
+  operations still need sandbox/live evidence under P6/P11;
 - prohibited-brief refusal/logging and full user-content deletion are not implemented
   (`SEC-002..005`);
 - release/supply-chain hardening and external/live/field acceptance remain open.

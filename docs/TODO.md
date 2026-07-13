@@ -190,7 +190,7 @@ Studio (TypeScript face):
 - [~] P11-005 — BOM agent: live vendor offers for catalog slots *(2026-06-15: `vendor_offers` tables/routes remain live and worker commerce normalization now gates `FORGE_VENDOR_REFRESH_CMD` output into priced, provenanced, rate-limited offers with invalid rows held; gateway wiring to the normalizer and real provider credentials remain open)*
 - [~] P11-006 — DfM + print ordering: oriented 3MF + profiles → print-service API (Craftcloud-class); printed-parts BOM section (= XC-18 DfM module dependency) *(2026-06-15: `occt.tessellate` now emits DfM report refs, oriented 3MF export refs, print profiles, quote-link-only handoff metadata, and printed-part BOM rows; worker commerce normalization blocks quotes without DfM-passing 3MF/profile artifacts and forces quote-link/off-platform checkout terms; gateway wiring, live provider quote submission, and true OCCT-generated orientation remain open)*
 - [x] P11-007 — UGC moderation policy live: report flow, takedown SLA, repeat-infringer rule *(2026-06-14: `moderation_reports`, 72-hour SLA target, repeat-infringer signal, gateway routes, and Studio report action live; legal/process ownership still outside code)*
-- [~] P11-008 — License-ledger API/UI is live, but exporter enforcement is incomplete: restricted geometry must actually degrade to dimensioned envelopes with attribution/link-out behavior in STEP/3MF/assembly exports. Track implementation and adversarial tests under `SEC-001`.
+- [x] P11-008 — License ledger and export enforcement *(2026-07-13: API/UI remain live; `SEC-001` adds a versioned attribution/assembly manifest, restricted envelope + datum + HTTPS link-out substitution, BOM fallback, external manifest-hash proof, and adversarial output filtering across gateway/worker export paths.)*
 - [x] P11-009 — Marketplace economics decided with usage data (OD-05); record in DECISIONS *(2026-06-14: D29 records usage-data beta, no seller payouts/revenue share/direct checkout at launch, credit cost-plus retained for GPU jobs)*
 
 ### P12 — Maintenance twin
@@ -289,7 +289,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 8. Security, privacy, safety, and legal completion (SEC)
 
-- [ ] SEC-001 — Enforce D10 in actual exporters: attribution manifests, restricted-mesh envelope substitution, link-outs, assembly policy derivation, and adversarial tests.
+- [x] SEC-001 — Enforce D10 in actual exporters: attribution manifests, restricted-mesh envelope substitution, link-outs, assembly policy derivation, and adversarial tests. *(2026-07-13: gateway/worker paths fail closed on missing/contradictory ledger evidence, derive the most restrictive assembly policy, govern license manifest 1.0, require restricted envelopes/datums/component/HTTPS link-outs, bind external OCCT proof to the manifest hash, and discard raw/unknown provider output; 31-step gate green.)*
 - [ ] SEC-002 — Implement prohibited weapons/targeting/munition/interdiction brief refusal and minimal safe refusal logging across deterministic and live generation paths.
 - [ ] SEC-003 — Implement user-scoped export and deletion for photos, models, generated artifacts, object blobs, telemetry, policies, courses, and account data.
 - [ ] SEC-004 — Implement explicit consent/version/withdrawal records for photoscan processing, telemetry sharing, pattern contribution, leaderboards, and training reuse.

@@ -153,7 +153,8 @@ Work:
 
 - finish live catalog ETL and review persistence (`P3-004`, `P4-016`);
 - consume the delivered XC-28 equipped semantics in live catalog/retrieval flows;
-- enforce license export substitution in real exporters (`SEC-001`);
+- retain the completed local license-export enforcement (`SEC-001`) and inspect its
+  manifest/envelope proof against real OCCT artifacts in the provider sandbox;
 - implement prohibited-brief refusal/logging (`SEC-002`);
 - implement ownership/consent/export/deletion for user content (`SEC-003..005`);
 - finish executable BOM vendor integration enough for a sandbox handoff (`P11-005`);

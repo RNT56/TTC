@@ -24,13 +24,16 @@ package to adopt that same number.
 | WASM facade | 0.2.0 | exported function signatures follow package SemVer; JSON payloads follow their own format versions | current minor line |
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
+| license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; public families must gain an independent `schemaVersion` before external publication | current minor line |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
 EnvSpecs now default a missing `schemaVersion` to `1.0.0` for backward-compatible
 reads; replay producers emit `1.0.0`, while readers temporarily accept the historical
-`replay.v1` alias.
+`replay.v1` alias. Manufacturing exports carry a separately versioned license export
+manifest that binds every assembly asset to its ledger class, disposition,
+attribution/link-out evidence, and the derived assembly policy.
 
 ModelSpec 2.2 adds `slots[].equippedVariantId`. For a 2.1 slot with exactly one
 alternative, `forge-validate migrate <file> --to current` records and equips that

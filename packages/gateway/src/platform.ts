@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { fixtureLicenseFilteredGeometry } from "./licenseExports.js";
 import type { CurrentUser } from "./auth.js";
 import type { GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
@@ -2210,12 +2211,7 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
         confidence: 0.82,
       };
     case "occt.tessellate":
-      return {
-        artifactKind: "geometry",
-        tessellated: true,
-        faces: 512,
-        cacheKey: `occt:${payloadHash}`,
-      };
+      return fixtureLicenseFilteredGeometry(payload, payloadHash);
   }
 }
 

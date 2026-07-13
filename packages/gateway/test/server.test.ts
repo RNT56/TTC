@@ -12,6 +12,7 @@ import {
   TemplateSynthesisAdapter,
 } from "../src/generation.js";
 import { buildServer } from "../src/server.js";
+import { fixtureLicenseFilteredGeometry } from "../src/licenseExports.js";
 import { validatorBin } from "../src/validator.js";
 
 const demoPath = join(process.cwd(), "..", "..", "examples", "vx2-mini.forge.json");
@@ -29,6 +30,39 @@ const generationMaterials: GenerationMaterials = {
     },
   ],
 };
+
+test("license-filtered geometry fixture requires ledger evidence and substitutes restricted assets", () => {
+  assert.throws(
+    () => fixtureLicenseFilteredGeometry({ assetRef: "obj://missing-license.step" }, "missing"),
+    /D10 license record/,
+  );
+
+  const result = fixtureLicenseFilteredGeometry(
+    {
+      assetRef: "obj://restricted.step",
+      componentId: "cmp_restricted",
+      license: {
+        id: "lic_restricted",
+        class: "no-redistribution",
+        terms: "view only",
+        sourceUrl: "https://example.com/restricted",
+        exportPolicy: "envelope-link-out",
+      },
+      envelopeMm: { widthMm: 30, heightMm: 20, lengthMm: 40 },
+      datumPorts: [{ id: "mount", type: "stack-20x20-M2", frame: [[0, 0, 0], [0, 0, 0]] }],
+    },
+    "restricted",
+  );
+  const exports = result.exports as Record<string, string>;
+  const licenseExport = result.licenseExport as Record<string, unknown>;
+  const print = result.print as Record<string, unknown>;
+  assert.match(exports.step, /envelope\.step$/);
+  assert.match(exports.threeMf, /envelope\.3mf$/);
+  assert.equal(licenseExport.schemaVersion, "1.0.0");
+  assert.equal(licenseExport.assemblyPolicy, "envelope-substitution");
+  assert.equal(print.readyForQuote, false);
+  assert.doesNotMatch(JSON.stringify(result), /source\.step/);
+});
 
 function parseJsonParam(value: unknown): unknown {
   return typeof value === "string" ? JSON.parse(value) : value;

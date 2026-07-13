@@ -61,6 +61,16 @@ meshes degrade to dimensioned envelopes that preserve fit while the BOM points a
 source. Implementation: export filter in the exporters keyed on the ledger
 ([`systems/component-database.md`](systems/component-database.md) §5; XC-17).
 
+Implementation evidence (2026-07-13, `SEC-001`): gateway fixture and Python worker
+exporters validate every asset, derive the assembly policy, bind the independently
+versioned license-export manifest, substitute restricted geometry with complete
+millimeter envelopes and datum ports, and emit source-link BOM rows instead of print
+artifacts. The external OCCT seam receives the manifest hash and fails closed unless
+it proves required attribution embedding/restricted-geometry exclusion; its output is
+allowlisted so raw restricted references and arbitrary provider fields cannot cross
+the boundary. This proves deterministic/adapter enforcement, not counsel review or a
+live provider artifact audit.
+
 ## 5. Privacy
 
 - **Local-first**: designs never leave the machine unless shared; server artifacts
@@ -88,7 +98,7 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 
 - [ ] New invariant → harness check with stable ID + doc update (`QA-007/008`)
 - [ ] Generated artifact path → provenance fields populated and validated
-- [~] Export path → license class/export policy consulted; ledger/UI exist, but actual restricted-geometry envelope substitution and attribution enforcement remain `SEC-001`
+- [x] Export path → license class/export policy consulted; versioned attribution manifest, assembly policy, restricted-envelope/datum/link-out substitution, external proof binding, and adversarial provider filtering are enforced (`SEC-001`, 2026-07-13)
 - [x] Catalog ingestion → per-field citations + license ledger entry + review queue
 - [x] Bridge/deployment surface → D30 accepted for controlled D12 lab pilots only;
       no auto-arm path; physical confirmation; supervisor

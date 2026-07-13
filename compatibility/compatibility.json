@@ -35,6 +35,11 @@
       "versionField": "schemaVersion",
       "documentVersionField": "version"
     },
+    "licenseExportManifest": {
+      "current": "1.0.0",
+      "supportedMajors": [1],
+      "versionField": "schemaVersion"
+    },
     "workerArtifacts": {
       "current": "0.2.0",
       "supportedMajors": [0],

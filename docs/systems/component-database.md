@@ -91,6 +91,15 @@ license classes, source terms, component counts, priced/cited row counts, review
 counts, blocked exports, and export-policy distribution. Studio renders the ledger
 in the platform panel so restricted/export-filtered catalog state is user-visible.
 
+Live 2026-07-13 (`SEC-001`): the deterministic gateway/worker export paths now refuse
+missing or contradictory ledger evidence and derive one assembly policy. Open assets
+retain full geometry; attribution assets bind a versioned 1.0 license-export manifest;
+restricted assets require a complete millimeter envelope, datum ports, component ID,
+and credential-free HTTPS source link, then emit only derived-LOD/envelope references
+and BOM link-outs. Command-backed OCCT output must return a proof bound to the exact
+manifest hash; unknown fields and raw restricted export references are discarded.
+This is fixture/adapter enforcement, not live-OCCT or legal-review evidence.
+
 ## 6. Lockfiles & upgrades (D5; P3-006, XC-03)
 
 `componentRef`s are semver ranges; each model's lockfile resolves to immutable

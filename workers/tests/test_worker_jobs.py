@@ -265,7 +265,16 @@ def test_geometry_and_codesign_outputs_are_deterministic():
         Job(
             id="j6",
             task="occt.tessellate",
-            payload={"assetRef": "obj://frame.step"},
+            payload={
+                "assetRef": "obj://frame.step",
+                "license": {
+                    "id": "lic_owner_open",
+                    "class": "open",
+                    "terms": "owner-authorized manufacturing export",
+                    "sourceUrl": "https://example.com/licenses/owner-open",
+                    "exportPolicy": "full-geometry-ok",
+                },
+            },
             idempotency_key="geo-1",
         )
     )
