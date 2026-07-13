@@ -18,6 +18,19 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Retry the visible account bootstrap in browser acceptance
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Hardened the production-preview harness against an observed transient boot
+race where the first account request failed while other panels initialized. The gate
+now retries only through Studio's visible, idempotent account refresh action and still
+requires the exact test identity before any accepted flow begins.
+**Changed:** Stable account-refresh selector and browser authentication bootstrap.
+**Decisions:** none; authorization semantics and test-header scope are unchanged.
+**Next:** rerun exact-head isolated Postgres/browser acceptance and inspect the next
+structured artifact.
+**Blockers:** none.
+
 ## 2026-07-13 — Bind catalog-aware reports to the browser contract
 **Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [~]

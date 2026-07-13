@@ -1689,7 +1689,7 @@ export default function App() {
                 GitHub
               </a>
             )}
-            <button onClick={() => void refreshAccount()} style={btn}>
+            <button data-testid="account-refresh" onClick={() => void refreshAccount()} style={btn}>
               refresh
             </button>
           </div>

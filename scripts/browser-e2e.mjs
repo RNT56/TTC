@@ -144,6 +144,28 @@ async function loadAdmittedDemo(activePage) {
   await waitForText(activePage.locator('[data-testid="validator-report"]'), /ADMITTED/);
 }
 
+async function ensureAuthenticated(activePage, email) {
+  const identity = activePage.locator('[data-testid="account-identity"]');
+  const refresh = activePage.locator('[data-testid="account-refresh"]');
+  await refresh.waitFor({ state: "visible", timeout: browserTimeoutMs });
+  const pattern = new RegExp(email);
+  let last = "";
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    last = (await identity.textContent().catch(() => null)) ?? "";
+    if (pattern.test(last)) return;
+    await refresh.click();
+    try {
+      await waitForText(identity, pattern, 5_000);
+      return;
+    } catch {
+      // Studio boot refreshes several independent server panels. Retry the
+      // visible, idempotent account action if that initial request loses a
+      // transient preview-proxy race.
+    }
+  }
+  throw new Error(`account did not authenticate after explicit refreshes; last text was ${JSON.stringify(last)}`);
+}
+
 function databaseIdentity(url) {
   const parsed = new URL(url);
   return { host: parsed.hostname, port: parsed.port || "5432", database: parsed.pathname.replace(/^\//, "") };
@@ -233,7 +255,7 @@ try {
   });
 
   await page.goto(`${studioOrigin}/`, { waitUntil: "domcontentloaded" });
-  await waitForText(page.locator('[data-testid="account-identity"]'), new RegExp(userEmail));
+  await ensureAuthenticated(page, userEmail);
   await loadAdmittedDemo(page);
   const wasmUrl = await waitForWasm(wasmUrls);
   evidence.realWasm = true;
@@ -299,7 +321,7 @@ try {
   // persisted model remains the draft. This lets the enabled share control reach
   // the server and prove that the server, not only the button state, refuses it.
   await page.reload({ waitUntil: "domcontentloaded" });
-  await waitForText(page.locator('[data-testid="account-identity"]'), new RegExp(userEmail));
+  await ensureAuthenticated(page, userEmail);
   await loadAdmittedDemo(page);
   await waitForOption(modelSelect, (option) => option.value === draftCandidate.value && /draft/i.test(option.text));
   await page.waitForFunction(
