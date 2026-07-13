@@ -18,6 +18,27 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Record protected external-acceptance governance
+**Session:** Codex agent · branch `codex/qa010-postmerge-evidence` · **Phase:** QA /
+external and field proof · **TODO items:** QA-010 [x]
+**Done:** Closed QA-010's evidence-governance kit through protected main. Exact PR
+head `74bae6e` passed CI `29275447135`, security `29275447237`, the required
+Postgres/real-browser job, dependency review/audit, source SPDX, native Desktop, both
+CodeQL languages, the new policy step, and 9/9 focused tests. Protected squash
+`8708de7` then passed post-merge CI `29275850838` and security `29275851177`,
+including all 34 policy/runtime steps. The task ledger now has 133 done, 37 in
+progress, 29 open, and 1 blocked.
+**Changed:** Canonical entry-agent boundary, project-state evidence ledger,
+phase/execution roadmaps, changelog, and QA-010 task status.
+**Decisions:** none; structural evidence governance does not grant participant,
+provider, spend, hardware, external-beta, or field authority and closes no `EXT-*`.
+**Next:** execute the protected builder runbook for EXT-001 with an independent
+participant while continuing the next dependency-complete local quality/operations
+lane separately.
+**Blockers:** EXT-001 requires a qualified independent participant; provider, print,
+course/platform, controlled-lab, and field milestones retain their named external
+authority and dependency gates.
+
 ## 2026-07-13 — Make external acceptance evidence executable
 **Session:** Codex agent · branch `codex/qa010-external-acceptance` · **Phase:** QA /
 external and field proof · **TODO items:** QA-010 [~], EXT-001..008

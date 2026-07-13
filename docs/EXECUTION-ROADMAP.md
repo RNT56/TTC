@@ -39,11 +39,12 @@ post-merge CI/security proof. Native Anthropic ETL and queued vendor normalizati
 exist at contract/fixture maturity through PRs #33/#34; docs-only evidence PR #35 is
 green at `4fe0df6`. QA-008 golden review is protected through PR #36 at `2589503`.
 QA-002 deterministic builder acceptance is protected through PR #38 at `c80accb`.
+QA-010 external-acceptance governance is protected through PR #40 at `8708de7`.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
-QA-010 -> EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is
-implemented and focused-policy green locally on this branch; protected delivery is
-still required before the actual EXT-001 run.
+EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
+the actual EXT-001 run still requires a qualified independent participant and frozen
+protected revision/environment.
 
 Current Wave 1/2 boundary:
 
@@ -58,11 +59,11 @@ Current Wave 1/2 boundary:
   post-merge evidence prove the production Studio bundle, real built WASM, downloaded
   validator, gateway, isolated Postgres, and all ten builder-loop flows through PR
   #38; this does not substitute for independent-user proof;
-- QA-010 now has a versioned registry, private run-pack generator, completed-manifest
+- QA-010 has a protected versioned registry, private run-pack generator, completed-manifest
   validator, milestone runbooks, and focused policy coverage across builder,
   photoscan, training, course, D30/D12 lab, print, marketplace, and maintenance. It
-  remains in progress until protected remote proof; the kit never substitutes for an
-  intended participant, real provider, controlled rig, or field event;
+  is closed through PR #40 at `8708de7`; the kit never substitutes for an intended
+  participant, real provider, controlled rig, or field event;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -201,8 +202,8 @@ Work:
   acceptance (`P11-005`);
 - retain closed QA-002 as the deterministic regression gate on every required
   data-plane run;
-- protect the completed QA-010 acceptance kit, then execute its builder script for
-  `EXT-001` with an independent participant who has no repository knowledge.
+- execute the protected QA-010 builder script for `EXT-001` with an independent
+  participant who has no repository knowledge.
 
 Acceptance:
 
