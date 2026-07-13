@@ -136,6 +136,14 @@ async function waitForWasm(urls, timeoutMs = browserTimeoutMs) {
   throw new Error("production Studio did not load a built WASM facade");
 }
 
+async function loadAdmittedDemo(activePage) {
+  // Let Studio's canonical default finish first so the explicit test selection
+  // cannot race its initial async bake/validation and be overwritten later.
+  await waitForText(activePage.locator('[data-testid="validator-report"]'), /forge-validate/i);
+  await activePage.locator('[data-testid="demo-model"]').selectOption("vx2-mini");
+  await waitForText(activePage.locator('[data-testid="validator-report"]'), /ADMITTED/);
+}
+
 function databaseIdentity(url) {
   const parsed = new URL(url);
   return { host: parsed.hostname, port: parsed.port || "5432", database: parsed.pathname.replace(/^\//, "") };
@@ -226,7 +234,7 @@ try {
 
   await page.goto(`${studioOrigin}/`, { waitUntil: "domcontentloaded" });
   await waitForText(page.locator('[data-testid="account-identity"]'), new RegExp(userEmail));
-  await waitForText(page.locator('[data-testid="validator-report"]'), /ADMITTED/);
+  await loadAdmittedDemo(page);
   const wasmUrl = await waitForWasm(wasmUrls);
   evidence.realWasm = true;
   evidence.wasmAsset = new URL(wasmUrl).pathname;
@@ -292,7 +300,7 @@ try {
   // the server and prove that the server, not only the button state, refuses it.
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForText(page.locator('[data-testid="account-identity"]'), new RegExp(userEmail));
-  await waitForText(page.locator('[data-testid="validator-report"]'), /ADMITTED/);
+  await loadAdmittedDemo(page);
   await waitForOption(modelSelect, (option) => option.value === draftCandidate.value && /draft/i.test(option.text));
   await page.waitForFunction(
     ({ selector, value }) => document.querySelector(selector)?.value === value,

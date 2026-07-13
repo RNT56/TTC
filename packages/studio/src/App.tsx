@@ -1580,6 +1580,7 @@ export default function App() {
       >
         <div style={{ color: "#8fa3bf", marginBottom: 6 }}>ForgedTTC STUDIO</div>
         <select
+          data-testid="demo-model"
           value={s.modelId}
           onChange={(e) => {
             s.setModelId(e.target.value);
