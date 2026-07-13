@@ -45,8 +45,10 @@ must remain attached to the exact workflow run.
 After QA-002, the same required job runs QA-003's separate production-bundle matrix
 in Chromium, Firefox, and WebKit. It must retain the default three-engine list,
 record the exact source revision and Studio/browser versions, exercise the real-WASM
-share/configurator keyboard journey, and fail on semantic, focus, contrast,
-target-size, responsive, reduced-motion, page-error, or support-tier drift. The
+share/configurator keyboard journey, prove Chromium's full WebGL path and Firefox/
+WebKit's positive Canvas2D drawing without scene/Three.js requests, and fail on
+semantic, focus, contrast, target-size, responsive, reduced-motion, page-error,
+renderer/asset, or support-tier drift. The
 uploaded `browser-acceptance-evidence` artifact contains both QA-002 and QA-003
 records; WebKit is a compatibility proxy, not an Apple-device claim. The policy and
 local commands are owned by [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md).

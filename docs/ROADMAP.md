@@ -39,9 +39,11 @@ change any `EXT-*`, live-provider, hardware, or field verdict by itself.
 
 QA-003 is now an active local candidate: Chromium, Firefox, and WebKit pass the
 production-bundle real-WASM viewer/configurator journey plus semantic, keyboard,
-focus, contrast, target-size, responsive, and reduced-motion acceptance. It remains
-in progress until protected exact-tree and post-merge evidence are green; the WebKit
-and mobile checks do not constitute Apple-device or external-user proof.
+focus, contrast, target-size, responsive, and reduced-motion acceptance. Chromium
+owns full WebGL; Firefox/WebKit draw the dependency-light core-baked schematic and
+prove the WebGL presentation chunks were not loaded. It remains in progress until
+protected exact-tree and post-merge evidence are green; the WebKit and mobile checks
+do not constitute Apple-device or external-user proof.
 
 | Phase | Status | Est. |
 |---|---|---|

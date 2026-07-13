@@ -27,7 +27,9 @@ monolith, shimmer gone, and 60 fps on mid hardware.
   ≤ 40/model). Pose matrices come from the core `tick`'s shared region,
   render-interpolated.
 - **WebGL2 baseline**, `WebGPURenderer` behind a flag (TSL gives the path without a
-  rewrite). Full studio targets the Chromium floor; viewer-grade elsewhere (D15).
+  rewrite). Full Studio targets the Chromium floor. Viewer-grade Firefox/WebKit use
+  the dependency-light Canvas2D projection of the same core-baked part centers and
+  do not load the Three.js/WebGL chunks (D15); this is presentation, never new truth.
 
 ## 3. Materials & lighting
 

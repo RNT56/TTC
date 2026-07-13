@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { StudioScene } from "./scene";
+import type { SceneController } from "./sceneController";
+import { ViewerScene } from "./viewerScene";
 import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass, Report } from "./types";
 import {
@@ -241,7 +242,7 @@ function detectBrowserSupport(): BrowserSupport {
   return {
     tier: "viewer-grade",
     surface: mobile ? "mobile" : "non-chromium",
-    summary: "viewer grade · view, orbit, equip, explode, blueprint, and local validation",
+    summary: "viewer grade · schematic view, orbit, equip, explode, blueprint, and local validation",
   };
 }
 
@@ -256,7 +257,7 @@ function readSessionValue(key: string): string {
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sceneRef = useRef<StudioScene | null>(null);
+  const sceneRef = useRef<SceneController | null>(null);
   const sessionRef = useRef<CoreSession | null>(null);
   /** long-lived bake handle — the patch → re-bake loop (P1-005/P1-014) */
   const bakeRef = useRef<CoreBake | null>(null);
@@ -784,14 +785,20 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    let disposed = false;
+    let cleanup: (() => void) | null = null;
+    void (async () => {
     const browserSupport = detectBrowserSupport();
-    const initialTier = browserSupport.tier === "viewer-grade" ? "low" : "high";
-    const scene = new StudioScene(canvas, initialTier);
-    // Viewer-grade engines intentionally start on the deterministic low tier.
-    // This avoids asking software-rendered WebGL implementations to compile the
-    // N8AO pipeline before the accessible share/view/configure surface is usable.
-    // Users may still opt into a higher tier; validator and bake truth are
-    // unchanged because quality only affects presentation.
+    const scene: SceneController = browserSupport.tier === "viewer-grade"
+      ? new ViewerScene(canvas)
+      : new (await import("./scene")).StudioScene(canvas, "high");
+    if (disposed) {
+      scene.dispose();
+      return;
+    }
+    // Viewer-grade engines intentionally use the dependency-light Canvas2D
+    // schematic. The full Three.js/WebGL bundle is loaded only for full Studio;
+    // contract, bake, simulation, and validator truth are unchanged.
     if (browserSupport.tier === "viewer-grade") {
       useStudio.getState().setTier("low");
     }
@@ -942,7 +949,7 @@ export default function App() {
       loaded: () => Boolean(useStudio.getState().artifact),
     };
 
-    return () => {
+    cleanup = () => {
       window.removeEventListener("resize", onResize);
       sessionRef.current?.dispose();
       sessionRef.current = null;
@@ -950,6 +957,11 @@ export default function App() {
       bakeRef.current = null;
       scene.dispose();
       sceneRef.current = null;
+    };
+    })();
+    return () => {
+      disposed = true;
+      cleanup?.();
     };
   }, [loadDemo]);
 
@@ -1701,8 +1713,11 @@ export default function App() {
       <canvas
         ref={canvasRef}
         data-testid="studio-viewer"
+        data-renderer={browserSupport.tier === "viewer-grade" ? "schematic-2d" : "webgl"}
         role="region"
-        aria-roledescription="interactive 3D robot viewer"
+        aria-roledescription={browserSupport.tier === "viewer-grade"
+          ? "interactive robot schematic"
+          : "interactive 3D robot viewer"}
         aria-label="Interactive robot assembly viewer"
         aria-describedby="viewer-keyboard-help"
         tabIndex={0}
@@ -1907,6 +1922,7 @@ export default function App() {
           quality{" "}
           <select
             value={s.tier}
+            disabled={browserSupport.tier === "viewer-grade"}
             onChange={(e) => {
               const t = e.target.value as "high" | "medium" | "low";
               s.setTier(t);

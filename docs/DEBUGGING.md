@@ -37,8 +37,10 @@ files until the failure is classified.
   and records only bounded service-log tails on failure.
 - A focused QA-003 engine run is diagnostic only. Closure requires the unmodified
   Chromium, Firefox, and WebKit list, and WebKit remains a Safari compatibility proxy
-  rather than Apple-device proof. Follow [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md)
-  before changing tiers or tolerances.
+  rather than Apple-device proof. Firefox/WebKit must keep positive schematic draw
+  counts and no dynamic scene/Three.js requests; a blank semantic shell is not a
+  pass. Follow [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md) before changing tiers or
+  tolerances.
 - External acceptance failures are retained as `failed` or `stopped`; never change
   the revision, environment, participant, authority, criterion, or threshold in place
   to obtain a pass. Start a new linked run, keep private/raw evidence outside Git, and

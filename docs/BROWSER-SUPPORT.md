@@ -16,8 +16,8 @@ Desktop native gate, or external-user acceptance.
 | Surface | Supported tier | Automated evidence | Boundary |
 |---|---|---|---|
 | Cross-origin-isolated desktop Chromium family | **Full Studio** | Playwright Chromium runs the production bundle, real WASM, shared viewer/configurator journey, responsive proxy, and reduced-motion proxy | QA-002 separately owns the authenticated gateway/Postgres builder loop; current Chrome, Edge, and Chromium are a shared engine policy, not three separately certified products |
-| Desktop Firefox | **Viewer grade** | Playwright Firefox runs the production bundle, real WASM, local validation, share open, orbit, equipped-variant change, explode, blueprint, semantics, focus, contrast, and target-size assertions | platform/provider panes beyond that journey are best effort until separately accepted |
-| Desktop Safari/WebKit | **Viewer grade** | Playwright WebKit runs the same viewer-grade journey | the CI engine is a WebKit compatibility proxy, not proof on Apple Safari, macOS hardware, or iOS |
+| Desktop Firefox | **Viewer grade** | Playwright Firefox runs the production bundle, real WASM, local validation, a core-baked Canvas2D schematic, share open, orbit, equipped-variant change, explode, blueprint, semantics, focus, contrast, and target-size assertions without loading the WebGL bundles | hosted/provider panes and full 3D rendering are outside this tier until separately accepted |
+| Desktop Safari/WebKit | **Viewer grade** | Playwright WebKit runs the same dependency-light viewer-grade journey without loading the WebGL bundles | the CI engine is a WebKit compatibility proxy, not proof on Apple Safari, macOS hardware, or iOS |
 | Mobile browsers | **Viewer grade declaration** | Chromium at 390 x 844 proves narrow-layout containment; runtime detection declares mobile viewer grade | no touch-device, mobile-browser-vendor, screen-reader, thermal, or field proof exists yet |
 | FORGE Desktop/Tauri | **Full Studio power surface** | platform-neutral Desktop tests plus the required native macOS compile | native signing, updater, three-OS distribution, serial hardware, and lab proof remain P8/SEC-008 work |
 
@@ -30,11 +30,12 @@ Full Studio means the isolated desktop Chromium/Tauri execution surface is eligi
 for the repository's complete product gates. Viewer grade is a smaller support
 promise: the admitted share/view/configure path above must work with the local WASM
 validator, while unlisted hosted or hardware workflows may work but are not part of
-that browser's acceptance contract. Viewer-grade engines start on the low visual
-quality tier (AO off and device-pixel ratio 1) so software-rendered WebGL cannot
-block the accessible viewer surface. The advanced AO pipeline is created lazily only
-if the user opts into a higher presentation tier. This does not change contract,
-bake, simulation, or validator truth.
+that browser's acceptance contract. Viewer-grade engines use a dependency-light
+Canvas2D schematic projected from the core-baked part centers. They stay on the low
+quality tier and do not request the dynamic Three.js/WebGL scene chunks, so software
+WebGL cannot block the accessible viewer surface. Orbit, explode, blueprint,
+selection, and equipped-variant revalidation operate on that schematic. This changes
+presentation only; contract, bake, simulation, and validator truth remain identical.
 
 ## 2. Accessibility and interaction contract
 
@@ -86,9 +87,9 @@ bundle. It starts an isolated preview, opens one compressed admitted contract pe
 engine, requires the hashed WASM asset and validator admission, exercises the shared
 journey, and writes `artifacts/e2e/qa003-browser-support.json`. The evidence records
 the source and checkout revisions and whether the local worktree was dirty, Studio
-version, engine/version, capability tier, selected/scene quality and
-advanced-pipeline state, WASM asset, semantics, keyboard results, critical target
-dimensions, contrast ratios, and
+version, engine/version, capability tier, selected/scene quality, renderer kind,
+advanced-pipeline state, requested presentation assets, draw statistics, WASM asset,
+semantics, keyboard results, critical target dimensions, contrast ratios, and
 Chromium-only responsive/reduced-motion results. A failed engine writes a bounded
 error plus a full-page screenshot when one is available.
 
@@ -113,10 +114,10 @@ external-acceptance procedure and preserve its limitations explicitly.
   placeholders, depend on color alone, or trap keyboard focus in the viewer.
 - Preserve viewer-grade operation when `SharedArrayBuffer` or cross-origin isolation
   is unavailable. The local `CoreSession` fallback is intentional and fail-visible.
-- Keep viewer-grade engines usable under software-rendered WebGL: start low with AO
-  disabled, do not initialize the advanced pipeline before the accessible viewer is
-  usable, prove that tier in the matrix, and treat optional visual quality as a
-  presentation choice rather than a prerequisite for validation or configuration.
+- Keep viewer-grade engines independent of software WebGL: use the core-baked
+  Canvas2D schematic, keep quality fixed low, prove non-loading of scene/Three.js
+  chunks plus positive draw statistics in the matrix, and never let optional 3D
+  presentation become a prerequisite for validation or configuration.
 - Reproduce failures at the exact revision and engine version from the evidence
   file. Attach the bounded evidence/screenshot; do not treat a single-engine rerun as
   proof that the complete matrix passed.

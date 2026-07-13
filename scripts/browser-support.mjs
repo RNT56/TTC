@@ -136,10 +136,14 @@ function rgb(value) {
 async function inspectPage(page, engine, origin) {
   const pageErrors = [];
   const wasmUrls = [];
+  const presentationAssets = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("response", (response) => {
     if (/\/forge_wasm_bg-[^/]+\.wasm(?:\?|$)/.test(response.url()) && response.status() === 200) {
       wasmUrls.push(response.url());
+    }
+    if (/\/assets\/(?:scene|three)-[^/]+\.js(?:\?|$)/.test(response.url()) && response.status() === 200) {
+      presentationAssets.push(new URL(response.url()).pathname);
     }
   });
   await page.goto(`${origin}/#${shareFragment()}`, {
@@ -167,9 +171,18 @@ async function inspectPage(page, engine, origin) {
   );
   assert.deepEqual(sceneQuality, {
     tier: engine === "chromium" ? "high" : "low",
+    renderer: engine === "chromium" ? "webgl" : "schematic-2d",
     advancedEffectsInitialized: engine === "chromium",
   });
   const quality = { selected: selectedQuality, ...sceneQuality };
+  if (engine === "chromium") {
+    assert.ok(presentationAssets.some((asset) => /\/scene-/.test(asset)));
+    assert.ok(presentationAssets.some((asset) => /\/three-/.test(asset)));
+  } else {
+    assert.deepEqual(presentationAssets, [], `${engine}: viewer grade must not load WebGL presentation bundles`);
+  }
+  const renderStats = await page.evaluate(() => window.__forgeParity.stats());
+  assert.ok(renderStats.drawCalls > 0, `${engine}: admitted artifact was not presented`);
 
   const semantics = await page.evaluate(() => {
     const visible = (element) => {
@@ -220,6 +233,7 @@ async function inspectPage(page, engine, origin) {
           ? {
               label: canvas.getAttribute("aria-label"),
               describedBy: canvas.getAttribute("aria-describedby"),
+              renderer: canvas.getAttribute("data-renderer"),
               tabIndex: canvas.tabIndex,
             }
           : null;
@@ -234,6 +248,7 @@ async function inspectPage(page, engine, origin) {
   assert.deepEqual(semantics.canvas, {
     label: "Interactive robot assembly viewer",
     describedBy: "viewer-keyboard-help",
+    renderer: engine === "chromium" ? "webgl" : "schematic-2d",
     tabIndex: 0,
   });
 
@@ -317,6 +332,8 @@ async function inspectPage(page, engine, origin) {
   return {
     support,
     quality,
+    presentationAssets,
+    renderStats,
     wasmUrl: new URL(wasmUrls[0]).pathname,
     semantics,
     skipLink,

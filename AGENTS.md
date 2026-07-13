@@ -107,8 +107,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   deterministic product acceptance, not live-provider or external-user proof;
 - QA-003 is an active candidate: the production share/configurator journey passes
   locally in Chromium, Firefox, and WebKit with real WASM plus semantic, keyboard,
-  focus, contrast, target-size, responsive, and reduced-motion assertions. This is
-  not protected or complete until exact PR and post-merge evidence is reconciled;
+  focus, contrast, target-size, responsive, and reduced-motion assertions. Chromium
+  loads the full WebGL scene; Firefox/WebKit prove the dependency-light core-baked
+  Canvas2D schematic without loading Three.js/WebGL. This is not protected or
+  complete until exact PR and post-merge evidence is reconciled;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,

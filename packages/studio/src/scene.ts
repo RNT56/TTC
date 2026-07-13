@@ -16,17 +16,16 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { N8AOPass } from "n8ao";
 import { classMaterialFor } from "./materials";
 import type { BakeArtifact, BakedPart, MaterialClass } from "./types";
+import type {
+  CameraPose,
+  PartPick,
+  QualityTier,
+  SceneController,
+  SceneQualityState,
+} from "./sceneController";
 
 /** XC-22 quality ladder (P1-016): what each tier turns on. */
-export type QualityTier = "high" | "medium" | "low";
-
-export interface PartPick {
-  partIndex: number;
-  sourcePath: string;
-  node: string;
-  material: string;
-  color: string;
-}
+export type { PartPick, QualityTier } from "./sceneController";
 
 interface PartHandle {
   batch: THREE.BatchedMesh;
@@ -88,7 +87,7 @@ const EDGE_FRAG = /* glsl */ `
   }
 `;
 
-export class StudioScene {
+export class StudioScene implements SceneController {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera: THREE.PerspectiveCamera;
@@ -264,9 +263,10 @@ export class StudioScene {
     return this.tier;
   }
 
-  qualityState(): { tier: QualityTier; advancedEffectsInitialized: boolean } {
+  qualityState(): SceneQualityState {
     return {
       tier: this.tier,
+      renderer: "webgl",
       advancedEffectsInitialized: this.composer !== null && this.aoPass !== null,
     };
   }
@@ -464,13 +464,7 @@ export class StudioScene {
   /** Pin the camera exactly — parity gallery & tests (P1-015). Same orbit
    * convention as the monolith: eye = target + dist·(cos el·sin yaw, sin el,
    * cos el·cos yaw), Y-up. Disables damping so the pose holds. */
-  setCameraPose(p: {
-    yaw: number;
-    el: number;
-    dist: number;
-    target: [number, number, number];
-    fovDeg?: number;
-  }): void {
+  setCameraPose(p: CameraPose): void {
     const ce = Math.cos(p.el);
     this.controls.target.set(p.target[0], p.target[1], p.target[2]);
     this.camera.position.set(

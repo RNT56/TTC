@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Separate viewer grade from WebGL
+**Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [~]
+**Done:** Protected run `29281411617` disproved N8AO as the sole Firefox blocker:
+QA-002 and all ten other checks passed, while Firefox again stalled before paint at
+the remaining synchronous WebGL renderer boundary. Added a dependency-light
+Canvas2D viewer scene that projects core-baked part centers, preserves orbit,
+explode, blueprint, selection, equipped-variant rebuild/revalidation, picking, and
+live pose consumption without creating a second source of physical truth. Full
+Studio dynamically loads Three.js/WebGL only on the Chromium/Tauri tier; Firefox and
+WebKit remain fixed-low viewer grade and do not request those chunks. The local
+three-engine matrix now asserts renderer identity, presentation-asset isolation, and
+positive draw counts in addition to the existing real-WASM, semantic, keyboard,
+focus, contrast, target, responsive, and reduced-motion contract. All 34 required
+non-database repository gates pass on the synchronized tree, including 61 gateway
+tests, Brief-25 25/25, native/fresh-WASM parity, 115 worker tests, release packaging,
+and patch hygiene.
+**Changed:** Scene-controller boundary; Canvas2D schematic renderer; dynamic full-
+Studio scene loading; browser evidence; agent entry point; current-state, roadmap,
+TODO, execution, system, governance, debugging, risk, README, and support guidance.
+**Decisions:** none; this implements D15's declared viewer-grade distinction
+honestly. Canvas2D presentation is not full 3D and never changes core truth.
+**Next:** publish the corrected head and require a new protected PR run with exact
+passing evidence.
+**Blockers:** none.
+
 ## 2026-07-13 — Defer advanced rendering on viewer-grade engines
 **Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
 Studio support · **TODO items:** QA-003 [~]

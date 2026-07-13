@@ -41,7 +41,9 @@ green at `4fe0df6`. QA-008 golden review is protected through PR #36 at `2589503
 QA-002 deterministic builder acceptance is protected through PR #38 at `c80accb`.
 QA-010 external-acceptance governance is protected through PR #40 at `8708de7`.
 QA-003's production-bundle Chromium/Firefox/WebKit accessibility and viewer-grade
-candidate passes locally but has no protected evidence anchor yet.
+candidate passes locally: Chromium uses full WebGL, while Firefox/WebKit draw the
+core-baked Canvas2D schematic without loading scene/Three.js chunks. It has no
+protected evidence anchor yet.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is complete;
@@ -69,7 +71,9 @@ Current Wave 1/2 boundary:
 - QA-003 locally proves the real-WASM share/configurator journey across Chromium,
   Firefox, and WebKit, including semantic names, skip/focus behavior, keyboard
   orbit/equip/explode/blueprint, contrast, target size, responsive containment, and
-  reduced motion. Required PR/post-merge evidence and task closeout remain pending;
+  reduced motion. Full WebGL is Chromium-only; Firefox/WebKit prove positive
+  schematic drawing and absence of WebGL presentation chunks. Required PR/post-merge
+  evidence and task closeout remain pending;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -209,7 +213,8 @@ Work:
 - retain closed QA-002 as the deterministic regression gate on every required
   data-plane run;
 - protect QA-003's three-engine accessibility/viewer-grade matrix without treating
-  WebKit or a narrow viewport as Apple-device, screen-reader, or mobile field proof;
+  its Canvas2D fallback as full 3D, or WebKit/a narrow viewport as Apple-device,
+  screen-reader, or mobile field proof;
 - execute the protected QA-010 builder script for `EXT-001` with an independent
   participant who has no repository knowledge.
 
@@ -331,7 +336,8 @@ Required practices:
 - require the machine registry and a new append-only record before any protected
   schema/render/physics/validator/corpus/generated-runtime artifact re-pin.
 - retain the unmodified Chromium/Firefox/WebKit QA-003 matrix and its exact-revision
-  evidence for Studio semantics, interaction, layout, motion, or support-tier changes.
+  evidence for Studio semantics, interaction, layout, motion, renderer/presentation-
+  asset isolation, or support-tier changes.
 
 Exit: G0.
 

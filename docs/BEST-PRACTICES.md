@@ -106,9 +106,9 @@ comments only for constraints the code cannot show.
     journey with real WASM in Chromium, Firefox, and WebKit; assert semantics,
     accessible names, skip/focus behavior, keyboard orbit/equip/explode/blueprint,
     contrast, critical target size, narrow layout, reduced motion, and tier-appropriate
-    initial quality. Viewer-grade engines start low with AO off so software-rendered
-    WebGL cannot block the accessible contract; initialize the advanced pipeline
-    lazily only when a user raises quality. Keep the
+    presentation. Viewer-grade engines use a core-baked Canvas2D schematic, remain
+    low quality, and must not load the dynamic scene/Three.js chunks; assert positive
+    draw statistics so the fallback cannot become a blank semantic shell. Keep the
     full-Studio/viewer-grade boundary and vendor-device limitations synchronized with
     [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md); a proxy engine is not a real-device or
     screen-reader certification (QA-003).
