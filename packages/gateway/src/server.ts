@@ -742,7 +742,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         errorResponseBuilder: () => ({ statusCode: 429, error: "rate limit exceeded" }),
       });
     }
-    const authRouteOptions = () => ({
+    const authRouteOptions = {
       config: {
         rateLimit: {
           max: rateLimitPolicy?.limits.auth ?? DEFAULT_RATE_LIMIT_POLICY.limits.auth,
@@ -750,9 +750,9 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           groupId: "auth",
         },
       },
-    });
-    authApp.all("/auth", authRouteOptions(), async (request, reply) => handleAuthRequest(request, reply));
-    authApp.all("/auth/*", authRouteOptions(), async (request, reply) => handleAuthRequest(request, reply));
+    };
+    authApp.all("/auth", authRouteOptions, async (request, reply) => handleAuthRequest(request, reply));
+    authApp.all("/auth/*", authRouteOptions, async (request, reply) => handleAuthRequest(request, reply));
   });
 
   app.get("/v1/me", async (request, reply) => {
