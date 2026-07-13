@@ -36,7 +36,7 @@ Live/external/field claims remain gated independently.
 | P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(EnvSpec, generation, routes, course-to-task adapter, replay verification, and Studio fixture surface exist; community race and popular-course live proof remain open)* | 3–4 wk |
-| P11 Platform | ◑ *(local platform contracts, D10/D33-D35 authority, and one locally verified idempotent gateway-to-worker vendor-normalization path exist; protected migration proof, credentialed vendor/print sandboxes, production backup/DR, external users, and policy process ownership remain gated)* | open |
+| P11 Platform | ◑ *(local platform contracts, D10/D33-D35 authority, and one protected contract/fixture idempotent gateway-to-worker vendor-normalization path exist; credentialed vendor/print sandboxes, production backup/DR, external users, and policy process ownership remain gated)* | open |
 | P12 Maintenance twin | ◑ *(2026-06-15: wear models, crash windows, repair-sheet generation with vendor/print handoff links, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and quote-link surfacing; real field-log evidence remains open)* | 3 wk |
 
 Sequencing rationale (D1–D4): verify-first means P3 (catalog truth) ships and gets

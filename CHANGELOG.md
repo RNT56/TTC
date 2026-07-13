@@ -18,6 +18,25 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Record protected commerce queue evidence
+**Session:** Codex agent · branch `codex/p11-commerce-evidence` · **Phase:** Wave 2 R1
+builder loop · **TODO items:** P11-005 [~]
+**Done:** Queued-commerce PR #34 passed all required checks and merged through the
+exact-check ruleset as `18f54fd`. Exact post-merge CI `29260837182` and security
+`29260833090` are green. The protected Postgres log applies migrations 0001..0020 and
+records concurrent gateway retry/request-binding/owner-scope acceptance plus worker
+success/corrupt-output rollback. Protected workers pass 115/115, gateway 61/61,
+Brief-25 25/25, and declared verdicts 5/5; Rust, native Desktop, dependency audit,
+source SPDX, and both CodeQL languages also pass.
+**Changed:** canonical agent boundary, project-state evidence ledger, roadmap,
+execution roadmap, and P11-005 task ledger.
+**Decisions:** none. This records evidence for the existing D27/D29-aligned
+contract/fixture slice and creates no provider or live authority.
+**Next:** execute a credentialed vendor sandbox with deployment-owned egress, quota,
+telemetry, retry/recovery, billing, current-terms, and purchasable-BOM evidence.
+**Blockers:** external vendor credentials, current provider/commercial terms, and
+deployment authority are required for the next maturity step.
+
 ## 2026-07-13 — Route vendor offers through the bounded worker queue
 **Session:** Codex agent · branch `codex/p11-commerce-worker-bridge` · **Phase:** Wave
 2 R1 builder loop · **TODO items:** P11-005 [~]
