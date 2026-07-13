@@ -32,6 +32,11 @@ the production Studio bundle, real WASM, exact validator, and isolated Postgres 
 all ten named flows in exact-head and post-merge CI. Live-provider and independent-
 user proof remain separate.
 
+QA-010 implementation now adds a 34th local policy gate with versioned scripts and
+generated evidence templates for all eight external milestones. It remains in
+progress until protected PR/post-merge evidence exists, and it does not change any
+`EXT-*`, live-provider, hardware, or field verdict by itself.
+
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(repository hygiene/public surfaces are protected; qualified confusing-similarity/common-law/class name review remains PRE-005/GOV-010)* | days |

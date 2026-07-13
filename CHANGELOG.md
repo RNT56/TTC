@@ -18,6 +18,38 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Make external acceptance evidence executable
+**Session:** Codex agent · branch `codex/qa010-external-acceptance` · **Phase:** QA /
+external and field proof · **TODO items:** QA-010 [~], EXT-001..008
+**Done:** Added a versioned registry and private run-pack CLI for builder, photoscan,
+training, course, controlled D12 lab, print, marketplace, and maintenance acceptance.
+Generated templates cannot validate as completed evidence; terminal manifests require
+the exact revision/environment, registered roles and independence, authority hashes,
+every step/evidence kind, finite measurements, findings review, incidents, matching
+signoffs, limitations, and honest pass/fail/stop semantics. Repository-local run
+output, unsafe evidence references, credential-shaped values, and public personal
+data fail closed; manifest bytes, nodes, depth, containers, and strings are bounded.
+Focused policy tests pass 9/9 and all eight generated templates pass
+the deterministic registry check. An adversarial direct-object test briefly exposed
+a shared-reference/true-cycle false positive; ancestor-scoped cycle detection now
+preserves shared evidence references while rejecting actual cycles. After the fresh
+worktree's first full run stopped
+at TypeScript build because dependencies were not installed, a frozen lockfile
+install restored the declared prerequisite and all 34 `pnpm verify` gates
+passed. The unchanged worker suite also passes 115/115 in a clean Python 3.12.7
+environment; 200 stable IDs remain unique with counts 132 done, 38 in progress, 29
+open, and 1 blocked; 58 Markdown files have zero broken local links.
+**Changed:** QA-010 registry, policy/CLI/tests, canonical external-acceptance runbook,
+entry-agent rules, full/local/required-CI verification, repository governance,
+debugging, best practices, README commands, and living execution/status ledgers.
+**Decisions:** none; the kit governs evidence but grants no participant, provider,
+spend, hardware, live, external-beta, or field authority.
+**Next:** run the complete local gates, publish through protected PR/main, reconcile
+exact remote evidence, then execute EXT-001 with an independent builder.
+**Blockers:** actual EXT-001 needs an independent participant; provider, print,
+course/platform, controlled-lab, and field milestones retain their named external
+authority and dependency gates.
+
 ## 2026-07-13 — Record protected builder-loop acceptance
 **Session:** Codex agent · branch `codex/qa002-postmerge-evidence` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [x]

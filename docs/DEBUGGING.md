@@ -13,6 +13,7 @@ files until the failure is classified.
 | Gateway failure | build `forge-validate`, then `pnpm --filter @forge/gateway test` | request, response, spawned-validator stderr |
 | Studio failure | `pnpm --filter @forge/studio typecheck`; build; focused browser reproduction | URL/state, console error, screenshot only when visual |
 | Builder browser E2E failure | inspect `artifacts/e2e/qa002-browser-e2e.json`; rerun `DATABASE_URL=... pnpm verify:db` on the exact SHA | failed flow, WASM asset, service tail, screenshot, isolated DB migration count |
+| External acceptance policy/run failure | `pnpm verify:external-acceptance`; validate the private manifest with `node scripts/external-acceptance.mjs validate <path>` | exact revision/deployment, failed/stopped step, authority, content hashes, bounded findings/incidents, signoffs, limitations; no raw private evidence in Git |
 | Worker failure | `PYTHONPATH=workers python3 -m pytest workers/tests/<file> -q` | job kind, sanitized payload, deterministic output/error |
 | Database failure | `docker compose -f infra/docker-compose.yml up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
 | Release failure | follow `docs/RELEASE.md`; inspect the exact job and downloaded aggregate | run ID, SHA, manifest, checksum, attestation |
@@ -33,6 +34,10 @@ files until the failure is classified.
 - QA-002 must not be pointed at a shared or production database. Its runner requires
   the explicit marker set by `pnpm verify:db`, creates a unique development identity,
   and records only bounded service-log tails on failure.
+- External acceptance failures are retained as `failed` or `stopped`; never change
+  the revision, environment, participant, authority, criterion, or threshold in place
+  to obtain a pass. Start a new linked run, keep private/raw evidence outside Git, and
+  follow `docs/EXTERNAL-ACCEPTANCE.md`.
 - Record recurring failure modes in the owning system document or risk register.
 
 If a vulnerability, credential, user-data exposure, or unsafe hardware authority is

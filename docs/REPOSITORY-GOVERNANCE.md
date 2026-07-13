@@ -55,6 +55,14 @@ runtime changes must have a new append-only review record; the frozen prototype 
 is immutable. The machine inventory and review procedure are owned by
 [`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md).
 
+The same required job runs the `QA-010` external-acceptance policy. All eight
+milestone contracts and generated templates must remain machine-valid; independent
+roles, required authority/evidence/measurement/signoff fields, D30/D12 hardware
+terms, secret rejection, and non-repository evidence storage cannot be weakened
+without failing the protected check. This deterministic policy check never stands in
+for an actual external run; the protocol is owned by
+[`EXTERNAL-ACCEPTANCE.md`](EXTERNAL-ACCEPTANCE.md).
+
 ## Release-blocking checks
 
 The following are not required on every PR, but must be green on the release commit:

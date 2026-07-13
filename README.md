@@ -407,14 +407,29 @@ This is the required non-database local gate: pinned Rust formatting, Clippy, te
 WASM/schema/native parity, all TypeScript packages, gateway/Brief-25, prototype
 oracles, budgets, fuzz/parity/release checks, Desktop/pilot invariants, workers, and
 patch hygiene. It also rejects mutable GitHub Action references and registered golden
-artifact changes without a new append-only review record. It fails if a prerequisite
-or committed generated/workflow artifact is stale.
+artifact changes without a new append-only review record, and validates all eight
+external-acceptance contracts/templates. It fails if a prerequisite or committed
+generated/workflow artifact is stale.
 
 Inspect the golden registry or run its focused policy gate with:
 
 ```bash
 pnpm verify:goldens
 ```
+
+Inspect the eight external-acceptance milestone contracts and generated evidence
+templates with:
+
+```bash
+pnpm verify:external-acceptance
+node scripts/external-acceptance.mjs list
+```
+
+The acceptance CLI creates private run packs outside the repository and validates
+completed evidence for builder, photoscan, training, course, controlled lab, print,
+marketplace, and maintenance milestones. A generated pack is not external proof; see
+[`docs/EXTERNAL-ACCEPTANCE.md`](docs/EXTERNAL-ACCEPTANCE.md) for independence,
+authority, data handling, signoff, and task-close rules.
 
 The fast workflow-only policy check is:
 

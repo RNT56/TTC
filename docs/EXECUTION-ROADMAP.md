@@ -41,7 +41,9 @@ green at `4fe0df6`. QA-008 golden review is protected through PR #36 at `2589503
 QA-002 deterministic builder acceptance is protected through PR #38 at `c80accb`.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 next ordered work continues Wave 2 with credentialed catalog acceptance and the
-QA-010 -> EXT-001 independent-builder path.
+QA-010 -> EXT-001 independent-builder path. QA-010's eight-milestone evidence kit is
+implemented and focused-policy green locally on this branch; protected delivery is
+still required before the actual EXT-001 run.
 
 Current Wave 1/2 boundary:
 
@@ -56,6 +58,11 @@ Current Wave 1/2 boundary:
   post-merge evidence prove the production Studio bundle, real built WASM, downloaded
   validator, gateway, isolated Postgres, and all ten builder-loop flows through PR
   #38; this does not substitute for independent-user proof;
+- QA-010 now has a versioned registry, private run-pack generator, completed-manifest
+  validator, milestone runbooks, and focused policy coverage across builder,
+  photoscan, training, course, D30/D12 lab, print, marketplace, and maintenance. It
+  remains in progress until protected remote proof; the kit never substitutes for an
+  intended participant, real provider, controlled rig, or field event;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -194,8 +201,8 @@ Work:
   acceptance (`P11-005`);
 - retain closed QA-002 as the deterministic regression gate on every required
   data-plane run;
-- author the independent-builder script/evidence template under `QA-010`, then
-  execute `EXT-001` without repository knowledge.
+- protect the completed QA-010 acceptance kit, then execute its builder script for
+  `EXT-001` with an independent participant who has no repository knowledge.
 
 Acceptance:
 

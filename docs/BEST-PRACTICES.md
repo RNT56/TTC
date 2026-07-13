@@ -102,6 +102,11 @@ comments only for constraints the code cannot show.
 9. **Browser E2E** — production Studio bundle + real built WASM + gateway/validator
    + isolated Postgres for the complete builder loop; public-share and private-route
    authorization must be proven in separate browser contexts (QA-002).
+10. **External acceptance** — execute the versioned QA-010 milestone script against
+    an exact product revision with the intended independent user, real provider, D30/
+    D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,
+    measurements, findings, limitations, and signoffs outside Git; machine-valid
+    evidence shape still requires semantic review before any `EXT-*` or maturity close.
 
 A red harness blocks merge. Flaky tests are bugs, not noise.
 
@@ -236,6 +241,13 @@ to imply a higher maturity level than the evidence supports.
 
 Status documents are not proof. When code/tests/CI contradict a checkbox, current
 executable evidence wins and the living docs are corrected in the same change.
+
+External evidence follows [`EXTERNAL-ACCEPTANCE.md`](EXTERNAL-ACCEPTANCE.md). Freeze
+the revision, deployment, participants, authority, criteria, and thresholds before
+observing results. Independent roles receive no repository/private-owner access and
+cannot also be the owner or facilitator. Generated runbooks are scaffolds; do not
+close a task until retained artifacts and signoffs are resolved, hash-checked,
+semantically reviewed, and bound to exact protected checks.
 
 ## 12. Recovery, release, and operations discipline
 
