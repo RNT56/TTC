@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { arch, platform, tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const value = (flag) => {
@@ -23,20 +23,46 @@ const sbom = JSON.parse(readFileSync(join(dir, "forge-artifacts.spdx.json"), "ut
 if (!String(sbom.spdxVersion ?? "").startsWith("SPDX-") || !sbom.packages?.length) {
   throw new Error("artifact SBOM is missing SPDX packages");
 }
-const linux = readdirSync(dir).find((name) => /-linux-x86_64\.tar\.gz$/.test(name));
-if (!linux) throw new Error("Linux x86_64 bundle missing");
+
+const nativeBundles = [
+  { target: "linux-x86_64", pattern: /-linux-x86_64\.tar\.gz$/, binary: "forge-validate" },
+  { target: "macos-x86_64", pattern: /-macos-x86_64\.tar\.gz$/, binary: "forge-validate" },
+  { target: "windows-x86_64", pattern: /-windows-x86_64\.zip$/, binary: "forge-validate.exe" },
+];
+const names = readdirSync(dir);
+const archives = new Map(
+  nativeBundles.map((bundle) => {
+    const name = names.find((candidate) => bundle.pattern.test(candidate));
+    if (!name) throw new Error(`${bundle.target} bundle missing`);
+    return [bundle.target, { ...bundle, name }];
+  }),
+);
+const hostTarget = platform() === "linux"
+  ? "linux-x86_64"
+  : platform() === "darwin"
+    ? "macos-x86_64"
+    : platform() === "win32"
+      ? "windows-x86_64"
+      : null;
+if (!hostTarget) throw new Error(`unsupported release verification host: ${platform()} ${arch()}`);
+const native = archives.get(hostTarget);
+if (!native) throw new Error(`native bundle unavailable for ${platform()} ${arch()}`);
 const temp = mkdtempSync(join(tmpdir(), "forge-release-verify-"));
 try {
-  execFileSync("tar", ["-xzf", join(dir, linux), "-C", temp]);
-  const folder = join(temp, linux.replace(/\.tar\.gz$/, ""));
-  const binary = join(folder, "forge-validate");
+  const archive = join(dir, native.name);
+  execFileSync("tar", [native.name.endsWith(".zip") ? "-xf" : "-xzf", archive, "-C", temp]);
+  const folder = join(temp, native.name.replace(/(?:\.tar\.gz|\.zip)$/, ""));
+  const binary = join(folder, native.binary);
+  if (platform() !== "win32" && (statSync(binary).mode & 0o111) === 0) {
+    throw new Error(`${native.target} bundle binary is not executable`);
+  }
   const version = execFileSync(binary, ["--version"], { encoding: "utf8" }).trim();
   if (version !== `forge-validate ${manifest.version}`) throw new Error(`version mismatch: ${version}`);
   execFileSync(binary, ["run", example], { stdio: "inherit" });
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
-const wasm = readdirSync(dir).find((name) => /^forge-validate-wasm-.*\.tgz$/.test(name));
+const wasm = names.find((name) => /^forge-validate-wasm-.*\.tgz$/.test(name));
 if (!wasm) throw new Error("WASM package missing");
 const entries = execFileSync("tar", ["-tzf", join(dir, wasm)], { encoding: "utf8" });
 for (const required of ["package/package.json", "package/forge_wasm.js", "package/forge_wasm_bg.wasm"]) {
@@ -65,4 +91,6 @@ console.log(\`clean WASM consumer reports \${info.packageVersion}\`);
 } finally {
   rmSync(consumer, { recursive: true, force: true });
 }
-console.log(`verified downloaded validator release v${manifest.version}: checksums, SPDX, Linux smoke, clean WASM install`);
+console.log(
+  `verified downloaded validator release v${manifest.version}: checksums, SPDX, ${native.target} smoke, clean WASM install`,
+);

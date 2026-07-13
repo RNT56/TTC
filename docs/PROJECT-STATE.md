@@ -1,6 +1,6 @@
 # PROJECT STATE - evidence snapshot and readiness boundary
 
-Snapshot date: **2026-07-12**
+Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
 Verified main: `137c440` (`origin/main`)
 Recovery gate: **G0 closed**
@@ -42,7 +42,7 @@ operational recovery, and field evidence remain incomplete.
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
-| G1 release workflow candidate | local pass; remote proof pending | four platform/package outputs, deterministic assembly, dual SPDX, manifest/checksums, attestation step, downloaded Linux verification, and clean installed WASM consumer proof are implemented on `codex/g1-release-artifacts` |
+| G1 release workflow candidate | branch run and external download pass | run `29236010204` passed all native/WASM/aggregate jobs at `02f912d`; the aggregate then passed independent checksum, SPDX, macOS binary/example, and clean WASM-consumer verification; protected-main rerun/tag/Release remain |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -58,7 +58,7 @@ The repaired generation baseline is intentionally stronger than the minimum:
 
 ## 3. GitHub and release posture
 
-Live GitHub evidence checked on 2026-07-12:
+Live GitHub evidence checked on 2026-07-13:
 
 - recovery [PR #11](https://github.com/RNT56/TTC/pull/11) and security closeout
   [PR #21](https://github.com/RNT56/TTC/pull/21), then native Desktop
@@ -74,6 +74,10 @@ Live GitHub evidence checked on 2026-07-12:
 - manual nightly parity/coverage passed on the recovery merge at
   [run 29211055558](https://github.com/RNT56/TTC/actions/runs/29211055558); final-commit rerun
   [29211517706](https://github.com/RNT56/TTC/actions/runs/29211517706) also passed and is the closeout record;
+- corrected G1 branch [run 29236010204](https://github.com/RNT56/TTC/actions/runs/29236010204)
+  passed Linux, macOS Intel, Windows, WASM, aggregate verification, and provenance at
+  `02f912d`; its downloaded aggregate independently passed on macOS, but this is not
+  yet protected-main or tagged-release evidence;
 - no GitHub Release exists;
 - annotated [`prototype-final`](https://github.com/RNT56/TTC/tree/prototype-final)
   resolves to commit `0294a9d`; its frozen file SHA-256 is `ca93489e…`;
@@ -128,7 +132,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Continue local development | **Go** | complete local gates are green |
 | Merge ordinary feature PRs | **Go through protection** | exact checks and current-branch policy are active |
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
-| Publish validator v0.1 | **No-go** | G1 release contract and downloaded install proof incomplete |
+| Publish validator v0.1 | **No-go** | branch artifact/download proof is green; protected-main rerun, annotated tag, GitHub Release, and post-publication download proof remain |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, refusal/privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
@@ -139,9 +143,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **199 tasks: 116 done, 38 in progress, 43 open,
-and 2 explicitly blocked**. All 8 recovery tasks are done. The 83 remaining tasks are
-the phase/live/field program plus 4 governance, 8 security, 9 quality, 10 operations,
+The stable ledger currently contains **200 tasks: 116 done, 39 in progress, 43 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 84 remaining tasks are
+the phase/live/field program plus 4 governance, 8 security, 9 quality, 11 operations,
 9 external-proof, and 3 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

@@ -7,6 +7,23 @@ Current candidate: **v0.1.0**
 The release workflow is the only supported artifact builder. A local build is useful
 for diagnosis, but it is not release evidence.
 
+The x86_64 macOS lane uses GitHub's supported `macos-26-intel` image and every native
+matrix job has a 60-minute ceiling. `macos-15-intel` is the rollback image through
+August 2027, but it is not the default: protected manual run `29216053372` spent
+5h10m in full-LTO build/smoke without producing a macOS artifact. The release profile
+uses thin LTO after a clean local comparison showed materially lower wall time while
+preserving version and canonical-admission smoke; macOS 26 full-LTO branch run
+`29227763639` subsequently hit the one-hour ceiling before artifact upload. Any
+runner or profile change must preserve the same artifact, smoke, SBOM, checksum, and
+downloaded-attestation proof.
+
+GitHub Actions artifact transfer does not preserve staged executable bits. The Linux
+aggregate must therefore normalize `forge-validate` to mode 0755 immediately before
+creating the deterministic tarball; the verifier checks that the extracted payload
+still has an execute bit before running it. Manual thin-LTO run `29230415603` is the
+negative proof: every platform build passed, but aggregate verification failed with
+`EACCES` before this normalization was added.
+
 ## Outputs
 
 Every successful manual or tag run produces one aggregate Actions artifact with:
@@ -19,10 +36,13 @@ Every successful manual or tag run produces one aggregate Actions artifact with:
 - `release-manifest.json`, `SHA256SUMS`, and release notes.
 
 The aggregate job creates a GitHub build-provenance attestation over every payload.
-It then verifies all checksums from the assembled artifact, extracts the Linux bundle
-into a clean temporary directory, checks `--version`, admits the canonical example,
-and inspects the packed WASM package. Tag runs attach the same files to a GitHub
-Release only after that proof succeeds.
+It then verifies all checksums from the assembled artifact, requires all three native
+bundles, extracts the bundle matching the verification host into a clean temporary
+directory, checks `--version`, admits the canonical example, and installs the packed
+WASM package into a clean consumer. Tag runs attach the same files to a GitHub Release
+only after that proof succeeds. Manual run `29236010204` is the branch-level positive
+proof: every build and aggregate job passed, and its downloaded artifact independently
+passed the same verifier on macOS using the macOS x86_64 payload.
 
 ## Pre-release
 

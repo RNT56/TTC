@@ -18,6 +18,60 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Prove the corrected release bundle on and off CI
+**Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
+**TODO items:** GOV-008, OPS-011
+**Done:** Manual branch run `29236010204` passed the release contract, Linux,
+macOS Intel, Windows, WASM, aggregate checksum/SPDX verification, and provenance
+attestation at exact commit `02f912d1dbe1a07f6ea29055ad55c5ae29eca279`.
+Downloaded the aggregate artifact outside Actions and independently verified every
+checksum, both SPDX documents, the macOS x86_64 binary version and canonical example,
+and a clean WASM consumer install. That external check found the verifier had
+hard-coded the Linux archive despite documenting a user-runnable download command;
+verification now requires all three native bundles and selects the current host's
+binary for smoke execution. The same downloaded aggregate then passed end to end on
+Apple Silicon through the advertised macOS x86_64 payload.
+**Changed:** downloaded release verifier, release runbook, task/state evidence, and
+changelog.
+**Decisions:** none; the release remains x86_64 on each native OS, and verification
+now follows that declared platform matrix.
+**Next:** Deliver the verifier correction through protected PR #29, rerun the manual
+workflow on the resulting protected `main`, independently download/verify it, then
+create annotated tag `v0.1.0`.
+**Blockers:** no artifact or runner blocker; protected-main and tag publication proof
+remain deliberately incomplete.
+
+## 2026-07-13 — Bound and migrate the Intel macOS release lane
+**Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
+**TODO items:** GOV-008, OPS-011
+**Done:** Preserved protected manual run `29216053372` as failed operational
+evidence after its macOS 15 Intel full-LTO build/smoke produced no artifact in
+5h10m; selected the supported macOS 26 Intel runner without changing the x86_64
+artifact, smoke, SBOM, checksum, or attestation contract; and added a one-hour
+native-job ceiling so this failure mode cannot silently consume a full runner day.
+When macOS 26 full-LTO branch run `29227763639` hit the 60-minute job ceiling before
+staging/upload, compared clean local arm64 profiles: thin LTO cut wall time from
+34.62s to 19.25s while both binaries passed version and canonical-admission smoke.
+Native size changed from 2,735,488 to 3,456,528 bytes; no binding native-size budget
+exists. Thin-LTO run `29230415603` then built/smoked Linux, Windows, macOS Intel, and
+WASM successfully; all PR CI/security checks passed. Its aggregate verifier exposed
+that Actions artifact transfer had normalized the staged Linux binary to non-
+executable mode before deterministic archive assembly. Assembly now restores the
+declared native mode before archiving, uses timestamp-free gzip output, and
+verification explicitly rejects a Linux archive without executable bits. The actual
+downloaded inputs from that failed run reassemble with mode 0755, and repeated Linux/
+macOS tarballs are byte-identical. The thin profile and permission fix pass all 31
+required local gates and clean WASM installation.
+**Changed:** release workflow/profile, binary assembly and downloaded verification,
+release runbook, risk register, task ledger, project state counts, and changelog.
+**Decisions:** no architectural decision; OPS-011 uses a measured thin-LTO release
+profile and runner migration, with `macos-15-intel` retained through August 2027.
+**Next:** Rerun the protected branch workflow with normalized archive permissions,
+deliver through protected `main`, download and independently verify the aggregate
+artifact, then create `v0.1.0`.
+**Blockers:** GOV-008 remains open until the corrected aggregate verifier and
+downloaded artifact pass; native runner migration itself is now remotely proven.
+
 ## 2026-07-12 — Build the release artifact verification chain
 **Session:** Codex agent · branch `codex/g1-release-artifacts` · **Phase:** G1 ·
 **TODO items:** GOV-008

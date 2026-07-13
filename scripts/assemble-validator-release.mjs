@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, utimesSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
@@ -51,16 +51,24 @@ mkdirSync(out, { recursive: true });
 const bundles = dirs(input);
 if (bundles.length !== 3) throw new Error(`expected 3 native bundles, found ${bundles.length}`);
 for (const dir of bundles) {
-  normalizeTimes(dir);
   const name = basename(dir);
+  const binary = join(dir, name.includes("windows") ? "forge-validate.exe" : "forge-validate");
+  if (!existsSync(binary)) throw new Error(`native bundle is missing ${basename(binary)}: ${name}`);
+  chmodSync(binary, name.includes("windows") ? 0o644 : 0o755);
+  normalizeTimes(dir);
   if (name.includes("windows")) {
     execFileSync("zip", ["-X", "-q", "-r", join(out, `${name}.zip`), name], { cwd: dirname(dir) });
   } else {
     const archive = join(out, `${name}.tar.gz`);
+    const tarPath = archive.slice(0, -3);
     const tarArgs = gnuTar
-      ? ["--sort=name", `--mtime=@${epoch}`, "--owner=0", "--group=0", "--numeric-owner", "-czf", archive, name]
-      : ["-czf", archive, name];
-    execFileSync("tar", tarArgs, { cwd: dirname(dir) });
+      ? ["--sort=name", `--mtime=@${epoch}`, "--owner=0", "--group=0", "--numeric-owner", "-cf", tarPath, name]
+      : ["-cf", tarPath, name];
+    execFileSync("tar", tarArgs, {
+      cwd: dirname(dir),
+      env: { ...process.env, COPYFILE_DISABLE: "1" },
+    });
+    execFileSync("gzip", ["-n", "-9", "-f", tarPath]);
   }
 }
 const wasm = files(input).filter((path) => /^forge-validate-wasm-\d+\.\d+\.\d+\.tgz$/.test(basename(path)));
