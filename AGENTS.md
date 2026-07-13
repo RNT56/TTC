@@ -81,6 +81,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
+- QA-010's protected evidence-governance anchor is PR #40 at `8708de7`, with exact
+  PR CI `29275447135`/security `29275447237` and post-merge CI `29275850838`/
+  security `29275851177` green; this makes external acceptance executable but does
+  not supply an independent participant, provider, controlled rig, or field result;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -89,11 +93,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   security workflow emits a validated SPDX source SBOM;
 - compatibility policy 1.0.0 is machine-checked across twelve public format/package
   boundaries; the CLI/WASM facades expose their active versions;
-- QA-008 is protected through PR #36: the protected baseline has 33 local steps and
-  fourteen registered golden artifact families; the frozen prototype is immutable
-  and any registered re-pin requires a new append-only evidence record. This QA-010
-  branch adds a 34th machine-checked external-acceptance policy step; it remains in
-  progress until exact protected PR and post-merge evidence exist;
+- QA-008 is protected through PR #36: fourteen registered golden artifact families
+  are machine-governed, the frozen prototype is immutable, and any registered re-pin
+  requires a new append-only evidence record. QA-010 is protected through PR #40:
+  the baseline now has 34 local steps and a machine-checked external-acceptance
+  policy across eight milestones;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
