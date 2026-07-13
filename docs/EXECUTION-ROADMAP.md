@@ -129,8 +129,9 @@ Work:
 - retain the published `prototype-final` evidence (`P0-010`/`GOV-006`) as an
   immutable input to release proof;
 - finish validator package metadata and publication (`P2-001`);
-- retain completed `GOV-007` policy/matrix enforcement; complete `GOV-008..010`:
-  build cross-platform artifacts,
+- retain completed `GOV-007` policy/matrix enforcement; finish the implemented
+  `GOV-008` artifact workflow with protected-merge/manual-download evidence, then
+  complete `GOV-009..010`: publication/install proof and public surfaces;
   checksums/artifact SBOM/provenance, release notes, install verification, and
   support/security entry points;
 - finish real-mid-hardware P1 budgets and remaining configurator truth.

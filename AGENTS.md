@@ -38,6 +38,8 @@ Read in this order for every non-trivial session:
    EnvSpec, worker artifacts, or version numbers.
 9. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
+10. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+    a validator release.
 
 When documents disagree, use this authority order:
 

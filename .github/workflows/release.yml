@@ -1,7 +1,5 @@
 name: release
-# Tag v* (or dispatch) → the static forge-validate binary + the wasm facade
-# package as downloadable artifacts. Publication to crates.io/npm (P2-001)
-# remains a separate, owner-keyed step.
+
 on:
   push:
     tags: ["v*"]
@@ -11,7 +9,64 @@ permissions:
   contents: read
 
 jobs:
-  artifacts:
+  validate-release:
+    name: validate release contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+      - name: verify compatibility and release notes
+        run: |
+          node scripts/check-compatibility.mjs
+          version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -1)"
+          test -f "docs/releases/v${version}.md"
+      - name: require matching annotated release tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          expected="v$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml | head -1)"
+          test "$GITHUB_REF_NAME" = "$expected"
+          test "$(git cat-file -t "$GITHUB_REF_NAME")" = "tag"
+
+  native-cli:
+    name: native CLI (${{ matrix.platform }})
+    needs: validate-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            binary: target/release/forge-validate
+          - os: macos-15-intel
+            platform: macos-x86_64
+            binary: target/release/forge-validate
+          - os: windows-latest
+            platform: windows-x86_64
+            binary: target/release/forge-validate.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: dtolnay/rust-toolchain@c0e9df88980754dd93e5833b8dcb1b304c1fe173 # 1.96.0
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: build and smoke native validator
+        shell: bash
+        run: |
+          cargo build --locked --release -p forge-validate
+          "${{ matrix.binary }}" --version
+          "${{ matrix.binary }}" run examples/vx2-mini.forge.json
+      - name: stage native bundle
+        shell: bash
+        run: node scripts/package-validator-binary.mjs --binary "${{ matrix.binary }}" --platform "$RUNNER_OS" --arch "$RUNNER_ARCH" --out dist-platform
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: forge-release-cli-${{ matrix.platform }}
+          path: dist-platform
+          if-no-files-found: error
+
+  wasm-package:
+    name: WASM npm package
+    needs: validate-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -25,8 +80,32 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: prepare validator release artifacts
-        run: pnpm release:validator
+      - name: build and pack WASM facade
+        run: node scripts/prepare-validator-release.mjs --out dist-wasm --wasm-only
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: forge-release-wasm
+          path: dist-wasm/forge-validate-wasm-*.tgz
+          if-no-files-found: error
+
+  release-bundle:
+    name: attest and verify release bundle
+    needs: [native-cli, wasm-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: forge-release-*
+          path: release-inputs
+      - name: assemble deterministic archives
+        run: node scripts/assemble-validator-release.mjs --input release-inputs --out dist-release
       - name: generate source SPDX SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
@@ -35,7 +114,29 @@ jobs:
           output-file: dist-release/forge-source.spdx.json
           upload-artifact: false
           upload-release-assets: false
+      - name: generate artifact SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: dist-release
+          format: spdx-json
+          output-file: dist-release/forge-artifacts.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: write manifest and checksums
+        run: node scripts/write-release-metadata.mjs --dir dist-release
+      - name: verify assembled and downloaded payload
+        run: node scripts/verify-validator-release.mjs --dir dist-release --example examples/vx2-mini.forge.json
+      - name: attest build provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: dist-release/*
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: forgedttc-release
+          name: forgedttc-validator-release-${{ github.sha }}
           path: dist-release
+          if-no-files-found: error
+      - name: publish GitHub release from annotated tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist-release/* --verify-tag --title "ForgedTTC validator $GITHUB_REF_NAME" --notes-file "docs/releases/${GITHUB_REF_NAME}.md"

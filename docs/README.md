@@ -35,6 +35,7 @@ hardware, or user content also requires
 | [`BEST-PRACTICES.md`](BEST-PRACTICES.md) | Doctrine, conventions, code/test/AI-usage standards, git discipline | Living |
 | [`REPOSITORY-GOVERNANCE.md`](REPOSITORY-GOVERNANCE.md) | Exact required checks, ruleset contract, security/dependency operations, and evidence cadence | Living |
 | [`COMPATIBILITY.md`](COMPATIBILITY.md) | SemVer domains, support matrix, deprecation windows, migration and breaking-change rules | Living; machine-checked |
+| [`RELEASE.md`](RELEASE.md) | Cross-platform validator artifact, attestation, verification, tag, publication, and rollback procedure | Living runbook |
 | [`GLOSSARY.md`](GLOSSARY.md) | Project vocabulary | Living |
 | [`architecture.md`](architecture.md) | Runtime split (Rust core / web face), core boundary, repo layout, stack, deployment, budgets | Living |
 | [`security-safety-legal.md`](security-safety-legal.md) | Security model, platform exclusions, legal gates, license export matrix, privacy | Living |

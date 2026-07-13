@@ -44,7 +44,8 @@ The following are not required on every PR, but must be green on the release com
 - `dependency audit`;
 - `source SBOM (SPDX)`;
 - `CodeQL (javascript-typescript)` and `CodeQL (python)`;
-- validator artifact workflow plus downloaded checksum/install/version proof.
+- validator `attest and verify release bundle` workflow job plus downloaded
+  checksum/install/version and GitHub-attestation proof.
 
 Nightly or scheduled failure opens a release blocker immediately. It becomes a merge
 blocker when the failure is deterministic on the PR tree or affects the changed
