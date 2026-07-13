@@ -1,9 +1,9 @@
 # ForgedTTC threat model
 
-Owner: repository maintainers and deployment operators  
-Last reviewed: **2026-07-13**  
+Owner: repository maintainers and deployment operators
+Last reviewed: **2026-07-13**
 Applies to: gateway, Auth.js boundary, Postgres, object storage, generation providers,
-Python workers, live command adapters, release archives, Studio-facing APIs  
+Python workers, live command adapters, release archives, Studio-facing APIs
 Implementation maturity: **contract and deterministic fixture**; production egress,
 distributed abuse control, provider operations, restore exercises, and incident drills
 remain operations work.
