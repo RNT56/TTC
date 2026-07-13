@@ -18,6 +18,21 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Prove SEC-006 on protected main
+**Session:** Codex agent · branch `codex/sec006-postmerge-evidence` · **Phase:** Wave 2 ·
+**TODO items:** SEC-006
+**Done:** Squash-merged PR #31 through protection at exact `d952f60`. Post-merge CI
+`29251978420` passed Postgres/pgvector, workers, Rust, native Desktop, and the full
+TypeScript/gateway/oracle stack; security `29251978330` passed JavaScript/TypeScript
+and Python CodeQL, npm/root/Desktop RustSec audits, and validated source SPDX.
+**Changed:** `AGENTS.md` plus project-state, roadmap, execution, task, and changelog
+evidence now identify SEC-006 as protected contract/fixture truth.
+**Decisions:** none. Production egress, shared quota/spend state, secret/log drills,
+rotation, isolation, backup/restore, and incident evidence remain explicit operations
+gates before live or billable claims.
+**Next:** execute the smallest dependency-complete Wave 2 R1 builder-loop slice.
+**Blockers:** none for SEC-006.
+
 ## 2026-07-13 — Close the SEC-006 contract and fixture boundary
 **Session:** Codex agent · branch `codex/sec006-threat-boundaries` · **Phase:** Wave 2 ·
 **TODO items:** SEC-006

@@ -34,16 +34,15 @@ The program is complete only when all four outcomes are independently true:
 The broad v0 and most deterministic fixture contracts exist. G0 and G1 are green on
 protected `main`: annotated validator v0.1.0 and its nine assets were produced by the
 release workflow, downloaded after publication, and independently verified. SEC-006
-contract/fixture acceptance is complete on green PR #31; its protected merge and
-post-merge proof are the final handoff into the dependency-complete Wave 2 builder
-loop.
+contract/fixture acceptance is protected on `main` through PR #31 with exact
+post-merge CI/security proof. The next ordered work is the dependency-complete Wave 2
+builder loop.
 
-Current Wave 1/2 blockers:
+Current Wave 1/2 boundary:
 
-- public support/security surfaces, ModelSpec 2.2, and SEC-001..005 are protected on
-  `main` through PR #30; SEC-006 is contract/fixture complete with exact local,
-  Postgres, CI, security, dependency, SBOM, CodeQL, and Desktop proof on PR #31, but
-  is not protected-main evidence until merge and post-merge checks complete;
+- public support/security surfaces, ModelSpec 2.2, and SEC-001..006 are protected on
+  `main` through PRs #30/#31 with exact local, Postgres, CI, security, dependency,
+  SBOM, CodeQL, Desktop, and post-merge proof;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is

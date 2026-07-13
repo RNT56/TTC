@@ -72,8 +72,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture boundary passes the 32-step `pnpm verify` gate on
   pinned Rust 1.96.0 and its exact-tree Postgres/pgvector, CI, security, dependency,
-  SBOM, CodeQL, and native Desktop checks are green on PR #31; protected merge and
-  post-merge proof remain before it becomes `main` evidence;
+  SBOM, CodeQL, and native Desktop checks are green through protected PR #31 and
+  exact post-merge CI `29251978420`/security `29251978330` at `d952f60`;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -86,9 +86,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
   lockfile, BOM, WASM, and Studio;
-- protected `main` at `d34b6fd` contains ModelSpec 2.2/XC-28, D10 manufacturing-
+- protected `main` at `d952f60` contains ModelSpec 2.2/XC-28, D10 manufacturing-
   license enforcement, and SEC-002 pre-retrieval/provider prohibited-brief refusal
-  with non-content audit rows; none of these prove live-provider operations;
+  with non-content audit rows plus the SEC-006 application boundary; none of these
+  prove live-provider operations;
 - SEC-003..005 on protected `main` prove versioned owner-scoped export, primary Postgres and
   S3-compatible deletion, purpose/subject consent grants and withdrawals, bounded
   retention, time-bounded legal holds, pseudonymous tombstones, backup catalog/
