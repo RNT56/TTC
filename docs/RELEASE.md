@@ -90,6 +90,11 @@ its signing, update, and Linux dependency gates are separate.
   backed-up purge. SEC-003 adds no migration: reverting the gateway removes the
   account export/delete routes but cannot restore primary rows or objects already
   deleted through them. A deletion receipt does not prove backup erasure; backup
-  retention/restore behavior remains blocked on SEC-005. Persisted
+  retention/restore behavior remains blocked on SEC-005. SEC-004 adds additive
+  `0016_user_consent_events.sql`; rollback may stop new consent actions but retains
+  its append-only history, makes no old grant current under a changed notice, and
+  cannot recall already completed provider work. A release that changes a consent
+  notice must publish the new policy/hash and prove prior grants become inactive.
+  Persisted
   ModelSpec/replay/EnvSpec support remains governed by
   [`COMPATIBILITY.md`](COMPATIBILITY.md).

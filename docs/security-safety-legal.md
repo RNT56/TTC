@@ -91,13 +91,12 @@ live provider artifact audit.
   training data without explicit opt-in.
 - **Telemetry logs are the user's**: sharing a log (leaderboard run, marketplace
   scorecard) is an explicit per-log action.
-- **Pattern library consent (D2)**: admitted models contribute anonymized structural
-  idioms — opt-out per model; marketplace-listed models opt-in by default; no
-  geometry attribution without consent. Consent flags travel with the harvester
-  (XC-13).
+- **Pattern library consent (D2/D34)**: admitted models contribute only after an
+  explicit per-model opt-in; no marketplace default, geometry, or attribution is
+  inferred. Withdrawal removes the contributed retrieval row.
 
-Implementation evidence (2026-07-13, `SEC-003`): authenticated user-data export
-1.0.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+Implementation evidence (2026-07-13, `SEC-003..004`): authenticated user-data export
+1.1.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
@@ -107,6 +106,15 @@ orphan, deletes S3-compatible payloads before commit, and returns a versioned re
 only after both stores succeed. Populated Postgres and MinIO upload/delete/404 proof
 pass locally. This is primary-store proof; consent withdrawal is SEC-004 and legal
 holds, tombstones, retention, and backup deletion/restoration are SEC-005.
+
+Consent ledger 1.0.0 records immutable grants and withdrawals separately for
+photoscan processing, telemetry sharing, pattern contribution, leaderboard
+publication, and training reuse. Each event binds the current notice/version/hash to
+one owned subject and prior event. Stale grants are inactive; processing/publication
+checks run under the same owner lock as the action. Withdrawal cancels affected
+pending photoscan/training jobs, makes telemetry private, and removes pattern or
+leaderboard publication rows. This is local primary-plane authority evidence, not a
+claim that an already completed provider operation or backup can be recalled.
 
 ## 6. Operating reality (what we tell users)
 
@@ -134,8 +142,10 @@ not promise any policy is safe in the open world**, and the UX says so at every 
 - [x] User content → owner-scoped versioned export, secret exclusion, explicit
       primary-row purge, S3-compatible deletion, and storage-failure rollback
       (`SEC-003`, 2026-07-13)
-- [ ] User content → explicit consent/withdrawal plus retention, legal-hold,
-      tombstone, backup-deletion, and restore semantics (`SEC-004..005`)
+- [x] User content → append-only current-notice consent/withdrawal per owned subject,
+      fail-closed action checks, and bounded withdrawal effects (`SEC-004`, 2026-07-13)
+- [ ] User content → retention, legal-hold, tombstone, backup-deletion, and restore
+      semantics (`SEC-005`)
 - [ ] Auth/provider/object/job surfaces → threat model, rate limits, negative tests, redaction, and credential rotation (`SEC-006`)
 - [ ] Policy sharing → current dual-use/export-control gate, per-policy signoff, moderation ownership, and external rollout decision (`SEC-007`)
 - [ ] Desktop/Link release → signed artifacts, update rollback, pairing/revocation, and fault-injection evidence (`SEC-008`)

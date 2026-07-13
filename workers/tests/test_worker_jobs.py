@@ -19,11 +19,13 @@ class FakeStore:
         self.job = None
         return job
 
-    def mark_succeeded(self, job_id: str, output: dict) -> None:
+    def mark_succeeded(self, job_id: str, output: dict) -> bool:
         self.succeeded = (job_id, output)
+        return True
 
-    def mark_failed(self, job_id: str, error: str) -> None:
+    def mark_failed(self, job_id: str, error: str) -> bool:
         self.failed = (job_id, error)
+        return True
 
     def record_event(self, job_id: str, event: str, payload: dict) -> None:
         self.events.append((job_id, event, payload))
@@ -80,6 +82,25 @@ def test_run_once_marks_handler_failure_without_raising():
     assert store.failed[0] == "job-2"
     assert "ValueError: bad payload" in store.failed[1]
     assert [event for _, event, _ in store.events] == ["started", "failed"]
+
+
+def test_run_once_discards_output_when_withdrawal_cancelled_the_running_job():
+    handlers = HandlerRegistry()
+
+    @handlers.register("unit.slow")
+    def _slow(_job: Job) -> dict:
+        return {"mustNotMaterialize": True}
+
+    class CancelledStore(FakeStore):
+        def mark_succeeded(self, job_id: str, output: dict) -> bool:
+            self.succeeded = None
+            return False
+
+    store = CancelledStore(Job(id="job-cancelled", task="unit.slow", payload={}, idempotency_key="idem-cancelled"))
+    assert run_once(store, handlers)
+    assert store.succeeded is None
+    assert [event for _, event, _ in store.events] == ["started", "discarded"]
+    assert store.events[-1][2]["reason"] == "job no longer running"
 
 
 def test_photoscan_single_emits_candidate_review_row():

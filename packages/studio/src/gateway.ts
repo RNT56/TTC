@@ -138,6 +138,37 @@ export interface MeResponse {
   user: { id: string; name: string | null; email: string | null; image: string | null } | null;
 }
 
+export type ConsentPurpose =
+  | "photoscan.processing"
+  | "telemetry.sharing"
+  | "pattern.contribution"
+  | "leaderboard.publication"
+  | "training.reuse";
+export type ConsentSubjectKind = "account" | "object-blob" | "telemetry-log" | "model";
+
+export interface ConsentPolicy {
+  purpose: ConsentPurpose;
+  subjectKind: ConsentSubjectKind;
+  policyVersion: string;
+  notice: string;
+  noticeHash: string;
+  ledgerVersion: string;
+}
+
+export interface ConsentEvent {
+  id: string;
+  ledgerVersion: string;
+  purpose: ConsentPurpose;
+  subjectKind: ConsentSubjectKind;
+  subjectId: string;
+  policyVersion: string;
+  noticeHash: string;
+  action: "grant" | "withdraw";
+  active: boolean;
+  previousEventId: string | null;
+  createdAt: string;
+}
+
 export interface ModelRecord {
   id: string;
   ownerUserId: string;
@@ -607,6 +638,48 @@ export async function listGenerationModels(): Promise<AnthropicModelPin[]> {
 
 export function getMe(): Promise<MeResponse> {
   return requestJson<MeResponse>("/v1/me");
+}
+
+export async function listConsentPolicies(): Promise<ConsentPolicy[]> {
+  const body = await requestJson<{ policies: ConsentPolicy[] }>("/v1/consents/policies");
+  return body.policies;
+}
+
+export async function listConsents(): Promise<ConsentEvent[]> {
+  const body = await requestJson<{ consents: ConsentEvent[] }>("/v1/consents");
+  return body.consents;
+}
+
+export function recordConsentEvent(input: {
+  purpose: ConsentPurpose;
+  subjectKind: ConsentSubjectKind;
+  subjectId: string;
+  policyVersion: string;
+  noticeHash: string;
+  action: "grant" | "withdraw";
+  locale?: string;
+  idempotencyKey: string;
+}): Promise<{ consent: ConsentEvent }> {
+  return requestJson<{ consent: ConsentEvent }>("/v1/consents", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function shareTelemetryLog(id: string): Promise<{ id: string; privacy: unknown }> {
+  return requestJson<{ id: string; privacy: unknown }>(`/v1/telemetry/logs/${encodeURIComponent(id)}/share`, {
+    method: "POST",
+  });
+}
+
+export function contributeModelPattern(
+  id: string,
+  structuralIdioms: string[],
+): Promise<{ contribution: { id: string } }> {
+  return requestJson<{ contribution: { id: string } }>(`/v1/models/${encodeURIComponent(id)}/pattern-contribution`, {
+    method: "POST",
+    body: JSON.stringify({ structuralIdioms }),
+  });
 }
 
 export async function listModels(limit = 25): Promise<ModelRecord[]> {

@@ -149,6 +149,10 @@ leaderboard runs are re-verified server-side as anti-cheat hygiene only.
   crates.io crate — the R2 rung as an artifact.
 - **Backups/audit:** one stateful service (Postgres) keeps backup and audit surface
   small; object storage is content-addressed where possible *(proposed)*.
+- **User authority (D33/D34):** primary export/deletion and append-only consent live
+  in the gateway/Postgres boundary. Consent is purpose- and subject-scoped, checked
+  under the same owner lock as the action, and worker materialization cannot
+  resurrect a job cancelled by withdrawal. Backup/hold authority remains SEC-005.
 - **Secrets:** platform API keys stay server-side only; BYO Anthropic keys are held
   client-side, passed per request to `POST /v1/generate` (`x-forge-anthropic-key` or
   request body), forwarded to Anthropic for that call, and never persisted

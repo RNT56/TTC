@@ -140,14 +140,18 @@ Postgres adapter schema, GitHub OAuth provider wiring, `/v1/me`, user-owned
 can use the explicit development header path; production auth is cookie/session
 based.
 
-Live locally 2026-07-13: `/v1/account/export` emits versioned user-data format 1.0.0
+Live locally 2026-07-13: `/v1/account/export` emits versioned user-data format 1.1.0
 from a repeatable owner-scoped snapshot with authenticated blob download endpoints
 and no OAuth/session/verification/provider secrets. Exact-confirmation
 `DELETE /v1/account` explicitly purges account, photo/model/generated/blob,
 telemetry/replay/policy/course/platform/classroom/job/maintenance rows, removes the
 S3-compatible payloads, and commits only after storage succeeds. Its versioned
-receipt is intentionally primary-store-only; SEC-004 owns consent withdrawal and
-SEC-005 owns retention, legal holds, tombstones, and backup lifecycle.
+receipt is intentionally primary-store-only. D34/SEC-004 adds independent,
+append-only, current-notice consent and withdrawal for photoscan objects, telemetry
+logs, model-pattern contribution, account leaderboard publication, and telemetry
+training reuse. Action-time checks are serializable and withdrawals cancel or remove
+future primary-plane eligibility. SEC-005 still owns retention, legal holds,
+tombstones, and backup lifecycle.
 
 ## 8. Dependencies
 

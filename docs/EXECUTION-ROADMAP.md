@@ -157,9 +157,9 @@ Work:
   manifest/envelope proof against real OCCT artifacts in the provider sandbox;
 - retain the completed local prohibited-brief refusal/minimal-audit boundary and add
   production monitoring/adversarial evidence (`SEC-002`, `SEC-006`, `OPS-*`);
-- retain the completed local owner-scoped export/primary deletion boundary
-  (`SEC-003`), then implement consent/withdrawal and the retention/legal-hold/
-  tombstone/backup lifecycle (`SEC-004..005`);
+- retain the completed local owner-scoped export/primary deletion and append-only
+  purpose/subject consent-withdrawal boundaries (`SEC-003..004`), then implement the
+  retention/legal-hold/tombstone/backup lifecycle (`SEC-005`);
 - finish executable BOM vendor integration enough for a sandbox handoff (`P11-005`);
 - execute `EXT-001`: independent builder acceptance.
 

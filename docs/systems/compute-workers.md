@@ -186,6 +186,14 @@ Postgres queue and are executable/materialized by the local Docker Compose worke
 Photoscan result caches and policy ONNX outputs are linked through `object_blobs`
 for durable S3/MinIO storage.
 
+D34 withdrawal is authoritative over worker completion. Photoscan/training
+withdrawal changes matching queued or running jobs to `cancelled`; the Postgres
+worker may mark success/failure and materialize output only while the row is still
+`running`. A late result from already-started compute is recorded as discarded and
+cannot overwrite cancellation or enter artifact tables. This prevents the local
+data-plane race but does not claim that an external provider can stop work already
+in flight.
+
 ## 8. Open questions
 
 Production lease hardening beyond the local `jobs` table; TRELLIS-class model pick

@@ -158,6 +158,14 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
   authority is absolute (D9).
 - Photos: processing rights only; deletion on request; never training data without
   explicit opt-in. Telemetry logs belong to the user; sharing is per-log explicit.
+- Treat consent as append-only authority, not UI state: bind purpose, owned subject,
+  policy version, exact notice hash, previous event, and idempotency; serialize
+  grants/withdrawals with the action they authorize. Separate photoscan processing,
+  telemetry sharing, pattern contribution, leaderboard publication, and training
+  reuse so one grant can never imply another. Policy drift invalidates old grants.
+- Withdrawal must stop future eligibility immediately and perform its documented
+  primary-plane effect, while stating what it cannot recall. Never use withdrawal to
+  imply account deletion, provider recall, legal-hold expiry, or backup erasure.
 - User export enumerates every owner-scoped dataset from a repeatable snapshot and
   excludes auth/session/verification/provider secrets. Blob payloads remain behind
   authenticated per-object download contracts.

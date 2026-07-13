@@ -28,14 +28,14 @@ operational recovery, and field evidence remain incomplete.
 |---|---|---|
 | Git state | protected `main` at `781dac6` | GOV-007 compatibility PR #26 and G1 artifact-contract PR #27 are merged; no `v0.1.0` tag/release exists |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 31 required non-DB gates on the SEC-003 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
-| `pnpm verify:compatibility` | pass: 10/10 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/delete-receipt boundaries, and deprecation floor cannot drift from the machine matrix |
+| `pnpm verify` | pass: 31 required non-DB gates on the SEC-004 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify:compatibility` | pass: 11/11 surfaces match policy 1.0.0 on the SEC-004 candidate | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
-| Gateway tests | pass: 36/36, no skips | includes SEC-002 refusal and SEC-003 export/delete authorization, secret exclusion, complete purge, storage handoff/failure, and successful-route coverage |
-| Worker tests | pass: 99/99 | includes current/unsupported replay formats and license-aware export enforcement |
-| Postgres/pgvector gate | pass | all 15 migrations, seed, P3/refusal invariants, and a populated user fixture export/delete/zero-residue lifecycle pass; prior clean-install/idempotent proof remains current |
+| Gateway tests | pass: 41/41, no skips on the SEC-004 candidate | adds current-notice consent grants, missing/stale/wrong-subject refusal, direct-library serialization, immutable withdrawals, five action guards/effects, and successful-route coverage to SEC-002/003 evidence |
+| Worker tests | pass: 100/100, including a separate Python 3.12.7 run | adds cancelled-job output discard to current/unsupported replay and license-aware export enforcement |
+| Postgres/pgvector gate | pass on populated predecessor and clean scratch database | all 16 migrations, seed, P3/refusal invariants, user export/delete/zero-residue, and five-purpose consent grant/withdraw/immutability/effect lifecycles pass; unchanged rerun skips all checksummed migrations |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
@@ -43,10 +43,11 @@ operational recovery, and field evidence remain incomplete.
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
-| G1 release workflow candidate | branch run and external download pass | run `29236010204` passed all native/WASM/aggregate jobs at `02f912d`; the aggregate then passed independent checksum, SPDX, macOS binary/example, and clean WASM-consumer verification; protected-main rerun/tag/Release remain |
+| G1 release workflow candidate | corrected branch run and independent download pass | run `29236010204` passed all native/WASM/aggregate jobs at `02f912d`; its downloaded aggregate independently passed checksums, SPDX, macOS binary/example, and clean WASM-consumer verification; protected-main rerun/tag/Release remain |
 | XC-28 equipped variants | local v0.2 candidate; protected proof pending | ModelSpec 2.2 explicit selection, migration refusal for ambiguous legacy slots, selected-only physical consumers, stable source pointers, Studio cards, all 31 local gates, rebuilt WASM, and a real-browser switch/HUD proof pass on `codex/xc28-equipped-variants` |
 | SEC-002 prohibited briefs | local v0.2 candidate; protected proof pending | versioned pre-retrieval/provider/mutation refusal across five HTTP surfaces and direct APIs, bounded explicit-exclusion handling, minimal non-content audit rows, fail-closed storage, full 31-step and Postgres gates on `codex/sec002-prohibited-briefs` |
-| SEC-003 user data | local v0.2 candidate; protected proof pending | user-data export 1.0.0, deletion receipt 1.0.0, explicit primary-row purge, secret exclusion, S3-compatible delete-before-commit, Postgres zero-residue and MinIO 404 proof on `codex/sec003-user-export-delete`; SEC-004/005 still own consent and backup lifecycle |
+| SEC-003 user data | local v0.2 candidate; protected proof pending | base user-data export 1.0.0, deletion receipt 1.0.0, explicit primary-row purge, secret exclusion, S3-compatible delete-before-commit, Postgres zero-residue and MinIO 404 proof on `codex/sec003-user-export-delete`; SEC-004 extends export to 1.1 with consent history and SEC-005 owns backup lifecycle |
+| SEC-004 consent | local v0.2 candidate; protected proof pending | consent ledger 1.0.0 binds five independent purposes to owned subjects/current notices; action checks serialize with grants/withdrawals; late worker output is discarded; bounded withdrawal effects, Studio authority controls, user export 1.1, all 31 local gates, clean/populated Postgres, and real-browser notice/grant/withdraw proof pass on `codex/sec004-consent-ledger`; SEC-005 owns retention/hold/tombstone/backup lifecycle |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -103,16 +104,16 @@ Live GitHub evidence checked on 2026-07-13:
   [29230415603](https://github.com/RNT56/TTC/actions/runs/29230415603) proved every
   platform build/smoke and all required CI/security checks, then found that Actions
   transfer had removed the Linux execute bit before aggregate archiving. Fix
-  `02f912d` normalizes and verifies native modes and uses timestamp-free gzip;
-  corrected run [29236010204](https://github.com/RNT56/TTC/actions/runs/29236010204)
-  and refreshed PR checks are queued;
+  `02f912d` normalizes and verifies native modes and uses timestamp-free gzip.
+  Corrected run [29236010204](https://github.com/RNT56/TTC/actions/runs/29236010204)
+  passed every native/WASM/aggregate job; its downloaded aggregate independently
+  passed checksum, SPDX, macOS binary/example, and clean WASM-consumer verification;
 - no `v0.1.0` tag or GitHub Release exists.
 
 Consequently G0 is **closed** and GOV-007 is protected-main complete. The remaining
-G1 boundary is a green remediated macOS artifact, aggregate SBOM/provenance/checksum
-proof, independent download/install/version proof, the annotated `v0.1.0` tag and
-verified GitHub Release, plus protected delivery of the public support/security
-surfaces.
+G1 boundary is protected delivery and a protected-main release rerun, the annotated
+`v0.1.0` tag and verified GitHub Release with post-publication download proof, plus
+protected delivery of the public support/security surfaces.
 
 ## 4. Capability maturity
 
@@ -121,7 +122,7 @@ surfaces.
 | Contract/validator/WASM | deterministic local implementation; ModelSpec 2.2 equipped semantics are locally proven | protected v0.2 delivery/publication, checksummed release, clean external install |
 | Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation plus D10 exporter enforcement | live ETL/review operations and live OCCT artifact audit |
-| Text generation | 25/25 deterministic template implementation, opt-in provider seam, and locally proven SEC-002 refusal/audit boundary | live model/extraction operation, production monitoring/adversarial evaluation, user-content privacy, external R1 proof |
+| Text generation | 25/25 deterministic template implementation, opt-in provider seam, SEC-002 refusal/audit, and local D34 training-reuse/pattern consent authority | live model/extraction operation, production monitoring/adversarial evaluation, retention/backup privacy, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | real Rapier, exporters/importers, pinned parity | live MuJoCo baseline and broader external model proof |
 | Training/policy | fixture scorecards and external command seams | real SB3/MuJoCo training and ONNX Runtime browser inference |
@@ -140,9 +141,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 - D10 export enforcement is locally implemented; real OCCT artifacts and provider
   operations still need sandbox/live evidence under P6/P11;
-- prohibited-brief refusal/logging and user-scoped export/primary deletion are locally
-  implemented; consent/withdrawal, retention, legal holds, tombstones, and backup
-  deletion/restoration remain open (`SEC-004..005`);
+- prohibited-brief refusal/logging, user-scoped export/primary deletion, and
+  purpose/subject consent-withdrawal are locally implemented; retention, legal holds,
+  tombstones, and backup deletion/restoration remain open (`SEC-005`);
 - release/supply-chain hardening and external/live/field acceptance remain open.
 
 ## 6. Go/no-go verdicts

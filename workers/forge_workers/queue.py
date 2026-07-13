@@ -35,9 +35,9 @@ class QueueStore(Protocol):
 
     def claim_one(self, tasks: Sequence[str]) -> Job | None: ...
 
-    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> None: ...
+    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> bool: ...
 
-    def mark_failed(self, job_id: str, error: str) -> None: ...
+    def mark_failed(self, job_id: str, error: str) -> bool: ...
 
     def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None: ...
 
@@ -98,11 +98,19 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
         output = handlers.dispatch(job)
     except Exception as exc:  # noqa: BLE001 - queue workers must fail closed.
         error = f"{type(exc).__name__}: {exc}"
-        store.mark_failed(job.id, error)
-        store.record_event(job.id, "failed", {"error": error})
+        accepted = store.mark_failed(job.id, error)
+        store.record_event(
+            job.id,
+            "failed" if accepted else "discarded",
+            {"error": error} if accepted else {"reason": "job no longer running"},
+        )
     else:
-        store.mark_succeeded(job.id, output)
-        store.record_event(job.id, "succeeded", {"task": job.task})
+        accepted = store.mark_succeeded(job.id, output)
+        store.record_event(
+            job.id,
+            "succeeded" if accepted else "discarded",
+            {"task": job.task} if accepted else {"reason": "job no longer running"},
+        )
     return True
 
 
@@ -177,7 +185,7 @@ class PostgresQueueStore:
             attempts=int(row["attempts"]),
         )
 
-    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> None:
+    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> bool:
         with self._conn.transaction():
             row = self._conn.execute(
                 """
@@ -187,6 +195,7 @@ class PostgresQueueStore:
                        error = NULL,
                        finished_at = now()
                  WHERE id = %s
+                   AND status = 'running'
                 RETURNING owner_user_id, input
                 """,
                 [self._jsonb(output), job_id],
@@ -198,28 +207,33 @@ class PostgresQueueStore:
                     job_input=_object(row["input"]),
                     output=output,
                 )
+                return True
+        return False
 
-    def mark_failed(self, job_id: str, error: str) -> None:
+    def mark_failed(self, job_id: str, error: str) -> bool:
         with self._conn.transaction():
-            self._conn.execute(
+            row = self._conn.execute(
                 """
                 UPDATE jobs
                    SET status = 'failed',
                        error = %s,
                        finished_at = now()
                  WHERE id = %s
+                   AND status = 'running'
+                RETURNING id
                 """,
                 [error, job_id],
-            )
+            ).fetchone()
+        return row is not None
 
     def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None:
         with self._conn.transaction():
             self._conn.execute(
                 """
                 INSERT INTO job_events (job_id, event, payload)
-                VALUES (%s, %s, %s::jsonb)
+                SELECT id, %s, %s::jsonb FROM jobs WHERE id = %s
                 """,
-                [job_id, event, self._jsonb(payload)],
+                [event, self._jsonb(payload), job_id],
             )
 
     def _materialize_job_output(

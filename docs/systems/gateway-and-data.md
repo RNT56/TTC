@@ -1,8 +1,8 @@
 # Gateway & Data Plane — implementation doc
 
-**Status:** validation/BOM/review/generation/auth/model/share/job/platform and primary user-data lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
+**Status:** validation/BOM/review/generation/auth/model/share/job/platform and local user-data/consent lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34
 
 ## 1. Purpose
 
@@ -29,13 +29,14 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 |---|---|---|
 | Validation | `POST /v1/validate` (contract → report); `POST /v1/bake`; `POST /v1/bom`; `GET /v1/schema` | P2/P3 |
 | Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits`; `GET /v1/account/export`; exact-confirmation `DELETE /v1/account` | P4/P11 |
+| Consent | `GET /v1/consents/policies`; `GET/POST /v1/consents`; `POST /v1/telemetry/logs/:id/share`; `POST /v1/models/:id/pattern-contribution`; consent-gated photoscan/training/leaderboard writes | P4-P11 |
 | Registry: models | `GET/POST /v1/models`; `GET /v1/models/:id`; `POST /v1/models/:id/edit`; `POST /v1/models/:id/share`; `GET /v1/share/:shareId` (public read-only, D4) | P4 |
 | Generation | `POST /v1/generate/context`; `POST /v1/generate`; `POST /v1/generate/stream` (staged SSE); `GET /v1/generate/models` (D26 model pins) | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
 | Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `maintenance.*`; fixture outputs materialize sidecar rows where tables exist | P5+ |
-| Policies/replays/photoscan | `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
+| Policies/replays/photoscan | consent-gated `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; consent-gated telemetry-reuse `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
 | Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
 | Platform | `GET/POST/PATCH /v1/listings`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/evals/brief25/latest` | P11/P12 |
 
@@ -86,7 +87,8 @@ tests and automation can opt into header auth with `FORGE_DEV_AUTH=1`; public sh
 reads never require authentication.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.0.0 across every explicit owner-scoped table. It
+transaction and returns format 1.1.0 across every explicit owner-scoped table,
+including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
 `DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
@@ -95,8 +97,18 @@ trusting `SET NULL`, batches S3-compatible object deletes, and commits only afte
 bounded storage call succeeds (`FORGE_OBJECT_DELETE_TIMEOUT_MS`, default 15 seconds).
 Receipt 1.0.0 proves primary Postgres/object deletion only;
 SEC-005 owns legal holds, tombstones, retention and backup expiry/restore behavior.
-No migration is required for SEC-003; it operates against the existing ownership
-columns and adds an executable populated-database lifecycle gate.
+
+Consent follows D34. Migration `0016_user_consent_events.sql` adds an append-only
+ledger with current purpose/subject/policy/notice bindings and explicit previous-event
+links, plus owner/model provenance for opt-in pattern rows. `POST /v1/consents`
+accepts only the current version/hash published by `/v1/consents/policies`; grant and
+withdraw use an owner lock and subject ownership check. The same serializable action
+transaction rechecks active consent before photoscan processing, per-log telemetry
+sharing, model-pattern contribution, leaderboard publication, or telemetry-backed
+training. Generic `/v1/jobs` and direct `createJob` calls retain the photoscan/training
+guard. Withdrawal cancels matching queued/running jobs, makes the log private, or
+removes the pattern/leaderboard rows. It does not delete primary content or prove
+provider recall/backups; account deletion and SEC-005 own those boundaries.
 
 Generation operations consume only approved review rows with non-blocked export
 policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
@@ -169,6 +181,11 @@ pino structured logs; Sentry; OpenTelemetry optional. Docker Compose on one
 Hetzner-class VM (gateway + Postgres + workers) + CDN for the studio; GPU burst-only.
 Backups: Postgres snapshots + object-storage lifecycle rules *(proposed)*.
 
+The local Compose Studio keeps `/v1` and `/auth` same-origin and sets
+`FORGE_GATEWAY_PROXY=http://gateway:8080` for Vite's server-side proxy. Do not point
+the browser directly at the gateway unless a reviewed CORS/preflight policy is added;
+the gateway intentionally exposes neither in the current local contract.
+
 ## 9. Testing
 
 Route schema round-trips (TypeBox gives this nearly free); admission-gate integration
@@ -183,8 +200,10 @@ pnpm --filter @forge/gateway test:object-storage
 ```
 
 The first command builds the gateway, creates a complete owner fixture in populated
-Postgres, exports it, asserts credential redaction, deletes it, and checks zero
-primary residue. The object smoke uploads a unique payload through MinIO, invokes the
+Postgres, exports it, asserts credential redaction, deletes it, checks zero primary
+residue, and then proves all five consent grant/withdraw histories, effects,
+append-only enforcement, and deletion residue against real transactions. The object
+smoke uploads a unique payload through MinIO, invokes the
 production batch-deletion adapter, and requires a 404 afterward.
 
 ## 10. Open questions

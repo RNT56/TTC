@@ -1,5 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 import { fixtureLicenseFilteredGeometry } from "./licenseExports.js";
+import {
+  sourceBlobIdsFromPayload,
+  telemetryLogIdsFromPayload,
+  withActiveConsents,
+} from "./consent.js";
 import type { CurrentUser } from "./auth.js";
 import type { GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
@@ -1055,7 +1060,9 @@ async function materializeJobOutput(db: GatewayDb, user: CurrentUser, job: JobRe
         [
           user.id,
           job.id,
-          stringList(output.sourceImages),
+          stringList(input.sourceBlobIds).length > 0
+            ? stringList(input.sourceBlobIds)
+            : stringList(output.sourceImages),
           json(output.alignment ?? {}),
           json(output.primitiveRefit ?? []),
           json(output.candidateComponent ?? null),
@@ -1863,15 +1870,49 @@ export async function getShare(db: GatewayDb, shareId: string): Promise<ShareSna
   return result.rows[0] ? mapShare(result.rows[0]) : null;
 }
 
+type CreateJobInput = {
+  kind: JobKind;
+  provider?: "fixture" | "local" | "modal";
+  payload?: unknown;
+  idempotencyKey?: string | null;
+};
+
 export async function createJob(
   db: GatewayDb,
   user: CurrentUser,
-  input: {
-    kind: JobKind;
-    provider?: "fixture" | "local" | "modal";
-    payload?: unknown;
-    idempotencyKey?: string | null;
-  },
+  input: CreateJobInput,
+): Promise<JobRecord> {
+  const requirements = [] as {
+    purpose: "photoscan.processing" | "training.reuse";
+    subjectKind: "object-blob" | "telemetry-log";
+    subjectId: string;
+  }[];
+  if (input.kind === "photoscan.single" || input.kind === "photoscan.multiview") {
+    const sourceBlobIds = sourceBlobIdsFromPayload(input.payload);
+    if (
+      (input.kind === "photoscan.single" && sourceBlobIds.length !== 1) ||
+      (input.kind === "photoscan.multiview" && sourceBlobIds.length < 2)
+    ) {
+      throw Object.assign(new Error(`${input.kind} requires explicit owned sourceBlobIds`), { statusCode: 400 });
+    }
+    for (const subjectId of sourceBlobIds) {
+      requirements.push({ purpose: "photoscan.processing", subjectKind: "object-blob", subjectId });
+    }
+  }
+  if (input.kind === "train.policy") {
+    for (const subjectId of telemetryLogIdsFromPayload(input.payload)) {
+      requirements.push({ purpose: "training.reuse", subjectKind: "telemetry-log", subjectId });
+    }
+  }
+  return requirements.length > 0
+    ? withActiveConsents(db, user, requirements, (transaction) => createJobUnchecked(transaction, user, input))
+    : createJobUnchecked(db, user, input);
+}
+
+async function createJobUnchecked(
+  db: GatewayDb,
+  user: CurrentUser,
+  input: CreateJobInput,
 ): Promise<JobRecord> {
   const provider = input.provider ?? "fixture";
   const costCredits = provider === "modal" ? 1 : 0;

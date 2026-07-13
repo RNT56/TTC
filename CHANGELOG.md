@@ -72,6 +72,52 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Make user-content consent explicit and revocable
+**Session:** Codex agent · branch `codex/sec004-consent-ledger` · **Phase:** P4/P5/P7/P10/P11 ·
+**TODO items:** SEC-004
+**Done:** Added consent-ledger format 1.0.0 as immutable grant/withdraw events for
+photoscan processing per object, telemetry sharing and training reuse per log,
+pattern contribution per model, and leaderboard publication per account. Every event
+binds an owned subject, current policy version and notice hash, previous event,
+bounded evidence, and idempotency. The gateway locks the owner and rechecks active
+consent in the same serializable transaction as each action; generic and direct
+photoscan/training job entry points retain the same guard. Withdrawal cancels
+affected queued/running work, makes telemetry private, and removes pattern or
+leaderboard eligibility. Worker completion now requires the row to remain running,
+so a late result cannot overwrite cancellation or materialize an artifact.
+
+Studio adds an expandable privacy-authority panel with the exact five notices,
+independent current state, explicit grant/withdraw controls, owned-photo requirements,
+and telemetry share, model-pattern, and telemetry-training actions. User-data export
+is additively bumped to 1.1.0 with the complete consent history; account deletion
+explicitly purges it. No consent or withdrawal claims provider recall, retention/
+legal-hold expiry, tombstone completion, or backup erasure.
+**Evidence:** `pnpm verify` passes all 31 gates with 11 compatibility surfaces,
+41/41 gateway tests using the real validator with no skips, Brief-25 at 25/25, and
+100/100 worker tests. The worker suite also passes under Python 3.12.7. Expanded
+`pnpm verify:db` passes on both a populated predecessor and a clean scratch database:
+all 16 migrations, five grant/withdraw histories and effects, append-only rejection,
+export/delete zero residue, and an unchanged checksum/idempotency rerun are green.
+Studio typecheck and production build pass. A real Chromium session against the
+local gateway and Postgres renders all five notices, grants account leaderboard
+publication to `1 active`, then withdraws it back to `0 active` with the explicit
+withdrawal confirmation. That smoke exposed and fixed the Compose Studio profile's
+cross-origin gateway URL: browser calls now stay same-origin and Vite proxies to the
+gateway inside the Compose network.
+**Changed:** migration 0016; gateway consent/account/job/server code and tests;
+worker cancellation/materialization guard and tests; Studio gateway client and
+privacy controls; compatibility matrix/checker; database acceptance scripts; root
+`AGENTS.md`; Compose Studio proxy; D34; architecture, best-practice, security, gateway/worker/Studio/
+platform, state, roadmap, execution, task, risk, release, and v0.2 release docs.
+**Decisions:** D34 supersedes D2's pattern opt-out/marketplace-default mechanic with
+explicit per-model opt-in while retaining D2's open-core boundary.
+**Next:** implement `SEC-005` retention, legal-hold, tombstone, backup-expiry, and
+restore/deletion proof without weakening the primary deletion or consent boundaries.
+**Blockers:** no local SEC-004 blocker; protected v0.2 delivery remains ordered
+behind G1 release proof and the stacked XC-28/SEC-001/SEC-002/SEC-003 commits.
+Corrected G1 branch run `29236010204` and its independently downloaded aggregate
+are green; protected-main rerun, tag, and GitHub Release proof remain.
+
 ## 2026-07-13 — Make user export and primary deletion complete
 **Session:** Codex agent · branch `codex/sec003-user-export-delete` · **Phase:** P4/P11 ·
 **TODO items:** SEC-003

@@ -35,7 +35,7 @@ Read in this order for every non-trivial session:
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
 8. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
-   EnvSpec, exports/deletion receipts, worker artifacts, or version numbers.
+   EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
 9. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
 10. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
@@ -72,7 +72,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
-- compatibility policy 1.0.0 is machine-checked across ten public format/package
+- compatibility policy 1.0.0 is machine-checked across eleven public format/package
   boundaries; the CLI/WASM facades expose their active versions;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
@@ -81,9 +81,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the local v0.2 stack enforces D10 manufacturing-license policy and SEC-002
   pre-retrieval/provider prohibited-brief refusal with non-content audit rows; both
   still await protected delivery and do not prove live-provider operations;
-- SEC-003 locally proves versioned owner-scoped export plus primary Postgres and
-  S3-compatible deletion; consent/withdrawal, retention, legal holds, tombstones,
-  and backup lifecycle remain SEC-004/005 and are not implied by that receipt;
+- SEC-003/004 locally prove versioned owner-scoped export, primary Postgres and
+  S3-compatible deletion, and append-only purpose/subject consent grants and
+  withdrawals; retention, legal holds, tombstones, and backup lifecycle remain
+  SEC-005 and are not implied by those records;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
@@ -160,6 +161,26 @@ User-data lifecycle boundary (D33/SEC-003):
 - a successful receipt proves primary database/object deletion only. Never claim
   legal-hold, tombstone, retention-expiry, or backup deletion until SEC-005 has
   executable restore/lifecycle evidence.
+
+Consent boundary (D34/SEC-004):
+
+- consent is an append-only event ledger, never a mutable flag. Every grant and
+  withdrawal binds ledger version, purpose, owned subject, current policy version,
+  exact notice SHA-256, prior event, bounded non-content evidence, and idempotency;
+- the five independent purposes are photoscan processing per object, telemetry
+  sharing per log, pattern contribution per model, leaderboard publication per
+  account, and training reuse per telemetry log. A grant for one never authorizes
+  another, and a stale policy/hash is inactive until the owner grants the current
+  notice;
+- lock the owner and validate current consent in the same serializable transaction
+  that starts processing, sharing, contribution, publication, or training reuse.
+  Direct job-library entry points retain the same assertion; UI state is not
+  authority;
+- withdrawal appends history and immediately cancels queued/running affected jobs,
+  makes telemetry private, removes contributed patterns or leaderboard rows as
+  appropriate. It does not claim in-flight provider recall, primary content
+  deletion, legal-hold expiry, or backup erasure; those use account deletion and
+  SEC-005 lifecycle proof.
 
 ## 5. Session protocol
 

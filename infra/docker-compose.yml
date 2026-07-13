@@ -78,7 +78,10 @@ services:
     working_dir: /workspace
     command: sh -lc "corepack enable && pnpm --dir packages/studio dev -- --host 0.0.0.0"
     environment:
-      VITE_FORGE_GATEWAY_URL: ${VITE_FORGE_GATEWAY_URL:-http://localhost:8080}
+      # Keep browser requests same-origin and let Vite proxy into the Compose
+      # network. Pointing the browser at :8080 directly requires a CORS policy
+      # and preflight surface that the gateway intentionally does not expose.
+      FORGE_GATEWAY_PROXY: http://gateway:8080
     ports:
       - "5173:5173"
     volumes:

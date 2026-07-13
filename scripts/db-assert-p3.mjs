@@ -48,6 +48,7 @@ for (const table of [
   "telemetry_logs",
   "maintenance_records",
   "generation_refusals",
+  "user_consent_events",
 ]) {
   checks.push([table, await one(`SELECT count(*) AS n FROM ${table}`), 0]);
 }

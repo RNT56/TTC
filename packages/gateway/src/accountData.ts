@@ -3,7 +3,7 @@ import type { CurrentUser } from "./auth.js";
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.0.0";
+export const USER_DATA_EXPORT_VERSION = "1.1.0";
 export const ACCOUNT_DELETION_RECEIPT_VERSION = "1.0.0";
 
 interface ExportDataset {
@@ -202,12 +202,22 @@ const exportDatasets: readonly ExportDataset[] = [
             FROM generation_refusals WHERE owner_user_id = $1 ORDER BY created_at, id`,
   },
   {
+    key: "consentEvents",
+    sql: `SELECT id, ledger_version AS "ledgerVersion", purpose,
+                 subject_kind AS "subjectKind", subject_id AS "subjectId",
+                 policy_version AS "policyVersion", notice_hash AS "noticeHash", action,
+                 evidence, idempotency_key AS "idempotencyKey",
+                 previous_event_id AS "previousEventId", created_at AS "createdAt"
+            FROM user_consent_events WHERE owner_user_id = $1 ORDER BY created_at, id`,
+  },
+  {
     key: "patternContributions",
-    sql: `SELECT p.id, p.source_artifact_id AS "sourceArtifactId", p.source_kind AS "sourceKind",
+    sql: `SELECT p.id, p.source_model_id AS "sourceModelId",
+                 p.source_artifact_id AS "sourceArtifactId", p.source_kind AS "sourceKind",
                  p.archetype, p.consent, p.summary, p.embedding::text AS embedding,
                  p.token_vector AS "tokenVector", p.created_at AS "createdAt"
-            FROM pattern_library p JOIN generated_artifacts g ON g.artifact_id = p.source_artifact_id
-           WHERE g.owner_user_id = $1 ORDER BY p.created_at, p.id`,
+            FROM pattern_library p LEFT JOIN generated_artifacts g ON g.artifact_id = p.source_artifact_id
+           WHERE p.owner_user_id = $1 OR g.owner_user_id = $1 ORDER BY p.created_at, p.id`,
   },
 ];
 
@@ -272,9 +282,14 @@ interface PurgeStep {
 
 const purgeSteps: readonly PurgeStep[] = [
   {
+    key: "consentEvents",
+    sql: `DELETE FROM user_consent_events WHERE owner_user_id = $1`,
+  },
+  {
     key: "patternContributions",
     sql: `DELETE FROM pattern_library
-           WHERE source_artifact_id IN (
+           WHERE owner_user_id = $1
+              OR source_artifact_id IN (
              SELECT artifact_id FROM generated_artifacts WHERE owner_user_id = $1
            )`,
   },

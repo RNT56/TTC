@@ -4,6 +4,7 @@ import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass, Report } from "./types";
 import {
   accessObjectBlob,
+  contributeModelPattern,
   createClassroomAssignment,
   createModerationReport,
   createCourse,
@@ -22,6 +23,8 @@ import {
   latestBrief25Eval,
   listClassroomAssignments,
   listClassroomSubmissions,
+  listConsentPolicies,
+  listConsents,
   listCourses,
   listGenerationModels,
   listJobs,
@@ -38,9 +41,11 @@ import {
   listTelemetryLogs,
   listVendorOffers,
   recordListingUsage,
+  recordConsentEvent,
   refreshVendorOffers,
   saveModel,
   shareModel,
+  shareTelemetryLog,
   submitLeaderboardRun,
   submitClassroomSubmission,
   uploadObjectBlob,
@@ -49,6 +54,10 @@ import {
   type ClassroomAssignmentRecord,
   type ClassroomSubmissionRecord,
   type CourseRecord,
+  type ConsentEvent,
+  type ConsentPolicy,
+  type ConsentPurpose,
+  type ConsentSubjectKind,
   type CreditSummary,
   type GenerationArchetype,
   type GenerationAttempt,
@@ -237,6 +246,10 @@ export default function App() {
   const [generationModelsError, setGenerationModelsError] = useState<string | null>(null);
   const [generationStages, setGenerationStages] = useState<GenerationStageEvent[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [consentPolicies, setConsentPolicies] = useState<ConsentPolicy[]>([]);
+  const [consents, setConsents] = useState<ConsentEvent[]>([]);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentMessage, setConsentMessage] = useState<string | null>(null);
   const [models, setModels] = useState<ModelRecord[]>([]);
   const [modelError, setModelError] = useState<string | null>(null);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -313,6 +326,21 @@ export default function App() {
         user: null,
       });
       setModelError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const refreshConsents = useCallback(async () => {
+    try {
+      const [policies, current] = await Promise.all([
+        listConsentPolicies(),
+        listConsents().catch(() => []),
+      ]);
+      setConsentPolicies(policies);
+      setConsents(current);
+    } catch (error) {
+      setConsentPolicies([]);
+      setConsents([]);
+      setConsentMessage(error instanceof Error ? error.message : String(error));
     }
   }, []);
 
@@ -923,9 +951,10 @@ export default function App() {
     void refreshModels();
     void refreshJobs();
     void refreshArtifacts();
+    void refreshConsents();
     void refreshPlatform();
     void refreshBriefEval();
-  }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshJobs, refreshModels, refreshPlatform]);
+  }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshConsents, refreshJobs, refreshModels, refreshPlatform]);
 
   const selectCourse = useCallback((courseId: string | null) => {
     setActiveCourseId(courseId);
@@ -1063,7 +1092,7 @@ export default function App() {
       const uploaded = [];
       for (const file of selected) {
         const result = await uploadObjectBlob(file, "photoscan-source");
-        uploaded.push(`obj:${result.blob.id}`);
+        uploaded.push(result.blob.id);
       }
       setScanImageRefs(uploaded);
       setScanUploadMessage(`${uploaded.length} image${uploaded.length === 1 ? "" : "s"} uploaded`);
@@ -1076,16 +1105,24 @@ export default function App() {
 
   const runFixtureJob = async (kind: string) => {
     setJobsError(null);
+    if (kind === "photoscan.single" && scanImageRefs.length < 1) {
+      setJobsError("upload one owned photo, then grant photoscan processing consent");
+      return;
+    }
+    if (kind === "photoscan.multiview" && scanImageRefs.length < 2) {
+      setJobsError("upload at least two owned photos, then grant processing consent for each");
+      return;
+    }
     const common = {
       modelId: activeModelId,
       contractHash: s.report?.contractHash,
       sourceObjectId: "fixture://asset",
     };
-    const singleImages = scanImageRefs.length > 0 ? scanImageRefs.slice(0, 1) : ["fixture-front", "fixture-side"];
-    const multiImages = scanImageRefs.length > 0 ? scanImageRefs : ["fixture-front", "fixture-side", "fixture-top"];
+    const singleImages = scanImageRefs.slice(0, 1).map((id) => `obj:${id}`);
+    const multiImages = scanImageRefs.map((id) => `obj:${id}`);
     const payloadByKind: Record<string, unknown> = {
-      "photoscan.single": { ...common, images: singleImages },
-      "photoscan.multiview": { ...common, images: multiImages, scale: 1.0 },
+      "photoscan.single": { ...common, images: singleImages, sourceBlobIds: scanImageRefs.slice(0, 1) },
+      "photoscan.multiview": { ...common, images: multiImages, sourceBlobIds: scanImageRefs, scale: 1.0 },
       "train.policy": { ...common, task: "hover-hold", seed: 7 },
       "train.sysid-fit": {
         ...common,
@@ -1137,6 +1174,87 @@ export default function App() {
       await refreshArtifacts();
     } catch (error) {
       setJobsError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const changeConsent = async (
+    purpose: ConsentPurpose,
+    subjectKind: ConsentSubjectKind,
+    subjectIds: string[],
+    action: "grant" | "withdraw",
+  ) => {
+    const policy = consentPolicies.find((candidate) => candidate.purpose === purpose);
+    if (!policy || subjectIds.length === 0) return;
+    setConsentBusy(true);
+    setConsentMessage(null);
+    try {
+      for (const subjectId of subjectIds) {
+        await recordConsentEvent({
+          purpose,
+          subjectKind,
+          subjectId,
+          policyVersion: policy.policyVersion,
+          noticeHash: policy.noticeHash,
+          action,
+          locale: navigator.language,
+          idempotencyKey: `${purpose}:${subjectId}:${action}:${crypto.randomUUID()}`,
+        });
+      }
+      setConsentMessage(`${action === "grant" ? "granted" : "withdrew"} ${purpose}`);
+      await Promise.all([refreshConsents(), refreshJobs(), refreshArtifacts(), refreshPlatform()]);
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const shareFirstTelemetry = async () => {
+    const telemetryId = telemetryLogs[0]?.id;
+    if (!telemetryId) return;
+    setConsentBusy(true);
+    try {
+      await shareTelemetryLog(telemetryId);
+      setConsentMessage(`shared telemetry ${telemetryId}`);
+      await refreshArtifacts();
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const contributeActivePattern = async () => {
+    if (!activeModelId) return;
+    setConsentBusy(true);
+    try {
+      const result = await contributeModelPattern(activeModelId, ["serviceable modular assembly"]);
+      setConsentMessage(`contributed pattern ${result.contribution.id}`);
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const trainFromFirstTelemetry = async () => {
+    const telemetryId = telemetryLogs[0]?.id;
+    if (!telemetryId) return;
+    setConsentBusy(true);
+    try {
+      await createJob("train.policy", {
+        modelId: activeModelId,
+        contractHash: s.report?.contractHash,
+        task: "hover-hold",
+        seed: 7,
+        telemetryLogIds: [telemetryId],
+      });
+      setConsentMessage(`started consented training reuse for ${telemetryId}`);
+      await Promise.all([refreshJobs(), refreshArtifacts()]);
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
     }
   };
 
@@ -1877,6 +1995,22 @@ export default function App() {
               </button>
             )}
           </div>
+          <ConsentPanel
+            policies={consentPolicies}
+            events={consents}
+            userId={me?.user?.id ?? null}
+            scanBlobIds={scanImageRefs}
+            modelId={activeModelId}
+            telemetryId={telemetryLogs[0]?.id ?? null}
+            busy={consentBusy}
+            message={consentMessage}
+            onChange={(purpose, subjectKind, subjectIds, action) =>
+              void changeConsent(purpose, subjectKind, subjectIds, action)
+            }
+            onShareTelemetry={() => void shareFirstTelemetry()}
+            onContributePattern={() => void contributeActivePattern()}
+            onTrainReuse={() => void trainFromFirstTelemetry()}
+          />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 6 }}>
             {[
               ["photoscan.single", "scan"],
@@ -2344,6 +2478,99 @@ function BriefEvalSummary({ value }: { value: unknown | null }) {
       {gate ? ` · gate ${gate.admittedWithoutHumanRepairActual ?? 0}/${gate.admittedWithoutHumanRepairTarget ?? 20}` : ""}
       {artifact.completedAt ? <div style={{ color: "#6b7686" }}>{artifact.completedAt}</div> : null}
     </div>
+  );
+}
+
+function ConsentPanel({
+  policies,
+  events,
+  userId,
+  scanBlobIds,
+  modelId,
+  telemetryId,
+  busy,
+  message,
+  onChange,
+  onShareTelemetry,
+  onContributePattern,
+  onTrainReuse,
+}: {
+  policies: ConsentPolicy[];
+  events: ConsentEvent[];
+  userId: string | null;
+  scanBlobIds: string[];
+  modelId: string | null;
+  telemetryId: string | null;
+  busy: boolean;
+  message: string | null;
+  onChange: (
+    purpose: ConsentPurpose,
+    subjectKind: ConsentSubjectKind,
+    subjectIds: string[],
+    action: "grant" | "withdraw",
+  ) => void;
+  onShareTelemetry: () => void;
+  onContributePattern: () => void;
+  onTrainReuse: () => void;
+}) {
+  const targets: Record<ConsentPurpose, string[]> = {
+    "photoscan.processing": scanBlobIds,
+    "telemetry.sharing": telemetryId ? [telemetryId] : [],
+    "pattern.contribution": modelId ? [modelId] : [],
+    "leaderboard.publication": userId ? [userId] : [],
+    "training.reuse": telemetryId ? [telemetryId] : [],
+  };
+  const actionFor = (purpose: ConsentPurpose) => {
+    if (purpose === "telemetry.sharing") return onShareTelemetry;
+    if (purpose === "pattern.contribution") return onContributePattern;
+    if (purpose === "training.reuse") return onTrainReuse;
+    return null;
+  };
+  const actionLabel = (purpose: ConsentPurpose) => {
+    if (purpose === "telemetry.sharing") return "share log";
+    if (purpose === "pattern.contribution") return "contribute";
+    if (purpose === "training.reuse") return "train from log";
+    return null;
+  };
+  return (
+    <details style={{ ...artifactRowStyle, marginTop: 6 }}>
+      <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>privacy authority · {events.filter((event) => event.active).length} active</summary>
+      <div style={{ color: "#6b7686", marginTop: 5 }}>
+        Each purpose is independent. Granting scan processing never grants sharing, contribution, leaderboard publication, or training reuse.
+      </div>
+      {policies.map((policy) => {
+        const subjectIds = targets[policy.purpose];
+        const active = subjectIds.length > 0 && subjectIds.every((subjectId) =>
+          events.some((event) => event.purpose === policy.purpose && event.subjectId === subjectId && event.active),
+        );
+        const action = actionFor(policy.purpose);
+        const label = actionLabel(policy.purpose);
+        return (
+          <div key={policy.purpose} style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ color: active ? "#7dd87d" : "#cfd6df", flex: 1 }}>
+                {policy.purpose} · {active ? "granted" : "not granted"}
+              </span>
+              <button
+                onClick={() => onChange(policy.purpose, policy.subjectKind, subjectIds, active ? "withdraw" : "grant")}
+                disabled={busy || subjectIds.length === 0}
+                style={btn}
+              >
+                {active ? "withdraw" : "grant"}
+              </button>
+              {active && action && label ? (
+                <button onClick={action} disabled={busy} style={btn}>{label}</button>
+              ) : null}
+            </div>
+            <div style={{ color: "#6b7686" }}>
+              v{policy.policyVersion} · {subjectIds.length > 0 ? `${subjectIds.length} owned subject${subjectIds.length === 1 ? "" : "s"}` : "no current subject"}
+            </div>
+            <div style={{ color: "#6b7686" }}>{policy.notice}</div>
+          </div>
+        );
+      })}
+      {message ? <div style={{ color: "#8fa3bf", marginTop: 6 }}>{message}</div> : null}
+    </details>
   );
 }
 

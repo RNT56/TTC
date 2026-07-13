@@ -39,6 +39,7 @@ const required = [
   "envSpec",
   "licenseExportManifest",
   "userDataExport",
+  "consentLedger",
   "accountDeletionReceipt",
   "workerArtifacts",
 ];
@@ -69,6 +70,10 @@ const expected = {
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
     "USER_DATA_EXPORT_VERSION",
+  ),
+  consentLedger: typescriptConstant(
+    "packages/gateway/src/consent.ts",
+    "CONSENT_LEDGER_FORMAT_VERSION",
   ),
   accountDeletionReceipt: typescriptConstant(
     "packages/gateway/src/accountData.ts",

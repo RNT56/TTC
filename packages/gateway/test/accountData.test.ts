@@ -65,7 +65,7 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
   });
 
   const exported = await exportUserData(db, user);
-  assert.equal(exported.formatVersion, "1.0.0");
+  assert.equal(exported.formatVersion, "1.1.0");
   assert.equal(exported.subject.userId, user.id);
   assert.equal(exported.data.account.length, 1);
   assert.equal(exported.data.authenticationProviders.length, 1);
@@ -193,7 +193,7 @@ test("account routes require authentication and explicit destructive confirmatio
     });
     assert.equal(exported.statusCode, 200, exported.body);
     assert.match(exported.headers["content-disposition"] ?? "", /forgedttc-user-data-/);
-    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.0.0");
+    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.1.0");
 
     const deleted = await app.inject({
       method: "DELETE",

@@ -29,6 +29,7 @@ const telemetryId = `db-telemetry-${suffix}`;
 const listingId = `db-listing-${suffix}`;
 const quoteRequestId = `db-quote-request-${suffix}`;
 const quoteOfferId = `db-quote-offer-${suffix}`;
+const consentId = `db-consent-${suffix}`;
 const objectKey = `users/${user.id}/photos/source.jpg`;
 
 let deleted = false;
@@ -106,6 +107,14 @@ try {
     [telemetryId, user.id, modelId],
   );
   await pool.query(
+    `INSERT INTO user_consent_events (
+       id, ledger_version, owner_user_id, purpose, subject_kind, subject_id,
+       policy_version, notice_hash, action, evidence
+     ) VALUES ($1, '1.0.0', $2, 'telemetry.sharing', 'telemetry-log', $3,
+               '1.0.0', $4, 'grant', '{"channel":"db-gate"}'::jsonb)`,
+    [consentId, user.id, telemetryId, "d".repeat(64)],
+  );
+  await pool.query(
     `INSERT INTO marketplace_listings (
        id, owner_user_id, model_id, listing_kind, title
      ) VALUES ($1, $2, $3, 'model', 'DB user-data listing')`,
@@ -139,6 +148,8 @@ try {
   assert.equal(exported.data.policyArtifacts.length, 1);
   assert.equal(exported.data.courses.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
+  assert.equal(exported.data.consentEvents.length, 1);
+  assert.equal(exported.formatVersion, "1.1.0");
   assert.equal(exported.data.marketplaceListings.length, 1);
   assert.equal(exported.data.marketplaceUsageRollups.length, 1);
   assert.equal(exported.data.printQuoteRequests.length, 1);
@@ -183,7 +194,8 @@ try {
        (SELECT count(*) FROM marketplace_listings WHERE id = $11) AS marketplace_listings,
        (SELECT count(*) FROM marketplace_usage_rollups WHERE listing_id = $11) AS marketplace_usage_rollups,
        (SELECT count(*) FROM print_quote_requests WHERE id = $12) AS print_quote_requests,
-       (SELECT count(*) FROM print_quote_offers WHERE id = $13) AS print_quote_offers`,
+       (SELECT count(*) FROM print_quote_offers WHERE id = $13) AS print_quote_offers,
+       (SELECT count(*) FROM user_consent_events WHERE id = $14) AS user_consent_events`,
     [
       user.id,
       user.email,
@@ -198,6 +210,7 @@ try {
       listingId,
       quoteRequestId,
       quoteOfferId,
+      consentId,
     ],
   );
   for (const [name, count] of Object.entries(residue.rows[0])) {
