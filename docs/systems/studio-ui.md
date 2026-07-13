@@ -13,6 +13,14 @@ configuring, validating (in-WASM, instant), and simulating work offline — the 
 is for generation, heavy geometry, training, catalog, sharing. The same bundle runs
 inside FORGE Desktop's webview at P8 (D15).
 
+The WASM facade intentionally carries no proprietary platform catalog. Studio always
+runs the local validator when loading a contract. For a catalog-backed model returned
+by the gateway, it retains the catalog-aware native report only when the local report
+proves the same non-empty contract hash, report format, schema version, and validator
+version; any mismatch falls back to the local fail-closed verdict. The displayed
+`target` therefore states whether the active verdict is `wasm` or `native` rather than
+implying offline catalog authority.
+
 ## 2. State architecture (the one rule that matters)
 
 **Truth stays in the core; loop state stays out of React.** The core facade owns

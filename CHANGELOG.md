@@ -18,6 +18,24 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Bind catalog-aware reports to the browser contract
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Corrected the Studio contract-load boundary exposed by the isolated browser
+gate: the local WASM validator still runs on every load, while a catalog-aware gateway
+report is retained only when its non-empty contract hash, report format, schema, and
+validator versions exactly match the WASM result. Generated catalog models now retain
+their sovereign native admission instead of being falsely rejected by WASM's
+intentional empty catalog, and mismatched/stale reports fail closed to the local
+verdict.
+**Changed:** Studio report selection and the Studio system contract.
+**Decisions:** none; the platform catalog remains server-owned and the UI truthfully
+displays the active report target.
+**Next:** rerun the exact-head isolated Postgres/browser acceptance and continue only
+from its structured evidence.
+**Blockers:** none for the deterministic gate; live-provider and external-user proof
+remain separate.
+
 ## 2026-07-13 — Gate the complete builder loop in a real browser
 **Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [~], QA-001

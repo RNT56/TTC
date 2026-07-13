@@ -101,6 +101,17 @@ import { decodeShareFragment, encodeShareFragment } from "./share";
 import { CoreBake, CoreSession, corePatch, coreValidate, type DriveInput } from "./wasm";
 import type { Slot } from "./contract.gen";
 
+function selectContractReport(localReport: Report, serverReport?: Report | null): Report {
+  if (!serverReport) return localReport;
+  const sameContract =
+    localReport.contractHash.length > 0 && serverReport.contractHash === localReport.contractHash;
+  const sameValidatorBoundary =
+    serverReport.reportVersion === localReport.reportVersion &&
+    serverReport.schemaVersion === localReport.schemaVersion &&
+    serverReport.validatorVersion === localReport.validatorVersion;
+  return sameContract && sameValidatorBoundary ? serverReport : localReport;
+}
+
 const panel: React.CSSProperties = {
   position: "absolute",
   background: "rgba(13,15,18,0.88)",
@@ -579,7 +590,11 @@ export default function App() {
     } catch {
       sessionRef.current = null; // archetypes without a v0 driver stay static
     }
-    const report = reportOverride?.verdict === "draft" ? reportOverride : await coreValidate(contract);
+    // The browser facade deliberately has no platform catalog. Always run it to
+    // bind the report to the exact contract and runtime boundary, then retain a
+    // catalog-aware gateway report only when those identities match exactly.
+    const localReport = await coreValidate(contract);
+    const report = selectContractReport(localReport, reportOverride);
     useStudio.getState().setLoaded(artifact, report, contract);
     useStudio.getState().setSelected(null);
   }, []);
