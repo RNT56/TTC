@@ -61,14 +61,16 @@ licensing groundwork.
 **Scope:** Monolith tagged as executable reference; contract schema v2.1 (env,
 estimator, lockfile, license classes, collider compounds) **authored in
 `forge-contract` with schemars emission**; mechanical translation of both prototype
-models (humanoid + VX-2) and all 31 variants to JSON; **cargo + pnpm monorepo
+models (humanoid + VX-2) to JSON; the plan's 31-variant claim is closed as
+non-applicable because the delivered oracle predates that configurator (D32);
+product-equipped variants are XC-28/P1-014; **cargo + pnpm monorepo
 scaffold**; **core boundary API frozen** (plan §5.3).
 **Owning docs:** [`systems/core-runtime.md`](systems/core-runtime.md),
 [`systems/model-contract.md`](systems/model-contract.md),
 [`architecture.md`](architecture.md) §3.
 
 Exit criteria:
-- [x] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(2026-06-12: hrx7 125/2195/2581 ✓, vx2-hornet 73/924/1250 ✓, CI-guarded; "all 31 variants" applies only if the later configurator build is delivered — see P0-007)*
+- [x] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(2026-06-12: hrx7 125/2195/2581 ✓, vx2-hornet 73/924/1250 ✓, CI-guarded; D32 closes the unavailable 31-variant historical claim without inventing source data)*
 - [x] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars *(2026-06-12)*
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*

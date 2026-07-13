@@ -72,6 +72,22 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Separate historical parity from equipped variants
+**Session:** Codex agent · branch `codex/g1-public-surfaces` · **Phase:** P0/P1 ·
+**TODO items:** P0-007, P1-014, XC-28
+**Done:** Closed the impossible 31-variant extraction claim against the complete,
+byte-frozen pre-configurator oracle without fabricating source data; identified that
+v2.1 consumers currently count every alternative as equipped; and created one stable
+cross-surface task for explicit selected-variant semantics.
+**Changed:** decision record, phase/task ledgers, project-state counts, ModelSpec and
+Studio system contracts, and changelog.
+**Decisions:** D32 makes the delivered oracle the complete historical parity boundary
+and requires exactly one explicit equipped alternative before variant behavior ships.
+**Next:** Implement XC-28 as a compatibility-governed contract/migration/validator/
+simulation/BOM/Studio slice after the G1 validator release evidence is complete.
+**Blockers:** no historical source blocker remains; implementation is dependency-
+ordered behind the active G1 release proof.
+
 ## 2026-07-13 — Establish honest public project surfaces
 **Session:** Codex agent · branch `codex/g1-public-surfaces` · **Phase:** G1 ·
 **TODO items:** PRE-004, PRE-005, GOV-010, DOC-004, DOC-006

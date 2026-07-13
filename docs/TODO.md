@@ -24,9 +24,10 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - **Governance/release blocker (`GOV-008..011`):** cross-platform
   release/artifact-SBOM/provenance/install proof, public repository surfaces, and
   the Linux Desktop dependency route remain open.
-- **Resolved historical blocker 2026-06-12:** PRE-002 delivered the byte-exact
-  pre-configurator prototype. P0-007 remains owner/rescope-gated because the delivered
-  vintage has no 31-variant slot system.
+- **Resolved historical blocker 2026-07-13 (D32):** PRE-002 delivered the byte-exact
+  pre-configurator prototype. The delivered vintage has no 31-variant slot system, so
+  P0-007 is closed without fabricated parity; real equipped-variant semantics are
+  tracked as XC-28/P1-014.
 
 ## 1. Pre-P0 housekeeping (PRE)
 
@@ -46,7 +47,7 @@ cross-cutting backlog, its open items (§22), and repository housekeeping. Phase
 - [x] P0-004 — **Byte-equivalence MET** *(2026-06-12)*: hrx7 `125/2195/2581` and vx2-hornet `73/924/1250` exact vs the monolith extraction; guarded permanently in CI (extraction-drift + translation-drift + compare steps)
 - [x] P0-005 — hrx7 → `examples/hrx7.forge.json` *(2026-06-12; mechanical: `scripts/translate-monolith.mjs` instruments the monolith's own N()/P() calls in a vm sandbox — zero hand transcription)*
 - [x] P0-006 — fpv → `examples/vx2-hornet.forge.json` *(2026-06-12; same mechanical path; "combat" naming dropped per §17.2)*. Finding: both translations fail CTR-004 (explode coverage 69 %/42 % vs the later 80 % gate) — historical models predate the completeness gates; gates unchanged, recorded honestly
-- [!] P0-007 — Translate all 31 slot variants — **the delivered vintage has no slot/variant system**; gated on the later ~83 KB configurator build (owner) or a re-scoping decision
+- [x] P0-007 — Translate all 31 slot variants — **closed as not applicable by D32 (2026-07-13):** the byte-frozen delivered vintage has no slot/variant system, so no defensible 31-variant source exists to translate. The repository will not invent historical parity; actual equipped-variant behavior is XC-28/P1-014.
 - [x] P0-008 — Extraction harness complete *(2026-06-12)*: counts (`extract-counts.mjs`) + **trajectory tapes** (`extract-trajectories.mjs` → `prototype/trajectories/`, deterministic, CI re-records on drift)
 - [x] P0-009 — **Core boundary API frozen (v1)** *(2026-06-12)*: bake + validate + **tick** (CoreSession, bit-deterministic) + **patch** (JSON-Patch with shape gate) all live in binary + WASM facade; zero-copy views remain a P1-005 refinement that cannot change call shapes
 - [x] P0-010 — Verified the current file and commit `0294a9d` both hash to `ca93489e05df87f94c0da0aacbedfd41a24274b19ab5a440df46bee3d5d21cbe`; created and pushed annotated tag `prototype-final` at that commit *(2026-07-12; = `GOV-006`)*.
@@ -70,7 +71,7 @@ Studio (TypeScript face):
 - [x] P1-011 — Explode: per-part windows ✓ + dashed leader lines on leader-flagged parts ✓ *(2026-06-12; Line2 fat-line upgrade cosmetic)*
 - [x] P1-012 — Selection *(2026-06-12)*: batchId raycast picking + info panel + **inverted-hull outline** (back-face shell inflated along normals, rim distance-scaled to ~2 px) — chosen over stencil: 1 draw call, no postprocess dependency, depth-correct for occluded parts; recorded here as the implementation decision
 - [x] P1-013 — Camera + inspection *(2026-06-12)*: orbit ✓; follow camera ✓ (`Session.focus()`, monolith min(1, dt·5) easing); **jog teach-pendant** ✓ (core `Session.set_jog` — per-node euler over the pose layers, the monolith's `nodes[k].rot += jog[k]`; studio drag on the selected node, zero button; clearing restores the bit-identical stream — tested); **pause + 1/120 s frame-step** ✓. Jog applies on the posed paths (biped/multirotor); quadruped/rover jog lands with their posed-path upgrade
-- [~] P1-014 — Configurator pane *(2026-06-12: mechanics live)*: selection pane patches color/material through the live `CoreBake` handle — **JSON-Patch → re-bake in place**, validator re-judges every patched document, explode/camera/drive/jog state and selection all survive the rebuild (browser-verified). **Variant cards remain gated on the slot system** (P0-007 vintage gap / P3 component DB)
+- [~] P1-014 — Configurator pane *(2026-06-12: mechanics live)*: selection pane patches color/material through the live `CoreBake` handle — **JSON-Patch → re-bake in place**, validator re-judges every patched document, explode/camera/drive/jog state and selection all survive the rebuild (browser-verified). Variant cards require XC-28's explicit equipped-variant contract and must explain incompatibility, preserve inspection state, and change only the selected alternative.
 - [x] P1-015 — Golden-scene parity gallery vs monolith *(2026-06-12)*: `pnpm parity` (`scripts/parity-gallery.mjs`) renders both — the frozen monolith (bridged copy, rest pose pinned, chrome suppressed) and the built studio (`__forgeParity` hook: camera pose, grid/shadows off) — under 6 canonical cameras (2 models × 3 views, monolith FOV 2·atan(0.3443)), headless chromium + SwiftShader. Structural gate: Sobel-edge F1 with 1-px tolerance ≥ 0.85; **measured 0.95–0.995 on all six** (wrong configs score ≤ 0.4). Evidence committed: `docs/assets/parity/` composites + metrics; full gallery regenerates into `artifacts/parity/` (gitignored). CI integration deliberately deferred (chromium install flake risk) — local tool + committed evidence
 - [x] P1-016 — N8AO + quality tiers *(2026-06-12)*: shaded pipeline renders through EffectComposer (Render → N8AO → Output; blueprint keeps its own pass; `n8ao` is the only new dep — plan-named at XC-22); tiers high/medium(½-res AO)/low(AO off) over pixel ratio, with the **XC-22 degradation ladder v0**: sustained < 45 fps for 3 s steps the tier DOWN (never up — raising is manual); parity gallery captures pin tier=low for determinism. Measured (SwiftShader floor): high 2.6 ms render · low 0.6 ms
 - [~] P1-017 — Perf overlay *(2026-06-12)*: fps + render ms + **draw calls + core-tick ms** live (honest per-frame accounting across blueprint's multi-pass — `info.autoReset` off); measured on SwiftShader (software floor): render 0.5 ms · core ≤ 0.05 ms · 9 draws. Rapier split lands with the worker (P6); UI ms pending
@@ -232,6 +233,7 @@ touched.
 | XC-25 | Leaderboard replay verifier — **done 2026-06-14** (server computes replay hash/timestamp/header checks before official verification) | P10 | systems/environments-courses.md |
 | XC-26 | Golden-number suite harness — **done 2026-06-12** (XT-001 in CI; forge-num determinism fix) | P1 | systems/core-runtime.md |
 | XC-27 | Tauri serial + background-recorder plugins | P8 | systems/hardware-bridge.md |
+| XC-28 | Equipped slot-variant semantics: additive ModelSpec field/version + migration, exactly-one validator invariant, selected-only bake/sim/BOM/lockfile resolution, Studio variant cards, compatibility explanations, and native/WASM/browser golden tests | P1/P3 | systems/model-contract.md, systems/studio-ui.md, systems/simulation-engine.md, COMPATIBILITY.md |
 
 ## 4. Open decisions (OD) — non-blocking, from plan §22
 

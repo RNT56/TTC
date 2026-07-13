@@ -2,7 +2,7 @@
 
 **Status:** P1 shell + P4 account/model/generation/share/review/job panels live; output-aware heavy-job artifact registry and platform panels live · **Phases:** P1 shell, grows every phase · **Home:**
 `packages/studio` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D3, D4, D14, D15, D16
+(v3.0) · **Decisions:** D3, D4, D14, D15, D16, D32
 
 ## 1. Purpose
 
@@ -35,6 +35,12 @@ geometry math.
 | P7 | fixture training job output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, and one-click CoreSession policy playback; full training tab and live ONNX Runtime inference remain open |
 | P8 | D30 lab-gated hardware bridge; config-diff, telemetry/replay, supervisor, system-ID, crash/ghost metadata, replay artifacts, telemetry logs, and maintenance records render in job/artifact panels; WebSerial write, ladder UX, recorder/ghost scrubber and **Desktop** serial/recorder plugins remain open |
 | P9–P12 | fixture co-design Pareto points, wear, crash, repair, and fleet outputs render in job details; co-design points can apply admitted JSON-Patch candidates through patch/re-bake and save admitted points as openable models through the model admission route; platform panel covers credits, license ledger/export-policy visibility, editable course creation, `?course=<id>` course URLs, replay-verified leaderboard filtering, classroom assignment/submission, marketplace kind/status filtering with row-level usage/equip actions, listing/policy-listing submission, and moderation reports; artifact panel now includes the maintenance twin dashboard with fleet counts, crash scrubber, wear cards, repair rows, reorder hints, and vendor/print handoff links; live optimizer-backed Pareto depth and live marketplace/provider economics remain open |
+
+Variant cards are not presentation-only state. XC-28 must first make the equipped
+variant explicit in the versioned contract. A card change patches that field, re-bakes
+and re-validates in place, preserves camera/explode/jog/selection state, and shows a
+specific reason when compatibility or catalog policy disables an alternative. Studio
+must never infer the equipped choice from array order or apply every listed variant.
 
 ## 4. Local-first persistence *(proposed)*
 

@@ -2,7 +2,7 @@
 
 **Status:** deterministic sim helpers/exporters/importers, engine-backed Rapier stepping, and Rapier↔MuJoCo parity live · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
-**Decisions:** D7, D8, D16, D17, D20
+**Decisions:** D7, D8, D16, D17, D20, D32
 
 ## 1. Purpose
 
@@ -33,6 +33,13 @@ assumptions inspectable.
   the ≤ 1.5 ms core-tick share for the models themselves.
 
 ## 3. Propulsion & battery models (the HUD's source of truth)
+
+XC-28 is a correctness prerequisite for slot-backed physical values. Until the
+contract identifies one equipped variant, a list of alternatives must not be treated
+as an assembly. The migration and compiler change must make mass, propulsion,
+battery, collider, export, and BOM resolution consume only the explicit equipped
+variant; unknown or ambiguous selection fails validation instead of falling back to
+array order.
 
 Per-motor, first-order:
 

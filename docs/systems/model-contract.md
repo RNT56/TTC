@@ -2,7 +2,7 @@
 
 **Status:** not started · **Phases:** P0 (authoring), evolves always · **Home:**
 `crates/forge-contract` *(proposed)* · **Plan refs:** §4, Appendix A (v3.0) ·
-**Decisions:** D5, D7, D8, D10, D16, D19
+**Decisions:** D5, D7, D8, D10, D16, D19, D31, D32
 
 ## 1. Purpose
 
@@ -33,7 +33,7 @@ A `ModelSpec`:
 | `env` | `{gravity: 9.80665, airDensity: 1.225, wind: {mean, gust}}` | no physical constant is ambient; overridable per scene/course |
 | `skeleton[]` | `{name, parent, pos[m], rot[rad], limits[[minX,maxX],[minY,maxY],[minZ,maxZ]], joint?: {type: fixed\|revolute\|spherical, axis, maxTorqueNm?, maxVelRad?}}` | one tree drives visuals AND physics export |
 | `parts[]` | `{node, geom, material, color, explode?, renderBias?, comp?, mass?: {value_g \| density_kgm3}, collision?: auto\|hull\|primitive\|none}` | `geom` is the tagged union below |
-| `slots[]` | `{id, label, mountNodes[], joint?, variants[]}`; variant = `{id, name, desc, parts[]} \| {id, componentRef, ports{}}` | `componentRef` is semver-ranged into the catalog |
+| `slots[]` | v2.1 shape is `{id, label, mountNodes[], joint?, variants[]}`; variant = `{id, name, desc, parts[]} \| {id, componentRef, ports{}}` | **Known v2.1 gap:** no equipped/default ID exists, so consumers currently cannot distinguish alternatives. XC-28 must add versioned equipped selection and make all physical/export consumers selected-only (D32). `componentRef` is semver-ranged into the catalog. |
 | `lockfile` | map `componentRef@range → exact immutable revision` | D5; admission requires full resolution |
 | `ports[]` | `{id, node, frame, type}` — type from the connector taxonomy (mechanical patterns, electrical, data) | couplers/fasteners/wires *generated* from resolution |
 | `chains[]` + per-part `explode` | staged disassembly windows `{dir, mag, t0, t1}` | coverage is a completeness gate |

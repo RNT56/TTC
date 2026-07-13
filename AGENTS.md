@@ -74,6 +74,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   security workflow emits a validated SPDX source SBOM;
 - compatibility policy 1.0.0 is machine-checked across seven public format/package
   boundaries; the CLI/WASM facades expose their active versions;
+- the frozen prototype is the complete historical parity oracle and predates slot
+  variants; D32 forbids fabricated extraction, while XC-28 owns explicit equipped-
+  variant semantics across contract, validator, simulation, BOM, and Studio;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
