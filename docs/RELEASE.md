@@ -51,16 +51,21 @@ Every successful manual or tag run produces one aggregate Actions artifact with:
 
 The aggregate job creates a GitHub build-provenance attestation over every payload.
 It then verifies all checksums from the assembled artifact, requires all three native
-bundles, extracts the bundle matching the verification host into a clean temporary
-directory, checks `--version`, admits the canonical example, and installs the packed
-WASM package into a clean consumer. Tag runs attach the same files to a GitHub Release
+bundles, and preflights archives before extraction or installation. Native and WASM
+archives have compressed and expanded byte ceilings, normalized exact member
+allowlists, traversal/absolute/drive/backslash/duplicate rejection, and refusal of
+symlinks, hard links, devices, FIFOs, or other non-regular members. Only then does
+the verifier extract the host bundle into a clean temporary directory, require a
+bounded regular executable, check `--version`, admit the canonical example, and
+install the packed WASM package with scripts disabled into a clean consumer. Tag runs
+attach the same files to a GitHub Release
 only after that proof succeeds. Manual run `29236010204` is the branch-level positive
 proof: every build and aggregate job passed, and its downloaded artifact independently
 passed the same verifier on macOS using the macOS x86_64 payload.
 
 ## Pre-release
 
-1. `main` is protected, clean, and green in CI, security, nightly, and the 31-step
+1. `main` is protected, clean, and green in CI, security, nightly, and the 32-step
    local gate.
 2. Cargo, npm/WASM, compatibility-matrix, release-note, and tag versions agree.
 3. `docs/releases/v<version>.md` lists compatibility, migrations, rollback, known
@@ -116,6 +121,11 @@ its signing, update, and Linux dependency gates are separate.
   hold, backup, tombstone, restore-test, lifecycle-audit, and monotonic authority data;
   do not re-enable a pre-deletion backup or drop tombstones. Real provider backup
   deletion, sandbox restore, and measured RPO/RTO remain the `OPS-005` release gate.
+  SEC-006 adds no migration or public format. Rollback may remove the application
+  guards only by reverting the whole release; it must not weaken the release archive
+  preflight, re-enable body/server-fallback provider keys, trust forwarded hosts, or
+  claim that external egress/rate/rotation operations existed when only deterministic
+  controls were proved.
   Persisted
   ModelSpec/replay/EnvSpec support remains governed by
   [`COMPATIBILITY.md`](COMPATIBILITY.md).

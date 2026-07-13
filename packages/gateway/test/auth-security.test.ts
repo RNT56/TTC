@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assertAuthConfiguration, configuredPublicOrigin, type CurrentUser } from "../src/auth.js";
+import {
+  assertAuthConfiguration,
+  configuredPublicOrigin,
+  pinnedAuthRequestUrl,
+  type CurrentUser,
+} from "../src/auth.js";
 import type { GatewayDb } from "../src/db.js";
 import { recordGeneratedArtifact } from "../src/generatedArtifacts.js";
 import type { GenerationRequest, GenerationResponse } from "../src/generation.js";
-import { objectStorageConfigFromEnv, presignObjectAccess } from "../src/objectStorage.js";
+import { deleteStoredObjects, objectStorageConfigFromEnv, presignObjectAccess } from "../src/objectStorage.js";
 import { insertModelFromGeneration, recordUsageEvent } from "../src/platform.js";
 import { buildServer } from "../src/server.js";
 
@@ -25,6 +30,14 @@ test("production auth pins an HTTPS origin, strong secret, complete OAuth pair, 
   assert.throws(
     () => assertAuthConfiguration(productionEnv({ GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "" })),
     /configured together/,
+  );
+  assert.equal(
+    pinnedAuthRequestUrl("https://attacker.example/auth/callback?code=test", "https://forge.example.test").href,
+    "https://forge.example.test/auth/callback?code=test",
+  );
+  assert.equal(
+    pinnedAuthRequestUrl("//attacker.example/auth/signin", "https://forge.example.test").href,
+    "https://forge.example.test/auth/signin",
   );
 });
 
@@ -64,6 +77,33 @@ test("object download URLs are short-lived, owner-keyed, and forced to attachmen
   assert.equal(url.searchParams.get("response-content-disposition"), "attachment");
   assert.equal(url.searchParams.get("response-content-type"), "application/octet-stream");
   assert.equal(access.expiresAt, "2026-07-13T00:02:00.000Z");
+  await assert.rejects(
+    presignObjectAccess(config, {
+      action: "upload",
+      bucket: "another-bucket",
+      objectKey: "users/user-1/model.glb",
+      contentType: "model/gltf-binary",
+      byteSize: 100,
+    }),
+    /configured boundary/,
+  );
+  await assert.rejects(
+    presignObjectAccess(config, {
+      action: "upload",
+      bucket: config.bucket,
+      objectKey: "users/user-1/model.glb",
+      contentType: "model/gltf-binary",
+    }),
+    /declared byte size/,
+  );
+  await assert.rejects(
+    deleteStoredObjects(config, [{ bucket: "another-bucket", objectKey: "users/user-1/model.glb" }]),
+    /configured boundary/,
+  );
+  await assert.rejects(
+    deleteStoredObjects(config, [{ bucket: config.bucket, objectKey: "../another-user/model.glb" }]),
+    /object key is invalid/,
+  );
 });
 
 test("ephemeral provider credentials never enter generation, model, or usage persistence", async () => {
@@ -187,6 +227,7 @@ test("gateway enforces per-surface rate limits, trusted origins, bounded bodies,
     const bodyKey = await app.inject({
       method: "POST",
       url: "/v1/generate",
+      headers: { cookie: "authjs.session-token=forged-a" },
       payload: { prompt: "benign rover", provider: "anthropic", anthropicApiKey: "sk-must-not-enter-json" },
     });
     assert.equal(bodyKey.statusCode, 400, bodyKey.body);
@@ -195,7 +236,10 @@ test("gateway enforces per-surface rate limits, trusted origins, bounded bodies,
     const limited = await app.inject({
       method: "POST",
       url: "/v1/generate",
-      headers: { "x-forge-anthropic-key": "sk-header-only-test" },
+      headers: {
+        cookie: "authjs.session-token=forged-b",
+        "x-forge-anthropic-key": "sk-header-only-test",
+      },
       payload: { prompt: "another benign rover", provider: "anthropic" },
     });
     assert.equal(limited.statusCode, 429, limited.body);
@@ -214,6 +258,27 @@ test("gateway enforces per-surface rate limits, trusted origins, bounded bodies,
     assert.equal(deep.statusCode, 400, deep.body);
     assert.match(deep.body, /nesting limit/);
     await bodyApp.close();
+
+    const relatedGenerationApp = buildServer({
+      rateLimitPolicy: {
+        windowMs: 60_000,
+        limits: { auth: 5, generation: 1, job: 5, object: 5, public: 5 },
+      },
+      rateLimitNow: () => 1_000,
+    });
+    const courseAttempt = await relatedGenerationApp.inject({
+      method: "POST",
+      url: "/v1/courses/generate",
+      payload: { prompt: "benign inspection course" },
+    });
+    assert.equal(courseAttempt.statusCode, 401, courseAttempt.body);
+    const editLimited = await relatedGenerationApp.inject({
+      method: "POST",
+      url: "/v1/models/model-test/edit",
+      payload: { prompt: "make the arms longer" },
+    });
+    assert.equal(editLimited.statusCode, 429, editLimited.body);
+    await relatedGenerationApp.close();
   } finally {
     if (previousOrigin === undefined) delete process.env.FORGE_PUBLIC_ORIGIN;
     else process.env.FORGE_PUBLIC_ORIGIN = previousOrigin;

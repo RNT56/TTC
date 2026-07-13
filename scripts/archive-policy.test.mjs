@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -38,6 +38,19 @@ test("archive inspection enforces compressed and expanded byte ceilings before u
     assert.throws(() => readArchiveMember(archive, "payload", true, 1024, "fixture payload"), /byte limit/);
     assert.equal(readArchiveMember(archive, "payload", true, 4096, "fixture payload").byteLength, 2048);
     assert.throws(() => listArchiveEntries(archive, true, 1, "fixture"), /archive exceeds/);
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test("archive inspection rejects symbolic links even when the path is allowlisted", () => {
+  const temp = mkdtempSync(join(tmpdir(), "forge-archive-link-policy-"));
+  try {
+    writeFileSync(join(temp, "target"), "safe-looking target");
+    symlinkSync("target", join(temp, "payload"));
+    const archive = join(temp, "payload.tar.gz");
+    execFileSync("tar", ["-czf", archive, "payload"], { cwd: temp });
+    assert.throws(() => listArchiveEntries(archive, true, 4096, "fixture"), /non-regular archive member/);
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

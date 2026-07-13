@@ -362,8 +362,20 @@ function reviewAuthorized(request: FastifyRequest, reviewToken: string | null): 
 function rateLimitClass(request: FastifyRequest): RateLimitClass {
   const path = request.url.split("?", 1)[0] ?? request.url;
   if (path === "/auth" || path.startsWith("/auth/")) return "auth";
-  if (path.startsWith("/v1/generate")) return "generation";
-  if (path.startsWith("/v1/jobs") || path.startsWith("/v1/photoscan") || path.startsWith("/v1/policies")) return "job";
+  if (
+    path.startsWith("/v1/generate") ||
+    path === "/v1/courses/generate" ||
+    (path.startsWith("/v1/models/") && path.endsWith("/edit"))
+  ) return "generation";
+  if (
+    path.startsWith("/v1/jobs") ||
+    path.startsWith("/v1/photoscan") ||
+    path.startsWith("/v1/policies") ||
+    path.startsWith("/v1/commerce/") ||
+    path === "/v1/validate" ||
+    path === "/v1/bake" ||
+    path === "/v1/bom"
+  ) return "job";
   if (path.startsWith("/v1/blobs")) return "object";
   return "public";
 }
@@ -1229,7 +1241,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
               maxLength: 160,
               pattern: "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\\/-]*$",
             })),
-            byteSize: Type.Optional(Type.Integer({ minimum: 0, maximum: MAX_OBJECT_BYTES })),
+            byteSize: Type.Integer({ minimum: 0, maximum: MAX_OBJECT_BYTES }),
             sha256: Type.Optional(sha256Schema),
             cacheKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
             metadata: Type.Optional(Type.Record(Type.String({ minLength: 1, maxLength: 80 }), Type.Unknown())),

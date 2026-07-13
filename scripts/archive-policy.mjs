@@ -51,7 +51,19 @@ function runTar(args, maxBuffer, label) {
 export function listArchiveEntries(archive, compressed, maxArchiveBytes, label) {
   if (statSync(archive).size > maxArchiveBytes) throw new Error(`${label} archive exceeds the byte limit`);
   const output = runTar(compressed ? ["-tzf", archive] : ["-tf", archive], 256 * 1024, label);
-  return output.toString("utf8").split("\n").filter(Boolean);
+  const entries = output.toString("utf8").split("\n").filter(Boolean);
+  const verbose = runTar(compressed ? ["-tvzf", archive] : ["-tvf", archive], 256 * 1024, label)
+    .toString("utf8")
+    .split("\n")
+    .filter(Boolean);
+  if (verbose.length !== entries.length) throw new Error(`${label} member metadata is inconsistent`);
+  for (const line of verbose) {
+    const type = line.trimStart()[0];
+    if (type !== "-" && type !== "d") {
+      throw new Error(`${label} contains a non-regular archive member`);
+    }
+  }
+  return entries;
 }
 
 export function readArchiveMember(archive, member, compressed, maxBytes, label) {

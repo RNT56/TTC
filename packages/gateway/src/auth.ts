@@ -73,6 +73,19 @@ function authOrigin(): string {
   return configuredPublicOrigin() ?? "http://localhost:8080";
 }
 
+export function pinnedAuthRequestUrl(rawUrl: string, origin: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl, origin);
+  } catch {
+    throw serviceError("authentication request URL is invalid", 400);
+  }
+  const pinned = new URL(origin);
+  pinned.pathname = parsed.pathname;
+  pinned.search = parsed.search;
+  return pinned;
+}
+
 export function githubAuthConfigured(): boolean {
   return Boolean(process.env.GITHUB_CLIENT_ID?.trim() && process.env.GITHUB_CLIENT_SECRET?.trim());
 }
@@ -111,7 +124,7 @@ export async function handleAuthRequest(
   reply: FastifyReply,
 ): Promise<FastifyReply> {
   const origin = authOrigin();
-  const url = new URL(request.raw.url ?? request.url, origin);
+  const url = pinnedAuthRequestUrl(request.raw.url ?? request.url, origin);
   const headers = new Headers();
   for (const [key, value] of Object.entries(request.headers)) {
     if (value === undefined) continue;
@@ -222,10 +235,9 @@ function cookieValue(cookieHeader: string | undefined, names: string[]): string 
 }
 
 export function requestRateLimitIdentity(request: FastifyRequest): string {
-  const session = cookieValue(request.headers.cookie, SESSION_COOKIE_NAMES);
-  if (session) return `session:${session}`;
-  const devUser = headerAuthEnabled() ? request.headers["x-forge-user-id"] : null;
-  if (typeof devUser === "string" && devUser.trim()) return `dev-user:${devUser.trim().slice(0, 200)}`;
+  // This hook runs before authentication. Caller-supplied session cookies or
+  // development headers are not identities until they have been verified, so using
+  // them here would let a client rotate fake values to reset its bucket.
   return `ip:${request.ip}`;
 }
 

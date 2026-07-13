@@ -36,6 +36,14 @@ truth. `workers/forge_workers/modal_app.py` provides an optional Modal entrypoin
 without importing Modal on local/CI runs and now exposes JSON-serializable task
 profiles for burst-GPU deployment planning.
 
+SEC-006 bounds every injected command to 4 MiB JSON input, 8 MiB stdout, 256 KiB
+stderr, and a configured 1-second to 8-hour timeout. Temporary files replace
+unbounded pipes; timeout or overflow kills the process group; nonzero exit and invalid
+output return generic errors without reflecting command stdout/stderr. Output must be
+a bounded JSON object. Live deployment must additionally run non-root with filesystem,
+CPU, memory, process, network, and device isolation; process bounds are not an OS
+sandbox.
+
 ## 3. Worker families
 
 ### 3.1 `workers/etl` — catalog ingestion (P3-004, P4-015..017)
@@ -50,7 +58,11 @@ Claude-style extraction, and OCCT geometry adapter protocols. `etl.ingest-compon
 can route source-bundle payloads through those adapters, and deployment-owned
 commands can provide `FORGE_CLAUDE_EXTRACT_CMD` and `FORGE_OCCT_TESSELLATE_CMD`.
 Fixture fetch/extract and envelope geometry fallback run in CI; HTTP and provider
-transports fail closed unless deployment supplies a key/executor.
+transports fail closed unless deployment supplies a key/executor. HTTP source and
+Modal adapters accept only credential-free HTTPS, exact hosts where configured,
+public DNS answers, no redirects, explicit content types, 1..120-second timeouts,
+and 1 KiB..8 MiB streamed responses. Application DNS validation still requires a
+production egress firewall/proxy to close the connection-time rebinding gap.
 
 ### 3.2 `workers/occt` — B-rep truth (P3 tessellation; P6 DfM/STEP)
 STEP I/O, fillets, exact tessellation → meshoptimizer LOD chain (≤ 800/≤ 150 tris);
@@ -167,7 +179,10 @@ from `forge-sim`.
 
 Golden-fixture jobs per family in CI (small datasheet → expected row; tiny mesh →
 refit verdict; micro-task → learning-signal smoke); idempotency tests (run twice,
-one result); poison-payload handling; cache-hit tests.
+one result); poison-payload handling; cache-hit tests. SEC-006 negative tests cover
+private/reserved/host-drift URLs, redirects, content and response ceilings, bounded
+JSON depth/non-finite values, command-secret non-reflection, and output-overflow
+process termination. See [`../THREAT-MODEL.md`](../THREAT-MODEL.md).
 
 ## 7. Phase mapping & backlog
 

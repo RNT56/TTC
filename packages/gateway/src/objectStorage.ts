@@ -5,6 +5,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { MAX_OBJECT_BYTES } from "./security.js";
 
 export type ObjectAccessAction = "upload" | "download";
 
@@ -44,6 +45,12 @@ export interface StoredObjectRef {
 }
 
 export type ObjectDeletionAdapter = (objects: readonly StoredObjectRef[]) => Promise<void>;
+
+function assertObjectKey(objectKey: string): void {
+  if (!objectKey || objectKey.startsWith("/") || /(?:^|\/)\.\.(?:\/|$)|[\0\r\n]/.test(objectKey)) {
+    throw new Error("object key is invalid");
+  }
+}
 
 function objectStorageClient(config: ObjectStorageConfig): S3Client {
   return new S3Client({
@@ -112,8 +119,19 @@ export async function presignObjectAccess(
   input: PresignObjectInput,
 ): Promise<ObjectAccessContract> {
   const expiresInSeconds = Math.min(Math.max(input.expiresInSeconds ?? 900, 60), 3600);
-  if (!input.objectKey || input.objectKey.startsWith("/") || /(?:^|\/)\.\.(?:\/|$)|[\0\r\n]/.test(input.objectKey)) {
-    throw new Error("object key is invalid");
+  if (input.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+  assertObjectKey(input.objectKey);
+  if (input.action === "upload") {
+    if (!Number.isSafeInteger(input.byteSize) || Number(input.byteSize) < 0 || Number(input.byteSize) > MAX_OBJECT_BYTES) {
+      throw new Error("object upload requires a bounded declared byte size");
+    }
+    if (
+      typeof input.contentType !== "string" ||
+      input.contentType.length > 160 ||
+      !/^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\/-]*$/.test(input.contentType)
+    ) {
+      throw new Error("object upload requires a valid content type");
+    }
   }
   const client = objectStorageClient(config);
   const command =
@@ -156,7 +174,11 @@ export async function deleteStoredObjects(
   objects: readonly StoredObjectRef[],
 ): Promise<void> {
   const unique = new Map<string, StoredObjectRef>();
-  for (const object of objects) unique.set(`${object.bucket}\0${object.objectKey}`, object);
+  for (const object of objects) {
+    if (object.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+    assertObjectKey(object.objectKey);
+    unique.set(`${object.bucket}\0${object.objectKey}`, object);
+  }
   const byBucket = new Map<string, string[]>();
   for (const object of unique.values()) {
     const keys = byBucket.get(object.bucket) ?? [];

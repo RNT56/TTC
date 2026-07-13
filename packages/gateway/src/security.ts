@@ -258,34 +258,39 @@ export async function fetchBoundedJson(
   const maxBytes = Math.max(1_024, Math.min(options.maxResponseBytes ?? DEFAULT_HTTP_RESPONSE_BYTES, 8 * 1024 * 1024));
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  let response: Response;
   try {
-    response = await (options.fetchImpl ?? fetch)(url, { ...init, redirect: "manual", signal: controller.signal });
+    let response: Response;
+    try {
+      response = await (options.fetchImpl ?? fetch)(url, { ...init, redirect: "manual", signal: controller.signal });
+    } catch {
+      if (controller.signal.aborted) throw httpError(`${options.label} timed out`, 503);
+      throw httpError(`${options.label} request failed`, 503);
+    }
+    if (response.status >= 300 && response.status < 400) {
+      throw httpError(`${options.label} redirects are not allowed`, 503);
+    }
+    const declaredLength = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+      throw httpError(`${options.label} response exceeds the byte limit`, 503);
+    }
+    const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+    if (response.ok && contentType !== "application/json" && !contentType.endsWith("+json")) {
+      throw httpError(`${options.label} returned an unsupported content type`, 503);
+    }
+    const text = await readBoundedBody(response, maxBytes, options.label);
+    if (!response.ok) throw httpError(`${options.label} failed (${response.status})`, 503);
+    try {
+      const value = JSON.parse(text) as unknown;
+      assertBoundedJson(value, `${options.label} response`, { maxBytes });
+      return { response, value };
+    } catch {
+      throw httpError(`${options.label} returned invalid JSON`, 503);
+    }
   } catch (error) {
     if (controller.signal.aborted) throw httpError(`${options.label} timed out`, 503);
-    throw httpError(`${options.label} request failed`, 503);
+    throw error;
   } finally {
     clearTimeout(timeout);
-  }
-  if (response.status >= 300 && response.status < 400) {
-    throw httpError(`${options.label} redirects are not allowed`, 503);
-  }
-  const declaredLength = Number(response.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-    throw httpError(`${options.label} response exceeds the byte limit`, 503);
-  }
-  const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
-  if (response.ok && contentType !== "application/json" && !contentType.endsWith("+json")) {
-    throw httpError(`${options.label} returned an unsupported content type`, 503);
-  }
-  const text = await readBoundedBody(response, maxBytes, options.label);
-  if (!response.ok) throw httpError(`${options.label} failed (${response.status})`, 503);
-  try {
-    const value = JSON.parse(text) as unknown;
-    assertBoundedJson(value, `${options.label} response`, { maxBytes });
-    return { response, value };
-  } catch {
-    throw httpError(`${options.label} returned invalid JSON`, 503);
   }
 }
 

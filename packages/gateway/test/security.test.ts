@@ -126,6 +126,23 @@ test("DNS and bounded provider fetch reject rebinding, redirects, content drift,
     }),
     /unsupported content type/,
   );
+  await assert.rejects(
+    fetchBoundedJson(url.href, {}, {
+      label: "provider",
+      resolveHost,
+      timeoutMs: 1_000,
+      fetchImpl: async (_input, init) => {
+        const signal = init?.signal;
+        return new Response(new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(Buffer.from('{"partial":'));
+            signal?.addEventListener("abort", () => controller.error(new Error("aborted")), { once: true });
+          },
+        }), { headers: { "content-type": "application/json" } });
+      },
+    }),
+    /timed out/,
+  );
   const result = await fetchBoundedJson(url.href, {}, {
     label: "provider",
     resolveHost,

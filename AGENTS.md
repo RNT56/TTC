@@ -34,14 +34,17 @@ Read in this order for every non-trivial session:
 5. `docs/TODO.md` — atomic task ledger with stable IDs.
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
-8. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+8. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
+   outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
+   or release archive handling.
+9. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-9. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+10. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
-10. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+11. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-11. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-12. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+12. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+13. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -67,8 +70,10 @@ production-proven or ready for live-provider, external-beta, or field claims.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
-- the recovery worktree passes the 31-step `pnpm verify` gate and the isolated
-  Postgres/pgvector `pnpm verify:db` gate on pinned Rust 1.96.0;
+- the SEC-006 candidate passes the 32-step `pnpm verify` gate on pinned Rust 1.96.0;
+  the last exact Postgres/pgvector proof is protected PR #30, while the local
+  SEC-006 rerun is pending a healthy Docker engine and must pass the required remote
+  Postgres check before the task closes;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -81,20 +86,24 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
   lockfile, BOM, WASM, and Studio;
-- the local v0.2 stack enforces D10 manufacturing-license policy and SEC-002
-  pre-retrieval/provider prohibited-brief refusal with non-content audit rows; both
-  still await protected delivery and do not prove live-provider operations;
-- SEC-003..005 locally prove versioned owner-scoped export, primary Postgres and
+- protected `main` at `d34b6fd` contains ModelSpec 2.2/XC-28, D10 manufacturing-
+  license enforcement, and SEC-002 pre-retrieval/provider prohibited-brief refusal
+  with non-content audit rows; none of these prove live-provider operations;
+- SEC-003..005 on protected `main` prove versioned owner-scoped export, primary Postgres and
   S3-compatible deletion, purpose/subject consent grants and withdrawals, bounded
   retention, time-bounded legal holds, pseudonymous tombstones, backup catalog/
   expiry adapters, and pre-restore suppression; production backup/restore remains
   `OPS-005` and is not implied by deterministic local evidence;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
+- the SEC-006 candidate adds pinned-origin authentication, header-only ephemeral
+  provider credentials, bounded JSON/network/process/object/archive boundaries,
+  prompt-injection containment, classed rate limits, and adversarial tests; production
+  egress enforcement, distributed quotas, secret rotation, and incident exercises
+  remain operations gates;
 - `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
   and its nine-asset GitHub Release were built from protected `1093842`, attested,
   downloaded after publication, and independently re-verified;
-- crates.io/npm publication remains explicitly deferred to owner-scoped credentials;
-  the local v0.2 stack is green but still requires protected delivery.
+- crates.io/npm publication remains explicitly deferred to owner-scoped credentials.
 
 Do not repeat these facts without re-running or re-checking them. Update
 `docs/PROJECT-STATE.md` whenever the boundary materially changes.
@@ -216,6 +225,28 @@ Data-lifecycle boundary (D35/SEC-005):
   provider deletion receipts, sandbox restores, RPO/RTO, and DR promotion remain
   `OPS-005`.
 
+Application threat boundary (SEC-006):
+
+- production auth uses an explicit credential-free HTTPS origin and strong secret;
+  untrusted forwarded hosts never reach Auth.js, built-in CSRF remains enabled,
+  unsafe cookie requests require the trusted origin, and development identities are
+  forbidden in production;
+- HTTP generation accepts BYO provider credentials only through the dedicated header.
+  It never reads a server-key fallback, serializes the key into generated-artifact,
+  usage, or model records, reflects it in errors, or records it in product logs;
+- all request/provider/job/object/worker/archive inputs have explicit size, depth,
+  time, content, and destination bounds. External HTTP is credential-free HTTPS,
+  redirect-free, exact-host where known, public-address checked, and structurally
+  validated; production still requires connection-time egress enforcement because
+  application DNS checks cannot eliminate rebinding;
+- prompt and retrieval text are untrusted data. Local prohibited-brief refusal,
+  reviewed-catalog policy, bounded tool output, allowlisted provider results, and the
+  sovereign validator remain the hard controls;
+- the in-memory classed limiter is valid for deterministic and single-process proof
+  only. Shared atomic rate, concurrency, and spend controls are required before a
+  multi-replica or billable-provider claim. The complete control/residual-risk matrix
+  is owned by `docs/THREAT-MODEL.md`.
+
 ## 5. Session protocol
 
 1. Check `git status --short --branch`, current branch/worktree, recent commits, and
@@ -284,6 +315,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Studio | `pnpm --filter @forge/studio typecheck`; build; browser smoke for changed interaction; accessibility/perf check when relevant |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
+| Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
@@ -312,6 +344,8 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 11. External model/provider identifiers, limits, prices, and regulations are verified
     from current primary sources at implementation time.
 12. Decisions, exceptions, and owner reordering are recorded in `docs/DECISIONS.md`.
+13. Secrets are request- or service-scoped, never persisted or reflected; outbound
+    destinations, resource use, and archive contents fail closed under explicit bounds.
 
 ## 9. Dependency and supply-chain policy
 
