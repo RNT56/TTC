@@ -18,6 +18,20 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Bind owner listing reads to the framework limiter
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~], SEC-006
+**Done:** Resolved the high-severity CodeQL finding on the new owner-listing query by
+binding the route to the official Fastify limiter as well as the existing shared
+public-surface limiter. Focused coverage proves the route refuses the second request
+under a one-request policy.
+**Changed:** Owner-listing route composition, security coverage, and gateway testing
+guidance.
+**Decisions:** none; the request budget remains fail-closed and identity-keyed.
+**Next:** rerun full local and exact-head CI/security/browser acceptance, then inspect
+the replacement Advanced Security check before marking PR #38 ready.
+**Blockers:** none.
+
 ## 2026-07-13 — Keep governed owner listings visible after refresh
 **Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [~]

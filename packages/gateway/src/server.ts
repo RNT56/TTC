@@ -2767,57 +2767,76 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
   );
 
-  app.get(
-    "/v1/listings/mine",
-    {
-      schema: {
-        querystring: Type.Object(
-          {
-            limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+  app.register(async (ownedListingsApp) => {
+    if (rateLimitPolicy !== null) {
+      await ownedListingsApp.register(fastifyRateLimit, {
+        global: true,
+        max: rateLimitPolicy.limits.public,
+        timeWindow: rateLimitPolicy.windowMs,
+        cache: 20_000,
+        keyGenerator: (request) => secretFingerprint(requestRateLimitIdentity(request)),
+        errorResponseBuilder: () => ({ statusCode: 429, error: "rate limit exceeded" }),
+      });
+    }
+    ownedListingsApp.get(
+      "/v1/listings/mine",
+      {
+        config: {
+          rateLimit: {
+            max: rateLimitPolicy?.limits.public ?? DEFAULT_RATE_LIMIT_POLICY.limits.public,
+            timeWindow: rateLimitPolicy?.windowMs ?? DEFAULT_RATE_LIMIT_POLICY.windowMs,
+            groupId: "owner-listings",
           },
-          { additionalProperties: false },
-        ),
+        },
+        schema: {
+          querystring: Type.Object(
+            {
+              limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+            },
+            { additionalProperties: false },
+          ),
+        },
       },
-    },
-    async (request, reply) => {
-      try {
-        const user = await requireUser(request, db);
-        const query = request.query as { limit?: number };
-        const result = await db.query<{
-          id: string;
-          listing_kind: string;
-          status: string;
-          title: string;
-          license_class: string | null;
-          export_policy: string;
-          price_credits: string | number;
-          created_at: Date | string;
-        }>(
-          `SELECT id, listing_kind, status, title, license_class, export_policy, price_credits, created_at
+      async (request, reply) => {
+        try {
+          const user = await requireUser(request, db);
+          const query = request.query as { limit?: number };
+          const result = await db.query<{
+            id: string;
+            listing_kind: string;
+            status: string;
+            title: string;
+            license_class: string | null;
+            export_policy: string;
+            price_credits: string | number;
+            created_at: Date | string;
+          }>(
+            `SELECT id, listing_kind, status, title, license_class, export_policy, price_credits, created_at
              FROM marketplace_listings
             WHERE owner_user_id = $1
             ORDER BY created_at DESC
             LIMIT $2`,
-          [user.id, query.limit ?? 50],
-        );
-        return reply.send({
-          listings: result.rows.map((row) => ({
-            id: row.id,
-            kind: row.listing_kind,
-            status: row.status,
-            title: row.title,
-            licenseClass: row.license_class,
-            exportPolicy: row.export_policy,
-            priceCredits: Number(row.price_credits),
-            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
-          })),
-        });
-      } catch (error) {
-        const mapped = routeError(error);
-        return reply.status(mapped.statusCode).send(mapped.body);
-      }
-    },
-  );
+            [user.id, query.limit ?? 50],
+          );
+          return reply.send({
+            listings: result.rows.map((row) => ({
+              id: row.id,
+              kind: row.listing_kind,
+              status: row.status,
+              title: row.title,
+              licenseClass: row.license_class,
+              exportPolicy: row.export_policy,
+              priceCredits: Number(row.price_credits),
+              createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+            })),
+          });
+        } catch (error) {
+          const mapped = routeError(error);
+          return reply.status(mapped.statusCode).send(mapped.body);
+        }
+      },
+    );
+  });
 
   app.get(
     "/v1/listings",

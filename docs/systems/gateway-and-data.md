@@ -297,7 +297,8 @@ append-only enforcement, and deletion residue against real transactions. It then
 runs QA-002 through the production Studio bundle, exact validator binary, built WASM,
 and headless Chromium against that isolated database. The runner covers all ten
 builder-loop surfaces, including authenticated reload of an owner's governed listing
-without granting review-queue access, emits
+without granting review-queue access. That owner query is bounded by both the shared
+public-surface limiter and an official route-scoped Fastify limiter. The runner emits
 `artifacts/e2e/qa002-browser-e2e.json`, captures a
 screenshot on failure, and refuses an implicit or unmarked database. The object smoke
 uploads a unique payload through MinIO, invokes the
