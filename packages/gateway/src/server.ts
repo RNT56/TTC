@@ -59,6 +59,7 @@ import {
 } from "./reviewQueue.js";
 import {
   assertJobKind,
+  completeObjectBlobUpload,
   createJob,
   createModel,
   createPrintQuoteRequest,
@@ -98,9 +99,11 @@ import {
 } from "./platform.js";
 import {
   deleteStoredObjects,
+  inspectStoredObject,
   objectStorageConfigFromEnv,
   presignObjectAccess,
   type ObjectDeletionAdapter,
+  type ObjectInspectionAdapter,
 } from "./objectStorage.js";
 import {
   prohibitedBriefResponse,
@@ -133,6 +136,7 @@ export interface ServerOptions {
   anthropicBaseUrl?: string;
   persistGeneratedArtifacts?: boolean;
   deleteObjects?: ObjectDeletionAdapter;
+  inspectObject?: ObjectInspectionAdapter;
   rateLimitPolicy?: RateLimitPolicy | null;
   rateLimitNow?: () => number;
 }
@@ -351,7 +355,11 @@ function routeError(error: unknown): { statusCode: number; body: unknown } {
     : 503;
   if (statusCode >= 400 && statusCode < 500) {
     const message = error instanceof Error ? redactSensitiveText(error.message).slice(0, 300) : "request rejected";
-    return { statusCode, body: { error: message } };
+    const candidateCode = (error as { code?: unknown } | null)?.code;
+    const code = typeof candidateCode === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(candidateCode)
+      ? candidateCode
+      : null;
+    return { statusCode, body: { error: message, ...(code ? { code } : {}) } };
   }
   return { statusCode: 503, body: unavailable() };
 }
@@ -724,6 +732,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const deleteObjects =
     options.deleteObjects ??
     ((objects) => deleteStoredObjects(objectStorageConfigFromEnv(), objects));
+  const inspectObject = options.inspectObject ?? inspectStoredObject;
 
   app.get("/healthz", async () => ({
     ok: true,
@@ -1264,13 +1273,13 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         body: Type.Object(
           {
             purpose: blobPurposeSchema,
-            contentType: Type.Optional(Type.String({
+            contentType: Type.String({
               minLength: 1,
               maxLength: 160,
               pattern: "^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\\/-]*$",
-            })),
+            }),
             byteSize: Type.Integer({ minimum: 0, maximum: MAX_OBJECT_BYTES }),
-            sha256: Type.Optional(sha256Schema),
+            sha256: sha256Schema,
             cacheKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
             metadata: Type.Optional(Type.Record(Type.String({ minLength: 1, maxLength: 80 }), Type.Unknown())),
             expiresInSeconds: Type.Optional(Type.Integer({ minimum: 60, maximum: 3600 })),
@@ -1284,9 +1293,9 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const user = await requireUser(request, db);
         const body = request.body as {
           purpose: string;
-          contentType?: string;
-          byteSize?: number;
-          sha256?: string;
+          contentType: string;
+          byteSize: number;
+          sha256: string;
           cacheKey?: string;
           metadata?: Record<string, unknown>;
           expiresInSeconds?: number;
@@ -1307,6 +1316,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           objectKey: blob.objectKey,
           contentType: blob.contentType,
           byteSize: blob.byteSize,
+          sha256: blob.sha256,
           expiresInSeconds: body.expiresInSeconds,
         });
         reply.header("cache-control", "no-store");
@@ -1342,6 +1352,35 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   );
 
   app.post(
+    "/v1/blobs/:id/complete",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object({}, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const blob = await getOwnedObjectBlob(db, user, id);
+        if (!blob) return reply.status(404).send({ error: "object blob not found" });
+        const config = objectStorageConfigFromEnv();
+        const inspection = await inspectObject(config, {
+          bucket: blob.bucket,
+          objectKey: blob.objectKey,
+        });
+        const completed = await completeObjectBlobUpload(db, user, blob.id, inspection);
+        reply.header("cache-control", "no-store");
+        return reply.send({ blob: completed });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
     "/v1/blobs/:id/access",
     {
       schema: {
@@ -1364,12 +1403,16 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         if (!blob) {
           return reply.status(404).send({ error: "object blob not found" });
         }
+        if (body.action === "download" && blob.uploadStatus !== "complete") {
+          return reply.status(409).send({ error: "object upload is not verified complete" });
+        }
         const access = await presignObjectAccess(objectStorageConfigFromEnv(), {
           action: body.action,
           bucket: blob.bucket,
           objectKey: blob.objectKey,
           contentType: blob.contentType,
           byteSize: blob.byteSize,
+          sha256: blob.sha256,
           expiresInSeconds: body.expiresInSeconds,
         });
         reply.header("cache-control", "no-store");

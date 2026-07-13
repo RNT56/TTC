@@ -41,6 +41,14 @@ catalog, run the P3/user-data/consent/lifecycle assertions owned by `pnpm verify
 and execute any cross-language transactional materializer acceptance added by the
 changed surface. Its uploaded evidence must include
 `qa004-migration-acceptance.json` bound to the exact checkout.
+For QA-005 the same `pnpm verify:db` invocation must also run exact object
+staging/partial/refusal/completion and lease-fenced queue fault scenarios. The
+uploaded `qa005-fault-acceptance.json` and `qa005-upload-acceptance.json` must bind
+source and checkout revision and prove crash/expired reclaim, duplicate-result
+discard, one-time materialization, retry/backoff, rate-limit exhaustion, partial
+recovery, cancellation, staged consent refusal, and exact completion. This
+deterministic fixture never substitutes for a production outage or object-provider
+incident drill.
 It must also run QA-002 through a production Studio preview with same-origin gateway
 proxying, the exact downloaded validator artifact, real built WASM, headless Chromium,
 and the isolated Postgres service. The uploaded JSON evidence or failure screenshot

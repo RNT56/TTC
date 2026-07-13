@@ -77,6 +77,18 @@ test("object download URLs are short-lived, owner-keyed, and forced to attachmen
   assert.equal(url.searchParams.get("response-content-disposition"), "attachment");
   assert.equal(url.searchParams.get("response-content-type"), "application/octet-stream");
   assert.equal(access.expiresAt, "2026-07-13T00:02:00.000Z");
+  const sha256 = "ab".repeat(32);
+  const upload = await presignObjectAccess(config, {
+    action: "upload",
+    bucket: config.bucket,
+    objectKey: "users/user-1/source.jpg",
+    contentType: "image/jpeg",
+    byteSize: 100,
+    sha256,
+  });
+  assert.equal(upload.headers["content-type"], "image/jpeg");
+  assert.equal(upload.headers["x-amz-checksum-sha256"], Buffer.from(sha256, "hex").toString("base64"));
+  assert.equal(new URL(upload.url).searchParams.get("x-amz-checksum-sha256"), upload.headers["x-amz-checksum-sha256"]);
   await assert.rejects(
     presignObjectAccess(config, {
       action: "upload",

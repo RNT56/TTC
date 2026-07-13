@@ -456,9 +456,12 @@ DATABASE_URL=postgres://forge:forge-dev-only@localhost:5432/forge pnpm verify:db
 
 This first runs QA-004's clean plus every populated predecessor, checksum,
 idempotency, failure-recovery, and concurrent-run acceptance, then seeds the current
-schema, runs every Postgres invariant, and launches the production Studio bundle and
-gateway for QA-002. QA-004 writes
-`artifacts/e2e/qa004-migration-acceptance.json`; deployment, backup impact,
+schema, runs every Postgres invariant—including QA-005 staged-upload verification and
+lease-fenced crash/retry/cancellation/duplicate fault recovery—and launches the
+production Studio bundle and gateway for QA-002. QA-004 writes
+`artifacts/e2e/qa004-migration-acceptance.json`; QA-005 writes
+`artifacts/e2e/qa005-fault-acceptance.json` and
+`artifacts/e2e/qa005-upload-acceptance.json`. Deployment, backup impact,
 roll-forward, application rollback, and failure triage are defined in
 [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md). The browser gate requires the real
 `target/debug/forge-validate`, loads the committed built WASM facade, exercises the

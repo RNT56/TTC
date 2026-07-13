@@ -107,15 +107,18 @@ try {
     [ids.leaderboard, ids.course, user.id],
   );
   await pool.query(
-    `INSERT INTO jobs (id, owner_user_id, kind, status, input)
-     VALUES ($1, $2, 'photoscan.single', 'queued', $3::jsonb),
-            ($4, $2, 'train.policy', 'running', $5::jsonb)`,
+    `INSERT INTO jobs (
+       id, owner_user_id, kind, status, input, lease_token, lease_expires_at
+     )
+     VALUES ($1, $2, 'photoscan.single', 'queued', $3::jsonb, NULL, NULL),
+            ($4, $2, 'train.policy', 'running', $5::jsonb, $6, now() + interval '1 hour')`,
     [
       ids.photoJob,
       user.id,
       JSON.stringify({ sourceBlobIds: [ids.blob] }),
       ids.trainingJob,
       JSON.stringify({ telemetryLogIds: [ids.telemetry] }),
+      `db-consent-training-lease-${suffix}`,
     ],
   );
 
@@ -147,6 +150,8 @@ try {
     `SELECT
        (SELECT status FROM jobs WHERE id = $1) AS photo_job,
        (SELECT status FROM jobs WHERE id = $2) AS training_job,
+       (SELECT lease_token FROM jobs WHERE id = $1) AS photo_lease,
+       (SELECT lease_token FROM jobs WHERE id = $2) AS training_lease,
        (SELECT privacy ->> 'sharing' FROM telemetry_logs WHERE id = $3) AS telemetry_sharing,
        (SELECT count(*) FROM pattern_library WHERE source_artifact_id = $4) AS pattern_rows,
        (SELECT count(*) FROM leaderboard_runs WHERE id = $5) AS leaderboard_rows`,
@@ -154,6 +159,8 @@ try {
   );
   assert.equal(state.rows[0].photo_job, "cancelled");
   assert.equal(state.rows[0].training_job, "cancelled");
+  assert.equal(state.rows[0].photo_lease, null);
+  assert.equal(state.rows[0].training_lease, null);
   assert.equal(state.rows[0].telemetry_sharing, "private");
   assert.equal(Number(state.rows[0].pattern_rows), 0);
   assert.equal(Number(state.rows[0].leaderboard_rows), 0);

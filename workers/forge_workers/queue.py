@@ -14,8 +14,10 @@ import math
 import os
 import time
 import urllib.parse
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Protocol, Sequence
+
+from forge_workers.faults import RetryableJobError, retry_delay_seconds
 
 
 @dataclass
@@ -27,6 +29,11 @@ class Job:
     payload: dict[str, Any]
     idempotency_key: str
     attempts: int = 0
+    provider: str = "local"
+    lease_token: str | None = None
+    lease_expires_at: str | None = None
+    max_attempts: int = 3
+    timeout_seconds: int = 3600
 
 
 class JobHandler(Protocol):
@@ -38,9 +45,17 @@ class QueueStore(Protocol):
 
     def claim_one(self, tasks: Sequence[str]) -> Job | None: ...
 
-    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> bool: ...
+    def mark_succeeded(self, job: Job, output: dict[str, Any]) -> bool: ...
 
-    def mark_failed(self, job_id: str, error: str) -> bool: ...
+    def mark_failed(self, job: Job, error: str, code: str) -> bool: ...
+
+    def mark_retryable(
+        self,
+        job: Job,
+        error: str,
+        code: str,
+        retry_after_seconds: float,
+    ) -> str | None: ...
 
     def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None: ...
 
@@ -69,7 +84,14 @@ class HandlerRegistry:
                 f"no handler for task '{job.task}' "
                 f"(registered: {sorted(self._handlers)})"
             ) from exc
-        result = handler(job)
+        # The persisted lease deadline is authoritative. Handlers receive the same
+        # timeout through the existing payload seam so an external process cannot
+        # outlive its attempt and occupy a worker after the result fence expires.
+        effective_job = replace(
+            job,
+            payload={**job.payload, "timeoutS": job.timeout_seconds},
+        )
+        result = handler(effective_job)
         # results must be JSON-serializable — they land in Postgres
         json.dumps(result)
         return result
@@ -99,20 +121,41 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
     store.record_event(job.id, "started", {"task": job.task, "attempt": max(1, job.attempts)})
     try:
         output = handlers.dispatch(job)
-        accepted = store.mark_succeeded(job.id, output)
+        accepted = store.mark_succeeded(job, output)
+    except RetryableJobError as exc:
+        retry_after_seconds = retry_delay_seconds(job.attempts, exc.retry_after_seconds)
+        error = f"{exc.code}: retryable worker failure"
+        disposition = store.mark_retryable(
+            job,
+            error,
+            exc.code,
+            retry_after_seconds,
+        )
+        store.record_event(
+            job.id,
+            "retry-scheduled" if disposition == "queued" else "failed" if disposition == "failed" else "discarded",
+            {
+                "code": exc.code,
+                "attempt": max(1, job.attempts),
+                "retryAfterSeconds": retry_after_seconds,
+            }
+            if disposition == "queued"
+            else {"code": exc.code} if disposition == "failed"
+            else {"reason": "job lease is no longer current"},
+        )
     except Exception as exc:  # noqa: BLE001 - queue workers must fail closed.
         error = f"{type(exc).__name__}: {exc}"
-        accepted = store.mark_failed(job.id, error)
+        accepted = store.mark_failed(job, error, "handler-failed")
         store.record_event(
             job.id,
             "failed" if accepted else "discarded",
-            {"error": error} if accepted else {"reason": "job no longer running"},
+            {"code": "handler-failed"} if accepted else {"reason": "job lease is no longer current"},
         )
     else:
         store.record_event(
             job.id,
             "succeeded" if accepted else "discarded",
-            {"task": job.task} if accepted else {"reason": "job no longer running"},
+            {"task": job.task} if accepted else {"reason": "job lease is no longer current"},
         )
     return True
 
@@ -152,24 +195,64 @@ class PostgresQueueStore:
         if not tasks:
             return None
         with self._conn.transaction():
+            self._conn.execute(
+                """
+                WITH exhausted AS (
+                  UPDATE jobs
+                     SET status = 'failed',
+                         error = 'worker-crash-exhausted: retry attempts exhausted',
+                         last_error_code = 'worker-crash-exhausted',
+                         finished_at = now(),
+                         lease_token = NULL,
+                         lease_expires_at = NULL
+                   WHERE status = 'running'
+                     AND provider IN ('local', 'modal')
+                     AND kind = ANY(%s)
+                     AND lease_expires_at <= now()
+                     AND attempts >= max_attempts
+                  RETURNING id
+                )
+                INSERT INTO job_events (job_id, event, payload)
+                SELECT id, 'failed', '{"code":"worker-crash-exhausted"}'::jsonb
+                  FROM exhausted
+                """,
+                [list(tasks)],
+            )
             row = self._conn.execute(
                 """
                 WITH claimed AS (
                   SELECT id
                     FROM jobs
-                   WHERE status = 'queued'
-                     AND provider IN ('local', 'modal')
+                   WHERE provider IN ('local', 'modal')
                      AND kind = ANY(%s)
-                   ORDER BY created_at ASC
+                     AND attempts < max_attempts
+                     AND (
+                       (status = 'queued' AND available_at <= now())
+                       OR
+                       (status = 'running' AND lease_expires_at <= now())
+                     )
+                   ORDER BY
+                     CASE WHEN status = 'running' THEN 0 ELSE 1 END,
+                     COALESCE(lease_expires_at, available_at),
+                     created_at
                    FOR UPDATE SKIP LOCKED
                    LIMIT 1
                 )
-                UPDATE jobs
+                UPDATE jobs AS target
                    SET status = 'running',
                        attempts = attempts + 1,
-                       started_at = COALESCE(started_at, now())
-                 WHERE id IN (SELECT id FROM claimed)
-                RETURNING id, kind, input, COALESCE(idempotency_key, id) AS idempotency_key, attempts
+                       started_at = COALESCE(started_at, now()),
+                       finished_at = NULL,
+                       error = NULL,
+                       last_error_code = NULL,
+                       lease_token = encode(gen_random_bytes(16), 'hex'),
+                       lease_expires_at = now() + make_interval(secs => timeout_seconds)
+                  FROM claimed
+                 WHERE target.id = claimed.id
+                RETURNING target.id, target.kind, target.provider, target.input,
+                          COALESCE(target.idempotency_key, target.id) AS idempotency_key,
+                          target.attempts, target.lease_token, target.lease_expires_at,
+                          target.max_attempts, target.timeout_seconds
                 """,
                 [list(tasks)],
             ).fetchone()
@@ -186,9 +269,16 @@ class PostgresQueueStore:
             payload=payload,
             idempotency_key=str(row["idempotency_key"]),
             attempts=int(row["attempts"]),
+            provider=str(row["provider"]),
+            lease_token=str(row["lease_token"]),
+            lease_expires_at=str(row["lease_expires_at"]),
+            max_attempts=int(row["max_attempts"]),
+            timeout_seconds=int(row["timeout_seconds"]),
         )
 
-    def mark_succeeded(self, job_id: str, output: dict[str, Any]) -> bool:
+    def mark_succeeded(self, job: Job, output: dict[str, Any]) -> bool:
+        if not job.lease_token:
+            return False
         with self._conn.transaction():
             row = self._conn.execute(
                 """
@@ -196,16 +286,21 @@ class PostgresQueueStore:
                    SET status = 'succeeded',
                        output = %s::jsonb,
                        error = NULL,
-                       finished_at = now()
+                       last_error_code = NULL,
+                       finished_at = now(),
+                       lease_token = NULL,
+                       lease_expires_at = NULL
                  WHERE id = %s
                    AND status = 'running'
+                   AND lease_token = %s
+                   AND lease_expires_at > now()
                 RETURNING owner_user_id, input
                 """,
-                [self._jsonb(output), job_id],
+                [self._jsonb(output), job.id, job.lease_token],
             ).fetchone()
             if row is not None:
                 self._materialize_job_output(
-                    job_id=job_id,
+                    job_id=job.id,
                     owner_user_id=row["owner_user_id"],
                     job_input=_object(row["input"]),
                     output=output,
@@ -213,21 +308,62 @@ class PostgresQueueStore:
                 return True
         return False
 
-    def mark_failed(self, job_id: str, error: str) -> bool:
+    def mark_failed(self, job: Job, error: str, code: str) -> bool:
+        if not job.lease_token:
+            return False
         with self._conn.transaction():
             row = self._conn.execute(
                 """
                 UPDATE jobs
                    SET status = 'failed',
                        error = %s,
-                       finished_at = now()
+                       last_error_code = %s,
+                       finished_at = now(),
+                       lease_token = NULL,
+                       lease_expires_at = NULL
                  WHERE id = %s
                    AND status = 'running'
+                   AND lease_token = %s
+                   AND lease_expires_at > now()
                 RETURNING id
                 """,
-                [error, job_id],
+                [error, code, job.id, job.lease_token],
             ).fetchone()
         return row is not None
+
+    def mark_retryable(
+        self,
+        job: Job,
+        error: str,
+        code: str,
+        retry_after_seconds: float,
+    ) -> str | None:
+        if not job.lease_token:
+            return None
+        delay = retry_delay_seconds(job.attempts, retry_after_seconds)
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                UPDATE jobs
+                   SET status = CASE WHEN attempts < max_attempts THEN 'queued' ELSE 'failed' END,
+                       available_at = CASE
+                         WHEN attempts < max_attempts THEN now() + make_interval(secs => %s)
+                         ELSE available_at
+                       END,
+                       error = %s,
+                       last_error_code = %s,
+                       finished_at = CASE WHEN attempts < max_attempts THEN NULL ELSE now() END,
+                       lease_token = NULL,
+                       lease_expires_at = NULL
+                 WHERE id = %s
+                   AND status = 'running'
+                   AND lease_token = %s
+                   AND lease_expires_at > now()
+                RETURNING status
+                """,
+                [delay, error, code, job.id, job.lease_token],
+            ).fetchone()
+        return str(row["status"]) if row is not None else None
 
     def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None:
         with self._conn.transaction():

@@ -11,6 +11,8 @@ import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
+from forge_workers.faults import ProviderRateLimitError, ProviderUnavailableError
+
 DEFAULT_HTTP_BYTES = 2 * 1024 * 1024
 MAX_JSON_DEPTH = 24
 MAX_JSON_NODES = 50_000
@@ -120,8 +122,19 @@ def fetch_public_https(
             return b"".join(chunks), content_type
     except RuntimeError:
         raise
-    except (OSError, urllib.error.URLError, ValueError) as exc:
-        raise RuntimeError(f"{label} request failed") from exc
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            raw_retry_after = exc.headers.get("retry-after", "5") if exc.headers is not None else "5"
+            try:
+                retry_after = float(raw_retry_after)
+            except (TypeError, ValueError):
+                retry_after = 5.0
+            raise ProviderRateLimitError(retry_after) from exc
+        raise ProviderUnavailableError(f"{label} request failed") from exc
+    except (OSError, urllib.error.URLError) as exc:
+        raise ProviderUnavailableError(f"{label} request failed") from exc
+    except ValueError as exc:
+        raise RuntimeError(f"{label} response was invalid") from exc
 
 
 def assert_bounded_json(

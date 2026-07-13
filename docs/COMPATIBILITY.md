@@ -90,6 +90,17 @@ an older gateway/worker; retain migration 0020 and roll forward. Removing the ki
 changing its persisted meaning requires a new migration, compatibility fixture, and
 the normal deprecation/breaking-change procedure.
 
+D38/migration 0021 changes the internal attempt protocol without changing queue-kind
+or worker-artifact 0.2.0 envelopes. New workers require an opaque lease token and
+expiry for `running`, use persisted bounded attempts/timeouts, and may commit only
+under the same unexpired token. Stop old workers before applying 0021; application
+rollback retains the additive schema, drains/cancels live attempts, and must not
+resume the old worker. The `/v1` client object API is pre-1.0: `POST /v1/blobs` now
+requires length, MIME type, and SHA-256, returns a staged row and checksum-bound PUT,
+and adds `POST /v1/blobs/:id/complete`. Consumers must complete verification before
+download or photoscan consent. Legacy rows are read as complete; no public artifact
+format version changes.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

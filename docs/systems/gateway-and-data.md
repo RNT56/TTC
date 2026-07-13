@@ -40,7 +40,7 @@ Neither layer substitutes for the other. The canonical security contract is
 | Generation | `POST /v1/generate/context`; `POST /v1/generate`; `POST /v1/generate/stream` (staged SSE); `GET /v1/generate/models` (D26 model pins) | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
-| Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
+| Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/complete`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
 | Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `commerce.vendor-refresh`, `maintenance.*`; fixture/worker outputs materialize sidecar rows where tables exist | P5+ |
 | Policies/replays/photoscan | consent-gated `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; consent-gated telemetry-reuse `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
 | Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
@@ -60,9 +60,16 @@ transactional jobs (job row commits atomically with the domain row that caused i
 photos, policies, telemetry logs, renders. Authenticated `/v1/blobs` registration
 creates owner-scoped `object_blobs` rows and returns AWS-compatible presigned
 upload/download contracts. Content-hash rows are idempotent per owner.
-Client registration requires and caps declared objects at 2 GiB, validates purpose/MIME and bounded
-metadata, rejects archive MIME/name classes, and never extracts user uploads.
-Presigned upload contracts bind declared length/type; presign and delete operations
+Client registration requires declared length, MIME type, and SHA-256, caps objects at
+2 GiB, validates purpose/MIME and bounded metadata, rejects archive MIME/name classes,
+and never extracts user uploads. New client rows are `staged`; an exact retry may
+reuse a cache key only for the same owner and unchanged declaration.
+Presigned upload contracts carry declared length/type and cryptographically bind the
+declared checksum. Completion HEADs the
+stored object with checksum mode enabled and atomically marks it `complete` only when
+the declaration still matches the exact received length/type/checksum. Partial,
+changed, or checksum-less objects remain staged; staged objects cannot be downloaded
+or used to grant photoscan-processing consent. Presign and delete operations
 reject database-supplied buckets outside the configured boundary and validate keys
 before network I/O. Downloads are forced as `application/octet-stream` attachments;
 URLs expire within one hour and API responses are non-cacheable. Production requires
@@ -113,6 +120,16 @@ row exists, and requires a new forward migration rather than editing 0020.
 proves that simultaneous/sequential exact retries converge, request drift conflicts,
 owner scope holds, and raw client keys never persist; the in-memory route suite is not
 used as a substitute for that SQL evidence.
+
+Migration `0021_job_leases_and_upload_verification.sql` adds job availability,
+attempt-token/expiry, retry ceiling, timeout, and stable error code fields, plus
+object upload state and verification evidence. During the stopped-worker deploy it
+returns any legacy tokenless `running` row to `queued`; the new lease-state constraint
+then forbids running without both token and expiry, or terminal/queued state with a
+live token. Existing pre-D38 object rows remain `complete` for compatibility, while
+all new gateway client registrations explicitly write `staged`. Rollback stops new
+workers and enqueueing first, then drains/cancels running jobs; retain 0021 and deploy
+forward because an older worker cannot satisfy the running-row constraint.
 
 Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
 filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,
@@ -249,7 +266,9 @@ runner registers handlers for all names; commerce is local-command-only rather t
 fixture-backed, and Modal/GPU work sits behind
 adapters. Fixture jobs complete synchronously for deterministic CI; non-fixture
 jobs remain queued until claimed by the Python worker. Every job carries
-`{userId, provider, payload, idempotencyKey}`.
+`{userId, provider, payload, idempotencyKey}` plus persisted availability, attempt
+count/ceiling, timeout, and the current lease expiry. The opaque lease token is
+worker-internal and is never returned by the gateway.
 
 ## 6. Auth & metering (D3)
 

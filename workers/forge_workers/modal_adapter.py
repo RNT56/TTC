@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import urllib.error
 import urllib.parse
@@ -15,6 +16,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from forge_workers.faults import ProviderUnavailableError
 from forge_workers.net_security import assert_bounded_json, fetch_public_https
 
 
@@ -70,16 +72,22 @@ class ModalGpuAdapter:
                 method="POST",
             )
             try:
+                timeout_s = float(os.getenv("FORGE_MODAL_TIMEOUT_S", "30"))
+                payload_timeout = payload.get("timeoutS")
+                if isinstance(payload_timeout, (int, float)) and math.isfinite(float(payload_timeout)):
+                    timeout_s = min(timeout_s, float(payload_timeout))
                 raw, _content_type = fetch_public_https(
                     request,
                     label="Modal backend",
-                    timeout_s=float(os.getenv("FORGE_MODAL_TIMEOUT_S", "30")),
+                    timeout_s=max(1.0, timeout_s),
                     max_bytes=4 * 1024 * 1024,
                     allowed_content_types=("application/json", "application/problem+json"),
                     allowed_hosts=((urllib.parse.urlsplit(endpoint).hostname or ""),),
                 )
                 result = json.loads(raw.decode("utf-8"))
-            except (UnicodeDecodeError, json.JSONDecodeError, urllib.error.URLError) as exc:
+            except urllib.error.URLError as exc:
+                raise ProviderUnavailableError("Modal backend request failed") from exc
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
                 raise RuntimeError("Modal backend returned invalid JSON") from exc
             if not isinstance(result, dict):
                 raise RuntimeError("Modal backend returned non-object JSON")

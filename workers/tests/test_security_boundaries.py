@@ -1,12 +1,15 @@
 import io
 import json
 import sys
+import urllib.error
+import urllib.request
 
 import pytest
 
 from forge_workers.etl.adapters import HttpSourceFetcher
 from forge_workers.external import run_json_command
-from forge_workers.net_security import assert_bounded_json, validate_public_https_url
+from forge_workers.faults import ProviderRateLimitError
+from forge_workers.net_security import assert_bounded_json, fetch_public_https, validate_public_https_url
 
 
 class FakeResponse:
@@ -39,6 +42,17 @@ class FakeOpener:
     def open(self, _request, *, timeout):
         assert 1 <= timeout <= 120
         return self.response
+
+
+class RateLimitedOpener:
+    def open(self, request, *, timeout):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            429,
+            "rate limited",
+            {"retry-after": "37"},
+            None,
+        )
 
 
 def public_resolver(_hostname: str, _port: int):
@@ -92,6 +106,21 @@ def test_http_source_fetch_is_https_only_bounded_no_redirect_and_content_typed()
             resolver=public_resolver,
             opener=FakeOpener(oversized),
         ).fetch(url)
+
+
+def test_http_rate_limit_maps_to_a_bounded_retry_fault():
+    request = urllib.request.Request("https://provider.example.test/run")
+    with pytest.raises(ProviderRateLimitError) as limited:
+        fetch_public_https(
+            request,
+            label="provider",
+            timeout_s=30,
+            allowed_content_types=("application/json",),
+            allowed_hosts=("provider.example.test",),
+            resolver=public_resolver,
+            opener=RateLimitedOpener(),
+        )
+    assert limited.value.retry_after_seconds == 37
 
 
 def test_external_command_output_is_bounded_and_failure_text_is_not_reflected(monkeypatch, tmp_path):

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { GatewayDb } from "../src/db.js";
-import { createJob, registerObjectBlob } from "../src/platform.js";
+import { completeObjectBlobUpload, createJob, registerObjectBlob } from "../src/platform.js";
 import {
   InMemoryRateLimiter,
   assertBoundedJson,
@@ -191,6 +191,116 @@ test("direct job and object-library entry points enforce the same bounded payloa
       metadata: { originalName: "model.tar.gz" },
     }),
     /archive uploads are not accepted/,
+  );
+  await assert.rejects(
+    registerObjectBlob(db, user, {
+      bucket: "forge-artifacts",
+      purpose: "photoscan-source",
+      contentType: "image/jpeg",
+      byteSize: 100,
+      sha256: "not-a-sha256",
+    }),
+    /SHA-256 is invalid/,
+  );
+  await assert.rejects(
+    registerObjectBlob(db, user, {
+      bucket: "forge-artifacts",
+      purpose: "photoscan-source",
+      contentType: "image/jpeg",
+      byteSize: 100,
+      sha256: "ab".repeat(32),
+      cacheKey: "x".repeat(201),
+    }),
+    /cache key is outside/,
+  );
+});
+
+test("partial object uploads stay staged until exact metadata is verified", async () => {
+  const user = { id: "owner-upload", name: null, email: null, image: null };
+  const sha256 = "cd".repeat(32);
+  const row = {
+    id: "blob-upload",
+    owner_user_id: user.id,
+    visibility: "private",
+    cache_key: `${user.id}:sha256:${sha256}`,
+    bucket: "forge-artifacts",
+    object_key: `users/${user.id}/photoscan-source/${sha256}`,
+    content_type: "image/jpeg",
+    byte_size: 100,
+    sha256,
+    upload_status: "staged",
+    verified_at: null as string | null,
+    verification_error_code: null as string | null,
+    metadata: { purpose: "photoscan-source" },
+    created_at: "2026-07-13T00:00:00.000Z",
+  };
+  const db: GatewayDb = {
+    async query<T = unknown>(text, params = []) {
+      if (text.includes("FROM object_blobs")) {
+        return {
+          rows: params[0] === row.id && params[1] === user.id ? [{ ...row } as T] : [],
+          rowCount: 1,
+        };
+      }
+      if (text.includes("SET upload_status = 'staged'")) {
+        row.upload_status = "staged";
+        row.verified_at = null;
+        row.verification_error_code = String(params[2]);
+        return { rows: [], rowCount: 1 };
+      }
+      if (text.includes("SET upload_status = 'complete'")) {
+        row.upload_status = "complete";
+        row.verified_at ??= "2026-07-13T00:01:00.000Z";
+        row.verification_error_code = null;
+        return { rows: [{ ...row } as T], rowCount: 1 };
+      }
+      throw new Error(`unexpected upload verification query: ${text}`);
+    },
+  };
+
+  await assert.rejects(
+    completeObjectBlobUpload(db, user, row.id, {
+      byteSize: 99,
+      contentType: "image/jpeg",
+      sha256,
+    }),
+    (error: unknown) => {
+      const detail = error as Error & { statusCode?: number; code?: string };
+      return detail.statusCode === 409 && detail.code === "partial-object-upload";
+    },
+  );
+  assert.equal(row.upload_status, "staged");
+  assert.equal(row.verification_error_code, "partial-object-upload");
+
+  const complete = await completeObjectBlobUpload(db, user, row.id, {
+    byteSize: 100,
+    contentType: "image/jpeg",
+    sha256,
+  });
+  assert.equal(complete.uploadStatus, "complete");
+  assert.equal(complete.verificationErrorCode, null);
+  assert.ok(complete.verifiedAt);
+});
+
+test("object registration refuses idempotency-key declaration drift", async () => {
+  const db: GatewayDb = {
+    async query<T = unknown>() {
+      return { rows: [] as T[], rowCount: 0 };
+    },
+  };
+  await assert.rejects(
+    registerObjectBlob(db, { id: "owner-drift", name: null, email: null, image: null }, {
+      bucket: "forge-artifacts",
+      purpose: "photoscan-source",
+      contentType: "image/jpeg",
+      byteSize: 100,
+      sha256: "ab".repeat(32),
+      cacheKey: "same-client-operation",
+    }),
+    (error: unknown) => {
+      const detail = error as Error & { statusCode?: number };
+      return detail.statusCode === 409 && detail.message.includes("different declaration");
+    },
   );
 });
 
