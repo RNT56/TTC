@@ -10,8 +10,10 @@ for diagnosis, but it is not release evidence.
 The x86_64 macOS lane uses GitHub's supported `macos-26-intel` image and every native
 matrix job has a 60-minute ceiling. `macos-15-intel` is the rollback image through
 August 2027, but it is not the default: protected manual run `29216053372` spent
-5h10m in full-LTO build/smoke without producing a macOS artifact. Any runner change
-must preserve the same binary smoke, aggregate verification, and downloaded proof.
+5h10m in full-LTO build/smoke without producing a macOS artifact. The release profile
+uses thin LTO after a clean local comparison showed materially lower wall time while
+preserving version and canonical-admission smoke. Any runner or profile change must
+preserve the same artifact, smoke, SBOM, checksum, and downloaded-attestation proof.
 
 ## Outputs
 

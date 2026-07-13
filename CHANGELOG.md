@@ -26,10 +26,14 @@ evidence after its macOS 15 Intel full-LTO build/smoke produced no artifact in
 5h10m; selected the supported macOS 26 Intel runner without changing the x86_64
 artifact, smoke, SBOM, checksum, or attestation contract; and added a one-hour
 native-job ceiling so this failure mode cannot silently consume a full runner day.
+When the macOS 26 full-LTO branch experiment also crossed 50 minutes, compared clean
+local arm64 profiles: thin LTO cut wall time from 34.62s to 19.25s while both binaries
+passed version and canonical-admission smoke; native size changed from 2,735,488 to
+3,456,528 bytes, below no binding native-size limit.
 **Changed:** release workflow, release runbook, risk register, task ledger, project
 state counts, and changelog.
-**Decisions:** no architectural decision; OPS-011 is a measured runner migration and
-`macos-15-intel` remains the rollback image through August 2027.
+**Decisions:** no architectural decision; OPS-011 uses a measured thin-LTO release
+profile and runner migration, with `macos-15-intel` retained through August 2027.
 **Next:** Deliver the runner migration through protected `main`, rerun the manual
 release workflow, download and verify the aggregate artifact, then create `v0.1.0`.
 **Blockers:** none; GOV-008 remains open until protected macOS 26 and aggregate proof.
