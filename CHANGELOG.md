@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Require evidence for every golden re-pin
+**Session:** Codex agent · branch `codex/qa008-golden-review-policy` · **Phase:** QA
+cross-cutting · **TODO items:** QA-008 [~], QA-001
+**Done:** Added a machine-owned registry for fourteen schema, render, physics,
+validator, corpus, and committed generated-runtime artifact families. The registry
+protects itself, the checker unions parent/current inventories so same-patch removal
+cannot hide drift, and the frozen prototype HTML is hard-required immutable. Every
+registered change now needs exactly one new append-only Markdown record with matching
+path, artifact ID, classification, rationale, source-of-truth change, compatibility
+impact, before/after evidence, reviewer focus, and task/decision references. Ten
+focused policy tests cover success, missing record, immutable input, history edits,
+placeholders, unrelated paths, parent-registry weakening, class mismatch, record-
+directory redirection, and ownership overlap. The expanded `pnpm verify` passes all
+33 gates with 61/61 gateway tests, 115/115 workers,
+Brief-25 25/25, declared verdicts 5/5, native/WASM parity, pinned simulation parity,
+release packaging, and patch hygiene.
+**Changed:** golden registry, policy/checker/tests, required Rust CI job, full local
+gate, canonical agent/read order, contributor/debugging/compatibility/governance/
+release/risk/best-practice/system documentation, roadmap/state/task ledgers, and one initial
+append-only registry evidence record.
+**Decisions:** none. D17 and D32 remain binding; the policy records evidence and adds
+no product, provider, hardware, or compatibility authority.
+**Next:** deliver QA-008 through the exact-check ruleset and verify its protected
+post-merge CI/security; then begin the smallest QA-002 browser-E2E builder-loop slice.
+**Blockers:** none for QA-008. Live Wave 2 provider/user acceptance remains external.
+
 ## 2026-07-13 — Record protected commerce queue evidence
 **Session:** Codex agent · branch `codex/p11-commerce-evidence` · **Phase:** Wave 2 R1
 builder loop · **TODO items:** P11-005 [~]

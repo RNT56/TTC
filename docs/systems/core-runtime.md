@@ -130,6 +130,10 @@ The cross-target exactness gate, run in CI on every core change:
 - **Degradation path:** if a platform breaks exactness, that platform is declared at
   ULP tolerance in the suite's manifest and the docs say so (D17).
 
+Every re-pin is governed by [`../GOLDEN-ARTIFACTS.md`](../GOLDEN-ARTIFACTS.md): the
+fixture is machine-registered, the frozen prototype input is immutable, and any
+intentional hash change requires a new append-only record with before/after evidence.
+
 ## 6. Build & distribution
 
 - **WASM:** one `forge-wasm` facade via wasm-pack → npm package; streaming compile;

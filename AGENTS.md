@@ -34,17 +34,19 @@ Read in this order for every non-trivial session:
 5. `docs/TODO.md` — atomic task ledger with stable IDs.
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
-8. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
+8. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
+   physics, validator, corpus, or committed generated-runtime artifact.
+9. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
    outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
    or release archive handling.
-9. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+10. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-10. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+11. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
-11. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+12. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-12. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-13. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+13. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+14. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -74,6 +76,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
   latest verified protected runtime descendant is queued-commerce PR #34 at
   `18f54fd`, with CI `29260837182` and security `29260833090` green;
+- docs-only PR #35 is the latest verified protected descendant at `4fe0df6`, with
+  exact post-merge CI `29262255427` and security `29262256860` green;
 - Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
   browser/coverage commands pass locally;
 - protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
@@ -82,6 +86,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   security workflow emits a validated SPDX source SBOM;
 - compatibility policy 1.0.0 is machine-checked across twelve public format/package
   boundaries; the CLI/WASM facades expose their active versions;
+- this QA-008 tree expands `pnpm verify` to 33 steps and registers fourteen golden
+  artifact families; the frozen prototype is immutable and any registered re-pin
+  requires a new append-only evidence record. Protected proof for this slice remains
+  pending until its PR and post-merge checks pass;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
@@ -289,13 +297,16 @@ Application threat boundary (SEC-006):
    actually starts.
 4. Add or update tests with behavior. New validator invariants require stable check
    IDs, diagnostics, fixtures, and documentation.
-5. Run the gates appropriate to the changed surfaces. Do not claim full verification
+5. Before changing a registered golden artifact, preserve the failing parent evidence,
+   change the owning source of truth first, and add one new append-only record under
+   `docs/golden-updates/`; never edit the frozen prototype oracle.
+6. Run the gates appropriate to the changed surfaces. Do not claim full verification
    when prerequisites caused tests to skip.
-6. Update every living document invalidated by the change. Preserve stable TODO IDs;
+7. Update every living document invalidated by the change. Preserve stable TODO IDs;
    mark tasks done rather than deleting them.
-7. Add a newest-first `CHANGELOG.md` entry containing evidence, affected IDs, next
+8. Add a newest-first `CHANGELOG.md` entry containing evidence, affected IDs, next
    step, and blockers.
-8. Before handoff, run `git diff --check`, run the cumulative committed-range check
+9. Before handoff, run `git diff --check`, run the cumulative committed-range check
    through `node scripts/check-patch-hygiene.mjs`, inspect the complete diff, and
    report both passing and failing gates.
 
@@ -345,6 +356,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 |---|---|
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
+| Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; browser smoke for changed interaction; accessibility/perf check when relevant |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
@@ -399,6 +411,8 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - `docs/ROADMAP.md` owns phase status and exit criteria.
 - `docs/TODO.md` owns stable atomic tasks.
 - `docs/EXECUTION-ROADMAP.md` owns sequencing, workstreams, gates, and handoffs.
+- `docs/GOLDEN-ARTIFACTS.md` and its machine registry own re-pin procedure,
+  immutable-oracle policy, regeneration commands, and append-only review evidence.
 - System docs own implementation contracts; `DECISIONS.md` owns binding choices;
   `risk-register.md` owns risks and watch triggers.
 - Use executable commands and explicit acceptance evidence.

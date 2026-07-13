@@ -4,6 +4,7 @@ Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
 Latest verified protected runtime descendant: `18f54fd` (PR #34; queued commerce)
+Latest verified protected documentation descendant: `4fe0df6` (PR #35)
 Recovery/release gates: **G0 and G1 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -34,9 +35,10 @@ open.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest protected runtime descendant `18f54fd` is green; annotated `v0.1.0` published | PR #34 delivered queued commerce contract/fixture work without changing the SEC-006 evidence anchor; v0.1.0 release evidence remains anchored to `1093842` |
+| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; runtime descendant `18f54fd` and documentation descendant `4fe0df6` are green; annotated `v0.1.0` published | PRs #34/#35 delivered queued commerce contract/fixture work and reconciled its evidence without changing the SEC-006 or release anchors |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 32 required non-DB gates locally; protected queued-commerce `18f54fd` also passed CI/security | Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene are green locally and at the protected finish line |
+| `pnpm verify` | pass: 33 required non-DB gates on this QA-008 tree; protected descendant `4fe0df6` passed the prior 32-step gate's CI/security equivalent | the new golden-review policy joins Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, and patch hygiene; protected proof for QA-008 is still pending |
+| Golden artifact review | pass locally: 14 registered families, 10/10 policy tests, 1 registry change covered by 1 new record | parent/current registries are unioned against same-patch weakening; record history and ownership cannot be redirected or overlapped; the frozen prototype is immutable; registered drift needs an append-only record with exact path, class, rationale, impact, evidence, and reviewer focus |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
@@ -119,6 +121,13 @@ Live GitHub evidence checked on 2026-07-13:
   Brief-25 25/25, Rust, native Desktop, audits, source SPDX, and both CodeQL
   languages. This proves the queue and transactional normalizer at contract/fixture
   maturity, not a credentialed vendor operation;
+- commerce evidence [PR #35](https://github.com/RNT56/TTC/pull/35) merged docs-only
+  at `4fe0df6`; exact post-merge CI
+  [29262255427](https://github.com/RNT56/TTC/actions/runs/29262255427) and security
+  [29262256860](https://github.com/RNT56/TTC/actions/runs/29262256860) passed Rust,
+  Postgres, workers, TypeScript/gateway, native Desktop, dependency audits, source
+  SPDX, and both CodeQL languages. This proves the descendant is green without
+  changing PR #34's runtime maturity boundary;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;

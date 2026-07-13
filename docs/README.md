@@ -23,7 +23,9 @@ providers, outbound network access, secrets, uploads, workers, callbacks, rate l
 logs, or release archives additionally require
 [`THREAT-MODEL.md`](THREAT-MODEL.md). Export, deletion, retention,
 legal-hold, backup, restore, or tombstone work additionally requires
-[`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md).
+[`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md). Any schema, render, physics, validator,
+corpus, or committed generated-runtime re-pin additionally requires
+[`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md).
 
 ## Document map
 
@@ -40,6 +42,7 @@ legal-hold, backup, restore, or tombstone work additionally requires
 | [`BEST-PRACTICES.md`](BEST-PRACTICES.md) | Doctrine, conventions, code/test/AI-usage standards, git discipline | Living |
 | [`REPOSITORY-GOVERNANCE.md`](REPOSITORY-GOVERNANCE.md) | Exact required checks, ruleset contract, security/dependency operations, and evidence cadence | Living |
 | [`COMPATIBILITY.md`](COMPATIBILITY.md) | SemVer domains, support matrix, deprecation windows, migration and breaking-change rules | Living; machine-checked |
+| [`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md) | Machine-registered golden inventory, immutable-oracle rule, re-pin procedure, review evidence, and focused commands | Living; machine-enforced |
 | [`RELEASE.md`](RELEASE.md) | Cross-platform validator artifact, attestation, verification, tag, publication, and rollback procedure | Living runbook |
 | [`PUBLICATION.md`](PUBLICATION.md) | crates.io/npm ownership, credentials, ordered publication, explicit deferral, and clean-consumer evidence | Living policy |
 | [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md) | Retention classes, legal-hold authority, primary deletion, backup expiry/restore, tombstones, audit events, operator commands, and maturity boundary | Living operating contract |
