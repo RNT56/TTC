@@ -37,22 +37,23 @@ evidence templates for all eight external milestones. Exact PR and post-merge
 CI/security are green at protected `8708de7`. The kit is complete, but it does not
 change any `EXT-*`, live-provider, hardware, or field verdict by itself.
 
-QA-003 is now an active local candidate: Chromium, Firefox, and WebKit pass the
-production-bundle real-WASM viewer/configurator journey plus semantic, keyboard,
-focus, contrast, target-size, responsive, and reduced-motion acceptance. Chromium
-owns full WebGL; Firefox/WebKit draw the dependency-light core-baked schematic and
-prove the WebGL presentation chunks were not loaded. It remains in progress until
-protected exact-tree and post-merge evidence are green; the WebKit and mobile checks
-do not constitute Apple-device or external-user proof.
+Protected QA-003 PR #42 closes deterministic supported-browser/accessibility
+acceptance at `9c1802b`. Exact PR and post-merge CI/security are green, and the clean
+merge artifact proves the production-bundle real-WASM viewer/configurator journey,
+semantics, keyboard, focus, contrast, target size, responsive containment, and
+reduced motion across Chromium, Firefox, and WebKit. Chromium owns full WebGL;
+Firefox/WebKit draw the dependency-light core-baked schematic without loading the
+WebGL presentation chunks. These proxies do not constitute Apple/mobile-device,
+assistive-technology, external-user, or field proof.
 
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(repository hygiene/public surfaces are protected; qualified confusing-similarity/common-law/class name review remains PRE-005/GOV-010)* | days |
 | P0 Freeze & extract | ● **done** *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; D32 closed historical variant parity honestly and XC-28 implements product variants separately)* | 1.5–2.5 wk |
-| P1 Core & studio | ◑ *(6/7 criteria met; QA-003's cross-engine accessibility candidate passes locally; sole phase exit still open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
+| P1 Core & studio | ◑ *(6/7 criteria met; QA-003's cross-engine accessibility matrix is protected through PR #42; sole phase exit still open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ● **done** *(full validation suite restored; validator v0.1.0 published and independently verified; v0.2 protected through PR #30; registry publication explicitly deferred to an owner-credential decision)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs, and native bounded Anthropic ETL contract; credentialed extraction through reviewed persistence remains P3-004/R1 work)* | 2–3 wk |
-| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate is 25/25 and QA-002's ten-flow real-WASM/isolated-DB browser loop is protected through PR #38; QA-003's three-engine semantic/interaction candidate is local only; SEC-002..006 remain contract/fixture, D36 native ETL is contract/fixture only, and credentialed extraction, deployed egress/quotas/backup/DR, and external R1 proof remain gated)* | 3–4 wk |
+| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate is 25/25, QA-002's ten-flow real-WASM/isolated-DB browser loop is protected through PR #38, and QA-003's three-engine semantic/interaction matrix is protected through PR #42; SEC-002..006 remain contract/fixture, D36 native ETL is contract/fixture only, and credentialed extraction, deployed egress/quotas/backup/DR, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
 | P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; live MuJoCo baseline and broader external corpus remain open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |

@@ -18,6 +18,31 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Record protected browser accessibility acceptance
+**Session:** Codex agent · branch `codex/qa003-postmerge-evidence` · **Phase:** QA /
+Studio support · **TODO items:** QA-003 [x]
+**Done:** Closed QA-003 through protected main. Exact implementation head `caed237`
+passed PR #42 CI `29282669499` and security `29282669468`, including the required
+Postgres/browser job and all dependency, SBOM, Desktop, Rust, worker, gateway, and
+CodeQL checks. Protected squash `9c1802b` then passed post-merge CI `29283250843` and
+security `29283250865`. The downloaded clean merge artifact binds source/checkout to
+`9c1802b`, retains QA-002 10/10, and passes Chromium 148.0.7778.96 at full-Studio /
+WebGL / high with 33 draws and the scene/Three.js chunks, plus Firefox 150.0.2 and
+WebKit 26.4 at viewer-grade / Canvas2D / low with 17 draws and no WebGL presentation
+chunks. Real WASM, validator admission, keyboard orbit/equip/explode/blueprint, AA
+contrast, critical targets, narrow containment, reduced motion, and renderer/asset
+isolation all pass. The ledger is now 200 tasks: 134 done, 37 in progress, 28 open,
+and 1 blocked.
+**Changed:** Canonical agent entry point; project-state evidence ledger; phase and
+execution roadmaps; QA-003 task status; changelog.
+**Decisions:** none; full Studio remains the Chromium/Tauri tier, and the dependency-
+light core-baked schematic remains an explicitly viewer-grade presentation.
+**Next:** execute the next dependency-complete local quality/operations lane while
+EXT-001 awaits a qualified independent participant.
+**Blockers:** none for deterministic browser support; Apple/mobile-device,
+assistive-technology, real-mid-hardware performance, external-user, and field proof
+retain their separate gates.
+
 ## 2026-07-13 — Separate viewer grade from WebGL
 **Session:** Codex agent · branch `codex/qa003-browser-accessibility` · **Phase:** QA /
 Studio support · **TODO items:** QA-003 [~]

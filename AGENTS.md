@@ -105,12 +105,14 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
   deterministic product acceptance, not live-provider or external-user proof;
-- QA-003 is an active candidate: the production share/configurator journey passes
-  locally in Chromium, Firefox, and WebKit with real WASM plus semantic, keyboard,
-  focus, contrast, target-size, responsive, and reduced-motion assertions. Chromium
-  loads the full WebGL scene; Firefox/WebKit prove the dependency-light core-baked
-  Canvas2D schematic without loading Three.js/WebGL. This is not protected or
-  complete until exact PR and post-merge evidence is reconciled;
+- QA-003 is protected through PR #42 at `9c1802b`: the production share/configurator
+  journey passes in Chromium, Firefox, and WebKit with real WASM plus semantic,
+  keyboard, focus, contrast, target-size, responsive, and reduced-motion assertions.
+  Chromium loads the full WebGL scene; Firefox/WebKit prove the dependency-light
+  core-baked Canvas2D schematic without loading Three.js/WebGL. Exact PR and
+  post-merge CI/security plus the clean exact-revision artifact are green; this does
+  not prove Apple/mobile devices, assistive technologies, external users, or field
+  maturity;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
   explicit equipped alternative across contract, validator, geometry, simulation,
