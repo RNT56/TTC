@@ -18,6 +18,22 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Bound and migrate the Intel macOS release lane
+**Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
+**TODO items:** GOV-008, OPS-011
+**Done:** Preserved protected manual run `29216053372` as failed operational
+evidence after its macOS 15 Intel full-LTO build/smoke produced no artifact in
+5h10m; selected the supported macOS 26 Intel runner without changing the x86_64
+artifact, smoke, SBOM, checksum, or attestation contract; and added a one-hour
+native-job ceiling so this failure mode cannot silently consume a full runner day.
+**Changed:** release workflow, release runbook, risk register, task ledger, project
+state counts, and changelog.
+**Decisions:** no architectural decision; OPS-011 is a measured runner migration and
+`macos-15-intel` remains the rollback image through August 2027.
+**Next:** Deliver the runner migration through protected `main`, rerun the manual
+release workflow, download and verify the aggregate artifact, then create `v0.1.0`.
+**Blockers:** none; GOV-008 remains open until protected macOS 26 and aggregate proof.
+
 ## 2026-07-12 — Build the release artifact verification chain
 **Session:** Codex agent · branch `codex/g1-release-artifacts` · **Phase:** G1 ·
 **TODO items:** GOV-008

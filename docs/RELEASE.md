@@ -7,6 +7,12 @@ Current candidate: **v0.1.0**
 The release workflow is the only supported artifact builder. A local build is useful
 for diagnosis, but it is not release evidence.
 
+The x86_64 macOS lane uses GitHub's supported `macos-26-intel` image and every native
+matrix job has a 60-minute ceiling. `macos-15-intel` is the rollback image through
+August 2027, but it is not the default: protected manual run `29216053372` spent
+5h10m in full-LTO build/smoke without producing a macOS artifact. Any runner change
+must preserve the same binary smoke, aggregate verification, and downloaded proof.
+
 ## Outputs
 
 Every successful manual or tag run produces one aggregate Actions artifact with:

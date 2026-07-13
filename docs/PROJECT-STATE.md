@@ -139,9 +139,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **199 tasks: 116 done, 38 in progress, 43 open,
-and 2 explicitly blocked**. All 8 recovery tasks are done. The 83 remaining tasks are
-the phase/live/field program plus 4 governance, 8 security, 9 quality, 10 operations,
+The stable ledger currently contains **200 tasks: 116 done, 39 in progress, 43 open,
+and 2 explicitly blocked**. All 8 recovery tasks are done. The 84 remaining tasks are
+the phase/live/field program plus 4 governance, 8 security, 9 quality, 11 operations,
 9 external-proof, and 3 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

@@ -25,6 +25,7 @@ at every phase close; note material changes in the changelog.
 | R17 | **Supply-chain or unprotected-main compromise** | Med | High | protected ruleset; immutable Action pins; dependency/secret/code scanning; SBOM/attestation; least workflow permissions | direct main push, unreviewed workflow change, or unresolved advisory beyond SLA |
 | R18 | **Privacy/deletion promise exceeds implementation** | Med | High | explicit consent/retention/deletion ledgers; object tombstones; backup-deletion tests; user export | deletion request cannot be completed across DB, blobs, backups, and derived artifacts |
 | R19 | **Provider failure or cost destroys trust/economics** | Med | High | sandbox proof, quotas, idempotency, circuit breakers, cancellation/refunds, per-job cost telemetry | repeated partial artifacts, runaway spend, or unexplained credit loss |
+| R20 | **Hosted Intel release latency makes artifact proof unreliable or prohibitively slow** | Med | Med | use the supported macOS 26 Intel image; cap native jobs at 60 minutes; preserve macOS 15 as a rollback through August 2027; cache Rust inputs; never weaken smoke/SBOM/attestation gates for speed | any native release job exceeds 30 minutes or times out |
 
 L = likelihood, I = impact.
 

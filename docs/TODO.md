@@ -322,6 +322,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 - [ ] OPS-008 — Define support, incident severity, on-call/escalation, status communication, security reporting, and postmortem processes.
 - [ ] OPS-009 — Instrument unit economics: model/API tokens, GPU/CPU time, storage/egress, vendor/print calls, credits, refunds, and margin by workflow.
 - [ ] OPS-010 — Run load/capacity/cost tests and set launch limits; no Kubernetes or multi-region expansion without measured need and a decision record.
+- [~] OPS-011 — Migrate the x86_64 validator release lane from `macos-15-intel` to `macos-26-intel`, retain a 60-minute native-job ceiling and the macOS 15 rollback through August 2027, and record before/after full-LTO evidence. Baseline manual run `29216053372` was cancelled after 5h10m in build/smoke with no macOS artifact; protected macOS 26 proof remains.
 
 ## 11. External and field proof (EXT)
 
