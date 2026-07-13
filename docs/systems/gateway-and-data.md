@@ -271,8 +271,11 @@ SEC-006 additionally tests production auth/object/admin failure, origin and head
 only key behavior, secret persistence/reflection, recursive JSON bombs, direct job/
 object bounds, private-address and DNS/redirect/content/byte refusal, provider prompt
 injection containment, peer-IP/per-class limiter isolation that ignores unverified
-cookie/header identities, and safe generic errors. The limiter is in-memory and
-single-process; shared atomic account/IP/provider rate/concurrency/spend quotas
+cookie/header identities, and safe generic errors. Auth routes additionally use the
+official Fastify 5-compatible `@fastify/rate-limit` plugin in their route scope so the
+framework and CodeQL can verify the authorization throttle; other classes retain the
+bounded classed store. Both are in-memory and single-process; shared atomic account/
+IP/provider rate/concurrency/spend quotas
 are required before multi-replica or billable-provider operation.
 
 ## 10. Open questions

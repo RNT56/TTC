@@ -295,11 +295,13 @@ process launches and live commerce refresh/quote calls use the job class.
 
 The pre-auth edge identity is the peer IP with Fastify proxy trust disabled. It never
 trusts a caller-supplied session cookie or development header as identity, so rotating
-forged values cannot reset the bucket. Buckets store only a short SHA-256-derived
-identifier and are capped at 20,000. A denial returns `429`, remaining/limit headers,
-and `Retry-After`.
+forged values cannot reset the bucket. Auth routes use the official Fastify 5-
+compatible `@fastify/rate-limit` plugin inside the Auth.js route scope; the other four
+classes use the bounded classed store. Both store only a short SHA-256-derived
+identifier and cap in-memory state at 20,000 buckets. A denial returns `429`, limit
+headers, and `Retry-After`.
 
-This limiter is single-process and resets on restart. It is suitable for deterministic
+These limiters are single-process and reset on restart. They are suitable for deterministic
 proof and one replica, not multi-replica production abuse defense. Before scaling or
 enabling billable providers, deploy a shared atomic limiter at the edge or data plane,
 separate verified-account/IP/provider/cost quotas, concurrency limits, daily spend caps,

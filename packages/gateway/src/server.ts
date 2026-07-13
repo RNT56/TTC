@@ -2,6 +2,7 @@
 // (TypeBox); heavy work goes to the queue or the validator binary; compute
 // workers have no public surface.
 import { Type } from "@sinclair/typebox";
+import fastifyRateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
@@ -116,6 +117,7 @@ import {
   fetchBoundedJson,
   parseExternalHttpsUrl,
   redactSensitiveText,
+  secretFingerprint,
   type RateLimitClass,
   type RateLimitPolicy,
 } from "./security.js";
@@ -672,14 +674,18 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     trustProxy: false,
     routerOptions: { maxParamLength: 2_000 },
   });
-  const limiter = options.rateLimitPolicy === null
+  const rateLimitPolicy = options.rateLimitPolicy === null
     ? null
-    : new InMemoryRateLimiter(options.rateLimitPolicy ?? DEFAULT_RATE_LIMIT_POLICY, options.rateLimitNow);
+    : options.rateLimitPolicy ?? DEFAULT_RATE_LIMIT_POLICY;
+  const limiter = rateLimitPolicy === null
+    ? null
+    : new InMemoryRateLimiter(rateLimitPolicy, options.rateLimitNow);
   app.addHook("onRequest", async (request, reply) => {
     try {
       assertTrustedRequestOrigin(request);
-      if (limiter) {
-        const result = limiter.consume(rateLimitClass(request), requestRateLimitIdentity(request));
+      const kind = rateLimitClass(request);
+      if (limiter && kind !== "auth") {
+        const result = limiter.consume(kind, requestRateLimitIdentity(request));
         reply.header("x-ratelimit-limit", result.limit);
         reply.header("x-ratelimit-remaining", result.remaining);
       }
@@ -725,8 +731,29 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     validatorPresent: existsSync(validatorBin()),
   }));
 
-  app.all("/auth", async (request, reply) => handleAuthRequest(request, reply));
-  app.all("/auth/*", async (request, reply) => handleAuthRequest(request, reply));
+  app.register(async (authApp) => {
+    if (rateLimitPolicy !== null) {
+      await authApp.register(fastifyRateLimit, {
+        global: true,
+        max: rateLimitPolicy.limits.auth,
+        timeWindow: rateLimitPolicy.windowMs,
+        cache: 20_000,
+        keyGenerator: (request) => secretFingerprint(requestRateLimitIdentity(request)),
+        errorResponseBuilder: () => ({ statusCode: 429, error: "rate limit exceeded" }),
+      });
+    }
+    const authRouteOptions = () => ({
+      config: {
+        rateLimit: {
+          max: rateLimitPolicy?.limits.auth ?? DEFAULT_RATE_LIMIT_POLICY.limits.auth,
+          timeWindow: rateLimitPolicy?.windowMs ?? DEFAULT_RATE_LIMIT_POLICY.windowMs,
+          groupId: "auth",
+        },
+      },
+    });
+    authApp.all("/auth", authRouteOptions(), async (request, reply) => handleAuthRequest(request, reply));
+    authApp.all("/auth/*", authRouteOptions(), async (request, reply) => handleAuthRequest(request, reply));
+  });
 
   app.get("/v1/me", async (request, reply) => {
     try {

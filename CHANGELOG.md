@@ -37,12 +37,16 @@ non-regular member before extraction. Added the canonical threat model with live
 deployment and residual-risk gates. `pnpm verify` passes all 32 steps with 59/59 real-
 validator gateway tests, 25/25 Brief-25, 104/104 workers, and all 4 archive-policy
 tests; the published v0.1.0 assets also pass the hardened verifier.
-**Changed:** gateway auth/security/generation/object/platform/server/validator code and
-tests; worker network/command adapters and tests; release verifier/archive policy;
+**Changed:** gateway auth/security/generation/object/platform/server/validator code,
+tests, dependency manifest, and lockfile; worker network/command adapters and tests;
+release verifier/archive policy;
 committed-range patch-hygiene enforcement; `AGENTS.md`, threat/security/system/
 release/governance/risk/state/roadmap/task docs.
-**Decisions:** no new product authority. The in-memory limiter is deliberately only
-single-process proof; production requires connection-time egress enforcement, shared
+**Decisions:** no new product authority. Added `@fastify/rate-limit` 11.1.x, the
+official Fastify 5-compatible line, only inside the Auth.js route scope so authorization
+throttling is framework-enforced and CodeQL-visible; the classed store retains the
+other four surfaces. Both are deliberately only single-process proof; production
+requires connection-time egress enforcement, shared
 rate/concurrency/spend state, secret/log/rotation drills, workload isolation, and
 incident/restore evidence. No inbound callback or user-archive importer exists.
 **Next:** obtain the exact-tree remote Postgres and remaining protected checks, then

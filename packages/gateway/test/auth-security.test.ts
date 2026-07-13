@@ -279,6 +279,27 @@ test("gateway enforces per-surface rate limits, trusted origins, bounded bodies,
     });
     assert.equal(editLimited.statusCode, 429, editLimited.body);
     await relatedGenerationApp.close();
+
+    const authApp = buildServer({
+      rateLimitPolicy: {
+        windowMs: 60_000,
+        limits: { auth: 1, generation: 5, job: 5, object: 5, public: 5 },
+      },
+    });
+    const authFirst = await authApp.inject({
+      method: "GET",
+      url: "/auth/providers",
+      headers: { cookie: "authjs.session-token=forged-auth-a" },
+    });
+    assert.equal(authFirst.statusCode, 200, authFirst.body);
+    const authLimited = await authApp.inject({
+      method: "GET",
+      url: "/auth/providers",
+      headers: { cookie: "authjs.session-token=forged-auth-b" },
+    });
+    assert.equal(authLimited.statusCode, 429, authLimited.body);
+    assert.equal(authLimited.json().error, "rate limit exceeded");
+    await authApp.close();
   } finally {
     if (previousOrigin === undefined) delete process.env.FORGE_PUBLIC_ORIGIN;
     else process.env.FORGE_PUBLIC_ORIGIN = previousOrigin;
