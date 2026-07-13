@@ -18,6 +18,40 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Make Postgres migration history executable
+**Session:** Codex agent · branch `codex/qa004-migration-acceptance` · **Phase:** QA /
+data operations · **TODO items:** QA-004 [~], QA-001
+**Done:** Recorded D37 and replaced the best-effort Postgres loop with one shared
+runner that takes a database advisory lock, requires an exact contiguous checked-in
+checksum prefix, and commits each migration plus its ledger row in one transaction.
+Added a structured acceptance harness for a clean install and all 19 populated
+historical prefixes through current migration 0020. The fixtures grow with the
+historical schema and prove catalog, review, generation, platform, consent, and
+lifecycle preservation; migration 0019 receives deliberately reversed 0018
+authority sequences. The same gate proves unchanged reruns, injected atomic rollback
+and corrected roll-forward, checksum/gap refusal, and two concurrent runners applying
+once. `pnpm verify` now has 35 steps and passes completely, including 2/2 focused
+migration-policy tests, 61 gateway tests, Brief-25 25/25, native/fresh-WASM parity,
+115 worker tests, release packaging, and patch hygiene. The exact protected QA-003
+evidence base `3f649f9` also passed post-merge CI `29284689496` and security
+`29284689586`. The ledger is now 200 tasks: 134 done, 38 in progress, 27 open, and 1
+blocked.
+**Changed:** Postgres runner and acceptance scripts; required DB/CI commands and
+artifact revision binding; D37; migration/deployment/recovery runbook; canonical
+agent entry point; compatibility, governance, release, system, best-practice, risk,
+state, phase, execution, TODO, and documentation-index guidance.
+**Decisions:** D37 makes every exact checked-in pre-1.0 predecessor prefix supported,
+keeps schema forward-only on application rollback, and requires explicit retirement
+plus verified recovery guidance rather than edited history or convenience down
+migrations.
+**Next:** publish the implementation through the exact-check ruleset, inspect the
+uploaded QA-004 JSON from PR and protected merge runs, then reconcile QA-004 to `[x]`
+only if all 19 populated predecessors and recovery/concurrency scenarios pass.
+**Blockers:** no implementation blocker. The local Docker/Postgres prerequisite is
+unavailable and was not modified, so database acceptance remains intentionally owned
+by required protected CI. Real encrypted backups, restore exercises, capacity, and
+measured RPO/RTO remain OPS-005.
+
 ## 2026-07-13 — Record protected browser accessibility acceptance
 **Session:** Codex agent · branch `codex/qa003-postmerge-evidence` · **Phase:** QA /
 Studio support · **TODO items:** QA-003 [x]

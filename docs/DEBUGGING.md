@@ -16,7 +16,8 @@ files until the failure is classified.
 | Browser support/accessibility failure | inspect `artifacts/e2e/qa003-browser-support.json`; rebuild Studio; rerun the failed engine with `FORGE_BROWSER_SUPPORT=1 FORGE_BROWSER_ENGINES=<engine> pnpm verify:browser-support`, then rerun all three | source revision, engine/version, tier, failed semantic/interaction/contrast/target/layout assertion, screenshot |
 | External acceptance policy/run failure | `pnpm verify:external-acceptance`; validate the private manifest with `node scripts/external-acceptance.mjs validate <path>` | exact revision/deployment, failed/stopped step, authority, content hashes, bounded findings/incidents, signoffs, limitations; no raw private evidence in Git |
 | Worker failure | `PYTHONPATH=workers python3 -m pytest workers/tests/<file> -q` | job kind, sanitized payload, deterministic output/error |
-| Database failure | `docker compose -f infra/docker-compose.yml up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
+| Migration acceptance failure | inspect `artifacts/e2e/qa004-migration-acceptance.json`; run `pnpm db:migrations:test`, then `DATABASE_URL=... pnpm db:assert-migrations` against disposable Postgres; follow `MIGRATIONS.md` | exact source/checkout, predecessor prefix/fixture family, checksum/history/failure/concurrency scenario, first SQL error; never edit the ledger |
+| Other database failure | `docker compose -f infra/docker-compose.yml up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
 | Release failure | follow `docs/RELEASE.md`; inspect the exact job and downloaded aggregate | run ID, SHA, manifest, checksum, attestation |
 | Hardware failure | stop authority, disarm physically, preserve logs, follow D30/D12 runbook | rig ID, confirmation state, supervisor/FC events |
 

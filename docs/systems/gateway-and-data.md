@@ -91,12 +91,16 @@ Classroom assignments/submissions, moderation reports, and policy-sharing signof
 are local P11 tables; submissions store the exact validator report and deterministic
 grade object used by the production admission gate.
 
-Migrations: forward-only SQL in `infra/migrations`, run on deploy; schema changes
-reviewed like code. A new change must be exercised on a clean database and a populated
-supported predecessor, then rerun to prove checksum/idempotency behavior. Back up
-before deploy, stop the application if a migration fails, inspect
-`schema_migrations`, and roll forward with corrected additive SQL; never edit an
-already-recorded migration checksum.
+Migrations follow D37 and the complete [`../MIGRATIONS.md`](../MIGRATIONS.md)
+runbook: forward-only SQL in `infra/migrations`, serialized by a database advisory
+lock, with each migration and `schema_migrations` row committed in one transaction.
+The runner refuses missing source, non-contiguous history, and checksum drift. The
+pre-1.0 support promise covers every exact checked-in predecessor prefix; required
+`pnpm db:assert-migrations` acceptance upgrades realistic populated fixtures from
+each prefix, reruns idempotently, injects a failed transaction and corrected
+roll-forward, and proves concurrent runners apply once. Back up before deploy, stop
+incompatible writers on failure, and never edit recorded history or use a destructive
+down migration as application rollback.
 
 Migration `0020_commerce_worker_jobs.sql` additively extends `jobs_kind_check` with
 `commerce.vendor-refresh`; it does not rewrite existing rows or touch object storage.
