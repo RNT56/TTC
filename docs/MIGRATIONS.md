@@ -191,9 +191,14 @@ tombstones, audit rows, or provenance is not an acceptable convenience rollback.
 
 ## 7. Evidence and maturity boundary
 
-QA-004 closes only after the exact implementation head and protected merge both pass
-required CI/security and the uploaded JSON is inspected. This proves deterministic
-migration behavior in isolated Postgres. It does not prove production backup
+QA-004 is closed through protected PR #44 at `e362c54`. Exact implementation-head CI
+`29286731035`/security `29286731271` and post-merge CI `29287274236`/security
+`29287274293` passed. The inspected clean merge JSON binds source and checkout to
+`e362c54` and proves PostgreSQL 16.14/pgvector 0.8.5, 20/20 clean migrations, all 19
+populated predecessors, preservation/idempotency, atomic recovery, checksum/gap
+refusal, and concurrent apply-once behavior.
+
+This is deterministic isolated-Postgres proof. It does not prove production backup
 automation, encrypted provider copies, point-in-time recovery, replica promotion,
-capacity, measured RPO/RTO, or a disaster exercise. Those remain `OPS-005`, and no
-release or project-state claim may collapse that distinction.
+capacity, measured RPO/RTO, or a disaster exercise. Those remain `OPS-005` and
+`QA-009`, and no release or project-state claim may collapse that distinction.

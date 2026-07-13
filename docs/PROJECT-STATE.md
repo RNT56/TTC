@@ -38,9 +38,9 @@ open.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest verified runtime descendant and QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 evidence-governance anchor `8708de7` are green; annotated `v0.1.0` published | PR #42 closes deterministic supported-browser/accessibility acceptance without changing live-provider, external-user, hardware, assistive-technology, vendor-device, or field maturity |
+| Git state | SEC-006 runtime/security evidence anchored at protected `d952f60`; latest verified descendant and QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 evidence-governance anchor `8708de7` are green; annotated `v0.1.0` published | PR #44 closes deterministic migration acceptance without changing production backup/DR, live-provider, external-user, hardware, assistive-technology, vendor-device, or field maturity |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 35 required non-DB gates on the QA-004 implementation candidate; latest protected baseline remains the 34-step PR #42/main run at `9c1802b` pending this lane's PR | migration source/history/checksum policy joins external acceptance, browser support, golden review, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 61 gateway tests, Brief-25 25/25, oracles, budgets, fuzz, sim, packaging, pilots, 115 worker tests, and patch hygiene; this local pass does not replace the required Postgres predecessor matrix or protected checks |
+| `pnpm verify` | pass: 35 required non-DB gates locally and on protected QA-004 main at `e362c54` | migration source/history/checksum policy joins external acceptance, browser support, golden review, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 61 gateway tests, Brief-25 25/25, oracles, budgets, fuzz, sim, packaging, pilots, 115 worker tests, and patch hygiene; the separate required Postgres job owns the populated predecessor matrix |
 | Golden artifact review | protected through PR #36: 14 registered families, 10/10 policy tests, 1 registry change covered by 1 new record | parent/current registries are unioned against same-patch weakening; record history and ownership cannot be redirected or overlapped; the frozen prototype is immutable; registered drift needs an append-only record with exact path, class, rationale, impact, evidence, and reviewer focus |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
@@ -49,13 +49,13 @@ open.
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 61/61 with the real validator in the full gate | includes worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
 | Worker tests | pass: 115/115 on this tree; Python 3.12 remains the required release environment | adds registered commerce dispatch, missing-command failure, bounded normalization, sanitized holds, transactional materialization revalidation, and worker-loop survival/failure recording to native ETL and SEC-006 coverage |
-| Postgres/pgvector gate | pass on protected QA-003 merge CI `29283250843` for 20 migrations | migration 0020 commerce invariants, transactional worker materialization, the complete QA-002 browser loop, and QA-003's three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
+| Postgres/pgvector gate | pass on protected QA-004 merge CI `29287274236` for 20 migrations | QA-004's clean plus 19 populated-predecessor matrix, migration 0020 commerce invariants, transactional worker materialization, the complete QA-002 browser loop, and QA-003's three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | pass: 6/6 | edge F1 0.957-0.995; nightly CLI works locally |
 | QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb` | exact PR CI `29272067712`/security `29272067617` and post-merge CI `29272532186`/security `29272531705` prove the production bundle, real WASM, 20 migrations, catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed owner listing, job, and materialized maintenance; no live-provider or external-user claim |
 | QA-003 browser/accessibility acceptance | complete at deterministic supported-browser maturity through PR #42 and protected `9c1802b` | exact PR CI `29282669499`/security `29282669468` and post-merge CI `29283250843`/security `29283250865` pass. The clean merge artifact records real WASM/validator admission and all semantic, skip/focus, keyboard orbit/equip/explode/blueprint, AA contrast, critical-target, responsive, reduced-motion, renderer, asset-isolation, and positive-draw assertions across Chromium 148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Chromium is full WebGL at 33 draws; Firefox/WebKit are core-baked Canvas2D at 17 draws with no scene/Three.js chunks. WebKit/narrow checks remain proxies, not Apple/mobile-device, assistive-technology, external-user, or field proof |
-| QA-004 migration acceptance | implementation in progress on D37; local runner-policy tests pass 2/2 | shared runner now serializes deploys, validates exact contiguous checksums, and transactionally binds SQL plus ledger rows; the isolated acceptance harness defines clean plus all 19 populated predecessor, idempotency, failure/recovery, gap/drift, and concurrency scenarios. Protected Postgres execution and exact PR/post-merge evidence remain required before completion; production backup/restore/RPO/RTO remains OPS-005 |
+| QA-004 migration acceptance | complete through PR #44 and protected `e362c54` | exact PR CI `29286731035`/security `29286731271` and post-merge CI `29287274236`/security `29287274293` pass. The clean merge artifact binds source/checkout to `e362c54`, applies 20/20 clean migrations, preserves and idempotently reruns all 19 populated predecessors, and proves atomic rollback/corrected roll-forward, checksum/gap refusal, advisory serialization, and apply once. Production backup/restore/RPO/RTO remains OPS-005 |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
@@ -181,6 +181,18 @@ Live GitHub evidence checked on 2026-07-13:
   real hashed WASM, renderer/asset isolation, positive draws, keyboard interaction,
   AA contrast, narrow containment, and reduced motion. This closes QA-003 only at
   deterministic supported-browser maturity;
+- migration acceptance [PR #44](https://github.com/RNT56/TTC/pull/44) passed
+  exact-head CI
+  [29286731035](https://github.com/RNT56/TTC/actions/runs/29286731035) and security
+  [29286731271](https://github.com/RNT56/TTC/actions/runs/29286731271) at `f44ee86`,
+  then merged through protection as `e362c54`. Exact post-merge CI
+  [29287274236](https://github.com/RNT56/TTC/actions/runs/29287274236) and security
+  [29287274293](https://github.com/RNT56/TTC/actions/runs/29287274293) passed all
+  runtime/security jobs. The clean merge artifact binds source and checkout to
+  `e362c54`, applies 20/20 current migrations on clean Postgres 16.14/pgvector 0.8.5,
+  preserves and idempotently reruns every populated predecessor `0001`..`0019`, and
+  proves atomic failure recovery, drift/gap refusal, and concurrent apply-once. This
+  closes QA-004 at deterministic isolated-Postgres maturity, not OPS-005 or QA-009;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -303,9 +315,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **200 tasks: 134 done, 38 in progress, 27 open,
-and 1 explicitly blocked**. All 8 recovery tasks are done. The 66 remaining tasks are
-the phase/live/field program plus 2 governance, 2 security, 5 quality, 10 operations,
+The stable ledger currently contains **200 tasks: 135 done, 37 in progress, 27 open,
+and 1 explicitly blocked**. All 8 recovery tasks are done. The 65 remaining tasks are
+the phase/live/field program plus 2 governance, 2 security, 4 quality, 10 operations,
 9 external-proof, and 2 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 
