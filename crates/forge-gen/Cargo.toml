@@ -7,13 +7,13 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-forge-contract = { version = "0.1.0", path = "../forge-contract" }
+forge-contract = { version = "0.2.0", path = "../forge-contract" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 schemars = { workspace = true }
 
 [dev-dependencies]
-forge-validate = { version = "0.1.0", path = "../forge-validate" }
+forge-validate = { version = "0.2.0", path = "../forge-validate" }
 
 [[bin]]
 name = "forge-gen"

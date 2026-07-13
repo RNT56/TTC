@@ -45,11 +45,28 @@ fn spec_with(refs: &[&str], lockfile: &[(&str, &str)]) -> ModelSpec {
       "skeleton": [{"name": "root", "parent": null, "pos": [0, 0, 0]}],
       "parts": [{"node": "root", "geom": {"kind": "box", "w": 0.1, "h": 0.02, "d": 0.1},
                  "material": "matte", "color": "#333333"}],
-      "slots": [{"id": "s", "label": "s", "mountNodes": ["root"], "variants": variants}],
+      "slots": [{"id": "s", "label": "s", "mountNodes": ["root"],
+                 "equippedVariantId": "v0", "variants": variants}],
       "driver": {"archetype": "multirotor", "params": {}},
       "lockfile": lock,
     });
     forge_contract::validate_shape(&doc.to_string()).unwrap()
+}
+
+#[test]
+fn only_the_equipped_alternative_is_pinned() {
+    let cat = Mem(vec![
+        ("cmp_selected", "1.2.0", false),
+        ("cmp_spare", "9.0.0", false),
+    ]);
+    let spec = spec_with(&["cmp_selected@^1.0.0", "cmp_spare@^9.0.0"], &[]);
+    let lock = pin_refs(&spec, &cat).unwrap();
+    assert_eq!(lock.len(), 1);
+    assert_eq!(
+        lock.get("cmp_selected@^1.0.0").map(String::as_str),
+        Some("cmp_selected@1.2.0")
+    );
+    assert!(!lock.contains_key("cmp_spare@^9.0.0"));
 }
 
 #[test]
@@ -100,13 +117,15 @@ fn yanked_pin_survives_but_upgrade_moves_off_it() {
 }
 
 #[test]
-fn unsatisfiable_ranges_and_bad_refs_error_with_reasons() {
+fn selected_unsatisfiable_ranges_and_bad_refs_error_with_reasons() {
     let cat = Mem(vec![("cmp_m", "2.0.0", false)]);
-    let spec = spec_with(&["cmp_m@^1.0.0", "no-at-sign"], &[]);
+    let spec = spec_with(&["cmp_m@^1.0.0"], &[]);
     let errors = pin_refs(&spec, &cat).unwrap_err();
-    assert_eq!(errors.len(), 2);
+    assert_eq!(errors.len(), 1);
     assert!(errors.iter().any(|e| e.reason.contains("no published")));
-    assert!(errors
-        .iter()
-        .any(|e| e.reason.contains("not '<id>@<range>'")));
+
+    let bad = spec_with(&["no-at-sign"], &[]);
+    let errors = pin_refs(&bad, &cat).unwrap_err();
+    assert_eq!(errors.len(), 1);
+    assert!(errors[0].reason.contains("not '<id>@<range>'"));
 }

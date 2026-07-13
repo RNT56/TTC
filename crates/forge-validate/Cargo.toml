@@ -7,10 +7,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-forge-contract = { version = "0.1.0", path = "../forge-contract" }
-forge-geometry = { version = "0.1.0", path = "../forge-geometry" }
-forge-motion = { version = "0.1.0", path = "../forge-motion" }
-forge-sim = { version = "0.1.0", path = "../forge-sim" }
+forge-contract = { version = "0.2.0", path = "../forge-contract" }
+forge-geometry = { version = "0.2.0", path = "../forge-geometry" }
+forge-motion = { version = "0.2.0", path = "../forge-motion" }
+forge-sim = { version = "0.2.0", path = "../forge-sim" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }

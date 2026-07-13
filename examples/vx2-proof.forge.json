@@ -851,6 +851,7 @@
     "m2",
     "m3"
    ],
+   "equippedVariantId": "eco2-2207-1900",
    "variants": [
     {
      "id": "eco2-2207-1900",
@@ -865,6 +866,7 @@
    "mountNodes": [
     "batt"
    ],
+   "equippedVariantId": "cnhl-4s-1500",
    "variants": [
     {
      "id": "cnhl-4s-1500",

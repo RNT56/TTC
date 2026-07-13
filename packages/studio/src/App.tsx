@@ -90,6 +90,7 @@ import {
 } from "./jobOutputs";
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { CoreBake, CoreSession, corePatch, coreValidate, type DriveInput } from "./wasm";
+import type { Slot } from "./contract.gen";
 
 const panel: React.CSSProperties = {
   position: "absolute",
@@ -140,6 +141,40 @@ const SWATCHES = [
   "#3a4a6e",
 ];
 const MATERIAL_CLASSES: MaterialClass[] = ["gloss", "metal", "satin", "matte", "rubber"];
+
+interface ConfiguratorContract {
+  slots: Slot[];
+  lockfile: Record<string, string>;
+}
+
+function configuratorContract(contractJson: string | null): ConfiguratorContract {
+  if (!contractJson) return { slots: [], lockfile: {} };
+  try {
+    const parsed = JSON.parse(contractJson) as { slots?: unknown; lockfile?: unknown };
+    const slots = Array.isArray(parsed.slots) ? (parsed.slots as Slot[]) : [];
+    const lockfile =
+      parsed.lockfile && typeof parsed.lockfile === "object" && !Array.isArray(parsed.lockfile)
+        ? (parsed.lockfile as Record<string, string>)
+        : {};
+    return { slots, lockfile };
+  } catch {
+    return { slots: [], lockfile: {} };
+  }
+}
+
+function variantConsequence(
+  variant: Slot["variants"][number],
+  lockfile: Record<string, string>,
+): string {
+  if (variant.componentRef) {
+    const pin = lockfile[variant.componentRef];
+    return pin
+      ? `${variant.componentRef} → ${pin}; validator, simulation, and BOM will recompute`
+      : `${variant.componentRef}; requires lockfile resolution before admission`;
+  }
+  const count = variant.parts?.length ?? 0;
+  return `${count} inline part${count === 1 ? "" : "s"}; geometry, mass, validation, simulation, and BOM will recompute`;
+}
 const REVIEW_EXPORT_POLICIES: ReviewExportPolicy[] = [
   "full-geometry-ok",
   "attribution-manifest-required",
@@ -639,15 +674,21 @@ export default function App() {
       sessionRef.current = null;
     }
     if (selected) {
-      const part = artifact.baked.parts[selected.partIndex];
+      const part =
+        artifact.baked.parts.find((candidate) => candidate.source_path === selected.sourcePath) ??
+        artifact.baked.parts.find((candidate) => candidate.node === selected.node);
       if (part) {
-        scene.setSelected(selected.partIndex);
+        scene.setSelected(part.part_index);
         st.setSelected({
-          partIndex: selected.partIndex,
+          partIndex: part.part_index,
+          sourcePath: part.source_path,
           node: part.node,
           material: part.material,
           color: part.color,
         });
+      } else {
+        scene.setSelected(null);
+        st.setSelected(null);
       }
     }
   }, []);
@@ -1386,6 +1427,7 @@ export default function App() {
   const synthesisPin = generationModels.find((model) => model.role === "synthesis");
   const repairPin = generationModels.find((model) => model.role === "repair");
   const shareDisabled = !s.contractJson || s.report?.verdict !== "admitted";
+  const configurator = configuratorContract(s.contractJson);
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <canvas
@@ -1438,6 +1480,57 @@ export default function App() {
           share
         </button>
         {shareUrl && <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{shareUrl}</div>}
+
+        {configurator.slots.length > 0 && (
+          <details data-testid="variant-configurator" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
+            <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>
+              equipped variants ({configurator.slots.length})
+            </summary>
+            {configurator.slots.map((slot, slotIndex) => (
+              <div key={slot.id} style={{ marginTop: 8 }}>
+                <div style={{ color: "#cfd6df" }}>{slot.label}</div>
+                <div style={{ color: "#6b7686" }}>{slot.mountNodes.join(", ") || "no mount"}</div>
+                <div style={{ display: "grid", gap: 5, marginTop: 5 }}>
+                  {slot.variants.map((variant) => {
+                    const equipped = slot.equippedVariantId === variant.id;
+                    return (
+                      <button
+                        key={variant.id}
+                        data-testid={`variant-${slot.id}-${variant.id}`}
+                        aria-pressed={equipped}
+                        onClick={() =>
+                          void applyPatch([
+                            {
+                              op: slot.equippedVariantId == null ? "add" : "replace",
+                              path: `/slots/${slotIndex}/equippedVariantId`,
+                              value: variant.id,
+                            },
+                          ])
+                        }
+                        disabled={equipped}
+                        style={{
+                          ...btn,
+                          padding: "6px 7px",
+                          textAlign: "left",
+                          borderColor: equipped ? "#39c8ff" : "#2a2f38",
+                          background: equipped ? "rgba(57,200,255,0.1)" : "#16181c",
+                          opacity: 1,
+                        }}
+                      >
+                        <span style={{ display: "block", color: equipped ? "#39c8ff" : "#cfd6df" }}>
+                          {equipped ? "equipped · " : ""}{variant.name ?? variant.id}
+                        </span>
+                        <span style={{ display: "block", color: "#6b7686", whiteSpace: "normal" }}>
+                          {variantConsequence(variant, configurator.lockfile)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </details>
+        )}
 
         <div data-testid="account-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1983,6 +2076,7 @@ export default function App() {
         <div style={{ ...panel, top: 220, right: 12, minWidth: 200 }}>
           <div style={{ color: "#8fa3bf" }}>selection</div>
           <Row k="part" v={`#${s.selected.partIndex}`} />
+          <Row k="source" v={s.selected.sourcePath} />
           <Row k="node" v={s.selected.node} />
           <Row k="material" v={s.selected.material} />
           <Row k="color" v={s.selected.color} />
@@ -1998,7 +2092,7 @@ export default function App() {
                 title={c}
                 onClick={() =>
                   void applyPatch([
-                    { op: "replace", path: `/parts/${s.selected!.partIndex}/color`, value: c },
+                    { op: "replace", path: `${s.selected!.sourcePath}/color`, value: c },
                   ])
                 }
                 style={{
@@ -2015,7 +2109,7 @@ export default function App() {
             value={s.selected.material}
             onChange={(e) =>
               void applyPatch([
-                { op: "replace", path: `/parts/${s.selected!.partIndex}/material`, value: e.target.value },
+                { op: "replace", path: `${s.selected!.sourcePath}/material`, value: e.target.value },
               ])
             }
             style={{

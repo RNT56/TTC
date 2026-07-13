@@ -13,7 +13,7 @@ use forge_contract::{
 };
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 // ---------------------------------------------------------------------------
 // report clock — provenance metadata only; judgment NEVER depends on it (D17).
 // std::time::{SystemTime, Instant} trap (`unreachable`) on
@@ -297,6 +297,7 @@ fn run_checks(
     opts: &Options,
 ) -> (Vec<Diagnostic>, Option<BakedModel>) {
     let mut d: Vec<Diagnostic> = Vec::new();
+    let physical_parts = spec.physical_parts_with_paths();
 
     // ---- CTR-002 port resolution (v0: node exists; capped counts as resolved)
     for port in &spec.ports {
@@ -318,15 +319,54 @@ fn run_checks(
         }
     }
 
-    // ---- CTR-003 slot defaults & variant well-formedness
+    // ---- CTR-003 explicit equipped choice & variant well-formedness
     for slot in &spec.slots {
         if slot.variants.is_empty() {
             d.push(
                 Diagnostic::error("CTR-003", format!("slot_empty: {}", slot.id))
                     .subject("slot", &slot.id),
             );
+        } else {
+            match slot.equipped_variant_id.as_deref() {
+                None => d.push(
+                    Diagnostic::error("CTR-003", format!("slot_equipped_missing: {}", slot.id))
+                        .subject("slot", &slot.id)
+                        .hint("set equippedVariantId to exactly one variant id"),
+                ),
+                Some(equipped) => {
+                    let matches = slot
+                        .variants
+                        .iter()
+                        .filter(|variant| variant.id == equipped)
+                        .count();
+                    if matches != 1 {
+                        d.push(
+                            Diagnostic::error(
+                                "CTR-003",
+                                format!(
+                                    "slot_equipped_unresolved: {}/{} matched {matches} variants",
+                                    slot.id, equipped
+                                ),
+                            )
+                            .subject("slot", &slot.id)
+                            .hint("equippedVariantId must match one unique variant id"),
+                        );
+                    }
+                }
+            }
         }
+        let mut variant_ids = BTreeSet::new();
         for v in &slot.variants {
+            if !variant_ids.insert(v.id.as_str()) {
+                d.push(
+                    Diagnostic::error(
+                        "CTR-003",
+                        format!("variant_id_duplicate: {}/{}", slot.id, v.id),
+                    )
+                    .subject("variant", &v.id)
+                    .hint("variant ids must be unique within their slot"),
+                );
+            }
             let has_parts = v.parts.as_ref().map(|p| !p.is_empty()).unwrap_or(false);
             let has_ref = v.component_ref.is_some();
             if has_parts == has_ref {
@@ -351,7 +391,7 @@ fn run_checks(
     }
 
     // ---- CTR-005 colors parse (material presence is type-enforced)
-    for (i, part) in spec.parts.iter().enumerate() {
+    for (i, (_, part)) in physical_parts.iter().enumerate() {
         if !valid_hex_color(&part.color) {
             d.push(
                 Diagnostic::error(
@@ -381,7 +421,7 @@ fn run_checks(
     // agree with the datasheet (>5 % drift warns; reconciliation is the
     // configurator equip flow's job, never a silent override).
     for slot in &spec.slots {
-        for v in &slot.variants {
+        if let Some(v) = slot.equipped_variant() {
             let Some(component_ref) = &v.component_ref else {
                 continue;
             };
@@ -453,7 +493,7 @@ fn run_checks(
     let budget = &spec.sim.colliders.budget;
     let mut per_node: BTreeMap<&str, u32> = BTreeMap::new();
     let mut total = 0u32;
-    for part in &spec.parts {
+    for (_, part) in &physical_parts {
         if part.collision != CollisionPolicy::None {
             *per_node.entry(part.node.as_str()).or_default() += 1;
             total += 1;
@@ -1009,10 +1049,13 @@ fn run_checks(
         ),
     }
 
-    // ---- CTR-004 explode coverage (≥ 80 % of base parts)
-    if spec.parts.len() >= 4 {
-        let covered = spec.parts.iter().filter(|p| p.explode.is_some()).count();
-        let coverage = covered as f64 / spec.parts.len() as f64;
+    // ---- CTR-004 explode coverage (≥ 80 % of equipped physical parts)
+    if physical_parts.len() >= 4 {
+        let covered = physical_parts
+            .iter()
+            .filter(|(_, part)| part.explode.is_some())
+            .count();
+        let coverage = covered as f64 / physical_parts.len() as f64;
         if coverage < 0.8 {
             d.push(
                 Diagnostic::error(
@@ -1081,11 +1124,12 @@ pub fn bom_rows_with_catalog(
     baked: &BakedModel,
     catalog: &dyn CatalogSource,
 ) -> Vec<BomRow> {
+    let physical_parts = spec.physical_parts_with_paths();
     let mut rows: Vec<BomRow> = baked
         .parts
         .iter()
         .map(|bp| {
-            let part = &spec.parts[bp.part_index];
+            let part = physical_parts[bp.part_index].1;
             let dfm = dfm_bom_summary(bp.part_index, part, bp);
             BomRow {
                 item: part
@@ -1114,7 +1158,7 @@ pub fn bom_rows_with_catalog(
         })
         .collect();
     for slot in &spec.slots {
-        for v in &slot.variants {
+        if let Some(v) = slot.equipped_variant() {
             if let Some(r) = &v.component_ref {
                 let pin = spec.lockfile.get(r);
                 let (component_id, revision) = pin
@@ -1262,8 +1306,9 @@ fn count_degenerate(mesh: &forge_geometry::MeshBuffers) -> usize {
 
 fn run_dfm_checks(spec: &ModelSpec, baked: &BakedModel) -> Vec<Diagnostic> {
     let mut out = Vec::new();
+    let physical_parts = spec.physical_parts_with_paths();
     for bp in &baked.parts {
-        let part = &spec.parts[bp.part_index];
+        let part = physical_parts[bp.part_index].1;
         let Some(analyses) = dfm_analyses(part, bp) else {
             continue;
         };
@@ -1497,6 +1542,35 @@ mod tests {
         .to_string()
     }
 
+    fn variant_contract(equipped_variant_id: Option<&str>, variants: serde_json::Value) -> String {
+        let mut value: serde_json::Value = serde_json::from_str(GOOD).unwrap();
+        let mut slot = serde_json::json!({
+            "id": "payload",
+            "label": "Payload",
+            "mountNodes": ["root"],
+            "variants": variants,
+        });
+        if let Some(equipped) = equipped_variant_id {
+            slot["equippedVariantId"] = serde_json::Value::String(equipped.to_string());
+        }
+        value["slots"] = serde_json::json!([slot]);
+        value.to_string()
+    }
+
+    fn inline_variant(id: &str, color: &str) -> serde_json::Value {
+        serde_json::json!({
+            "id": id,
+            "parts": [{
+                "node": "root",
+                "geom": {"kind": "box", "w": 0.02, "h": 0.02, "d": 0.02},
+                "material": "metal",
+                "color": color,
+                "collision": "none",
+                "mass": {"valueG": 3}
+            }]
+        })
+    }
+
     #[test]
     fn arm_driver_params_and_smoke_are_admitted() {
         let doc = arm_contract(serde_json::json!({
@@ -1540,6 +1614,7 @@ mod tests {
             label: "POWER".into(),
             mount_nodes: vec!["root".into()],
             joint: None,
+            equipped_variant_id: Some("b1".into()),
             variants: vec![forge_contract::Variant {
                 id: "b1".into(),
                 name: None,
@@ -1552,6 +1627,95 @@ mod tests {
         let doc = serde_json::to_string(&spec).unwrap();
         let report = run_full(&doc, &EmptyCatalog, &Options::default());
         assert!(report.results.iter().any(|d| d.check == "CTR-006"));
+        assert_eq!(report.verdict, Verdict::Rejected);
+    }
+
+    #[test]
+    fn slot_requires_one_unique_equipped_variant_id() {
+        let variants = serde_json::json!([
+            inline_variant("light", "#111111"),
+            inline_variant("heavy", "#222222")
+        ]);
+        let missing = run_full(
+            &variant_contract(None, variants.clone()),
+            &EmptyCatalog,
+            &Options::default(),
+        );
+        assert!(missing
+            .results
+            .iter()
+            .any(|d| { d.check == "CTR-003" && d.message.contains("slot_equipped_missing") }));
+
+        let unknown = run_full(
+            &variant_contract(Some("unknown"), variants),
+            &EmptyCatalog,
+            &Options::default(),
+        );
+        assert!(unknown
+            .results
+            .iter()
+            .any(|d| { d.check == "CTR-003" && d.message.contains("slot_equipped_unresolved") }));
+
+        let duplicate = run_full(
+            &variant_contract(
+                Some("same"),
+                serde_json::json!([
+                    inline_variant("same", "#111111"),
+                    inline_variant("same", "#222222")
+                ]),
+            ),
+            &EmptyCatalog,
+            &Options::default(),
+        );
+        assert!(duplicate
+            .results
+            .iter()
+            .any(|d| { d.check == "CTR-003" && d.message.contains("variant_id_duplicate") }));
+        assert!(duplicate
+            .results
+            .iter()
+            .any(|d| { d.check == "CTR-003" && d.message.contains("matched 2 variants") }));
+    }
+
+    #[test]
+    fn unselected_alternatives_do_not_affect_physics_lockfile_or_bom() {
+        let doc = variant_contract(
+            Some("inline"),
+            serde_json::json!([
+                inline_variant("inline", "#123456"),
+                inline_variant("bad-color-spare", "not-a-color"),
+                {"id":"catalog-spare","componentRef":"cmp_missing@^9"}
+            ]),
+        );
+        let report = run_full(&doc, &EmptyCatalog, &Options::default());
+        assert!(!report.results.iter().any(|d| d.check == "CTR-005"));
+        assert!(!report.results.iter().any(|d| d.check == "CTR-006"));
+
+        let spec = forge_contract::validate_shape(&doc).unwrap();
+        let baked = forge_geometry::bake(&spec).unwrap();
+        assert_eq!(
+            baked.parts.last().unwrap().source_path,
+            "/slots/0/variants/0/parts/0"
+        );
+        let rows = bom_rows(&spec, &baked);
+        assert_eq!(rows.len(), spec.parts.len() + 1);
+        assert!(!rows.iter().any(|row| row.item == "payload/catalog-spare"));
+    }
+
+    #[test]
+    fn selected_inline_alternative_is_subject_to_physical_checks() {
+        let report = run_full(
+            &variant_contract(
+                Some("bad-color"),
+                serde_json::json!([
+                    inline_variant("good-spare", "#123456"),
+                    inline_variant("bad-color", "not-a-color")
+                ]),
+            ),
+            &EmptyCatalog,
+            &Options::default(),
+        );
+        assert!(report.results.iter().any(|d| d.check == "CTR-005"));
         assert_eq!(report.verdict, Verdict::Rejected);
     }
 

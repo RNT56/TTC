@@ -887,14 +887,16 @@ function catalogSlots(
     if (!mounts || mounts.length === 0) continue;
     seen.add(component.category);
     const componentRef = `${component.id}@${majorRange(component.revision)}`;
+    const variantId = component.id.replace(/^cmp_/, "");
     lockfile[componentRef] = `${component.id}@${component.revision}`;
     slots.push({
       id: `${component.category}-catalog`,
       label: `${component.category} catalog selection`,
       mountNodes: mounts,
+      equippedVariantId: variantId,
       variants: [
         {
-          id: component.id.replace(/^cmp_/, ""),
+          id: variantId,
           name: `${component.brand} ${component.model}`,
           componentRef,
           ports: {},

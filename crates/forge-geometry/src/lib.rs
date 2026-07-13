@@ -40,6 +40,10 @@ impl MeshBuffers {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BakedPart {
+    /// JSON Pointer to the source part in the contract. Unlike `part_index`,
+    /// this remains meaningful when an equipped alternative changes the
+    /// flattened physical part table.
+    pub source_path: String,
     pub part_index: usize,
     pub node: String,
     pub material: MaterialClass,
@@ -117,11 +121,12 @@ impl std::error::Error for BakeError {}
 /// Bake a contract: every part → flat buffers; every node → world transform.
 pub fn bake(spec: &ModelSpec) -> Result<BakedModel, BakeError> {
     let node_world = node_world_transforms(spec)?;
-    let mut parts = Vec::with_capacity(spec.parts.len());
+    let physical = spec.physical_parts_with_paths();
+    let mut parts = Vec::with_capacity(physical.len());
     let mut total_faces = 0usize;
     let mut total_vertices = 0usize;
     let mut total_polygons = 0usize;
-    for (i, part) in spec.parts.iter().enumerate() {
+    for (i, (source_path, part)) in physical.iter().enumerate() {
         if !node_world.contains_key(&part.node) {
             return Err(BakeError::UnknownNode {
                 part_index: i,
@@ -143,6 +148,7 @@ pub fn bake(spec: &ModelSpec) -> Result<BakedModel, BakeError> {
         total_vertices += counts.verts;
         total_polygons += counts.polys;
         parts.push(BakedPart {
+            source_path: source_path.clone(),
             part_index: i,
             node: part.node.clone(),
             material: part.material,
@@ -174,22 +180,28 @@ pub fn bake_incremental(
     prev: &BakedModel,
 ) -> Result<BakedModel, BakeError> {
     let node_world = node_world_transforms(spec)?;
-    let mut parts = Vec::with_capacity(spec.parts.len());
+    let physical = spec.physical_parts_with_paths();
+    let previous_physical = prev_spec.physical_parts_with_paths();
+    let mut parts = Vec::with_capacity(physical.len());
     let mut total_faces = 0usize;
     let mut total_vertices = 0usize;
     let mut total_polygons = 0usize;
-    for (i, part) in spec.parts.iter().enumerate() {
+    for (i, (source_path, part)) in physical.iter().enumerate() {
         if !node_world.contains_key(&part.node) {
             return Err(BakeError::UnknownNode {
                 part_index: i,
                 node: part.node.clone(),
             });
         }
-        let reusable = prev_spec
-            .parts
+        let reusable = previous_physical
             .get(i)
-            .filter(|p| p.geom == part.geom && p.pose == part.pose)
-            .and_then(|_| prev.parts.get(i));
+            .filter(|(previous_path, previous_part)| {
+                previous_path == source_path
+                    && previous_part.geom == part.geom
+                    && previous_part.pose == part.pose
+            })
+            .and_then(|_| prev.parts.get(i))
+            .filter(|previous_bake| previous_bake.source_path == *source_path);
         let (mesh, verts, polys) = match reusable {
             Some(prev_part) => (
                 prev_part.mesh.clone(),
@@ -217,6 +229,7 @@ pub fn bake_incremental(
         total_vertices += verts;
         total_polygons += polys;
         parts.push(BakedPart {
+            source_path: source_path.clone(),
             part_index: i,
             node: part.node.clone(),
             material: part.material,
@@ -498,11 +511,12 @@ pub fn part_mass_g(mass: &Option<MassSpec>, material: MaterialClass, mesh: &Mesh
 
 /// Total model mass in grams (Σ part masses).
 pub fn model_mass_g(spec: &ModelSpec, baked: &BakedModel) -> f64 {
+    let physical = spec.physical_parts_with_paths();
     baked
         .parts
         .iter()
         .map(|bp| {
-            let part = &spec.parts[bp.part_index];
+            let part = physical[bp.part_index].1;
             part_mass_g(&part.mass, part.material, &bp.mesh)
         })
         .sum()
@@ -588,6 +602,32 @@ mod tests {
         .unwrap()
     }
 
+    fn variant_spec(equipped: &str) -> ModelSpec {
+        let doc = serde_json::json!({
+          "meta": {"id":"variants","name":"variants","version":"2.2.0","archetype":"rover",
+                   "provenance":{"kind":"human"},"license":"CC0"},
+          "skeleton":[{"name":"root","parent":null,"pos":[0,0,0]}],
+          "parts":[{"node":"root","geom":{"kind":"box","w":0.1,"h":0.1,"d":0.1},
+                    "material":"matte","color":"#111111","mass":{"valueG":10}}],
+          "slots":[{
+            "id":"payload","label":"Payload","mountNodes":["root"],
+            "equippedVariantId": equipped,
+            "variants":[
+              {"id":"light","parts":[
+                {"node":"root","geom":{"kind":"box","w":0.02,"h":0.02,"d":0.02},
+                 "material":"matte","color":"#222222","mass":{"valueG":2}}
+              ]},
+              {"id":"wide","parts":[
+                {"node":"root","geom":{"kind":"cyl","r0":0.04,"h":0.03,"n":16},
+                 "material":"metal","color":"#333333","mass":{"valueG":7}}
+              ]}
+            ]
+          }],
+          "driver":{"archetype":"rover","params":{}}
+        });
+        validate_shape(&doc.to_string()).unwrap()
+    }
+
     #[test]
     fn bake_produces_buffers_and_transforms() {
         let spec = demo_spec();
@@ -613,6 +653,31 @@ mod tests {
         assert!(
             (g - expect).abs() / expect < 0.01,
             "got {g}, expect ≈{expect}"
+        );
+    }
+
+    #[test]
+    fn bake_and_mass_include_only_the_equipped_inline_alternative() {
+        let light = variant_spec("light");
+        let light_bake = bake(&light).unwrap();
+        assert_eq!(light_bake.parts.len(), 2);
+        assert_eq!(
+            light_bake.parts[1].source_path,
+            "/slots/0/variants/0/parts/0"
+        );
+        assert!((model_mass_g(&light, &light_bake) - 12.0).abs() < 1e-9);
+
+        let wide = variant_spec("wide");
+        let wide_bake = bake_incremental(&wide, &light, &light_bake).unwrap();
+        assert_eq!(wide_bake.parts.len(), 2);
+        assert_eq!(
+            wide_bake.parts[1].source_path,
+            "/slots/0/variants/1/parts/0"
+        );
+        assert!((model_mass_g(&wide, &wide_bake) - 17.0).abs() < 1e-9);
+        assert_ne!(
+            light_bake.parts[1].mesh.positions, wide_bake.parts[1].mesh.positions,
+            "changing the equipped alternative must invalidate the old mesh"
         );
     }
 

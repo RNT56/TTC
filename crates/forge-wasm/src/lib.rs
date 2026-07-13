@@ -87,6 +87,7 @@ pub fn bake_meta_json(
         "baked": {
             "node_world": baked.node_world,
             "parts": baked.parts.iter().map(|p| serde_json::json!({
+                "source_path": p.source_path,
                 "part_index": p.part_index,
                 "node": p.node,
                 "material": p.material,
@@ -450,6 +451,7 @@ mod tests {
         let parts = meta["baked"]["parts"].as_array().unwrap();
         assert_eq!(parts.len(), 125);
         assert!(parts[0].get("mesh").is_none(), "no buffers in meta");
+        assert_eq!(parts[0]["source_path"], "/parts/0");
         assert!(parts[0]["vertices"].as_u64().unwrap() > 0);
         assert!(meta["baked"]["node_world"].get("root").is_some());
     }

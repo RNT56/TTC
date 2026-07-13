@@ -75,8 +75,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - compatibility policy 1.0.0 is machine-checked across seven public format/package
   boundaries; the CLI/WASM facades expose their active versions;
 - the frozen prototype is the complete historical parity oracle and predates slot
-  variants; D32 forbids fabricated extraction, while XC-28 owns explicit equipped-
-  variant semantics across contract, validator, simulation, BOM, and Studio;
+  variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
+  explicit equipped alternative across contract, validator, geometry, simulation,
+  lockfile, BOM, WASM, and Studio;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
@@ -87,7 +88,7 @@ Do not repeat these facts without re-running or re-checking them. Update
 
 | Area | Home | Rule |
 |---|---|---|
-| Contract/schema | `crates/forge-contract`, `schema/` | Rust types are the source; generated schema/TS types must not drift |
+| Contract/schema | `crates/forge-contract`, `schema/` | Rust types are the source; generated schema/TS types must not drift; every non-empty slot explicitly equips one unique variant |
 | Geometry/DfM | `crates/forge-geometry` | Deterministic, SI-unit, test-backed; no presentation-only truth |
 | Motion/drivers | `crates/forge-motion` | Versioned data-driven drivers; no executable code in contracts |
 | Simulation/export/import | `crates/forge-sim` | Rapier interactive; MuJoCo training-canonical; parity on upgrades |
@@ -98,6 +99,16 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
+
+Equipped-variant boundary (D32/XC-28):
+
+- only `slots[].equippedVariantId` selects physical truth; array order is never a
+  default and unselected alternatives are inert for geometry, mass, simulation,
+  lockfile resolution, validation, exports, and BOMs;
+- 2.1 migration may auto-equip a sole alternative, but it must refuse to guess among
+  multiple alternatives until the author records an explicit choice;
+- flattened baked parts carry source JSON Pointers. Studio patches those pointers and
+  preserves inspection state by source identity, not by unstable flattened index.
 
 ## 5. Session protocol
 

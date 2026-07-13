@@ -10,11 +10,11 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-forge-contract = { version = "0.1.0", path = "../forge-contract" }
-forge-geometry = { version = "0.1.0", path = "../forge-geometry" }
-forge-motion = { version = "0.1.0", path = "../forge-motion" }
-forge-sim = { version = "0.1.0", path = "../forge-sim" }
-forge-validate = { version = "0.1.0", path = "../forge-validate" }
+forge-contract = { version = "0.2.0", path = "../forge-contract" }
+forge-geometry = { version = "0.2.0", path = "../forge-geometry" }
+forge-motion = { version = "0.2.0", path = "../forge-motion" }
+forge-sim = { version = "0.2.0", path = "../forge-sim" }
+forge-validate = { version = "0.2.0", path = "../forge-validate" }
 serde_json = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

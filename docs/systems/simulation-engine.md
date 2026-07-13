@@ -34,12 +34,14 @@ assumptions inspectable.
 
 ## 3. Propulsion & battery models (the HUD's source of truth)
 
-XC-28 is a correctness prerequisite for slot-backed physical values. Until the
-contract identifies one equipped variant, a list of alternatives must not be treated
-as an assembly. The migration and compiler change must make mass, propulsion,
-battery, collider, export, and BOM resolution consume only the explicit equipped
-variant; unknown or ambiguous selection fails validation instead of falling back to
-array order.
+XC-28 closes the slot-backed physical-value ambiguity. Geometry bake, mass, catalog
+HUD overrides, propulsion and battery lookup, collider validation, lockfile
+resolution, Rapier bodies/colliders, URDF/MJCF inertials and geometry, and BOM rows
+consume only the explicit equipped variant; unknown or ambiguous selection fails
+validation instead of falling back to array order. Native tests cover selected-only
+catalog category/mass behavior, inline geometry/mass, executable Rapier construction,
+and export part/mass counts; the WASM facade exposes stable source pointers for the
+same flattened physical table.
 
 Per-motor, first-order:
 

@@ -1199,6 +1199,13 @@
     "Slot": {
       "type": "object",
       "properties": {
+        "equippedVariantId": {
+          "description": "The sole alternative that contributes physical parts, catalog refs,\nports, simulation values, and BOM rows (D32/XC-28).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "id": {
           "type": "string"
         },

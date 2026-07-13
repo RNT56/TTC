@@ -23,7 +23,7 @@ live/external/field claims remain gated independently.
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, immutable Action pins, selected-Action allowlist, and machine-checked compatibility policy active 2026-07-12; repository metadata remains GOV work)* | days |
-| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; P0-007 variants require later build/rescope)* | 1.5–2.5 wk |
+| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; D32 closed historical variant parity honestly and XC-28 implements product variants separately)* | 1.5–2.5 wk |
 | P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
 | P2 Data-driven models | ◑ *(implementation/full-suite criterion restored and remote G0 green 2026-07-12; validator publication remains G1/P2-001)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs; live ETL remains P3-004/R1 work)* | 2–3 wk |
@@ -63,7 +63,7 @@ estimator, lockfile, license classes, collider compounds) **authored in
 `forge-contract` with schemars emission**; mechanical translation of both prototype
 models (humanoid + VX-2) to JSON; the plan's 31-variant claim is closed as
 non-applicable because the delivered oracle predates that configurator (D32);
-product-equipped variants are XC-28/P1-014; **cargo + pnpm monorepo
+product-equipped variants are delivered separately by XC-28/P1-014; **cargo + pnpm monorepo
 scaffold**; **core boundary API frozen** (plan §5.3).
 **Owning docs:** [`systems/core-runtime.md`](systems/core-runtime.md),
 [`systems/model-contract.md`](systems/model-contract.md),
@@ -96,6 +96,7 @@ Exit criteria:
 - [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI) *(software-renderer floor measured 2026-06-12: render 0.5 ms · core ≤ 0.05 ms · 9 draw calls on SwiftShader — budgets hold with huge margin even without a GPU; the 60 fps claim still wants a real-mid-hardware run, owner-verifiable via the perf overlay)*
 - [x] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts *(2026-06-12 — golden-compare on hrx7 + vx2-hornet)*
 - [x] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms *(2026-06-12: 298 KB gz · bake 2.0 ms · patch→re-bake 2.8 ms through the typed `Bake` handle; CI-gated via `scripts/budgets.mjs`)*
+- [x] Equipped-variant configurator truth *(2026-07-13: ModelSpec 2.2 explicit choice, selected-only physical consumers, stable source-pointer selection, consequence cards, and native/WASM/browser proof; P1-014/XC-28)*
 
 ## P2 — Data-driven models
 

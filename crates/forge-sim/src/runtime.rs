@@ -62,6 +62,7 @@ pub struct RapierScene {
 }
 
 pub fn compile_rapier_fixture(spec: &ModelSpec, baked: &BakedModel) -> RapierScene {
+    let physical_parts = spec.physical_parts_with_paths();
     let mut by_node: BTreeMap<String, RapierBody> = spec
         .skeleton
         .iter()
@@ -77,7 +78,7 @@ pub fn compile_rapier_fixture(spec: &ModelSpec, baked: &BakedModel) -> RapierSce
         })
         .collect();
     for baked_part in &baked.parts {
-        let part = &spec.parts[baked_part.part_index];
+        let part = physical_parts[baked_part.part_index].1;
         let entry = by_node.entry(part.node.clone()).or_insert(RapierBody {
             node: part.node.clone(),
             mass_kg: 0.0,

@@ -6,9 +6,9 @@ Effective: **2026-07-13**
 Machine-readable source: [`../compatibility/compatibility.json`](../compatibility/compatibility.json)
 
 This policy governs the formats that cross process, package, persistence, and
-download boundaries. It does not turn the unreleased `0.1.0` repository into a
-production-supported service. It makes the compatibility promise explicit before
-the first validator release.
+download boundaries. It does not turn a tagged validator package into a
+production-supported service. It makes the compatibility promise explicit at every
+release boundary.
 
 ## Version domains
 
@@ -18,19 +18,26 @@ package to adopt that same number.
 
 | Surface | Current | Compatibility rule | Current read support |
 |---|---:|---|---|
-| ModelSpec schema | 2.1.0 | additive optional fields are minor; removals, meaning/type/unit changes, or newly required fields are major | exactly 2.1.0; older aliases require explicit `migrate` proof before being listed |
-| validator CLI | 0.1.0 | documented flags, exit codes, and stdout JSON are public; before 1.0, breaking changes require a minor bump and migration note | current minor line |
+| ModelSpec schema | 2.2.0 | additive optional fields are minor; removals, meaning/type/unit changes, or newly required fields are major | 2.2.0 directly; 2.1.0 slot documents require explicit `migrate` selection proof |
+| validator CLI | 0.2.0 | documented flags, exit codes, and stdout JSON are public; before 1.0, breaking changes require a minor bump and migration note | current minor line |
 | validator report | 1.0.0 | consumers must ignore unknown fields; additive fields are minor; removal/type/meaning changes are major | major 1 |
-| WASM facade | 0.1.0 | exported function signatures follow package SemVer; JSON payloads follow their own format versions | current minor line |
+| WASM facade | 0.2.0 | exported function signatures follow package SemVer; JSON payloads follow their own format versions | current minor line |
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
-| worker artifacts | 0.1.0 | package SemVer governs unversioned internal envelopes; public families must gain an independent `schemaVersion` before external publication | current minor line |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; public families must gain an independent `schemaVersion` before external publication | current minor line |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
 EnvSpecs now default a missing `schemaVersion` to `1.0.0` for backward-compatible
 reads; replay producers emit `1.0.0`, while readers temporarily accept the historical
 `replay.v1` alias.
+
+ModelSpec 2.2 adds `slots[].equippedVariantId`. For a 2.1 slot with exactly one
+alternative, `forge-validate migrate <file> --to current` records and equips that
+sole alternative. Migration refuses to guess when a legacy slot has multiple
+alternatives; set `equippedVariantId` explicitly, then rerun migration. Unselected
+alternatives never contribute parts, catalog refs, simulation values, BOM rows, or
+lockfile requirements.
 
 ## Change classification
 

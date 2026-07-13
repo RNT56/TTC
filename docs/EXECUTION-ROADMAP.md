@@ -134,7 +134,8 @@ Work:
   complete `GOV-009..010`: publication/install proof and public surfaces;
   checksums/artifact SBOM/provenance, release notes, install verification, and
   support/security entry points;
-- finish real-mid-hardware P1 budgets and remaining configurator truth.
+- finish real-mid-hardware P1 budgets; XC-28 configurator truth is implemented and
+  awaits protected delivery with the v0.2 package boundary.
 
 Acceptance:
 
@@ -151,7 +152,7 @@ Objective: prove the verify-first wedge with reviewed data and a real user.
 Work:
 
 - finish live catalog ETL and review persistence (`P3-004`, `P4-016`);
-- close variant/configurator gaps (`P1-014`, `P0-007` decision result);
+- consume the delivered XC-28 equipped semantics in live catalog/retrieval flows;
 - enforce license export substitution in real exporters (`SEC-001`);
 - implement prohibited-brief refusal/logging (`SEC-002`);
 - implement ownership/consent/export/deletion for user content (`SEC-003..005`);
@@ -336,8 +337,8 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 
 | Phase | Remaining phase work | Adjacent gates | Closure proof |
 |---|---|---|---|
-| P0 | P0-007 | decision hygiene | later configurator obtained or variant scope explicitly resolved |
-| P1 | P1-004, P1-014, P1-017 | REC, QA perf/browser | real-mid-hardware budget and truthful configurator |
+| P0 | P0-007 | decision hygiene | closed by D32; no fabricated historical variants |
+| P1 | P1-004, P1-017 | REC, QA perf/browser | real-mid-hardware budget; XC-28 configurator truth complete |
 | P2 | P2-001 plus publication/remote proof | REC-007, GOV release | full suite green and published/installed validator |
 | P3 | P3-004 live ETL | SEC citation/license, OPS provider | reviewed live row through BOM/export |
 | P4 | P4-016 live extraction and external R1 proof | SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and external R1 flow succeeds |

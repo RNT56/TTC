@@ -72,6 +72,37 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Make equipped alternatives physically sovereign
+**Session:** Codex agent · branch `codex/xc28-equipped-variants` · **Phase:** P1/P3 ·
+**TODO items:** P1-014, XC-28, P2-001
+**Done:** Added ModelSpec 2.2 `equippedVariantId` with deterministic single-option
+migration and fail-closed multi-option migration; made geometry, mass, simulation,
+colliders, lockfile resolution, validation, and BOM consume only the equipped
+alternative; added stable source JSON Pointers to baked parts; and shipped Studio
+variant cards that patch only the equipped ID, disclose inline/catalog consequences,
+and preserve selection by source identity. Migrated the proof fixture and generation
+template, regenerated schema/TypeScript/WASM artifacts, and moved the pre-1.0 package
+boundary to 0.2.0 with release/migration notes.
+**Evidence:** `pnpm verify` passes all 31 required local gates: 7 compatibility
+surfaces, full Rust/TS/gateway suites, 25/25 Brief-25, native/fresh/committed WASM
+parity, 9/9 fuzz outcomes, packaging of `@forge/validate-wasm@0.2.0`, and 89 worker
+tests. Focused tests cover missing/unknown/duplicate choices and selected-only
+geometry, mass, catalog, BOM, lockfile, Rapier/collider, and URDF/MJCF behavior. A
+real-browser WASM switch changed an
+inline payload from 334 to 346 faces and recomputed AUW 482→488 g, TWR 4.67→4.61,
+and endurance 21.6→21.2 min while the validator re-admitted the document.
+**Changed:** canonical agent entry, package/version/compatibility surfaces, Rust
+contract/geometry/sim/validator/WASM crates, generated schema/types/WASM, gateway
+generation, Studio scene/configurator, proof/fuzz/export fixtures, system/living docs,
+and v0.2 release notes.
+**Decisions:** no new decision; implements D32 and the compatibility-governed minor
+boundary already required by D31/GOV-007.
+**Next:** complete and publish v0.1.0 through the queued runner-remediation lane, then
+rebase this v0.2 slice onto protected `main`, rerun all gates, and deliver it through
+the exact-check ruleset.
+**Blockers:** no local XC-28 blocker; protected delivery is dependency-ordered behind
+the still-queued G1 v0.1 release proof so v0.2 cannot overtake the first release.
+
 ## 2026-07-13 — Separate historical parity from equipped variants
 **Session:** Codex agent · branch `codex/g1-public-surfaces` · **Phase:** P0/P1 ·
 **TODO items:** P0-007, P1-014, XC-28

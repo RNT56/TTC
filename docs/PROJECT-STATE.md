@@ -2,7 +2,7 @@
 
 Snapshot date: **2026-07-13**
 Repository: `RNT56/TTC`
-Verified main: `137c440` (`origin/main`)
+Verified main: `781dac6` (`origin/main`)
 Recovery gate: **G0 closed**
 
 This document records current evidence. It is not the product vision and does not
@@ -26,9 +26,9 @@ operational recovery, and field evidence remain incomplete.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | clean protected `main` at `137c440` before the GOV-007 branch | PR #25 and exact post-merge CI/security are green |
+| Git state | protected `main` at `781dac6` | GOV-007 compatibility PR #26 and G1 artifact-contract PR #27 are merged; no `v0.1.0` tag/release exists |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 31 required non-DB gates | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
+| `pnpm verify` | pass: 31 required non-DB gates on the XC-28 v0.2 candidate | Action pins, compatibility matrix, fmt, Clippy, full tests, WASM, schema, TS, gateway, Brief-25, oracles, budgets, fuzz, sim, packaging, pilots, workers, diff |
 | `pnpm verify:compatibility` | pass: 7/7 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
@@ -43,6 +43,7 @@ operational recovery, and field evidence remain incomplete.
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
 | Release packaging dry run | pass | local artifact construction works; no public release exists |
 | G1 release workflow candidate | branch run and external download pass | run `29236010204` passed all native/WASM/aggregate jobs at `02f912d`; the aggregate then passed independent checksum, SPDX, macOS binary/example, and clean WASM-consumer verification; protected-main rerun/tag/Release remain |
+| XC-28 equipped variants | local v0.2 candidate; protected proof pending | ModelSpec 2.2 explicit selection, migration refusal for ambiguous legacy slots, selected-only physical consumers, stable source pointers, Studio cards, all 31 local gates, rebuilt WASM, and a real-browser switch/HUD proof pass on `codex/xc28-equipped-variants` |
 | npm audit | pass: no known vulnerabilities | `@auth/core` 0.41.2 removed the vulnerable `cookie@0.6.0` path |
 | RustSec audit | pass for root; Desktop audited separately | patched Desktop transitive highs; time-bounded Tauri/glib warning is GOV-011 and blocks Linux release |
 | CodeQL | pass: JavaScript/TypeScript and Python | first post-merge scans completed successfully |
@@ -91,18 +92,27 @@ Live GitHub evidence checked on 2026-07-13:
 - repository description, README homepage, and 12 focused topics are set; security,
   contribution, support, conduct, issue/PR, debugging, release, and publication
   surfaces are implemented on `codex/g1-public-surfaces` pending protected delivery.
+- compatibility [PR #26](https://github.com/RNT56/TTC/pull/26) and release-artifact
+  [PR #27](https://github.com/RNT56/TTC/pull/27) are merged on protected `main` at
+  `781dac6`; the first main release run exposed the macOS runner/profile bottleneck;
+- runner remediation [PR #29](https://github.com/RNT56/TTC/pull/29) selects
+  `macos-26-intel`, a 60-minute ceiling, and measured thin LTO. Its manual run
+  [29230415603](https://github.com/RNT56/TTC/actions/runs/29230415603) and required
+  CI/security checks are queued; GitHub reports no platform incident;
+- no `v0.1.0` tag or GitHub Release exists.
 
-Consequently G0 is **closed**, and the GOV-007 compatibility contract is locally
-complete pending its protected merge. The remaining G1 boundary is cross-platform
-artifacts, artifact SBOM/provenance/checksums, downloaded install/version proof, and
-accurate public support/security surfaces.
+Consequently G0 is **closed** and GOV-007 is protected-main complete. The remaining
+G1 boundary is a green remediated macOS artifact, aggregate SBOM/provenance/checksum
+proof, independent download/install/version proof, the annotated `v0.1.0` tag and
+verified GitHub Release, plus protected delivery of the public support/security
+surfaces.
 
 ## 4. Capability maturity
 
 | Capability | Current maturity | What is still needed |
 |---|---|---|
-| Contract/validator/WASM | deterministic local implementation, green as a workspace | protected publication, checksummed release, clean external install |
-| Studio inspection/editing | deterministic local implementation | browser E2E, accessibility, real performance matrix, external-user proof |
+| Contract/validator/WASM | deterministic local implementation; ModelSpec 2.2 equipped semantics are locally proven | protected v0.2 delivery/publication, checksummed release, clean external install |
+| Studio inspection/editing | deterministic local implementation with truthful variant cards and stable-source selection | broader browser E2E, accessibility, real performance matrix, external-user proof |
 | Catalog/BOM/license ledger | fixture/local Postgres implementation | live ETL/review operations and actual exporter enforcement |
 | Text generation | 25/25 deterministic template implementation plus opt-in provider seam | live model/extraction operation, refusal/logging, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |

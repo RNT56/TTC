@@ -52,6 +52,7 @@
             "id": "fuzz-payload",
             "label": "FUZZ PAYLOAD",
             "mountNodes": ["root"],
+            "equippedVariantId": "ghost",
             "variants": [
               {
                 "id": "ghost",

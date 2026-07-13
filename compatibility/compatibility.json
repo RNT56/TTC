@@ -1,15 +1,15 @@
 {
   "policyVersion": "1.0.0",
-  "productVersion": "0.1.0",
+  "productVersion": "0.2.0",
   "status": "pre-1.0",
   "surfaces": {
     "modelSpec": {
-      "current": "2.1.0",
-      "supported": ["2.1.0"],
+      "current": "2.2.0",
+      "supported": ["2.1.0", "2.2.0"],
       "versionField": "validator report schemaVersion"
     },
     "validatorCli": {
-      "current": "0.1.0",
+      "current": "0.2.0",
       "supportedMajors": [0],
       "versionCommand": "forge-validate version --json"
     },
@@ -19,7 +19,7 @@
       "versionField": "reportVersion"
     },
     "wasmFacade": {
-      "current": "0.1.0",
+      "current": "0.2.0",
       "supportedMajors": [0],
       "versionExport": "version()"
     },
@@ -36,7 +36,7 @@
       "documentVersionField": "version"
     },
     "workerArtifacts": {
-      "current": "0.1.0",
+      "current": "0.2.0",
       "supportedMajors": [0],
       "versionRule": "forge-workers package SemVer until an artifact family receives an independent schema version"
     }

@@ -3,7 +3,7 @@
 //!   forge-validate run <contract.json> [--report out.json] [--as-draft]
 //!   forge-validate bake <contract.json> [--out bake.json]
 //!   forge-validate patch <contract.json> <patch.json> [--out out.json]
-//!   forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]
+//!   forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]
 //!   forge-validate env <env.json> [--report out.json] [--as-draft]
 //!   forge-validate sim-parity rapier-baseline [--out baseline.json]
 //!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
@@ -34,7 +34,7 @@ fn main() -> ExitCode {
         }
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.1.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
             );
             ExitCode::from(1)
         }

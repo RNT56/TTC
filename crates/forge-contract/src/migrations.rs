@@ -49,6 +49,7 @@ pub fn migrate_with_report(doc: &str, to_version: &str) -> Result<MigrationRepor
         take_schema_version_marker(&mut value, &mut applied).unwrap_or_else(|| "unknown".into());
 
     normalize_value(&mut value, &mut applied);
+    normalize_equipped_variants(&mut value, &mut applied)?;
 
     let migrated = serde_json::to_string(&value)
         .map_err(|e| MigrationError::new(format!("cannot serialize migrated JSON: {e}")))?;
@@ -61,6 +62,58 @@ pub fn migrate_with_report(doc: &str, to_version: &str) -> Result<MigrationRepor
         applied,
         spec,
     })
+}
+
+fn normalize_equipped_variants(
+    value: &mut Value,
+    applied: &mut Vec<String>,
+) -> Result<(), MigrationError> {
+    let Some(slots) = value
+        .as_object_mut()
+        .and_then(|root| root.get_mut("slots"))
+        .and_then(Value::as_array_mut)
+    else {
+        return Ok(());
+    };
+    let mut equipped_single = false;
+    for slot in slots {
+        let Some(slot) = slot.as_object_mut() else {
+            continue;
+        };
+        if slot.contains_key("equippedVariantId") {
+            continue;
+        }
+        let slot_id = slot
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("<unknown>")
+            .to_string();
+        let Some(variants) = slot.get("variants").and_then(Value::as_array) else {
+            continue;
+        };
+        match variants.as_slice() {
+            [] => {}
+            [only] => {
+                let Some(variant_id) = only.get("id").and_then(Value::as_str) else {
+                    continue;
+                };
+                slot.insert(
+                    "equippedVariantId".to_string(),
+                    Value::String(variant_id.to_string()),
+                );
+                equipped_single = true;
+            }
+            _ => {
+                return Err(MigrationError::new(format!(
+                    "slot '{slot_id}' has multiple legacy variants; set equippedVariantId explicitly before migrating to {SCHEMA_VERSION}"
+                )));
+            }
+        }
+    }
+    if equipped_single {
+        record(applied, "equip-single-variant-slots-v2.2");
+    }
+    Ok(())
 }
 
 fn normalize_target(to_version: &str) -> Result<&'static str, MigrationError> {

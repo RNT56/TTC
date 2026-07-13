@@ -2,7 +2,7 @@
 
 Owner: repository maintainers  
 Applies to: standalone `forge-validate` and `@forge/validate-wasm`  
-Current candidate: **v0.1.0**
+Current candidate: **v0.2.0**
 
 The release workflow is the only supported artifact builder. A local build is useful
 for diagnosis, but it is not release evidence.
@@ -81,6 +81,8 @@ its signing, update, and Linux dependency gates are separate.
 - After a bad GitHub Release: mark it withdrawn, document the affected checksums,
   publish a patch version, and retain the audit trail. Do not silently overwrite an
   asset with the same name.
-- Validator v0.1.0 has no database migration. Rollback removes the binary/package and
-  restores the previous installed version. Persisted ModelSpec/replay/EnvSpec support
-  remains governed by [`COMPATIBILITY.md`](COMPATIBILITY.md).
+- Validator v0.2.0 has no database migration. Rollback removes the binary/package and
+  restores v0.1.0. ModelSpec 2.2 migration is document-local: single-variant 2.1 slots
+  migrate deterministically, while multi-variant slots require an explicit equipped
+  choice. Persisted ModelSpec/replay/EnvSpec support remains governed by
+  [`COMPATIBILITY.md`](COMPATIBILITY.md).
