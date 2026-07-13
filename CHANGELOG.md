@@ -18,6 +18,21 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Keep governed owner listings visible after refresh
+**Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
+Wave 2 builder loop · **TODO items:** QA-002 [~]
+**Done:** Corrected the listing read boundary exposed by protected browser evidence.
+Authenticated owners can now reload their own persisted listings across review and
+historical states without receiving the global curation queue; Studio deduplicates
+those rows with the public listed marketplace. The gateway test proves anonymous
+refusal and exact owner-scoped review-row retrieval.
+**Changed:** Owner listing API, gateway coverage, Studio marketplace refresh, and
+gateway/platform system contracts.
+**Decisions:** none; public discovery remains listed-only and review authority remains
+separate from listing ownership.
+**Next:** rerun the exact-head isolated browser gate from governed listing rendering.
+**Blockers:** none.
+
 ## 2026-07-13 — Let bodyless mutations reach their product guards
 **Session:** Codex agent · branch `codex/qa002-builder-browser-e2e` · **Phase:** QA /
 Wave 2 builder loop · **TODO items:** QA-002 [~]

@@ -32,6 +32,7 @@ import {
   listLicenseLedger,
   listMaintenanceRecords,
   listListings,
+  listOwnedListings,
   listModels,
   listModerationReports,
   listPhotoscanArtifacts,
@@ -473,7 +474,8 @@ export default function App() {
     try {
       const [
         courseRows,
-        listingRows,
+        publicListingRows,
+        ownedListingRows,
         assignmentRows,
         reportRows,
         creditSummary,
@@ -484,6 +486,7 @@ export default function App() {
       ] = await Promise.all([
         listCourses(),
         listListings(),
+        listOwnedListings(),
         listClassroomAssignments(),
         listModerationReports().catch(() => []),
         getCredits().catch(() => null),
@@ -492,6 +495,9 @@ export default function App() {
         listVendorOffers().catch(() => []),
         listPrintQuotes().catch(() => []),
       ]);
+      const listingRows = [
+        ...new Map([...publicListingRows, ...ownedListingRows].map((listing) => [listing.id, listing])).values(),
+      ];
       setCourses(courseRows);
       setListings(listingRows);
       setClassroomAssignments(assignmentRows);

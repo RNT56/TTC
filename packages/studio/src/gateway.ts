@@ -974,6 +974,16 @@ export async function listListings(kind?: string, limit = 10, status?: string): 
   return body.listings;
 }
 
+export async function listOwnedListings(limit = 50): Promise<ListingRecord[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const body = await requestJson<{ listings: ListingRecord[] } | { error: string }>(
+    `/v1/listings/mine?${params}`,
+    undefined,
+    { okStatuses: [401] },
+  );
+  return "listings" in body ? body.listings : [];
+}
+
 export function createListing(input: {
   modelId: string;
   title: string;
