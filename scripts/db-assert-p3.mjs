@@ -49,9 +49,21 @@ for (const table of [
   "maintenance_records",
   "generation_refusals",
   "user_consent_events",
+  "legal_hold_events",
+  "backup_records",
+  "backup_subjects",
+  "deletion_tombstones",
+  "backup_restore_tests",
+  "data_lifecycle_events",
 ]) {
   checks.push([table, await one(`SELECT count(*) AS n FROM ${table}`), 0]);
 }
+
+checks.push([
+  "data_retention_policies",
+  await one("SELECT count(*) AS n FROM data_retention_policies WHERE policy_version = '1.0.0'"),
+  6,
+]);
 
 let failures = 0;
 for (const [name, got, min] of checks) {

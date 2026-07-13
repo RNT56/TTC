@@ -158,13 +158,18 @@ try {
   assert.equal(Number(state.rows[0].pattern_rows), 0);
   assert.equal(Number(state.rows[0].leaderboard_rows), 0);
 
-  await deleteUserData(pool, user, async () => undefined);
+  const deletion = await deleteUserData(pool, user, async () => undefined);
   deleted = true;
   const residue = await pool.query(
     `SELECT count(*) AS n FROM user_consent_events WHERE owner_user_id = $1`,
     [user.id],
   );
   assert.equal(Number(residue.rows[0].n), 0);
+  await pool.query(`DELETE FROM deletion_tombstones WHERE deletion_id = $1`, [deletion.deletionId]);
+  await pool.query(
+    `DELETE FROM data_lifecycle_events WHERE evidence_reference = $1`,
+    [deletion.deletionId],
+  );
   console.log("ok consent ledger: five versioned grant/withdraw histories and bounded effects verified");
   console.log("ok consent immutability: in-place update rejected; account deletion leaves zero consent residue");
 } finally {

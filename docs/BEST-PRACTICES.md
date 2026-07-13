@@ -171,8 +171,27 @@ elsewhere; Desktop for the bridge) in any user-facing capability claim.
   authenticated per-object download contracts.
 - Primary account deletion is an explicit serializable purge, not a user-row cascade:
   lock the owner, remove owned/derived rows, delete S3-compatible payloads before
-  commit, and roll back database changes if storage fails. A primary receipt never
-  claims that backups or legal holds have expired (D33/SEC-003..005).
+  commit, and roll back database changes if storage fails. Receipt 2.0.0 adds
+  pseudonymous restore-suppression evidence, not a claim that provider backups are
+  already deleted (D33/D35).
+- Version retention by data class; keep legal holds append-only, reference-only, and
+  time-bounded. A hold permits retention only. It never grants content use, sharing,
+  training, or broad operator access. Serialize hold mutation and deletion with the
+  same globally ordered transaction-scoped user/object locks as backup registration,
+  restore evaluation, and deletion so authority cannot race a purge.
+- Catalogue every backup copy and covered subject digest, enforce an affirmative
+  deletion deadline, reject idempotency-key subject-manifest drift, retain bounded
+  retry state, reclaim crashed claims only after a lease, and require exact manifest
+  plus tombstone checks before restore. Provider deletion adapters must be idempotent.
+  Reject any copy claiming a tombstoned subject after primary deletion; a valid
+  late-discovered pre-deletion copy reopens completion until it is deleted. Restore
+  into isolation first; never promote a deleted subject back to primary storage. Real
+  backup/DR proof remains separate from a deterministic lifecycle fixture.
+- Use monotonic database sequences for authority ledgers. Timestamps and random IDs
+  cannot reliably order same-instant grant/withdraw or place/release events.
+- Keep authority/audit retention causal and hold-aware: never delete an active chain,
+  remove closed self-linked chains child-first, and retain a named audit target while
+  its current hold remains active.
 - Legal gates are entry conditions, not afterthoughts: ToS review before P8,
   dual-use check before P11 policy sharing.
 

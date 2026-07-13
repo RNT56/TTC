@@ -83,6 +83,7 @@ export interface ConsentEvent {
   evidence: unknown;
   idempotencyKey: string | null;
   previousEventId: string | null;
+  eventSequence: string;
   createdAt: string;
   active: boolean;
 }
@@ -100,6 +101,7 @@ type ConsentRow = {
   evidence: unknown;
   idempotency_key: string | null;
   previous_event_id: string | null;
+  event_sequence: number | string;
   created_at: Date | string;
 };
 
@@ -124,6 +126,7 @@ function mapEvent(row: ConsentRow): ConsentEvent {
     evidence: row.evidence,
     idempotencyKey: row.idempotency_key,
     previousEventId: row.previous_event_id,
+    eventSequence: String(row.event_sequence),
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     active:
       row.action === "grant" &&
@@ -181,14 +184,15 @@ async function assertOwnedSubject(
 }
 
 const EVENT_COLUMNS = `id, ledger_version, owner_user_id, purpose, subject_kind, subject_id,
-  policy_version, notice_hash, action, evidence, idempotency_key, previous_event_id, created_at`;
+  policy_version, notice_hash, action, evidence, idempotency_key, previous_event_id,
+  event_sequence, created_at`;
 
 export async function listCurrentConsents(db: GatewayDb, user: CurrentUser): Promise<ConsentEvent[]> {
   const result = await db.query<ConsentRow>(
     `SELECT DISTINCT ON (purpose, subject_kind, subject_id) ${EVENT_COLUMNS}
-       FROM user_consent_events
+      FROM user_consent_events
       WHERE owner_user_id = $1
-      ORDER BY purpose, subject_kind, subject_id, created_at DESC, id DESC`,
+      ORDER BY purpose, subject_kind, subject_id, event_sequence DESC`,
     [user.id],
   );
   return result.rows.map(mapEvent);
@@ -207,7 +211,7 @@ export async function assertActiveConsent(
     `SELECT ${EVENT_COLUMNS}
        FROM user_consent_events
       WHERE owner_user_id = $1 AND purpose = $2 AND subject_kind = $3 AND subject_id = $4
-      ORDER BY created_at DESC, id DESC
+      ORDER BY event_sequence DESC
       LIMIT 1`,
     [user.id, purpose, subjectKind, subjectId],
   );
@@ -352,7 +356,7 @@ export async function recordConsent(
     const previous = await transaction.query<ConsentRow>(
       `SELECT ${EVENT_COLUMNS} FROM user_consent_events
         WHERE owner_user_id = $1 AND purpose = $2 AND subject_kind = $3 AND subject_id = $4
-        ORDER BY created_at DESC, id DESC LIMIT 1`,
+        ORDER BY event_sequence DESC LIMIT 1`,
       [user.id, input.purpose, input.subjectKind, input.subjectId],
     );
     const inserted = await transaction.query<ConsentRow>(

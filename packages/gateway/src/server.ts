@@ -20,6 +20,13 @@ import {
   type ConsentPurpose,
   type ConsentSubjectKind,
 } from "./consent.js";
+import {
+  DATA_LIFECYCLE_FORMAT_VERSION,
+  RETENTION_POLICIES,
+  RETENTION_POLICY_VERSION,
+  accountLifecycleStatus,
+  lifecycleErrorResponse,
+} from "./dataLifecycle.js";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import { recordGeneratedArtifact } from "./generatedArtifacts.js";
 import {
@@ -311,6 +318,8 @@ function routeError(error: unknown): { statusCode: number; body: unknown } {
   if (safety) return safety;
   const consent = consentErrorResponse(error);
   if (consent) return consent;
+  const lifecycle = lifecycleErrorResponse(error);
+  if (lifecycle) return lifecycle;
   const mapped = validatorError(error);
   if (mapped) return mapped;
   return { statusCode: 503, body: unavailable(error) };
@@ -648,6 +657,34 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         `attachment; filename="forgedttc-user-data-${user.id.replace(/[^a-zA-Z0-9_-]/g, "_")}.json"`,
       );
       return reply.send(exported);
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.get("/v1/data-lifecycle/policy", async (_request, reply) => {
+    return reply.send({
+      lifecycleVersion: DATA_LIFECYCLE_FORMAT_VERSION,
+      policyVersion: RETENTION_POLICY_VERSION,
+      policies: RETENTION_POLICIES,
+      legalHold: {
+        appendOnly: true,
+        maximumDaysBeforeReview: 365,
+        contentUseAuthorized: false,
+      },
+      backup: {
+        catalogRequired: true,
+        restoreTombstoneCheckRequired: true,
+        productionRestoreProof: "OPS-005",
+      },
+    });
+  });
+
+  app.get("/v1/account/lifecycle", async (request, reply) => {
+    try {
+      const user = await requireUser(request, db);
+      return reply.send(await accountLifecycleStatus(db, user.id));
     } catch (error) {
       const mapped = routeError(error);
       return reply.status(mapped.statusCode).send(mapped.body);

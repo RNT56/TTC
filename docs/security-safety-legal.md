@@ -95,17 +95,17 @@ live provider artifact audit.
   explicit per-model opt-in; no marketplace default, geometry, or attribution is
   inferred. Withdrawal removes the contributed retrieval row.
 
-Implementation evidence (2026-07-13, `SEC-003..004`): authenticated user-data export
-1.1.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+Implementation evidence (2026-07-13, `SEC-003..005`): authenticated user-data export
+1.2.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
 session/verification tokens, and provider keys are excluded. Exact-confirmation
 account deletion locks the owner, explicitly removes content that `SET NULL` would
 orphan, deletes S3-compatible payloads before commit, and returns a versioned receipt
-only after both stores succeed. Populated Postgres and MinIO upload/delete/404 proof
-pass locally. This is primary-store proof; consent withdrawal is SEC-004 and legal
-holds, tombstones, retention, and backup deletion/restoration are SEC-005.
+only after both stores succeed. Version 1.2 adds redacted hold history and backup-copy
+status without operator authority/evidence references. Populated Postgres and MinIO
+upload/delete/404 proof pass locally.
 
 Consent ledger 1.0.0 records immutable grants and withdrawals separately for
 photoscan processing, telemetry sharing, pattern contribution, leaderboard
@@ -115,6 +115,33 @@ checks run under the same owner lock as the action. Withdrawal cancels affected
 pending photoscan/training jobs, makes telemetry private, and removes pattern or
 leaderboard publication rows. This is local primary-plane authority evidence, not a
 claim that an already completed provider operation or backup can be recalled.
+
+Data-lifecycle 1.0.0 and deletion receipt 2.0.0 implement D35: six versioned
+retention classes, append-only time-bounded legal holds, monotonic authority-event
+ordering, domain-separated user/object digests, a 30-day maximum backup window,
+45-day restore-suppression tombstones, a catalogued provider deletion adapter with
+exact subject-manifest idempotency, bounded retry/stale-claim recovery, and a
+mandatory manifest/tombstone pre-restore check. Hold mutation, backup registration/
+restore evaluation, and account deletion share globally ordered transaction-scoped
+user/object locks so authority cannot race the purge. A hold
+permits retention only; it never permits use, sharing, training, or operator browsing.
+The local Postgres gate proves user/object holds block deletion, user holds block
+retention, releases are causal, pre-deletion backups cannot restore tombstoned
+subjects, subject-manifest drift and post-deletion capture are refused, late valid
+catalog discovery reopens completion, provider failure/stale claims retry without
+private error text, user/audit holds defer named retention targets, closed hold chains
+expire causally, and tombstones expire only after backup completion.
+Production backup/restore, complete catalog automation, provider receipts, and
+measured DR remain `OPS-005`, not an SEC-005 live claim.
+
+Policy defaults follow the storage-limitation and accountability principles in
+[GDPR Article 5](https://eur-lex.europa.eu/eli/reg/2016/679/art_5/oj/eng), the erasure
+and exception boundary in
+[GDPR Article 17](https://eur-lex.europa.eu/eli/reg/2016/679/art_17/oj/eng), and the
+catalogue, affirmative-deletion, audit, and restore-test practices in
+[NIST SP 800-209](https://csrc.nist.gov/pubs/sp/800/209/final) and
+[NIST SP 1339](https://csrc.nist.gov/pubs/sp/1339/final). They remain product defaults
+pending jurisdiction-specific counsel review, not universal statutory periods.
 
 ## 6. Operating reality (what we tell users)
 
@@ -144,8 +171,9 @@ not promise any policy is safe in the open world**, and the UX says so at every 
       (`SEC-003`, 2026-07-13)
 - [x] User content → append-only current-notice consent/withdrawal per owned subject,
       fail-closed action checks, and bounded withdrawal effects (`SEC-004`, 2026-07-13)
-- [ ] User content → retention, legal-hold, tombstone, backup-deletion, and restore
-      semantics (`SEC-005`)
+- [x] User content → versioned retention, time-bounded legal holds, pseudonymous
+      tombstones, catalogued backup deletion/retry, and pre-restore suppression
+      semantics (`SEC-005`, contract/fixture, 2026-07-13; live DR remains `OPS-005`)
 - [ ] Auth/provider/object/job surfaces → threat model, rate limits, negative tests, redaction, and credential rotation (`SEC-006`)
 - [ ] Policy sharing → current dual-use/export-control gate, per-policy signoff, moderation ownership, and external rollout decision (`SEC-007`)
 - [ ] Desktop/Link release → signed artifacts, update rollback, pairing/revocation, and fault-injection evidence (`SEC-008`)

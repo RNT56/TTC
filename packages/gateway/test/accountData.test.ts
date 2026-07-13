@@ -45,7 +45,7 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
         rowCount: 1,
       } as never;
     }
-    if (text.includes("FROM object_blobs")) {
+    if (text.includes("SELECT id, visibility") && text.includes("FROM object_blobs")) {
       return {
         rows: [
           {
@@ -65,7 +65,7 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
   });
 
   const exported = await exportUserData(db, user);
-  assert.equal(exported.formatVersion, "1.1.0");
+  assert.equal(exported.formatVersion, "1.2.0");
   assert.equal(exported.subject.userId, user.id);
   assert.equal(exported.data.account.length, 1);
   assert.equal(exported.data.authenticationProviders.length, 1);
@@ -106,7 +106,11 @@ test("account deletion purges every owner-scoped surface and hands all objects t
   });
   assert.equal(receipt.primaryDataDeleted, true);
   assert.equal(receipt.objectPayloadsDeleted, true);
-  assert.equal(receipt.backupLifecycle, "not-covered-primary-only-see-SEC-005");
+  assert.equal(receipt.formatVersion, "2.0.0");
+  assert.equal(receipt.backupLifecycle.state, "restore-suppressed-pending-expiry");
+  assert.equal(receipt.backupLifecycle.lifecycleVersion, "1.0.0");
+  assert.equal(receipt.backupLifecycle.objectTombstoneCount, 2);
+  assert.match(receipt.backupLifecycle.tombstoneId, /^tmb-/);
   assert.match(receipt.deletionId, /^del-/);
   assert.equal(receipt.counts.users, 1);
   assert.equal(receipt.counts.models, 1);
@@ -147,6 +151,50 @@ test("storage failure aborts before the account row is deleted", async () => {
   assert.equal(statements.some((sql) => sql.includes("DELETE FROM users WHERE")), false);
 });
 
+test("an active legal hold blocks deletion without exposing authority details", async () => {
+  const statements: string[] = [];
+  const db = transactionDb(async (text) => {
+    statements.push(text);
+    if (text.includes("SELECT id, email FROM users")) {
+      return { rows: [{ id: user.id, email: user.email }], rowCount: 1 } as never;
+    }
+    if (text.includes("SELECT bucket, object_key")) return { rows: [], rowCount: 0 } as never;
+    if (text.includes("FROM (\n       SELECT DISTINCT ON (hold_key)")) {
+      return {
+        rows: [{
+          id: "hold-1",
+          hold_key: "case-1",
+          action: "place",
+          subject_kind: "user",
+          subject_digest: "a".repeat(64),
+          reason_code: "litigation",
+          authority_reference: "authority/internal-1",
+          jurisdiction: "EU",
+          evidence_reference: "evidence/internal-1",
+          expires_at: "2027-01-01T00:00:00.000Z",
+          idempotency_key: "hold-place-1",
+          previous_event_id: null,
+          event_sequence: 1,
+          created_at: "2026-07-13T00:00:00.000Z",
+        }],
+        rowCount: 1,
+      } as never;
+    }
+    return { rows: [], rowCount: text.startsWith("INSERT") ? 1 : 0 } as never;
+  });
+
+  await assert.rejects(
+    deleteUserData(db, user, async () => undefined),
+    (error: unknown) => {
+      assert.equal((error as { code?: string }).code, "LEGAL_HOLD_ACTIVE");
+      assert.doesNotMatch(JSON.stringify(error), /authority\/internal|evidence\/internal/);
+      return true;
+    },
+  );
+  assert.equal(statements.some((sql) => sql.includes("DELETE FROM users WHERE")), false);
+  assert.ok(statements.some((sql) => sql.includes("'legal-hold-blocked'")));
+});
+
 test("account routes require authentication and explicit destructive confirmation", async () => {
   const deletedObjects: { bucket: string; objectKey: string }[] = [];
   const db = transactionDb(
@@ -175,6 +223,10 @@ test("account routes require authentication and explicit destructive confirmatio
     },
   });
   try {
+    const publicPolicy = await app.inject({ method: "GET", url: "/v1/data-lifecycle/policy" });
+    assert.equal(publicPolicy.statusCode, 200, publicPolicy.body);
+    assert.equal((publicPolicy.json() as { policies: unknown[] }).policies.length, 6);
+
     const anonymous = await app.inject({ method: "GET", url: "/v1/account/export" });
     assert.equal(anonymous.statusCode, 401);
 
@@ -193,7 +245,21 @@ test("account routes require authentication and explicit destructive confirmatio
     });
     assert.equal(exported.statusCode, 200, exported.body);
     assert.match(exported.headers["content-disposition"] ?? "", /forgedttc-user-data-/);
-    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.1.0");
+    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.2.0");
+
+    const lifecycle = await app.inject({
+      method: "GET",
+      url: "/v1/account/lifecycle",
+      headers: { cookie: "authjs.session-token=test-session" },
+    });
+    assert.equal(lifecycle.statusCode, 200, lifecycle.body);
+    assert.deepEqual(lifecycle.json(), {
+      lifecycleVersion: "1.0.0",
+      policyVersion: "1.0.0",
+      activeLegalHoldCount: 0,
+      cataloguedBackupCount: 0,
+      latestBackupDeleteAfter: null,
+    });
 
     const deleted = await app.inject({
       method: "DELETE",
@@ -203,8 +269,12 @@ test("account routes require authentication and explicit destructive confirmatio
     });
     assert.equal(deleted.statusCode, 200, deleted.body);
     assert.equal(
-      (deleted.json() as { receipt: { primaryDataDeleted: boolean } }).receipt.primaryDataDeleted,
+      (deleted.json() as { receipt: { primaryDataDeleted: boolean; formatVersion: string } }).receipt.primaryDataDeleted,
       true,
+    );
+    assert.equal(
+      (deleted.json() as { receipt: { formatVersion: string } }).receipt.formatVersion,
+      "2.0.0",
     );
     assert.deepEqual(deletedObjects, [
       { bucket: "forge-artifacts", objectKey: "users/usr-export-test/photo.jpg" },

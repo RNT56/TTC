@@ -89,12 +89,19 @@ its signing, update, and Linux dependency gates are separate.
   its rows unless an explicit retention/privacy decision authorizes an exported and
   backed-up purge. SEC-003 adds no migration: reverting the gateway removes the
   account export/delete routes but cannot restore primary rows or objects already
-  deleted through them. A deletion receipt does not prove backup erasure; backup
-  retention/restore behavior remains blocked on SEC-005. SEC-004 adds additive
-  `0016_user_consent_events.sql`; rollback may stop new consent actions but retains
+  deleted through them. SEC-004 adds additive `0016_user_consent_events.sql`;
+  rollback may stop new consent actions but retains
   its append-only history, makes no old grant current under a changed notice, and
   cannot recall already completed provider work. A release that changes a consent
   notice must publish the new policy/hash and prove prior grants become inactive.
+  SEC-005 adds additive `0017_data_lifecycle.sql` and
+  `0018_authority_event_sequences.sql`, followed by
+  `0019_authority_sequence_backfill.sql` to derive pre-existing chronology from
+  causal links. Deletion receipt 2.0.0 proves primary/object
+  removal plus restore suppression, not physical backup erasure. Rollback must retain
+  hold, backup, tombstone, restore-test, lifecycle-audit, and monotonic authority data;
+  do not re-enable a pre-deletion backup or drop tombstones. Real provider backup
+  deletion, sandbox restore, and measured RPO/RTO remain the `OPS-005` release gate.
   Persisted
   ModelSpec/replay/EnvSpec support remains governed by
   [`COMPATIBILITY.md`](COMPATIBILITY.md).

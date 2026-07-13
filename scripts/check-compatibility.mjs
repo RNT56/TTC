@@ -41,6 +41,7 @@ const required = [
   "userDataExport",
   "consentLedger",
   "accountDeletionReceipt",
+  "dataLifecycle",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -78,6 +79,10 @@ const expected = {
   accountDeletionReceipt: typescriptConstant(
     "packages/gateway/src/accountData.ts",
     "ACCOUNT_DELETION_RECEIPT_VERSION",
+  ),
+  dataLifecycle: typescriptConstant(
+    "packages/gateway/src/dataLifecycle.ts",
+    "DATA_LIFECYCLE_FORMAT_VERSION",
   ),
   workerArtifacts: workerVersion,
 };

@@ -41,7 +41,7 @@
       "versionField": "schemaVersion"
     },
     "userDataExport": {
-      "current": "1.1.0",
+      "current": "1.2.0",
       "supportedMajors": [1],
       "versionField": "formatVersion"
     },
@@ -51,9 +51,14 @@
       "versionField": "ledgerVersion"
     },
     "accountDeletionReceipt": {
+      "current": "2.0.0",
+      "supportedMajors": [2],
+      "versionField": "formatVersion"
+    },
+    "dataLifecycle": {
       "current": "1.0.0",
       "supportedMajors": [1],
-      "versionField": "formatVersion"
+      "versionField": "lifecycleVersion"
     },
     "workerArtifacts": {
       "current": "0.2.0",

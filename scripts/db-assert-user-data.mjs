@@ -149,7 +149,9 @@ try {
   assert.equal(exported.data.courses.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
   assert.equal(exported.data.consentEvents.length, 1);
-  assert.equal(exported.formatVersion, "1.1.0");
+  assert.equal(exported.formatVersion, "1.2.0");
+  assert.equal(exported.data.lifecycleLegalHolds.length, 0);
+  assert.equal(exported.data.backupCopies.length, 0);
   assert.equal(exported.data.marketplaceListings.length, 1);
   assert.equal(exported.data.marketplaceUsageRollups.length, 1);
   assert.equal(exported.data.printQuoteRequests.length, 1);
@@ -175,6 +177,9 @@ try {
   deleted = true;
   assert.equal(receipt.primaryDataDeleted, true);
   assert.equal(receipt.objectPayloadsDeleted, true);
+  assert.equal(receipt.formatVersion, "2.0.0");
+  assert.equal(receipt.backupLifecycle.state, "restore-suppressed-pending-expiry");
+  assert.equal(receipt.backupLifecycle.objectTombstoneCount, 1);
   assert.deepEqual(deletedObjects, [{ bucket: "forge-artifacts", objectKey }]);
 
   const residue = await pool.query(
@@ -216,8 +221,19 @@ try {
   for (const [name, count] of Object.entries(residue.rows[0])) {
     assert.equal(Number(count), 0, `${name} survived account deletion`);
   }
+  const lifecycleResidue = await pool.query(
+    `SELECT count(*)::int AS tombstones
+       FROM deletion_tombstones WHERE deletion_id = $1`,
+    [receipt.deletionId],
+  );
+  assert.equal(lifecycleResidue.rows[0].tombstones, 2);
+  await pool.query(`DELETE FROM deletion_tombstones WHERE deletion_id = $1`, [receipt.deletionId]);
+  await pool.query(
+    `DELETE FROM data_lifecycle_events WHERE evidence_reference = $1`,
+    [receipt.deletionId],
+  );
   console.log("ok user-data export: all declared datasets queried without auth secrets");
-  console.log("ok account deletion: primary rows purged and object deletion handoff verified");
+  console.log("ok account deletion: primary rows purged, object handoff verified, lifecycle tombstones emitted");
 } finally {
   if (!deleted) {
     try {

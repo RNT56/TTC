@@ -72,6 +72,56 @@ artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
 
+## 2026-07-13 — Make deletion survive holds, backups, and restore
+**Session:** Codex agent · branch `codex/sec005-retention-backups` · **Phase:** P4/P11 ·
+**TODO items:** SEC-005
+**Done:** Added data-lifecycle format/policy 1.0.0 with six bounded retention classes,
+time-bounded append-only user/object/audit legal holds, monotonic consent/hold event
+sequences, pseudonymous deletion tombstones, exact backup subject manifests,
+fail-closed restore evaluation, retryable provider deletion with stale-claim recovery,
+post-deletion capture refusal, late-catalog tombstone reopening, and dry-run-first
+primary retention. Hold placement/release, backup registration/restore evaluation,
+and deletion share globally ordered transaction-scoped pseudonymous subject locks;
+account deletion checks the owner and every object so concurrent or object-specific
+authority cannot race the purge.
+Authenticated export 1.2.0 adds redacted hold/backup state, deletion receipt 2.0.0
+records restore suppression without claiming provider erasure, and public/account
+lifecycle endpoints expose only bounded state. The provider-specific backup adapter,
+encrypted production copies, deletion receipts, sandbox restore, monitoring, and
+measured RPO/RTO remain explicitly separate under OPS-005.
+**Evidence:** `pnpm verify` passes all 31 non-DB gates with 12 compatibility surfaces,
+45/45 gateway tests using the real validator with no skips, Brief-25 at 25/25, and
+100/100 worker tests. Expanded `pnpm verify:db` passes on the populated predecessor;
+a clean scratch database applies all 19 migrations, passes seed/export/deletion/
+consent/lifecycle assertions, and skips every unchanged checksummed migration on
+rerun. A dedicated upgrade fixture starts from migrations 0001..0018, deliberately
+reverses same-time grant/withdraw and place/release sequence values, then proves 0019
+reconstructs both causal chains and reinstates the unique indexes/append-only
+triggers. The lifecycle fixture proves user and object holds, causal release, exact
+backup subject idempotency, post-delete capture refusal, late-catalog reopening,
+pre-deletion restore refusal, bounded adapter failure, stale-claim recovery,
+tombstone finalization/expiry, user/audit retention holds, causal expiry of closed
+hold chains, 400-day restore-test/deleted-catalog/audit expiry, redaction, mutation
+rejection, and zero fixture residue. The exact documented
+`pnpm lifecycle:ops -- help` command passes, and its dry-run retention command reports
+every deletion/finalization class without mutation. Official GDPR Articles 5/17 and
+NIST SP 800-209/SP 1339 were rechecked as primary policy/recovery references; product
+defaults still require jurisdiction-specific owner/counsel review.
+**Changed:** migrations 0017..0019; gateway lifecycle/account/consent/server code and
+tests; lifecycle operator and populated/clean Postgres assertions; compatibility
+matrix/checker; root `AGENTS.md`; D35; data-lifecycle, security, architecture,
+best-practice, gateway/platform, state, roadmap, execution, task, risk, release, and
+v0.2 release documentation.
+**Decisions:** D35 separates primary deletion plus deterministic restore suppression
+from physical provider-backup and disaster-recovery proof.
+**Next:** independently download and verify protected-main release run `29241883791`;
+only then create annotated `v0.1.0`, verify the published GitHub Release, and deliver
+the ordered XC-28/SEC-001..005 v0.2 stack through protected PRs.
+**Blockers:** no local SEC-005 blocker. Production backup/DR remains gated by
+`OPS-005`; v0.2 delivery remains ordered behind G1 publication proof. Protected
+`main` is `1093842` after PR #29 with green post-merge CI/security; manual release
+run `29241883791` is still in progress at this entry.
+
 ## 2026-07-13 — Make user-content consent explicit and revocable
 **Session:** Codex agent · branch `codex/sec004-consent-ledger` · **Phase:** P4/P5/P7/P10/P11 ·
 **TODO items:** SEC-004

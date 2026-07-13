@@ -41,6 +41,8 @@ Read in this order for every non-trivial session:
 10. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
 11. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+12. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+    backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
 
@@ -72,7 +74,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
-- compatibility policy 1.0.0 is machine-checked across eleven public format/package
+- compatibility policy 1.0.0 is machine-checked across twelve public format/package
   boundaries; the CLI/WASM facades expose their active versions;
 - the frozen prototype is the complete historical parity oracle and predates slot
   variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
@@ -81,10 +83,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the local v0.2 stack enforces D10 manufacturing-license policy and SEC-002
   pre-retrieval/provider prohibited-brief refusal with non-content audit rows; both
   still await protected delivery and do not prove live-provider operations;
-- SEC-003/004 locally prove versioned owner-scoped export, primary Postgres and
-  S3-compatible deletion, and append-only purpose/subject consent grants and
-  withdrawals; retention, legal holds, tombstones, and backup lifecycle remain
-  SEC-005 and are not implied by those records;
+- SEC-003..005 locally prove versioned owner-scoped export, primary Postgres and
+  S3-compatible deletion, purpose/subject consent grants and withdrawals, bounded
+  retention, time-bounded legal holds, pseudonymous tombstones, backup catalog/
+  expiry adapters, and pre-restore suppression; production backup/restore remains
+  `OPS-005` and is not implied by deterministic local evidence;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
 - `main` has an active PR-only exact-check ruleset; no release exists.
 
@@ -158,9 +161,9 @@ User-data lifecycle boundary (D33/SEC-003):
 - object deletion failure rolls the database transaction back. Test success,
   authorization, malformed confirmation, secret exclusion, storage failure, a real
   populated Postgres lifecycle, and an S3-compatible upload/delete/404 smoke;
-- a successful receipt proves primary database/object deletion only. Never claim
-  legal-hold, tombstone, retention-expiry, or backup deletion until SEC-005 has
-  executable restore/lifecycle evidence.
+- receipt 2.0.0 proves primary database/object deletion and creation of
+  restore-suppression tombstones. It never proves physical backup deletion; only a
+  catalogued provider adapter result plus restore evidence may make that claim.
 
 Consent boundary (D34/SEC-004):
 
@@ -180,7 +183,33 @@ Consent boundary (D34/SEC-004):
   makes telemetry private, removes contributed patterns or leaderboard rows as
   appropriate. It does not claim in-flight provider recall, primary content
   deletion, legal-hold expiry, or backup erasure; those use account deletion and
-  SEC-005 lifecycle proof.
+  SEC-005 lifecycle proof;
+- authority chronology uses monotonic `event_sequence`, not timestamps or random
+  IDs. Same-timestamp grant/withdraw or place/release pairs must resolve causally.
+
+Data-lifecycle boundary (D35/SEC-005):
+
+- lifecycle 1.0.0 defines six data classes, a 30-day maximum backup window, a
+  45-day pseudonymous tombstone window, bounded primary audit/job/auth periods, and
+  a 400-day pseudonymous lifecycle-audit period. These are versioned product
+  defaults, not universal legal conclusions;
+- legal holds are append-only, subject-digested, reason-coded, reference-only, and
+  expire within 365 days unless a new reviewed event renews them. A hold permits
+  retention only; it never authorizes use, training, sharing, or operator browsing.
+  Hold mutation, backup register/restore evaluation, and deletion must share globally
+  ordered transaction-scoped locks for the affected user and objects so authority
+  cannot race a purge;
+- deletion receipt 2.0.0 creates user/object tombstones and suppresses pre-deletion
+  restore through backup expiry. Every backup must be catalogued with manifest hash,
+  covered subject digests, affirmative delete deadline, provider adapter evidence,
+  exact subject-manifest idempotency, and retryable failure state. Provider deletion
+  adapters are idempotent and stale in-progress claims are reclaimed only after the
+  bounded lease. Reject a copy captured after its subject's primary deletion; a
+  valid late-catalogued pre-deletion copy reopens tombstone completion until erased;
+- no restore enters primary storage before exact manifest and tombstone checks.
+  Local Postgres fixtures prove the contract; real encrypted backup automation,
+  provider deletion receipts, sandbox restores, RPO/RTO, and DR promotion remain
+  `OPS-005`.
 
 ## 5. Session protocol
 

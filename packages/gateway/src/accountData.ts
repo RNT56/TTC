@@ -1,10 +1,16 @@
 import { randomUUID } from "node:crypto";
 import type { CurrentUser } from "./auth.js";
+import {
+  DATA_LIFECYCLE_FORMAT_VERSION,
+  prepareAccountDeletionLifecycle,
+  recordLegalHoldBlockedDeletion,
+  type AccountDeletionLifecycle,
+} from "./dataLifecycle.js";
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.1.0";
-export const ACCOUNT_DELETION_RECEIPT_VERSION = "1.0.0";
+export const USER_DATA_EXPORT_VERSION = "1.2.0";
+export const ACCOUNT_DELETION_RECEIPT_VERSION = "2.0.0";
 
 interface ExportDataset {
   key: string;
@@ -207,8 +213,38 @@ const exportDatasets: readonly ExportDataset[] = [
                  subject_kind AS "subjectKind", subject_id AS "subjectId",
                  policy_version AS "policyVersion", notice_hash AS "noticeHash", action,
                  evidence, idempotency_key AS "idempotencyKey",
-                 previous_event_id AS "previousEventId", created_at AS "createdAt"
-            FROM user_consent_events WHERE owner_user_id = $1 ORDER BY created_at, id`,
+                 previous_event_id AS "previousEventId", event_sequence AS "eventSequence",
+                 created_at AS "createdAt"
+            FROM user_consent_events WHERE owner_user_id = $1 ORDER BY event_sequence`,
+  },
+  {
+    key: "lifecycleLegalHolds",
+    sql: `SELECT id, hold_key AS "holdKey", action, subject_kind AS "subjectKind",
+                 reason_code AS "reasonCode",
+                 jurisdiction, expires_at AS "expiresAt", previous_event_id AS "previousEventId",
+                 event_sequence AS "eventSequence", created_at AS "createdAt"
+            FROM legal_hold_events
+           WHERE (subject_kind = 'user'
+                  AND subject_digest = encode(digest('user:' || $1, 'sha256'), 'hex'))
+              OR (subject_kind = 'object' AND subject_digest IN (
+                    SELECT encode(digest('object:' || bucket || '/' || object_key, 'sha256'), 'hex')
+                      FROM object_blobs WHERE owner_user_id = $1
+                 ))
+           ORDER BY event_sequence`,
+  },
+  {
+    key: "backupCopies",
+    sql: `SELECT DISTINCT b.id, b.provider, b.captured_at AS "capturedAt",
+                 b.delete_after AS "deleteAfter", b.status, b.deleted_at AS "deletedAt"
+            FROM backup_records b
+            JOIN backup_subjects s ON s.backup_id = b.id
+           WHERE (s.subject_kind = 'user'
+                  AND s.subject_digest = encode(digest('user:' || $1, 'sha256'), 'hex'))
+              OR (s.subject_kind = 'object' AND s.subject_digest IN (
+                    SELECT encode(digest('object:' || bucket || '/' || object_key, 'sha256'), 'hex')
+                      FROM object_blobs WHERE owner_user_id = $1
+                 ))
+           ORDER BY b.captured_at, b.id`,
   },
   {
     key: "patternContributions",
@@ -423,7 +459,14 @@ export interface AccountDeletionReceipt {
   deletedAt: string;
   primaryDataDeleted: true;
   objectPayloadsDeleted: true;
-  backupLifecycle: "not-covered-primary-only-see-SEC-005";
+  backupLifecycle: {
+    lifecycleVersion: typeof DATA_LIFECYCLE_FORMAT_VERSION;
+    state: "restore-suppressed-pending-expiry";
+    tombstoneId: string;
+    backupDeleteAfter: string;
+    tombstoneExpiresAt: string;
+    objectTombstoneCount: number;
+  };
   counts: Record<string, number>;
 }
 
@@ -432,48 +475,70 @@ export async function deleteUserData(
   user: CurrentUser,
   deleteObjects: ObjectDeletionAdapter,
 ): Promise<AccountDeletionReceipt> {
-  return withGatewayTransaction(db, { isolation: "serializable" }, async (transaction) => {
-    const account = await transaction.query<{ id: string; email: string | null }>(
-      `SELECT id, email FROM users WHERE id = $1 FOR UPDATE`,
-      [user.id],
-    );
-    const row = account.rows[0];
-    if (!row) throw httpError(404, "account not found");
+  const now = new Date();
+  const deletionId = `del-${randomUUID()}`;
+  try {
+    return await withGatewayTransaction(db, { isolation: "serializable" }, async (transaction) => {
+      const account = await transaction.query<{ id: string; email: string | null }>(
+        `SELECT id, email FROM users WHERE id = $1 FOR UPDATE`,
+        [user.id],
+      );
+      const row = account.rows[0];
+      if (!row) throw httpError(404, "account not found");
 
-    const blobs = await transaction.query<StoredObjectRef>(
-      `SELECT bucket, object_key AS "objectKey"
-         FROM object_blobs
-        WHERE owner_user_id = $1
-        ORDER BY bucket, object_key`,
-      [user.id],
-    );
+      const blobs = await transaction.query<StoredObjectRef>(
+        `SELECT bucket, object_key AS "objectKey"
+           FROM object_blobs
+          WHERE owner_user_id = $1
+          ORDER BY bucket, object_key`,
+        [user.id],
+      );
+      const lifecycle: AccountDeletionLifecycle = await prepareAccountDeletionLifecycle(transaction, {
+        userId: user.id,
+        objectKeys: blobs.rows,
+        deletionId,
+        now,
+      });
 
-    const counts: Record<string, number> = {};
-    for (const step of purgeSteps) {
-      const result = await transaction.query(step.sql, [user.id]);
-      counts[step.key] = result.rowCount ?? 0;
+      const counts: Record<string, number> = {};
+      for (const step of purgeSteps) {
+        const result = await transaction.query(step.sql, [user.id]);
+        counts[step.key] = result.rowCount ?? 0;
+      }
+      if (row.email) {
+        const tokens = await transaction.query(`DELETE FROM verification_token WHERE identifier = $1`, [row.email]);
+        counts.verificationTokens = tokens.rowCount ?? 0;
+      } else {
+        counts.verificationTokens = 0;
+      }
+
+      await deleteObjects(blobs.rows);
+
+      const deletedAccount = await transaction.query(`DELETE FROM users WHERE id = $1`, [user.id]);
+      if (deletedAccount.rowCount !== 1) throw httpError(409, "account changed during deletion");
+      counts.users = 1;
+
+      return {
+        formatVersion: ACCOUNT_DELETION_RECEIPT_VERSION,
+        deletionId,
+        deletedAt: now.toISOString(),
+        primaryDataDeleted: true,
+        objectPayloadsDeleted: true,
+        backupLifecycle: {
+          lifecycleVersion: DATA_LIFECYCLE_FORMAT_VERSION,
+          state: "restore-suppressed-pending-expiry",
+          tombstoneId: lifecycle.tombstoneId,
+          backupDeleteAfter: lifecycle.backupDeleteAfter,
+          tombstoneExpiresAt: lifecycle.tombstoneExpiresAt,
+          objectTombstoneCount: lifecycle.objectTombstoneCount,
+        },
+        counts,
+      };
+    });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "LEGAL_HOLD_ACTIVE") {
+      await recordLegalHoldBlockedDeletion(db, user.id, now);
     }
-    if (row.email) {
-      const tokens = await transaction.query(`DELETE FROM verification_token WHERE identifier = $1`, [row.email]);
-      counts.verificationTokens = tokens.rowCount ?? 0;
-    } else {
-      counts.verificationTokens = 0;
-    }
-
-    await deleteObjects(blobs.rows);
-
-    const deletedAccount = await transaction.query(`DELETE FROM users WHERE id = $1`, [user.id]);
-    if (deletedAccount.rowCount !== 1) throw httpError(409, "account changed during deletion");
-    counts.users = 1;
-
-    return {
-      formatVersion: ACCOUNT_DELETION_RECEIPT_VERSION,
-      deletionId: `del-${randomUUID()}`,
-      deletedAt: new Date().toISOString(),
-      primaryDataDeleted: true,
-      objectPayloadsDeleted: true,
-      backupLifecycle: "not-covered-primary-only-see-SEC-005",
-      counts,
-    };
-  });
+    throw error;
+  }
 }

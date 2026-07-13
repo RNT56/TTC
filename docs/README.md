@@ -18,7 +18,9 @@ This index maps the `docs/` tree and gives reading orders by role.
 [`BEST-PRACTICES.md`](BEST-PRACTICES.md) and the budgets in
 [`architecture.md`](architecture.md) §7. Anything touching admission, exports,
 hardware, or user content also requires
-[`security-safety-legal.md`](security-safety-legal.md).
+[`security-safety-legal.md`](security-safety-legal.md). Export, deletion, retention,
+legal-hold, backup, restore, or tombstone work additionally requires
+[`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md).
 
 ## Document map
 
@@ -37,6 +39,7 @@ hardware, or user content also requires
 | [`COMPATIBILITY.md`](COMPATIBILITY.md) | SemVer domains, support matrix, deprecation windows, migration and breaking-change rules | Living; machine-checked |
 | [`RELEASE.md`](RELEASE.md) | Cross-platform validator artifact, attestation, verification, tag, publication, and rollback procedure | Living runbook |
 | [`PUBLICATION.md`](PUBLICATION.md) | crates.io/npm ownership, credentials, ordered publication, explicit deferral, and clean-consumer evidence | Living policy |
+| [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md) | Retention classes, legal-hold authority, primary deletion, backup expiry/restore, tombstones, audit events, operator commands, and maturity boundary | Living operating contract |
 | [`DEBUGGING.md`](DEBUGGING.md) | Failure routing, evidence preservation, reproduction, redaction, and safety escalation | Living runbook |
 | [`TRADEMARK-SEARCH.md`](TRADEMARK-SEARCH.md) | Dated exact-name search evidence and remaining legal-clearance boundary | Living governance evidence |
 | [`GLOSSARY.md`](GLOSSARY.md) | Project vocabulary | Living |

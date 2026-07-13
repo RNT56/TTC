@@ -87,7 +87,7 @@ tests and automation can opt into header auth with `FORGE_DEV_AUTH=1`; public sh
 reads never require authentication.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.1.0 across every explicit owner-scoped table,
+transaction and returns format 1.2.0 across every explicit owner-scoped table,
 including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
@@ -95,8 +95,21 @@ access/refresh/ID tokens, session and verification tokens, and provider keys.
 user in a serializable transaction, removes user/derived rows explicitly rather than
 trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the
 bounded storage call succeeds (`FORGE_OBJECT_DELETE_TIMEOUT_MS`, default 15 seconds).
-Receipt 1.0.0 proves primary Postgres/object deletion only;
-SEC-005 owns legal holds, tombstones, retention and backup expiry/restore behavior.
+Receipt 2.0.0 proves primary Postgres/object deletion plus lifecycle 1.0.0 user/object
+tombstone creation. It does not claim provider-backup deletion. Migrations
+`0017_data_lifecycle.sql`, `0018_authority_event_sequences.sql`, and
+`0019_authority_sequence_backfill.sql` add six versioned
+retention classes, time-bounded append-only holds, monotonic authority ordering,
+backup catalog/subject coverage, deletion tombstones, restore tests, and bounded
+pseudonymous lifecycle audit. `GET /v1/data-lifecycle/policy` exposes public defaults;
+`GET /v1/account/lifecycle` exposes only the owner's hold count and backup exposure.
+`deleteExpiredBackups` requires an idempotent physical provider adapter, rejects
+backup-reference subject-manifest drift, retains retry state, and reclaims a stale
+deletion claim after its bounded lease. Registration rejects a post-deletion capture
+and reopens tombstone completion for a valid late-discovered pre-deletion copy;
+`evaluateRestoreCandidate` rejects a mismatched/due copy and blocks any subject with
+an active tombstone before staging. The Postgres fixture proves this state machine;
+real encrypted backup/restore, provider receipts, RPO/RTO, and DR remain `OPS-005`.
 
 Consent follows D34. Migration `0016_user_consent_events.sql` adds an append-only
 ledger with current purpose/subject/policy/notice bindings and explicit previous-event
@@ -108,7 +121,9 @@ sharing, model-pattern contribution, leaderboard publication, or telemetry-backe
 training. Generic `/v1/jobs` and direct `createJob` calls retain the photoscan/training
 guard. Withdrawal cancels matching queued/running jobs, makes the log private, or
 removes the pattern/leaderboard rows. It does not delete primary content or prove
-provider recall/backups; account deletion and SEC-005 own those boundaries.
+provider recall/backups; account deletion and D35 lifecycle authority own those
+boundaries. Consent and hold ledgers order same-timestamp events by monotonic
+`event_sequence`, not random IDs.
 
 Generation operations consume only approved review rows with non-blocked export
 policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
@@ -147,6 +162,14 @@ audit table and its evidence; dropping or purging it requires an explicit privac
 legal retention decision and an export/backup first. A partially interrupted deploy
 is recovered by keeping the application stopped, restoring if the database itself is
 damaged, and rerunning the unchanged idempotent migration before traffic resumes.
+
+Lifecycle migrations are additive. Application rollback may stop creating new holds,
+backups, tombstones, or restore checks, but must retain their tables and continue
+restore suppression for any existing tombstone. Never drop the backup catalog or
+tombstones while a backup may still exist. Roll forward with the unchanged
+checksummed migration; breaking receipt/lifecycle changes require compatibility and
+decision records. Run `pnpm lifecycle:ops -- help` for the operator surface and
+[`../DATA-LIFECYCLE.md`](../DATA-LIFECYCLE.md) for the full state machine.
 
 ## 5. Job queue taxonomy
 

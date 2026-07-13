@@ -61,6 +61,7 @@ function consentDb() {
           evidence: JSON.parse(String(params[8])),
           idempotency_key: params[9],
           previous_event_id: params[10],
+          event_sequence: next - 1,
           created_at: `2026-07-13T00:00:0${next}.000Z`,
         };
         events.push(row);
@@ -160,6 +161,7 @@ test("grant is idempotent, current-only, and withdrawal remains in append-only h
     idempotencyKey: "photo-grant-1",
   });
   assert.equal(grant.active, true);
+  assert.equal(grant.eventSequence, "1");
   assert.equal(grant.previousEventId, null);
   const duplicate = await recordConsent(db, user, {
     purpose: "photoscan.processing",
