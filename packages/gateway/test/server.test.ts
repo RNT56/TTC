@@ -5,6 +5,8 @@ import test from "node:test";
 import type { GatewayDb } from "../src/db.js";
 import {
   ANTHROPIC_MODEL_PINS,
+  buildGenerationContext,
+  runGeneration,
   type AnthropicTransport,
   type GenerationMaterials,
   type GenerationValidator,
@@ -12,6 +14,13 @@ import {
   TemplateSynthesisAdapter,
 } from "../src/generation.js";
 import { buildServer } from "../src/server.js";
+import { fixtureLicenseFilteredGeometry } from "../src/licenseExports.js";
+import {
+  assessBriefSafety,
+  assertBriefAllowed,
+  ProhibitedBriefError,
+  type ProhibitedBriefCategory,
+} from "../src/safety.js";
 import { validatorBin } from "../src/validator.js";
 
 const demoPath = join(process.cwd(), "..", "..", "examples", "vx2-mini.forge.json");
@@ -29,6 +38,39 @@ const generationMaterials: GenerationMaterials = {
     },
   ],
 };
+
+test("license-filtered geometry fixture requires ledger evidence and substitutes restricted assets", () => {
+  assert.throws(
+    () => fixtureLicenseFilteredGeometry({ assetRef: "obj://missing-license.step" }, "missing"),
+    /D10 license record/,
+  );
+
+  const result = fixtureLicenseFilteredGeometry(
+    {
+      assetRef: "obj://restricted.step",
+      componentId: "cmp_restricted",
+      license: {
+        id: "lic_restricted",
+        class: "no-redistribution",
+        terms: "view only",
+        sourceUrl: "https://example.com/restricted",
+        exportPolicy: "envelope-link-out",
+      },
+      envelopeMm: { widthMm: 30, heightMm: 20, lengthMm: 40 },
+      datumPorts: [{ id: "mount", type: "stack-20x20-M2", frame: [[0, 0, 0], [0, 0, 0]] }],
+    },
+    "restricted",
+  );
+  const exports = result.exports as Record<string, string>;
+  const licenseExport = result.licenseExport as Record<string, unknown>;
+  const print = result.print as Record<string, unknown>;
+  assert.match(exports.step, /envelope\.step$/);
+  assert.match(exports.threeMf, /envelope\.3mf$/);
+  assert.equal(licenseExport.schemaVersion, "1.0.0");
+  assert.equal(licenseExport.assemblyPolicy, "envelope-substitution");
+  assert.equal(print.readyForQuote, false);
+  assert.doesNotMatch(JSON.stringify(result), /source\.step/);
+});
 
 function parseJsonParam(value: unknown): unknown {
   return typeof value === "string" ? JSON.parse(value) : value;
@@ -56,6 +98,8 @@ function platformMemoryDb(): GatewayDb {
   const photoscanArtifacts: Record<string, unknown>[] = [];
   const policyArtifacts: Record<string, unknown>[] = [];
   const telemetryLogs: Record<string, unknown>[] = [];
+  const consentEvents: Record<string, unknown>[] = [];
+  const patternContributions: Record<string, unknown>[] = [];
   const listings: Record<string, unknown>[] = [];
   const courses: Record<string, unknown>[] = [];
   const leaderboardRuns: Record<string, unknown>[] = [];
@@ -158,9 +202,51 @@ function platformMemoryDb(): GatewayDb {
   let nextVendorOffer = 1;
   let nextPrintQuote = 1;
   let nextPrintQuoteOffer = 1;
+  let nextConsent = 1;
+  let nextPattern = 1;
 
-  return {
+  const db: GatewayDb = {
     async query<T = unknown>(text: string, params: unknown[] = []) {
+      if (text.includes("SELECT id FROM users WHERE id = $1 FOR UPDATE")) {
+        return { rows: [{ id: params[0] } as T], rowCount: 1 };
+      }
+      if (text.includes("INSERT INTO user_consent_events")) {
+        const row = {
+          id: `consent-${nextConsent++}`,
+          ledger_version: params[0],
+          owner_user_id: params[1],
+          purpose: params[2],
+          subject_kind: params[3],
+          subject_id: params[4],
+          policy_version: params[5],
+          notice_hash: params[6],
+          action: params[7],
+          evidence: parseJsonParam(params[8]),
+          idempotency_key: params[9],
+          previous_event_id: params[10],
+          created_at: now,
+        };
+        consentEvents.push(row);
+        return { rows: [row as T], rowCount: 1 };
+      }
+      if (text.includes("FROM user_consent_events")) {
+        let rows = consentEvents.filter((row) => row.owner_user_id === params[0]);
+        if (text.includes("idempotency_key = $2")) {
+          rows = rows.filter((row) => row.idempotency_key === params[1]);
+        } else if (text.includes("purpose = $2")) {
+          rows = rows.filter(
+            (row) => row.purpose === params[1] && row.subject_kind === params[2] && row.subject_id === params[3],
+          );
+        }
+        if (text.includes("DISTINCT ON")) {
+          const latest = new Map<string, Record<string, unknown>>();
+          for (const row of rows) latest.set(`${row.purpose}:${row.subject_kind}:${row.subject_id}`, row);
+          rows = [...latest.values()];
+        } else {
+          rows = rows.slice(-1);
+        }
+        return { rows: rows as T[], rowCount: rows.length };
+      }
       if (text.includes("INSERT INTO users")) {
         return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
       }
@@ -246,6 +332,13 @@ function platformMemoryDb(): GatewayDb {
         return {
           rows: row && row.owner_user_id === params[0] ? [row as T] : [],
           rowCount: row && row.owner_user_id === params[0] ? 1 : 0,
+        };
+      }
+      if (text.includes("FROM model_registry") && text.includes("id = $1") && text.includes("owner_user_id = $2")) {
+        const row = models.get(String(params[0]));
+        return {
+          rows: row && row.owner_user_id === params[1] ? [{ id: row.id } as T] : [],
+          rowCount: row && row.owner_user_id === params[1] ? 1 : 0,
         };
       }
       if (text.includes("FROM model_registry") && text.includes("WHERE owner_user_id = $1")) {
@@ -355,6 +448,9 @@ function platformMemoryDb(): GatewayDb {
         const rows = [...jobs.values()].filter((row) => row.owner_user_id === params[0]);
         return { rows: rows as T[], rowCount: rows.length };
       }
+      if (text.includes("UPDATE jobs SET status = 'cancelled'")) {
+        return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+      }
       if (text.includes("INSERT INTO replay_artifacts")) {
         const id = `replay-${nextReplay++}`;
         const row = {
@@ -434,8 +530,47 @@ function platformMemoryDb(): GatewayDb {
         telemetryLogs.push(row);
         return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
       }
+      if (text.includes("UPDATE telemetry_logs")) {
+        const row = telemetryLogs.find((candidate) => candidate.id === params[0] && candidate.owner_user_id === params[1]);
+        if (!row) return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+        row.privacy = {
+          ...parseRecordParam(row.privacy),
+          sharing: text.includes("'shared'") ? "shared" : "private",
+        };
+        return { rows: [{ privacy: row.privacy } as T], rowCount: 1 };
+      }
+      if (text.includes("FROM telemetry_logs") && text.includes("id = $1") && text.includes("owner_user_id = $2")) {
+        const row = telemetryLogs.find((candidate) => candidate.id === params[0] && candidate.owner_user_id === params[1]);
+        return { rows: row ? [{ id: row.id } as T] : [], rowCount: row ? 1 : 0 };
+      }
       if (text.includes("FROM telemetry_logs")) {
         const rows = telemetryLogs.filter((row) => row.owner_user_id === params[0]);
+        return { rows: rows as T[], rowCount: rows.length };
+      }
+      if (text.includes("INSERT INTO pattern_library")) {
+        const existing = patternContributions.find((row) => row.source_model_id === params[1]);
+        if (existing) return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+        const row = {
+          id: `pattern-${nextPattern++}`,
+          owner_user_id: params[0],
+          source_model_id: params[1],
+          source_artifact_id: params[2],
+          source_kind: "user-opt-in",
+          archetype: params[3],
+          consent: "opt-in",
+          summary: parseJsonParam(params[4]),
+          created_at: now,
+        };
+        patternContributions.push(row);
+        return { rows: [row as T], rowCount: 1 };
+      }
+      if (text.includes("DELETE FROM pattern_library")) {
+        return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+      }
+      if (text.includes("FROM pattern_library")) {
+        const rows = patternContributions.filter(
+          (row) => row.owner_user_id === params[0] && row.source_model_id === params[1],
+        );
         return { rows: rows as T[], rowCount: rows.length };
       }
       if (text.includes("INSERT INTO courses")) {
@@ -479,6 +614,13 @@ function platformMemoryDb(): GatewayDb {
         };
         leaderboardRuns.push(row);
         return { rows: [{ id: row.id } as T], rowCount: 1 };
+      }
+      if (text.includes("DELETE FROM leaderboard_runs")) {
+        const before = leaderboardRuns.length;
+        for (let index = leaderboardRuns.length - 1; index >= 0; index--) {
+          if (leaderboardRuns[index].user_id === params[0]) leaderboardRuns.splice(index, 1);
+        }
+        return { rows: [], rowCount: before - leaderboardRuns.length } as { rows: T[]; rowCount: number };
       }
       if (text.includes("FROM leaderboard_runs")) {
         const rows = leaderboardRuns.filter(
@@ -722,6 +864,8 @@ function platformMemoryDb(): GatewayDb {
       throw new Error(`unhandled platform test query: ${text}`);
     },
   };
+  db.transaction = async (_options, operation) => operation(db);
+  return db;
 }
 
 const authHeaders = {
@@ -926,6 +1070,238 @@ test("generate context rejects malformed bodies at the schema boundary", async (
   });
   assert.equal(res.statusCode, 400);
   await app.close();
+});
+
+test("prohibited-brief detector rejects platform exclusions without blocking benign robotics language", () => {
+  for (const prompt of [
+    "inspection rover that follows target waypoints",
+    "camera payload for wildfire mapping",
+    "robot arm for sorting parts",
+    "inspection rover with passive sensors only; no weapon, interdiction, or targeting modules",
+    "mapping quad that must exclude weapon and targeting systems",
+  ]) {
+    const assessment = assessBriefSafety(prompt);
+    assert.equal(assessment.prohibited, false, prompt);
+    assert.doesNotThrow(() => assertBriefAllowed(prompt));
+  }
+
+  const cases: [string, ProhibitedBriefCategory][] = [
+    ["weaponized quad with a target-lock camera and explosive payload", "weapon"],
+    ["build a w e a p o n mount for this rover", "weapon"],
+    ["add a g.u.n mount to the chassis", "weapon"],
+    ["combat drone with a fire control computer", "targeting"],
+    ["counter-UAS interdiction robot", "interdiction"],
+    ["missile release bay for an autonomous airframe", "munition"],
+  ];
+  for (const [prompt, expectedCategory] of cases) {
+    const assessment = assessBriefSafety(prompt);
+    assert.equal(assessment.prohibited, true, prompt);
+    assert.ok(assessment.categories.includes(expectedCategory), prompt);
+    assert.match(assessment.promptHash, /^[a-f0-9]{64}$/);
+    assert.throws(() => assertBriefAllowed(prompt), ProhibitedBriefError);
+  }
+
+  const mixed = assessBriefSafety("No weapon payload; add a targeting system instead.");
+  assert.equal(mixed.prohibited, true);
+  assert.ok(mixed.categories.includes("targeting"));
+});
+
+test("direct generation entry points refuse prohibited briefs before retrieval or provider calls", async () => {
+  let queryCalls = 0;
+  let providerCalls = 0;
+  const db: GatewayDb = {
+    async query() {
+      queryCalls += 1;
+      throw new Error("database must not be queried for a prohibited direct brief");
+    },
+  };
+
+  await assert.rejects(
+    buildGenerationContext(
+      db,
+      { prompt: "weaponized rover with target-lock camera" },
+      generationMaterials,
+    ),
+    ProhibitedBriefError,
+  );
+  await assert.rejects(
+    runGeneration(
+      db,
+      {
+        prompt: "combat drone with explosive payload",
+        provider: "anthropic",
+        anthropicApiKey: "direct-provider-secret",
+      },
+      {
+        materials: generationMaterials,
+        anthropicTransport: async () => {
+          providerCalls += 1;
+          return { content: [] };
+        },
+      },
+    ),
+    ProhibitedBriefError,
+  );
+  assert.equal(queryCalls, 0);
+  assert.equal(providerCalls, 0);
+});
+
+test("generation HTTP surfaces log minimal refusal metadata and never call the provider", async () => {
+  const refusalParams: unknown[][] = [];
+  let providerCalls = 0;
+  const db: GatewayDb = {
+    async query(text, params = []) {
+      if (!text.includes("INSERT INTO generation_refusals")) {
+        throw new Error(`unexpected query before prohibited-brief refusal: ${text}`);
+      }
+      refusalParams.push(params);
+      return {
+        rows: [{ id: `ref-test-${refusalParams.length}`, created_at: "2026-07-13T00:00:00.000Z" }],
+        rowCount: 1,
+      } as never;
+    },
+  };
+  const app = buildServer({
+    db,
+    generationMaterials,
+    anthropicTransport: async () => {
+      providerCalls += 1;
+      return { content: [] };
+    },
+    persistGeneratedArtifacts: false,
+  });
+
+  const generatePrompt = "weaponized quad with target-lock camera";
+  const generate = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: {
+      prompt: generatePrompt,
+      provider: "anthropic",
+      anthropicApiKey: "super-secret-provider-key",
+    },
+  });
+  assert.equal(generate.statusCode, 422, generate.body);
+  assert.equal((generate.json() as { code: string }).code, "SAFETY_PROHIBITED_BRIEF");
+  assert.equal((generate.json() as { refusalId: string }).refusalId, "ref-test-1");
+  assert.doesNotMatch(generate.body, /weaponized|super-secret-provider-key/);
+
+  const contextPrompt = "counter-UAS interdiction platform";
+  const context = await app.inject({
+    method: "POST",
+    url: "/v1/generate/context",
+    payload: { prompt: contextPrompt },
+  });
+  assert.equal(context.statusCode, 422, context.body);
+  assert.equal((context.json() as { refusalId: string }).refusalId, "ref-test-2");
+
+  const streamPrompt = "combat drone with an explosive payload";
+  const stream = await app.inject({
+    method: "POST",
+    url: "/v1/generate/stream",
+    payload: {
+      prompt: streamPrompt,
+      provider: "anthropic",
+      anthropicApiKey: "stream-provider-secret",
+    },
+  });
+  assert.equal(stream.statusCode, 200, stream.body);
+  assert.match(stream.body, /event: start/);
+  assert.match(stream.body, /"promptHash":"[a-f0-9]{64}"/);
+  assert.match(stream.body, /event: error/);
+  assert.match(stream.body, /SAFETY_PROHIBITED_BRIEF/);
+  assert.doesNotMatch(stream.body, /combat drone|stream-provider-secret/);
+
+  assert.equal(providerCalls, 0);
+  assert.deepEqual(refusalParams.map((params) => params[7]), ["generation", "context", "stream"]);
+  assert.deepEqual(refusalParams.map((params) => params[8]), ["anthropic", null, "anthropic"]);
+  for (const [index, params] of refusalParams.entries()) {
+    assert.match(String(params[1]), /^[a-f0-9]{64}$/, `refusal ${index + 1} prompt hash`);
+    const serialized = JSON.stringify(params);
+    assert.doesNotMatch(serialized, /weaponized|counter-UAS|combat drone|provider-secret/);
+  }
+  await app.close();
+});
+
+test("refusal logging failure is fail-closed before any live provider call", async () => {
+  let providerCalls = 0;
+  const app = buildServer({
+    db: {
+      async query(text) {
+        assert.match(text, /INSERT INTO generation_refusals/);
+        throw new Error("refusal audit store unavailable");
+      },
+    },
+    generationMaterials,
+    anthropicTransport: async () => {
+      providerCalls += 1;
+      return { content: [] };
+    },
+    persistGeneratedArtifacts: false,
+  });
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/generate",
+    payload: {
+      prompt: "armed drone with a targeting system",
+      provider: "anthropic",
+      anthropicApiKey: "must-not-be-used",
+    },
+  });
+  assert.equal(response.statusCode, 503, response.body);
+  assert.equal(providerCalls, 0);
+  assert.doesNotMatch(response.body, /armed drone|must-not-be-used/);
+  await app.close();
+});
+
+test("course generation and model edits share the logged prohibited-brief boundary", async () => {
+  const previousDevAuth = process.env.FORGE_DEV_AUTH;
+  process.env.FORGE_DEV_AUTH = "1";
+  const refusalSurfaces: unknown[] = [];
+  let unexpectedMutation = false;
+  const db: GatewayDb = {
+    async query(text, params = []) {
+      if (text.includes("WITH by_id") || text.includes("INSERT INTO users")) {
+        return {
+          rows: [{ id: authHeaders["x-forge-user-id"], name: "Platform User", email: "platform@example.test", image: null }],
+          rowCount: 1,
+        } as never;
+      }
+      if (text.includes("INSERT INTO credit_accounts")) return { rows: [], rowCount: 1 } as never;
+      if (text.includes("INSERT INTO generation_refusals")) {
+        refusalSurfaces.push(params[7]);
+        return {
+          rows: [{ id: `ref-adjacent-${refusalSurfaces.length}`, created_at: "2026-07-13T00:00:00.000Z" }],
+          rowCount: 1,
+        } as never;
+      }
+      unexpectedMutation = true;
+      throw new Error(`prohibited adjacent route crossed its safety boundary: ${text}`);
+    },
+  };
+  const app = buildServer({ db });
+  try {
+    const edit = await app.inject({
+      method: "POST",
+      url: "/v1/models/model-safe/edit",
+      headers: authHeaders,
+      payload: { prompt: "add a weapon mount and target-lock camera" },
+    });
+    assert.equal(edit.statusCode, 422, edit.body);
+    const course = await app.inject({
+      method: "POST",
+      url: "/v1/courses/generate",
+      headers: authHeaders,
+      payload: { prompt: "counter-UAS interdiction course", archetype: "multirotor" },
+    });
+    assert.equal(course.statusCode, 422, course.body);
+    assert.deepEqual(refusalSurfaces, ["model-edit", "course-generation"]);
+    assert.equal(unexpectedMutation, false);
+  } finally {
+    await app.close();
+    if (previousDevAuth === undefined) delete process.env.FORGE_DEV_AUTH;
+    else process.env.FORGE_DEV_AUTH = previousDevAuth;
+  }
 });
 
 test("generate blocks before synthesis when approved catalog context is empty", async () => {
@@ -1527,6 +1903,45 @@ test(
       assert.equal(me.statusCode, 200, me.body);
       assert.equal((me.json() as { authenticated: boolean; user: { id: string } }).user.id, "user-platform");
 
+      const policyResponse = await app.inject({ method: "GET", url: "/v1/consents/policies" });
+      assert.equal(policyResponse.statusCode, 200, policyResponse.body);
+      const policyByPurpose = new Map(
+        (policyResponse.json() as {
+          policies: { purpose: string; policyVersion: string; noticeHash: string }[];
+        }).policies.map((policy) => [policy.purpose, policy]),
+      );
+      const grantConsent = async (
+        purpose: string,
+        subjectKind: string,
+        subjectId: string,
+        idempotencyKey: string,
+      ) => {
+        const policy = policyByPurpose.get(purpose);
+        assert.ok(policy, `missing policy ${purpose}`);
+        const response = await app.inject({
+          method: "POST",
+          url: "/v1/consents",
+          headers: authHeaders,
+          payload: {
+            purpose,
+            subjectKind,
+            subjectId,
+            policyVersion: policy.policyVersion,
+            noticeHash: policy.noticeHash,
+            action: "grant",
+            idempotencyKey,
+          },
+        });
+        assert.equal(response.statusCode, 201, response.body);
+        return response;
+      };
+      await grantConsent(
+        "leaderboard.publication",
+        "account",
+        "user-platform",
+        "leaderboard-publication-grant",
+      );
+
       const contract = JSON.parse(readFileSync(demoPath, "utf8")) as unknown;
       const created = await app.inject({
         method: "POST",
@@ -1552,6 +1967,28 @@ test(
       headers: authHeaders,
     });
     assert.equal(fetchedModel.statusCode, 200, fetchedModel.body);
+
+    const patternWithoutConsent = await app.inject({
+      method: "POST",
+      url: `/v1/models/${createdBody.model.id}/pattern-contribution`,
+      headers: authHeaders,
+      payload: { structuralIdioms: ["serviceable battery bay"] },
+    });
+    assert.equal(patternWithoutConsent.statusCode, 409, patternWithoutConsent.body);
+    assert.equal((patternWithoutConsent.json() as { code: string }).code, "CONSENT_REQUIRED");
+    await grantConsent(
+      "pattern.contribution",
+      "model",
+      createdBody.model.id,
+      "pattern-contribution-grant",
+    );
+    const patternContribution = await app.inject({
+      method: "POST",
+      url: `/v1/models/${createdBody.model.id}/pattern-contribution`,
+      headers: authHeaders,
+      payload: { structuralIdioms: ["serviceable battery bay"] },
+    });
+    assert.equal(patternContribution.statusCode, 201, patternContribution.body);
 
     const shared = await app.inject({
       method: "POST",
@@ -1655,6 +2092,41 @@ test(
     assert.equal(duplicateBlob.statusCode, 201, duplicateBlob.body);
     assert.equal((duplicateBlob.json() as { blob: { id: string } }).blob.id, sourceBlobBody.blob.id);
 
+    const secondSourceBlob = await app.inject({
+      method: "POST",
+      url: "/v1/blobs",
+      headers: authHeaders,
+      payload: {
+        purpose: "photoscan-source",
+        contentType: "image/jpeg",
+        byteSize: 11321,
+        sha256: "cd".repeat(32),
+        metadata: { originalName: "side.jpg" },
+      },
+    });
+    assert.equal(secondSourceBlob.statusCode, 201, secondSourceBlob.body);
+    const secondSourceBlobId = (secondSourceBlob.json() as { blob: { id: string } }).blob.id;
+    const photoscanWithoutConsent = await app.inject({
+      method: "POST",
+      url: "/v1/photoscan",
+      headers: authHeaders,
+      payload: { mode: "single", sourceBlobIds: [sourceBlobBody.blob.id] },
+    });
+    assert.equal(photoscanWithoutConsent.statusCode, 409, photoscanWithoutConsent.body);
+    assert.equal((photoscanWithoutConsent.json() as { code: string }).code, "CONSENT_REQUIRED");
+    await grantConsent(
+      "photoscan.processing",
+      "object-blob",
+      sourceBlobBody.blob.id,
+      "photoscan-front-grant",
+    );
+    await grantConsent(
+      "photoscan.processing",
+      "object-blob",
+      secondSourceBlobId,
+      "photoscan-side-grant",
+    );
+
     const fetchedBlob = await app.inject({
       method: "GET",
       url: `/v1/blobs/${sourceBlobBody.blob.id}`,
@@ -1742,7 +2214,7 @@ test(
       headers: authHeaders,
       payload: {
         kind: "photoscan.single",
-        payload: { objectKey: "fixture://single.jpg" },
+        payload: { sourceBlobIds: [sourceBlobBody.blob.id] },
         idempotencyKey: "photoscan-single",
       },
     });
@@ -1756,7 +2228,7 @@ test(
       headers: authHeaders,
       payload: {
         kind: "photoscan.single",
-        payload: { objectKey: "fixture://single.jpg" },
+        payload: { sourceBlobIds: [sourceBlobBody.blob.id] },
         idempotencyKey: "photoscan-single",
       },
     });
@@ -1800,7 +2272,11 @@ test(
       method: "POST",
       url: "/v1/photoscan",
       headers: authHeaders,
-      payload: { mode: "multiview", payload: { imageCount: 4 } },
+      payload: {
+        mode: "multiview",
+        sourceBlobIds: [sourceBlobBody.blob.id, secondSourceBlobId],
+        payload: { imageCount: 4 },
+      },
     });
     assert.equal(photoscan.statusCode, 202, photoscan.body);
 
@@ -1912,9 +2388,36 @@ test(
     assert.equal((telemetryJob.json() as { job: { output: { artifactKind: string } } }).job.output.artifactKind, "telemetry-replay");
     const telemetryLogs = await app.inject({ method: "GET", url: "/v1/telemetry/logs", headers: authHeaders });
     assert.equal(telemetryLogs.statusCode, 200, telemetryLogs.body);
-    const telemetryBody = telemetryLogs.json() as { logs: { source: string; tape: { frames?: unknown[] } }[] };
+    const telemetryBody = telemetryLogs.json() as { logs: { id: string; source: string; tape: { frames?: unknown[] } }[] };
 	    assert.equal(telemetryBody.logs.length, 1);
 	    assert.equal(telemetryBody.logs[0].source, "fixture");
+      await grantConsent(
+        "telemetry.sharing",
+        "telemetry-log",
+        telemetryBody.logs[0].id,
+        "telemetry-share-grant",
+      );
+      const sharedTelemetry = await app.inject({
+        method: "POST",
+        url: `/v1/telemetry/logs/${telemetryBody.logs[0].id}/share`,
+        headers: authHeaders,
+      });
+      assert.equal(sharedTelemetry.statusCode, 200, sharedTelemetry.body);
+      assert.equal((sharedTelemetry.json() as { privacy: { sharing: string } }).privacy.sharing, "shared");
+
+      await grantConsent(
+        "training.reuse",
+        "telemetry-log",
+        telemetryBody.logs[0].id,
+        "training-reuse-grant",
+      );
+      const reusePolicy = await app.inject({
+        method: "POST",
+        url: "/v1/policies",
+        headers: authHeaders,
+        payload: { payload: { telemetryLogIds: [telemetryBody.logs[0].id], task: "hover" } },
+      });
+      assert.equal(reusePolicy.statusCode, 202, reusePolicy.body);
 
 	    const previousHardwareLabMode = process.env.FORGE_HARDWARE_LAB_MODE;
 	    delete process.env.FORGE_HARDWARE_LAB_MODE;
@@ -2014,7 +2517,7 @@ test(
 
     const jobs = await app.inject({ method: "GET", url: "/v1/jobs", headers: authHeaders });
     assert.equal(jobs.statusCode, 200, jobs.body);
-    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 9);
+    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 10);
 
     const course = await app.inject({
       method: "POST",

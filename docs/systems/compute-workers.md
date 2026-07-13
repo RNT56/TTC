@@ -57,11 +57,17 @@ STEP I/O, fillets, exact tessellation → meshoptimizer LOD chain (≤ 800/≤ 1
 DfM evaluation per process profile (feeds MFG-* checks); STEP/3MF export jobs with
 the **license export filter** applied (D10).
 
-Live 2026-06-15: `occt.tessellate` has a deterministic fixture handler that emits
+Live 2026-07-13: `occt.tessellate` has a deterministic fixture handler that emits
 stable object keys, mesh metadata, DfM report references, oriented 3MF export
 references, print-profile metadata, and printed-part BOM rows for quote-link
-handoff. The live OCCT binding remains behind the same task boundary for P6 DfM and
-export work.
+handoff. D10 is enforced before fixture or external execution: every asset must carry
+a compatible ledger record; assembly policy is derived from the most restrictive
+asset; attribution binds a versioned license manifest; and restricted assets become
+dimensioned envelopes with datum ports and BOM link-outs. External commands receive
+the manifest/hash and must prove attribution embedding or restricted-geometry
+exclusion; provider output is rebuilt from allowlisted fields. The live OCCT binding
+and real generated artifact inspection remain behind the same task boundary for P6
+DfM and export proof.
 
 ### 3.3 `workers/photoscan` — image → 3D (P5)
 background removal → TRELLIS-class single-image reconstruction (or COLMAP multi-view
@@ -167,7 +173,8 @@ one result); poison-payload handling; cache-hit tests.
 
 P3/P4: etl + adapter seams (P3-004, P3-010, P4-015..017). P5: fixture photoscan is
 live; full TRELLIS/COLMAP remains adapter work. P6: fixture tessellation, DfM
-metadata, and runtime sim helpers are live; full OCCT/STEP export remains open. P7:
+metadata, D10 policy enforcement, and runtime sim helpers are live; full live
+OCCT/STEP artifact proof remains open. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; SB3/MuJoCo/offline-RL
 training remains open. P8: config-diff, telemetry ingest, supervisor, sysid, and replay.verify
@@ -178,6 +185,14 @@ matching outputs into `photoscan_artifacts`, `policy_artifacts`, `telemetry_logs
 Postgres queue and are executable/materialized by the local Docker Compose worker.
 Photoscan result caches and policy ONNX outputs are linked through `object_blobs`
 for durable S3/MinIO storage.
+
+D34 withdrawal is authoritative over worker completion. Photoscan/training
+withdrawal changes matching queued or running jobs to `cancelled`; the Postgres
+worker may mark success/failure and materialize output only while the row is still
+`running`. A late result from already-started compute is recorded as discarded and
+cannot overwrite cancellation or enter artifact tables. This prevents the local
+data-plane race but does not claim that an external provider can stop work already
+in flight.
 
 ## 8. Open questions
 

@@ -1,8 +1,8 @@
-# Model Contract v2.1 — implementation doc
+# Model Contract v2.2 — implementation doc
 
-**Status:** not started · **Phases:** P0 (authoring), evolves always · **Home:**
-`crates/forge-contract` *(proposed)* · **Plan refs:** §4, Appendix A (v3.0) ·
-**Decisions:** D5, D7, D8, D10, D16, D19
+**Status:** implemented and compatibility-gated · **Phases:** P0 (authoring), evolves always · **Home:**
+`crates/forge-contract` · **Plan refs:** §4, Appendix A (v3.0) ·
+**Decisions:** D5, D7, D8, D10, D16, D19, D31, D32
 
 ## 1. Purpose
 
@@ -33,7 +33,7 @@ A `ModelSpec`:
 | `env` | `{gravity: 9.80665, airDensity: 1.225, wind: {mean, gust}}` | no physical constant is ambient; overridable per scene/course |
 | `skeleton[]` | `{name, parent, pos[m], rot[rad], limits[[minX,maxX],[minY,maxY],[minZ,maxZ]], joint?: {type: fixed\|revolute\|spherical, axis, maxTorqueNm?, maxVelRad?}}` | one tree drives visuals AND physics export |
 | `parts[]` | `{node, geom, material, color, explode?, renderBias?, comp?, mass?: {value_g \| density_kgm3}, collision?: auto\|hull\|primitive\|none}` | `geom` is the tagged union below |
-| `slots[]` | `{id, label, mountNodes[], joint?, variants[]}`; variant = `{id, name, desc, parts[]} \| {id, componentRef, ports{}}` | `componentRef` is semver-ranged into the catalog |
+| `slots[]` | v2.2 shape is `{id, label, mountNodes[], joint?, equippedVariantId?, variants[]}`; variant = `{id, name, desc, parts[]} \| {id, componentRef, ports{}}` | `equippedVariantId` must match exactly one unique variant for every non-empty slot. Only that variant contributes parts, catalog refs, ports, simulation, lockfile requirements, or BOM rows (D32/XC-28). `componentRef` is semver-ranged into the catalog. |
 | `lockfile` | map `componentRef@range → exact immutable revision` | D5; admission requires full resolution |
 | `ports[]` | `{id, node, frame, type}` — type from the connector taxonomy (mechanical patterns, electrical, data) | couplers/fasteners/wires *generated* from resolution |
 | `chains[]` + per-part `explode` | staged disassembly windows `{dir, mag, t0, t1}` | coverage is a completeness gate |
@@ -86,9 +86,12 @@ admits the resulting contracts before a `RoverDriver` one-meter smoke.
 ## 7. Versioning & migrations
 
 Schema is semver'd. Historical contracts load through the Rust migration runner
-before the shape gate; the current XC-23 runner accepts `2.1.0`/`current` as the
-target, drops legacy schema-version markers, normalizes known field aliases, and
-then re-validates against the current `ModelSpec`.
+before the shape gate; the current XC-23 runner targets `2.2.0`/`current`, drops
+legacy schema-version markers, normalizes known field aliases, and then re-validates
+against the current `ModelSpec`. For a 2.1 slot with one alternative, migration sets
+that ID deterministically and records `equip-single-variant-slots-v2.2`. For multiple
+alternatives it refuses to guess and requires the author to set `equippedVariantId`
+before retrying.
 
 ```bash
 cargo run -q -p forge-validate -- migrate path/to/model.forge.json --out migrated.forge.json

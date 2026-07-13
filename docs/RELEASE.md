@@ -2,10 +2,24 @@
 
 Owner: repository maintainers  
 Applies to: standalone `forge-validate` and `@forge/validate-wasm`  
-Current candidate: **v0.1.0**
+Current candidate: **v0.2.0**
 
 The release workflow is the only supported artifact builder. A local build is useful
 for diagnosis, but it is not release evidence.
+
+## Published baseline
+
+Validator `v0.1.0` is the first verified public baseline. Protected-main manual run
+[`29241883791`](https://github.com/RNT56/TTC/actions/runs/29241883791) passed every
+platform, both SPDX SBOMs, checksum/payload verification, provenance attestation, and
+aggregate upload at commit `1093842`; its downloaded aggregate passed independently.
+Annotated tag `v0.1.0` then drove publication run
+[`29244972303`](https://github.com/RNT56/TTC/actions/runs/29244972303), which published
+the [nine-asset GitHub Release](https://github.com/RNT56/TTC/releases/tag/v0.1.0).
+Every public asset was downloaded after publication and the verifier again passed
+checksums, artifact SPDX, macOS binary/version/canonical admission, and a clean WASM
+consumer. crates.io/npm publication was explicitly deferred because no owner-scoped
+registry credentials or publication decision were supplied.
 
 The x86_64 macOS lane uses GitHub's supported `macos-26-intel` image and every native
 matrix job has a 60-minute ceiling. `macos-15-intel` is the rollback image through
@@ -81,6 +95,27 @@ its signing, update, and Linux dependency gates are separate.
 - After a bad GitHub Release: mark it withdrawn, document the affected checksums,
   publish a patch version, and retain the audit trail. Do not silently overwrite an
   asset with the same name.
-- Validator v0.1.0 has no database migration. Rollback removes the binary/package and
-  restores the previous installed version. Persisted ModelSpec/replay/EnvSpec support
-  remains governed by [`COMPATIBILITY.md`](COMPATIBILITY.md).
+- Standalone validator v0.2.0 rollback removes the binary/package and restores
+  v0.1.0. ModelSpec 2.2 migration is document-local: single-variant 2.1 slots migrate
+  deterministically, while multi-variant slots require an explicit equipped choice.
+  A hosted gateway at this repository version also applies additive migration
+  `0015_generation_refusals.sql`; application rollback retains that audit table and
+  its rows unless an explicit retention/privacy decision authorizes an exported and
+  backed-up purge. SEC-003 adds no migration: reverting the gateway removes the
+  account export/delete routes but cannot restore primary rows or objects already
+  deleted through them. SEC-004 adds additive `0016_user_consent_events.sql`;
+  rollback may stop new consent actions but retains
+  its append-only history, makes no old grant current under a changed notice, and
+  cannot recall already completed provider work. A release that changes a consent
+  notice must publish the new policy/hash and prove prior grants become inactive.
+  SEC-005 adds additive `0017_data_lifecycle.sql` and
+  `0018_authority_event_sequences.sql`, followed by
+  `0019_authority_sequence_backfill.sql` to derive pre-existing chronology from
+  causal links. Deletion receipt 2.0.0 proves primary/object
+  removal plus restore suppression, not physical backup erasure. Rollback must retain
+  hold, backup, tombstone, restore-test, lifecycle-audit, and monotonic authority data;
+  do not re-enable a pre-deletion backup or drop tombstones. Real provider backup
+  deletion, sandbox restore, and measured RPO/RTO remain the `OPS-005` release gate.
+  Persisted
+  ModelSpec/replay/EnvSpec support remains governed by
+  [`COMPATIBILITY.md`](COMPATIBILITY.md).

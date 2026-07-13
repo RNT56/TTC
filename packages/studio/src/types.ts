@@ -13,6 +13,8 @@ export interface ExplodeWindow {
 }
 
 export interface BakedPart {
+  /** Stable JSON Pointer to the physical part in the source contract. */
+  source_path: string;
   part_index: number;
   node: string;
   material: MaterialClass;

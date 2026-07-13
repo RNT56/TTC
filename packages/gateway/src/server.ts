@@ -7,6 +7,26 @@ import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { getCurrentUser, handleAuthRequest, requireUser, type CurrentUser } from "./auth.js";
+import { deleteUserData, exportUserData } from "./accountData.js";
+import {
+  CONSENT_POLICIES,
+  CONSENT_PURPOSES,
+  consentErrorResponse,
+  listCurrentConsents,
+  recordConsent,
+  sourceBlobIdsFromPayload,
+  withActiveConsents,
+  type ConsentAction,
+  type ConsentPurpose,
+  type ConsentSubjectKind,
+} from "./consent.js";
+import {
+  DATA_LIFECYCLE_FORMAT_VERSION,
+  RETENTION_POLICIES,
+  RETENTION_POLICY_VERSION,
+  accountLifecycleStatus,
+  lifecycleErrorResponse,
+} from "./dataLifecycle.js";
 import { gatewayDb, type GatewayDb } from "./db.js";
 import { recordGeneratedArtifact } from "./generatedArtifacts.js";
 import {
@@ -67,7 +87,17 @@ import {
   type PlatformGateKey,
   type PlatformGateStatus,
 } from "./platform.js";
-import { objectStorageConfigFromEnv, presignObjectAccess } from "./objectStorage.js";
+import {
+  deleteStoredObjects,
+  objectStorageConfigFromEnv,
+  presignObjectAccess,
+  type ObjectDeletionAdapter,
+} from "./objectStorage.js";
+import {
+  prohibitedBriefResponse,
+  refuseProhibitedBrief,
+  type ProhibitedBriefSurface,
+} from "./safety.js";
 import { runBake, runBom, runEnvSpec, runValidator, validatorBin } from "./validator.js";
 
 export interface ServerOptions {
@@ -79,6 +109,7 @@ export interface ServerOptions {
   anthropicTransport?: AnthropicTransport;
   anthropicBaseUrl?: string;
   persistGeneratedArtifacts?: boolean;
+  deleteObjects?: ObjectDeletionAdapter;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -128,6 +159,14 @@ const jobProviderSchema = Type.Union([
   Type.Literal("modal"),
 ]);
 const blobAccessActionSchema = Type.Union([Type.Literal("upload"), Type.Literal("download")]);
+const consentPurposeSchema = Type.Union(CONSENT_PURPOSES.map((purpose) => Type.Literal(purpose)));
+const consentSubjectKindSchema = Type.Union([
+  Type.Literal("account"),
+  Type.Literal("object-blob"),
+  Type.Literal("telemetry-log"),
+  Type.Literal("model"),
+]);
+const consentActionSchema = Type.Union([Type.Literal("grant"), Type.Literal("withdraw")]);
 const photoscanAxisSchema = Type.Union([Type.Literal("x"), Type.Literal("y"), Type.Literal("z")]);
 const photoscanPortSchema = Type.Object(
   {
@@ -275,6 +314,12 @@ function unavailable(error: unknown): { error: string; detail: string } {
 }
 
 function routeError(error: unknown): { statusCode: number; body: unknown } {
+  const safety = prohibitedBriefResponse(error);
+  if (safety) return safety;
+  const consent = consentErrorResponse(error);
+  if (consent) return consent;
+  const lifecycle = lifecycleErrorResponse(error);
+  if (lifecycle) return lifecycle;
   const mapped = validatorError(error);
   if (mapped) return mapped;
   return { statusCode: 503, body: unavailable(error) };
@@ -516,6 +561,7 @@ async function executeGeneration(
   request: FastifyRequest,
   options: ServerOptions,
   user: CurrentUser | null = null,
+  surface: Extract<ProhibitedBriefSurface, "generation" | "stream"> = "generation",
   onEvent?: (event: string, data: unknown) => void,
 ): Promise<Awaited<ReturnType<typeof runGeneration>>> {
   const generationRequest: GenerationRequest = {
@@ -523,6 +569,12 @@ async function executeGeneration(
     provider: (body.provider ?? "template") as GenerationProvider,
     anthropicApiKey: generationApiKeyHeader(request) ?? body.anthropicApiKey,
   };
+  await refuseProhibitedBrief(db, generationRequest.prompt, {
+    surface,
+    ownerUserId: user?.id ?? null,
+    provider: generationRequest.provider ?? null,
+    archetype: generationRequest.archetype ?? null,
+  });
   const result = await runGeneration(db, generationRequest, {
     materials: options.generationMaterials,
     adapter: options.generationAdapter,
@@ -567,10 +619,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_request, body, done) => {
     done(null, body);
   });
-  const db = options.db ?? {
-    query: (text, params) => gatewayDb().query(text, params),
-  } satisfies GatewayDb;
+  const db = options.db ?? gatewayDb();
   const reviewToken = options.reviewToken ?? process.env.FORGE_REVIEW_TOKEN ?? null;
+  const deleteObjects =
+    options.deleteObjects ??
+    ((objects) => deleteStoredObjects(objectStorageConfigFromEnv(), objects));
 
   app.get("/healthz", async () => ({
     ok: true,
@@ -594,6 +647,126 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       return reply.status(mapped.statusCode).send(mapped.body);
     }
   });
+
+  app.get("/v1/account/export", async (request, reply) => {
+    try {
+      const user = await requireUser(request, db);
+      const exported = await exportUserData(db, user);
+      reply.header(
+        "content-disposition",
+        `attachment; filename="forgedttc-user-data-${user.id.replace(/[^a-zA-Z0-9_-]/g, "_")}.json"`,
+      );
+      return reply.send(exported);
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.get("/v1/data-lifecycle/policy", async (_request, reply) => {
+    return reply.send({
+      lifecycleVersion: DATA_LIFECYCLE_FORMAT_VERSION,
+      policyVersion: RETENTION_POLICY_VERSION,
+      policies: RETENTION_POLICIES,
+      legalHold: {
+        appendOnly: true,
+        maximumDaysBeforeReview: 365,
+        contentUseAuthorized: false,
+      },
+      backup: {
+        catalogRequired: true,
+        restoreTombstoneCheckRequired: true,
+        productionRestoreProof: "OPS-005",
+      },
+    });
+  });
+
+  app.get("/v1/account/lifecycle", async (request, reply) => {
+    try {
+      const user = await requireUser(request, db);
+      return reply.send(await accountLifecycleStatus(db, user.id));
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.delete(
+    "/v1/account",
+    {
+      schema: {
+        body: Type.Object(
+          { confirmation: Type.Literal("DELETE MY ACCOUNT") },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const receipt = await deleteUserData(db, user, deleteObjects);
+        return reply.send({ receipt });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get("/v1/consents/policies", async (_request, reply) => {
+    return reply.send({ policies: CONSENT_POLICIES });
+  });
+
+  app.get("/v1/consents", async (request, reply) => {
+    try {
+      const user = await requireUser(request, db);
+      return reply.send({ consents: await listCurrentConsents(db, user) });
+    } catch (error) {
+      const mapped = routeError(error);
+      return reply.status(mapped.statusCode).send(mapped.body);
+    }
+  });
+
+  app.post(
+    "/v1/consents",
+    {
+      schema: {
+        body: Type.Object(
+          {
+            purpose: consentPurposeSchema,
+            subjectKind: consentSubjectKindSchema,
+            subjectId: Type.String({ minLength: 1, maxLength: 200 }),
+            policyVersion: Type.String({ minLength: 1, maxLength: 80 }),
+            noticeHash: Type.String({ pattern: "^[0-9a-f]{64}$" }),
+            action: consentActionSchema,
+            locale: Type.Optional(Type.String({ minLength: 2, maxLength: 35 })),
+            idempotencyKey: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const body = request.body as {
+          purpose: ConsentPurpose;
+          subjectKind: ConsentSubjectKind;
+          subjectId: string;
+          policyVersion: string;
+          noticeHash: string;
+          action: ConsentAction;
+          locale?: string;
+          idempotencyKey?: string;
+        };
+        const consent = await recordConsent(db, user, body);
+        return reply.status(201).send({ consent });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
 
   app.post(
     "/v1/validate",
@@ -693,10 +866,18 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         includePrefixText?: boolean;
       };
       try {
+        const user = await getCurrentUser(request, db);
+        await refuseProhibitedBrief(db, body.prompt, {
+          surface: "context",
+          ownerUserId: user?.id ?? null,
+          provider: null,
+          archetype: body.archetype ?? null,
+        });
         const context = await buildGenerationContext(db, body, options.generationMaterials);
         return reply.send(context);
       } catch (error) {
-        return reply.status(503).send(unavailable(error));
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
       }
     },
   );
@@ -714,7 +895,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       try {
         const body = request.body as GenerationRequest;
         const user = await getCurrentUser(request, db);
-        const result = await executeGeneration(db, body, request, options, user);
+        const result = await executeGeneration(db, body, request, options, user, "generation");
         return reply.status(result.verdict === "blocked" ? 409 : 200).send(result);
       } catch (error) {
         const mapped = routeError(error);
@@ -736,12 +917,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         connection: "keep-alive",
       });
       reply.raw.write(sse("start", {
-        prompt: body.prompt,
+        promptHash: sha256(body.prompt.trim()),
         provider: body.provider ?? "template",
       }));
       try {
         const user = await getCurrentUser(request, db);
-        const result = await executeGeneration(db, body, request, options, user, (event, data) => {
+        const result = await executeGeneration(db, body, request, options, user, "stream", (event, data) => {
           reply.raw.write(sse(event, data));
         });
         reply.raw.write(sse("complete", result));
@@ -836,6 +1017,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const user = await requireUser(request, db);
         const { id } = request.params as { id: string };
         const { prompt } = request.body as { prompt: string };
+        await refuseProhibitedBrief(db, prompt, {
+          surface: "model-edit",
+          ownerUserId: user.id,
+          provider: "template",
+          archetype: null,
+        });
         const result = await editModel(db, user, id, prompt);
         return reply.send(result);
       } catch (error) {
@@ -1179,8 +1366,21 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           idempotencyKey?: string;
         };
         assertJobKind(body.kind);
+        const isPhotoscan = body.kind === "photoscan.single" || body.kind === "photoscan.multiview";
+        const sourceBlobIds = isPhotoscan ? sourceBlobIdsFromPayload(body.payload) : [];
+        if (isPhotoscan && sourceBlobIds.length === 0) {
+          throw Object.assign(new Error("photoscan jobs require owned sourceBlobIds with active processing consent"), {
+            statusCode: 400,
+          });
+        }
+        if (body.kind === "photoscan.single" && sourceBlobIds.length !== 1) {
+          throw Object.assign(new Error("single photoscan requires exactly one source blob"), { statusCode: 400 });
+        }
+        if (body.kind === "photoscan.multiview" && sourceBlobIds.length < 2) {
+          throw Object.assign(new Error("multiview photoscan requires at least two source blobs"), { statusCode: 400 });
+        }
         const job = await createJob(db, user, {
-          kind: body.kind,
+          kind: body.kind as JobKind,
           provider: body.provider,
           payload: body.payload,
           idempotencyKey: body.idempotencyKey,
@@ -1267,6 +1467,11 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         body: Type.Object(
           {
             mode: Type.Optional(Type.Union([Type.Literal("single"), Type.Literal("multiview")])),
+            sourceBlobIds: Type.Array(Type.String({ minLength: 1, maxLength: 200 }), {
+              minItems: 1,
+              maxItems: 64,
+              uniqueItems: true,
+            }),
             payload: Type.Optional(Type.Unknown()),
           },
           { additionalProperties: false },
@@ -1276,9 +1481,18 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     async (request, reply) => {
       try {
         const user = await requireUser(request, db);
-        const body = request.body as { mode?: "single" | "multiview"; payload?: unknown };
+        const body = request.body as { mode?: "single" | "multiview"; sourceBlobIds: string[]; payload?: unknown };
         const kind: JobKind = body.mode === "multiview" ? "photoscan.multiview" : "photoscan.single";
-        const job = await createJob(db, user, { kind, payload: body.payload, provider: "fixture" });
+        if (kind === "photoscan.single" && body.sourceBlobIds.length !== 1) {
+          throw Object.assign(new Error("single photoscan requires exactly one source blob"), { statusCode: 400 });
+        }
+        if (kind === "photoscan.multiview" && body.sourceBlobIds.length < 2) {
+          throw Object.assign(new Error("multiview photoscan requires at least two source blobs"), { statusCode: 400 });
+        }
+        const payload = isRecord(body.payload)
+          ? { ...body.payload, sourceBlobIds: body.sourceBlobIds }
+          : { sourceBlobIds: body.sourceBlobIds };
+        const job = await createJob(db, user, { kind, payload, provider: "fixture" });
         return reply.status(202).send({ job });
       } catch (error) {
         const mapped = routeError(error);
@@ -1388,6 +1602,108 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const user = await requireUser(request, db);
         const query = request.query as { limit?: number };
         return reply.send({ logs: await listTelemetryLogs(db, user, query.limit ?? 50) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/telemetry/logs/:id/share",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const privacy = await withActiveConsents(
+          db,
+          user,
+          [{ purpose: "telemetry.sharing", subjectKind: "telemetry-log", subjectId: id }],
+          async (transaction) => {
+            const updated = await transaction.query<{ privacy: unknown }>(
+              `UPDATE telemetry_logs
+                  SET privacy = COALESCE(privacy, '{}'::jsonb) || jsonb_build_object(
+                    'sharing', 'shared', 'sharedAt', now()
+                  )
+                WHERE id = $1 AND owner_user_id = $2
+                RETURNING privacy`,
+              [id, user.id],
+            );
+            if (!updated.rows[0]) throw Object.assign(new Error("telemetry-log not found"), { statusCode: 404 });
+            return updated.rows[0].privacy;
+          },
+        );
+        return reply.send({ id, privacy });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/models/:id/pattern-contribution",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          {
+            structuralIdioms: Type.Array(Type.String({ minLength: 1, maxLength: 80 }), {
+              minItems: 1,
+              maxItems: 20,
+              uniqueItems: true,
+            }),
+          },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const { structuralIdioms } = request.body as { structuralIdioms: string[] };
+        const contribution = await withActiveConsents(
+          db,
+          user,
+          [{ purpose: "pattern.contribution", subjectKind: "model", subjectId: id }],
+          async (transaction) => {
+            const model = await getOwnedModel(transaction, user, id);
+            if (!model) throw Object.assign(new Error("model not found"), { statusCode: 404 });
+            if (model.status !== "admitted") {
+              throw Object.assign(new Error("only admitted models can contribute patterns"), { statusCode: 409 });
+            }
+            const summary = {
+              structuralIdioms,
+              geometryIncluded: false,
+              attributionIncluded: false,
+              modelContractHash: model.contractHash,
+            };
+            const inserted = await transaction.query<{ id: string; source_artifact_id: string; created_at: Date | string }>(
+              `INSERT INTO pattern_library (
+                 owner_user_id, source_model_id, source_artifact_id,
+                 source_kind, archetype, consent, summary, token_vector
+               ) VALUES ($1, $2, $3, 'user-opt-in', $4, 'opt-in', $5::jsonb, '{}'::jsonb)
+               ON CONFLICT (source_model_id) WHERE consent = 'opt-in' AND source_model_id IS NOT NULL
+               DO NOTHING
+               RETURNING id, source_artifact_id, created_at`,
+              [user.id, model.id, model.sourceArtifactId, model.archetype ?? "unknown", JSON.stringify(summary)],
+            );
+            if (inserted.rows[0]) return inserted.rows[0];
+            const existing = await transaction.query<{ id: string; source_artifact_id: string; created_at: Date | string }>(
+              `SELECT id, source_artifact_id, created_at FROM pattern_library
+                WHERE owner_user_id = $1 AND source_model_id = $2 AND consent = 'opt-in' LIMIT 1`,
+              [user.id, model.id],
+            );
+            return existing.rows[0];
+          },
+        );
+        return reply.status(201).send({ contribution });
       } catch (error) {
         const mapped = routeError(error);
         return reply.status(mapped.statusCode).send(mapped.body);
@@ -1510,6 +1826,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       try {
         const user = await requireUser(request, db);
         const body = request.body as CourseGenerationBody;
+        await refuseProhibitedBrief(db, body.prompt, {
+          surface: "course-generation",
+          ownerUserId: user.id,
+          provider: body.provider ?? "template",
+          archetype: body.archetype ?? null,
+        });
         const envSpec = buildTemplateEnvSpec(body);
         const validation = await runEnvSpec(JSON.stringify(envSpec), false);
         if (validation.exitCode === -1 || validation.report === null) {
@@ -1668,44 +1990,51 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
                 expectedContractHash,
                 courseId: body.courseId,
               });
-        const replay =
-          submittedTape === undefined
-            ? null
-            : await insertReplayArtifact(db, user, {
-                tape: submittedTape,
-                verification,
-                modelId: typeof clientVerification.modelId === "string" ? clientVerification.modelId : null,
-              });
-        const result = await db.query<{ id: string }>(
-          `INSERT INTO leaderboard_runs (
-             course_id, policy_id, replay_id, user_id, archetype, class_key, score, verified, verification
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
-           RETURNING id`,
-          [
-            body.courseId,
-            body.policyId ?? null,
-            replay?.id ?? body.replayId ?? null,
-            user.id,
-            slice.archetype,
-            slice.classKey,
-            body.score,
-            verification.verified,
-            JSON.stringify({
-              ...verification,
-              archetype: slice.archetype,
-              classKey: slice.classKey,
-              clientClaim: clientVerification.verified === undefined ? null : Boolean(clientVerification.verified),
-            }),
-          ],
+        const published = await withActiveConsents(
+          db,
+          user,
+          [{ purpose: "leaderboard.publication", subjectKind: "account", subjectId: user.id }],
+          async (transaction) => {
+            const replay = submittedTape === undefined
+              ? null
+              : await insertReplayArtifact(transaction, user, {
+                  tape: submittedTape,
+                  verification,
+                  modelId: typeof clientVerification.modelId === "string" ? clientVerification.modelId : null,
+                });
+            const result = await transaction.query<{ id: string }>(
+              `INSERT INTO leaderboard_runs (
+                 course_id, policy_id, replay_id, user_id, archetype, class_key, score, verified, verification
+               )
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+               RETURNING id`,
+              [
+                body.courseId,
+                body.policyId ?? null,
+                replay?.id ?? body.replayId ?? null,
+                user.id,
+                slice.archetype,
+                slice.classKey,
+                body.score,
+                verification.verified,
+                JSON.stringify({
+                  ...verification,
+                  archetype: slice.archetype,
+                  classKey: slice.classKey,
+                  clientClaim: clientVerification.verified === undefined ? null : Boolean(clientVerification.verified),
+                }),
+              ],
+            );
+            return { id: result.rows[0].id, replay };
+          },
         );
         return reply.status(201).send({
-          id: result.rows[0].id,
+          id: published.id,
           verified: verification.verified,
           archetype: slice.archetype,
           classKey: slice.classKey,
           verification,
-          replay,
+          replay: published.replay,
         });
       } catch (error) {
         const mapped = routeError(error);

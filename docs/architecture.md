@@ -50,6 +50,13 @@ flowchart TB
 - **Python:** training (MuJoCo/MJX, SB3, offline RL), TRELLIS/COLMAP, OCCT jobs,
   catalog ETL.
 
+Cross-store lifecycle authority remains in the gateway/Postgres plane: D35 retention
+policies, append-only legal holds, backup catalog records, pseudonymous deletion
+tombstones, restore tests, and causal authority backfill live in `packages/gateway`
+plus migrations 0017..0019.
+Provider-specific backup deletion is an injected operations adapter; no worker or UI
+may mark a physical copy deleted. Full contract: [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md).
+
 Full port methodology, boundary signatures, and golden-number suite:
 [`systems/core-runtime.md`](systems/core-runtime.md).
 
@@ -149,6 +156,12 @@ leaderboard runs are re-verified server-side as anti-cheat hygiene only.
   crates.io crate — the R2 rung as an artifact.
 - **Backups/audit:** one stateful service (Postgres) keeps backup and audit surface
   small; object storage is content-addressed where possible *(proposed)*.
+- **User authority (D33/D34/D35):** primary export/deletion, append-only consent,
+  retention, legal holds, backup cataloguing, tombstones, and restore suppression
+  live in the gateway/Postgres boundary. Consent is purpose- and subject-scoped;
+  consent actions and hold-aware deletion serialize authority with the affected
+  owner/objects, and worker materialization cannot resurrect a cancelled job. Real
+  backup-provider deletion and disaster-recovery proof remain OPS-005.
 - **Secrets:** platform API keys stay server-side only; BYO Anthropic keys are held
   client-side, passed per request to `POST /v1/generate` (`x-forge-anthropic-key` or
   request body), forwarded to Anthropic for that call, and never persisted

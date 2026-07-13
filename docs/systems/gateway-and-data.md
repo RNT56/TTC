@@ -1,8 +1,8 @@
 # Gateway & Data Plane — implementation doc
 
-**Status:** validation/BOM/review/generation/auth/model/share/job/platform APIs live · **Phases:** P2 (validation service), grows through P12 ·
+**Status:** validation/BOM/review/generation/auth/model/share/job/platform and local user-data/consent lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34
 
 ## 1. Purpose
 
@@ -28,14 +28,15 @@ against binary-spawn at P2 (OD-08, P2-007) before any adoption.
 | Area | Routes | Phase |
 |---|---|---|
 | Validation | `POST /v1/validate` (contract → report); `POST /v1/bake`; `POST /v1/bom`; `GET /v1/schema` | P2/P3 |
-| Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits` | P4/P11 |
+| Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits`; `GET /v1/account/export`; exact-confirmation `DELETE /v1/account` | P4/P11 |
+| Consent | `GET /v1/consents/policies`; `GET/POST /v1/consents`; `POST /v1/telemetry/logs/:id/share`; `POST /v1/models/:id/pattern-contribution`; consent-gated photoscan/training/leaderboard writes | P4-P11 |
 | Registry: models | `GET/POST /v1/models`; `GET /v1/models/:id`; `POST /v1/models/:id/edit`; `POST /v1/models/:id/share`; `GET /v1/share/:shareId` (public read-only, D4) | P4 |
 | Generation | `POST /v1/generate/context`; `POST /v1/generate`; `POST /v1/generate/stream` (staged SSE); `GET /v1/generate/models` (D26 model pins) | P4 |
 | Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
 | Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
 | Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
 | Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `maintenance.*`; fixture outputs materialize sidecar rows where tables exist | P5+ |
-| Policies/replays/photoscan | `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
+| Policies/replays/photoscan | consent-gated `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; consent-gated telemetry-reuse `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
 | Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
 | Platform | `GET/POST/PATCH /v1/listings`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/evals/brief25/latest` | P11/P12 |
 
@@ -64,7 +65,11 @@ are local P11 tables; submissions store the exact validator report and determini
 grade object used by the production admission gate.
 
 Migrations: forward-only SQL in `infra/migrations`, run on deploy; schema changes
-reviewed like code.
+reviewed like code. A new change must be exercised on a clean database and a populated
+supported predecessor, then rerun to prove checksum/idempotency behavior. Back up
+before deploy, stop the application if a migration fails, inspect
+`schema_migrations`, and roll forward with corrected additive SQL; never edit an
+already-recorded migration checksum.
 
 Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
 filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,
@@ -81,6 +86,45 @@ using GitHub OAuth and the Auth.js Postgres adapter schema. Local deterministic
 tests and automation can opt into header auth with `FORGE_DEV_AUTH=1`; public share
 reads never require authentication.
 
+User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
+transaction and returns format 1.2.0 across every explicit owner-scoped table,
+including consent history. It
+lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
+access/refresh/ID tokens, session and verification tokens, and provider keys.
+`DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
+user in a serializable transaction, removes user/derived rows explicitly rather than
+trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the
+bounded storage call succeeds (`FORGE_OBJECT_DELETE_TIMEOUT_MS`, default 15 seconds).
+Receipt 2.0.0 proves primary Postgres/object deletion plus lifecycle 1.0.0 user/object
+tombstone creation. It does not claim provider-backup deletion. Migrations
+`0017_data_lifecycle.sql`, `0018_authority_event_sequences.sql`, and
+`0019_authority_sequence_backfill.sql` add six versioned
+retention classes, time-bounded append-only holds, monotonic authority ordering,
+backup catalog/subject coverage, deletion tombstones, restore tests, and bounded
+pseudonymous lifecycle audit. `GET /v1/data-lifecycle/policy` exposes public defaults;
+`GET /v1/account/lifecycle` exposes only the owner's hold count and backup exposure.
+`deleteExpiredBackups` requires an idempotent physical provider adapter, rejects
+backup-reference subject-manifest drift, retains retry state, and reclaims a stale
+deletion claim after its bounded lease. Registration rejects a post-deletion capture
+and reopens tombstone completion for a valid late-discovered pre-deletion copy;
+`evaluateRestoreCandidate` rejects a mismatched/due copy and blocks any subject with
+an active tombstone before staging. The Postgres fixture proves this state machine;
+real encrypted backup/restore, provider receipts, RPO/RTO, and DR remain `OPS-005`.
+
+Consent follows D34. Migration `0016_user_consent_events.sql` adds an append-only
+ledger with current purpose/subject/policy/notice bindings and explicit previous-event
+links, plus owner/model provenance for opt-in pattern rows. `POST /v1/consents`
+accepts only the current version/hash published by `/v1/consents/policies`; grant and
+withdraw use an owner lock and subject ownership check. The same serializable action
+transaction rechecks active consent before photoscan processing, per-log telemetry
+sharing, model-pattern contribution, leaderboard publication, or telemetry-backed
+training. Generic `/v1/jobs` and direct `createJob` calls retain the photoscan/training
+guard. Withdrawal cancels matching queued/running jobs, makes the log private, or
+removes the pattern/leaderboard rows. It does not delete primary content or prove
+provider recall/backups; account deletion and D35 lifecycle authority own those
+boundaries. Consent and hold ledgers order same-timestamp events by monotonic
+`event_sequence`, not random IDs.
+
 Generation operations consume only approved review rows with non-blocked export
 policies. `POST /v1/generate/context` is retrieval-only; `POST /v1/generate` runs
 the validator-gated synthesis loop with deterministic multi-archetype templates by
@@ -96,10 +140,36 @@ diagnostics, the admitted/draft/rejected contract, the validator report, and the
 uses `text/event-stream` and emits start plus final complete/error events; per-pass
 slot/diagnostic streaming remains proposed for the richer studio UX.
 
+All generation-family entry points first apply the SEC-002 platform-exclusion guard.
+Refused briefs never reach retrieval, provider transport, model edit, or course
+construction. `generation_refusals` stores only hash/bucket/version/category/rule/
+surface/provider/archetype/owner metadata; there is deliberately no raw prompt or
+credential column. The write is part of the authority boundary: if it fails, the
+request returns unavailable and no downstream action runs. SSE start events expose a
+prompt hash rather than content.
+
 Generated-artifact persistence is in Postgres table `generated_artifacts`: prompt,
 provider, archetype/categories, seed, stable contract hash, prompt hash, final model
 ID, contract JSON, validator report, attempts, approved-catalog context, and D26
 model pins. Authenticated generation also creates a user-owned `model_registry` row.
+This allowed-generation history is distinct from the minimal refusal ledger; a
+prohibited request never creates a generated artifact.
+
+Migration `0015_generation_refusals.sql` is additive and has no backfill or object-
+storage impact. Expected storage is one small metadata row per refusal plus timestamp
+and owner indexes. Application rollback may stop writing new rows but must retain the
+audit table and its evidence; dropping or purging it requires an explicit privacy/
+legal retention decision and an export/backup first. A partially interrupted deploy
+is recovered by keeping the application stopped, restoring if the database itself is
+damaged, and rerunning the unchanged idempotent migration before traffic resumes.
+
+Lifecycle migrations are additive. Application rollback may stop creating new holds,
+backups, tombstones, or restore checks, but must retain their tables and continue
+restore suppression for any existing tombstone. Never drop the backup catalog or
+tombstones while a backup may still exist. Roll forward with the unchanged
+checksummed migration; breaking receipt/lifecycle changes require compatibility and
+decision records. Run `pnpm lifecycle:ops -- help` for the operator surface and
+[`../DATA-LIFECYCLE.md`](../DATA-LIFECYCLE.md) for the full state machine.
 
 ## 5. Job queue taxonomy
 
@@ -134,12 +204,30 @@ pino structured logs; Sentry; OpenTelemetry optional. Docker Compose on one
 Hetzner-class VM (gateway + Postgres + workers) + CDN for the studio; GPU burst-only.
 Backups: Postgres snapshots + object-storage lifecycle rules *(proposed)*.
 
+The local Compose Studio keeps `/v1` and `/auth` same-origin and sets
+`FORGE_GATEWAY_PROXY=http://gateway:8080` for Vite's server-side proxy. Do not point
+the browser directly at the gateway unless a reviewed CORS/preflight policy is added;
+the gateway intentionally exposes neither in the current local contract.
+
 ## 9. Testing
 
 Route schema round-trips (TypeBox gives this nearly free); admission-gate integration
 tests (invalid contract → 422 with diagnostics; draft semantics); share-URL
 anonymous-access test (P4 exit criterion); job idempotency tests; queue
-claim/fail-closed tests; poison-message handling.
+claim/fail-closed tests; poison-message handling. User-data changes additionally run:
+
+```bash
+pnpm verify:db
+docker compose -f infra/docker-compose.yml up -d minio
+pnpm --filter @forge/gateway test:object-storage
+```
+
+The first command builds the gateway, creates a complete owner fixture in populated
+Postgres, exports it, asserts credential redaction, deletes it, checks zero primary
+residue, and then proves all five consent grant/withdraw histories, effects,
+append-only enforcement, and deletion residue against real transactions. The object
+smoke uploads a unique payload through MinIO, invokes the
+production batch-deletion adapter, and requires a 404 afterward.
 
 ## 10. Open questions
 

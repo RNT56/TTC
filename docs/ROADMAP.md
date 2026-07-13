@@ -16,25 +16,27 @@ and D17 deletes an entire class of client/server consistency work.
 phase-level state only. Parallel execution order and subworker ownership live in
 [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
-**Recovery gate (2026-07-12): G0 closed.** Protected `main` has green local, PR,
-post-merge CI/security, and manual-nightly evidence. Release work now starts at G1;
-live/external/field claims remain gated independently.
+**Recovery/release gates: G0 closed 2026-07-12; G1 closed 2026-07-13.** Protected
+`main` has green local, PR, post-merge CI/security, and manual-nightly evidence.
+Standalone validator v0.1.0 was built and attested from protected `1093842`, published
+from an annotated tag, downloaded after publication, and independently verified.
+Live/external/field claims remain gated independently.
 
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(root AGENTS/docs, exact-check main ruleset, security scans, immutable Action pins, selected-Action allowlist, and machine-checked compatibility policy active 2026-07-12; repository metadata remains GOV work)* | days |
-| P0 Freeze & extract | ◑ *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; P0-007 variants require later build/rescope)* | 1.5–2.5 wk |
-| P1 Core & studio | ◑ *(5/6 criteria met 2026-06-12; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
-| P2 Data-driven models | ◑ *(implementation/full-suite criterion restored and remote G0 green 2026-07-12; validator publication remains G1/P2-001)* | 3 wk |
+| P0 Freeze & extract | ● **done** *(delivered vintage frozen in-tree and remotely tagged `prototype-final`; D32 closed historical variant parity honestly and XC-28 implements product variants separately)* | 1.5–2.5 wk |
+| P1 Core & studio | ◑ *(6/7 criteria met; open: 60 fps verification on real mid hardware — owner-runnable via the perf overlay)* | 6–8 wk |
+| P2 Data-driven models | ◑ *(implementation/full-suite criterion restored; validator v0.1.0 is published and independently verified, while v0.2 protected delivery and optional owner-credential registry publication remain P2-001 work)* | 3 wk |
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs; live ETL remains P3-004/R1 work)* | 2–3 wk |
-| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate restored to 25/25 on 2026-07-12; live extraction, refusal/privacy work, and external R1 proof remain gated)* | 3–4 wk |
+| P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate restored to 25/25; local SEC-002..005 refusal, export/deletion, consent, hold, tombstone, retention, and restore-suppression boundaries pass 2026-07-13; live extraction, production backup/DR operations, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
 | P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; live MuJoCo baseline and broader external corpus remain open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
 | P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(EnvSpec, generation, routes, course-to-task adapter, replay verification, and Studio fixture surface exist; community race and popular-course live proof remain open)* | 3–4 wk |
-| P11 Platform | ◑ *(2026-06-14: Auth.js GitHub, credits, user-owned models, listings/moderation reports, platform gates, policy signoffs, classroom assignments/submissions with validator grading, policy ONNX metadata, DfM/3MF metadata, owner-scoped object blobs, executable job queue, usage-beta rollups, vendor offer APIs, print quote/link APIs, and Studio commerce/gate rows; external provider integrations still env-gated)* | open |
+| P11 Platform | ◑ *(local platform contracts, D10 license-aware exports, D33 user export/primary deletion, D34 consent/withdrawal, and D35 retention/hold/tombstone/restore authority are implemented; production backup/DR, external users, policy process ownership, and provider handoffs remain gated)* | open |
 | P12 Maintenance twin | ◑ *(2026-06-15: wear models, crash windows, repair-sheet generation with vendor/print handoff links, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and quote-link surfacing; real field-log evidence remains open)* | 3 wk |
 
 Sequencing rationale (D1–D4): verify-first means P3 (catalog truth) ships and gets
@@ -61,14 +63,16 @@ licensing groundwork.
 **Scope:** Monolith tagged as executable reference; contract schema v2.1 (env,
 estimator, lockfile, license classes, collider compounds) **authored in
 `forge-contract` with schemars emission**; mechanical translation of both prototype
-models (humanoid + VX-2) and all 31 variants to JSON; **cargo + pnpm monorepo
+models (humanoid + VX-2) to JSON; the plan's 31-variant claim is closed as
+non-applicable because the delivered oracle predates that configurator (D32);
+product-equipped variants are delivered separately by XC-28/P1-014; **cargo + pnpm monorepo
 scaffold**; **core boundary API frozen** (plan §5.3).
 **Owning docs:** [`systems/core-runtime.md`](systems/core-runtime.md),
 [`systems/model-contract.md`](systems/model-contract.md),
 [`architecture.md`](architecture.md) §3.
 
 Exit criteria:
-- [x] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(2026-06-12: hrx7 125/2195/2581 ✓, vx2-hornet 73/924/1250 ✓, CI-guarded; "all 31 variants" applies only if the later configurator build is delivered — see P0-007)*
+- [x] Both contracts validate in a first-cut runner with part/face counts **byte-equivalent** to the monolith *(2026-06-12: hrx7 125/2195/2581 ✓, vx2-hornet 73/924/1250 ✓, CI-guarded; D32 closes the unavailable 31-variant historical claim without inventing source data)*
 - [x] Contract schema authored as Rust types in `forge-contract`; JSON Schema emitted via schemars *(2026-06-12)*
 - [x] TS types codegen from the Rust schema (schemars → TS pipeline working in CI) *(2026-06-12)*
 - [x] Cargo workspace + pnpm scaffold builds green in CI *(2026-06-12)*
@@ -94,6 +98,7 @@ Exit criteria:
 - [ ] 60 fps on mid hardware within the frame budget (≤ 6 ms render / ≤ 1.5 ms core tick / ≤ 4 ms Rapier / ≤ 2 ms UI) *(software-renderer floor measured 2026-06-12: render 0.5 ms · core ≤ 0.05 ms · 9 draw calls on SwiftShader — budgets hold with huge margin even without a GPU; the 60 fps claim still wants a real-mid-hardware run, owner-verifiable via the perf overlay)*
 - [x] `forge-validate` binary and WASM produce **bit-identical results** on both translated contracts *(2026-06-12 — golden-compare on hrx7 + vx2-hornet)*
 - [x] WASM facade ≤ 2 MB gz; humanoid bake ≤ 60 ms; incremental patch re-bake ≤ 10 ms *(2026-06-12: 298 KB gz · bake 2.0 ms · patch→re-bake 2.8 ms through the typed `Bake` handle; CI-gated via `scripts/budgets.mjs`)*
+- [x] Equipped-variant configurator truth *(2026-07-13: ModelSpec 2.2 explicit choice, selected-only physical consumers, stable source-pointer selection, consequence cards, and native/WASM/browser proof; P1-014/XC-28)*
 
 ## P2 — Data-driven models
 
@@ -105,7 +110,7 @@ family #1 — quadruped generator with leg-count/wheelbase/mass sliders.
 
 Exit criteria:
 - [x] A quadruped spec becomes a valid walking model with **zero hand-written code** *(2026-07-12: modular printable generator passes the full slider-grid admission test)*
-- [~] CI green on the full validation suite *(complete local suite is green on pinned Rust 1.96.0; PR/post-merge CI proof remains `REC-007`)*
+- [~] CI green on the full validation suite *(complete local suite is green on pinned Rust 1.96.0 and the v0.1 protected baseline is proven; protected v0.2 PR/post-merge proof remains)*
 - [x] Diagnostic format stable and machine-readable *(2026-06-12: check IDs + diagnostic JSON + CTR-008)*
 - [x] napi-rs hot-path vs binary-spawn measured in the gateway; outcome recorded (OD-08) *(2026-06-12: D22 — spawn stays; numbers in the decision row)*
 

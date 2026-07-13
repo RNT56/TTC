@@ -138,6 +138,7 @@ impl RapierWorld {
             .map(|node| (node.name.as_str(), node.parent.is_none()))
             .collect();
         let fitted_colliders_by_node = colliders.per_node.clone();
+        let physical_parts = spec.physical_parts_with_paths();
         let mut bodies_by_node = BTreeMap::new();
         let mut node_order = Vec::new();
         for body in &scene.bodies {
@@ -171,7 +172,7 @@ impl RapierWorld {
             let handle = *bodies_by_node
                 .get(&primitive.node)
                 .ok_or_else(|| RapierBuildError::MissingBody(primitive.node.clone()))?;
-            let part = &spec.parts[primitive.part_index];
+            let part = physical_parts[primitive.part_index].1;
             let baked_part = baked
                 .parts
                 .iter()

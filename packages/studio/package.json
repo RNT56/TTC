@@ -1,7 +1,7 @@
 {
   "name": "@forge/studio",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "FORGE browser studio \u2014 TypeScript face: thin consumer of core-baked buffers (D16).",
   "scripts": {

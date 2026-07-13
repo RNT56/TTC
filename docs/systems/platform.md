@@ -140,6 +140,25 @@ Postgres adapter schema, GitHub OAuth provider wiring, `/v1/me`, user-owned
 can use the explicit development header path; production auth is cookie/session
 based.
 
+Live locally 2026-07-13: `/v1/account/export` emits versioned user-data format 1.2.0
+from a repeatable owner-scoped snapshot with authenticated blob download endpoints
+and no OAuth/session/verification/provider secrets. Exact-confirmation
+`DELETE /v1/account` explicitly purges account, photo/model/generated/blob,
+telemetry/replay/policy/course/platform/classroom/job/maintenance rows, removes the
+S3-compatible payloads, and commits only after storage succeeds. Receipt 2.0.0 adds
+D35 user/object restore-suppression tombstones, explicit backup/tombstone deadlines,
+and no false physical-backup deletion claim. D34/SEC-004 adds independent,
+append-only, current-notice consent and withdrawal for photoscan objects, telemetry
+logs, model-pattern contribution, account leaderboard publication, and telemetry
+training reuse. Action-time checks are serializable and withdrawals cancel or remove
+future primary-plane eligibility. D35/SEC-005 adds six retention classes,
+time-bounded append-only holds, monotonic authority ordering, backup catalog/subject
+coverage, exact subject-manifest idempotency, provider deletion retry/stale-claim
+recovery, late-catalog tombstone reopening, and a mandatory manifest/tombstone restore
+gate. Hold mutation, backup registration/restore evaluation, and deletion share
+globally ordered transaction-scoped user/object authority locks. The real Postgres state machine
+is green; live encrypted backup/restore and DR remain `OPS-005`.
+
 ## 8. Dependencies
 
 Everything below it: Auth.js Postgres tables, registries, validation reports,

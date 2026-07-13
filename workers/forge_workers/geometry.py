@@ -10,6 +10,13 @@ from __future__ import annotations
 from typing import Any
 
 from forge_workers.external import run_json_command
+from forge_workers.license_exports import (
+    build_license_export_manifest,
+    copy_allowlisted_geometry_metadata,
+    filter_export_references,
+    manifest_sha256,
+    restricted_bom_rows,
+)
 from forge_workers.modal_adapter import cache_key
 from forge_workers.queue import Job, registry
 
@@ -18,23 +25,50 @@ def tessellate(payload: dict[str, Any]) -> dict[str, Any]:
     source = payload.get("sourceObjectId") or payload.get("assetRef")
     if not source:
         raise ValueError("occt.tessellate requires sourceObjectId or assetRef")
+    key = cache_key("occt.tessellate", payload)
+    license_manifest = build_license_export_manifest(payload, str(source))
+    license_manifest_sha256 = manifest_sha256(license_manifest)
     external = run_json_command(
         "FORGE_OCCT_TESSELLATE_CMD",
-        {"task": "occt.tessellate", **payload, "source": source},
+        {
+            "task": "occt.tessellate",
+            **payload,
+            "source": source,
+            "licenseExportManifest": license_manifest,
+            "licenseExportManifestSha256": license_manifest_sha256,
+        },
         timeout_s=float(payload.get("timeoutS", 1800)),
     )
     if external is not None:
-        if external.get("artifactKind") != "geometry":
-            external = {"artifactKind": "geometry", **external}
-        external.setdefault("source", source)
-        external.setdefault("cacheKey", cache_key("occt.tessellate", payload))
-        external.setdefault("provider", "external-occt")
-        return external
-    key = cache_key("occt.tessellate", payload)
+        result = {
+            "artifactKind": "geometry",
+            "source": source,
+            "cacheKey": key,
+            "provider": "external-occt",
+            **copy_allowlisted_geometry_metadata(external),
+            "exports": filter_export_references(license_manifest, key, external),
+            "licenseExport": license_manifest,
+            "licenseExportManifestSha256": license_manifest_sha256,
+        }
+        result["print"] = _print_handoff(
+            payload,
+            source,
+            result["exports"],
+            license_manifest,
+            result.get("dfm"),
+        )
+        return result
     orientation = _orientation(payload)
     profile = _print_profile(payload)
     dfm_artifact_id = f"{key}/dfm-report.json"
-    three_mf_key = f"{key}/print.3mf"
+    exports = filter_export_references(license_manifest, key)
+    dfm = {
+        "process": payload.get("process", "fdm"),
+        "pass": True,
+        "orientation": orientation,
+        "artifactId": dfm_artifact_id,
+        "notes": [],
+    }
     return {
         "artifactKind": "geometry",
         "source": source,
@@ -53,41 +87,63 @@ def tessellate(payload: dict[str, Any]) -> dict[str, Any]:
             "budget": {"perNode": 8, "perModel": 24},
             "overflowNodes": [],
         },
-        "dfm": {
-            "process": payload.get("process", "fdm"),
-            "pass": True,
-            "orientation": orientation,
-            "artifactId": dfm_artifact_id,
-            "notes": [],
-        },
-        "exports": {
-            "mesh": f"{key}/mesh.glb",
-            "step": f"{key}/source.step",
-            "threeMf": three_mf_key,
-        },
-        "print": {
-            "readyForQuote": True,
-            "handoff": {"mode": "quote-link", "directCheckout": False},
-            "threeMfArtifact": {
-                "objectKey": three_mf_key,
-                "orientation": orientation,
-                "profile": profile,
-                "dfmReport": dfm_artifact_id,
-            },
-            "bomSection": [
-                {
-                    "kind": "printed-part",
-                    "source": source,
-                    "quantity": max(1, _int(payload.get("quantity"), 1)),
-                    "process": profile["process"],
-                    "material": profile["material"],
-                    "profileId": profile["id"],
-                    "dfmArtifactId": dfm_artifact_id,
-                    "threeMfObjectKey": three_mf_key,
-                }
-            ],
-        },
+        "dfm": dfm,
+        "exports": exports,
+        "licenseExport": license_manifest,
+        "licenseExportManifestSha256": license_manifest_sha256,
+        "print": _print_handoff(payload, source, exports, license_manifest, dfm),
         "fixture": True,
+    }
+
+
+def _print_handoff(
+    payload: dict[str, Any],
+    source: Any,
+    exports: dict[str, str],
+    license_manifest: dict[str, Any],
+    dfm: Any,
+) -> dict[str, Any]:
+    if not license_manifest["fullGeometryAllowed"]:
+        return {
+            "readyForQuote": False,
+            "handoff": {
+                "mode": "source-link",
+                "directCheckout": False,
+                "reason": "restricted geometry is replaced by a fit envelope and cannot be printed",
+            },
+            "bomSection": restricted_bom_rows(license_manifest),
+        }
+
+    orientation = _orientation(payload)
+    profile = _print_profile(payload)
+    dfm_record = dfm if isinstance(dfm, dict) else {}
+    dfm_artifact_id = dfm_record.get("artifactId")
+    dfm_pass = dfm_record.get("pass") is True
+    three_mf_key = exports.get("threeMf")
+    ready = dfm_pass and isinstance(three_mf_key, str) and bool(three_mf_key)
+    return {
+        "readyForQuote": ready,
+        "handoff": {"mode": "quote-link", "directCheckout": False},
+        "threeMfArtifact": {
+            "objectKey": three_mf_key,
+            "orientation": orientation,
+            "profile": profile,
+            "dfmReport": dfm_artifact_id,
+            "licenseManifest": exports["licenseManifest"],
+        },
+        "bomSection": [
+            {
+                "kind": "printed-part",
+                "source": source,
+                "quantity": max(1, _int(payload.get("quantity"), 1)),
+                "process": profile["process"],
+                "material": profile["material"],
+                "profileId": profile["id"],
+                "dfmArtifactId": dfm_artifact_id,
+                "threeMfObjectKey": three_mf_key,
+                "licenseManifest": exports["licenseManifest"],
+            }
+        ],
     }
 
 

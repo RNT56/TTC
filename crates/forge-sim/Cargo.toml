@@ -7,9 +7,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-forge-contract = { version = "0.1.0", path = "../forge-contract" }
-forge-num = { version = "0.1.0", path = "../forge-num" }
-forge-geometry = { version = "0.1.0", path = "../forge-geometry" }
+forge-contract = { version = "0.2.0", path = "../forge-contract" }
+forge-num = { version = "0.2.0", path = "../forge-num" }
+forge-geometry = { version = "0.2.0", path = "../forge-geometry" }
 rapier3d = { version = "0.33.0", default-features = false, features = ["dim3", "f32", "std", "enhanced-determinism"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

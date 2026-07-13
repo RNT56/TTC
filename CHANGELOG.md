@@ -18,6 +18,30 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Publish and independently verify validator v0.1.0
+**Session:** Codex agent · branch `codex/v02-contract-security-stack` · **Phase:** G1 ·
+**TODO items:** GOV-008, GOV-009, OPS-011
+**Done:** Protected-main manual release run `29241883791` passed the release contract,
+Linux, Windows, macOS Intel, WASM, both SPDX SBOMs, checksums, downloaded-payload
+verification, provenance attestation, and aggregate upload at exact commit `1093842`.
+Its downloaded aggregate independently passed checksums, artifact SPDX, the macOS
+binary/version/canonical example, and a clean WASM consumer. Created and pushed
+annotated tag `v0.1.0`; tag run `29244972303` rebuilt every platform and published the
+non-draft nine-asset GitHub Release. Downloaded every public asset after publication
+and repeated the same independent binary/WASM verifier successfully. Rebuilt the
+public-surface/XC-28/SEC-001..005 v0.2 stack on exact protected main without duplicate
+pre-squash release commits; its full 31-step and Postgres/pgvector gates pass.
+**Changed:** canonical agent boundary, project/phase/task/execution/release/risk/v0.2
+living documentation, plus the protected v0.2 integration history.
+**Decisions:** crates.io/npm publication is explicitly deferred because no
+owner-scoped registry credentials or publication decision were supplied; the verified
+GitHub Release is the G1 publication boundary.
+**Next:** deliver the green v0.2 stack through the exact-check ruleset, then continue
+SEC-006 and later Wave 2 work without overstating live/provider/field maturity.
+**Blockers:** no G1 blocker remains. Qualified trademark review, Linux Desktop's
+time-bounded glib route, production providers/operations, external users, and hardware
+evidence remain separate tasks.
+
 ## 2026-07-13 — Prove the corrected release bundle on and off CI
 **Session:** Codex agent · branch `codex/g1-release-runner` · **Phase:** G1 ·
 **TODO items:** GOV-008, OPS-011
@@ -71,6 +95,255 @@ deliver through protected `main`, download and independently verify the aggregat
 artifact, then create `v0.1.0`.
 **Blockers:** GOV-008 remains open until the corrected aggregate verifier and
 downloaded artifact pass; native runner migration itself is now remotely proven.
+
+## 2026-07-13 — Make deletion survive holds, backups, and restore
+**Session:** Codex agent · branch `codex/sec005-retention-backups` · **Phase:** P4/P11 ·
+**TODO items:** SEC-005
+**Done:** Added data-lifecycle format/policy 1.0.0 with six bounded retention classes,
+time-bounded append-only user/object/audit legal holds, monotonic consent/hold event
+sequences, pseudonymous deletion tombstones, exact backup subject manifests,
+fail-closed restore evaluation, retryable provider deletion with stale-claim recovery,
+post-deletion capture refusal, late-catalog tombstone reopening, and dry-run-first
+primary retention. Hold placement/release, backup registration/restore evaluation,
+and deletion share globally ordered transaction-scoped pseudonymous subject locks;
+account deletion checks the owner and every object so concurrent or object-specific
+authority cannot race the purge.
+Authenticated export 1.2.0 adds redacted hold/backup state, deletion receipt 2.0.0
+records restore suppression without claiming provider erasure, and public/account
+lifecycle endpoints expose only bounded state. The provider-specific backup adapter,
+encrypted production copies, deletion receipts, sandbox restore, monitoring, and
+measured RPO/RTO remain explicitly separate under OPS-005.
+**Evidence:** `pnpm verify` passes all 31 non-DB gates with 12 compatibility surfaces,
+45/45 gateway tests using the real validator with no skips, Brief-25 at 25/25, and
+100/100 worker tests. Expanded `pnpm verify:db` passes on the populated predecessor;
+a clean scratch database applies all 19 migrations, passes seed/export/deletion/
+consent/lifecycle assertions, and skips every unchanged checksummed migration on
+rerun. A dedicated upgrade fixture starts from migrations 0001..0018, deliberately
+reverses same-time grant/withdraw and place/release sequence values, then proves 0019
+reconstructs both causal chains and reinstates the unique indexes/append-only
+triggers. The lifecycle fixture proves user and object holds, causal release, exact
+backup subject idempotency, post-delete capture refusal, late-catalog reopening,
+pre-deletion restore refusal, bounded adapter failure, stale-claim recovery,
+tombstone finalization/expiry, user/audit retention holds, causal expiry of closed
+hold chains, 400-day restore-test/deleted-catalog/audit expiry, redaction, mutation
+rejection, and zero fixture residue. The exact documented
+`pnpm lifecycle:ops -- help` command passes, and its dry-run retention command reports
+every deletion/finalization class without mutation. Official GDPR Articles 5/17 and
+NIST SP 800-209/SP 1339 were rechecked as primary policy/recovery references; product
+defaults still require jurisdiction-specific owner/counsel review.
+**Changed:** migrations 0017..0019; gateway lifecycle/account/consent/server code and
+tests; lifecycle operator and populated/clean Postgres assertions; compatibility
+matrix/checker; root `AGENTS.md`; D35; data-lifecycle, security, architecture,
+best-practice, gateway/platform, state, roadmap, execution, task, risk, release, and
+v0.2 release documentation.
+**Decisions:** D35 separates primary deletion plus deterministic restore suppression
+from physical provider-backup and disaster-recovery proof.
+**Next:** independently download and verify protected-main release run `29241883791`;
+only then create annotated `v0.1.0`, verify the published GitHub Release, and deliver
+the ordered XC-28/SEC-001..005 v0.2 stack through protected PRs.
+**Blockers:** no local SEC-005 blocker. Production backup/DR remains gated by
+`OPS-005`; v0.2 delivery remains ordered behind G1 publication proof. Protected
+`main` is `1093842` after PR #29 with green post-merge CI/security; manual release
+run `29241883791` is still in progress at this entry.
+
+## 2026-07-13 — Make user-content consent explicit and revocable
+**Session:** Codex agent · branch `codex/sec004-consent-ledger` · **Phase:** P4/P5/P7/P10/P11 ·
+**TODO items:** SEC-004
+**Done:** Added consent-ledger format 1.0.0 as immutable grant/withdraw events for
+photoscan processing per object, telemetry sharing and training reuse per log,
+pattern contribution per model, and leaderboard publication per account. Every event
+binds an owned subject, current policy version and notice hash, previous event,
+bounded evidence, and idempotency. The gateway locks the owner and rechecks active
+consent in the same serializable transaction as each action; generic and direct
+photoscan/training job entry points retain the same guard. Withdrawal cancels
+affected queued/running work, makes telemetry private, and removes pattern or
+leaderboard eligibility. Worker completion now requires the row to remain running,
+so a late result cannot overwrite cancellation or materialize an artifact.
+
+Studio adds an expandable privacy-authority panel with the exact five notices,
+independent current state, explicit grant/withdraw controls, owned-photo requirements,
+and telemetry share, model-pattern, and telemetry-training actions. User-data export
+is additively bumped to 1.1.0 with the complete consent history; account deletion
+explicitly purges it. No consent or withdrawal claims provider recall, retention/
+legal-hold expiry, tombstone completion, or backup erasure.
+**Evidence:** `pnpm verify` passes all 31 gates with 11 compatibility surfaces,
+41/41 gateway tests using the real validator with no skips, Brief-25 at 25/25, and
+100/100 worker tests. The worker suite also passes under Python 3.12.7. Expanded
+`pnpm verify:db` passes on both a populated predecessor and a clean scratch database:
+all 16 migrations, five grant/withdraw histories and effects, append-only rejection,
+export/delete zero residue, and an unchanged checksum/idempotency rerun are green.
+Studio typecheck and production build pass. A real Chromium session against the
+local gateway and Postgres renders all five notices, grants account leaderboard
+publication to `1 active`, then withdraws it back to `0 active` with the explicit
+withdrawal confirmation. That smoke exposed and fixed the Compose Studio profile's
+cross-origin gateway URL: browser calls now stay same-origin and Vite proxies to the
+gateway inside the Compose network.
+**Changed:** migration 0016; gateway consent/account/job/server code and tests;
+worker cancellation/materialization guard and tests; Studio gateway client and
+privacy controls; compatibility matrix/checker; database acceptance scripts; root
+`AGENTS.md`; Compose Studio proxy; D34; architecture, best-practice, security, gateway/worker/Studio/
+platform, state, roadmap, execution, task, risk, release, and v0.2 release docs.
+**Decisions:** D34 supersedes D2's pattern opt-out/marketplace-default mechanic with
+explicit per-model opt-in while retaining D2's open-core boundary.
+**Next:** implement `SEC-005` retention, legal-hold, tombstone, backup-expiry, and
+restore/deletion proof without weakening the primary deletion or consent boundaries.
+**Blockers:** no local SEC-004 blocker; protected v0.2 delivery remains ordered
+behind G1 release proof and the stacked XC-28/SEC-001/SEC-002/SEC-003 commits.
+Corrected G1 branch run `29236010204` and its independently downloaded aggregate
+are green; protected-main rerun, tag, and GitHub Release proof remain.
+
+## 2026-07-13 — Make user export and primary deletion complete
+**Session:** Codex agent · branch `codex/sec003-user-export-delete` · **Phase:** P4/P11 ·
+**TODO items:** SEC-003
+**Done:** Added authenticated user-data export format 1.0.0 across account metadata,
+generated artifacts, models/shares, object blobs/photoscan, jobs, replays, policies,
+courses/leaderboards, marketplace/classroom activity, telemetry/maintenance, quote
+requests, refusals, and pattern contributions. Export reads a repeatable snapshot,
+points binary payloads to authenticated blob-download routes, and excludes OAuth
+access/refresh/ID tokens, session/verification tokens, and provider keys.
+Exact-confirmation account deletion now locks the owner in a serializable transaction,
+explicitly purges rows that user deletion previously orphaned through `SET NULL`,
+batches S3-compatible payload deletion before commit, rolls back database changes on
+storage failure, and returns primary-only deletion receipt 1.0.0.
+**Evidence:** `pnpm verify` passes all 31 gates with 10 compatibility surfaces,
+36/36 gateway tests using the real validator with no skips, Brief-25 at 25/25, and
+99/99 worker tests. Expanded `pnpm verify:db` builds the gateway, exports a populated
+owner fixture, proves secret exclusion, deletes it, and finds zero named primary
+residue. `pnpm --filter @forge/gateway test:object-storage` uploads a unique MinIO
+object, exercises the production delete adapter, and requires a 404 afterward.
+**Changed:** gateway account-data/transaction/object-storage code and route tests;
+Postgres and MinIO acceptance scripts; compatibility matrix/checker; root
+`AGENTS.md`; D33; best-practice, security, gateway/platform, state, roadmap,
+execution, task, risk, release, and v0.2 release-note documentation.
+**Decisions:** D33 makes export and primary deletion explicit, versioned,
+secret-minimizing, and fail-closed, while reserving consent and backup lifecycle for
+SEC-004/005.
+**Next:** implement `SEC-004` consent/version/withdrawal records and enforcement on
+photoscan processing, telemetry sharing, pattern contribution, leaderboards, and
+training reuse, then close SEC-005 retention/hold/tombstone/backup proof.
+**Blockers:** no local SEC-003 blocker; protected v0.2 delivery remains ordered behind
+the queued G1 release proof and stacked XC-28/SEC-001/SEC-002 commits. A primary
+deletion receipt intentionally does not claim backup erasure.
+
+## 2026-07-13 — Refuse prohibited briefs before execution
+**Session:** Codex agent · branch `codex/sec002-prohibited-briefs` · **Phase:** P4/P10 ·
+**TODO items:** SEC-002
+**Done:** Added a versioned deterministic platform-exclusion guard for weapons,
+targeting, munitions, and interdiction briefs before catalog/pattern retrieval,
+template or Anthropic synthesis, model edits, and course generation. The five HTTP
+surfaces log a minimal refusal record before execution; direct generation APIs also
+assert independently. Bounded explicit exclusions such as “no targeting modules”
+remain valid, while mixed/obfuscated requests remain refused. Responses and SSE
+events never echo the refused prompt or provider key, and audit-store failure prevents
+all downstream work.
+**Evidence:** `pnpm verify` passes all 31 local gates with 8 compatibility surfaces,
+32/32 gateway tests with the real validator and no skips, Brief-25 at 25/25, and
+99/99 worker tests. `pnpm verify:db` applies all 15 migrations to the populated
+Compose database; a clean scratch database passes migration/seed/invariants, and an
+unchanged rerun skips every checksum-pinned migration. Schema assertions prove that
+`generation_refusals` has no raw-prompt or credential columns. Focused tests cover
+benign robotics language, explicit safety exclusions, mixed and spaced/punctuated
+evasion, all guarded routes, direct calls, provider non-invocation, redaction, and
+audit failure.
+**Changed:** canonical agent/best-practice/compatibility/release guidance, gateway
+generation/server/safety code and tests, additive migration 0015 plus DB invariants,
+and the security, generation, data, roadmap, state, task, and v0.2 release documents.
+**Decisions:** none; implements the existing absolute platform exclusion without
+changing its scope.
+**Next:** implement `SEC-003` user-scoped export/deletion as the next dependency-
+complete privacy slice while the G1 v0.1 release proof and protected v0.2 delivery
+remain ordered ahead of publication.
+**Blockers:** no local SEC-002 blocker; protected delivery remains dependency-ordered
+behind the v0.1 release and the stacked XC-28/SEC-001 v0.2 work.
+
+## 2026-07-13 — Enforce lawful manufacturing exports
+**Session:** Codex agent · branch `codex/sec001-license-exports` · **Phase:** P3/P11 ·
+**TODO items:** SEC-001, P11-008
+**Done:** Made D10 authoritative in the gateway fixture and Python worker export
+paths. Every assembly asset now requires compatible ledger evidence; the most
+restrictive asset derives the assembly policy; attribution binds a versioned 1.0
+manifest; and no-redistribution/view-only geometry becomes a dimensioned envelope
+with datum ports and an HTTPS BOM link-out instead of a printable artifact. External
+OCCT commands receive the manifest/hash, must prove attribution embedding or
+restricted-geometry exclusion, and can return only allowlisted metadata and safe
+artifact references.
+**Evidence:** `pnpm verify` passes all 31 local gates with 8 compatibility surfaces,
+27/27 gateway tests with the real validator and no skips, and 99/99 worker tests.
+Focused tests cover open/attribution/restricted and mixed assemblies, missing and
+contradictory ledger data, incomplete envelopes/datums, unsafe URLs, manifest proof
+mismatch, and an adversarial provider attempting to smuggle raw restricted geometry.
+**Changed:** canonical agent entry, compatibility matrix/checker, gateway license
+export fixture, worker license/export modules and tests, release notes, and owning
+catalog/compute/security/state/roadmap documentation.
+**Decisions:** none; implements active D10 and D31 without changing their meaning.
+**Next:** implement `SEC-002` prohibited-brief refusal and minimal safe logging while
+the dependency-ordered G1 v0.1 release proof remains queued.
+**Blockers:** protected delivery remains ordered behind G1/v0.1 and GitHub-hosted
+runner availability; live OCCT artifact inspection remains separate sandbox evidence,
+not a claim made by this deterministic/adapter slice.
+
+## 2026-07-13 — Make equipped alternatives physically sovereign
+**Session:** Codex agent · branch `codex/xc28-equipped-variants` · **Phase:** P1/P3 ·
+**TODO items:** P1-014, XC-28, P2-001
+**Done:** Added ModelSpec 2.2 `equippedVariantId` with deterministic single-option
+migration and fail-closed multi-option migration; made geometry, mass, simulation,
+colliders, lockfile resolution, validation, and BOM consume only the equipped
+alternative; added stable source JSON Pointers to baked parts; and shipped Studio
+variant cards that patch only the equipped ID, disclose inline/catalog consequences,
+and preserve selection by source identity. Migrated the proof fixture and generation
+template, regenerated schema/TypeScript/WASM artifacts, and moved the pre-1.0 package
+boundary to 0.2.0 with release/migration notes.
+**Evidence:** `pnpm verify` passes all 31 required local gates: 7 compatibility
+surfaces, full Rust/TS/gateway suites, 25/25 Brief-25, native/fresh/committed WASM
+parity, 9/9 fuzz outcomes, packaging of `@forge/validate-wasm@0.2.0`, and 89 worker
+tests. Focused tests cover missing/unknown/duplicate choices and selected-only
+geometry, mass, catalog, BOM, lockfile, Rapier/collider, and URDF/MJCF behavior. A
+real-browser WASM switch changed an
+inline payload from 334 to 346 faces and recomputed AUW 482→488 g, TWR 4.67→4.61,
+and endurance 21.6→21.2 min while the validator re-admitted the document.
+**Changed:** canonical agent entry, package/version/compatibility surfaces, Rust
+contract/geometry/sim/validator/WASM crates, generated schema/types/WASM, gateway
+generation, Studio scene/configurator, proof/fuzz/export fixtures, system/living docs,
+and v0.2 release notes.
+**Decisions:** no new decision; implements D32 and the compatibility-governed minor
+boundary already required by D31/GOV-007.
+**Next:** complete and publish v0.1.0 through the queued runner-remediation lane, then
+rebase this v0.2 slice onto protected `main`, rerun all gates, and deliver it through
+the exact-check ruleset.
+**Blockers:** no local XC-28 blocker; protected delivery is dependency-ordered behind
+the still-queued G1 v0.1 release proof so v0.2 cannot overtake the first release.
+
+## 2026-07-13 — Separate historical parity from equipped variants
+**Session:** Codex agent · branch `codex/g1-public-surfaces` · **Phase:** P0/P1 ·
+**TODO items:** P0-007, P1-014, XC-28
+**Done:** Closed the impossible 31-variant extraction claim against the complete,
+byte-frozen pre-configurator oracle without fabricating source data; identified that
+v2.1 consumers currently count every alternative as equipped; and created one stable
+cross-surface task for explicit selected-variant semantics.
+**Changed:** decision record, phase/task ledgers, project-state counts, ModelSpec and
+Studio system contracts, and changelog.
+**Decisions:** D32 makes the delivered oracle the complete historical parity boundary
+and requires exactly one explicit equipped alternative before variant behavior ships.
+**Next:** Implement XC-28 as a compatibility-governed contract/migration/validator/
+simulation/BOM/Studio slice after the G1 validator release evidence is complete.
+**Blockers:** no historical source blocker remains; implementation is dependency-
+ordered behind the active G1 release proof.
+
+## 2026-07-13 — Establish honest public project surfaces
+**Session:** Codex agent · branch `codex/g1-public-surfaces` · **Phase:** G1 ·
+**TODO items:** PRE-004, PRE-005, GOV-010, DOC-004, DOC-006
+**Done:** Set a bounded prototype description, README homepage, and 12 repository
+topics; corrected the stale red-gate README claim and added live main CI/security
+badges; added security, contribution, support, conduct, issue/PR, and debugging
+surfaces; and recorded exact-name USPTO/EUIPO searches with zero `ForgedTTC` results.
+**Changed:** live GitHub metadata, README, community health files/templates,
+debugging and trademark evidence, docs index, project state, TODO, and changelog.
+**Decisions:** exact-name absence is preliminary evidence only; confusing-similarity,
+classes, common-law use, geography, and filing remain professional legal work.
+**Next:** Deliver these surfaces after the compatibility/release stack, then curate a
+real first-good-issue and obtain launch-stage trademark review before broad promotion.
+**Blockers:** qualified trademark clearance is external; current exact-name search
+found no conflict.
 
 ## 2026-07-12 — Build the release artifact verification chain
 **Session:** Codex agent · branch `codex/g1-release-artifacts` · **Phase:** G1 ·

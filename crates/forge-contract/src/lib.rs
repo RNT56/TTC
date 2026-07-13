@@ -23,7 +23,7 @@ pub use migrations::{migrate, migrate_with_report, MigrationError, MigrationRepo
 
 /// Contract schema version exposed by validators and emitted schemas.
 /// `meta.version` remains the semver of the model document itself.
-pub const SCHEMA_VERSION: &str = "2.1.0";
+pub const SCHEMA_VERSION: &str = "2.2.0";
 
 // ---------------------------------------------------------------------------
 // meta
@@ -400,7 +400,21 @@ pub struct Slot {
     pub mount_nodes: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub joint: Option<Joint>,
+    /// The sole alternative that contributes physical parts, catalog refs,
+    /// ports, simulation values, and BOM rows (D32/XC-28).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub equipped_variant_id: Option<String>,
     pub variants: Vec<Variant>,
+}
+
+impl Slot {
+    /// Resolve the explicitly equipped alternative. Validation owns the
+    /// missing/unknown-ID diagnostic; consumers must never fall back to array
+    /// order or treat every alternative as installed.
+    pub fn equipped_variant(&self) -> Option<&Variant> {
+        let equipped = self.equipped_variant_id.as_deref()?;
+        self.variants.iter().find(|variant| variant.id == equipped)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -880,10 +894,11 @@ fn ref_parts(component_ref: &str) -> Result<(&str, semver::Range), String> {
 
 fn each_ref(spec: &ModelSpec, mut f: impl FnMut(&str)) {
     for slot in &spec.slots {
-        for v in &slot.variants {
-            if let Some(r) = &v.component_ref {
-                f(r);
-            }
+        if let Some(r) = slot
+            .equipped_variant()
+            .and_then(|variant| variant.component_ref.as_deref())
+        {
+            f(r);
         }
     }
     for m in &spec.sim.motors {
@@ -1045,10 +1060,11 @@ pub fn resolve_lockfile(spec: &ModelSpec, catalog: &dyn CatalogSource) -> Vec<Un
         }
     };
     for slot in &spec.slots {
-        for v in &slot.variants {
-            if let Some(r) = &v.component_ref {
-                check(r);
-            }
+        if let Some(r) = slot
+            .equipped_variant()
+            .and_then(|variant| variant.component_ref.as_deref())
+        {
+            check(r);
         }
     }
     for m in &spec.sim.motors {
@@ -1063,6 +1079,43 @@ impl ModelSpec {
     /// Look up a skeleton node by name.
     pub fn node(&self, name: &str) -> Option<&Node> {
         self.skeleton.iter().find(|n| n.name == name)
+    }
+
+    /// Physical parts in deterministic bake order, paired with their JSON
+    /// Pointer source. Base parts come first, followed by inline parts from
+    /// each explicitly equipped slot alternative. Unselected alternatives
+    /// are configuration choices, not installed matter.
+    pub fn physical_parts_with_paths(&self) -> Vec<(String, &Part)> {
+        let mut physical = Vec::with_capacity(self.parts.len());
+        physical.extend(
+            self.parts
+                .iter()
+                .enumerate()
+                .map(|(index, part)| (format!("/parts/{index}"), part)),
+        );
+        for (slot_index, slot) in self.slots.iter().enumerate() {
+            let Some(equipped_id) = slot.equipped_variant_id.as_deref() else {
+                continue;
+            };
+            let Some((variant_index, variant)) = slot
+                .variants
+                .iter()
+                .enumerate()
+                .find(|(_, variant)| variant.id == equipped_id)
+            else {
+                continue;
+            };
+            let Some(parts) = variant.parts.as_ref() else {
+                continue;
+            };
+            physical.extend(parts.iter().enumerate().map(|(part_index, part)| {
+                (
+                    format!("/slots/{slot_index}/variants/{variant_index}/parts/{part_index}"),
+                    part,
+                )
+            }));
+        }
+        physical
     }
 }
 

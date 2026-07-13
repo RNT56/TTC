@@ -1,6 +1,6 @@
 [package]
 name = "forge-contract"
-description = "FORGE Model Contract v2.1 — serde types, schemars JSON-Schema emission, lockfile resolution"
+description = "FORGE Model Contract v2.2 — serde types, schemars JSON-Schema emission, lockfile resolution"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

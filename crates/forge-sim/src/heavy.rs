@@ -36,9 +36,10 @@ pub struct ColliderFitReport {
 
 pub fn fit_compound_colliders(spec: &ModelSpec, baked: &BakedModel) -> ColliderFitReport {
     let per_node_budget = spec.sim.colliders.budget.per_node as usize;
+    let physical_parts = spec.physical_parts_with_paths();
     let mut by_node: BTreeMap<String, Vec<ColliderPrimitive>> = BTreeMap::new();
     for baked_part in &baked.parts {
-        let part = &spec.parts[baked_part.part_index];
+        let part = physical_parts[baked_part.part_index].1;
         if matches!(part.collision, CollisionPolicy::None) {
             continue;
         }

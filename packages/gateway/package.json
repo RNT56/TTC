@@ -1,14 +1,15 @@
 {
   "name": "@forge/gateway",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "FORGE gateway - thin Fastify API; spawns the forge-validate binary (process isolation + bit-equality with CI, D17).",
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
-    "test": "node --import tsx --test test/server.test.ts"
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:object-storage": "node scripts/object-delete-smoke.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.2",

@@ -22,6 +22,7 @@ export type QualityTier = "high" | "medium" | "low";
 
 export interface PartPick {
   partIndex: number;
+  sourcePath: string;
   node: string;
   material: string;
   color: string;
@@ -32,6 +33,7 @@ interface PartHandle {
   instanceId: number;
   node: string;
   partIndex: number;
+  sourcePath: string;
   material: string;
   color: string;
   explode?: BakedPart["explode"];
@@ -306,6 +308,7 @@ export class StudioScene {
           instanceId,
           node: part.node,
           partIndex: part.part_index,
+          sourcePath: part.source_path,
           material: part.material,
           color: part.color,
           explode: part.explode,
@@ -408,7 +411,13 @@ export class StudioScene {
     const h = this.parts.find((p) => p.batch === hit.object && p.instanceId === hit.batchId);
     if (!h) return null;
     this.setSelected(h.partIndex);
-    return { partIndex: h.partIndex, node: h.node, material: h.material, color: h.color };
+    return {
+      partIndex: h.partIndex,
+      sourcePath: h.sourcePath,
+      node: h.node,
+      material: h.material,
+      color: h.color,
+    };
   }
 
   /** Outline the part (inverted hull, P1-012); null clears. */

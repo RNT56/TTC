@@ -52,7 +52,7 @@ Severity: `error` blocks admission; `warn` admits with notice.
 |---|---|---|
 | CTR-001 | schema validity | document validates against schema version |
 | CTR-002 | port resolution | all ports resolved or explicitly capped |
-| CTR-003 | slot defaults | every slot has a valid default variant |
+| CTR-003 | equipped slot semantics | every non-empty slot names exactly one unique equipped variant; variant IDs are unique and each alternative carries exactly one of inline parts or `componentRef` |
 | CTR-004 | explode coverage | ≥ 80 % of parts; ≥ 1 leader-flagged subassembly per slot |
 | CTR-005 | materials | a material on every part |
 | CTR-006 | lockfile | every componentRef resolves to an immutable catalog revision |

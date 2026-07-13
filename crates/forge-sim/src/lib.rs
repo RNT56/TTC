@@ -447,22 +447,23 @@ fn first_catalog_component(
     category: &str,
 ) -> Option<CatalogComponent> {
     for slot in &spec.slots {
-        for variant in &slot.variants {
-            let Some(component_ref) = &variant.component_ref else {
-                continue;
-            };
-            let Some(pin) = spec.lockfile.get(component_ref) else {
-                continue;
-            };
-            let Some((id, _)) = pin.rsplit_once('@') else {
-                continue;
-            };
-            let Some(component) = catalog.component(id) else {
-                continue;
-            };
-            if component.category == category {
-                return Some(component);
-            }
+        let Some(component_ref) = slot
+            .equipped_variant()
+            .and_then(|variant| variant.component_ref.as_ref())
+        else {
+            continue;
+        };
+        let Some(pin) = spec.lockfile.get(component_ref) else {
+            continue;
+        };
+        let Some((id, _)) = pin.rsplit_once('@') else {
+            continue;
+        };
+        let Some(component) = catalog.component(id) else {
+            continue;
+        };
+        if component.category == category {
+            return Some(component);
         }
     }
     None
@@ -472,19 +473,20 @@ fn catalog_equipped_mass_g(spec: &ModelSpec, catalog: &dyn CatalogSource) -> f64
     let mut total = 0.0;
     for slot in &spec.slots {
         let quantity = slot.mount_nodes.len().max(1) as f64;
-        for variant in &slot.variants {
-            let Some(component_ref) = &variant.component_ref else {
-                continue;
-            };
-            let Some(pin) = spec.lockfile.get(component_ref) else {
-                continue;
-            };
-            let Some((id, _)) = pin.rsplit_once('@') else {
-                continue;
-            };
-            if let Some(component) = catalog.component(id) {
-                total += component.mass_g * quantity;
-            }
+        let Some(component_ref) = slot
+            .equipped_variant()
+            .and_then(|variant| variant.component_ref.as_ref())
+        else {
+            continue;
+        };
+        let Some(pin) = spec.lockfile.get(component_ref) else {
+            continue;
+        };
+        let Some((id, _)) = pin.rsplit_once('@') else {
+            continue;
+        };
+        if let Some(component) = catalog.component(id) {
+            total += component.mass_g * quantity;
         }
     }
     total
@@ -595,7 +597,87 @@ impl ReplayHeader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use forge_contract::validate_shape;
+    use forge_contract::{validate_shape, CatalogComponent};
+
+    struct VariantCatalog;
+    impl CatalogSource for VariantCatalog {
+        fn has_revision(&self, component_id: &str, revision: &str) -> bool {
+            matches!(
+                (component_id, revision),
+                ("cmp_selected", "1.0.0") | ("cmp_spare", "1.0.0")
+            )
+        }
+
+        fn component(&self, component_id: &str) -> Option<CatalogComponent> {
+            let (category, mass_g) = match component_id {
+                "cmp_selected" => ("battery", 25.0),
+                "cmp_spare" => ("motor", 900.0),
+                _ => return None,
+            };
+            Some(CatalogComponent {
+                id: component_id.to_string(),
+                category: category.to_string(),
+                mass_g,
+                ..CatalogComponent::default()
+            })
+        }
+    }
+
+    fn catalog_variant_spec() -> ModelSpec {
+        validate_shape(
+            &serde_json::json!({
+              "meta":{"id":"catalog-variants","name":"catalog variants","version":"2.2.0",
+                      "archetype":"rover","provenance":{"kind":"human"},"license":"CC0"},
+              "skeleton":[{"name":"root","parent":null,"pos":[0,0,0]}],
+              "parts":[{"node":"root","geom":{"kind":"box","w":0.1,"h":0.1,"d":0.1},
+                        "material":"matte","color":"#111111","mass":{"valueG":10}}],
+              "slots":[{"id":"power","label":"Power","mountNodes":["root","root"],
+                "equippedVariantId":"selected","variants":[
+                  {"id":"selected","componentRef":"cmp_selected@^1"},
+                  {"id":"spare","componentRef":"cmp_spare@^1"}
+                ]}],
+              "lockfile":{
+                "cmp_selected@^1":"cmp_selected@1.0.0",
+                "cmp_spare@^1":"cmp_spare@1.0.0"
+              },
+              "driver":{"archetype":"rover","params":{}}
+            })
+            .to_string(),
+        )
+        .unwrap()
+    }
+
+    fn inline_variant_spec(equipped: &str) -> ModelSpec {
+        validate_shape(
+            &serde_json::json!({
+              "meta":{"id":"inline-variants","name":"inline variants","version":"2.2.0",
+                      "archetype":"rover","provenance":{"kind":"human"},"license":"CC0"},
+              "skeleton":[{"name":"root","parent":null,"pos":[0,0,0]}],
+              "parts":[{"node":"root","geom":{"kind":"box","w":0.1,"h":0.1,"d":0.1},
+                        "material":"matte","color":"#111111","collision":"primitive",
+                        "mass":{"valueG":10}}],
+              "slots":[{"id":"payload","label":"Payload","mountNodes":["root"],
+                "equippedVariantId":equipped,"variants":[
+                  {"id":"selected","parts":[
+                    {"node":"root","geom":{"kind":"box","w":0.02,"h":0.02,"d":0.02},
+                     "material":"matte","color":"#222222","collision":"primitive",
+                     "mass":{"valueG":2}}
+                  ]},
+                  {"id":"spare","parts":[
+                    {"node":"root","geom":{"kind":"cyl","r0":0.015,"h":0.03,"n":16},
+                     "material":"metal","color":"#333333","collision":"primitive",
+                     "mass":{"valueG":7}},
+                    {"node":"root","geom":{"kind":"box","w":0.03,"h":0.01,"d":0.03},
+                     "material":"matte","color":"#444444","collision":"primitive",
+                     "mass":{"valueG":8}}
+                  ]}
+                ]}],
+              "driver":{"archetype":"rover","params":{}}
+            })
+            .to_string(),
+        )
+        .unwrap()
+    }
 
     fn quad_spec() -> ModelSpec {
         validate_shape(
@@ -685,6 +767,85 @@ mod tests {
         let hud = derive_hud(&spec, &baked).unwrap();
         assert!((hud.auw_g - 500.0).abs() < 1e-9);
         assert!(hud.twr.is_none());
+    }
+
+    #[test]
+    fn catalog_mass_and_category_use_only_the_equipped_alternative() {
+        let spec = catalog_variant_spec();
+        assert_eq!(catalog_equipped_mass_g(&spec, &VariantCatalog), 50.0);
+        let battery = first_catalog_component(&spec, &VariantCatalog, "battery").unwrap();
+        assert_eq!(battery.id, "cmp_selected");
+        assert!(first_catalog_component(&spec, &VariantCatalog, "motor").is_none());
+
+        let baked = forge_geometry::bake(&spec).unwrap();
+        let hud = derive_hud_with_catalog(&spec, &baked, &VariantCatalog).unwrap();
+        assert!((hud.auw_g - 60.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn sim_runtime_and_exports_use_only_the_equipped_inline_alternative() {
+        let selected = inline_variant_spec("selected");
+        let selected_bake = forge_geometry::bake(&selected).unwrap();
+        assert_eq!(selected_bake.parts.len(), 2);
+        assert_eq!(
+            selected_bake.parts[1].source_path,
+            "/slots/0/variants/0/parts/0"
+        );
+
+        let selected_scene = runtime::compile_rapier_fixture(&selected, &selected_bake);
+        assert_eq!(selected_scene.collider_count, 2);
+        assert!((selected_scene.bodies[0].mass_kg - 0.012).abs() < 1e-9);
+        let selected_fit = heavy::fit_compound_colliders(&selected, &selected_bake);
+        assert_eq!(selected_fit.collider_count, 2);
+        let selected_world = rapier::RapierWorld::from_contract(
+            &selected,
+            &selected_bake,
+            rapier::RapierWorldConfig::default(),
+        )
+        .unwrap();
+        assert_eq!(selected_world.scene().collider_count, 2);
+
+        let selected_urdf = export::to_urdf(&selected, &selected_bake);
+        assert_eq!(selected_urdf.matches("<visual>").count(), 2);
+        assert_eq!(selected_urdf.matches("<collision>").count(), 2);
+        assert!(selected_urdf.contains("<mass value=\"0.012\"/>"));
+        let selected_mjcf = export::to_mjcf(&selected, &selected_bake);
+        assert_eq!(selected_mjcf.matches("<geom ").count(), 2);
+        assert!(selected_mjcf.contains("mass=\"0.012\""));
+
+        let spare = inline_variant_spec("spare");
+        let spare_bake = forge_geometry::bake(&spare).unwrap();
+        assert_eq!(spare_bake.parts.len(), 3);
+        assert_eq!(
+            spare_bake.parts[1].source_path,
+            "/slots/0/variants/1/parts/0"
+        );
+        assert_eq!(
+            spare_bake.parts[2].source_path,
+            "/slots/0/variants/1/parts/1"
+        );
+
+        let spare_scene = runtime::compile_rapier_fixture(&spare, &spare_bake);
+        assert_eq!(spare_scene.collider_count, 3);
+        assert!((spare_scene.bodies[0].mass_kg - 0.025).abs() < 1e-9);
+        assert_eq!(
+            heavy::fit_compound_colliders(&spare, &spare_bake).collider_count,
+            3
+        );
+        assert!(rapier::RapierWorld::from_contract(
+            &spare,
+            &spare_bake,
+            rapier::RapierWorldConfig::default(),
+        )
+        .is_ok());
+
+        let spare_urdf = export::to_urdf(&spare, &spare_bake);
+        assert_eq!(spare_urdf.matches("<visual>").count(), 3);
+        assert_eq!(spare_urdf.matches("<collision>").count(), 3);
+        assert!(spare_urdf.contains("<mass value=\"0.025\"/>"));
+        let spare_mjcf = export::to_mjcf(&spare, &spare_bake);
+        assert_eq!(spare_mjcf.matches("<geom ").count(), 3);
+        assert!(spare_mjcf.contains("mass=\"0.025\""));
     }
 
     #[test]

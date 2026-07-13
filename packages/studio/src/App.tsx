@@ -4,6 +4,7 @@ import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass, Report } from "./types";
 import {
   accessObjectBlob,
+  contributeModelPattern,
   createClassroomAssignment,
   createModerationReport,
   createCourse,
@@ -22,6 +23,8 @@ import {
   latestBrief25Eval,
   listClassroomAssignments,
   listClassroomSubmissions,
+  listConsentPolicies,
+  listConsents,
   listCourses,
   listGenerationModels,
   listJobs,
@@ -38,9 +41,11 @@ import {
   listTelemetryLogs,
   listVendorOffers,
   recordListingUsage,
+  recordConsentEvent,
   refreshVendorOffers,
   saveModel,
   shareModel,
+  shareTelemetryLog,
   submitLeaderboardRun,
   submitClassroomSubmission,
   uploadObjectBlob,
@@ -49,6 +54,10 @@ import {
   type ClassroomAssignmentRecord,
   type ClassroomSubmissionRecord,
   type CourseRecord,
+  type ConsentEvent,
+  type ConsentPolicy,
+  type ConsentPurpose,
+  type ConsentSubjectKind,
   type CreditSummary,
   type GenerationArchetype,
   type GenerationAttempt,
@@ -90,6 +99,7 @@ import {
 } from "./jobOutputs";
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { CoreBake, CoreSession, corePatch, coreValidate, type DriveInput } from "./wasm";
+import type { Slot } from "./contract.gen";
 
 const panel: React.CSSProperties = {
   position: "absolute",
@@ -140,6 +150,40 @@ const SWATCHES = [
   "#3a4a6e",
 ];
 const MATERIAL_CLASSES: MaterialClass[] = ["gloss", "metal", "satin", "matte", "rubber"];
+
+interface ConfiguratorContract {
+  slots: Slot[];
+  lockfile: Record<string, string>;
+}
+
+function configuratorContract(contractJson: string | null): ConfiguratorContract {
+  if (!contractJson) return { slots: [], lockfile: {} };
+  try {
+    const parsed = JSON.parse(contractJson) as { slots?: unknown; lockfile?: unknown };
+    const slots = Array.isArray(parsed.slots) ? (parsed.slots as Slot[]) : [];
+    const lockfile =
+      parsed.lockfile && typeof parsed.lockfile === "object" && !Array.isArray(parsed.lockfile)
+        ? (parsed.lockfile as Record<string, string>)
+        : {};
+    return { slots, lockfile };
+  } catch {
+    return { slots: [], lockfile: {} };
+  }
+}
+
+function variantConsequence(
+  variant: Slot["variants"][number],
+  lockfile: Record<string, string>,
+): string {
+  if (variant.componentRef) {
+    const pin = lockfile[variant.componentRef];
+    return pin
+      ? `${variant.componentRef} → ${pin}; validator, simulation, and BOM will recompute`
+      : `${variant.componentRef}; requires lockfile resolution before admission`;
+  }
+  const count = variant.parts?.length ?? 0;
+  return `${count} inline part${count === 1 ? "" : "s"}; geometry, mass, validation, simulation, and BOM will recompute`;
+}
 const REVIEW_EXPORT_POLICIES: ReviewExportPolicy[] = [
   "full-geometry-ok",
   "attribution-manifest-required",
@@ -202,6 +246,10 @@ export default function App() {
   const [generationModelsError, setGenerationModelsError] = useState<string | null>(null);
   const [generationStages, setGenerationStages] = useState<GenerationStageEvent[]>([]);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [consentPolicies, setConsentPolicies] = useState<ConsentPolicy[]>([]);
+  const [consents, setConsents] = useState<ConsentEvent[]>([]);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentMessage, setConsentMessage] = useState<string | null>(null);
   const [models, setModels] = useState<ModelRecord[]>([]);
   const [modelError, setModelError] = useState<string | null>(null);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -278,6 +326,21 @@ export default function App() {
         user: null,
       });
       setModelError(error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
+  const refreshConsents = useCallback(async () => {
+    try {
+      const [policies, current] = await Promise.all([
+        listConsentPolicies(),
+        listConsents().catch(() => []),
+      ]);
+      setConsentPolicies(policies);
+      setConsents(current);
+    } catch (error) {
+      setConsentPolicies([]);
+      setConsents([]);
+      setConsentMessage(error instanceof Error ? error.message : String(error));
     }
   }, []);
 
@@ -639,15 +702,21 @@ export default function App() {
       sessionRef.current = null;
     }
     if (selected) {
-      const part = artifact.baked.parts[selected.partIndex];
+      const part =
+        artifact.baked.parts.find((candidate) => candidate.source_path === selected.sourcePath) ??
+        artifact.baked.parts.find((candidate) => candidate.node === selected.node);
       if (part) {
-        scene.setSelected(selected.partIndex);
+        scene.setSelected(part.part_index);
         st.setSelected({
-          partIndex: selected.partIndex,
+          partIndex: part.part_index,
+          sourcePath: part.source_path,
           node: part.node,
           material: part.material,
           color: part.color,
         });
+      } else {
+        scene.setSelected(null);
+        st.setSelected(null);
       }
     }
   }, []);
@@ -882,9 +951,10 @@ export default function App() {
     void refreshModels();
     void refreshJobs();
     void refreshArtifacts();
+    void refreshConsents();
     void refreshPlatform();
     void refreshBriefEval();
-  }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshJobs, refreshModels, refreshPlatform]);
+  }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshConsents, refreshJobs, refreshModels, refreshPlatform]);
 
   const selectCourse = useCallback((courseId: string | null) => {
     setActiveCourseId(courseId);
@@ -1022,7 +1092,7 @@ export default function App() {
       const uploaded = [];
       for (const file of selected) {
         const result = await uploadObjectBlob(file, "photoscan-source");
-        uploaded.push(`obj:${result.blob.id}`);
+        uploaded.push(result.blob.id);
       }
       setScanImageRefs(uploaded);
       setScanUploadMessage(`${uploaded.length} image${uploaded.length === 1 ? "" : "s"} uploaded`);
@@ -1035,16 +1105,24 @@ export default function App() {
 
   const runFixtureJob = async (kind: string) => {
     setJobsError(null);
+    if (kind === "photoscan.single" && scanImageRefs.length < 1) {
+      setJobsError("upload one owned photo, then grant photoscan processing consent");
+      return;
+    }
+    if (kind === "photoscan.multiview" && scanImageRefs.length < 2) {
+      setJobsError("upload at least two owned photos, then grant processing consent for each");
+      return;
+    }
     const common = {
       modelId: activeModelId,
       contractHash: s.report?.contractHash,
       sourceObjectId: "fixture://asset",
     };
-    const singleImages = scanImageRefs.length > 0 ? scanImageRefs.slice(0, 1) : ["fixture-front", "fixture-side"];
-    const multiImages = scanImageRefs.length > 0 ? scanImageRefs : ["fixture-front", "fixture-side", "fixture-top"];
+    const singleImages = scanImageRefs.slice(0, 1).map((id) => `obj:${id}`);
+    const multiImages = scanImageRefs.map((id) => `obj:${id}`);
     const payloadByKind: Record<string, unknown> = {
-      "photoscan.single": { ...common, images: singleImages },
-      "photoscan.multiview": { ...common, images: multiImages, scale: 1.0 },
+      "photoscan.single": { ...common, images: singleImages, sourceBlobIds: scanImageRefs.slice(0, 1) },
+      "photoscan.multiview": { ...common, images: multiImages, sourceBlobIds: scanImageRefs, scale: 1.0 },
       "train.policy": { ...common, task: "hover-hold", seed: 7 },
       "train.sysid-fit": {
         ...common,
@@ -1096,6 +1174,87 @@ export default function App() {
       await refreshArtifacts();
     } catch (error) {
       setJobsError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const changeConsent = async (
+    purpose: ConsentPurpose,
+    subjectKind: ConsentSubjectKind,
+    subjectIds: string[],
+    action: "grant" | "withdraw",
+  ) => {
+    const policy = consentPolicies.find((candidate) => candidate.purpose === purpose);
+    if (!policy || subjectIds.length === 0) return;
+    setConsentBusy(true);
+    setConsentMessage(null);
+    try {
+      for (const subjectId of subjectIds) {
+        await recordConsentEvent({
+          purpose,
+          subjectKind,
+          subjectId,
+          policyVersion: policy.policyVersion,
+          noticeHash: policy.noticeHash,
+          action,
+          locale: navigator.language,
+          idempotencyKey: `${purpose}:${subjectId}:${action}:${crypto.randomUUID()}`,
+        });
+      }
+      setConsentMessage(`${action === "grant" ? "granted" : "withdrew"} ${purpose}`);
+      await Promise.all([refreshConsents(), refreshJobs(), refreshArtifacts(), refreshPlatform()]);
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const shareFirstTelemetry = async () => {
+    const telemetryId = telemetryLogs[0]?.id;
+    if (!telemetryId) return;
+    setConsentBusy(true);
+    try {
+      await shareTelemetryLog(telemetryId);
+      setConsentMessage(`shared telemetry ${telemetryId}`);
+      await refreshArtifacts();
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const contributeActivePattern = async () => {
+    if (!activeModelId) return;
+    setConsentBusy(true);
+    try {
+      const result = await contributeModelPattern(activeModelId, ["serviceable modular assembly"]);
+      setConsentMessage(`contributed pattern ${result.contribution.id}`);
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const trainFromFirstTelemetry = async () => {
+    const telemetryId = telemetryLogs[0]?.id;
+    if (!telemetryId) return;
+    setConsentBusy(true);
+    try {
+      await createJob("train.policy", {
+        modelId: activeModelId,
+        contractHash: s.report?.contractHash,
+        task: "hover-hold",
+        seed: 7,
+        telemetryLogIds: [telemetryId],
+      });
+      setConsentMessage(`started consented training reuse for ${telemetryId}`);
+      await Promise.all([refreshJobs(), refreshArtifacts()]);
+    } catch (error) {
+      setConsentMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setConsentBusy(false);
     }
   };
 
@@ -1386,6 +1545,7 @@ export default function App() {
   const synthesisPin = generationModels.find((model) => model.role === "synthesis");
   const repairPin = generationModels.find((model) => model.role === "repair");
   const shareDisabled = !s.contractJson || s.report?.verdict !== "admitted";
+  const configurator = configuratorContract(s.contractJson);
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <canvas
@@ -1438,6 +1598,57 @@ export default function App() {
           share
         </button>
         {shareUrl && <div style={{ color: "#6b7686", wordBreak: "break-word" }}>{shareUrl}</div>}
+
+        {configurator.slots.length > 0 && (
+          <details data-testid="variant-configurator" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
+            <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>
+              equipped variants ({configurator.slots.length})
+            </summary>
+            {configurator.slots.map((slot, slotIndex) => (
+              <div key={slot.id} style={{ marginTop: 8 }}>
+                <div style={{ color: "#cfd6df" }}>{slot.label}</div>
+                <div style={{ color: "#6b7686" }}>{slot.mountNodes.join(", ") || "no mount"}</div>
+                <div style={{ display: "grid", gap: 5, marginTop: 5 }}>
+                  {slot.variants.map((variant) => {
+                    const equipped = slot.equippedVariantId === variant.id;
+                    return (
+                      <button
+                        key={variant.id}
+                        data-testid={`variant-${slot.id}-${variant.id}`}
+                        aria-pressed={equipped}
+                        onClick={() =>
+                          void applyPatch([
+                            {
+                              op: slot.equippedVariantId == null ? "add" : "replace",
+                              path: `/slots/${slotIndex}/equippedVariantId`,
+                              value: variant.id,
+                            },
+                          ])
+                        }
+                        disabled={equipped}
+                        style={{
+                          ...btn,
+                          padding: "6px 7px",
+                          textAlign: "left",
+                          borderColor: equipped ? "#39c8ff" : "#2a2f38",
+                          background: equipped ? "rgba(57,200,255,0.1)" : "#16181c",
+                          opacity: 1,
+                        }}
+                      >
+                        <span style={{ display: "block", color: equipped ? "#39c8ff" : "#cfd6df" }}>
+                          {equipped ? "equipped · " : ""}{variant.name ?? variant.id}
+                        </span>
+                        <span style={{ display: "block", color: "#6b7686", whiteSpace: "normal" }}>
+                          {variantConsequence(variant, configurator.lockfile)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </details>
+        )}
 
         <div data-testid="account-panel" style={{ borderTop: "1px solid #2a2f38", marginTop: 10, paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1784,6 +1995,22 @@ export default function App() {
               </button>
             )}
           </div>
+          <ConsentPanel
+            policies={consentPolicies}
+            events={consents}
+            userId={me?.user?.id ?? null}
+            scanBlobIds={scanImageRefs}
+            modelId={activeModelId}
+            telemetryId={telemetryLogs[0]?.id ?? null}
+            busy={consentBusy}
+            message={consentMessage}
+            onChange={(purpose, subjectKind, subjectIds, action) =>
+              void changeConsent(purpose, subjectKind, subjectIds, action)
+            }
+            onShareTelemetry={() => void shareFirstTelemetry()}
+            onContributePattern={() => void contributeActivePattern()}
+            onTrainReuse={() => void trainFromFirstTelemetry()}
+          />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 6 }}>
             {[
               ["photoscan.single", "scan"],
@@ -1983,6 +2210,7 @@ export default function App() {
         <div style={{ ...panel, top: 220, right: 12, minWidth: 200 }}>
           <div style={{ color: "#8fa3bf" }}>selection</div>
           <Row k="part" v={`#${s.selected.partIndex}`} />
+          <Row k="source" v={s.selected.sourcePath} />
           <Row k="node" v={s.selected.node} />
           <Row k="material" v={s.selected.material} />
           <Row k="color" v={s.selected.color} />
@@ -1998,7 +2226,7 @@ export default function App() {
                 title={c}
                 onClick={() =>
                   void applyPatch([
-                    { op: "replace", path: `/parts/${s.selected!.partIndex}/color`, value: c },
+                    { op: "replace", path: `${s.selected!.sourcePath}/color`, value: c },
                   ])
                 }
                 style={{
@@ -2015,7 +2243,7 @@ export default function App() {
             value={s.selected.material}
             onChange={(e) =>
               void applyPatch([
-                { op: "replace", path: `/parts/${s.selected!.partIndex}/material`, value: e.target.value },
+                { op: "replace", path: `${s.selected!.sourcePath}/material`, value: e.target.value },
               ])
             }
             style={{
@@ -2250,6 +2478,99 @@ function BriefEvalSummary({ value }: { value: unknown | null }) {
       {gate ? ` · gate ${gate.admittedWithoutHumanRepairActual ?? 0}/${gate.admittedWithoutHumanRepairTarget ?? 20}` : ""}
       {artifact.completedAt ? <div style={{ color: "#6b7686" }}>{artifact.completedAt}</div> : null}
     </div>
+  );
+}
+
+function ConsentPanel({
+  policies,
+  events,
+  userId,
+  scanBlobIds,
+  modelId,
+  telemetryId,
+  busy,
+  message,
+  onChange,
+  onShareTelemetry,
+  onContributePattern,
+  onTrainReuse,
+}: {
+  policies: ConsentPolicy[];
+  events: ConsentEvent[];
+  userId: string | null;
+  scanBlobIds: string[];
+  modelId: string | null;
+  telemetryId: string | null;
+  busy: boolean;
+  message: string | null;
+  onChange: (
+    purpose: ConsentPurpose,
+    subjectKind: ConsentSubjectKind,
+    subjectIds: string[],
+    action: "grant" | "withdraw",
+  ) => void;
+  onShareTelemetry: () => void;
+  onContributePattern: () => void;
+  onTrainReuse: () => void;
+}) {
+  const targets: Record<ConsentPurpose, string[]> = {
+    "photoscan.processing": scanBlobIds,
+    "telemetry.sharing": telemetryId ? [telemetryId] : [],
+    "pattern.contribution": modelId ? [modelId] : [],
+    "leaderboard.publication": userId ? [userId] : [],
+    "training.reuse": telemetryId ? [telemetryId] : [],
+  };
+  const actionFor = (purpose: ConsentPurpose) => {
+    if (purpose === "telemetry.sharing") return onShareTelemetry;
+    if (purpose === "pattern.contribution") return onContributePattern;
+    if (purpose === "training.reuse") return onTrainReuse;
+    return null;
+  };
+  const actionLabel = (purpose: ConsentPurpose) => {
+    if (purpose === "telemetry.sharing") return "share log";
+    if (purpose === "pattern.contribution") return "contribute";
+    if (purpose === "training.reuse") return "train from log";
+    return null;
+  };
+  return (
+    <details style={{ ...artifactRowStyle, marginTop: 6 }}>
+      <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>privacy authority · {events.filter((event) => event.active).length} active</summary>
+      <div style={{ color: "#6b7686", marginTop: 5 }}>
+        Each purpose is independent. Granting scan processing never grants sharing, contribution, leaderboard publication, or training reuse.
+      </div>
+      {policies.map((policy) => {
+        const subjectIds = targets[policy.purpose];
+        const active = subjectIds.length > 0 && subjectIds.every((subjectId) =>
+          events.some((event) => event.purpose === policy.purpose && event.subjectId === subjectId && event.active),
+        );
+        const action = actionFor(policy.purpose);
+        const label = actionLabel(policy.purpose);
+        return (
+          <div key={policy.purpose} style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ color: active ? "#7dd87d" : "#cfd6df", flex: 1 }}>
+                {policy.purpose} · {active ? "granted" : "not granted"}
+              </span>
+              <button
+                onClick={() => onChange(policy.purpose, policy.subjectKind, subjectIds, active ? "withdraw" : "grant")}
+                disabled={busy || subjectIds.length === 0}
+                style={btn}
+              >
+                {active ? "withdraw" : "grant"}
+              </button>
+              {active && action && label ? (
+                <button onClick={action} disabled={busy} style={btn}>{label}</button>
+              ) : null}
+            </div>
+            <div style={{ color: "#6b7686" }}>
+              v{policy.policyVersion} · {subjectIds.length > 0 ? `${subjectIds.length} owned subject${subjectIds.length === 1 ? "" : "s"}` : "no current subject"}
+            </div>
+            <div style={{ color: "#6b7686" }}>{policy.notice}</div>
+          </div>
+        );
+      })}
+      {message ? <div style={{ color: "#8fa3bf", marginTop: 6 }}>{message}</div> : null}
+    </details>
   );
 }
 

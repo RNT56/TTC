@@ -21,6 +21,12 @@ function manifestVersion(path) {
   return match[1];
 }
 
+function typescriptConstant(path, name) {
+  const match = read(path).match(new RegExp(`export const ${name}\\s*=\\s*"([^"]+)"`));
+  requireValue(match, `${path}: missing ${name}`);
+  return match[1];
+}
+
 requireValue(semver.test(matrix.policyVersion), "policyVersion must be SemVer");
 requireValue(semver.test(matrix.productVersion), "productVersion must be SemVer");
 
@@ -31,6 +37,11 @@ const required = [
   "wasmFacade",
   "replay",
   "envSpec",
+  "licenseExportManifest",
+  "userDataExport",
+  "consentLedger",
+  "accountDeletionReceipt",
+  "dataLifecycle",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -57,6 +68,22 @@ const expected = {
   wasmFacade: workspaceVersion,
   replay: sourceConstant("crates/forge-sim/src/runtime.rs", "REPLAY_FORMAT_VERSION"),
   envSpec: sourceConstant("crates/forge-sim/src/runtime.rs", "ENVSPEC_SCHEMA_VERSION"),
+  userDataExport: typescriptConstant(
+    "packages/gateway/src/accountData.ts",
+    "USER_DATA_EXPORT_VERSION",
+  ),
+  consentLedger: typescriptConstant(
+    "packages/gateway/src/consent.ts",
+    "CONSENT_LEDGER_FORMAT_VERSION",
+  ),
+  accountDeletionReceipt: typescriptConstant(
+    "packages/gateway/src/accountData.ts",
+    "ACCOUNT_DELETION_RECEIPT_VERSION",
+  ),
+  dataLifecycle: typescriptConstant(
+    "packages/gateway/src/dataLifecycle.ts",
+    "DATA_LIFECYCLE_FORMAT_VERSION",
+  ),
   workerArtifacts: workerVersion,
 };
 
@@ -78,6 +105,18 @@ for (const [name, version] of [
     `worker ${name} does not match compatibility matrix`,
   );
 }
+requireValue(
+  workerContract.includes(
+    `LICENSE_EXPORT_MANIFEST_FORMAT_VERSION = "${matrix.surfaces.licenseExportManifest.current}"`,
+  ),
+  "worker license export manifest version does not match compatibility matrix",
+);
+requireValue(
+  read("packages/gateway/src/licenseExports.ts").includes(
+    `LICENSE_EXPORT_MANIFEST_FORMAT_VERSION = "${matrix.surfaces.licenseExportManifest.current}"`,
+  ),
+  "gateway license export manifest version does not match compatibility matrix",
+);
 
 const legacyReplay = sourceConstant(
   "crates/forge-sim/src/runtime.rs",

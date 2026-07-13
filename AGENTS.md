@@ -35,12 +35,14 @@ Read in this order for every non-trivial session:
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
 8. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
-   EnvSpec, worker artifacts, or version numbers.
+   EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
 9. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
 10. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
 11. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+12. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+    backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
 
@@ -59,8 +61,9 @@ the same change. Never make code imitate a stale checkbox.
 ## 3. Current boundary
 
 The repository contains a broad deterministic v0 across the Rust core, React Studio,
-Fastify gateway, Postgres data plane, Python workers, and Tauri shell. It is not
-currently release-ready or production-proven.
+Fastify gateway, Postgres data plane, Python workers, and Tauri shell. The standalone
+validator v0.1.0 is released and independently verified; the broader product is not
+production-proven or ready for live-provider, external-beta, or field claims.
 
 As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
@@ -72,10 +75,26 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
-- compatibility policy 1.0.0 is machine-checked across seven public format/package
+- compatibility policy 1.0.0 is machine-checked across twelve public format/package
   boundaries; the CLI/WASM facades expose their active versions;
+- the frozen prototype is the complete historical parity oracle and predates slot
+  variants; D32 forbids fabricated extraction, while ModelSpec 2.2/XC-28 defines one
+  explicit equipped alternative across contract, validator, geometry, simulation,
+  lockfile, BOM, WASM, and Studio;
+- the local v0.2 stack enforces D10 manufacturing-license policy and SEC-002
+  pre-retrieval/provider prohibited-brief refusal with non-content audit rows; both
+  still await protected delivery and do not prove live-provider operations;
+- SEC-003..005 locally prove versioned owner-scoped export, primary Postgres and
+  S3-compatible deletion, purpose/subject consent grants and withdrawals, bounded
+  retention, time-bounded legal holds, pseudonymous tombstones, backup catalog/
+  expiry adapters, and pre-restore suppression; production backup/restore remains
+  `OPS-005` and is not implied by deterministic local evidence;
 - most P5-P12 live providers, hardware steps, and external proof remain gated;
-- `main` has an active PR-only exact-check ruleset; no release exists.
+- `main` has an active PR-only exact-check ruleset; annotated validator tag `v0.1.0`
+  and its nine-asset GitHub Release were built from protected `1093842`, attested,
+  downloaded after publication, and independently re-verified;
+- crates.io/npm publication remains explicitly deferred to owner-scoped credentials;
+  the local v0.2 stack is green but still requires protected delivery.
 
 Do not repeat these facts without re-running or re-checking them. Update
 `docs/PROJECT-STATE.md` whenever the boundary materially changes.
@@ -84,7 +103,7 @@ Do not repeat these facts without re-running or re-checking them. Update
 
 | Area | Home | Rule |
 |---|---|---|
-| Contract/schema | `crates/forge-contract`, `schema/` | Rust types are the source; generated schema/TS types must not drift |
+| Contract/schema | `crates/forge-contract`, `schema/` | Rust types are the source; generated schema/TS types must not drift; every non-empty slot explicitly equips one unique variant |
 | Geometry/DfM | `crates/forge-geometry` | Deterministic, SI-unit, test-backed; no presentation-only truth |
 | Motion/drivers | `crates/forge-motion` | Versioned data-driven drivers; no executable code in contracts |
 | Simulation/export/import | `crates/forge-sim` | Rapier interactive; MuJoCo training-canonical; parity on upgrades |
@@ -95,6 +114,107 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
+
+Equipped-variant boundary (D32/XC-28):
+
+- only `slots[].equippedVariantId` selects physical truth; array order is never a
+  default and unselected alternatives are inert for geometry, mass, simulation,
+  lockfile resolution, validation, exports, and BOMs;
+- 2.1 migration may auto-equip a sole alternative, but it must refuse to guess among
+  multiple alternatives until the author records an explicit choice;
+- flattened baked parts carry source JSON Pointers. Studio patches those pointers and
+  preserves inspection state by source identity, not by unstable flattened index.
+
+License-export boundary (D10/SEC-001):
+
+- manufacturing export jobs require a complete license ledger record for every
+  assembly asset; missing, unknown, contradictory, or unsafe link evidence fails
+  before a provider runs;
+- `open` geometry may export in full, `attribution` geometry also requires the
+  versioned license manifest, and `no-redistribution`/`view-only` geometry is replaced
+  by a dimensioned envelope plus datum ports and an HTTPS BOM link-out;
+- external OCCT output is untrusted. It must prove the requested manifest hash and
+  required attribution/restriction behavior; exporters retain only allowlisted
+  metadata and policy-safe artifact references.
+
+Prohibited-brief boundary (SEC-002):
+
+- screen briefs before catalog/pattern retrieval, synthesis, provider transport,
+  course generation, or model editing. The guarded surfaces are context, generation,
+  streaming generation, course generation, and model edit; direct generation-library
+  callers retain an independent assertion;
+- the versioned deterministic detector is the admission boundary. Prompt instructions
+  and provider moderation are defense in depth and never override a local refusal;
+- refusal rows contain only the prompt SHA-256, length bucket, policy/detector
+  versions, matched categories/rule IDs, surface, requested provider/archetype, and
+  optional owner. Never persist or return the raw refused prompt or a provider key;
+- refusal auditing is fail-closed: if the metadata row cannot be written, no
+  retrieval, synthesis, provider, edit, or environment-generation action may run.
+  Rule changes require benign-language, adversarial-normalization, secret-redaction,
+  audit-failure, and every-surface regression tests.
+
+User-data lifecycle boundary (D33/SEC-003):
+
+- `GET /v1/account/export` is an authenticated repeatable-read snapshot. Keep its
+  format versioned, enumerate new owner-scoped tables explicitly, provide blob
+  download endpoints, and never include OAuth access/refresh/ID tokens, session or
+  verification tokens, or provider API keys;
+- `DELETE /v1/account` requires the exact confirmation phrase, a serializable owner
+  lock, explicit purge of every owned/derived row, and S3-compatible payload deletion
+  before commit. Do not rely on `ON DELETE SET NULL`, which anonymizes ownership but
+  leaves user content behind;
+- object deletion failure rolls the database transaction back. Test success,
+  authorization, malformed confirmation, secret exclusion, storage failure, a real
+  populated Postgres lifecycle, and an S3-compatible upload/delete/404 smoke;
+- receipt 2.0.0 proves primary database/object deletion and creation of
+  restore-suppression tombstones. It never proves physical backup deletion; only a
+  catalogued provider adapter result plus restore evidence may make that claim.
+
+Consent boundary (D34/SEC-004):
+
+- consent is an append-only event ledger, never a mutable flag. Every grant and
+  withdrawal binds ledger version, purpose, owned subject, current policy version,
+  exact notice SHA-256, prior event, bounded non-content evidence, and idempotency;
+- the five independent purposes are photoscan processing per object, telemetry
+  sharing per log, pattern contribution per model, leaderboard publication per
+  account, and training reuse per telemetry log. A grant for one never authorizes
+  another, and a stale policy/hash is inactive until the owner grants the current
+  notice;
+- lock the owner and validate current consent in the same serializable transaction
+  that starts processing, sharing, contribution, publication, or training reuse.
+  Direct job-library entry points retain the same assertion; UI state is not
+  authority;
+- withdrawal appends history and immediately cancels queued/running affected jobs,
+  makes telemetry private, removes contributed patterns or leaderboard rows as
+  appropriate. It does not claim in-flight provider recall, primary content
+  deletion, legal-hold expiry, or backup erasure; those use account deletion and
+  SEC-005 lifecycle proof;
+- authority chronology uses monotonic `event_sequence`, not timestamps or random
+  IDs. Same-timestamp grant/withdraw or place/release pairs must resolve causally.
+
+Data-lifecycle boundary (D35/SEC-005):
+
+- lifecycle 1.0.0 defines six data classes, a 30-day maximum backup window, a
+  45-day pseudonymous tombstone window, bounded primary audit/job/auth periods, and
+  a 400-day pseudonymous lifecycle-audit period. These are versioned product
+  defaults, not universal legal conclusions;
+- legal holds are append-only, subject-digested, reason-coded, reference-only, and
+  expire within 365 days unless a new reviewed event renews them. A hold permits
+  retention only; it never authorizes use, training, sharing, or operator browsing.
+  Hold mutation, backup register/restore evaluation, and deletion must share globally
+  ordered transaction-scoped locks for the affected user and objects so authority
+  cannot race a purge;
+- deletion receipt 2.0.0 creates user/object tombstones and suppresses pre-deletion
+  restore through backup expiry. Every backup must be catalogued with manifest hash,
+  covered subject digests, affirmative delete deadline, provider adapter evidence,
+  exact subject-manifest idempotency, and retryable failure state. Provider deletion
+  adapters are idempotent and stale in-progress claims are reclaimed only after the
+  bounded lease. Reject a copy captured after its subject's primary deletion; a
+  valid late-catalogued pre-deletion copy reopens tombstone completion until erased;
+- no restore enters primary storage before exact manifest and tombstone checks.
+  Local Postgres fixtures prove the contract; real encrypted backup automation,
+  provider deletion receipts, sandbox restores, RPO/RTO, and DR promotion remain
+  `OPS-005`.
 
 ## 5. Session protocol
 
@@ -165,6 +285,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched |
 | Data/migrations | forward migration on empty and populated DB; invariant assertion; rollback/recovery plan; backup impact review |
+| User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
@@ -179,8 +300,9 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 3. Never bypass or weaken the validator to make generated content pass.
 4. No code in contracts. Future user controllers require the reviewed sandbox path.
 5. No fast-math or unrecorded nondeterminism in the core.
-6. No weapons, targeting, munitions, or interdiction functionality. Refuse and log
-   prohibited briefs.
+6. No weapons, targeting, munitions, or interdiction functionality. Refuse before
+   retrieval/provider work and log only the minimal non-content audit record; an
+   audit-write failure must fail closed.
 7. Generated, trained, imported, exported, and deployed artifacts carry provenance.
 8. License/export policy is enforced in actual exporters, not only displayed.
 9. User photos, models, and telemetry require explicit ownership, consent, retention,

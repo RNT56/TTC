@@ -2,7 +2,7 @@
 
 **Status:** deterministic sim helpers/exporters/importers, engine-backed Rapier stepping, and Rapier↔MuJoCo parity live · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
-**Decisions:** D7, D8, D16, D17, D20
+**Decisions:** D7, D8, D16, D17, D20, D32
 
 ## 1. Purpose
 
@@ -33,6 +33,15 @@ assumptions inspectable.
   the ≤ 1.5 ms core-tick share for the models themselves.
 
 ## 3. Propulsion & battery models (the HUD's source of truth)
+
+XC-28 closes the slot-backed physical-value ambiguity. Geometry bake, mass, catalog
+HUD overrides, propulsion and battery lookup, collider validation, lockfile
+resolution, Rapier bodies/colliders, URDF/MJCF inertials and geometry, and BOM rows
+consume only the explicit equipped variant; unknown or ambiguous selection fails
+validation instead of falling back to array order. Native tests cover selected-only
+catalog category/mass behavior, inline geometry/mass, executable Rapier construction,
+and export part/mass counts; the WASM facade exposes stable source pointers for the
+same flattened physical table.
 
 Per-motor, first-order:
 

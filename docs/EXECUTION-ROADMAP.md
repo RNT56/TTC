@@ -1,6 +1,6 @@
 # EXECUTION ROADMAP - complete program from recovery to field proof
 
-Last rebuilt: **2026-07-12**
+Last rebuilt: **2026-07-13**
 
 Evidence baseline: [`PROJECT-STATE.md`](PROJECT-STATE.md)
 
@@ -31,18 +31,23 @@ The program is complete only when all four outcomes are independently true:
 
 ## 2. Current boundary
 
-The broad v0 and most deterministic fixture contracts exist. G0 is green on protected
-`main`; the next task is the G1 release and supply-chain contract before broad public
-claims or resumed feature breadth.
+The broad v0 and most deterministic fixture contracts exist. G0 and G1 are green on
+protected `main`: annotated validator v0.1.0 and its nine assets were produced by the
+release workflow, downloaded after publication, and independently verified. The next
+ordered task is protected delivery of the already-green public-surface/XC-28/
+SEC-001..005 v0.2 stack before Wave 2 breadth.
 
-Current release blockers:
+Current Wave 1/2 blockers:
 
-- artifact SBOM/provenance/checksum outputs, clean external install/version proof,
-  and public support/security surfaces are absent; immutable Action pins and the
-  compatibility policy/matrix are complete;
-- security, operations, release, live-provider, external-user, and field work remains.
+- public support/security surfaces and the ModelSpec 2.2/security stack await
+  protected v0.2 delivery;
+- registry publication is explicitly deferred to owner-scoped credentials and is not
+  required to claim the verified GitHub release;
+- remaining security, operations, live-provider, external-user, and field work is
+  still open.
 
-No downstream phase may claim closure while Wave 0 is incomplete.
+No downstream phase may claim closure from G1 alone; each live/external/field gate
+retains its own acceptance evidence.
 
 ## 3. Execution principles
 
@@ -123,18 +128,23 @@ Acceptance:
 
 Objective: turn the strongest asset into a consumable, supported release.
 
+Status (2026-07-13): **G1 complete; protected v0.2 delivery in progress.** Manual
+protected-main run `29241883791`, annotated-tag run `29244972303`, the nine-asset
+v0.1.0 GitHub Release, and independent aggregate/public-asset verification are green.
+crates.io/npm publication is an explicit owner-credential deferral. Public support
+surfaces and XC-28/SEC-001..005 are assembled on the green v0.2 integration branch.
+
 Work:
 
-- resolve `P0-007` by obtaining the later prototype or recording a rescope decision;
-- retain the published `prototype-final` evidence (`P0-010`/`GOV-006`) as an
-  immutable input to release proof;
-- finish validator package metadata and publication (`P2-001`);
-- retain completed `GOV-007` policy/matrix enforcement; finish the implemented
-  `GOV-008` artifact workflow with protected-merge/manual-download evidence, then
-  complete `GOV-009..010`: publication/install proof and public surfaces;
-  checksums/artifact SBOM/provenance, release notes, install verification, and
-  support/security entry points;
-- finish real-mid-hardware P1 budgets and remaining configurator truth.
+- retain D32's honest closure of `P0-007` and the published `prototype-final`
+  evidence (`P0-010`/`GOV-006`) as immutable release inputs;
+- retain the published, independently installed validator baseline and explicit
+  registry deferral (`P2-001`, `GOV-007..009`);
+- deliver the accurate public surfaces plus ModelSpec 2.2 and SEC-001..005 through
+  the exact-check ruleset; `GOV-010` remains in progress only for qualified
+  confusing-similarity/common-law/class review;
+- finish real-mid-hardware P1 budgets; XC-28 configurator truth is implemented and
+  awaits protected delivery with the v0.2 package boundary.
 
 Acceptance:
 
@@ -151,10 +161,15 @@ Objective: prove the verify-first wedge with reviewed data and a real user.
 Work:
 
 - finish live catalog ETL and review persistence (`P3-004`, `P4-016`);
-- close variant/configurator gaps (`P1-014`, `P0-007` decision result);
-- enforce license export substitution in real exporters (`SEC-001`);
-- implement prohibited-brief refusal/logging (`SEC-002`);
-- implement ownership/consent/export/deletion for user content (`SEC-003..005`);
+- consume the delivered XC-28 equipped semantics in live catalog/retrieval flows;
+- retain the completed local license-export enforcement (`SEC-001`) and inspect its
+  manifest/envelope proof against real OCCT artifacts in the provider sandbox;
+- retain the completed local prohibited-brief refusal/minimal-audit boundary and add
+  production monitoring/adversarial evidence (`SEC-002`, `SEC-006`, `OPS-*`);
+- retain the completed local owner-scoped export/primary deletion, append-only
+  purpose/subject consent-withdrawal, and retention/legal-hold/tombstone/restore-
+  suppression boundaries (`SEC-003..005`); production backup adapters, deletion
+  receipts, sandbox restores, and measured RPO/RTO remain `OPS-005`;
 - finish executable BOM vendor integration enough for a sandbox handoff (`P11-005`);
 - execute `EXT-001`: independent builder acceptance.
 
@@ -336,9 +351,9 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 
 | Phase | Remaining phase work | Adjacent gates | Closure proof |
 |---|---|---|---|
-| P0 | P0-007 | decision hygiene | later configurator obtained or variant scope explicitly resolved |
-| P1 | P1-004, P1-014, P1-017 | REC, QA perf/browser | real-mid-hardware budget and truthful configurator |
-| P2 | P2-001 plus publication/remote proof | REC-007, GOV release | full suite green and published/installed validator |
+| P0 | none | decision hygiene | closed by D32; no fabricated historical variants |
+| P1 | P1-004, P1-017 | REC, QA perf/browser | real-mid-hardware budget; XC-28 configurator truth complete |
+| P2 | P2-001 protected v0.2 delivery | GOV release policy | v0.1 published/installed; v0.2 exact checks and post-merge proof |
 | P3 | P3-004 live ETL | SEC citation/license, OPS provider | reviewed live row through BOM/export |
 | P4 | P4-016 live extraction and external R1 proof | SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and external R1 flow succeeds |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
@@ -410,7 +425,7 @@ Cadence:
 ## 11. Final program acceptance checklist
 
 - [ ] G0 truthful green baseline remains stable.
-- [ ] G1 trusted core is reproducibly released and independently installed.
+- [x] G1 trusted core is reproducibly released and independently installed.
 - [ ] R1 external builder completes a reviewed lawful build flow.
 - [ ] R2 external robot trains and runs a real policy with honest evidence.
 - [ ] R3 controlled rig produces a Desktop field log and improved/assessed twin.

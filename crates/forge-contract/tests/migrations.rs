@@ -98,6 +98,9 @@ fn migrates_legacy_aliases_to_current_schema() {
     assert!(report
         .applied
         .contains(&"provenance-kind-aliases".to_string()));
+    assert!(report
+        .applied
+        .contains(&"equip-single-variant-slots-v2.2".to_string()));
 
     let spec = report.spec;
     assert_eq!(
@@ -116,6 +119,7 @@ fn migrates_legacy_aliases_to_current_schema() {
     assert_eq!(spec.parts[0].render_bias, Some(0.02));
     assert_eq!(spec.parts[0].mass.as_ref().unwrap().value_g, Some(12.5));
     assert_eq!(spec.slots[0].mount_nodes, vec!["root".to_string()]);
+    assert_eq!(spec.slots[0].equipped_variant_id.as_deref(), Some("pack"));
     assert_eq!(
         spec.slots[0].variants[0].component_ref.as_deref(),
         Some("cmp_pack@^1.0.0")
@@ -152,4 +156,17 @@ fn migrate_returns_typed_spec_for_current_target() {
 fn rejects_unsupported_targets() {
     let err = migrate_with_report(&legacy_doc(), "3.0.0").unwrap_err();
     assert!(err.message.contains("unsupported migration target"));
+}
+
+#[test]
+fn refuses_to_guess_among_multiple_legacy_variants() {
+    let mut value: serde_json::Value = serde_json::from_str(&legacy_doc()).unwrap();
+    let variants = value["slots"][0]["variants"].as_array_mut().unwrap();
+    variants.push(serde_json::json!({
+        "id": "other-pack",
+        "componentRef": "cmp_pack_other@^1.0.0"
+    }));
+    let err = migrate_with_report(&value.to_string(), "current").unwrap_err();
+    assert!(err.message.contains("multiple legacy variants"));
+    assert!(err.message.contains("set equippedVariantId explicitly"));
 }

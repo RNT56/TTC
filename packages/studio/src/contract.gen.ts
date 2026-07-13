@@ -381,6 +381,11 @@ export interface Joint {
   type: JointKind;
 }
 export interface Slot {
+  /**
+   * The sole alternative that contributes physical parts, catalog refs,
+   * ports, simulation values, and BOM rows (D32/XC-28).
+   */
+  equippedVariantId?: string | null;
   id: string;
   joint?: Joint | null;
   label: string;
