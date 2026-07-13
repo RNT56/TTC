@@ -2,7 +2,7 @@
 
 **Status:** P4 deterministic GA path live: staged generation, edit, share, eval history · **Phases:** P4 (GA), P10 (environments) · **Home:**
 `packages/gateway` (orchestrator context, deterministic synthesis, staged SSE, edit/share routes, and Anthropic tool-pass adapter) · **Plan refs:** §8 (v3.0) ·
-**Decisions:** D3, D14, D16, D17, D25, D26, D-evals
+**Decisions:** D3, D14, D16, D17, D25, D26, D36, D-evals
 
 ## 1. Purpose
 
@@ -14,8 +14,10 @@ P4 starts with the catalog review loop (D25): live fetch/Claude/OCCT ingestion m
 draft rows, but generated artifacts can only consume reviewed catalog truth. The
 gateway and studio expose the review queue, audit notes, and export-policy filters.
 Workers expose injectable source-fetch, Claude-style extraction, and OCCT geometry
-adapter seams; fixture adapters are the deterministic CI oracle, while live
-transport/executors remain deployment-owned.
+adapter seams; fixture adapters are the deterministic CI oracle. A native bounded
+Anthropic ETL transport now exists at contract/fixture maturity, while credentials,
+provider operations, review persistence, and live OCCT execution remain deployment-
+owned evidence.
 
 ## 2. The five stages (P4-001)
 
@@ -119,6 +121,16 @@ persistence select explicit fields and regression tests prove the ephemeral key 
 not enter their query parameters. The complete residual-risk and deployment contract
 is [`../THREAT-MODEL.md`](../THREAT-MODEL.md).
 
+The worker ETL boundary follows the same doctrine with a narrower authority. Its
+fixed Messages API request uses deployment credentials only in the header, a forced
+strict tool, a 4 MiB request, 2 MiB response, and 512 KiB extracted-input ceiling.
+Because catalog rows contain category-dependent nested fields that exceed the safe
+portable subset of Anthropic's compiled strict schemas, the provider emits a strict
+two-field envelope (`canonicalRowJson`, `sourceConflicts`). Local code reparses the
+row and applies the complete byte/depth/node/type/license/price/citation checks,
+preserves model/API/source provenance, and then submits the candidate to P3 admission
+and human review. Provider conformance is therefore never catalog authority (D36).
+
 ## 3. Conversational editing (P4-005)
 
 "Make the arms 20 % longer" / "swap to ducted props" compile to **JSON-Patch
@@ -141,6 +153,11 @@ were pinned on 2026-06-13 from official Anthropic docs and recorded in D26:
 `claude-fable-5` for synthesis, `claude-opus-4-8` for repair,
 `claude-sonnet-4-6` for edits, and `claude-haiku-4-5-20251001` for ETL. The gateway
 exposes the executable pin set at `GET /v1/generate/models`.
+
+The ETL pin, Messages endpoint, `2023-06-01` API version, forced strict-tool contract,
+and supported schema subset were rechecked against official Anthropic documentation
+on 2026-07-13 and recorded in D36. The native adapter still has no credentialed
+sandbox acceptance, so this documentation update does not promote it to live.
 
 ## 5. Brief-25 — generation quality as CI (D-evals, P4-009/010)
 

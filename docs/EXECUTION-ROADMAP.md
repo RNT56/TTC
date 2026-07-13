@@ -35,8 +35,10 @@ The broad v0 and most deterministic fixture contracts exist. G0 and G1 are green
 protected `main`: annotated validator v0.1.0 and its nine assets were produced by the
 release workflow, downloaded after publication, and independently verified. SEC-006
 contract/fixture acceptance is protected on `main` through PR #31 with exact
-post-merge CI/security proof. The next ordered work is the dependency-complete Wave 2
-builder loop.
+post-merge CI/security proof; docs-only PR #32 and its post-merge CI/security are
+also green. The native Anthropic ETL transport now exists at contract/fixture
+maturity (D36), but no credentialed provider or end-to-end reviewed-row proof exists.
+The next ordered work continues the dependency-complete Wave 2 builder loop.
 
 Current Wave 1/2 boundary:
 
@@ -162,7 +164,9 @@ Objective: prove the verify-first wedge with reviewed data and a real user.
 
 Work:
 
-- finish live catalog ETL and review persistence (`P3-004`, `P4-016`);
+- finish the credentialed catalog ETL sandbox through dedupe, immutable persistence,
+  owner review, BOM/export use, and recovery (`P3-004`, `P4-016`); the native bounded
+  transport contract is complete, but is not that acceptance evidence;
 - consume the delivered XC-28 equipped semantics in live catalog/retrieval flows;
 - retain the completed local license-export enforcement (`SEC-001`) and inspect its
   manifest/envelope proof against real OCCT artifacts in the provider sandbox;
@@ -357,8 +361,8 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P0 | none | decision hygiene | closed by D32; no fabricated historical variants |
 | P1 | P1-004, P1-017 | REC, QA perf/browser | real-mid-hardware budget; XC-28 configurator truth complete |
 | P2 | none | explicit registry deferral remains policy, not incomplete phase work | closed: v0.1 published/installed and v0.2 exact checks/post-merge proof |
-| P3 | P3-004 live ETL | SEC citation/license, OPS provider | reviewed live row through BOM/export |
-| P4 | P4-016 live extraction and external R1 proof | SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and external R1 flow succeeds |
+| P3 | P3-004 credentialed ETL sandbox and persistence | D36 native transport, SEC citation/license, OPS provider | one real extracted row is deduped, persisted immutably, owner-reviewed, and consumed through BOM/export with recovery evidence |
+| P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA E2E | Brief-25 >=20 remains green and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | P6-010 live parity | QA external corpus | real engines and external driveable model |
 | P7 | P7-003, 008, 009, 010 | OPS cost, SEC policy data | live one-click passing policy in browser |

@@ -1,8 +1,8 @@
 # Component Database & Compatibility Engine — implementation doc
 
-**Status:** P3 local production slice live · **Phases:** P3 · **Home:** Postgres (data plane) +
+**Status:** P3 deterministic/local production slice implemented; native Claude ETL contract exists, credentialed sandbox/live ingestion does not · **Phases:** P3 · **Home:** Postgres (data plane) +
 `crates/forge-validate::compat` (compatibility rules — CORE-side per D16, corrected from the earlier gateway *(proposed)* placement; gateway/studio consume) + `workers/etl`; lockfile resolution in `crates/forge-contract` (live) · **Plan refs:** §9 (v3.0) · **Decisions:** D1,
-D5, D10, D12
+D5, D10, D12, D36
 
 ## 1. Purpose
 
@@ -78,6 +78,18 @@ the component schema with **per-field source citations** → OCCT tessellation +
 meshoptimizer LOD chain → dedupe by (brand, model, rev) → **license-ledger entry
 (non-optional)** → low-confidence extractions to a human review queue. **Nothing
 auto-publishes.** Batch API for bulk runs.
+
+Contract/fixture implementation 2026-07-13 (D36): the worker retains deterministic
+fixture extraction and a deployment-command override, then adds a native pinned
+Haiku 4.5 Messages API path behind deployment credentials. Source data is explicitly
+delimited as untrusted; the request uses an exact public HTTPS host, forced strict
+tool selection, and byte/time/depth/node ceilings. Anthropic's supported strict
+schema constrains the transport envelope; the worker reparses and validates the full
+category-dependent row locally, including required identity, finite SI mass,
+confidence, license/export policy, offers, and per-field citations. Extraction
+model/API/source-hash provenance is retained. This produces only a review candidate:
+real credential proof, dedupe, immutable revision/ledger persistence, live OCCT/LOD,
+and end-to-end human review from the worker result remain P3-004 work.
 
 ## 5. License ledger & export filter (D10; XC-17)
 

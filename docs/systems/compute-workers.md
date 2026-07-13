@@ -1,8 +1,11 @@
 # Compute Workers (Python plane) — implementation doc
 
-**Status:** Fixture worker plane live for ETL, photoscan, geometry, training, replay, bridge, co-design, and maintenance; live GPU stacks adapter-backed · **Phases:** P3/P4 (ETL), P5 (photoscan), P6 (OCCT full), P7
-(training) · **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
-(v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved)
+**Status:** Deterministic worker plane implemented across all families; native
+Anthropic ETL at contract/fixture maturity; live GPU/provider stacks remain adapter-
+backed · **Phases:** P3/P4 (ETL), P5 (photoscan), P6 (OCCT full), P7 (training) ·
+**Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
+(v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
+(fixture-first expansion), D36 (native ETL boundary)
 
 ## 1. Purpose
 
@@ -53,7 +56,7 @@ hand off geometry to OCCT jobs → dedupe (brand, model, rev) → license-ledger
 (non-optional) → low-confidence rows to the human review queue. **Nothing
 auto-publishes.**
 
-Live 2026-06-14: deterministic fixture ingest plus injectable source-fetch,
+Implemented 2026-06-14: deterministic fixture ingest plus injectable source-fetch,
 Claude-style extraction, and OCCT geometry adapter protocols. `etl.ingest-component`
 can route source-bundle payloads through those adapters, and deployment-owned
 commands can provide `FORGE_CLAUDE_EXTRACT_CMD` and `FORGE_OCCT_TESSELLATE_CMD`.
@@ -63,6 +66,19 @@ Modal adapters accept only credential-free HTTPS, exact hosts where configured,
 public DNS answers, no redirects, explicit content types, 1..120-second timeouts,
 and 1 KiB..8 MiB streamed responses. Application DNS validation still requires a
 production egress firewall/proxy to close the connection-time rebinding gap.
+
+Contract/fixture implementation 2026-07-13 (D36): after the injected fixture and
+`FORGE_CLAUDE_EXTRACT_CMD` paths, the adapter may use deployment
+`ANTHROPIC_API_KEY` for a native standard-library Messages API call. The endpoint is
+fixed to `api.anthropic.com/v1/messages`; the key exists only in the header; API
+version `2023-06-01`, model `claude-haiku-4-5-20251001`, and an 8,192-token ceiling
+are pinned. The request is capped at 4 MiB, the response at 2 MiB, and the extracted
+tool input at 512 KiB. A forced strict tool emits a provider-compatible
+`canonicalRowJson` plus conflicts; local parsing then rejects non-finite, deep,
+oversized, malformed, uncited, unlicensed, or structurally incomplete rows before
+the sovereign catalog gate. Model/API/source-hash provenance survives into the
+worker result. No credentialed sandbox request, provider billing/recovery evidence,
+live review persistence, or live OCCT artifact is claimed.
 
 ### 3.2 `workers/occt` — B-rep truth (P3 tessellation; P6 DfM/STEP)
 STEP I/O, fillets, exact tessellation → meshoptimizer LOD chain (≤ 800/≤ 150 tris);
@@ -182,12 +198,19 @@ refit verdict; micro-task → learning-signal smoke); idempotency tests (run twi
 one result); poison-payload handling; cache-hit tests. SEC-006 negative tests cover
 private/reserved/host-drift URLs, redirects, content and response ceilings, bounded
 JSON depth/non-finite values, command-secret non-reflection, and output-overflow
-process termination. See [`../THREAT-MODEL.md`](../THREAT-MODEL.md).
+process termination. Native ETL tests additionally assert exact endpoint/version/
+model/tool choice, command precedence, secret-free JSON, delimiter containment,
+strict-schema compatibility, local row validation, extraction provenance, missing or
+duplicate tool rejection, captured-source-only provenance URLs, redirect/private-DNS
+failure, and reflected-error redaction. See
+[`../THREAT-MODEL.md`](../THREAT-MODEL.md).
 
 ## 7. Phase mapping & backlog
 
-P3/P4: etl + adapter seams (P3-004, P3-010, P4-015..017). P5: fixture photoscan is
-live; full TRELLIS/COLMAP remains adapter work. P6: fixture tessellation, DfM
+P3/P4: ETL fixture, command, and native Anthropic contract paths exist
+(P3-004, P3-010, P4-015..017); credentialed sandbox extraction, real-result
+persistence, and live OCCT remain open. P5: fixture photoscan is live; full
+TRELLIS/COLMAP remains adapter work. P6: fixture tessellation, DfM
 metadata, D10 policy enforcement, and runtime sim helpers are live; full live
 OCCT/STEP artifact proof remains open. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
