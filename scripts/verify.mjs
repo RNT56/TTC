@@ -34,6 +34,7 @@ function assertSame(label, left, right) {
 try {
   run("Immutable workflow action pins", "node", ["scripts/check-actions-pinned.mjs"]);
   run("Compatibility matrix and version contracts", "node", ["scripts/check-compatibility.mjs"]);
+  run("Generated API, event, and artifact documentation", "pnpm", ["verify:docs-contracts"]);
   run("Postgres migration runner policy", "pnpm", ["db:migrations:test"]);
   run("Golden artifact review policy", "pnpm", ["verify:goldens"]);
   run("External acceptance evidence policy", "pnpm", ["verify:external-acceptance"]);

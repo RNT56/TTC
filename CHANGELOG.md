@@ -18,6 +18,31 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-14 — Generate governed interface documentation
+**Session:** Codex agent · branch `codex/doc005-contract-docs` · **Phase:** DOC /
+compatibility · **TODO items:** DOC-005 [~]
+**Done:** Added one reviewed source manifest and deterministic generator for the
+gateway API, streamed/job events, and worker artifact families. The generated
+OpenAPI 3.1 reference exact-matches all 75 Fastify registrations; the event and
+artifact catalogs cover two event families and all sixteen worker queue kinds; the
+compatibility matrix now governs fourteen surfaces. Migration/deprecation guides and
+four synthetic examples preserve the pre-1.0, fixture/contract, authorization, BYO-
+key, and independently versioned-response boundaries. The complete 36-step local
+gate passes under Python 3.12, including 63/63 gateway tests, 127/127 worker tests,
+19 golden-policy tests, native/WASM parity, packaging, generated-doc drift, and patch
+hygiene.
+**Changed:** Runtime route observation; documentation source/generator and generated
+references; migration, deprecation, and example guidance; compatibility and golden
+registries; required CI and local gates; canonical agent entry; README; gateway,
+governance, best-practice, compatibility, state, phase, execution, and task docs.
+**Decisions:** none. D31 and existing compatibility/deprecation authority remain
+binding; no runtime API, schema, dependency, live-provider path, or maturity claim
+changed.
+**Next:** publish this exact candidate through protected PR CI/security, then record
+the protected merge and post-merge evidence before closing DOC-005.
+**Blockers:** none for deterministic delivery. Live providers, hardware, external
+users, operations, and field evidence retain their separate prerequisites.
+
 ## 2026-07-14 — Close protected parity reliability acceptance
 **Session:** Codex agent · branch `codex/qa012-protected-evidence` · **Phase:** QA /
 render reliability · **TODO items:** QA-012 [x]

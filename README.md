@@ -42,7 +42,7 @@ studio, a Rust validator, a simulation/export stack, a Python worker plane, and 
 platform layer for sharing, courses, policy scorecards, quote links, and
 maintenance records.
 
-> **Current status (2026-07-13):** the standalone validator
+> **Current status (2026-07-14):** the standalone validator
 > [`v0.1.0`](https://github.com/RNT56/TTC/releases/tag/v0.1.0) is released with
 > checksums, SPDX SBOMs, provenance, and independent binary/WASM install proof. The
 > broader product remains an advanced deterministic prototype, not a production
@@ -423,6 +423,19 @@ Inspect the golden registry or run its focused policy gate with:
 pnpm verify:goldens
 ```
 
+Generate and verify the versioned gateway API, event, and artifact references with:
+
+```bash
+pnpm docs:contracts
+pnpm verify:docs-contracts
+```
+
+The [generated reference](docs/API-EVENT-ARTIFACT-REFERENCE.md) exact-matches all
+registered routes and TypeBox request constraints, both event families, compatibility
+versions, and worker queue kinds. It includes OpenAPI 3.1, migration/deprecation
+guidance, and synthetic examples. These are contract/fixture docs, not a hosted-live
+service claim.
+
 Inspect the eight external-acceptance milestone contracts and generated evidence
 templates with:
 
@@ -516,8 +529,9 @@ as WebGL parity evidence.
 | `workers` | Python jobs for ETL, photoscan, training, replay, bridge, co-design, maintenance |
 | `infra/migrations` | Postgres schema for catalog, jobs, artifacts, gates, commerce |
 | `catalog` | Component and reference rig data |
+| `contracts/documentation.json` | Reviewed source metadata for generated route/event/artifact documentation |
 | `examples` | First-party model contracts |
-| `docs` | Current state, phase/task/execution roadmaps, system design, decisions, golden review records, pilot playbooks |
+| `docs` | Current state, roadmaps, system/compatibility docs, generated contract references, decisions, golden records, pilot playbooks |
 | `evals` | Brief-25 generation benchmark |
 | `scripts` | Codegen, migrations, checks, parity, evals |
 

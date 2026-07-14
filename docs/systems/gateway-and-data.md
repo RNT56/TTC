@@ -31,24 +31,30 @@ Neither layer substitutes for the other. The canonical security contract is
 
 ## 3. API surface
 
-| Area | Routes | Phase |
-|---|---|---|
-| Validation | `POST /v1/validate` (contract → report); `POST /v1/bake`; `POST /v1/bom`; `GET /v1/schema` | P2/P3 |
-| Auth/account | `/auth/*` (Auth.js GitHub OAuth); `GET /v1/me`; `GET /v1/credits`; `GET /v1/account/export`; exact-confirmation `DELETE /v1/account` | P4/P11 |
-| Consent | `GET /v1/consents/policies`; `GET/POST /v1/consents`; `POST /v1/telemetry/logs/:id/share`; `POST /v1/models/:id/pattern-contribution`; consent-gated photoscan/training/leaderboard writes | P4-P11 |
-| Registry: models | `GET/POST /v1/models`; `GET /v1/models/:id`; `POST /v1/models/:id/edit`; `POST /v1/models/:id/share`; `GET /v1/share/:shareId` (public read-only, D4) | P4 |
-| Generation | `POST /v1/generate/context`; `POST /v1/generate`; `POST /v1/generate/stream` (staged SSE); `GET /v1/generate/models` (D26 model pins) | P4 |
-| Catalog | `GET /v1/components` (search/filter/embedding); `GET /v1/components/:id@:rev`; `POST /v1/lockfile/resolve`; upgrade-diff; `POST /v1/bom` live | P3 |
-| Review queue | `GET /v1/reviews` (pending/approved/rejected catalog review records); `PATCH /v1/reviews/:id` (approve/reject one pending record) | P4 entry |
-| Object blobs | `POST /v1/blobs`; `GET /v1/blobs/:id`; `POST /v1/blobs/:id/complete`; `POST /v1/blobs/:id/access` for owner-scoped S3/MinIO presigned upload/download | P5+ |
-| Jobs | `GET/POST /v1/jobs`; `GET /v1/jobs/:id`; `GET /v1/jobs/:id/events`; task kinds `etl.ingest-component`, `occt.tessellate`, `photoscan.single`, `photoscan.multiview`, `train.policy`, `train.sysid-fit`, `replay.verify`, `codesign.evaluate`, `bridge.*`, `commerce.vendor-refresh`, `maintenance.*`; fixture/worker outputs materialize sidecar rows where tables exist | P5+ |
-| Policies/replays/photoscan | consent-gated `POST /v1/photoscan`; `GET /v1/photoscan/artifacts`; `PATCH /v1/photoscan/artifacts/:id/alignment`; consent-gated telemetry-reuse `POST /v1/policies`; `GET /v1/policies`; `GET/POST /v1/replays`; `GET /v1/telemetry/logs` | P5/P7/P8 |
-| Courses/leaderboards/classroom | `GET/POST /v1/courses`; `GET /v1/courses/:id`; `POST /v1/courses/generate`; `GET/POST /v1/leaderboards` with course/archetype/class slices; `GET/POST /v1/classroom/assignments`; `GET/POST /v1/classroom/assignments/:id/submissions` | P10/P11 |
-| Platform | `GET/POST/PATCH /v1/listings`; owner-scoped `GET /v1/listings/mine`; `GET/POST/PATCH /v1/moderation/reports`; `GET/POST /v1/maintenance/records`; `GET /v1/commerce/vendor-offers`; `POST /v1/commerce/vendor-offers/refresh`; `GET /v1/evals/brief25/latest` | P11/P12 |
+The exhaustive current surface is generated from the registered Fastify routes and
+their TypeBox request schemas:
 
-Conventions *(proposed)*: versioned prefix `/v1`; SSE for long-running streams
-(generation, jobs); presigned S3 URLs for all binary upload/download; idempotency
-keys on job creation.
+- [`../API-EVENT-ARTIFACT-REFERENCE.md`](../API-EVENT-ARTIFACT-REFERENCE.md) — human
+  route/auth/maturity table plus event and artifact guidance;
+- [`../contracts/openapi.v0.2.0.json`](../contracts/openapi.v0.2.0.json) — OpenAPI
+  3.1 request contract for all 75 registered routes;
+- [`../contracts/events.v0.2.0.json`](../contracts/events.v0.2.0.json) — generation
+  SSE and persisted job-event ordering/terminal semantics;
+- [`../contracts/artifacts.v0.2.0.json`](../contracts/artifacts.v0.2.0.json) — all
+  compatibility domains and the exact 16-kind worker envelope catalog.
+
+`contracts/documentation.json` supplies reviewed purpose, authentication, maturity,
+response-status, event, and artifact metadata. `pnpm docs:contracts` combines it with
+actual route registrations and the compatibility matrix. `pnpm
+verify:docs-contracts` fails on undocumented or removed routes, stale TypeBox output,
+event-emission drift, queue-kind drift, missing guides/examples, or changed generated
+files.
+
+The `/v1` API and event stream are documented pre-1.0 internal surfaces at 0.2.0.
+Successful response objects without their own format marker remain open pre-1.0
+shapes; independently versioned reports, exports, ledgers, receipts, lifecycle
+records, replays, EnvSpecs, and license manifests retain their own compatibility
+domains. Compute workers still have no public HTTP surface.
 
 ## 4. Data plane
 
@@ -205,8 +211,10 @@ schema is the emitted ModelSpec JSON Schema, then feeds each candidate through t
 same validator/repair/draft loop. The JSON response returns attempt history,
 diagnostics, the admitted/draft/rejected contract, the validator report, and the
 `generatedArtifact` audit pointer when persistence is enabled. The stream endpoint
-uses `text/event-stream` and emits start plus final complete/error events; per-pass
-slot/diagnostic streaming remains proposed for the richer studio UX.
+uses `text/event-stream`: one hash-only `start`, ordered `stage` events for intent,
+retrieval, synthesis, validation, repair, and admission, then exactly one terminal
+`complete` or `error`. The generated event catalog owns the current stage vocabulary
+and payload-field contract.
 
 All generation-family entry points first apply the SEC-002 platform-exclusion guard.
 Refused briefs never reach retrieval, provider transport, model edit, or course

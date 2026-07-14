@@ -36,6 +36,26 @@
       "compatibilityReview": true
     },
     {
+      "id": "api-event-artifact-docs",
+      "classification": "schema",
+      "paths": [
+        "docs/API-EVENT-ARTIFACT-REFERENCE.md",
+        "docs/contracts/manifest.json",
+        "docs/contracts/openapi.v0.2.0.json",
+        "docs/contracts/events.v0.2.0.json",
+        "docs/contracts/artifacts.v0.2.0.json"
+      ],
+      "owner": "gateway and compatibility maintainers",
+      "sourceOfTruth": "registered Fastify/TypeBox routes, compatibility matrix, and contracts/documentation.json metadata",
+      "regenerate": "pnpm docs:contracts",
+      "verify": [
+        "pnpm verify:docs-contracts",
+        "pnpm verify:compatibility",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
       "id": "native-wasm-golden-numbers",
       "classification": "physics",
       "paths": [

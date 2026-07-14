@@ -74,6 +74,10 @@ jobs:
       - name: build validator binary for gateway tests
         run: cargo build -p forge-validate
       - run: pnpm install --frozen-lockfile
+      - name: generated API, event, artifact, and compatibility contracts
+        run: |
+          pnpm verify:compatibility
+          pnpm verify:docs-contracts
       - name: build studio + gateway
         run: pnpm -r build
       - name: gateway tests (spawns the gatekeeper)

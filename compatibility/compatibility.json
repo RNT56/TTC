@@ -23,6 +23,18 @@
       "supportedMajors": [0],
       "versionExport": "version()"
     },
+    "gatewayApi": {
+      "current": "0.2.0",
+      "supportedMajors": [0],
+      "spec": "docs/contracts/openapi.v0.2.0.json",
+      "versionRule": "pre-1.0 gateway package SemVer; independently versioned response documents retain their own format versions"
+    },
+    "gatewayEvents": {
+      "current": "0.2.0",
+      "supportedMajors": [0],
+      "spec": "docs/contracts/events.v0.2.0.json",
+      "versionRule": "pre-1.0 gateway package SemVer; consumers ignore additive event fields and unknown stage values"
+    },
     "replay": {
       "current": "1.0.0",
       "supportedMajors": [1],

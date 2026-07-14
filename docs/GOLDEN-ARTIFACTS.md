@@ -72,7 +72,12 @@ and a new oracle family, not an edit.
 The registry is machine-owned inventory. Adding or removing an artifact family must
 update this document, registry validation tests, and the owning system documentation.
 
-The current inventory has **fifteen families**. QA-007's
+The current inventory has **sixteen families**. DOC-005's
+`api-event-artifact-docs` family owns the generated OpenAPI, event/artifact catalogs,
+machine manifest, and human reference. Its route/request source is the running
+Fastify/TypeBox registry; its version source is the compatibility matrix; and its
+reviewed descriptive source is `contracts/documentation.json`. Generated files are
+never hand-edited. QA-007's
 `boundary-adversarial-corpora` family owns the exact eight JSON files under
 `evals/fuzz/boundaries/`. Its cases are reviewed fixture evidence: stable IDs,
 accepted/refused outcomes, special non-finite sentinels, and the exact file set are

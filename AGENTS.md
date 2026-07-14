@@ -46,14 +46,17 @@ Read in this order for every non-trivial session:
    or release archive handling.
 12. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
     persisted-data compatibility, backup impact, or database recovery behavior.
-13. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
-   EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-14. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
-   dependencies, or releases.
-15. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+13. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
+    `docs/DEPRECATIONS.md` before changing gateway routes, authentication classes,
+    events, externally consumed artifacts, examples, or removal plans.
+14. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
+15. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+    dependencies, or releases.
+16. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-16. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-17. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+17. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+18. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -103,7 +106,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
-- compatibility policy 1.0.0 is machine-checked across twelve public format/package
+- compatibility policy 1.0.0 is machine-checked across fourteen API/event/format/
+  package
   boundaries; the CLI/WASM facades expose their active versions;
 - QA-008 is protected through PR #36: fourteen registered golden artifact families
   are machine-governed, the frozen prototype is immutable, and any registered re-pin
@@ -114,6 +118,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   proves its D38 queue and staged-upload recovery matrix. QA-007 is protected through
   PR #48 at `e89bb15`: the fifteenth family contains eight versioned boundary corpora
   and 89 reviewed cases, and exact PR/post-merge CI/security are green;
+- the DOC-005 candidate adds a sixteenth registered schema family: its generator
+  exact-matches all 75 Fastify routes, two event families, fourteen compatibility
+  domains, and sixteen worker queue kinds, and emits versioned OpenAPI/event/artifact
+  references plus migration, example, and deprecation guidance. The complete 36-step
+  local gate passes under Python 3.12; this remains branch evidence until protected
+  PR and post-merge checks pass;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -188,7 +198,7 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Simulation/export/import | `crates/forge-sim` | Rapier interactive; MuJoCo training-canonical; parity on upgrades |
 | Admission | `crates/forge-validate` | The validator is sovereign; fix artifacts, never weaken checks to green them |
 | Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction; support tiers and accessibility acceptance are owned by `docs/BROWSER-SUPPORT.md` |
-| API/data/platform | `packages/gateway`, `infra/migrations` | Validate writes, scope ownership, fail closed, preserve audit history |
+| API/data/platform | `packages/gateway`, `infra/migrations`, `contracts/documentation.json` | Validate writes, scope ownership, fail closed, preserve audit history; registered routes and TypeBox request schemas generate the versioned API/event/artifact reference without hand-edited drift |
 | Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
@@ -472,6 +482,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 |---|---|
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
+| Gateway API/event/artifact docs | `pnpm docs:contracts`; inspect generated OpenAPI/reference/catalog diff; `pnpm verify:docs-contracts`; `pnpm verify:compatibility`; append-only golden review record; gateway build/tests; full `pnpm verify` before closure |
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
 | Visual parity/nightly | `pnpm --filter @forge/studio build`; `pnpm parity`; inspect the matching source/checkout SHA and clean-worktree identity in `artifacts/parity/{preflight,metrics}.json`, renderer preflight, metrics, and all six composites; require full-Studio Chromium/WebGL and unchanged gates; branch nightly for harness changes |
 | Cross-boundary parser/fuzz corpus | `pnpm fuzz:contract:check`; Rust contract/sim boundary tests; Python 3.12 worker suite; registered-golden review; full `pnpm verify` |
@@ -540,6 +551,10 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - `docs/EXTERNAL-ACCEPTANCE.md` and its machine registry own external scripts,
   evidence shape, independence, data minimization, stop outcomes, and task-close
   review; raw acceptance material stays outside Git.
+- `contracts/documentation.json` plus the registered gateway routes and compatibility
+  matrix own generated API/event/artifact reference metadata. Never hand-edit files
+  under `docs/contracts/` or `docs/API-EVENT-ARTIFACT-REFERENCE.md`; regenerate and
+  check them with the documented commands.
 - System docs own implementation contracts; `DECISIONS.md` owns binding choices;
   `risk-register.md` owns risks and watch triggers.
 - Use executable commands and explicit acceptance evidence.

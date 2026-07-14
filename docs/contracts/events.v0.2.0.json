@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "forge-event-catalog.v1",
+  "catalogVersion": "1.0.0",
+  "gatewayEventVersion": "0.2.0",
+  "capabilityBoundary": "contract/fixture; no deployed live event-service claim",
+  "events": [
+    {
+      "id": "generation-sse",
+      "versionSurface": "gatewayEvents",
+      "transport": "text/event-stream",
+      "endpoint": "POST /v1/generate/stream",
+      "ordering": "wire order on one HTTP response",
+      "events": [
+        {
+          "name": "start",
+          "terminal": false,
+          "fields": [
+            "promptHash",
+            "provider"
+          ]
+        },
+        {
+          "name": "stage",
+          "terminal": false,
+          "fields": [
+            "stage"
+          ],
+          "stageValues": [
+            "intent-parse",
+            "retrieval",
+            "blocked",
+            "skeleton-slot-pass",
+            "part-detail-pass",
+            "validation-repair-pass",
+            "validator-result",
+            "admission",
+            "deterministic-repair",
+            "draft-admission"
+          ]
+        },
+        {
+          "name": "complete",
+          "terminal": true,
+          "fields": [
+            "mode",
+            "catalogPolicy",
+            "modelPins",
+            "context",
+            "attempts",
+            "verdict",
+            "contract",
+            "report",
+            "blockedReasons"
+          ]
+        },
+        {
+          "name": "error",
+          "terminal": true,
+          "fields": [
+            "error"
+          ],
+          "notes": "Structured safety refusals also include code, policyVersion, categories, and refusalId without raw prompt content."
+        }
+      ],
+      "currentVersion": "0.2.0"
+    },
+    {
+      "id": "job-lifecycle",
+      "versionSurface": "workerArtifacts",
+      "transport": "persisted-polling",
+      "endpoint": "GET /v1/jobs/:id/events",
+      "ordering": "ascending numeric id",
+      "recordFields": [
+        "id",
+        "jobId",
+        "event",
+        "payload",
+        "createdAt"
+      ],
+      "events": [
+        {
+          "name": "started",
+          "terminal": false,
+          "fields": [
+            "task",
+            "attempt"
+          ]
+        },
+        {
+          "name": "retry-scheduled",
+          "terminal": false,
+          "fields": [
+            "code",
+            "attempt",
+            "retryAfterSeconds"
+          ]
+        },
+        {
+          "name": "succeeded",
+          "terminal": true,
+          "fields": [
+            "task"
+          ]
+        },
+        {
+          "name": "failed",
+          "terminal": true,
+          "fields": [
+            "code"
+          ]
+        },
+        {
+          "name": "discarded",
+          "terminal": true,
+          "fields": [
+            "reason"
+          ]
+        }
+      ],
+      "currentVersion": "0.2.0"
+    }
+  ]
+}
