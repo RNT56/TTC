@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-14**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected runtime descendant: `e89bb15` (PR #48; QA-007 adversarial corpus)
+Latest verified protected runtime descendant: `6f8509b` (PR #50; QA-012 parity reliability)
 Latest verified protected evidence descendant: `0f31b82` (PR #49; QA-007 reconciliation and QA-012 registration)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
@@ -11,7 +11,8 @@ QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
 QA-003 browser/accessibility evidence anchor: `9c1802b` (PR #42)
 QA-005 fault-acceptance evidence anchor: `7970005` (PR #46)
 QA-007 adversarial-corpus evidence anchor: `e89bb15` (PR #48)
-Recovery/release gates: **G1 historical release closed; current G0 nightly acceptance regressed under QA-012**
+QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
+Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -22,11 +23,11 @@ releases, provider readiness, hardware proof, or phase status.
 ForgedTTC is an advanced deterministic engineering prototype with real implementation
 across all architectural planes. Protected `main` has a green required baseline for
 core, generation, WASM, gateway, Postgres, workers, packaging, dependency audits,
-and CodeQL. Nightly core coverage is green, but visual parity is currently red
-because the harness captured the intentional Canvas2D support fallback rather than
-the required WebGL renderer; QA-012 owns the active reliability lane. The published
-v0.1.0/G1 evidence remains valid, but this regression blocks any new phase/release
-close that requires a current G0.
+CodeQL, nightly coverage, and governed visual parity. QA-012 restored the full-Studio
+WebGL parity path through protected PR #50 and exact-main nightly `29372161650`; the
+downloaded artifact binds a clean checkout to protected `6f8509b` and passes all six
+canonical scenes. Current G0 acceptance is restored, while published v0.1.0/G1
+evidence remains valid.
 
 The standalone validator v0.1.0 is now **released and independently install-verified**.
 The broader ForgedTTC product remains **not production-ready or field-proven**: G0/G1
@@ -45,26 +46,27 @@ open.
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected runtime descendant and QA-007 anchor `e89bb15`, latest docs reconciliation `0f31b82`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | QA-007 PR #48 exact head `fb6eacc` passed CI `29366837836`/security `29366838444`; protected squash `e89bb15` passed post-merge CI `29367356078`/security `29367355993`. Evidence PR #49 merged as `0f31b82` and passed post-merge CI `29369026150`/security `29369026035` |
+| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected runtime descendant and QA-012 anchor `6f8509b`, latest docs reconciliation `0f31b82`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | QA-012 PR #50 exact head `8d4bf63` passed CI `29370722178`/security `29370722124` and branch nightly `29370725355`; protected squash `6f8509b` passed post-merge CI `29371177801`/security `29371177809` and exact-main nightly `29372161650` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 35 required non-DB gates locally on the QA-012 candidate; equivalent protected base jobs pass at `0f31b82` | migration source/history/checksum policy joins external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; the separate required Postgres job will re-prove the populated predecessor, fault, and three-engine browser matrices on the exact PR head |
-| Golden artifact and parity-harness review | protected through PR #48 with 15 governed families; QA-012 locally extends the existing policy step from 10 to 16 tests | the six added tests pin isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No registered artifact, golden, camera, metric threshold, or draw-call budget changes |
+| `pnpm verify` | pass: 35 required non-DB gates on exact QA-012 head `8d4bf63`; equivalent protected jobs pass at `6f8509b` | migration source/history/checksum policy joins external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance also passes on exact PR and protected merge |
+| Golden artifact and parity-harness review | protected through PR #50 with 15 governed artifact families and 19 focused policy tests | nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 63/63 with the real validator in the full gate | includes staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
-| Worker tests | pass: 127/127 on protected QA-007 under Python 3.12 | the five corpus consumers cover replay/provider/citation/export/hardware boundaries; D38, commerce, native ETL, and SEC-006 coverage remain green |
-| Postgres/pgvector gate | pass on protected QA-007 merge CI `29367356078` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
+| Worker tests | pass: 127/127 on protected QA-012 under Python 3.12 | the five corpus consumers cover replay/provider/citation/export/hardware boundaries; D38, commerce, native ETL, and SEC-006 coverage remain green |
+| Postgres/pgvector gate | pass on protected QA-012 merge CI `29371177801` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
-| Browser parity gallery | **protected nightly red; QA-012 local candidate green** | scheduled run `29311327203` and exact-current-main manual run `29367911748` passed coverage but selected Canvas2D because the custom parity server lacked the COOP/COEP contract added with QA-003; the same semantic wrapper change also made its old chrome-hiding selector ineffective. The local candidate restores isolation, verifies full-Studio/Chromium/high/WebGL preflight, permits only one fresh-browser retry for an isolated renderer initialization failure, asserts low/WebGL/advanced capture quality, records attempt diagnostics, and passes all six scenes at edge F1 0.957-0.995 with 3 draws. Focused Chromium browser-support and the full 35-step gate also pass. Protected branch/main nightly proof remains required; thresholds and goldens are unchanged |
+| Browser parity gallery | **pass on protected `6f8509b`; QA-012 closed** | scheduled run `29311327203` and exact-current-main rerun `29367911748` exposed missing isolation headers and stale semantic-wrapper chrome suppression. PR #50 restores the governed full-WebGL path and version-binds both JSON artifacts. Exact branch nightly `29370725355` and exact-main nightly `29372161650` pass. Downloaded artifact `8326520247` records one isolated full-Studio Chromium/high-WebGL preflight with no page errors and six low-WebGL captures at unchanged edge F1 0.957-0.995, 3 draws, and 2,208/4,662 triangles; source/checkout equal `6f8509b` and the worktree is clean |
 | QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb`; revalidated at `7970005` | exact PR CI `29272067712`/security `29272067617` and post-merge CI `29272532186`/security `29272531705` close the task; current protected CI re-proves the production bundle, real WASM, 21 migrations, catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed owner listing, job, and materialized maintenance; no live-provider or external-user claim |
 | QA-003 browser/accessibility acceptance | complete at deterministic supported-browser maturity through PR #42 and protected `9c1802b` | exact PR CI `29282669499`/security `29282669468` and post-merge CI `29283250843`/security `29283250865` pass. The clean merge artifact records real WASM/validator admission and all semantic, skip/focus, keyboard orbit/equip/explode/blueprint, AA contrast, critical-target, responsive, reduced-motion, renderer, asset-isolation, and positive-draw assertions across Chromium 148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Chromium is full WebGL at 33 draws; Firefox/WebKit are core-baked Canvas2D at 17 draws with no scene/Three.js chunks. WebKit/narrow checks remain proxies, not Apple/mobile-device, assistive-technology, external-user, or field proof |
 | QA-004 migration acceptance | complete through PR #44 and protected `e362c54` | exact PR CI `29286731035`/security `29286731271` and post-merge CI `29287274236`/security `29287274293` pass. The clean merge artifact binds source/checkout to `e362c54`, applies 20/20 clean migrations, preserves and idempotently reruns all 19 populated predecessors, and proves atomic rollback/corrected roll-forward, checksum/gap refusal, advisory serialization, and apply once. Production backup/restore/RPO/RTO remains OPS-005 |
 | QA-005 fault acceptance | complete at deterministic isolated-Postgres maturity through PR #46 and protected `7970005` | exact implementation head `5663900` passed PR CI `29291536114`/security `29291536115`; synthetic merge `99024b8` had no non-doc implementation delta; post-merge CI `29292041469`/security `29292041441` pass. The clean artifact binds source/checkout to `7970005` and proves crash reclaim, two-attempt one-time materialization, stale/cancelled-result discard, bounded outage recovery, terminal rate exhaustion with its 17 s hint, partial-upload refusal/retry, exact metadata completion, and consent/job success. Multi-replica queues, deployed object storage, provider incidents, shared quotas, and production SLOs remain separate gates |
 | QA-007 boundary adversarial corpus | complete through PR #48 and protected `e89bb15` | exact eight-file `forge-boundary-fuzz.v1` inventory contains 89 unique cases. Rust contract/sim tests consume patch/import/EnvSpec/replay cases with property-based no-panic checks; Python consumes replay/provider/citation/export/hardware cases. Exact head `fb6eacc` passed PR CI `29366837836`/security `29366838444`; protected merge `e89bb15` passed post-merge CI `29367356078`/security `29367355993`, including the isolated Postgres/real-browser job. This remains deterministic fixture evidence, not provider, diverse real-import, hardware, load, or field proof |
+| QA-012 parity reliability | complete through PR #50 and protected `6f8509b` | exact head `8d4bf63` passed all 35 local gates, branch nightly `29370725355`, PR CI `29370722178`, and security `29370722124`; protected merge passed CI `29371177801`, security `29371177809`, and exact-main nightly `29372161650`. Both downloaded JSON artifacts self-bind to the clean merge revision and refuse Canvas2D or source drift; this restores G0 parity acceptance without changing the QA-003 viewer fallback or any golden/threshold |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
 | Rapier/pinned-MuJoCo parity | pass | deterministic fixture comparison; not a live MuJoCo provider run |
@@ -223,15 +225,19 @@ Live GitHub evidence checked on 2026-07-14:
   [29369026150](https://github.com/RNT56/TTC/actions/runs/29369026150) and security
   [29369026035](https://github.com/RNT56/TTC/actions/runs/29369026035) are green. It
   closes the evidence loop and registers QA-012 without changing QA-007 maturity;
-- scheduled nightly [29311327203](https://github.com/RNT56/TTC/actions/runs/29311327203)
-  and exact-current-main manual rerun
-  [29367911748](https://github.com/RNT56/TTC/actions/runs/29367911748) both passed
-  core coverage but failed all six visual-parity scenes with Canvas2D fallback draw
-  counts and edge F1 0.058-0.121. Previous nightly
-  [29232788821](https://github.com/RNT56/TTC/actions/runs/29232788821) passed full
-  WebGL at edge F1 0.957-0.995. QA-012's local candidate identifies the missing
-  parity-server isolation headers and stale semantic-wrapper selector, then passes
-  full-Studio WebGL 6/6 at the same F1 range and 3 draws without changing thresholds;
+- parity reliability [PR #50](https://github.com/RNT56/TTC/pull/50) closed QA-012.
+  Exact head `8d4bf63` passed branch nightly
+  [29370725355](https://github.com/RNT56/TTC/actions/runs/29370725355), PR CI
+  [29370722178](https://github.com/RNT56/TTC/actions/runs/29370722178), and security
+  [29370722124](https://github.com/RNT56/TTC/actions/runs/29370722124). Protected
+  squash `6f8509b` passed post-merge CI
+  [29371177801](https://github.com/RNT56/TTC/actions/runs/29371177801), security
+  [29371177809](https://github.com/RNT56/TTC/actions/runs/29371177809), and exact-main
+  nightly [29372161650](https://github.com/RNT56/TTC/actions/runs/29372161650).
+  Downloaded artifact `8326520247` binds a clean source/checkout to `6f8509b`, records
+  one isolated full-Studio Chromium/high-WebGL preflight without page errors, and
+  passes all six low-WebGL scenes at unchanged edge F1 0.957-0.995 and 3 draws. The
+  earlier Canvas2D failures remain the diagnosis record, not current acceptance;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -366,10 +372,10 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **201 tasks: 137 done, 38 in progress, 25 open,
-and 1 explicitly blocked**. All 8 recovery tasks retain their historical completion;
-QA-012 owns the new baseline regression. The 64 remaining tasks are the phase/live/
-field program plus 2 governance, 2 security, 3 quality, 10 operations,
+The stable ledger currently contains **201 tasks: 138 done, 37 in progress, 25 open,
+and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
+The 63 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
+2 quality, 10 operations,
 9 external-proof, and 2 documentation tasks; dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 

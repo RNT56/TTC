@@ -18,6 +18,31 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-14 — Close protected parity reliability acceptance
+**Session:** Codex agent · branch `codex/qa012-protected-evidence` · **Phase:** QA /
+render reliability · **TODO items:** QA-012 [x]
+**Done:** Closed QA-012 through protected runtime evidence. Exact implementation
+head `8d4bf63` passed the complete 35-step local gate, authoritative clean-tree local
+parity, branch nightly `29370725355`, PR #50 CI `29370722178`, and security
+`29370722124`. Protected squash `6f8509b` passed post-merge CI `29371177801`, security
+`29371177809`, and exact-main nightly `29372161650`. Downloaded protected artifact
+`8326520247` uses `forge-parity-gallery.v1`, binds matching source/checkout SHAs to
+the clean merge, records one isolated full-Studio Chromium/high-WebGL preflight with
+no page errors, and passes all six low-WebGL scenes at unchanged edge F1
+0.957-0.995, 3 draws, and exact 2,208/4,662 triangle counts. Current G0 acceptance is
+restored; the earlier Canvas2D runs remain regression evidence, not acceptance.
+**Changed:** Canonical agent entry, project state, phase/execution roadmaps, stable
+QA-012 ledger row, counts, and changelog. No runtime, golden, camera, threshold,
+draw-call budget, browser tier, or compatibility format changed in this evidence
+reconciliation.
+**Decisions:** none. Existing D15/QA-003 browser tiers and P1-015 parity authority
+remain binding; Canvas2D is valid viewer fallback evidence but never parity proof.
+**Next:** merge this evidence reconciliation through protected checks, then select the
+next smallest dependency-complete lane from the 63 remaining tasks without
+misstating credential, external-user, operations, hardware, or field prerequisites.
+**Blockers:** none for QA-012 closure. Live-provider, independent-user, operations,
+controlled-lab, and field gates remain separate prerequisites.
+
 ## 2026-07-14 — Restore fail-closed WebGL parity evidence
 **Session:** Codex agent · branch `codex/qa012-parity-reliability` · **Phase:** QA /
 render reliability · **TODO items:** QA-012 [~]
