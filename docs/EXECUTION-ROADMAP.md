@@ -70,12 +70,15 @@ QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
 requires a qualified independent participant and frozen protected revision/
 environment.
 
-DOC-005 is the current dependency-complete X-lane on protected `2dfc960`. Its branch
-candidate adds versioned generated API/event/artifact references, exact runtime-route
-and worker-kind parity, migration/deprecation guidance, synthetic examples, and a
-registered golden schema family. Focused local generation/drift/compatibility checks
-and the complete 36-step gate pass under Python 3.12; PR and post-merge checks are
-still required for closure.
+DOC-005 is closed through protected PR #53 at `22c263b`. Versioned generated API,
+event, and artifact references now exact-match runtime routes and worker kinds;
+migration/deprecation guidance, synthetic examples, fourteen compatibility domains,
+and the registered schema family share the 36-step gate. Exact-head PR CI
+`29375146614`/security `29375146592` and post-merge CI `29376742319`/security
+`29376742373` pass. DOC-006 is the remaining dependency-complete X-lane: establish
+and exercise a maintainer-curated first-good-issue workflow without assigning
+security, credentials/providers, hardware, user data, compatibility migrations, or
+golden/oracle authority to entry-level work.
 
 Current Wave 1/2 boundary:
 
@@ -124,10 +127,10 @@ Current Wave 1/2 boundary:
   revision-bound full-WebGL parity contract across all six scenes. The QA-003
   Canvas2D viewer fallback remains intentional and separately accepted; no golden,
   threshold, browser support tier, or product maturity claim changed;
-- DOC-005 is in progress: the candidate exact-matches 75 runtime routes, two event
-  families, fourteen compatibility domains, and sixteen worker queue kinds, and adds
-  one generated documentation step to the full gate. All 36 local steps pass under
-  Python 3.12; it remains branch evidence until protected delivery;
+- DOC-005 is complete through protected PR #53 at `22c263b`: 75 runtime routes, two
+  event families, fourteen compatibility domains, and sixteen worker queue kinds
+  exact-match the generated references; all 36 local steps and exact PR/post-merge
+  CI/security pass;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is

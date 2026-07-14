@@ -18,6 +18,29 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-14 — Close governed interface documentation on protected main
+**Session:** Codex agent · branch `codex/doc005-protected-evidence` · **Phase:** DOC /
+compatibility · **TODO items:** DOC-005 [x]
+**Done:** Closed DOC-005 through protected PR #53. Exact implementation head
+`e79bbb1` passed the complete 36-step local gate under Python 3.12, PR CI
+`29375146614`, security `29375146592`, and the separate CodeQL aggregate. Protected
+squash `22c263b` passed post-merge CI `29376742319` and security `29376742373`,
+including 75-route/two-event/sixteen-worker generated-reference drift, fourteen
+compatibility surfaces, isolated Postgres and real-browser acceptance, three-engine
+accessibility, native Desktop, dependency audits, SPDX, and both CodeQL languages.
+The first PR head exposed incomplete Markdown escaping; the exact-head backslash and
+newline fix passed all gates and no failing alert carried into protected `main`.
+**Changed:** Canonical agent entry, project state, phase/execution roadmaps, stable
+DOC-005 ledger row, counts, and changelog. No runtime API, dependency, live-provider
+path, hardware authority, or maturity claim changed in this evidence reconciliation.
+**Decisions:** none. D31 and the compatibility/deprecation contracts remain binding.
+**Next:** Execute DOC-006's maintainer-curated first-good-issue workflow, exercise it
+with bounded dependency-free issues, and close the final documentation task through
+protected evidence.
+**Blockers:** none for DOC-006 documentation/process work. Live credentials/providers,
+external users, operations, controlled hardware, and field evidence retain separate
+owners and prerequisites.
+
 ## 2026-07-14 — Generate governed interface documentation
 **Session:** Codex agent · branch `codex/doc005-contract-docs` · **Phase:** DOC /
 compatibility · **TODO items:** DOC-005 [~]
