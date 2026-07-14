@@ -58,15 +58,14 @@ multi-replica queues, object-store operations, shared quotas, and SLOs remain
 OPS-005/QA-009 and OPS-003..007.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
-EXT-001 independent-builder path. Before resuming those prerequisite-bound lanes, the
-active dependency-complete reliability lane is the scheduled-nightly visual-parity
-failure under QA-012. Its local candidate restores the parity server's COOP/COEP
-isolation, makes chrome suppression independent of semantic wrapper shape, requires
-full-Studio/Chromium/high/WebGL preflight, permits one fresh-browser retry only after
-an isolated renderer initialization failure, and records per-attempt diagnostics.
-All six local scenes pass at the unchanged thresholds; protected branch/main nightly
-proof remains. Historical G0/G1 evidence stays valid, but QA-012 blocks any new
-G0-dependent release or phase close.
+EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is
+closed through protected PR #50 at `6f8509b`: the isolation-aware, semantic-wrapper-
+independent harness requires full-Studio Chromium/WebGL, records bounded diagnostics,
+and binds both JSON artifacts to one clean exact revision. Exact branch nightly
+`29370725355`, PR CI `29370722178`/security `29370722124`, post-merge CI
+`29371177801`/security `29371177809`, and exact-main nightly `29372161650` are green;
+the downloaded protected artifact passes all six scenes at unchanged thresholds.
+Current G0 acceptance is restored without changing historical G1 evidence.
 QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
 requires a qualified independent participant and frozen protected revision/
 environment.
@@ -113,6 +112,11 @@ Current Wave 1/2 boundary:
   Exact PR CI `29366837836`/security `29366838444` at `fb6eacc` and post-merge CI
   `29367356078`/security `29367355993` at `e89bb15` pass. Its fixture corpus is not a
   credentialed-provider, real-hardware, load, or field claim;
+- QA-012 is closed through protected PR #50 at `6f8509b`: exact branch, PR,
+  post-merge, and protected-main nightly evidence proves the isolation-aware,
+  revision-bound full-WebGL parity contract across all six scenes. The QA-003
+  Canvas2D viewer fallback remains intentional and separately accepted; no golden,
+  threshold, browser support tier, or product maturity claim changed;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -172,14 +176,12 @@ retains its own acceptance evidence.
 
 Objective: make `main` trustworthy before new feature work.
 
-Status (updated 2026-07-14): **Wave 0's historical closure remains complete, but
-current G0 acceptance is reopened by QA-012.** `REC-001..008`, `GOV-001..005`, and
-`QA-001` retain their completed evidence in `PROJECT-STATE.md`; scheduled and manual
-current-main nightlies reproduced a Canvas2D fallback capture instead of WebGL. The
-local QA-012 candidate identifies missing isolation headers plus stale chrome
-suppression as the deterministic causes and restores 6/6 full-WebGL parity. Exact
-branch and protected-main nightly proof must still pass before any new G0-dependent
-close.
+Status (updated 2026-07-14): **Wave 0 and current G0 acceptance are closed.**
+`REC-001..008`, `GOV-001..005`, and `QA-001` retain their completed evidence in
+`PROJECT-STATE.md`. QA-012 diagnosed the later Canvas2D parity-harness regression,
+restored the governed full-WebGL path without changing product fallback behavior,
+and passed exact branch, PR, post-merge, and protected-main nightly proof through PR
+#50 at `6f8509b`.
 
 Work:
 

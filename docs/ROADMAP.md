@@ -16,14 +16,13 @@ and D17 deletes an entire class of client/server consistency work.
 phase-level state only. Parallel execution order and subworker ownership live in
 [`EXECUTION-ROADMAP.md`](EXECUTION-ROADMAP.md).
 
-**Recovery/release gates:** G0 closed on 2026-07-12 and G1 closed on 2026-07-13;
-their historical evidence remains valid. Current G0 acceptance is nevertheless
-regressed under QA-012 because two current nightlies captured Canvas2D fallback
-instead of the required WebGL parity renderer. Protected `main` remains green in
-required PR/post-merge CI/security, and standalone validator v0.1.0 remains built,
-attested, published from an annotated tag, downloaded, and independently verified.
-QA-012 blocks any new G0-dependent release/phase close; live/external/field claims
-remain gated independently.
+**Recovery/release gates:** G0 closed on 2026-07-12, G1 closed on 2026-07-13, and
+QA-012 restored current G0 nightly acceptance on 2026-07-14. Protected PR #50,
+post-merge CI/security, and exact-main nightly `29372161650` are green at `6f8509b`;
+its downloaded revision-bound artifact proves the required full-Studio WebGL
+renderer across all six scenes. Standalone validator v0.1.0 remains built, attested,
+published from an annotated tag, downloaded, and independently verified. Live,
+external-user, operations, hardware, and field claims remain gated independently.
 
 Protected QA-008 PR #36 adds a 33rd local gate: fourteen schema/render/physics/
 validator/corpus/generated-runtime families are machine-registered, the frozen
@@ -71,12 +70,13 @@ boundary files and 89 stable cases. Rust and Python consumers pin accepted/refus
 behavior for imports, JSON Patch, EnvSpec, replay, provider rows, citations, D10
 exports, and hardware payloads; exact PR and post-merge CI/security are green. This
 deterministic corpus does not close live-provider, external-import diversity,
-hardware, performance, or field criteria. QA-012 is the immediate reliability lane:
-the local candidate fixes the custom server's missing COOP/COEP isolation and stale
-semantic-wrapper chrome selector, then requires a full-Studio/Chromium/high/WebGL
-preflight before the low-tier deterministic capture. All six local scenes pass at
-edge F1 0.957-0.995 and 3 draws without changing goldens or thresholds; branch and
-protected-main nightly proof remain before closure.
+hardware, performance, or field criteria. QA-012 is closed through protected PR #50
+at `6f8509b`: the custom server carries the required isolation contract, semantic-
+wrapper changes cannot contaminate captures, and versioned artifacts fail closed on
+renderer or source-revision drift. Exact-head branch nightly `29370725355`, PR CI/
+security, post-merge CI/security, and exact-main nightly `29372161650` are green. The
+protected artifact passes all six scenes at unchanged edge F1 0.957-0.995 and 3 draws
+without re-pinning any golden or threshold.
 
 | Phase | Status | Est. |
 |---|---|---|

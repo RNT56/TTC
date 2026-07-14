@@ -91,17 +91,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   security `29275851177` green; this makes external acceptance executable but does
   not supply an independent participant, provider, controlled rig, or field result;
 - Brief-25 admits 25/25 and every declared first-party verdict matches;
-- protected `main` is green in exact PR and post-merge CI/security. The latest
-  scheduled nightly `29311327203` passed coverage but failed visual parity after the
-  Studio entered its intentional Canvas2D fallback instead of WebGL; current-main
-  manual rerun `29367911748` reproduced the same six-scene failure, so parity
-  hardening is active under QA-012. The local candidate restores the parity server's
-  required COOP/COEP isolation, hides semantic UI wrappers without hiding the canvas,
-  and fail-closes on anything except full-Studio Chromium/WebGL; its six local scenes
-  pass at edge F1 0.957-0.995 and 3 draws, and all 35 local gates plus focused
-  Chromium support pass. Historical G0/G1 evidence remains intact, but no new release
-  or phase close may reuse G0 until protected branch/main nightly proof closes
-  QA-012;
+- protected `main` is green in exact PR and post-merge CI/security. QA-012 closed the
+  deterministic nightly-parity regression through PR #50 at `6f8509b`: exact head
+  `8d4bf63` passed branch nightly `29370725355`, PR CI `29370722178`, and security
+  `29370722124`; the protected merge passed CI `29371177801`, security `29371177809`,
+  and exact-main nightly `29372161650`. Downloaded artifact `8326520247` binds a
+  clean source/checkout to `6f8509b`, records one isolated full-Studio Chromium/
+  high-WebGL preflight with no page errors, and passes all six low-WebGL scenes at
+  unchanged edge F1 0.957-0.995, 3 draws, and exact 2,208/4,662 triangle counts.
+  Current G0 acceptance is restored without changing goldens or thresholds;
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
