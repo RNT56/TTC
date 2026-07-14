@@ -111,10 +111,14 @@ preflight for `full-studio`/`chromium`/`high`/`webgl` plus initialized advanced
 effects, then captures all six scenes at deterministic low-tier WebGL. Missing
 isolation or support-tier drift is a non-retryable configuration failure. An isolated
 renderer-initialization failure may receive one fresh-browser retry; every attempt is
-recorded in `artifacts/parity/preflight.json`. Each scene records its renderer quality
-in `metrics.json` and must retain the existing edge-F1 and draw-call gates. Semantic
-wrapper changes must hide non-canvas presentation subtrees by canvas ancestry so UI
-chrome cannot contaminate element screenshots.
+recorded in `artifacts/parity/preflight.json`. Both `preflight.json` and
+`metrics.json` carry the `forge-parity-gallery.v1` evidence identity: the workflow-
+declared source revision, checked-out Git revision, and dirty-worktree state. The
+nightly job requires the declared and checked-out 40-character SHAs to match and the
+checkout to remain clean. Each scene records its renderer quality in `metrics.json`
+and must retain the existing edge-F1 and draw-call gates. Semantic wrapper changes
+must hide non-canvas presentation subtrees by canvas ancestry so UI chrome cannot
+contaminate element screenshots.
 
 ## 4. Change and triage rules
 
@@ -136,3 +140,6 @@ chrome cannot contaminate element screenshots.
   proof that the complete matrix passed.
 - For parity failures, inspect `preflight.json` before image metrics. Never compare or
   re-pin a viewer-grade capture as if it were full-Studio WebGL evidence.
+- Reject an uploaded parity artifact whose embedded source revision differs from the
+  workflow run commit, whose checkout revision differs from its declared source, or
+  whose authoritative worktree was dirty.

@@ -475,7 +475,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
-| Visual parity/nightly | `pnpm --filter @forge/studio build`; `pnpm parity`; inspect `artifacts/parity/preflight.json`, metrics, and all six composites; require full-Studio Chromium/WebGL and unchanged gates; branch nightly for harness changes |
+| Visual parity/nightly | `pnpm --filter @forge/studio build`; `pnpm parity`; inspect the matching source/checkout SHA and clean-worktree identity in `artifacts/parity/{preflight,metrics}.json`, renderer preflight, metrics, and all six composites; require full-Studio Chromium/WebGL and unchanged gates; branch nightly for harness changes |
 | Cross-boundary parser/fuzz corpus | `pnpm fuzz:contract:check`; Rust contract/sim boundary tests; Python 3.12 worker suite; registered-golden review; full `pnpm verify` |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |

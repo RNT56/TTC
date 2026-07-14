@@ -20,14 +20,17 @@
 //
 // Outputs: per-scene monolith/studio/diff PNGs + composite strips + an HTML
 // index + metrics.json. Run after `pnpm -r build`.
+import { execFileSync } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { PNG } from "pngjs";
 import {
+  PARITY_EVIDENCE_SCHEMA,
   PARITY_ISOLATION_HEADERS,
   assessParityCapture,
   assessParityPreflight,
+  assessParitySourceEvidence,
   formatParityFailure,
 } from "./parity-gallery-policy.mjs";
 
@@ -43,6 +46,29 @@ const FOV_DEG = (2 * Math.atan(0.3443) * 180) / Math.PI;
 /// score 0.95–0.995; any wrong camera/model/pose/chrome configuration we
 /// observed scored ≤ 0.40. 0.85 separates the regimes with wide margin.
 const EDGE_F1_GATE = 0.85;
+
+function gitText(args) {
+  return execFileSync("git", args, { cwd: process.cwd(), encoding: "utf8" }).trim();
+}
+
+function collectSourceEvidence() {
+  const checkoutRevision = gitText(["rev-parse", "HEAD"]);
+  const declaredRevision = process.env.FORGE_SOURCE_REVISION?.trim();
+  const evidence = {
+    schema: PARITY_EVIDENCE_SCHEMA,
+    sourceRevision: declaredRevision || checkoutRevision,
+    checkoutRevision,
+    worktreeDirty: gitText(["status", "--porcelain=v1"]).length > 0,
+  };
+  const authoritative = declaredRevision !== undefined && declaredRevision.length > 0;
+  const assessment = assessParitySourceEvidence(evidence, { requireClean: authoritative });
+  if (!assessment.ready) {
+    throw new Error(
+      formatParityFailure("parity source-evidence preflight failed", assessment, evidence),
+    );
+  }
+  return evidence;
+}
 
 /// canonical cameras — three per model, shared by both renderers
 const SCENES = [
@@ -313,7 +339,7 @@ async function inspectStudioReadiness(browser, baseUrl, attempt) {
   }
 }
 
-async function launchVerifiedBrowser(baseUrl) {
+async function launchVerifiedBrowser(baseUrl, evidence) {
   const attempts = [];
   for (let attempt = 1; attempt <= 2; attempt++) {
     const browser = await launchBrowser();
@@ -326,7 +352,7 @@ async function launchVerifiedBrowser(baseUrl) {
     }
     const assessment = assessParityPreflight(diagnostics);
     attempts.push({ ...diagnostics, assessment });
-    writeFileSync(join(OUT, "preflight.json"), `${JSON.stringify({ attempts }, null, 2)}\n`);
+    writeFileSync(join(OUT, "preflight.json"), `${JSON.stringify({ evidence, attempts }, null, 2)}\n`);
     if (assessment.ready) return { browser, attempts };
 
     await browser.close();
@@ -408,6 +434,7 @@ async function captureStudio(browser, baseUrl, scene, view) {
 
 // --- main ----------------------------------------------------------------------
 mkdirSync(OUT, { recursive: true });
+const evidence = collectSourceEvidence();
 if (!existsSync(join(DIST, "index.html"))) {
   console.error("studio dist missing — run `pnpm -r build` first");
   process.exit(1);
@@ -429,7 +456,7 @@ const rows = [];
 let browser = null;
 let preflightAttempts = [];
 try {
-  const verified = await launchVerifiedBrowser(baseUrl);
+  const verified = await launchVerifiedBrowser(baseUrl, evidence);
   browser = verified.browser;
   preflightAttempts = verified.attempts;
 
@@ -469,7 +496,7 @@ try {
 
   writeFileSync(
     join(OUT, "metrics.json"),
-    `${JSON.stringify({ gate: EDGE_F1_GATE, fovDeg: FOV_DEG, preflight: preflightAttempts, scenes: metrics }, null, 2)}\n`,
+    `${JSON.stringify({ evidence, gate: EDGE_F1_GATE, fovDeg: FOV_DEG, preflight: preflightAttempts, scenes: metrics }, null, 2)}\n`,
   );
   writeFileSync(
     join(OUT, "index.html"),

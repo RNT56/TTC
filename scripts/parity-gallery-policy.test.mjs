@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  PARITY_EVIDENCE_SCHEMA,
   PARITY_ISOLATION_HEADERS,
   assessParityCapture,
   assessParityPreflight,
+  assessParitySourceEvidence,
 } from "./parity-gallery-policy.mjs";
+
+const REVISION = "0123456789abcdef0123456789abcdef01234567";
 
 const ready = () => ({
   crossOriginIsolated: true,
@@ -22,6 +26,47 @@ test("parity server owns the same isolation contract as full Studio", () => {
     "Cross-Origin-Opener-Policy": "same-origin",
     "Cross-Origin-Embedder-Policy": "require-corp",
   });
+});
+
+test("source evidence binds one clean checkout to the versioned artifact", () => {
+  assert.deepEqual(
+    assessParitySourceEvidence(
+      {
+        schema: PARITY_EVIDENCE_SCHEMA,
+        sourceRevision: REVISION,
+        checkoutRevision: REVISION,
+        worktreeDirty: false,
+      },
+      { requireClean: true },
+    ),
+    { ready: true, failures: [] },
+  );
+});
+
+test("authoritative evidence rejects revision drift and a dirty checkout", () => {
+  const result = assessParitySourceEvidence(
+    {
+      schema: PARITY_EVIDENCE_SCHEMA,
+      sourceRevision: REVISION,
+      checkoutRevision: "fedcba9876543210fedcba9876543210fedcba98",
+      worktreeDirty: true,
+    },
+    { requireClean: true },
+  );
+  assert.equal(result.ready, false);
+  assert.match(result.failures.join(" "), /does not match checkout/);
+  assert.match(result.failures.join(" "), /clean worktree/);
+});
+
+test("source evidence rejects malformed or incomplete identity fields", () => {
+  const result = assessParitySourceEvidence({
+    schema: "forge-parity-gallery.future",
+    sourceRevision: "main",
+    checkoutRevision: null,
+    worktreeDirty: "no",
+  });
+  assert.equal(result.ready, false);
+  assert.equal(result.failures.length, 4);
 });
 
 test("full-Studio Chromium with initialized WebGL passes preflight", () => {

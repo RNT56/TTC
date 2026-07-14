@@ -107,8 +107,11 @@ scene quality, initialized advanced effects, no page errors, and a loaded artifa
 before any image comparison. Only an isolated renderer-initialization failure may
 retry, once, with a fresh browser. Every capture remains low-tier WebGL with the
 unchanged edge-F1 ≥ 0.85 and ≤ 40 draw-call gates. Always upload preflight, metrics,
-composites, and failure images. Canvas2D viewer output is valid QA-003 fallback
-evidence but never P1-015 parity evidence.
+composites, and failure images. Both JSON evidence files must use the
+`forge-parity-gallery.v1` schema and embed matching declared-source and checkout Git
+SHAs plus the checkout dirty state; workflow evidence fails closed on a mismatch or
+dirty checkout. Canvas2D viewer output is valid QA-003 fallback evidence but never
+P1-015 parity evidence.
 
 ## Security and dependency operations
 
