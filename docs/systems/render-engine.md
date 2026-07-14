@@ -1,6 +1,6 @@
 # Render Engine — implementation doc
 
-**Status:** not started · **Phases:** P1 · **Home:** `packages/studio` render layer
+**Status:** deterministic implementation live; real-mid-hardware performance open · **Phases:** P1 · **Home:** `packages/studio` render layer
 **(TypeScript, deliberately — D16)** · **Plan refs:** §7.2, §5.2 (v3.0) ·
 **Decisions:** D15, D16
 
@@ -86,11 +86,15 @@ Golden-image perceptual diffs on the canonical camera set (RND-001) — **live
 2026-06-12** as the parity gallery (`pnpm parity`, P1-015): the frozen monolith
 (bridged copy, rest pose pinned, chrome suppressed) vs the built studio under
 6 shared cameras, gated on Sobel-edge F1 ≥ 0.85 with measured 0.95–0.995;
-evidence committed under `docs/assets/parity/`, kept as regression (re-run
-locally; CI integration deferred — headless-chromium install flake). Blueprint
-render check (RND-002); draw-call and frame-budget assertions in a perf
-harness on representative scenes; zero-copy discipline test (no buffer cloning
-on the bake path *(proposed: allocation assertions in the perf harness)*).
+evidence committed under `docs/assets/parity/` and rerun by the nightly workflow.
+QA-012 requires the custom server to preserve the production COOP/COEP isolation
+contract and performs a fail-closed full-Studio/Chromium/high/WebGL preflight before
+low-tier deterministic captures. It records every preflight attempt plus per-scene
+quality and refuses the viewer-grade Canvas2D fallback. Semantic Studio wrappers are
+excluded by canvas ancestry rather than a brittle DOM shape. Blueprint render check
+(RND-002); draw-call and frame-budget assertions in a perf harness on representative
+scenes; zero-copy discipline test (no buffer cloning on the bake path *(proposed:
+allocation assertions in the perf harness)*).
 
 ## 8. Phase mapping & backlog
 

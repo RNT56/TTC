@@ -60,9 +60,12 @@ No credentialed provider-sourced reviewed row or real vendor operation is proven
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. Before resuming those prerequisite-bound lanes, the
 active dependency-complete reliability lane is the scheduled-nightly visual-parity
-failure under QA-012: require full WebGL quality, retry only bounded initialization
-failure, and emit explicit renderer diagnostics without weakening the six-scene
-thresholds. Historical G0/G1 evidence remains valid, but QA-012 blocks any new
+failure under QA-012. Its local candidate restores the parity server's COOP/COEP
+isolation, makes chrome suppression independent of semantic wrapper shape, requires
+full-Studio/Chromium/high/WebGL preflight, permits one fresh-browser retry only after
+an isolated renderer initialization failure, and records per-attempt diagnostics.
+All six local scenes pass at the unchanged thresholds; protected branch/main nightly
+proof remains. Historical G0/G1 evidence stays valid, but QA-012 blocks any new
 G0-dependent release or phase close.
 QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
 requires a qualified independent participant and frozen protected revision/
@@ -172,8 +175,11 @@ Objective: make `main` trustworthy before new feature work.
 Status (updated 2026-07-14): **Wave 0's historical closure remains complete, but
 current G0 acceptance is reopened by QA-012.** `REC-001..008`, `GOV-001..005`, and
 `QA-001` retain their completed evidence in `PROJECT-STATE.md`; scheduled and manual
-current-main nightlies reproduced a Canvas2D fallback capture instead of WebGL.
-QA-012 must restore exact full-WebGL proof before any new G0-dependent close.
+current-main nightlies reproduced a Canvas2D fallback capture instead of WebGL. The
+local QA-012 candidate identifies missing isolation headers plus stale chrome
+suppression as the deterministic causes and restores 6/6 full-WebGL parity. Exact
+branch and protected-main nightly proof must still pass before any new G0-dependent
+close.
 
 Work:
 

@@ -22,6 +22,7 @@ jobs:
       - name: golden artifact update policy
         run: |
           node --test scripts/golden-artifact-policy.test.mjs
+          node --test scripts/parity-gallery-policy.test.mjs
           node scripts/check-golden-artifacts.mjs
       - name: external acceptance evidence policy
         run: |

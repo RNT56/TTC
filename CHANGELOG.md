@@ -18,6 +18,38 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-14 — Restore fail-closed WebGL parity evidence
+**Session:** Codex agent · branch `codex/qa012-parity-reliability` · **Phase:** QA /
+render reliability · **TODO items:** QA-012 [~]
+**Done:** Diagnosed both current nightly failures as deterministic harness drift from
+QA-003, not golden-image or random GPU drift. The custom parity server lacked the
+COOP/COEP headers now required for full Studio, so Chromium correctly selected the
+viewer-grade Canvas2D path; the new semantic `<main>` wrapper also made the old
+direct-child chrome selector match nothing. The candidate now shares the production
+isolation contract, hides non-canvas presentation subtrees by canvas ancestry,
+requires full-Studio/Chromium/high/WebGL preflight, permits only one fresh-browser
+retry after an isolated renderer-initialization failure, asserts low/WebGL/advanced
+quality on every capture, and preserves attempt diagnostics. Both JSON evidence files
+now carry the `forge-parity-gallery.v1` schema, declared source SHA, checked-out SHA,
+and dirty-worktree state; workflow proof rejects SHA drift or a dirty checkout. Nine
+policy tests pass. The real local gallery passes all six unchanged structural gates
+at edge F1 0.957-0.995, 3 draws, and exact 4,662/2,208 WebGL triangle counts. The complete
+35-step gate and focused Chromium browser-support acceptance pass under Python 3.12.
+QA-007 evidence PR #49 also passed and merged as `0f31b82`; post-merge CI
+`29369026150` and security `29369026035` are green.
+**Changed:** Parity server/capture policy and focused tests; package and CI/nightly
+commands; canonical agent entry; browser/render/governance/best-practice guidance;
+README; project state, phase/execution roadmap, QA-012 task, and changelog.
+**Decisions:** none. This enforces existing D15/QA-003 capability tiers and P1-015
+render authority; it does not change the frozen oracle, cameras, goldens, edge-F1
+threshold, draw-call budget, product browser tiers, or compatibility formats.
+**Next:** dispatch the workflow on the final exact branch head, inspect its embedded
+source identity plus full-Studio preflight and six-scene artifact, then publish
+through protected PR/post-merge checks and a final protected-main nightly before
+QA-012/G0 closure.
+**Blockers:** none for deterministic implementation. Current protected G0 remains
+regressed until exact remote nightly proof passes.
+
 ## 2026-07-14 — Close protected adversarial corpus acceptance
 **Session:** Codex agent · branch `codex/qa007-protected-evidence` · **Phase:** QA /
 cross-boundary quality · **TODO items:** QA-007 [x], QA-012 [~]

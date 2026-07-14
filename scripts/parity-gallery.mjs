@@ -20,10 +20,19 @@
 //
 // Outputs: per-scene monolith/studio/diff PNGs + composite strips + an HTML
 // index + metrics.json. Run after `pnpm -r build`.
+import { execFileSync } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { PNG } from "pngjs";
+import {
+  PARITY_EVIDENCE_SCHEMA,
+  PARITY_ISOLATION_HEADERS,
+  assessParityCapture,
+  assessParityPreflight,
+  assessParitySourceEvidence,
+  formatParityFailure,
+} from "./parity-gallery-policy.mjs";
 
 const OUT = (() => {
   const i = process.argv.indexOf("--out");
@@ -37,6 +46,29 @@ const FOV_DEG = (2 * Math.atan(0.3443) * 180) / Math.PI;
 /// score 0.95–0.995; any wrong camera/model/pose/chrome configuration we
 /// observed scored ≤ 0.40. 0.85 separates the regimes with wide margin.
 const EDGE_F1_GATE = 0.85;
+
+function gitText(args) {
+  return execFileSync("git", args, { cwd: process.cwd(), encoding: "utf8" }).trim();
+}
+
+function collectSourceEvidence() {
+  const checkoutRevision = gitText(["rev-parse", "HEAD"]);
+  const declaredRevision = process.env.FORGE_SOURCE_REVISION?.trim();
+  const evidence = {
+    schema: PARITY_EVIDENCE_SCHEMA,
+    sourceRevision: declaredRevision || checkoutRevision,
+    checkoutRevision,
+    worktreeDirty: gitText(["status", "--porcelain=v1"]).length > 0,
+  };
+  const authoritative = declaredRevision !== undefined && declaredRevision.length > 0;
+  const assessment = assessParitySourceEvidence(evidence, { requireClean: authoritative });
+  if (!assessment.ready) {
+    throw new Error(
+      formatParityFailure("parity source-evidence preflight failed", assessment, evidence),
+    );
+  }
+  return evidence;
+}
 
 /// canonical cameras — three per model, shared by both renderers
 const SCENES = [
@@ -105,7 +137,7 @@ function serveDist() {
   const server = createServer((req, res) => {
     const path = decodeURIComponent((req.url ?? "/").split("?")[0]);
     if (path === "/__monolith.html") {
-      res.writeHead(200, { "content-type": "text/html" });
+      res.writeHead(200, { "content-type": "text/html", ...PARITY_ISOLATION_HEADERS });
       res.end(monolithHtml);
       return;
     }
@@ -113,10 +145,13 @@ function serveDist() {
     if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, "index.html");
     try {
       const body = readFileSync(file);
-      res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
+      res.writeHead(200, {
+        "content-type": MIME[extname(file)] ?? "application/octet-stream",
+        ...PARITY_ISOLATION_HEADERS,
+      });
       res.end(body);
     } catch {
-      res.writeHead(404);
+      res.writeHead(404, PARITY_ISOLATION_HEADERS);
       res.end();
     }
   });
@@ -257,6 +292,80 @@ async function launchBrowser() {
   });
 }
 
+async function inspectStudioReadiness(browser, baseUrl, attempt) {
+  const page = await browser.newPage({ viewport: VIEW, deviceScaleFactor: 1 });
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  let waitError = null;
+  try {
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+    await page
+      .waitForFunction(() => window.__forgeParity?.loaded(), null, { timeout: 30000 })
+      .catch((error) => {
+        waitError = error instanceof Error ? error.message : String(error);
+      });
+    const diagnostics = await page.evaluate((attemptNumber) => {
+      const supportElement = document.querySelector('[data-testid="browser-support"]');
+      const hook = window.__forgeParity;
+      let quality = null;
+      let loaded = false;
+      try {
+        quality = hook?.quality() ?? null;
+        loaded = hook?.loaded() === true;
+      } catch {
+        // The outer evidence retains hook/load state and any page exception.
+      }
+      return {
+        attempt: attemptNumber,
+        userAgent: navigator.userAgent,
+        crossOriginIsolated: globalThis.crossOriginIsolated === true,
+        sharedArrayBuffer: typeof SharedArrayBuffer !== "undefined",
+        support: supportElement
+          ? {
+              tier: supportElement.getAttribute("data-tier"),
+              surface: supportElement.getAttribute("data-surface"),
+              text: supportElement.textContent?.trim() ?? "",
+            }
+          : null,
+        canvasRenderer: document.querySelector("canvas")?.getAttribute("data-renderer") ?? null,
+        hookAvailable: Boolean(hook),
+        loaded,
+        quality,
+      };
+    }, attempt);
+    return { ...diagnostics, pageErrors, waitError };
+  } finally {
+    await page.close();
+  }
+}
+
+async function launchVerifiedBrowser(baseUrl, evidence) {
+  const attempts = [];
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const browser = await launchBrowser();
+    let diagnostics;
+    try {
+      diagnostics = await inspectStudioReadiness(browser, baseUrl, attempt);
+    } catch (error) {
+      await browser.close();
+      throw error;
+    }
+    const assessment = assessParityPreflight(diagnostics);
+    attempts.push({ ...diagnostics, assessment });
+    writeFileSync(join(OUT, "preflight.json"), `${JSON.stringify({ evidence, attempts }, null, 2)}\n`);
+    if (assessment.ready) return { browser, attempts };
+
+    await browser.close();
+    if (!assessment.retryable || attempt === 2) {
+      throw new Error(formatParityFailure("parity full-Studio preflight failed", assessment, diagnostics));
+    }
+    console.warn(
+      `parity preflight attempt ${attempt} hit a renderer initialization failure; retrying once with a fresh browser`,
+    );
+  }
+  throw new Error("parity preflight exhausted without a browser");
+}
+
 async function captureMonolith(browser, baseUrl, scene, view) {
   const page = await browser.newPage({ viewport: VIEW, deviceScaleFactor: 1 });
   await page.goto(`${baseUrl}__monolith.html`);
@@ -298,23 +407,34 @@ async function captureStudio(browser, baseUrl, scene, view) {
         target: [0, ty, 0],
         fovDeg: fov,
       });
-      // hide DOM chrome (panels overlay the full-window canvas)
-      for (const el of document.querySelectorAll("#root > div > *:not(canvas)")) {
+      // Hide every presentation node that is neither the capture canvas nor one
+      // of its ancestors. This survives semantic wrapper changes in App.tsx;
+      // element screenshots still include siblings that visually overlay a canvas.
+      const canvas = document.querySelector('[data-testid="studio-viewer"]');
+      for (const el of document.querySelectorAll("#root *")) {
+        if (el === canvas || el.contains(canvas)) continue;
         el.style.visibility = "hidden";
       }
     },
     [scene.studio, view, scene.ty, FOV_DEG],
   );
   await page.waitForTimeout(300);
+  const quality = await page.evaluate(() => window.__forgeParity.quality());
+  const readiness = assessParityCapture(quality);
+  if (!readiness.ready) {
+    await page.close();
+    throw new Error(formatParityFailure("parity capture left full WebGL", readiness, { quality }));
+  }
   const stats = await page.evaluate(() => window.__forgeParity.stats());
   const canvas = page.locator("canvas");
   const buf = await canvas.screenshot();
   await page.close();
-  return { png: PNG.sync.read(buf), stats };
+  return { png: PNG.sync.read(buf), stats, quality };
 }
 
 // --- main ----------------------------------------------------------------------
 mkdirSync(OUT, { recursive: true });
+const evidence = collectSourceEvidence();
 if (!existsSync(join(DIST, "index.html"))) {
   console.error("studio dist missing — run `pnpm -r build` first");
   process.exit(1);
@@ -330,61 +450,69 @@ for (const scene of SCENES) {
 
 const server = await serveDist();
 const baseUrl = `http://127.0.0.1:${server.address().port}/`;
-const browser = await launchBrowser();
-
 const metrics = [];
 let failures = 0;
 const rows = [];
-for (const scene of SCENES) {
-  for (const view of scene.views) {
-    const id = `${scene.studio}-${view.name}`;
-    const mono = await captureMonolith(browser, baseUrl, scene, view);
-    const { png: studio, stats } = await captureStudio(browser, baseUrl, scene, view);
+let browser = null;
+let preflightAttempts = [];
+try {
+  const verified = await launchVerifiedBrowser(baseUrl, evidence);
+  browser = verified.browser;
+  preflightAttempts = verified.attempts;
 
-    const lumM = downscale(mono, DOWN.width, DOWN.height);
-    const lumS = downscale(studio, DOWN.width, DOWN.height);
-    const edgesM = binarizeTopPercent(sobel(lumM, DOWN.width, DOWN.height), 0.08);
-    const edgesS = binarizeTopPercent(sobel(lumS, DOWN.width, DOWN.height), 0.08);
-    const { f1, precision, recall } = edgeF1(edgesM, edgesS, DOWN.width, DOWN.height);
-    const lumRms = rms(lumM, lumS);
+  for (const scene of SCENES) {
+    for (const view of scene.views) {
+      const id = `${scene.studio}-${view.name}`;
+      const mono = await captureMonolith(browser, baseUrl, scene, view);
+      const { png: studio, stats, quality } = await captureStudio(browser, baseUrl, scene, view);
 
-    const strip = composite(mono, studio, edgesM, edgesS, DOWN.width, DOWN.height);
-    writeFileSync(join(OUT, `${id}.png`), PNG.sync.write(strip));
-    writeFileSync(join(OUT, `${id}.monolith.png`), PNG.sync.write(mono));
-    writeFileSync(join(OUT, `${id}.studio.png`), PNG.sync.write(studio));
+      const lumM = downscale(mono, DOWN.width, DOWN.height);
+      const lumS = downscale(studio, DOWN.width, DOWN.height);
+      const edgesM = binarizeTopPercent(sobel(lumM, DOWN.width, DOWN.height), 0.08);
+      const edgesS = binarizeTopPercent(sobel(lumS, DOWN.width, DOWN.height), 0.08);
+      const { f1, precision, recall } = edgeF1(edgesM, edgesS, DOWN.width, DOWN.height);
+      const lumRms = rms(lumM, lumS);
 
-    // P1-008 budget: ≤ 40 draw calls per model (architecture §7, binding)
-    const pass = f1 >= EDGE_F1_GATE && stats.drawCalls <= 40;
-    if (!pass) failures++;
-    metrics.push({ id, edgeF1: f1, precision, recall, lumRms, ...stats, pass });
-    rows.push(
-      `<tr><td>${id}</td><td>${f1.toFixed(3)}</td><td>${precision.toFixed(3)}</td>` +
-        `<td>${recall.toFixed(3)}</td><td>${lumRms.toFixed(1)}</td><td>${stats.drawCalls}</td>` +
-        `<td>${pass ? "✅" : "❌"}</td></tr>` +
-        `<tr><td colspan="7"><img src="${id}.png" style="width:100%"></td></tr>`,
-    );
-    console.log(
-      `${pass ? "ok  " : "FAIL"} ${id}: edgeF1 ${f1.toFixed(3)} (p ${precision.toFixed(3)} r ${recall.toFixed(3)}) lumRMS ${lumRms.toFixed(1)} · ${stats.drawCalls} draws`,
-    );
+      const strip = composite(mono, studio, edgesM, edgesS, DOWN.width, DOWN.height);
+      writeFileSync(join(OUT, `${id}.png`), PNG.sync.write(strip));
+      writeFileSync(join(OUT, `${id}.monolith.png`), PNG.sync.write(mono));
+      writeFileSync(join(OUT, `${id}.studio.png`), PNG.sync.write(studio));
+
+      // P1-008 budget: ≤ 40 draw calls per model (architecture §7, binding)
+      const pass = f1 >= EDGE_F1_GATE && stats.drawCalls <= 40;
+      if (!pass) failures++;
+      metrics.push({ id, edgeF1: f1, precision, recall, lumRms, quality, ...stats, pass });
+      rows.push(
+        `<tr><td>${id}</td><td>${f1.toFixed(3)}</td><td>${precision.toFixed(3)}</td>` +
+          `<td>${recall.toFixed(3)}</td><td>${lumRms.toFixed(1)}</td><td>${stats.drawCalls}</td>` +
+          `<td>${pass ? "✅" : "❌"}</td></tr>` +
+          `<tr><td colspan="7"><img src="${id}.png" style="width:100%"></td></tr>`,
+      );
+      console.log(
+        `${pass ? "ok  " : "FAIL"} ${id}: edgeF1 ${f1.toFixed(3)} (p ${precision.toFixed(3)} r ${recall.toFixed(3)}) lumRMS ${lumRms.toFixed(1)} · ${stats.drawCalls} draws`,
+      );
+    }
   }
-}
 
-writeFileSync(join(OUT, "metrics.json"), JSON.stringify({ gate: EDGE_F1_GATE, fovDeg: FOV_DEG, scenes: metrics }, null, 2) + "\n");
-writeFileSync(
-  join(OUT, "index.html"),
-  `<!doctype html><meta charset="utf-8"><title>FORGE parity gallery</title>
+  writeFileSync(
+    join(OUT, "metrics.json"),
+    `${JSON.stringify({ evidence, gate: EDGE_F1_GATE, fovDeg: FOV_DEG, preflight: preflightAttempts, scenes: metrics }, null, 2)}\n`,
+  );
+  writeFileSync(
+    join(OUT, "index.html"),
+    `<!doctype html><meta charset="utf-8"><title>FORGE parity gallery</title>
 <style>body{background:#111;color:#cfd6df;font:13px system-ui}table{width:100%;border-collapse:collapse}td{padding:4px;border-bottom:1px solid #333}</style>
 <h1>Golden-scene parity gallery (P1-015)</h1>
-<p>monolith | studio | edge overlay (green matched · red monolith-only · blue studio-only) — gate: edge F1 ≥ ${EDGE_F1_GATE}</p>
+<p>full-Studio WebGL preflight passed in ${preflightAttempts.length} attempt(s). Monolith | studio | edge overlay (green matched · red monolith-only · blue studio-only) — gate: edge F1 ≥ ${EDGE_F1_GATE}</p>
 <table><tr><th>scene</th><th>edgeF1</th><th>precision</th><th>recall</th><th>lumRMS</th><th>draws</th><th>pass</th></tr>${rows.join("")}</table>`,
-);
+  );
 
-await browser.close();
-server.close();
-
-console.log(`\ngallery → ${OUT}/index.html`);
-if (failures > 0) {
-  console.error(`parity-gallery: ${failures} scene(s) below the structural gate`);
-  process.exit(1);
+  console.log(`\ngallery → ${OUT}/index.html`);
+  if (failures > 0) {
+    throw new Error(`parity-gallery: ${failures} scene(s) below the structural gate`);
+  }
+  console.log("parity-gallery: all canonical scenes pass full-Studio WebGL structural parity (P1-015)");
+} finally {
+  if (browser) await browser.close().catch(() => undefined);
+  await new Promise((resolveClose) => server.close(() => resolveClose()));
 }
-console.log("parity-gallery: all canonical scenes pass the structural gate (P1-015)");

@@ -95,21 +95,26 @@ comments only for constraints the code cannot show.
    extraction fixtures vs the prototype.
 4. **Golden-number** — cross-target bit-exactness, native↔WASM, canonical scenes, on
    every core change (XT-001, D17).
-5. **Harness** — the full validation suite on every first-party contract, every PR.
-6. **Parity** — Rapier vs MuJoCo on canonical scenes on every engine/exporter bump
+5. **Visual parity** — the built full-Studio Chromium/WebGL renderer versus the frozen
+   monolith under canonical cameras. Require production-equivalent isolation,
+   fail-closed renderer preflight, chrome-free canvas captures, recorded quality and
+   attempts, unchanged structural thresholds, and reviewed composites. Viewer-grade
+   Canvas2D is support evidence, never WebGL parity proof (P1-015/QA-012).
+6. **Harness** — the full validation suite on every first-party contract, every PR.
+7. **Simulation parity** — Rapier vs MuJoCo on canonical scenes on every engine/exporter bump
    (training side canonical, D20).
-7. **Regression** — physics trajectory tolerance bands; minimized fuzz failures
+8. **Regression** — physics trajectory tolerance bands; minimized fuzz failures
    become permanent cases (XC-24).
-8. **Trust-boundary adversarial corpus** — imports, JSON Patch, EnvSpec, replay,
+9. **Trust-boundary adversarial corpus** — imports, JSON Patch, EnvSpec, replay,
    provider output, catalog citations, export policy, and hardware payloads retain
    stable accepted/refused cases plus random no-panic coverage. Non-finite numbers,
    unbounded inputs, malformed graphs/vectors, unsafe command tokens, and provenance
    or policy contradictions fail closed (QA-007).
-9. **Brief-25** — generation quality as CI with a metrics dashboard (D-evals).
-10. **Browser E2E** — production Studio bundle + real built WASM + gateway/validator
+10. **Brief-25** — generation quality as CI with a metrics dashboard (D-evals).
+11. **Browser E2E** — production Studio bundle + real built WASM + gateway/validator
    + isolated Postgres for the complete builder loop; public-share and private-route
    authorization must be proven in separate browser contexts (QA-002).
-11. **Browser support and accessibility** — run the production share/configurator
+12. **Browser support and accessibility** — run the production share/configurator
     journey with real WASM in Chromium, Firefox, and WebKit; assert semantics,
     accessible names, skip/focus behavior, keyboard orbit/equip/explode/blueprint,
     contrast, critical target size, narrow layout, reduced motion, and tier-appropriate
@@ -119,7 +124,7 @@ comments only for constraints the code cannot show.
     full-Studio/viewer-grade boundary and vendor-device limitations synchronized with
     [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md); a proxy engine is not a real-device or
     screen-reader certification (QA-003).
-12. **External acceptance** — execute the versioned QA-010 milestone script against
+13. **External acceptance** — execute the versioned QA-010 milestone script against
     an exact product revision with the intended independent user, real provider, D30/
     D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,
     measurements, findings, limitations, and signoffs outside Git; machine-valid
