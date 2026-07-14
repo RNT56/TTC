@@ -70,6 +70,13 @@ QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
 requires a qualified independent participant and frozen protected revision/
 environment.
 
+DOC-005 is the current dependency-complete X-lane on protected `2dfc960`. Its branch
+candidate adds versioned generated API/event/artifact references, exact runtime-route
+and worker-kind parity, migration/deprecation guidance, synthetic examples, and a
+registered golden schema family. Focused local generation/drift/compatibility checks
+and the complete 36-step gate pass under Python 3.12; PR and post-merge checks are
+still required for closure.
+
 Current Wave 1/2 boundary:
 
 - public support/security surfaces, ModelSpec 2.2, and SEC-001..006 are protected on
@@ -117,6 +124,10 @@ Current Wave 1/2 boundary:
   revision-bound full-WebGL parity contract across all six scenes. The QA-003
   Canvas2D viewer fallback remains intentional and separately accepted; no golden,
   threshold, browser support tier, or product maturity claim changed;
+- DOC-005 is in progress: the candidate exact-matches 75 runtime routes, two event
+  families, fourteen compatibility domains, and sixteen worker queue kinds, and adds
+  one generated documentation step to the full gate. All 36 local steps pass under
+  Python 3.12; it remains branch evidence until protected delivery;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -132,6 +143,8 @@ retains its own acceptance evidence.
 - Keep fixture truth deterministic and keyless; add live paths without replacing the
   fixture oracle.
 - Split work by contracts and files, not by vague phases.
+- Generate API/event/artifact references from registered runtime and compatibility
+  sources; a hand-maintained route table is not acceptance evidence.
 - Every live integration has capability discovery, timeouts, rate limits, idempotency,
   cost bounds, structured errors, audit records, and recovery behavior.
 - Every user/hardware action has authorization, consent, and fail-closed tests.

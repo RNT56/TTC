@@ -1,0 +1,22 @@
+{
+  "artifactKind": "photoscan",
+  "sourceImages": ["obj_example_source"],
+  "objectCache": {
+    "key": "fixture:photoscan:example",
+    "provider": "fixture"
+  },
+  "acceptance": {
+    "gate": "D13",
+    "pass": true,
+    "fitCoveragePct": 75,
+    "hausdorffPct": 1.2,
+    "meshClassFallback": false,
+    "rejectReasons": []
+  },
+  "candidateComponent": {
+    "id": "cmp_photoscan_example",
+    "source": "photoscan",
+    "confidence": 0.78,
+    "reviewRequired": true
+  }
+}

@@ -139,6 +139,13 @@ export interface ServerOptions {
   inspectObject?: ObjectInspectionAdapter;
   rateLimitPolicy?: RateLimitPolicy | null;
   rateLimitNow?: () => number;
+  observeRoute?: (route: GatewayRouteObservation) => void;
+}
+
+export interface GatewayRouteObservation {
+  method: string | string[];
+  url: string;
+  schema?: unknown;
 }
 
 const reviewStatusSchema = Type.Union([
@@ -683,6 +690,15 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     trustProxy: false,
     routerOptions: { maxParamLength: 2_000 },
   });
+  if (options.observeRoute) {
+    app.addHook("onRoute", (route) => {
+      options.observeRoute?.({
+        method: route.method,
+        url: route.url,
+        schema: route.schema,
+      });
+    });
+  }
   const rateLimitPolicy = options.rateLimitPolicy === null
     ? null
     : options.rateLimitPolicy ?? DEFAULT_RATE_LIMIT_POLICY;

@@ -11,6 +11,8 @@
     "verify:desktop-native": "pnpm --filter @forge/desktop check:native",
     "verify:workflows": "node scripts/check-actions-pinned.mjs",
     "verify:compatibility": "node scripts/check-compatibility.mjs",
+    "docs:contracts": "pnpm --filter @forge/gateway exec tsx ../../scripts/generate-contract-docs.mts",
+    "verify:docs-contracts": "pnpm --filter @forge/gateway exec tsx ../../scripts/generate-contract-docs.mts --check",
     "verify:goldens": "node --test scripts/golden-artifact-policy.test.mjs scripts/parity-gallery-policy.test.mjs && node scripts/check-golden-artifacts.mjs",
     "verify:external-acceptance": "node --test scripts/external-acceptance-policy.test.mjs && node scripts/external-acceptance.mjs check",
     "verify:browser-e2e": "node scripts/browser-e2e.mjs",

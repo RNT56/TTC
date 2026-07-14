@@ -85,6 +85,15 @@ set completion; a stale or cancelled attempt never commits.
 math (testable headlessly); deterministic seeds threaded through anything stochastic;
 comments only for constraints the code cannot show.
 
+**API, events, and artifacts:** register request constraints in Fastify/TypeBox first;
+record route purpose, authentication class, maturity, and response statuses in
+`contracts/documentation.json`; then run `pnpm docs:contracts`. Never hand-edit the
+generated OpenAPI/reference/catalog files. A route change is incomplete until
+`pnpm verify:docs-contracts` proves exact runtime coverage. Version package APIs,
+event lines, and persisted artifact formats independently; preserve old documents and
+read fixtures while their support window is active. Examples use synthetic IDs and
+fixture values, never secrets, signed URLs, raw user content, or claims of live proof.
+
 ## 6. Testing pyramid
 
 1. **Unit** — math, geometry, schema validators (mass properties vs analytic solids,

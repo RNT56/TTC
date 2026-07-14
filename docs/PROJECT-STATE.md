@@ -4,7 +4,7 @@ Snapshot date: **2026-07-14**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
 Latest verified protected runtime descendant: `6f8509b` (PR #50; QA-012 parity reliability)
-Latest verified protected evidence descendant: `0f31b82` (PR #49; QA-007 reconciliation and QA-012 registration)
+Latest verified protected evidence descendant: `2dfc960` (PR #52; QA-012 protected evidence reconciliation)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -42,16 +42,24 @@ and local validation are tested without a real credential or provider call. Sand
 provider output, recovery/observability, billing, and current-terms evidence remain
 open.
 
+DOC-005 is in implementation on top of protected `2dfc960`. The current branch
+candidate generates versioned OpenAPI/event/artifact references from 75 registered
+Fastify/TypeBox routes, two event families, fourteen compatibility domains, and
+sixteen worker queue kinds, with migration/deprecation guides and synthetic examples.
+The complete 36-step local gate passes under Python 3.12; this is not yet a protected-
+main documentation claim.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected runtime descendant and QA-012 anchor `6f8509b`, latest docs reconciliation `0f31b82`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | QA-012 PR #50 exact head `8d4bf63` passed CI `29370722178`/security `29370722124` and branch nightly `29370725355`; protected squash `6f8509b` passed post-merge CI `29371177801`/security `29371177809` and exact-main nightly `29372161650` |
+| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected runtime descendant and QA-012 anchor `6f8509b`, latest evidence reconciliation `2dfc960`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | QA-012 PR #50 exact head `8d4bf63` passed CI `29370722178`/security `29370722124` and branch nightly `29370725355`; protected squash `6f8509b` passed post-merge CI `29371177801`/security `29371177809` and exact-main nightly `29372161650`; evidence PR #52 merged as `2dfc960` and passed exact post-merge CI `29373122748`/security `29373122777` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| `pnpm verify` | pass: 35 required non-DB gates on exact QA-012 head `8d4bf63`; equivalent protected jobs pass at `6f8509b` | migration source/history/checksum policy joins external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance also passes on exact PR and protected merge |
+| `pnpm verify` | current DOC-005 branch pass: 36 required non-DB gates under Python 3.12; protected baseline remains 35 until merge | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance remains green on protected `6f8509b` |
 | Golden artifact and parity-harness review | protected through PR #50 with 15 governed artifact families and 19 focused policy tests | nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
-| `pnpm verify:compatibility` | pass: 12/12 surfaces match policy 1.0.0 | source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and deprecation floor cannot drift from the machine matrix |
+| `pnpm verify:compatibility` | current DOC-005 branch pass: 14/14 surfaces match policy 1.0.0; protected baseline remains 12 until merge | gateway API/events now join source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
+| DOC-005 contract documentation candidate | full 36-step local pass: 75 runtime routes, 2 event families, 14 compatibility surfaces, and 16 worker families | `pnpm docs:contracts`, generated drift, compatibility, 63 gateway tests, 127 worker tests on Python 3.12, 19 golden-policy tests, native/WASM parity, packaging, and patch hygiene pass; generated outputs remain branch evidence until protected checks |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
@@ -238,6 +246,14 @@ Live GitHub evidence checked on 2026-07-14:
   one isolated full-Studio Chromium/high-WebGL preflight without page errors, and
   passes all six low-WebGL scenes at unchanged edge F1 0.957-0.995 and 3 draws. The
   earlier Canvas2D failures remain the diagnosis record, not current acceptance;
+- QA-012 evidence [PR #52](https://github.com/RNT56/TTC/pull/52) passed exact-head CI
+  `29372629644` and security `29372629628` at `6895248`, then merged through
+  protection as `2dfc960`. Exact post-merge CI
+  [29373122748](https://github.com/RNT56/TTC/actions/runs/29373122748) and security
+  [29373122777](https://github.com/RNT56/TTC/actions/runs/29373122777) passed every
+  applicable runtime, database/browser, native Desktop, dependency, SBOM, and CodeQL
+  job. This closes the documentation descendant without replacing PR #50's runtime
+  or exact-main nightly anchors;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -372,11 +388,12 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **201 tasks: 138 done, 37 in progress, 25 open,
+The stable ledger currently contains **201 tasks: 138 done, 38 in progress, 24 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
 The 63 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
 2 quality, 10 operations,
-9 external-proof, and 2 documentation tasks; dependency order is owned by
+9 external-proof, and 2 documentation tasks (DOC-005 and DOC-006 are in progress);
+dependency order is owned by
 `EXECUTION-ROADMAP.md`.
 
 Refresh this snapshot when the next task changes the boundary or any current gate

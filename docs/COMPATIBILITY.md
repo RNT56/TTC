@@ -22,6 +22,8 @@ package to adopt that same number.
 | validator CLI | 0.2.0 | documented flags, exit codes, and stdout JSON are public; before 1.0, breaking changes require a minor bump and migration note | current minor line |
 | validator report | 1.0.0 | consumers must ignore unknown fields; additive fields are minor; removal/type/meaning changes are major | major 1 |
 | WASM facade | 0.2.0 | exported function signatures follow package SemVer; JSON payloads follow their own format versions | current minor line |
+| gateway API | 0.2.0 | registered routes, request constraints, auth class, and documented statuses follow gateway package SemVer before 1.0; independently versioned response documents keep their own domains | current minor line |
+| gateway events | 0.2.0 | event names/order/terminal meaning follow gateway package SemVer before 1.0; additive fields and new stage values are minor | current minor line |
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
@@ -73,12 +75,17 @@ alternatives; set `equippedVariantId` explicitly, then rerun migration. Unselect
 alternatives never contribute parts, catalog refs, simulation values, BOM rows, or
 lockfile requirements.
 
-The `/v1` gateway API remains a pre-1.0 internal surface pending `DOC-005`. The v0.2
-gateway adds a structured HTTP 422 refusal with code `SAFETY_PROHIBITED_BRIEF` for
-locally prohibited generation-family inputs; successful response shapes are
-unchanged, and SSE emits the same safe body as an error event after a hash-only start
-event. Clients must not depend on refused prompt echoing or on fields outside the
-documented code/policy-version/category/refusal-ID response.
+The `/v1` gateway API and its event line are documented pre-1.0 internal surfaces at
+0.2.0. [`API-EVENT-ARTIFACT-REFERENCE.md`](API-EVENT-ARTIFACT-REFERENCE.md), the
+versioned OpenAPI/event catalogs, and their machine manifest are generated from the
+actual Fastify/TypeBox registrations plus reviewed metadata. The gate rejects an
+undocumented/removed route, stale request schema, event-emission drift, queue-kind
+drift, missing example/guide, or edited generated output. Successful response shapes
+without an independent format marker remain open pre-1.0 objects. The v0.2 gateway
+adds a structured HTTP 422 refusal with code `SAFETY_PROHIBITED_BRIEF`; SSE emits the
+same safe body as a terminal error after a hash-only start and ordered stage events.
+Clients must not depend on refused prompt echoing or fields outside the documented
+code/policy-version/category/refusal-ID response.
 
 The worker queue kind list is also an internal cross-process contract. The gateway
 source and `workerArtifacts.queueKinds` matrix must match exactly.
@@ -152,7 +159,9 @@ line; new producers must emit `schemaVersion: "1.0.0"`.
 
 Every compatibility-affecting pull request must update the machine matrix and this
 document, add or modify migration/compatibility fixtures, run
-`pnpm verify:compatibility`, regenerate schema/TypeScript/WASM outputs when relevant,
+`pnpm verify:compatibility`, regenerate and check API/event/artifact docs with
+`pnpm docs:contracts` and `pnpm verify:docs-contracts` when relevant, regenerate
+schema/TypeScript/WASM outputs when relevant,
 add the review evidence required by [`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md) when
 a registered artifact changes, and record the user-visible effect in `CHANGELOG.md`.
 Never infer support from a lenient parser: a version is supported only when it is

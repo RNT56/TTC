@@ -1,0 +1,11 @@
+{
+  "id": 42,
+  "jobId": "00000000-0000-4000-8000-000000000002",
+  "event": "retry-scheduled",
+  "payload": {
+    "code": "provider-rate-limited",
+    "attempt": 1,
+    "retryAfterSeconds": 17
+  },
+  "createdAt": "2026-07-14T00:00:00.000Z"
+}

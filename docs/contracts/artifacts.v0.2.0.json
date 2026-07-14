@@ -1,0 +1,248 @@
+{
+  "schemaVersion": "forge-artifact-catalog.v1",
+  "catalogVersion": "1.0.0",
+  "compatibilityPolicyVersion": "1.0.0",
+  "capabilityBoundary": "format documentation plus deterministic fixtures; provider, hardware, operations, and field maturity remain separate",
+  "formats": {
+    "modelSpec": {
+      "current": "2.2.0",
+      "supported": [
+        "2.1.0",
+        "2.2.0"
+      ],
+      "versionField": "validator report schemaVersion"
+    },
+    "validatorCli": {
+      "current": "0.2.0",
+      "supportedMajors": [
+        0
+      ],
+      "versionCommand": "forge-validate version --json"
+    },
+    "validatorReport": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "versionField": "reportVersion"
+    },
+    "wasmFacade": {
+      "current": "0.2.0",
+      "supportedMajors": [
+        0
+      ],
+      "versionExport": "version()"
+    },
+    "gatewayApi": {
+      "current": "0.2.0",
+      "supportedMajors": [
+        0
+      ],
+      "spec": "docs/contracts/openapi.v0.2.0.json",
+      "versionRule": "pre-1.0 gateway package SemVer; independently versioned response documents retain their own format versions"
+    },
+    "gatewayEvents": {
+      "current": "0.2.0",
+      "supportedMajors": [
+        0
+      ],
+      "spec": "docs/contracts/events.v0.2.0.json",
+      "versionRule": "pre-1.0 gateway package SemVer; consumers ignore additive event fields and unknown stage values"
+    },
+    "replay": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "legacyAliases": [
+        "replay.v1"
+      ],
+      "versionField": "schemaVersion"
+    },
+    "envSpec": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "versionField": "schemaVersion",
+      "documentVersionField": "version"
+    },
+    "licenseExportManifest": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "versionField": "schemaVersion"
+    },
+    "userDataExport": {
+      "current": "1.2.0",
+      "supportedMajors": [
+        1
+      ],
+      "versionField": "formatVersion"
+    },
+    "consentLedger": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "versionField": "ledgerVersion"
+    },
+    "accountDeletionReceipt": {
+      "current": "2.0.0",
+      "supportedMajors": [
+        2
+      ],
+      "versionField": "formatVersion"
+    },
+    "dataLifecycle": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "versionField": "lifecycleVersion"
+    },
+    "workerArtifacts": {
+      "current": "0.2.0",
+      "supportedMajors": [
+        0
+      ],
+      "queueKinds": [
+        "etl.ingest-component",
+        "occt.tessellate",
+        "photoscan.single",
+        "photoscan.multiview",
+        "train.policy",
+        "train.sysid-fit",
+        "replay.verify",
+        "codesign.evaluate",
+        "bridge.config-diff",
+        "bridge.telemetry-ingest",
+        "bridge.supervisor-check",
+        "commerce.vendor-refresh",
+        "maintenance.estimate-wear",
+        "maintenance.crash-forensics",
+        "maintenance.repair-sheet",
+        "maintenance.fleet-summary"
+      ],
+      "versionRule": "forge-workers package SemVer until an artifact family receives an independent schema version"
+    }
+  },
+  "workerEnvelope": {
+    "version": "0.2.0",
+    "externalPublicationRule": "forge-workers package SemVer until an artifact family receives an independent schema version",
+    "families": [
+      {
+        "queueKind": "etl.ingest-component",
+        "artifactKinds": [],
+        "maturity": "fixture",
+        "notes": "Structured row/publishable/reviewQueue result; no artifactKind discriminator in the internal envelope."
+      },
+      {
+        "queueKind": "occt.tessellate",
+        "artifactKinds": [
+          "geometry"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "photoscan.single",
+        "artifactKinds": [
+          "photoscan"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "photoscan.multiview",
+        "artifactKinds": [
+          "photoscan"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "train.policy",
+        "artifactKinds": [
+          "policy"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "train.sysid-fit",
+        "artifactKinds": [
+          "sysid"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "replay.verify",
+        "artifactKinds": [
+          "replay"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "codesign.evaluate",
+        "artifactKinds": [
+          "codesign"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "bridge.config-diff",
+        "artifactKinds": [
+          "bridge-config"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "bridge.telemetry-ingest",
+        "artifactKinds": [
+          "telemetry-replay"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "bridge.supervisor-check",
+        "artifactKinds": [
+          "supervisor-decision"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "commerce.vendor-refresh",
+        "artifactKinds": [
+          "vendor-offer-refresh"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "maintenance.estimate-wear",
+        "artifactKinds": [
+          "wear-estimate"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "maintenance.crash-forensics",
+        "artifactKinds": [
+          "crash-forensics"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "maintenance.repair-sheet",
+        "artifactKinds": [
+          "repair-sheet"
+        ],
+        "maturity": "fixture"
+      },
+      {
+        "queueKind": "maintenance.fleet-summary",
+        "artifactKinds": [
+          "fleet-summary"
+        ],
+        "maturity": "fixture"
+      }
+    ]
+  }
+}

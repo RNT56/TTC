@@ -84,6 +84,13 @@ without failing the protected check. This deterministic policy check never stand
 for an actual external run; the protocol is owned by
 [`EXTERNAL-ACCEPTANCE.md`](EXTERNAL-ACCEPTANCE.md).
 
+The required `studio + gateway (TypeScript)` job runs
+`pnpm verify:compatibility` and `pnpm verify:docs-contracts` before building. The
+generated OpenAPI, event/artifact catalogs, manifest, and human reference must
+exact-match all registered Fastify/TypeBox routes, documented event emissions,
+compatibility domains, worker queue kinds, examples, and guide links. A route or
+contract-documentation change cannot merge by editing generated output directly.
+
 ## Release-blocking checks
 
 The following are not required on every PR, but must be green on the release commit:

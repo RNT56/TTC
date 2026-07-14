@@ -1,0 +1,7 @@
+{
+  "error": "Brief refused by the ForgedTTC platform-exclusions policy.",
+  "code": "SAFETY_PROHIBITED_BRIEF",
+  "policyVersion": "forge-platform-exclusions.v1",
+  "categories": ["prohibited-example"],
+  "refusalId": "00000000-0000-4000-8000-000000000001"
+}

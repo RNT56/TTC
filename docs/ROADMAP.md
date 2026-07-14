@@ -78,6 +78,14 @@ security, post-merge CI/security, and exact-main nightly `29372161650` are green
 protected artifact passes all six scenes at unchanged edge F1 0.957-0.995 and 3 draws
 without re-pinning any golden or threshold.
 
+DOC-005 is in implementation on the protected `2dfc960` descendant. The candidate
+adds the sixteenth registered schema family and a 36th full-gate step: generated
+OpenAPI 3.1 plus event/artifact catalogs exact-match 75 registered routes, two event
+families, fourteen compatibility domains, and sixteen worker queue kinds. Migration,
+deprecation, and synthetic example guides are checked in the same drift gate. The
+complete 36-step local gate passes under Python 3.12; protected PR and post-merge
+evidence remain required before the task closes.
+
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(repository hygiene/public surfaces are protected; qualified confusing-similarity/common-law/class name review remains PRE-005/GOV-010)* | days |

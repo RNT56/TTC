@@ -43,6 +43,8 @@ const required = [
   "validatorCli",
   "validatorReport",
   "wasmFacade",
+  "gatewayApi",
+  "gatewayEvents",
   "replay",
   "envSpec",
   "licenseExportManifest",
@@ -69,11 +71,14 @@ requireValue(
 
 const workspaceVersion = manifestVersion("Cargo.toml");
 const workerVersion = JSON.parse(read("workers/package.json")).version;
+const gatewayVersion = JSON.parse(read("packages/gateway/package.json")).version;
 const expected = {
   modelSpec: sourceConstant("crates/forge-contract/src/lib.rs", "SCHEMA_VERSION"),
   validatorCli: workspaceVersion,
   validatorReport: sourceConstant("crates/forge-validate/src/lib.rs", "REPORT_FORMAT_VERSION"),
   wasmFacade: workspaceVersion,
+  gatewayApi: gatewayVersion,
+  gatewayEvents: gatewayVersion,
   replay: sourceConstant("crates/forge-sim/src/runtime.rs", "REPLAY_FORMAT_VERSION"),
   envSpec: sourceConstant("crates/forge-sim/src/runtime.rs", "ENVSPEC_SCHEMA_VERSION"),
   userDataExport: typescriptConstant(

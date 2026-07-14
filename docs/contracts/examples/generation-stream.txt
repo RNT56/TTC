@@ -1,0 +1,11 @@
+event: start
+data: {"promptHash":"0000000000000000000000000000000000000000000000000000000000000000","provider":"template"}
+
+event: stage
+data: {"stage":"intent-parse","archetype":"rover","categories":[],"provider":"template"}
+
+event: stage
+data: {"stage":"admission","verdict":"admitted","attempt":0}
+
+event: complete
+data: {"mode":"synthesis","catalogPolicy":"approved-review-rows-only","attempts":[],"verdict":"admitted","blockedReasons":[]}
