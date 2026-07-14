@@ -1,7 +1,7 @@
 # Repository governance and required checks
 
 Owner: repository maintainers  
-Last reviewed: **2026-07-13**
+Last reviewed: **2026-07-14**
 
 This is the executable contract for default-branch protection, check stability,
 dependency/security triage, and release escalation. It complements `AGENTS.md`; it
@@ -99,6 +99,16 @@ The following are not required on every PR, but must be green on the release com
 Nightly or scheduled failure opens a release blocker immediately. It becomes a merge
 blocker when the failure is deterministic on the PR tree or affects the changed
 surface.
+
+The parity job must execute `pnpm parity`, including the focused harness-policy
+tests. Its custom server carries the production COOP/COEP isolation contract; a
+preflight must prove full-Studio Chromium, available `SharedArrayBuffer`, high/WebGL
+scene quality, initialized advanced effects, no page errors, and a loaded artifact
+before any image comparison. Only an isolated renderer-initialization failure may
+retry, once, with a fresh browser. Every capture remains low-tier WebGL with the
+unchanged edge-F1 ≥ 0.85 and ≤ 40 draw-call gates. Always upload preflight, metrics,
+composites, and failure images. Canvas2D viewer output is valid QA-003 fallback
+evidence but never P1-015 parity evidence.
 
 ## Security and dependency operations
 

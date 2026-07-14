@@ -2,7 +2,7 @@
 
 Owner: Studio maintainers
 
-Last reviewed: **2026-07-13**
+Last reviewed: **2026-07-14**
 
 Task: `QA-003`
 
@@ -103,6 +103,19 @@ For authenticated persistence and authorization, run QA-002 separately through
 QA-006 on named hardware. For real user/device claims, use the registered QA-010
 external-acceptance procedure and preserve its limitations explicitly.
 
+P1-015/QA-012 visual parity has a narrower authority than viewer acceptance: it must
+exercise the **full-Studio Chromium WebGL renderer**, never the Canvas2D support
+fallback. `pnpm parity` serves the production bundle and frozen monolith through one
+local origin with the same COOP/COEP isolation headers as Vite, runs a fail-closed
+preflight for `full-studio`/`chromium`/`high`/`webgl` plus initialized advanced
+effects, then captures all six scenes at deterministic low-tier WebGL. Missing
+isolation or support-tier drift is a non-retryable configuration failure. An isolated
+renderer-initialization failure may receive one fresh-browser retry; every attempt is
+recorded in `artifacts/parity/preflight.json`. Each scene records its renderer quality
+in `metrics.json` and must retain the existing edge-F1 and draw-call gates. Semantic
+wrapper changes must hide non-canvas presentation subtrees by canvas ancestry so UI
+chrome cannot contaminate element screenshots.
+
 ## 4. Change and triage rules
 
 - Treat the tier banner and detection logic as a product contract. A browser may be
@@ -121,3 +134,5 @@ external-acceptance procedure and preserve its limitations explicitly.
 - Reproduce failures at the exact revision and engine version from the evidence
   file. Attach the bounded evidence/screenshot; do not treat a single-engine rerun as
   proof that the complete matrix passed.
+- For parity failures, inspect `preflight.json` before image metrics. Never compare or
+  re-pin a viewer-grade capture as if it were full-Studio WebGL evidence.

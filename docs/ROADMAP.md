@@ -72,9 +72,11 @@ behavior for imports, JSON Patch, EnvSpec, replay, provider rows, citations, D10
 exports, and hardware payloads; exact PR and post-merge CI/security are green. This
 deterministic corpus does not close live-provider, external-import diversity,
 hardware, performance, or field criteria. QA-012 is the immediate reliability lane:
-resolve the current nightlies' WebGL-startup/fallback ambiguity while keeping parity
-proof full-WebGL and failing explicitly when only the intentional Canvas2D fallback
-loads.
+the local candidate fixes the custom server's missing COOP/COEP isolation and stale
+semantic-wrapper chrome selector, then requires a full-Studio/Chromium/high/WebGL
+preflight before the low-tier deterministic capture. All six local scenes pass at
+edge F1 0.957-0.995 and 3 draws without changing goldens or thresholds; branch and
+protected-main nightly proof remain before closure.
 
 | Phase | Status | Est. |
 |---|---|---|

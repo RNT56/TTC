@@ -494,6 +494,14 @@ proof; Playwright WebKit is not an Apple Safari/iOS certification. See
 [`docs/BROWSER-SUPPORT.md`](docs/BROWSER-SUPPORT.md) for the complete matrix,
 accessibility contract, evidence fields, and claim limits.
 
+Visual parity is deliberately stricter than viewer support. After the Studio build,
+`pnpm parity` serves the frozen monolith and production bundle with the full Studio's
+COOP/COEP isolation contract, refuses anything except Chromium/WebGL preflight, hides
+UI chrome independently of semantic wrapper shape, and compares all six canonical
+cameras at the unchanged edge-F1/draw-call gates. Its preflight, metrics, composites,
+and captures are written under `artifacts/parity/`; Canvas2D output is never accepted
+as WebGL parity evidence.
+
 ---
 
 ## Repo Map

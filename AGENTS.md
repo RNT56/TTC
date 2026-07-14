@@ -95,9 +95,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   scheduled nightly `29311327203` passed coverage but failed visual parity after the
   Studio entered its intentional Canvas2D fallback instead of WebGL; current-main
   manual rerun `29367911748` reproduced the same six-scene failure, so parity
-  hardening is active under QA-012 and the gate must not accept the fallback as
-  WebGL proof. Historical G0/G1 evidence remains intact, but no new release or phase
-  close may reuse G0 until QA-012 restores current nightly proof;
+  hardening is active under QA-012. The local candidate restores the parity server's
+  required COOP/COEP isolation, hides semantic UI wrappers without hiding the canvas,
+  and fail-closes on anything except full-Studio Chromium/WebGL; its six local scenes
+  pass at edge F1 0.957-0.995 and 3 draws, and all 35 local gates plus focused
+  Chromium support pass. Historical G0/G1 evidence remains intact, but no new release
+  or phase close may reuse G0 until protected branch/main nightly proof closes
+  QA-012;
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
@@ -471,6 +475,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
+| Visual parity/nightly | `pnpm --filter @forge/studio build`; `pnpm parity`; inspect `artifacts/parity/preflight.json`, metrics, and all six composites; require full-Studio Chromium/WebGL and unchanged gates; branch nightly for harness changes |
 | Cross-boundary parser/fuzz corpus | `pnpm fuzz:contract:check`; Rust contract/sim boundary tests; Python 3.12 worker suite; registered-golden review; full `pnpm verify` |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
