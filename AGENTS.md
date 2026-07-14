@@ -81,8 +81,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is QA-005 PR #46 at `7970005`, with
-  CI `29292041469` and security `29292041441` green;
+  latest verified protected runtime descendant is QA-007 PR #48 at `e89bb15`, with
+  CI `29367356078` and security `29367355993` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -90,9 +90,14 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   PR CI `29275447135`/security `29275447237` and post-merge CI `29275850838`/
   security `29275851177` green; this makes external acceptance executable but does
   not supply an independent participant, provider, controlled rig, or field result;
-- Brief-25 admits 25/25, every declared first-party verdict matches, and the nightly
-  browser/coverage commands pass locally;
-- protected `main` is green in PR, post-merge CI/security, and manual nightly proof;
+- Brief-25 admits 25/25 and every declared first-party verdict matches;
+- protected `main` is green in exact PR and post-merge CI/security. The latest
+  scheduled nightly `29311327203` passed coverage but failed visual parity after the
+  Studio entered its intentional Canvas2D fallback instead of WebGL; current-main
+  manual rerun `29367911748` reproduced the same six-scene failure, so parity
+  hardening is active under QA-012 and the gate must not accept the fallback as
+  WebGL proof. Historical G0/G1 evidence remains intact, but no new release or phase
+  close may reuse G0 until QA-012 restores current nightly proof;
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
@@ -104,10 +109,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   its 34th step machine-checks external-acceptance policy across eight milestones.
   QA-004 is protected through PR #44, whose 35th step machine-checks the migration
   runner policy. QA-005 is protected through PR #46; the same isolated-Postgres job
-  now proves its D38 queue and staged-upload recovery matrix. QA-007 is the active
-  local lane: its candidate registers a fifteenth family containing eight versioned
-  boundary corpora and 89 reviewed cases; all 35 local gates pass and it remains
-  `[~]` until protected PR/post-merge evidence passes;
+  proves its D38 queue and staged-upload recovery matrix. QA-007 is protected through
+  PR #48 at `e89bb15`: the fifteenth family contains eight versioned boundary corpora
+  and 89 reviewed cases, and exact PR/post-merge CI/security are green;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
