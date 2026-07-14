@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-14 — Close protected adversarial corpus acceptance
+**Session:** Codex agent · branch `codex/qa007-protected-evidence` · **Phase:** QA /
+cross-boundary quality · **TODO items:** QA-007 [x], QA-012 [~]
+**Done:** Closed QA-007 through protected main. Exact implementation head `fb6eacc`
+passed PR #48 CI `29366837836` and security `29366838444`, including dependency
+review/audit, source SPDX, native Desktop, Rust, workers, TypeScript/gateway,
+isolated Postgres/real-browser acceptance, and both CodeQL languages. Protected
+squash `e89bb15` passed post-merge CI `29367356078` and security `29367355993`.
+The protected 35-step baseline now governs the exact eight-file/89-case boundary
+inventory and its Rust/Python consumers. The ledger is 201 tasks: 137 done, 38 in
+progress, 25 open, and 1 blocked. Current-state review also found scheduled nightly
+`29311327203` passed core coverage but captured the intentional Canvas2D fallback
+instead of WebGL for all six parity scenes; exact-current-main rerun `29367911748`
+reproduced the same failure while coverage remained green.
+**Changed:** Canonical agent entry point; project-state evidence ledger; phase and
+execution roadmaps; QA-007 closure; new QA-012 regression task and current-G0
+boundary; changelog.
+**Decisions:** none. QA-007 remains deterministic fixture evidence and does not claim
+credentialed providers, diverse real external imports, hardware, load, external
+users, or field maturity. Visual parity still requires the full WebGL renderer; the
+Canvas2D support fallback is not acceptable parity proof.
+**Next:** harden the nightly parity harness to assert full-WebGL quality, retry only
+bounded initialization failures, and preserve the existing six-scene thresholds;
+then prove the exact change through a manual nightly and protected CI/security.
+**Blockers:** none for QA-007. Credentialed providers, qualified external
+participants, production operations, and controlled hardware remain prerequisites
+for their own roadmap lanes.
+
 ## 2026-07-13 — Govern adversarial trust-boundary failures
 **Session:** Codex agent · branch `codex/qa007-adversarial-corpus` · **Phase:** QA /
 cross-boundary quality · **TODO items:** QA-007 [~], QA-008

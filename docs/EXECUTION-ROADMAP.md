@@ -1,6 +1,6 @@
 # EXECUTION ROADMAP - complete program from recovery to field proof
 
-Last rebuilt: **2026-07-13**
+Last rebuilt: **2026-07-14**
 
 Evidence baseline: [`PROJECT-STATE.md`](PROJECT-STATE.md)
 
@@ -51,15 +51,19 @@ and post-merge proof. QA-005 deterministic fault acceptance is protected through
 #46 at `7970005`: D38/migration 0021 lease-fenced attempts, bounded retry/
 cancellation/timeout behavior, staged exact-checksum uploads, and the clean 21-
 migration plus 20-predecessor matrix have exact PR and post-merge CI/security and
-revision-bound artifacts. Production backup/DR, multi-replica queues, object-store
-operations, shared quotas, and SLOs remain OPS-005/QA-009 and OPS-003..007.
+revision-bound artifacts. QA-007 is protected through PR #48 at `e89bb15`: its
+eight-file/89-case adversarial inventory, Rust/Python consumers, and fifteenth golden
+family passed exact PR CI/security and post-merge CI/security. Production backup/DR,
+multi-replica queues, object-store operations, shared quotas, and SLOs remain
+OPS-005/QA-009 and OPS-003..007.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
-EXT-001 independent-builder path. While those external prerequisites are absent, the
-active dependency-complete local lane is QA-007's cross-boundary adversarial corpus.
-Its candidate has the exact eight versioned files, 89 reviewed cases, Rust/Python
-consumers, and a green 35-step local gate; protected PR/post-merge proof remains
-before closure.
+EXT-001 independent-builder path. Before resuming those prerequisite-bound lanes, the
+active dependency-complete reliability lane is the scheduled-nightly visual-parity
+failure under QA-012: require full WebGL quality, retry only bounded initialization
+failure, and emit explicit renderer diagnostics without weakening the six-scene
+thresholds. Historical G0/G1 evidence remains valid, but QA-012 blocks any new
+G0-dependent release or phase close.
 QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
 requires a qualified independent participant and frozen protected revision/
 environment.
@@ -100,11 +104,12 @@ Current Wave 1/2 boundary:
   materialization, staged-object refusal, and exact verified upload completion;
   multi-replica, deployed provider/object-store, incident, quota, dead-letter, and SLO
   evidence retains OPS/QA ownership;
-- QA-007 is active locally: the candidate registers the fifteenth golden family,
+- QA-007 is closed through protected PR #48: it registers the fifteenth golden family,
   keeps the 35-step gate count stable by extending `fuzz:contract:check`, and pins
   import/patch/EnvSpec/replay/provider/citation/export/hardware refusal behavior.
-  All 35 local gates pass; it remains `[~]` until exact PR, merge, and post-merge evidence. Its
-  fixture corpus is not a credentialed-provider, real-hardware, load, or field claim;
+  Exact PR CI `29366837836`/security `29366838444` at `fb6eacc` and post-merge CI
+  `29367356078`/security `29367355993` at `e89bb15` pass. Its fixture corpus is not a
+  credentialed-provider, real-hardware, load, or field claim;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -164,10 +169,11 @@ retains its own acceptance evidence.
 
 Objective: make `main` trustworthy before new feature work.
 
-Status (2026-07-12): **G0 and Wave 0 complete.** `REC-001..008`, `GOV-001..005`,
-and `QA-001` are complete with evidence in `PROJECT-STATE.md`. All remaining work
-moves through G1 and later gates without reopening G0 unless a baseline check
-regresses.
+Status (updated 2026-07-14): **Wave 0's historical closure remains complete, but
+current G0 acceptance is reopened by QA-012.** `REC-001..008`, `GOV-001..005`, and
+`QA-001` retain their completed evidence in `PROJECT-STATE.md`; scheduled and manual
+current-main nightlies reproduced a Canvas2D fallback capture instead of WebGL.
+QA-012 must restore exact full-WebGL proof before any new G0-dependent close.
 
 Work:
 
