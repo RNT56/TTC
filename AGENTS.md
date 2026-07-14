@@ -104,7 +104,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   its 34th step machine-checks external-acceptance policy across eight milestones.
   QA-004 is protected through PR #44, whose 35th step machine-checks the migration
   runner policy. QA-005 is protected through PR #46; the same isolated-Postgres job
-  now proves its D38 queue and staged-upload recovery matrix;
+  now proves its D38 queue and staged-upload recovery matrix. QA-007 is the active
+  local lane: its candidate registers a fifteenth family containing eight versioned
+  boundary corpora and 89 reviewed cases; all 35 local gates pass and it remains
+  `[~]` until protected PR/post-merge evidence passes;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -350,6 +353,25 @@ Queue and client-upload fault boundary (D38/QA-005):
   shared quotas, object-provider incident drills, and SLO evidence remain OPS-003,
   OPS-004, OPS-006, OPS-007, QA-006, and QA-009.
 
+Cross-boundary adversarial evidence (QA-007/QA-008):
+
+- `evals/fuzz/boundaries/` is one registered golden family with exactly eight files:
+  imports, JSON Patch, EnvSpec, replay, provider output, catalog citations, export
+  policy, and hardware payloads. Case IDs are stable and globally unique; removals,
+  changed outcomes, or new files require the QA-008 append-only review procedure;
+- `pnpm fuzz:contract:check` runs both the existing ModelSpec seed oracle and the
+  boundary-corpus structure check without adding another full-gate step. Rust tests
+  consume patch/import/EnvSpec/replay cases; Python 3.12 workers consume replay,
+  provider, citation, export, and hardware cases;
+- non-finite SI values, malformed imported numeric attributes/graphs, unsupported
+  patch behavior, unbounded or non-finite provider/replay payloads, invalid citation
+  confidence or URLs, contradictory D10 export policy, command-token injection,
+  duplicate telemetry time, and malformed supervisor state must fail closed. A
+  refusal case is never re-pinned to acceptance merely to make a test green;
+- this corpus proves deterministic fixture behavior only. It does not replace
+  external imported-model diversity, credentialed providers, controlled hardware,
+  production load/fault drills, or field evidence.
+
 External acceptance boundary (QA-010/EXT-001..008):
 
 - the versioned registry and CLI under `docs/external-acceptance/` and `scripts/`
@@ -445,6 +467,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Rust core/validator | `cargo fmt --all --check`; `cargo clippy --workspace -- -D warnings`; relevant tests; `cargo test --workspace`; schema/golden/declared-verdict checks when affected |
 | Schema/contract | `pnpm codegen:contract`; generated diff review; migration/property/fuzz tests; native/WASM golden comparison |
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
+| Cross-boundary parser/fuzz corpus | `pnpm fuzz:contract:check`; Rust contract/sim boundary tests; Python 3.12 worker suite; registered-golden review; full `pnpm verify` |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |

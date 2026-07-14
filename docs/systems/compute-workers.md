@@ -168,6 +168,10 @@ metadata; `bridge.telemetry-ingest` turns captured samples into sorted replay ta
 checks with explicit 50 Hz advisory / 200 Hz supervisor rates. Live hardware write
 and capture are D30 lab-gated: accepted `d28.hardware` signoff, lab-mode env, local
 provider, D12 rig ID, physical confirmation, and lab adapter are all required.
+QA-007 bounds all three JSON inputs, allows only single safe config command tokens,
+requires finite unique telemetry timestamps, rejects non-finite nested telemetry
+before hashing, and requires exact finite 3-vectors plus positive finite supervisor
+limits. These fixture checks do not authorize, arm, or write physical hardware.
 
 ### 3.6 `workers/maintenance` — lifecycle twin (P12)
 `maintenance.estimate-wear`, `maintenance.crash-forensics`,
@@ -239,6 +243,15 @@ result, materializes the winner once, and exercises outage recovery, rate-limit
 exhaustion, partial recovery, and cancellation. It writes
 `artifacts/e2e/qa005-fault-acceptance.json`; this is isolated deterministic fault
 injection, not a production outage drill.
+
+QA-007 registers 55 Python-consumed cases across replay, provider output, catalog
+citations, D10 exports, and hardware payloads (within the 89-case cross-language
+family). The suite materializes explicit non-finite sentinels only in memory, asserts
+bounded provider JSON, finite `[0,1]` confidence, credential-free HTTPS citation
+sources, most-restrictive export policy, command-token refusal, telemetry ordering,
+and supervisor fail-closed behavior. Together with existing worker tests, 127/127
+pass under Python 3.12; credentialed providers and physical adapters remain separate
+acceptance lanes.
 
 ## 7. Phase mapping & backlog
 

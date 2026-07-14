@@ -192,6 +192,7 @@ pub struct ReplayVerification {
 
 pub fn verify_replay(tape: &ReplayTape, expected_hash: Option<&str>) -> ReplayVerification {
     let tape_hash = fnv1a_hex(&serde_json::to_string(tape).expect("replay tape serializes"));
+    let finite = tape.frames.iter().all(|frame| frame.t.is_finite());
     let monotonic = tape.frames.windows(2).all(|pair| pair[0].t < pair[1].t);
     let hash_ok = expected_hash
         .map(|expected| expected == tape_hash)
@@ -205,6 +206,8 @@ pub fn verify_replay(tape: &ReplayTape, expected_hash: Option<&str>) -> ReplayVe
         ))
     } else if tape.frames.is_empty() {
         Some("replay has no frames".to_string())
+    } else if !finite {
+        Some("replay timestamps must be finite".to_string())
     } else if !monotonic {
         Some("replay timestamps are not strictly increasing".to_string())
     } else if !hash_ok {
@@ -394,7 +397,12 @@ pub fn validate_envspec(env: &EnvSpec) -> Vec<EnvDiagnostic> {
         }
     }
     for gate in &env.gates {
-        if gate.id.trim().is_empty() || gate.width_m <= 0.0 || gate.height_m <= 0.0 {
+        if gate.id.trim().is_empty()
+            || !gate.width_m.is_finite()
+            || gate.width_m <= 0.0
+            || !gate.height_m.is_finite()
+            || gate.height_m <= 0.0
+        {
             diagnostics.push(diag(
                 "ENV-004",
                 "error",

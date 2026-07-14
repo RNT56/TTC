@@ -98,7 +98,11 @@ analytic solids (box/cylinder/sphere within 0.1 %); bake byte-stability fixtures
 the monolith (P0-008 recordings); golden-number membership for bake outputs (XT-001,
 incl. Manifold native-vs-WASM parity); CSG robustness fuzz; interference known-pairs
 suite; refit acceptance corpus (clean scans, noisy scans, unfittable organic
-shapes); DfM fixtures per process profile.
+shapes); DfM fixtures per process profile. QA-007's registered D10 export corpus
+pins full-geometry, attribution-manifest, and envelope-substitution outcomes for
+open/attributed/restricted/mixed assemblies and rejects contradictory policy,
+missing ledger/datums, insecure source URLs, non-finite envelopes, and invalid BOM
+quantity.
 
 ## 6. Phase mapping & backlog
 

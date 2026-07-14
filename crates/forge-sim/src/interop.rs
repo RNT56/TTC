@@ -11,6 +11,9 @@ use forge_contract::{
     Meta, ModelSpec, Node, Part, PartPose, Provenance, ProvenanceKind, SimBlock,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
+
+const MAX_IMPORT_XML_BYTES: usize = 4 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -66,6 +69,11 @@ impl ImportedSummary {
 }
 
 pub fn import_urdf_summary(xml: &str) -> Result<ImportedSummary, String> {
+    validate_import_xml(
+        xml,
+        "URDF",
+        &["xyz", "rpy", "size", "radius", "length", "lower", "upper"],
+    )?;
     let model = attr(xml, "<robot", "name").unwrap_or_else(|| "imported-urdf".to_string());
     let mut nodes = Vec::new();
     let mut geoms = Vec::new();
@@ -97,22 +105,30 @@ pub fn import_urdf_summary(xml: &str) -> Result<ImportedSummary, String> {
         let parent =
             child_text_attr(&joint.body, "parent", "link").ok_or("URDF joint missing parent")?;
         let kind = attr(&joint.open, "<joint", "type");
-        if let Some(node) = nodes.iter_mut().find(|node| node.name == child) {
-            node.parent = Some(parent);
-            node.joint_kind = kind;
-            node.pos = child_text_attr(&joint.body, "origin", "xyz")
-                .and_then(|value| parse_vec3(&value))
-                .map(zup_to_forge)
-                .unwrap_or([0.0; 3]);
-            node.rot = child_text_attr(&joint.body, "origin", "rpy")
-                .and_then(|value| parse_vec3(&value))
-                .unwrap_or([0.0; 3]);
-            node.joint_axis = child_text_attr(&joint.body, "axis", "xyz")
-                .and_then(|value| parse_vec3(&value))
-                .map(zup_to_forge);
-            node.joint_limits = parse_limits(&joint.body);
+        let node = nodes
+            .iter_mut()
+            .find(|node| node.name == child)
+            .ok_or_else(|| format!("URDF joint references missing child '{child}'"))?;
+        if node.parent.is_some() {
+            return Err(format!(
+                "URDF link '{child}' has more than one parent joint"
+            ));
         }
+        node.parent = Some(parent);
+        node.joint_kind = kind;
+        node.pos = child_text_attr(&joint.body, "origin", "xyz")
+            .and_then(|value| parse_vec3(&value))
+            .map(zup_to_forge)
+            .unwrap_or([0.0; 3]);
+        node.rot = child_text_attr(&joint.body, "origin", "rpy")
+            .and_then(|value| parse_vec3(&value))
+            .unwrap_or([0.0; 3]);
+        node.joint_axis = child_text_attr(&joint.body, "axis", "xyz")
+            .and_then(|value| parse_vec3(&value))
+            .map(zup_to_forge);
+        node.joint_limits = parse_limits(&joint.body);
     }
+    validate_imported_nodes(&nodes, "URDF")?;
     Ok(ImportedSummary {
         format: "urdf".to_string(),
         model,
@@ -123,6 +139,7 @@ pub fn import_urdf_summary(xml: &str) -> Result<ImportedSummary, String> {
 }
 
 pub fn import_mjcf_summary(xml: &str) -> Result<ImportedSummary, String> {
+    validate_import_xml(xml, "MJCF", &["pos", "axis", "range", "size"])?;
     let model = attr(xml, "<mujoco", "model").unwrap_or_else(|| "imported-mjcf".to_string());
     let mut stack: Vec<String> = Vec::new();
     let mut nodes = Vec::new();
@@ -175,6 +192,7 @@ pub fn import_mjcf_summary(xml: &str) -> Result<ImportedSummary, String> {
             }
         }
     }
+    validate_imported_nodes(&nodes, "MJCF")?;
     Ok(ImportedSummary {
         format: "mjcf".to_string(),
         model,
@@ -815,8 +833,8 @@ fn urdf_geom(body: &str, node: &str, collision: bool) -> Option<ImportedGeom> {
         });
     }
     if let (Some(radius), Some(length)) = (
-        attr(body, "<cylinder", "radius").and_then(|value| value.parse::<f64>().ok()),
-        attr(body, "<cylinder", "length").and_then(|value| value.parse::<f64>().ok()),
+        attr(body, "<cylinder", "radius").and_then(|value| parse_finite(&value)),
+        attr(body, "<cylinder", "length").and_then(|value| parse_finite(&value)),
     ) {
         return Some(ImportedGeom {
             node: node.to_string(),
@@ -892,7 +910,7 @@ fn import_joint(kind: Option<&str>, axis: Option<[f64; 3]>) -> Joint {
 fn limits_for_axis(axis: [f64; 3], limits: [f64; 2]) -> [[f64; 2]; 3] {
     let mut out = [[0.0, 0.0]; 3];
     let dominant = (0..3)
-        .max_by(|a, b| axis[*a].abs().partial_cmp(&axis[*b].abs()).unwrap())
+        .max_by(|a, b| axis[*a].abs().total_cmp(&axis[*b].abs()))
         .unwrap_or(1);
     out[dominant] = limits;
     out
@@ -934,14 +952,14 @@ fn zup_to_forge(p: [f64; 3]) -> [f64; 3] {
 }
 
 fn parse_limits(text: &str) -> Option<[f64; 2]> {
-    let lower = attr(text, "<limit", "lower")?.parse::<f64>().ok()?;
-    let upper = attr(text, "<limit", "upper")?.parse::<f64>().ok()?;
+    let lower = parse_finite(&attr(text, "<limit", "lower")?)?;
+    let upper = parse_finite(&attr(text, "<limit", "upper")?)?;
     Some([lower, upper])
 }
 
 fn parse_pair(value: &str) -> Option<[f64; 2]> {
     let values = parse_numbers(value)?;
-    if values.len() >= 2 {
+    if values.len() == 2 {
         Some([values[0], values[1]])
     } else {
         None
@@ -950,7 +968,7 @@ fn parse_pair(value: &str) -> Option<[f64; 2]> {
 
 fn parse_vec3(value: &str) -> Option<[f64; 3]> {
     let values = parse_numbers(value)?;
-    if values.len() >= 3 {
+    if values.len() == 3 {
         Some([values[0], values[1], values[2]])
     } else {
         None
@@ -963,11 +981,111 @@ fn parse_numbers(value: &str) -> Option<Vec<f64>> {
         .map(str::parse::<f64>)
         .collect::<Result<Vec<_>, _>>()
         .ok()?;
-    if values.is_empty() {
+    if values.is_empty() || values.iter().any(|number| !number.is_finite()) {
         None
     } else {
         Some(values)
     }
+}
+
+fn parse_finite(value: &str) -> Option<f64> {
+    value
+        .parse::<f64>()
+        .ok()
+        .filter(|number| number.is_finite())
+}
+
+fn validate_import_xml(xml: &str, format: &str, numeric_attrs: &[&str]) -> Result<(), String> {
+    if xml.len() > MAX_IMPORT_XML_BYTES {
+        return Err(format!(
+            "{format} import exceeds the {} byte limit",
+            MAX_IMPORT_XML_BYTES
+        ));
+    }
+    if xml.contains('\0') {
+        return Err(format!("{format} import contains a NUL byte"));
+    }
+    for name in numeric_attrs {
+        let needle = format!("{name}=\"");
+        let mut rest = xml;
+        while let Some(start) = rest.find(&needle) {
+            if start > 0
+                && !rest[..start]
+                    .chars()
+                    .next_back()
+                    .is_some_and(char::is_whitespace)
+            {
+                rest = &rest[start + needle.len()..];
+                continue;
+            }
+            let tail = &rest[start + needle.len()..];
+            let Some(end) = tail.find('"') else {
+                return Err(format!(
+                    "{format} import has an unterminated {name} attribute"
+                ));
+            };
+            let raw = &tail[..end];
+            let values = parse_numbers(raw).ok_or_else(|| {
+                format!("{format} import has an invalid finite numeric {name} attribute")
+            })?;
+            if values.len() > 16 {
+                return Err(format!("{format} import {name} attribute is too wide"));
+            }
+            rest = &tail[end + 1..];
+        }
+    }
+    Ok(())
+}
+
+fn validate_imported_nodes(nodes: &[ImportedNode], format: &str) -> Result<(), String> {
+    if nodes.is_empty() {
+        return Err(format!("{format} import produced no skeleton nodes"));
+    }
+    let names = nodes
+        .iter()
+        .map(|node| node.name.as_str())
+        .collect::<BTreeSet<_>>();
+    if names.len() != nodes.len() {
+        return Err(format!("{format} import contains duplicate node names"));
+    }
+    let parents = nodes
+        .iter()
+        .map(|node| (node.name.as_str(), node.parent.as_deref()))
+        .collect::<BTreeMap<_, _>>();
+    for node in nodes {
+        if node.name.trim().is_empty() {
+            return Err(format!("{format} import contains an empty node name"));
+        }
+        if node
+            .parent
+            .as_ref()
+            .is_some_and(|parent| parent == &node.name || !names.contains(parent.as_str()))
+        {
+            return Err(format!(
+                "{format} import node '{}' has an invalid parent",
+                node.name
+            ));
+        }
+    }
+    let mut resolved = BTreeSet::new();
+    for node in nodes {
+        if resolved.contains(node.name.as_str()) {
+            continue;
+        }
+        let mut ancestors = BTreeSet::new();
+        let mut cursor = Some(node.name.as_str());
+        while let Some(name) = cursor {
+            if resolved.contains(name) {
+                break;
+            }
+            if !ancestors.insert(name) {
+                return Err(format!("{format} import contains a parent cycle"));
+            }
+            cursor = parents.get(name).copied().flatten();
+        }
+        resolved.extend(ancestors);
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1081,6 +1199,13 @@ mod tests {
             .parts
             .iter()
             .all(|part| part.collision == CollisionPolicy::Primitive));
+    }
+
+    #[test]
+    fn numeric_preflight_matches_complete_attribute_names() {
+        let xml = r#"<robot name="u"><link name="base" data-size="not-a-number"></link></robot>"#;
+        let imported = import_urdf_summary(xml).expect("unrelated suffix attribute is ignored");
+        assert_eq!(imported.node_count(), 1);
     }
 
     #[test]

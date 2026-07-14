@@ -196,6 +196,17 @@ corpus materializes first-party examples plus JSON-Pointer mutations, pins verdi
 and error check IDs, and the minimizer greedily removes optional model content while
 preserving a requested diagnostic check for permanent regression fixtures.
 
+QA-007 extends that gate without adding a new top-level verification step.
+`pnpm fuzz:contract:check` now also runs
+[`scripts/check-boundary-fuzz-corpora.mjs`](../../scripts/check-boundary-fuzz-corpora.mjs),
+which requires the exact eight-file `forge-boundary-fuzz.v1` inventory, substantive
+case rationale, globally unique stable IDs, pinned accept/reject outcomes, and valid
+non-finite sentinels. The registered family currently contains 89 cases. Rust
+consumers own JSON Patch, URDF/MJCF import, EnvSpec, and replay behavior; Python 3.12
+consumers own replay, provider output, catalog citations, D10 export policy, and
+hardware payloads. Structural validity is not behavioral proof, so the registry also
+requires both Rust consumers and the worker suite.
+
 ## 9. Phase mapping
 
 - **P0:** embryo — schema validity + part/face byte-equivalence vs the monolith

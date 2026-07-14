@@ -62,6 +62,15 @@ partial-upload refusal followed by exact staged-upload completion. Production qu
 operations, multi-replica capacity, provider/object-store incident drills, shared
 quotas, dead-letter operations, and SLOs remain separate OPS/QA gates.
 
+QA-007 is active on `codex/qa007-adversarial-corpus`. The candidate registers a
+fifteenth golden family with the exact eight required trust-boundary files and 89
+stable cases. Rust and Python consumers pin accepted/refused behavior for imports,
+JSON Patch, EnvSpec, replay, provider rows, citations, D10 exports, and hardware
+payloads; focused tests and all 35 local gates are green. It remains `[~]` until
+exact protected PR/post-merge CI/security pass. This deterministic corpus does not
+close live-provider, external-import diversity, hardware, performance, or field
+criteria.
+
 | Phase | Status | Est. |
 |---|---|---|
 | Pre-P0 housekeeping | ◑ *(repository hygiene/public surfaces are protected; qualified confusing-similarity/common-law/class name review remains PRE-005/GOV-010)* | days |
@@ -71,9 +80,9 @@ quotas, dead-letter operations, and SLOs remain separate OPS/QA gates.
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs, and native bounded Anthropic ETL contract; credentialed extraction through reviewed persistence remains P3-004/R1 work)* | 2–3 wk |
 | P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate is 25/25, QA-002's ten-flow real-WASM/isolated-DB browser loop is protected through PR #38, and QA-003's three-engine semantic/interaction matrix is protected through PR #42; SEC-002..006 remain contract/fixture, D36 native ETL is contract/fixture only, and credentialed extraction, deployed egress/quotas/backup/DR, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
-| P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; live MuJoCo baseline and broader external corpus remain open)* | 3–4 wk |
+| P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; QA-007 candidate adds malformed/non-finite import/replay/EnvSpec regression coverage, while live MuJoCo baseline and diverse real external corpus remain open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
-| P8 Bridge + Desktop | ◑ *(2026-06-14: D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; real lab adapters/evidence remain open)* | 5–7 wk |
+| P8 Bridge + Desktop | ◑ *(D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; QA-007 candidate bounds payloads and refuses command injection, duplicate/non-finite time, malformed vectors, and invalid safety limits; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
 | P10 Environments & courses | ◑ *(EnvSpec, generation, routes, course-to-task adapter, replay verification, and Studio fixture surface exist; community race and popular-course live proof remain open)* | 3–4 wk |
 | P11 Platform | ◑ *(local platform contracts, D10/D33-D35 authority, and one protected contract/fixture idempotent gateway-to-worker vendor-normalization path exist; credentialed vendor/print sandboxes, production backup/DR, external users, and policy process ownership remain gated)* | open |

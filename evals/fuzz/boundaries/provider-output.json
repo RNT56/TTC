@@ -1,0 +1,32 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "provider-output",
+  "description": "Untrusted canonical-row JSON cases for the native Anthropic ETL boundary; no case performs a provider request.",
+  "fixture": {
+    "id": "cmp_qa007_motor",
+    "brand": "ExampleCo",
+    "model": "QA007",
+    "category": "motor",
+    "massG": 32.4,
+    "confidence": 0.97,
+    "dims": {"xMm": 28, "yMm": 28, "zMm": 17},
+    "source": "datasheet",
+    "revisions": [{"version": "1.0.0", "yanked": false}],
+    "license": {"id": "lic_qa007", "class": "open", "terms": "fixture", "sourceUrl": "https://example.com/source", "exportPolicy": "full-geometry-ok"},
+    "prices": [{"vendor": "Example", "sku": "QA007", "url": "https://example.com/source", "amount": 19.99, "currency": "USD", "fetchedAt": "2026-07-13", "region": "US", "purchasable": true}],
+    "citations": {"massG": {"value": "32.4 g", "sources": ["https://example.com/source"], "accessed": "2026-07-13"}}
+  },
+  "cases": [
+    {"id": "provider-output-valid-row", "focus": "A bounded canonical catalog row parses without provider-side authority.", "input": {"mutation": null}, "expect": {"outcome": "accept"}},
+    {"id": "provider-output-json-nan", "focus": "Non-standard JSON NaN constants are refused.", "input": {"rawCanonicalRowJson": "{\"massG\":NaN}"}, "expect": {"outcome": "reject", "contains": "invalid canonical row JSON"}},
+    {"id": "provider-output-top-level-array", "focus": "Provider output must be one canonical row object.", "input": {"rawCanonicalRowJson": "[]"}, "expect": {"outcome": "reject", "contains": "non-object"}},
+    {"id": "provider-output-boolean-mass", "focus": "Boolean values cannot masquerade as sourced physics.", "input": {"mutation": {"path": "/massG", "value": true}}, "expect": {"outcome": "reject", "contains": "invalid massG"}},
+    {"id": "provider-output-confidence-over-one", "focus": "Confidence remains a finite closed-unit interval.", "input": {"mutation": {"path": "/confidence", "value": 1.1}}, "expect": {"outcome": "reject", "contains": "invalid confidence"}},
+    {"id": "provider-output-invalid-source-class", "focus": "Provider-chosen source classes stay allowlisted.", "input": {"mutation": {"path": "/source", "value": "internet"}}, "expect": {"outcome": "reject", "contains": "source class"}},
+    {"id": "provider-output-empty-revisions", "focus": "Canonical rows retain at least one immutable revision.", "input": {"mutation": {"path": "/revisions", "value": []}}, "expect": {"outcome": "reject", "contains": "invalid revisions"}},
+    {"id": "provider-output-invalid-license-class", "focus": "Provider output cannot invent an export-authority license class.", "input": {"mutation": {"path": "/license/class", "value": "unknown"}}, "expect": {"outcome": "reject", "contains": "license.class"}},
+    {"id": "provider-output-infinite-price", "focus": "Non-finite commercial claims fail the canonical row parser.", "input": {"mutation": {"path": "/prices/0/amount", "value": {"$number": "infinity"}}}, "expect": {"outcome": "reject", "contains": "invalid canonical row JSON"}},
+    {"id": "provider-output-prototype-key", "focus": "Prototype-pollution object keys are rejected at the bounded JSON boundary.", "input": {"mutation": {"path": "/constructor", "value": {}}}, "expect": {"outcome": "reject", "contains": "invalid object keys"}},
+    {"id": "provider-output-excessive-depth", "focus": "Provider-created nesting is capped before downstream traversal.", "input": {"generator": {"kind": "nested-extra", "depth": 30}}, "expect": {"outcome": "reject", "contains": "nesting limit"}}
+  ]
+}

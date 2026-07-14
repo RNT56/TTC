@@ -1,0 +1,17 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "replay",
+  "description": "Cross-language replay timestamp and format cases shared by forge-sim and Python worker verification.",
+  "cases": [
+    {"id": "replay-current-increasing", "focus": "Current-format strictly increasing finite frames verify.", "input": {"schemaVersion": "1.0.0", "timestamps": [0, 0.5, 1]}, "expect": {"outcome": "accept"}},
+    {"id": "replay-compatible-minor", "focus": "Compatible minor replay formats remain readable.", "input": {"schemaVersion": "1.1.0", "timestamps": [0, 1]}, "expect": {"outcome": "accept"}},
+    {"id": "replay-legacy-alias", "focus": "The documented read-only replay.v1 alias remains accepted.", "input": {"schemaVersion": "replay.v1", "timestamps": [0, 1]}, "expect": {"outcome": "accept"}},
+    {"id": "replay-unsupported-major", "focus": "Unknown format majors fail closed.", "input": {"schemaVersion": "2.0.0", "timestamps": [0, 1]}, "expect": {"outcome": "reject", "contains": "unsupported replay schema"}},
+    {"id": "replay-empty-frames", "focus": "A replay without evidence frames cannot verify.", "input": {"schemaVersion": "1.0.0", "timestamps": []}, "expect": {"outcome": "reject", "contains": "frames"}},
+    {"id": "replay-duplicate-timestamp", "focus": "Duplicate frame timestamps are ambiguous and rejected.", "input": {"schemaVersion": "1.0.0", "timestamps": [0, 0]}, "expect": {"outcome": "reject", "contains": "strictly increasing"}},
+    {"id": "replay-descending-timestamp", "focus": "Out-of-order replay evidence is rejected.", "input": {"schemaVersion": "1.0.0", "timestamps": [1, 0]}, "expect": {"outcome": "reject", "contains": "strictly increasing"}},
+    {"id": "replay-single-nan-timestamp", "focus": "A single NaN frame cannot pass a vacuous monotonic window.", "input": {"schemaVersion": "1.0.0", "timestamps": [{"$number": "nan"}]}, "expect": {"outcome": "reject", "contains": "finite"}},
+    {"id": "replay-infinite-timestamp", "focus": "Infinite time is not replay evidence.", "input": {"schemaVersion": "1.0.0", "timestamps": [0, {"$number": "infinity"}]}, "expect": {"outcome": "reject", "contains": "finite"}},
+    {"id": "replay-hash-mismatch", "focus": "Expected-hash disagreement remains an explicit refusal.", "input": {"schemaVersion": "1.0.0", "timestamps": [0, 1], "expectedHash": "0000000000000000"}, "expect": {"outcome": "reject", "contains": "hash mismatch"}}
+  ]
+}

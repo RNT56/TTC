@@ -1,0 +1,79 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "imports",
+  "description": "Reviewed URDF and MJCF import cases that pin the supported deterministic subset and fail-closed numeric and graph behavior.",
+  "cases": [
+    {
+      "id": "imports-urdf-valid-box",
+      "focus": "A minimal finite URDF box remains importable as a shape-valid contract.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"base\"><visual><geometry><box size=\"0.1 0.2 0.3\"/></geometry></visual></link></robot>"},
+      "expect": {"outcome": "accept"}
+    },
+    {
+      "id": "imports-mjcf-valid-box",
+      "focus": "A minimal finite MJCF body remains importable as a shape-valid contract.",
+      "input": {"format": "mjcf", "xml": "<mujoco model=\"m\"><worldbody><body name=\"base\" pos=\"0 0 0\"><geom type=\"box\" size=\"0.05 0.1 0.15\"/></body></worldbody></mujoco>"},
+      "expect": {"outcome": "accept"}
+    },
+    {
+      "id": "imports-urdf-nan-origin",
+      "focus": "Non-finite URDF poses never silently become the origin.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"base\"/><joint name=\"j\" type=\"fixed\"><parent link=\"base\"/><child link=\"tip\"/><origin xyz=\"NaN 0 0\"/></joint><link name=\"tip\"/></robot>"},
+      "expect": {"outcome": "reject", "contains": "finite numeric xyz"}
+    },
+    {
+      "id": "imports-urdf-infinite-cylinder",
+      "focus": "Infinite primitive dimensions cannot reach geometry or placeholder fallback.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"base\"><visual><geometry><cylinder radius=\"inf\" length=\"0.2\"/></geometry></visual></link></robot>"},
+      "expect": {"outcome": "reject", "contains": "finite numeric radius"}
+    },
+    {
+      "id": "imports-urdf-malformed-box-size",
+      "focus": "Malformed dimensions fail instead of silently producing a geometry-free part.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"base\"><visual><geometry><box size=\"wide 0.2 0.3\"/></geometry></visual></link></robot>"},
+      "expect": {"outcome": "reject", "contains": "finite numeric size"}
+    },
+    {
+      "id": "imports-mjcf-nan-axis",
+      "focus": "A non-finite joint axis is rejected before dominant-axis selection.",
+      "input": {"format": "mjcf", "xml": "<mujoco model=\"m\"><worldbody><body name=\"base\"><body name=\"tip\"><joint type=\"hinge\" axis=\"0 NaN 0\" range=\"-1 1\"/><geom type=\"box\" size=\"0.1 0.1 0.1\"/></body></body></worldbody></mujoco>"},
+      "expect": {"outcome": "reject", "contains": "finite numeric axis"}
+    },
+    {
+      "id": "imports-empty-document",
+      "focus": "An import with no supported skeleton nodes is refused.",
+      "input": {"format": "urdf", "xml": "<robot name=\"empty\"></robot>"},
+      "expect": {"outcome": "reject", "contains": "no skeleton nodes"}
+    },
+    {
+      "id": "imports-urdf-missing-link-name",
+      "focus": "Every imported link must retain an explicit stable identity.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link><visual><geometry><box size=\"0.1 0.1 0.1\"/></geometry></visual></link></robot>"},
+      "expect": {"outcome": "reject", "contains": "missing name"}
+    },
+    {
+      "id": "imports-urdf-unknown-parent",
+      "focus": "Imported joint graphs cannot reference absent parents.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"tip\"></link><joint name=\"j\" type=\"fixed\"><parent link=\"ghost\"/><child link=\"tip\"/></joint></robot>"},
+      "expect": {"outcome": "reject", "contains": "invalid parent"}
+    },
+    {
+      "id": "imports-mjcf-duplicate-node",
+      "focus": "Duplicate imported node identities are refused before contract assembly.",
+      "input": {"format": "mjcf", "xml": "<mujoco model=\"m\"><worldbody><body name=\"dup\"></body><body name=\"dup\"></body></worldbody></mujoco>"},
+      "expect": {"outcome": "reject", "contains": "duplicate node names"}
+    },
+    {
+      "id": "imports-urdf-missing-child",
+      "focus": "A joint cannot disappear merely because its declared child link is absent.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"base\"/><joint name=\"j\" type=\"fixed\"><parent link=\"base\"/><child link=\"ghost\"/></joint></robot>"},
+      "expect": {"outcome": "reject", "contains": "missing child"}
+    },
+    {
+      "id": "imports-urdf-parent-cycle",
+      "focus": "A cyclic parent graph cannot be assembled into an apparently valid skeleton.",
+      "input": {"format": "urdf", "xml": "<robot name=\"u\"><link name=\"a\"></link><link name=\"b\"></link><joint name=\"ab\" type=\"fixed\"><parent link=\"a\"/><child link=\"b\"/></joint><joint name=\"ba\" type=\"fixed\"><parent link=\"b\"/><child link=\"a\"/></joint></robot>"},
+      "expect": {"outcome": "reject", "contains": "parent cycle"}
+    }
+  ]
+}

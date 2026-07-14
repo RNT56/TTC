@@ -132,7 +132,12 @@ None (the root crate). Everything depends on it.
 Schema round-trip tests (Appendix-A example + both P0 translated models); migration
 tests (every historical version → current); fuzz the tagged unions (XC-24 feeds
 this); lockfile resolution unit tests incl. missing-revision failure modes; codegen
-pipeline test (emitted schema → TS types compile and match fixtures).
+pipeline test (emitted schema → TS types compile and match fixtures). QA-007 adds a
+registered JSON Patch corpus covering escaped pointers, array append/bounds, test
+failure, required-field removal, unsupported operations, root refusal, malformed
+patch documents, and schema closure. Property tests retain the stronger invariant:
+arbitrary supported patch attempts either refuse or emit a shape-valid contract and
+never panic.
 
 ## 11. Phase mapping
 

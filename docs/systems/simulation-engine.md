@@ -73,7 +73,9 @@ pre-training sanity. **Replay (P6-011):** every session serializes to
 `{contractHash + lockfile, env, seed, input tape}` — and because the same bits run
 on every target, a tape **verifies anywhere**: in the browser, in CI, on the
 gateway. Official leaderboard runs are re-verified server-side as anti-cheat hygiene
-only (D17, superseding D6's client/server split).
+only (D17, superseding D6's client/server split). Every frame timestamp must be
+finite and strictly increasing, including a single-frame tape; non-finite values
+cannot pass a vacuous pairwise window.
 
 ## 6. Exporters & importer
 
@@ -88,7 +90,10 @@ only (D17, superseding D6's client/server split).
   the editor. Fixture corpus starts with `import_rover.urdf` and
   `import_rover.mjcf` (XC-05); as of 2026-06-15 both external rover fixtures
   validate as admitted, driveable contracts with inferred rover wheelbase and
-  conservative explode windows.
+  conservative explode windows. QA-007 additionally caps import text, rejects NUL or
+  malformed/non-finite supported numeric attributes, requires a non-empty unique
+  node graph with valid parents, and uses total ordering for dominant-axis selection
+  so malformed input cannot panic or silently become zero-valued geometry.
 
 ## 7. The parity discipline (D20)
 
@@ -124,7 +129,10 @@ differential tests vs the JS oracle during the port; parity suite (canonical sce
 tolerance bands — also the physics-regression gates for engine bumps); replay
 determinism via the golden-number suite (bit-exact, any target); exporter goldens;
 importer round-trip (external URDF/MJCF → admitted contract → `RoverDriver`
-drive smoke, P6 exit criterion closed 2026-06-15).
+drive smoke, P6 exit criterion closed 2026-06-15). The registered QA-007 corpus adds
+ten import, eleven EnvSpec, and ten replay cases plus randomized bounded import text
+and replay timestamp vectors. EnvSpec bounds, poses, obstacle sizes, gate dimensions,
+and win times remain finite SI values with stable `ENV-*` diagnostics.
 
 ## 10. Phase mapping & backlog
 

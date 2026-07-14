@@ -6,8 +6,10 @@ low-confidence extractions queue for human review; nothing auto-publishes.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlsplit
 
 #: Fields that must be cited for a canonical component row to be publishable.
 REQUIRED_CITED_FIELDS: dict[str, tuple[str, ...]] = {
@@ -75,7 +77,11 @@ def check_citations(
 ) -> IngestVerdict:
     """Gate a candidate component row on citation completeness + confidence."""
     problems: list[str] = []
-    cited = {c.field_path for c in citations}
+    cited = {
+        citation.field_path
+        for citation in citations
+        if isinstance(citation.field_path, str) and citation.field_path.strip()
+    }
 
     required = REQUIRED_CITED_FIELDS.get(category)
     if required is None:
@@ -96,10 +102,34 @@ def check_citations(
     if not isinstance(prices, list) or not any(p.get("purchasable") for p in prices if isinstance(p, dict)):
         problems.append("purchasable price/SKU is required for P3 BOM export")
 
-    low = [c.field_path for c in citations if c.confidence < REVIEW_CONFIDENCE_FLOOR]
-    if float(row.get("confidence", 0.0)) < REVIEW_CONFIDENCE_FLOOR:
+    invalid_confidence: list[str] = []
+    low: list[str] = []
+    for index, citation in enumerate(citations):
+        label = (
+            citation.field_path
+            if isinstance(citation.field_path, str) and citation.field_path.strip()
+            else f"citation[{index}]"
+        )
+        if not isinstance(citation.extractor, str) or not citation.extractor.strip():
+            problems.append(f"invalid citation extractor: {label}")
+        if not _valid_source_url(citation.source_url):
+            problems.append(f"invalid citation source URL: {label}")
+        confidence = _confidence(citation.confidence)
+        if confidence is None:
+            invalid_confidence.append(label)
+        elif confidence < REVIEW_CONFIDENCE_FLOOR:
+            low.append(label)
+
+    row_confidence = _confidence(row.get("confidence"))
+    if row_confidence is None:
+        invalid_confidence.append("row.confidence")
+    elif row_confidence < REVIEW_CONFIDENCE_FLOOR:
         low.append("row.confidence")
-    needs_review = bool(low)
+    if invalid_confidence:
+        problems.append(
+            "invalid confidence values: " + ", ".join(sorted(invalid_confidence))
+        )
+    needs_review = bool(low or invalid_confidence)
     if low:
         problems.append(
             f"low-confidence extractions (review queue): {', '.join(sorted(low))}"
@@ -109,6 +139,32 @@ def check_citations(
         publishable=not problems,
         needs_review=needs_review,
         problems=problems,
+    )
+
+
+def _confidence(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        number = float(value)
+    except OverflowError:
+        return None
+    return number if math.isfinite(number) and 0.0 <= number <= 1.0 else None
+
+
+def _valid_source_url(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme == "https"
+        and bool(parsed.hostname)
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.fragment
     )
 
 

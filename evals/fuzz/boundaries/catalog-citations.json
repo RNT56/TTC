@@ -1,0 +1,39 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "catalog-citations",
+  "description": "Citation completeness, HTTPS provenance, extractor identity, and finite confidence cases for catalog publication authority.",
+  "fixture": {
+    "category": "motor",
+    "row": {
+      "massG": 32.4,
+      "elec": {"kv": 1750, "vMin": 11.1, "vMax": 25.2, "maxCurrentA": 38},
+      "mech": {"mountPattern": "motor-16x16-M3", "propShaft": "prop-shaft-M5"},
+      "license": {"id": "lic_qa007", "class": "open"},
+      "prices": [{"purchasable": true}],
+      "confidence": 0.97
+    },
+    "citations": [
+      {"fieldPath": "massG", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "elec.kv", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "elec.vMin", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "elec.vMax", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "elec.maxCurrentA", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "mech.mountPattern", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "mech.propShaft", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "license", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97},
+      {"fieldPath": "prices", "sourceUrl": "https://example.com/source", "extractor": "fixture-etl", "confidence": 0.97}
+    ]
+  },
+  "cases": [
+    {"id": "citations-valid-complete", "focus": "A complete high-confidence HTTPS citation set can publish.", "input": {"mutation": null}, "expect": {"outcome": "accept", "publishable": true, "needsReview": false}},
+    {"id": "citations-row-nan-confidence", "focus": "NaN row confidence cannot evade the review floor.", "input": {"mutation": {"path": "/row/confidence", "value": {"$number": "nan"}}}, "expect": {"outcome": "reject", "needsReview": true, "contains": "invalid confidence"}},
+    {"id": "citations-entry-nan-confidence", "focus": "NaN per-field confidence cannot evade review.", "input": {"mutation": {"path": "/citations/0/confidence", "value": {"$number": "nan"}}}, "expect": {"outcome": "reject", "needsReview": true, "contains": "invalid confidence"}},
+    {"id": "citations-entry-confidence-over-one", "focus": "Confidence above one is invalid rather than super-trusted.", "input": {"mutation": {"path": "/citations/0/confidence", "value": 1.2}}, "expect": {"outcome": "reject", "needsReview": true, "contains": "invalid confidence"}},
+    {"id": "citations-low-confidence-review", "focus": "Finite low confidence enters the human review queue.", "input": {"mutation": {"path": "/citations/0/confidence", "value": 0.4}}, "expect": {"outcome": "reject", "needsReview": true, "contains": "low-confidence"}},
+    {"id": "citations-missing-required-field-citation", "focus": "A required sourced field without a citation cannot publish.", "input": {"mutation": {"path": "/citations/1", "$delete": true}}, "expect": {"outcome": "reject", "contains": "uncited field"}},
+    {"id": "citations-insecure-source-url", "focus": "Citation provenance must use credential-free HTTPS.", "input": {"mutation": {"path": "/citations/0/sourceUrl", "value": "http://example.com/source"}}, "expect": {"outcome": "reject", "contains": "invalid citation source URL"}},
+    {"id": "citations-empty-extractor", "focus": "Every citation records the extraction authority.", "input": {"mutation": {"path": "/citations/0/extractor", "value": ""}}, "expect": {"outcome": "reject", "contains": "invalid citation extractor"}},
+    {"id": "citations-unknown-category", "focus": "Unknown component categories fail closed.", "input": {"mutation": {"path": "/category", "value": "warp-drive"}}, "expect": {"outcome": "reject", "needsReview": true, "contains": "unknown category"}},
+    {"id": "citations-missing-purchasable-price", "focus": "P3 publication requires a purchasable price record.", "input": {"mutation": {"path": "/row/prices", "value": []}}, "expect": {"outcome": "reject", "contains": "price"}}
+  ]
+}

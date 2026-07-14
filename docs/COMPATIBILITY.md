@@ -101,6 +101,16 @@ and adds `POST /v1/blobs/:id/complete`. Consumers must complete verification bef
 download or photoscan consent. Legacy rows are read as complete; no public artifact
 format version changes.
 
+QA-007 is a patch-level strictness correction, not a format-version change. Valid
+ModelSpec patches, replay major 1 plus the deprecated `replay.v1` alias, EnvSpec
+major 1, the documented URDF/MJCF subset, worker artifact 0.2.0 payloads, and license
+manifest major 1 retain their meaning. Inputs containing non-finite physical/time/
+confidence values, malformed supported import numerics or graphs, unsafe hardware
+command tokens, duplicate telemetry time, malformed supervisor vectors/limits, or
+contradictory license authority were never valid supported evidence and now refuse
+deterministically. The registered corpora pin both compatible reads and these
+refusals; no migration or deprecation clock is introduced.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

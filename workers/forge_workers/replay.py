@@ -8,14 +8,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any
 
 from forge_workers.contract import LEGACY_REPLAY_FORMAT_VERSION, REPLAY_FORMAT_VERSION
+from forge_workers.net_security import assert_bounded_json
 from forge_workers.queue import Job, registry
 
 
 def replay_hash(tape: Any) -> str:
-    encoded = json.dumps(tape, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(
+        tape, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
 
@@ -26,9 +30,29 @@ def verify_replay(payload: dict[str, Any]) -> dict[str, Any]:
     frames = tape.get("frames", [])
     if not isinstance(frames, list) or not frames:
         raise ValueError("replay tape requires non-empty frames")
-    times = [float(frame.get("t", 0)) for frame in frames if isinstance(frame, dict)]
-    if len(times) != len(frames):
-        raise ValueError("replay frames must be objects with numeric t")
+    times: list[float] = []
+    for frame in frames:
+        if not isinstance(frame, dict):
+            raise ValueError("replay frames must be objects with finite numeric t")
+        raw_time = frame.get("t")
+        if isinstance(raw_time, bool) or not isinstance(raw_time, (int, float)):
+            raise ValueError("replay frames must be objects with finite numeric t")
+        try:
+            timestamp = float(raw_time)
+        except OverflowError as exc:
+            raise ValueError(
+                "replay frames must be objects with finite numeric t"
+            ) from exc
+        if not math.isfinite(timestamp):
+            raise ValueError("replay frames must be objects with finite numeric t")
+        times.append(timestamp)
+    assert_bounded_json(
+        tape,
+        label="replay tape",
+        max_bytes=4 * 1024 * 1024,
+        max_depth=32,
+        max_nodes=100_000,
+    )
     digest = replay_hash(tape)
     schema_version = tape.get("schemaVersion")
     # Markerless tapes are retained for the current pre-1.0 worker line. New

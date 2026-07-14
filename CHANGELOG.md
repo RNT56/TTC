@@ -18,6 +18,38 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-13 — Govern adversarial trust-boundary failures
+**Session:** Codex agent · branch `codex/qa007-adversarial-corpus` · **Phase:** QA /
+cross-boundary quality · **TODO items:** QA-007 [~], QA-008
+**Done:** Added the exact eight-file `forge-boundary-fuzz.v1` inventory with 89
+globally unique reviewed cases for imports, JSON Patch, EnvSpec, replay, provider
+output, catalog citations, D10 export policy, and hardware payloads. Registered it as
+the fifteenth golden family with an append-only review record and extended the
+existing fuzz gate without increasing the 35-step total. Rust consumers pin patch,
+import, EnvSpec, and replay outcomes plus randomized no-panic properties; Python
+3.12 consumes replay/provider/citation/export/hardware outcomes. Hardened supported
+import numerics/graphs and dominant-axis ordering, native/worker replay finiteness,
+EnvSpec gate finiteness, finite `[0,1]` citation confidence and HTTPS/extractor
+identity, bounded hardware JSON, safe config tokens, unique finite telemetry time,
+and strict finite supervisor vectors/limits. Focused corpus and golden-policy checks,
+all 47 forge-sim unit tests plus 5 corpus/property tests, the JSON Patch corpus test,
+and 127/127 worker tests pass. The complete 35-step local gate also passes under
+Python 3.12, including native/WASM parity, packaging, and cumulative patch hygiene.
+**Changed:** Registered corpora/checker/record; Rust contract/simulation tests and
+import/replay/EnvSpec boundaries; Python replay/citation/bridge boundaries and worker
+tests; test-only forge-sim `proptest`; AGENTS, compatibility, risk, best-practice,
+state/phase/execution/TODO, golden-policy, and affected system documentation.
+**Decisions:** none. This is a patch-level strictness correction for already-invalid
+non-finite, malformed, contradictory, or unsafe evidence. Valid format/version
+support is unchanged, and fixture evidence does not claim providers, hardware, load,
+external users, or field maturity.
+**Next:** publish the inspected exact candidate through the protected PR-only
+ruleset, and close QA-007 only after exact PR and post-merge CI/security evidence
+passes.
+**Blockers:** none for deterministic implementation. Live providers, diverse real
+external imports, performance/load, controlled hardware, and field evidence retain
+their separate prerequisites.
+
 ## 2026-07-13 — Close protected queue and upload fault acceptance
 **Session:** Codex agent · branch `codex/qa005-protected-evidence` · **Phase:** QA /
 worker and object reliability · **TODO items:** QA-005 [x]

@@ -1,0 +1,31 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "envspec",
+  "description": "Reviewed EnvSpec mutations that pin finite SI bounds, reachable references, task presence, and stable ENV diagnostics.",
+  "fixture": {
+    "id": "qa007-course",
+    "name": "QA-007 course",
+    "schemaVersion": "1.0.0",
+    "version": "0.1.0",
+    "kind": "course",
+    "boundsM": [10, 4, 10],
+    "tasks": ["gate-slalom"],
+    "obstacles": [{"id": "corner", "centerM": [4, 0, 4], "sizeM": [0.5, 0.5, 0.5]}],
+    "gates": [{"id": "finish", "pose": {"p": [2, 0, 0], "r": [0, 0, 0]}, "widthM": 1.2, "heightM": 0.8}],
+    "spawns": [{"id": "start", "pose": {"p": [-2, 0, 0], "r": [0, 0, 0]}}],
+    "win": {"gateOrder": ["finish"], "timeLimitS": 30}
+  },
+  "cases": [
+    {"id": "envspec-valid-course", "focus": "A finite connected course remains accepted.", "input": {"mutation": null}, "expect": {"outcome": "accept"}},
+    {"id": "envspec-zero-bound", "focus": "World bounds must be positive SI meters.", "input": {"mutation": {"path": "/boundsM/0", "value": 0}}, "expect": {"outcome": "reject", "check": "ENV-002"}},
+    {"id": "envspec-nan-bound", "focus": "Non-finite world bounds are rejected.", "input": {"mutation": {"path": "/boundsM/1", "value": {"$number": "nan"}}}, "expect": {"outcome": "reject", "check": "ENV-002"}},
+    {"id": "envspec-nan-gate-width", "focus": "NaN gate width cannot bypass the positive-dimension comparison.", "input": {"mutation": {"path": "/gates/0/widthM", "value": {"$number": "nan"}}}, "expect": {"outcome": "reject", "check": "ENV-004"}},
+    {"id": "envspec-infinite-gate-height", "focus": "Infinite gate height is not a physical dimension.", "input": {"mutation": {"path": "/gates/0/heightM", "value": {"$number": "infinity"}}}, "expect": {"outcome": "reject", "check": "ENV-004"}},
+    {"id": "envspec-nan-spawn-position", "focus": "A non-finite spawn cannot be inside course bounds.", "input": {"mutation": {"path": "/spawns/0/pose/p/0", "value": {"$number": "nan"}}}, "expect": {"outcome": "reject", "check": "ENV-001"}},
+    {"id": "envspec-negative-obstacle-size", "focus": "Obstacle extents remain positive finite meters.", "input": {"mutation": {"path": "/obstacles/0/sizeM/1", "value": -0.1}}, "expect": {"outcome": "reject", "check": "ENV-004"}},
+    {"id": "envspec-zero-time-limit", "focus": "Win time limits remain positive finite seconds.", "input": {"mutation": {"path": "/win/timeLimitS", "value": 0}}, "expect": {"outcome": "reject", "check": "ENV-003"}},
+    {"id": "envspec-missing-gate-reference", "focus": "Win conditions cannot reference an absent gate.", "input": {"mutation": {"path": "/win/gateOrder/0", "value": "ghost"}}, "expect": {"outcome": "reject", "check": "ENV-002"}},
+    {"id": "envspec-empty-task-set", "focus": "Every environment names at least one task adapter.", "input": {"mutation": {"path": "/tasks", "value": []}}, "expect": {"outcome": "reject", "check": "ENV-003"}},
+    {"id": "envspec-unsupported-schema-major", "focus": "Unknown EnvSpec major versions fail closed.", "input": {"mutation": {"path": "/schemaVersion", "value": "2.0.0"}}, "expect": {"outcome": "reject", "check": "ENV-000"}}
+  ]
+}
