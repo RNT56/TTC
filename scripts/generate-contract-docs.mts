@@ -187,7 +187,10 @@ function versionedResponseSurface(route: RouteDocumentation): string | undefined
 }
 
 function markdownEscape(value: string): string {
-  return value.replace(/\|/g, "\\|");
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, " ");
 }
 
 const source = readJson<DocumentationSource>("contracts/documentation.json");
