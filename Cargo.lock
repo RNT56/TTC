@@ -242,6 +242,7 @@ dependencies = [
  "forge-contract",
  "forge-geometry",
  "forge-num",
+ "proptest",
  "rapier3d",
  "serde",
  "serde_json",

@@ -411,6 +411,12 @@ artifact changes without a new append-only review record, and validates all eigh
 external-acceptance contracts/templates. It fails if a prerequisite or committed
 generated/workflow artifact is stale.
 
+The fuzz step includes the registered QA-007 trust-boundary inventory: 89 reviewed
+accepted/refused cases across imports, JSON Patch, EnvSpec, replay, provider output,
+catalog citations, D10 export policy, and hardware payloads. Inspect its exact file
+set and stable IDs with `pnpm fuzz:boundaries:check`; behavioral proof also runs in
+the Rust and Python suites.
+
 Inspect the golden registry or run its focused policy gate with:
 
 ```bash

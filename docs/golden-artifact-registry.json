@@ -187,6 +187,24 @@
       "compatibilityReview": false
     },
     {
+      "id": "boundary-adversarial-corpora",
+      "classification": "fixture",
+      "paths": [
+        "evals/fuzz/boundaries/**"
+      ],
+      "owner": "cross-boundary quality workstream",
+      "sourceOfTruth": "reviewed minimized trust-boundary failures with pinned acceptance or refusal outcomes",
+      "regenerate": "Edit deliberately with stable case IDs and a golden update record; minimize failures without weakening the governed boundary",
+      "verify": [
+        "pnpm fuzz:boundaries:check",
+        "cargo test -p forge-contract --test boundary_fuzz_corpus",
+        "cargo test -p forge-sim --test boundary_fuzz_corpus",
+        "pnpm --dir workers test",
+        "pnpm verify"
+      ],
+      "compatibilityReview": false
+    },
+    {
       "id": "committed-wasm-facade",
       "classification": "generated-runtime",
       "paths": [

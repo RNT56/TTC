@@ -44,6 +44,8 @@ In scope:
 - catalog, vendor, print, Modal, ETL, and other outbound HTTP adapters;
 - Postgres writes, object metadata, presigned S3-compatible access, and deletion;
 - queue-driven Python workers and deployment-owned command adapters;
+- imported URDF/MJCF text, JSON Patch edits, EnvSpec/replay documents, catalog
+  citations, license/export manifests, and hardware bridge payloads;
 - prompt/retrieval injection and provider/tool output;
 - validator child processes and release archive verification;
 - error, log, secret-rotation, and incident boundaries.
@@ -92,6 +94,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Gateway -> object store | owner key, MIME, declared size/checksum | presign/inspection/deletion adapter | explicit config, scoped key, declared length/type plus signed checksum, staged-until-inspected completion, short expiry, forced download, delete-before-commit |
 | Queue -> worker | job payload and deployment config | worker dispatcher/adapter | kind allowlist, consent/cancellation, bounded JSON/network/process/result, opaque expiring attempt fence |
 | Provider/command -> validator | arbitrary contract/artifact/result | validator and license/admission gates | allowlisted result fields, provenance, bounded process, sovereign verdict |
+| Import/course/replay -> core | XML/JSON numbers, graph identities, pointers, timestamps | forge-contract/forge-sim boundary | byte cap, finite SI/time, valid graph/pointer/schema, strict order, no-panic corpus |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 
@@ -161,6 +164,15 @@ Python command adapters accept at most 4 MiB JSON input, 8 MiB stdout, and 256 K
 stderr; run for 1 second to 8 hours; use temporary files instead of unbounded pipes;
 and kill the process group on timeout or overflow. Exit failures never reflect
 provider stdout/stderr. Output must be a bounded JSON object.
+
+QA-007 adds narrower surface limits and governed negative cases. Supported URDF/MJCF
+text is capped at 4 MiB, contains no NUL, and must use finite supported numeric
+attributes plus a non-empty unique valid-parent graph. Replay and EnvSpec physical/
+time values are finite; replay time is strictly increasing. Hardware config,
+telemetry, and supervisor inputs use bounded JSON; generated command fields are
+single safe tokens, telemetry times are unique, vectors have exact arity, and safety
+limits are finite and positive. Catalog confidence is finite in `[0,1]`, citation
+sources are credential-free HTTPS, and D10 policy contradictions refuse.
 
 Queued vendor refresh adds a narrower contract: 1..50 component IDs, a required
 1..200-character idempotency key, a 1..120-second timeout, local provider only, and
@@ -416,6 +428,7 @@ and tracing defaults separately; application tests cannot prove those external l
 | SSRF/redirect/rebinding | private-range, allowlist, DNS, redirect, type, timeout/body tests | egress proxy/firewall connection-time proof |
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |
 | Native ETL provider output | exact endpoint/version/model, forced supported-subset strict tool, bounded response and local canonical-row validation/provenance tests | credentialed adversarial sandbox through persistence/review/BOM/export plus outage, billing, retention, and recovery evidence |
+| Cross-boundary numeric/graph/command confusion | registered 89-case import/patch/EnvSpec/replay/provider/citation/export/hardware corpus plus Rust/Python behavior and random no-panic tests | diverse real external imports, credentialed provider corpus, controlled hardware, and load/fault exercises |
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
 | Malicious/partial upload or archive | checksum-bound PUT, staged-until-exact HEAD completion, staged download/consent refusal, MIME/name refusal, forced download, exact release archive allowlist/caps | provider IAM/checksum audit and quarantine scanner for any future importer |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |

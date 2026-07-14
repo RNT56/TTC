@@ -1,0 +1,74 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "json-patch",
+  "description": "Reviewed RFC 6901/6902 subset cases for conversational edits, schema closure, malformed inputs, and refusal without panic.",
+  "base": "examples/vx2-mini.forge.json",
+  "cases": [
+    {
+      "id": "json-patch-replace-name",
+      "focus": "A scalar replace preserves a shape-valid contract.",
+      "input": {"patch": [{"op": "replace", "path": "/meta/name", "value": "QA-007 patched"}]},
+      "expect": {"outcome": "accept"}
+    },
+    {
+      "id": "json-patch-escaped-member",
+      "focus": "RFC 6901 slash escaping addresses one literal object member.",
+      "input": {"patch": [{"op": "add", "path": "/driver/params/a~1b", "value": 1.0}]},
+      "expect": {"outcome": "accept"}
+    },
+    {
+      "id": "json-patch-array-append",
+      "focus": "The supported dash token appends a shape-valid skeleton node.",
+      "input": {"patch": [{"op": "add", "path": "/skeleton/-", "value": {"name": "qa007-tip", "parent": "root", "pos": [0, 0.1, 0]}}]},
+      "expect": {"outcome": "accept"}
+    },
+    {
+      "id": "json-patch-test-mismatch",
+      "focus": "A failed optimistic-concurrency test refuses the patch.",
+      "input": {"patch": [{"op": "test", "path": "/meta/id", "value": "wrong"}]},
+      "expect": {"outcome": "reject", "contains": "test failed"}
+    },
+    {
+      "id": "json-patch-remove-required-driver",
+      "focus": "Schema closure refuses removal of a required contract block.",
+      "input": {"patch": [{"op": "remove", "path": "/driver"}]},
+      "expect": {"outcome": "reject", "contains": "schema"}
+    },
+    {
+      "id": "json-patch-array-out-of-bounds",
+      "focus": "Out-of-range array addressing is an error, not implicit growth.",
+      "input": {"patch": [{"op": "replace", "path": "/skeleton/999/name", "value": "ghost"}]},
+      "expect": {"outcome": "reject", "contains": "out of bounds"}
+    },
+    {
+      "id": "json-patch-pointer-without-slash",
+      "focus": "Non-pointer paths are refused deterministically.",
+      "input": {"patch": [{"op": "replace", "path": "meta/name", "value": "bad"}]},
+      "expect": {"outcome": "reject", "contains": "must start"}
+    },
+    {
+      "id": "json-patch-unsupported-move",
+      "focus": "Unsupported RFC operations do not enter the reduced v0 patch engine.",
+      "input": {"patch": [{"op": "move", "from": "/meta/name", "path": "/meta/id"}]},
+      "expect": {"outcome": "reject", "contains": "JSON-Patch array"}
+    },
+    {
+      "id": "json-patch-remove-root",
+      "focus": "The document root cannot be removed.",
+      "input": {"patch": [{"op": "remove", "path": ""}]},
+      "expect": {"outcome": "reject", "contains": "document root"}
+    },
+    {
+      "id": "json-patch-invalid-document-shape",
+      "focus": "A non-array JSON patch is rejected before mutation.",
+      "input": {"rawPatch": "{\"op\":\"remove\",\"path\":\"/driver\"}"},
+      "expect": {"outcome": "reject", "contains": "JSON-Patch array"}
+    },
+    {
+      "id": "json-patch-invalid-geometry-type",
+      "focus": "A syntactically valid patch cannot emit a schema-invalid geometry.",
+      "input": {"patch": [{"op": "replace", "path": "/parts/0/geom/w", "value": "wide"}]},
+      "expect": {"outcome": "reject", "contains": "schema"}
+    }
+  ]
+}

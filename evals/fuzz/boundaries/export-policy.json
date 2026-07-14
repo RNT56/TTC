@@ -1,0 +1,40 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "export-policy",
+  "description": "D10 manufacturing-export cases pin license-class/policy agreement and envelope-only fallback for restricted geometry.",
+  "fixtures": {
+    "restricted": {
+      "assetRef": "obj://restricted.step",
+      "componentId": "cmp_restricted",
+      "license": {"id": "lic_restricted", "class": "no-redistribution", "terms": "fixture", "sourceUrl": "https://example.com/restricted", "exportPolicy": "envelope-link-out"},
+      "envelopeMm": {"xMm": 28, "yMm": 34, "zMm": 28},
+      "datumPorts": [{"id": "mount", "type": "motor-mount", "frame": [[0, 0, 0], [0, 0, 0]]}]
+    },
+    "open": {
+      "assetRef": "obj://open.step",
+      "license": {"id": "lic_open", "class": "open", "terms": "fixture", "sourceUrl": "https://example.com/open", "exportPolicy": "full-geometry-ok"}
+    },
+    "attribution": {
+      "assetRef": "obj://attributed.step",
+      "license": {"id": "lic_attr", "class": "attribution", "terms": "credit ExampleCo", "sourceUrl": "https://example.com/attributed", "exportPolicy": "attribution-manifest-required"}
+    },
+    "mixed": {
+      "assemblyAssets": [
+        {"assetId": "obj://open.step", "license": {"id": "lic_open", "class": "open", "terms": "fixture", "sourceUrl": "https://example.com/open", "exportPolicy": "full-geometry-ok"}},
+        {"assetId": "obj://restricted.step", "componentId": "cmp_restricted", "license": {"id": "lic_view", "class": "view-only", "terms": "fixture", "sourceUrl": "https://example.com/restricted", "exportPolicy": "envelope-only"}, "envelopeMm": {"xMm": 28, "yMm": 34, "zMm": 28}, "datumPorts": [{"id": "mount", "type": "motor-mount", "frame": [[0, 0, 0], [0, 0, 0]]}]}
+      ]
+    }
+  },
+  "cases": [
+    {"id": "export-restricted-envelope", "focus": "Restricted geometry becomes envelope substitution with a BOM link-out.", "input": {"fixture": "restricted", "mutation": null}, "expect": {"outcome": "accept", "assemblyPolicy": "envelope-substitution"}},
+    {"id": "export-open-full-geometry", "focus": "Open geometry retains full export authority.", "input": {"fixture": "open", "mutation": null}, "expect": {"outcome": "accept", "assemblyPolicy": "full-geometry-ok"}},
+    {"id": "export-attribution-manifest", "focus": "Attribution geometry requires a manifest without suppressing geometry.", "input": {"fixture": "attribution", "mutation": null}, "expect": {"outcome": "accept", "assemblyPolicy": "attribution-manifest-required"}},
+    {"id": "export-mixed-most-restrictive", "focus": "A mixed assembly derives the most restrictive actual policy.", "input": {"fixture": "mixed", "mutation": null}, "expect": {"outcome": "accept", "assemblyPolicy": "envelope-substitution"}},
+    {"id": "export-contradictory-policy", "focus": "A restricted class cannot request full geometry.", "input": {"fixture": "restricted", "mutation": {"path": "/license/exportPolicy", "value": "full-geometry-ok"}}, "expect": {"outcome": "reject", "contains": "contradicts license class"}},
+    {"id": "export-missing-license", "focus": "D10 license evidence is non-optional.", "input": {"fixture": "restricted", "mutation": {"path": "/license", "$delete": true}}, "expect": {"outcome": "reject", "contains": "requires a D10 license"}},
+    {"id": "export-insecure-source-url", "focus": "License source links are credential-free HTTPS.", "input": {"fixture": "restricted", "mutation": {"path": "/license/sourceUrl", "value": "javascript:alert(1)"}}, "expect": {"outcome": "reject", "contains": "HTTPS URL"}},
+    {"id": "export-nan-envelope", "focus": "Restricted envelopes use positive finite millimeters.", "input": {"fixture": "restricted", "mutation": {"path": "/envelopeMm/xMm", "value": {"$number": "nan"}}}, "expect": {"outcome": "reject", "contains": "must be positive"}},
+    {"id": "export-missing-datum-ports", "focus": "Envelope substitution preserves explicit assembly datums.", "input": {"fixture": "restricted", "mutation": {"path": "/datumPorts", "value": []}}, "expect": {"outcome": "reject", "contains": "at least one datum port"}},
+    {"id": "export-zero-quantity", "focus": "BOM quantities are positive integers.", "input": {"fixture": "mixed", "mutation": {"path": "/assemblyAssets/1/quantity", "value": 0}}, "expect": {"outcome": "reject", "contains": "positive integer"}}
+  ]
+}

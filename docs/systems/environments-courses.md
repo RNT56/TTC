@@ -29,6 +29,9 @@ loop commercially).
 `schemaVersion` governs the EnvSpec shape; `version` is the individual course
 document revision. Same conventions as ModelSpec (Y-up meters, semver, provenance). Generated via the
 P4 pipeline with a smaller schema (orchestrator is schema-generic by design, P4-013).
+Bounds, obstacle/gate dimensions, poses, and time limits must be finite SI values;
+NaN and infinity are invalid even when an ordinary `<= 0` comparison would not catch
+them.
 
 ## 3. The course gatekeeper (P10-002)
 
@@ -49,6 +52,7 @@ XC-25) before a time enters the official board, as **anti-cheat hygiene** rather
 than as the only place truth exists. A client-provided `verified: true` claim is
 recorded only as a claim; official `verified` is computed from tape hash,
 monotonic timestamps, and optional contract-hash checks.
+Timestamps are finite and strictly increasing, including a single-frame tape.
 
 Replay producers emit `schemaVersion: "1.0.0"`. Native and worker readers retain
 the historical `replay.v1` spelling during the deprecation window and reject unknown
@@ -89,7 +93,10 @@ studio (editor + boards).
 
 ENV-check fixtures (valid/invalid courses); reachability known-cases per archetype;
 leaderboard verification integration test (tampered tape must reject); course→task
-adapter smoke (a fixture course trains a few steps with learning signal).
+adapter smoke (a fixture course trains a few steps with learning signal). QA-007's
+registered corpus adds eleven EnvSpec and ten cross-language replay cases for schema
+major, finite bounds/poses/dimensions/time, task/gate references, empty/duplicate/
+descending/non-finite time, legacy/current formats, and hash mismatch.
 
 ## 8. Phase mapping & backlog
 

@@ -39,6 +39,13 @@ adapter plus the runtime gates. The gateway rejects non-fixture live bridge jobs
 unless D30's `d28.hardware` signoff is active, `FORGE_HARDWARE_LAB_MODE=1`, the
 provider is local, and the reference rig is one of the pinned D12 quad/rover IDs.
 
+QA-007 hardens the deterministic worker boundary before any adapter exists: config
+keys/values/mixers are single safe tokens; all JSON is byte/depth/node bounded;
+telemetry is finite, unique, and normalized by timestamp; supervisor vectors are
+exact finite 3-vectors and safety thresholds are finite and physically positive.
+Malformed input fails rather than defaulting to an apparently safe state. None of
+this bypasses physical confirmation or enables a hardware write.
+
 ## 3. FORGE Desktop (Tauri, ships P8 — D15)
 
 Not a contingency: a scheduled product surface that arrives when it has a real job.
@@ -162,7 +169,9 @@ synthetic telemetry with known ground truth (fit must recover injected constants
 supervisor unit tests (envelope breach → fallback within deadline); pairing-auth
 tests; Desktop plugin integration tests on all three OSes; gateway/Desktop gate tests
 for D30/D28 fail-closed behavior, D12 lab-only behavior, physical confirmation, and
-"never auto-arm".
+"never auto-arm". The registered QA-007 hardware corpus adds fourteen accepted and
+refused payloads for command newlines, finite/duplicate telemetry, vector arity,
+geofence bounds, kill-switch typing, and advisory/hold outcomes.
 
 ## 12. Open questions
 

@@ -56,7 +56,10 @@ operations, shared quotas, and SLOs remain OPS-005/QA-009 and OPS-003..007.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. While those external prerequisites are absent, the
-next dependency-complete local lane is QA-007's cross-boundary adversarial corpus.
+active dependency-complete local lane is QA-007's cross-boundary adversarial corpus.
+Its candidate has the exact eight versioned files, 89 reviewed cases, Rust/Python
+consumers, and a green 35-step local gate; protected PR/post-merge proof remains
+before closure.
 QA-010's eight-milestone evidence kit is complete; the actual EXT-001 run still
 requires a qualified independent participant and frozen protected revision/
 environment.
@@ -97,6 +100,11 @@ Current Wave 1/2 boundary:
   materialization, staged-object refusal, and exact verified upload completion;
   multi-replica, deployed provider/object-store, incident, quota, dead-letter, and SLO
   evidence retains OPS/QA ownership;
+- QA-007 is active locally: the candidate registers the fifteenth golden family,
+  keeps the 35-step gate count stable by extending `fuzz:contract:check`, and pins
+  import/patch/EnvSpec/replay/provider/citation/export/hardware refusal behavior.
+  All 35 local gates pass; it remains `[~]` until exact PR, merge, and post-merge evidence. Its
+  fixture corpus is not a credentialed-provider, real-hardware, load, or field claim;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is

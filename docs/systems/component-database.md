@@ -91,6 +91,12 @@ model/API/source-hash provenance is retained. This produces only a review candid
 real credential proof, dedupe, immutable revision/ledger persistence, live OCCT/LOD,
 and end-to-end human review from the worker result remain P3-004 work.
 
+QA-007 makes the publication edge explicit: row and per-field confidence must be
+finite in `[0,1]`; NaN, infinity, booleans, and out-of-range values require review
+and block publication. Every citation has a non-empty extractor and credential-free
+HTTPS source. Invalid citations may still identify a field for diagnostics, but they
+never satisfy publication authority.
+
 ## 5. License ledger & export filter (D10; XC-17)
 
 License class set at ingestion drives the export matrix
@@ -149,7 +155,11 @@ Postgres + object storage; OCCT worker (tessellation); Claude (extraction);
 Schema migration tests; compatibility rule unit tests (fixture pairs with known
 verdicts + explanation strings); lockfile resolution incl. yanked-revision behavior;
 ETL extraction goldens (datasheet fixtures → expected rows with citations);
-ingestion-without-license rejection test.
+ingestion-without-license rejection test. The registered QA-007 citation/provider
+corpora cover complete rows, missing citations/prices/revisions, low and invalid
+confidence, invalid source/extractor identity, prototype-pollution keys, non-finite
+claims, and excessive nesting. D10 corpus cases cover open, attribution, restricted,
+and mixed assemblies plus contradictory/missing license evidence.
 
 ## 10. Phase mapping & backlog
 
