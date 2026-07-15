@@ -222,6 +222,13 @@ reviewed baseline fixture; `pnpm sim:parity:live` is the reproducible maintainer
 This proves a local/CI CPU engine pair, not SB3 training, GPU performance, provider
 operations, or field transfer.
 
+Protected acceptance is complete through PR #60. Exact head `aa5b133` passed
+CI `29383163191`/security `29383163204`; protected `c0f5172` passed post-merge CI
+`29383489511`/security `29383489520`. Required worker job `87252899630` uploaded all
+four files with protected source revision `c0f51726d09ebc28852b75f894266e2d2d78a7c3`,
+request SHA-256 `66059445aae9ac24b4bd85abbff3bf71e38d355f3c2050d3e2df166db9e4103f`, exact
+provider `mujoco-python-3.9.0`, matched timing, unchanged bands, and a passing report.
+
 ## 4. GPU burst policy
 
 Burst-only (Modal by default): no idle GPU. Job cost is metered to credits (D3) at
@@ -272,9 +279,9 @@ citations, D10 exports, and hardware payloads (within the 89-case cross-language
 family). The suite materializes explicit non-finite sentinels only in memory, asserts
 bounded provider JSON, finite `[0,1]` confidence, credential-free HTTPS citation
 sources, most-restrictive export policy, command-token refusal, telemetry ordering,
-and supervisor fail-closed behavior. Together with existing worker tests, 127/127
-pass under Python 3.12; credentialed providers and physical adapters remain separate
-acceptance lanes.
+and supervisor fail-closed behavior. The QA-007 landing passed 127/127 under Python
+3.12; the protected suite now passes 128/128 with P6-010 engine parity. Credentialed
+providers and physical adapters remain separate acceptance lanes.
 
 P6-010 additionally tests request schema/version/source identity, exact engine pin,
 contract-derived scene bounds, external-file refusal, missing-scene refusal,
@@ -288,8 +295,8 @@ P3/P4: ETL fixture, command, and native Anthropic contract paths exist
 persistence, and live OCCT remain open. P5: fixture photoscan is live; full
 TRELLIS/COLMAP remains adapter work. P6: fixture tessellation, DfM
 metadata, D10 policy enforcement, and runtime sim helpers are live; full live
-OCCT/STEP artifact proof remains open. P6 real CPU Rapier/MuJoCo parity is implemented
-locally and wired into required CI, with protected acceptance still pending. P7:
+OCCT/STEP artifact proof remains open. P6 real CPU Rapier/MuJoCo parity is protected
+through required PR and post-merge CI with retained source-bound evidence. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; SB3/MuJoCo/offline-RL
 training remains open. P8: config-diff, telemetry ingest, supervisor, sysid, and replay.verify

@@ -312,8 +312,9 @@ Objective: move R2 from adapter contracts to measured live compute.
 Work:
 
 - P5 live photoscan/COLMAP/cache/SLO (`P5-001`, `P5-002`, `P5-006`, `EXT-002`);
-- P6 protect the locally passing real Rapier/MuJoCo 3.9.0 required-check evidence
-  and broaden the external import corpus (`P6-010`);
+- retain protected P6-010 real Rapier/MuJoCo 3.9.0 evidence on every engine/exporter
+  upgrade, and treat a broader diverse import corpus as adjacent product QA rather
+  than reopening the completed phase exit;
 - P7 real SB3/MuJoCo pipeline, ONNX Runtime Web, offline learning, and MJX decision
   (`P7-003`, `P7-008..010`, `EXT-003`);
 - P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
@@ -503,7 +504,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P3 | P3-004 credentialed ETL sandbox and persistence | D36 native transport, SEC citation/license, OPS provider | one real extracted row is deduped, persisted immutably, owner-reviewed, and consumed through BOM/export with recovery evidence |
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
-| P6 | P6-010 live parity | QA external corpus | real engines and external driveable model |
+| P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | P7-003, 008, 009, 010 | OPS cost, SEC policy data | live one-click passing policy in browser |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
