@@ -1,10 +1,9 @@
 # Learning Engine — implementation doc
 
 **Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
-hover runtime, candidate real sequential-waypoint runtime, lease-fenced exact
-object-backed one-click delivery, real browser ONNX/WASM execution, and a controlled
-CPU MuJoCo/MJX feasibility harness implemented; protected waypoint evidence,
-overnight scorecard passage, decision-grade D12
+hover and real sequential-waypoint runtime, lease-fenced exact object-backed
+one-click delivery, real browser ONNX/WASM execution, and a controlled CPU MuJoCo/
+MJX feasibility harness implemented; overnight scorecard passage, decision-grade D12
 accelerator evidence, deployed GPU/storage operations, and field transfer remain
 gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
@@ -29,7 +28,8 @@ slalom), and randomization config. P10 makes community courses importable as tas
 Live 2026-06-14: `forge-sim::heavy` defines task kinds/specs and the
 course-to-task adapter; `train.policy` emits task metadata and curriculum stage.
 
-Candidate 2026-07-15 under D41: new tasks emit `p7-v2`/`2.0.0`, explicit
+Protected 2026-07-15 through PR #70/`f220d25` under D41: new tasks emit
+`p7-v2`/`2.0.0`, explicit
 `forge-y-up-rh-m`, and a SHA-256 over canonical sorted task JSON without the
 self-referential hash field. Every built-in 3D spawn, bound, target, gate, obstacle,
 and arm point is now expressed in Forge Y-up; 2D rover paths declare the `xz` plane.
@@ -116,7 +116,7 @@ parameter digests in lineage. Unsupported roots, archetypes, estimators, physica
 constants, runtime versions, payloads, or snapshot hashes refuse before training.
 
 The protected initial environment remains the floating-root multirotor hover task.
-The current P7-014 candidate generalizes that same sovereign runtime to the worker-
+P7-014 generalizes that same sovereign runtime to the worker-
 owned `hover-hold` and `waypoint-chain` v2 definitions with 11 estimator-only
 observations and four normalized actions. It uses
 the Rust-derived MJCF, hover trim, mass, gravity, 101-point powertrain curve, control
@@ -127,9 +127,9 @@ frame target-error norm reaches the active radius; MuJoCo truth remains availabl
 only for bounded safety termination and never enters policy observation or target
 authority. Evaluation records baseline, mass +15 %, Kv -8 %, and 4 m/s wind
 scenarios; waypoint success requires the complete chain, not a partial success
-fraction. This establishes a controlled local/CI CPU runtime for two multirotor
-tasks; it does not establish protected waypoint evidence, overnight scorecard
-passage, rover/legged coverage, GPU economics, or field transfer.
+fraction. Protected PR #70 and clean artifact `8342801418` establish a controlled
+CPU runtime for both multirotor tasks; they do not establish overnight scorecard
+passage, rover/legged coverage, GPU economics, live operations, or field transfer.
 
 ## 5. Domain randomization (first-class config)
 
@@ -196,17 +196,20 @@ Protected through PR #64/`d1c4c38` on 2026-07-15:
 `workers/.../sb3_runner.py` is the native JSON command boundary used by
 `FORGE_SB3_TRAIN_CMD`. The required CI worker job installs the exact CPU training
 stack, runs the complete worker suite, and executes the source-bound training smoke
-through the same gateway-shaped snapshot and Rust bundle path. The P7-014 candidate
-upgrades that artifact to schema 2.0 and runs both hover-hold and waypoint-chain for
-256 PPO steps. It verifies exact task version/frame/hash across task metadata, config,
-scorecard lineage and ONNX header, plus real optimization and byte/digest-valid
+through the same gateway-shaped snapshot and Rust bundle path. Protected P7-014 PR
+#70 upgrades that artifact to schema 2.0 and runs both hover-hold and waypoint-chain
+for 256 PPO steps. It verifies exact task version/frame/hash across task metadata,
+config, scorecard lineage and ONNX header, plus real optimization and byte/digest-valid
 fixed-shape opset-18 export. Both scorecards are deliberately blocked; the smoke is
 too short to claim learning quality.
-P7-011 is protected through PR #68/`9131289`: durable object upload, one-click Studio
-queueing/download/playback, isolated Postgres/S3-compatible acceptance, and the
+Protected artifact `8342801418` self-binds the two blocked outputs to clean source
+`f220d25`; this satisfies D40's executable-waypoint prerequisite without claiming
+learning quality. P7-011 is protected through PR #68/`9131289`: durable object
+upload, one-click Studio queueing/download/playback, isolated Postgres/S3-compatible
+acceptance, and the
 production-browser path are closed at controlled sandbox maturity. Deployed Modal/
-GPU proof and an overnight passing run remain P7-012..013, and D40 requires the real
-waypoint slice of P7-014 before P7-012.
+GPU proof and an overnight passing run remain P7-012..013; D40's real-waypoint
+prerequisite is now satisfied.
 
 Live 2026-07-15: the hover fixture is a real 906-byte opset-18 Gemm+Tanh ONNX graph,
 generated with ONNX 1.19.1 and bound by SHA-256
@@ -220,9 +223,9 @@ loop consumes the last safe action. A missed inference holds the previous bounde
 advisory; any error zeros commands and stops playback. Non-hover keyless fixture
 tasks remain held rather than fabricating model bytes.
 
-The P7-014 Studio candidate preserves that legacy single-target read path and adds
-bounded v2 target chains. It requires exact task suite/version/frame/hash agreement
-across task metadata, scorecard lineage, and the ONNX header. For waypoint policies,
+The protected P7-014 Studio consumer preserves that legacy single-target read path
+and adds bounded v2 target chains. It requires exact task suite/version/frame/hash
+agreement across task metadata, scorecard lineage, and the ONNX header. For waypoint policies,
 the controller requests the current target from `CoreSession`, advances only from
 the returned estimator target-error scalars, requests a fresh snapshot for the next
 target before inference, and zeroes advisories after completing the chain. Render

@@ -186,14 +186,16 @@ exact-pinned to NumPy 2.5.1, Gymnasium 1.3.0, PyTorch 2.13.0, Stable-Baselines3
 and a tiny clean-source training smoke; that smoke is runtime proof, not a passing
 policy or overnight-SLO claim.
 
-Candidate 2026-07-15 for the P7-014 waypoint slice: the native runtime is generalized
-only to worker-owned `hover-hold` and `waypoint-chain` task-v2 definitions. It
+Protected 2026-07-15 through PR #70/`f220d25` for the P7-014 waypoint slice: the
+native runtime is generalized only to worker-owned `hover-hold` and
+`waypoint-chain` task-v2 definitions. It
 sequentially advances waypoint targets from estimator error, requires full-chain
 completion in evaluation, includes task identity/hash in config, ONNX metadata and
 scorecard lineage, and rejects gate/rover/legged or drifted-frame/task shapes. The
 required training smoke now runs both tasks for 256 PPO steps and retains two honest
-blocked scorecards. This is controlled CPU runtime proof, not protected evidence,
-overnight learning quality, deployed GPU operations, or broader-archetype closure.
+blocked scorecards. Clean artifact `8342801418` binds them to exact protected source.
+This is controlled CPU runtime proof, not overnight learning quality, deployed GPU
+operations, or broader-archetype closure.
 
 Required CI installs the separate `mjx` extra, runs the complete worker suite, then
 retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
@@ -353,9 +355,9 @@ transactionally creates one byte-free job-bound policy. Clean artifact `83405873
 proves stale/substituted/cancelled attempts cannot create authority and exact retained
 bytes execute through the browser. Preserve that protected acceptance on changes; a
 database-only object row, inline byte field, or successful upload without the winning
-lease is not delivery proof. D40 makes real waypoint execution the next trainer
-dependency before overnight P7-012; the candidate implementation now exists under
-D41, but protection is pending and rover/legged real trainers remain P7-014. P8: config-diff,
+lease is not delivery proof. D40's real-waypoint dependency before overnight P7-012
+is satisfied through protected PR #70/`f220d25` and artifact `8342801418`; rover/
+legged real trainers remain P7-014. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
 codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes
@@ -380,6 +382,6 @@ Multi-replica queue capacity, heartbeat policy for tasks that legitimately excee
 attempt deadline, dead-letter/reconciliation operations including unreferenced
 content-addressed policy uploads, and queue SLOs; TRELLIS-class model pick and hosting
 at P5 (the field moves fast — pin at implementation); live deployed Modal/GPU
-training, protected waypoint evidence and real rover/legged environments, overnight scorecard/SLO
+training, real rover/legged environments, overnight scorecard/SLO
 proof, MJX adoption evidence, and OCCT dependency/benchmark evidence; review queue
 UI ownership beyond the existing gateway/studio scaffolds.
