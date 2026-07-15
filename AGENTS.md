@@ -86,10 +86,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-003 PR #64 at `d1c4c38`, with
-  post-merge CI `29394580998` and security `29394580959` green; PR #64 owns the
-  controlled training-runtime evidence, while PR #62/`1de7974` remains the owning
-  browser-runtime evidence anchor;
+  latest verified protected runtime descendant is P7-010 PR #66 at `0614272`, with
+  post-merge CI `29399434491` and security `29399434519` green. PR #66 owns the
+  controlled MJX-feasibility evidence, PR #64/`d1c4c38` remains the owning seeded
+  training-runtime anchor, and PR #62/`1de7974` remains the owning browser-runtime
+  anchor;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -167,13 +168,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   honestly non-exportable at a zero success score. Overnight passing hover/waypoint
   proof, object-backed one-click delivery, deployed Modal/GPU evidence, broader
   archetypes, and external acceptance remain open under separate tasks;
-- P7-010 now has a controlled feasibility runner that compiles the admitted hover
-  snapshot through Rust, compares native multithreaded MuJoCo 3.9.0 with exact
-  MuJoCo-MJX 3.9.0/JAX 0.10.2 under one frozen float64 protocol, and emits a
-  source/request/contract/MJCF/runtime/hardware-bound report. This reference CPU row
-  is deliberately decision-ineligible: exact D12 quad/rover/legged, declared
-  accelerator, overnight/tier-2 budget, cost, clean protected evidence, and the
-  existing 3x cost-normalized rule still own the adoption decision;
+- P7-010's controlled feasibility foundation is protected through PR #66 at
+  `0614272`. Required CI retained clean artifact `8337556569`, which binds exact
+  Python 3.12.13, NumPy 2.5.1, MuJoCo/MuJoCo-MJX 3.9.0, JAX/JAXLIB 0.10.2, the
+  frozen request, admitted contract/MJCF, and x86_64 CPU hardware to the protected
+  source. Native multithreaded MuJoCo measured 268,902 steps/s versus CPU-backed MJX
+  at 54,698 steps/s; float64 parity passed. This reference row remains deliberately
+  decision-ineligible: exact D12 quad/rover/legged, declared accelerator,
+  overnight/tier-2 budget, cost, and the existing 3x cost-normalized rule still own
+  the adoption decision;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
