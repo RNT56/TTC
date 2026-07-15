@@ -86,8 +86,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is DOC-005/GOV-003 evidence PR #54 at
-  `41dee2d`, with post-merge CI `29378749550` and security `29378749542` green;
+  latest verified protected `main` descendant is DOC-006 PR #58 at `3078dba`, with
+  post-merge CI `29380212006` and security `29380212007` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -131,6 +131,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   npm's bulk-advisory protocol, dependency build authority is version-exact, exact
   head `00ae9a0` passed CI `29378364147`/security `29378364143`, and post-merge CI
   `29378749550`/security `29378749542` pass;
+- DOC-006 is protected through PR #58 at `3078dba`: the canonical onboarding
+  contract, maintainer-only curation source, public entry links, sensitive-authority
+  exclusions, assignment/reassignment flow, and live seed issues #55-#57 passed
+  exact-head CI `29379546230`/security `29379546201` and post-merge CI
+  `29380212006`/security `29380212007`. Open issues prove workflow shape, not a
+  successful external contribution;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is

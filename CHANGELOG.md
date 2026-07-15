@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Close contributor onboarding on protected main
+**Session:** Codex agent · branch `codex/doc006-protected-evidence` · **Phase:** DOC /
+governance · **TODO items:** DOC-006 [x]
+**Done:** Closed the documentation-completion lane through protected PR #58. Exact
+implementation head `c83f036` passed CI `29379546230`, security `29379546201`, and
+the separate CodeQL aggregate. Protected squash `3078dba` passed post-merge CI
+`29380212006` and security `29380212007`, including the 36-step-equivalent Rust,
+workers, TypeScript/gateway, isolated Postgres/real-browser, accessibility, native
+Desktop, dependency audit, SPDX, and both CodeQL language paths. The canonical
+onboarding contract, maintainer-only curation source, entry links, exclusions,
+assignment/reassignment flow, and seed issues #55-#57 are therefore protected. The
+open issues remain process evidence only; no external contribution is claimed. The
+evidence-reconciliation tree also passes all 69 local Markdown targets, issue-form
+YAML parsing, live issue-state checks, `git diff --check`, and the complete 36-step
+local gate under Python 3.12.
+**Changed:** Canonical agent current boundary, project-state evidence and counts,
+phase/execution roadmaps, stable DOC-006 ledger state, and changelog. No runtime API,
+dependency, public compatibility format, golden, provider, hardware authority, or
+product-maturity claim changed.
+**Decisions:** none. Maintainer curation, assignment authority, seven-day inactivity
+flow, and sensitive-surface exclusions remain the binding contributor contract.
+**Next:** Begin the next dependency-complete product lane from the 61 remaining tasks;
+prioritize credentialed catalog acceptance plus EXT-001 only when the owner supplies
+the required provider sandbox and qualified independent participant.
+**Blockers:** none for documentation completion. Credentials/providers, independent
+users, production operations, controlled hardware, and field evidence retain their
+existing prerequisites.
+
 ## 2026-07-15 — Establish curated contributor onboarding
 **Session:** Codex agent · branch `codex/doc006-contributor-onboarding` · **Phase:** DOC /
 governance · **TODO items:** DOC-006 [~], GOV-003 maintenance [x]

@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected `main` descendant: `41dee2d` (PR #54; DOC-005/GOV-003 evidence maintenance)
+Latest verified protected `main` descendant: `3078dba` (PR #58; DOC-006 contributor onboarding)
 Latest verified protected runtime/parity anchor: `6f8509b` (PR #50; QA-012 parity reliability)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
@@ -59,7 +59,7 @@ protected squash `41dee2d` passed post-merge CI `29378749550`/security `29378749
 Frozen install, low-severity audit, and the complete 36-step gate pass without
 lockfile drift.
 
-DOC-006 is now an exercised implementation candidate: the canonical onboarding
+DOC-006 is complete through protected PR #58 at `3078dba`: the canonical onboarding
 contract and maintainer-only curation template are linked from contributor, support,
 issue, pull-request, repository, and agent entry surfaces. Live unassigned issues
 [#55](https://github.com/RNT56/TTC/issues/55),
@@ -67,20 +67,22 @@ issue, pull-request, repository, and agent entry surfaces. Live unassigned issue
 [#57](https://github.com/RNT56/TTC/issues/57) prove the discovery, scope, mentor,
 assignment, acceptance, and exclusion shape against protected `41dee2d`. These open
 issues are process evidence, not evidence that an external contribution succeeded;
-protected implementation and post-merge proof remain pending.
+exact head `c83f036` passed CI `29379546230`/security `29379546201`, and the
+protected squash passed post-merge CI `29380212006`/security `29380212007`.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected `main` descendant is DOC-005/GOV-003 evidence `41dee2d`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | PR #54 exact head `00ae9a0` passed CI `29378364147`/security `29378364143`; protected squash `41dee2d` passed post-merge CI `29378749550`/security `29378749542`. QA-012 remains anchored to PR #50 and exact-main nightly `29372161650` |
+| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected `main` descendant is DOC-006 `3078dba`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | PR #58 exact head `c83f036` passed CI `29379546230`/security `29379546201`; protected squash `3078dba` passed post-merge CI `29380212006`/security `29380212007`. QA-012 remains anchored to PR #50 and exact-main nightly `29372161650` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install, `pnpm audit --audit-level low`, and all 36 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except three version-exact reviewed entries; exact-head and post-merge security are green |
-| `pnpm verify` | protected PR #54 baseline: 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance passed on protected `41dee2d` in CI `29378749550` |
+| `pnpm verify` | protected PR #58 baseline: 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance passed on protected `3078dba` in CI `29380212006` |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | protected pass: 14/14 surfaces match policy 1.0.0 | gateway API/events now join source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
 | DOC-005 contract documentation | complete through protected PR #53 at `22c263b`: 75 runtime routes, 2 event families, 14 compatibility surfaces, and 16 worker families | `pnpm docs:contracts`, generated drift, compatibility, 63 gateway tests, 127 worker tests on Python 3.12, 19 golden-policy tests, native/WASM parity, packaging, and patch hygiene pass locally and through exact PR/post-merge CI/security |
+| DOC-006 contributor workflow | complete through protected PR #58 at `3078dba`: canonical onboarding, maintainer-only curation, linked entry surfaces, sensitive-authority exclusions, assignment/reassignment rules, and three live seed issues | all 69 Markdown files resolve locally, issue-form YAML parses, #55-#57 remain correctly labeled and unassigned, all 36 local gates pass, and exact PR/post-merge CI/security are green; no external contribution outcome is claimed |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
@@ -419,12 +421,12 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **201 tasks: 139 done, 37 in progress, 24 open,
+The stable ledger currently contains **201 tasks: 140 done, 36 in progress, 24 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
-The 62 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
+The 61 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
 2 quality, 10 operations,
-9 external-proof, and 1 documentation task (DOC-006 is in progress);
-dependency order is owned by
+and 9 external-proof tasks; the documentation completion lane is closed. Dependency
+order is owned by
 `EXECUTION-ROADMAP.md`.
 
 Refresh this snapshot when the next task changes the boundary or any current gate
