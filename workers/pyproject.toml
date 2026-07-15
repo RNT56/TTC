@@ -12,10 +12,10 @@ dependencies = ["jsonschema>=4.21"]
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 queue = ["psycopg[binary]>=3.2"]
-mujoco = ["mujoco>=3.2"]
-# Heavy runtime stacks are installed per worker family at deployment, never as
-# package deps: mujoco/stable-baselines3 (training), trimesh/occt (geometry),
-# and GPU libraries. Pinned in each family's container image.
+mujoco = ["mujoco==3.9.0"]
+# Heavy runtime stacks stay out of the default worker install. The parity extra
+# pins MuJoCo exactly; training, geometry, and GPU stacks remain per-family image
+# dependencies with their own reviewed pins.
 
 [tool.setuptools.packages.find]
 include = ["forge_workers*"]

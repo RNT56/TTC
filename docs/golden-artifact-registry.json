@@ -153,7 +153,7 @@
       ],
       "owner": "crates/forge-sim",
       "sourceOfTruth": "reviewed engine-backed MuJoCo measurements with fixture identity and threshold metadata",
-      "regenerate": "Capture a fresh engine-backed baseline through the P6 parity workflow; never hand-edit measured rows",
+      "regenerate": "FORGE_MUJOCO_PARITY_CMD='python -m forge_workers.mujoco_parity' pnpm sim:parity -- --capture-baseline crates/forge-sim/tests/fixtures/mujoco-parity-baseline.json",
       "verify": [
         "pnpm sim:parity:check",
         "pnpm verify"

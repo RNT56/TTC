@@ -83,3 +83,10 @@ never hand-edited. QA-007's
 accepted/refused outcomes, special non-finite sentinels, and the exact file set are
 machine-checked. Rust and Python consumers prove behavior; the structural checker
 alone cannot justify changing an outcome.
+
+P6-010's `sim-parity-baseline` is generated only by the live pinned-engine path.
+The orchestrator verifies exact MuJoCo provider, source revision, request SHA-256,
+finite metrics, and matched driver/substeps, requires the real comparison to pass,
+then writes a run-neutral reviewed candidate through `--capture-baseline`;
+hand-editing measured rows remains prohibited. The separate live evidence directory
+retains the source-bound request and both raw baselines for exact-run review.

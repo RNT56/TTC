@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// P6-010 local runner: always produce the Rapier baseline through the same
-// forge-validate binary CI ships, then compare it with a MuJoCo baseline JSON.
+// P6-010 runner: produce Rapier measurements and contract-derived MuJoCo scenes
+// through the same forge-validate binary CI ships, then execute or compare a
+// MuJoCo baseline JSON.
 //
 //   node scripts/sim-parity.mjs [--mujoco mujoco-baseline.json]
 //                              [--validator target/debug/forge-validate]
 //                              [--out artifacts/sim-parity]
+//                              [--capture-baseline path/to/reviewed-fixture.json]
 //
 // Without --mujoco, FORGE_MUJOCO_PARITY_CMD may be configured. The command
 // receives the request JSON on stdin and must emit a MuJoCo parity baseline JSON
@@ -41,6 +43,7 @@ function numberFlag(name, fallback) {
 const validator = resolve(root, flag("--validator", "target/debug/forge-validate"));
 const outDir = resolve(root, flag("--out", "artifacts/sim-parity"));
 const keepOut = args.includes("--keep-out");
+const captureBaseline = flag("--capture-baseline");
 const gravity = numberFlag("--gravity", 9.80665);
 const pendulumLengthM = numberFlag("--pendulum-length", 0.4);
 const hoverTrim = numberFlag("--hover-trim", 0.42);
@@ -72,8 +75,64 @@ function run(command, commandArgs, options = {}) {
   return result;
 }
 
+function capture(command, commandArgs) {
+  const result = spawnSync(command, commandArgs, { cwd: root, encoding: "utf8" });
+  if (result.status !== 0) {
+    throw new Error(`${command} ${commandArgs.join(" ")} failed with exit ${result.status}`);
+  }
+  return result.stdout.trim();
+}
+
+function validateLiveMuJoCoArtifact(artifact, request) {
+  if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) {
+    throw new Error("MuJoCo command must emit one JSON object");
+  }
+  if (artifact.artifactKind !== "simParityMuJoCoBaseline") {
+    throw new Error(`MuJoCo command emitted unexpected artifactKind ${artifact.artifactKind}`);
+  }
+  if (artifact.schemaVersion !== "1.0.0") {
+    throw new Error(`MuJoCo command emitted unsupported schemaVersion ${artifact.schemaVersion}`);
+  }
+  const expectedProvider = `mujoco-python-${request.mujocoVersion}`;
+  if (artifact.provider !== expectedProvider) {
+    throw new Error(`MuJoCo provider mismatch: expected ${expectedProvider}, got ${artifact.provider}`);
+  }
+  if (artifact.sourceRevision !== request.sourceRevision) {
+    throw new Error(
+      `MuJoCo source revision mismatch: expected ${request.sourceRevision}, got ${artifact.sourceRevision}`,
+    );
+  }
+  if (artifact.requestSha256 !== request.requestSha256) {
+    throw new Error(
+      `MuJoCo request hash mismatch: expected ${request.requestSha256}, got ${artifact.requestSha256}`,
+    );
+  }
+  if (
+    !artifact.baseline ||
+    artifact.baseline.driverDtS !== request.driverDtS ||
+    artifact.baseline.substeps !== request.substeps
+  ) {
+    throw new Error("MuJoCo baseline timestep/substep metadata does not match the request");
+  }
+  for (const field of [
+    "dropHeightM",
+    "mujocoDropTimeS",
+    "pendulumLengthM",
+    "mujocoPendulumPeriodS",
+    "mujocoHoverTrim",
+    "mujocoGaitComM",
+  ]) {
+    if (!Number.isFinite(artifact.baseline[field])) {
+      throw new Error(`MuJoCo baseline field ${field} must be finite`);
+    }
+  }
+}
+
 if (!existsSync(validator)) {
   throw new Error(`validator binary not found at ${validator}; run: cargo build -p forge-validate`);
+}
+if (captureBaseline && flag("--mujoco")) {
+  throw new Error("--capture-baseline requires a live MuJoCo command, not --mujoco");
 }
 if (!keepOut) {
   rmSync(outDir, { recursive: true, force: true });
@@ -96,27 +155,30 @@ const baselineArgs = [
 ];
 run(validator, baselineArgs);
 
-const request = {
-  artifactKind: "simParityMuJoCoRequest",
-  task: "sim.parity",
-  gravity,
-  dropHeightM: 1.0,
-  pendulumLengthM,
-  hoverTrim,
-  gaitComM,
-  expectedOutput: {
-    artifactKind: "simParityMuJoCoBaseline",
-    baselineFields: [
-      "dropHeightM",
-      "mujocoDropTimeS",
-      "pendulumLengthM",
-      "mujocoPendulumPeriodS",
-      "mujocoHoverTrim",
-      "mujocoGaitComM",
-    ],
-  },
-};
-writeFileSync(requestPath, `${JSON.stringify(request, null, 2)}\n`);
+const checkoutRevision = capture("git", ["rev-parse", "HEAD"]);
+const sourceRevision = process.env.FORGE_SOURCE_REVISION?.trim() || checkoutRevision;
+if (sourceRevision !== checkoutRevision) {
+  throw new Error(
+    `FORGE_SOURCE_REVISION ${sourceRevision} does not match checkout ${checkoutRevision}`,
+  );
+}
+run(validator, [
+  "sim-parity",
+  "mujoco-request",
+  "--out",
+  requestPath,
+  "--source-revision",
+  sourceRevision,
+  "--gravity",
+  String(gravity),
+  "--pendulum-length",
+  String(pendulumLengthM),
+  "--hover-trim",
+  String(hoverTrim),
+  "--gait-com",
+  String(gaitComM),
+]);
+const request = JSON.parse(readFileSync(requestPath, "utf8"));
 
 if (!flag("--mujoco")) {
   const command = process.env.FORGE_MUJOCO_PARITY_CMD?.trim();
@@ -129,9 +191,10 @@ if (!flag("--mujoco")) {
   const shell = process.env.SHELL || "/bin/sh";
   const result = run(shell, ["-lc", command], {
     stdio: "pipe",
-    input: JSON.stringify(request),
+    input: readFileSync(requestPath, "utf8"),
   });
-  JSON.parse(result.stdout);
+  const artifact = JSON.parse(result.stdout);
+  validateLiveMuJoCoArtifact(artifact, request);
   writeFileSync(mujocoPath, result.stdout.endsWith("\n") ? result.stdout : `${result.stdout}\n`);
 }
 
@@ -147,6 +210,22 @@ run(validator, [
 ]);
 
 const comparison = JSON.parse(readFileSync(comparisonPath, "utf8"));
+if (captureBaseline) {
+  if (!comparison.report?.passed) {
+    throw new Error("refusing to capture a MuJoCo baseline from a failed parity comparison");
+  }
+  const liveArtifact = JSON.parse(readFileSync(mujocoPath, "utf8"));
+  const reviewedFixture = {
+    artifactKind: liveArtifact.artifactKind,
+    schemaVersion: liveArtifact.schemaVersion,
+    provider: liveArtifact.provider,
+    baseline: liveArtifact.baseline,
+  };
+  const capturePath = resolve(root, captureBaseline);
+  mkdirSync(dirname(capturePath), { recursive: true });
+  writeFileSync(capturePath, `${JSON.stringify(reviewedFixture, null, 2)}\n`);
+  console.log(`sim-parity: captured reviewed baseline candidate at ${capturePath}`);
+}
 console.log(
   `sim-parity: ${comparison.report.passed ? "passed" : "failed"} · artifacts in ${outDir}`,
 );

@@ -86,8 +86,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is DOC-006 PR #58 at `3078dba`, with
-  post-merge CI `29380212006` and security `29380212007` green;
+  latest verified protected `main` descendant is DOC-006 evidence PR #59 at
+  `484aefa`, with post-merge CI `29381316922` and security `29381316924` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -137,6 +137,14 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   exact-head CI `29379546230`/security `29379546201` and post-merge CI
   `29380212006`/security `29380212007`. Open issues prove workflow shape, not a
   successful external contribution;
+- DOC-006 evidence PR #59 at `484aefa` passed exact-head and post-merge CI/security,
+  so the documentation lane is closed without implying that seed issues #55-#57 have
+  produced an external contribution;
+- the P6-010 implementation candidate runs real Rapier and exact MuJoCo 3.9.0 over
+  four contract-derived MJCF scenes with explicit radians, matched timestep/substeps,
+  unchanged tolerances, and evidence upload in the existing required worker check;
+  local live and registered-fixture gates pass, but the task stays in progress until
+  exact-head and protected-merge remote evidence exist;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -502,6 +510,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Registered golden/generated artifact | `pnpm verify:goldens`; new append-only review record; registry-named focused regeneration and verification; compatibility review when flagged |
 | Visual parity/nightly | `pnpm --filter @forge/studio build`; `pnpm parity`; inspect the matching source/checkout SHA and clean-worktree identity in `artifacts/parity/{preflight,metrics}.json`, renderer preflight, metrics, and all six composites; require full-Studio Chromium/WebGL and unchanged gates; branch nightly for harness changes |
 | Cross-boundary parser/fuzz corpus | `pnpm fuzz:contract:check`; Rust contract/sim boundary tests; Python 3.12 worker suite; registered-golden review; full `pnpm verify` |
+| Simulation engine/exporter | `cargo test -p forge-sim -p forge-validate`; `pnpm sim:parity:check`; for engine/exporter changes install `workers[dev,mujoco]` and run `pnpm sim:parity:live`; inspect source/provider/unit/timestep/substep-bound artifacts; append-only golden review for registered output; require the real-engine worker check before closure |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
 | Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |

@@ -199,6 +199,29 @@ bounded failed-job error in a separate transition, and polling continues with no
 offer inserts. An empty accepted set may succeed with held diagnostics; it is never a
 purchasable-BOM claim.
 
+### 3.8 `workers/mujoco_parity` — required engine evidence (P6-010)
+
+This direct JSON-stdin/stdout utility is an internal CI/maintainer proof surface, not
+a public listener or queue family. `forge-validate` emits four source-revision- and
+request-hash-bound MJCF scenes from the same canonical contracts Rapier executes. The
+worker accepts at most 4 MiB total and 512 KiB per scene, requires the
+generated-source marker and radian compiler declaration, rejects NUL, external
+include/asset/plugin/file
+references, malformed body names, non-finite values, and timestep/substep drift, and
+refuses any installed engine other than exact MuJoCo 3.9.0. It independently
+recomputes the canonical request SHA-256 and checks the compiled runtime gravity and
+timestep before execution. It then echoes source revision, request hash, engine
+version, and measured baseline metadata; the Node orchestrator verifies them before
+the Rust comparator applies the unchanged parity bands.
+
+The existing required `compute workers (Python)` job downloads the exact validator
+from the Rust job, installs `workers[dev,mujoco]`, runs the full Python suite, executes
+real Rapier and MuJoCo for drop, pendulum, hover, and gait, and always uploads the
+request, both baselines, and comparison. The keyless local full gate retains the
+reviewed baseline fixture; `pnpm sim:parity:live` is the reproducible maintainer path.
+This proves a local/CI CPU engine pair, not SB3 training, GPU performance, provider
+operations, or field transfer.
+
 ## 4. GPU burst policy
 
 Burst-only (Modal by default): no idle GPU. Job cost is metered to credits (D3) at
@@ -253,6 +276,11 @@ and supervisor fail-closed behavior. Together with existing worker tests, 127/12
 pass under Python 3.12; credentialed providers and physical adapters remain separate
 acceptance lanes.
 
+P6-010 additionally tests request schema/version/source identity, exact engine pin,
+contract-derived scene bounds, external-file refusal, missing-scene refusal,
+timestep/substep identity, real four-scenario execution, and fail-closed baseline
+capture. Required CI retains the complete engine evidence directory for review.
+
 ## 7. Phase mapping & backlog
 
 P3/P4: ETL fixture, command, and native Anthropic contract paths exist
@@ -260,7 +288,8 @@ P3/P4: ETL fixture, command, and native Anthropic contract paths exist
 persistence, and live OCCT remain open. P5: fixture photoscan is live; full
 TRELLIS/COLMAP remains adapter work. P6: fixture tessellation, DfM
 metadata, D10 policy enforcement, and runtime sim helpers are live; full live
-OCCT/STEP artifact proof remains open. P7:
+OCCT/STEP artifact proof remains open. P6 real CPU Rapier/MuJoCo parity is implemented
+locally and wired into required CI, with protected acceptance still pending. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; SB3/MuJoCo/offline-RL
 training remains open. P8: config-diff, telemetry ingest, supervisor, sysid, and replay.verify

@@ -17,6 +17,7 @@ fn temp_path(name: &str) -> PathBuf {
 #[test]
 fn sim_parity_cli_emits_rapier_baseline_and_compares_mujoco_sample() {
     let rapier_path = temp_path("rapier");
+    let request_path = temp_path("mujoco-request");
     let mujoco_path = temp_path("mujoco");
     let drift_path = temp_path("mujoco-drift");
 
@@ -35,6 +36,43 @@ fn sim_parity_cli_emits_rapier_baseline_and_compares_mujoco_sample() {
         serde_json::from_str(&fs::read_to_string(&rapier_path).expect("rapier baseline file"))
             .expect("rapier baseline is JSON");
     assert_eq!(baseline_artifact["artifactKind"], "simParityRapierBaseline");
+
+    let request_output = Command::new(validator_bin())
+        .args([
+            "sim-parity",
+            "mujoco-request",
+            "--source-revision",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "--out",
+        ])
+        .arg(&request_path)
+        .output()
+        .expect("mujoco-request command runs");
+    assert!(
+        request_output.status.success(),
+        "stderr={}",
+        String::from_utf8_lossy(&request_output.stderr)
+    );
+    let request: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&request_path).expect("MuJoCo request file"))
+            .expect("MuJoCo request is JSON");
+    assert_eq!(request["artifactKind"], "simParityMuJoCoRequest");
+    assert_eq!(request["schemaVersion"], "1.0.0");
+    assert_eq!(request["mujocoVersion"], "3.9.0");
+    assert_eq!(request["sourceRevision"], "a".repeat(40));
+    assert_eq!(request["requestSha256"].as_str().unwrap().len(), 64);
+    assert!(request["scenes"]["drop"]["mjcf"]
+        .as_str()
+        .unwrap()
+        .contains("<compiler angle=\"radian\"/>"));
+    assert!(request["scenes"]["drop"]["mjcf"]
+        .as_str()
+        .unwrap()
+        .contains("<freejoint/>"));
+    assert!(!request["scenes"]["pendulum"]["mjcf"]
+        .as_str()
+        .unwrap()
+        .contains("<freejoint/>"));
     let baseline = &baseline_artifact["baseline"];
     let mujoco = json!({
         "dropHeightM": baseline["dropHeightM"].as_f64().unwrap(),
@@ -91,6 +129,7 @@ fn sim_parity_cli_emits_rapier_baseline_and_compares_mujoco_sample() {
     );
 
     let _ = fs::remove_file(rapier_path);
+    let _ = fs::remove_file(request_path);
     let _ = fs::remove_file(mujoco_path);
     let _ = fs::remove_file(drift_path);
 }
