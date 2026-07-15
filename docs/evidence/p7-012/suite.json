@@ -1,0 +1,194 @@
+{
+  "generatedAt": "2026-07-15T15:14:09.816104+00:00",
+  "hardware": {
+    "accelerator": {
+      "available": true,
+      "backend": "mps",
+      "built": true,
+      "coreCount": 19,
+      "name": "Apple M2 Pro"
+    },
+    "chip": "Apple M2 Pro",
+    "cpuLogicalCount": 12,
+    "machine": "arm64",
+    "machineName": "MacBook Pro",
+    "memory": "16 GB",
+    "modelIdentifier": "Mac14,10",
+    "processorDescription": "proc 12:8:4:0",
+    "release": "25.5.0",
+    "system": "Darwin"
+  },
+  "nonClaims": [
+    "This is controlled consumer-hardware simulation evidence, not deployed GPU, external-user, real-device, or field proof.",
+    "The Apple GPU is inventoried, but PPO runs on CPU because exact-host measurement found MPS slower for this MLP workload.",
+    "Policy scorecard energy is simulated vehicle energy; host energy is reported separately only as a conservative upper bound."
+  ],
+  "powerUpperBound": {
+    "measured": false,
+    "method": "operator-declared-adapter-rating-times-wall-time",
+    "watts": 140.0
+  },
+  "recipe": {
+    "hover": {
+      "distillationBatchSize": 512,
+      "distillationEpochs": 30,
+      "learningRate": 1e-05,
+      "logStd": -3.0,
+      "network": [
+        128,
+        128
+      ],
+      "ppoTimesteps": 10000,
+      "teacherEpisodes": 24
+    },
+    "id": "p7-overnight-v1",
+    "waypoint": {
+      "distillationBatchSize": 512,
+      "distillationEpochs": 30,
+      "learningRate": 1e-05,
+      "logStd": -3.0,
+      "network": [
+        128,
+        128
+      ],
+      "ppoTimesteps": 10000,
+      "teacherEpisodes": 64
+    }
+  },
+  "recovery": {
+    "atomicTaskCheckpoints": true,
+    "checkpointValidation": "request hash plus ONNX byte count and SHA-256",
+    "resumeRequested": true,
+    "reusedTasks": [
+      "hover-hold"
+    ]
+  },
+  "requestHash": "7b27f6f9f0469fe5c255528010d7ad9cc32c4c5f13c89d4baf66568d932c79bc",
+  "results": [
+    {
+      "cost": {
+        "electricityCost": null,
+        "nonClaim": "No electricity tariff or measured host consumption is asserted.",
+        "providerCostBasis": "locally owned hardware; no metered compute provider",
+        "providerCostUsd": 0.0
+      },
+      "hostEnergy": {
+        "measured": false,
+        "method": "operator-declared-adapter-rating-times-wall-time",
+        "nonClaim": "No privileged host-energy sampler was available; this is a conservative upper bound, not consumption telemetry.",
+        "upperBoundWh": 1.1745514569448359,
+        "watts": 140.0
+      },
+      "policySha256": "9afc1152b0e99398652274a1b97c97d53292f51995784f03323094727866fc4c",
+      "scorecard": {
+        "energyWh": 0.8104700859454028,
+        "estimatorSmoke": "passed",
+        "exportable": true,
+        "lineage": {
+          "codeVersion": "forge-sb3-mujoco/2.0.0",
+          "configHash": "4b2431704b1fc44e74ab0b6227860c9a11ad77532452b39941cc01a09de374e9",
+          "contractHash": "ccc166e70646a5ec76d5a3b4d1640ef64eb790348bd4dafc2c2165c565dc011e",
+          "dependencyManifestHash": "a1ad78c3ef99b97f097f4f05d97f3b5e1d6d9769ee262c7830b91984fafb4228",
+          "lockfileHash": "2c8b72c90b79c7e5e4bc5f04fa61b7168ff95ac9e37063f3519ab10c63cb853c",
+          "seed": "1201",
+          "sourceRevision": "8e094c0b70e83bb4ccf35cf9f4d78d6d9b00825e",
+          "taskDefinitionHash": "68dae98eb8e917e8dee918a9f80f823b927c2ea5d0ebce958ebf40f358d7497d"
+        },
+        "reasons": [],
+        "robustness": {
+          "kv-8%": 1.0,
+          "mass+15%": 1.0,
+          "wind4ms": 1.0
+        },
+        "schemaVersion": "p7-scorecard-v1",
+        "successRate": 1.0,
+        "task": "hover-hold",
+        "taskVersion": "3.0.0",
+        "thresholds": {
+          "minRobustness": 0.7,
+          "minSuccess": 0.85
+        },
+        "trainedOnEstimator": true
+      },
+      "seed": 1201,
+      "task": "hover-hold",
+      "wallTimeS": 30.202751750010066
+    },
+    {
+      "cost": {
+        "electricityCost": null,
+        "nonClaim": "No electricity tariff or measured host consumption is asserted.",
+        "providerCostBasis": "locally owned hardware; no metered compute provider",
+        "providerCostUsd": 0.0
+      },
+      "hostEnergy": {
+        "measured": false,
+        "method": "operator-declared-adapter-rating-times-wall-time",
+        "nonClaim": "No privileged host-energy sampler was available; this is a conservative upper bound, not consumption telemetry.",
+        "upperBoundWh": 0.4021055273291293,
+        "watts": 140.0
+      },
+      "policySha256": "b07b023aa81c4c9d96f38a0f232e92277e5c71f51b0454fcbe1f722529edb1a2",
+      "scorecard": {
+        "energyWh": 0.19408750692152418,
+        "estimatorSmoke": "passed",
+        "exportable": true,
+        "lineage": {
+          "codeVersion": "forge-sb3-mujoco/2.0.0",
+          "configHash": "bbadbef7df26242c088ebe81b25539088fd728939a4b42a7d55c3c9fb75c1669",
+          "contractHash": "ccc166e70646a5ec76d5a3b4d1640ef64eb790348bd4dafc2c2165c565dc011e",
+          "dependencyManifestHash": "a1ad78c3ef99b97f097f4f05d97f3b5e1d6d9769ee262c7830b91984fafb4228",
+          "lockfileHash": "2c8b72c90b79c7e5e4bc5f04fa61b7168ff95ac9e37063f3519ab10c63cb853c",
+          "seed": "1207",
+          "sourceRevision": "8e094c0b70e83bb4ccf35cf9f4d78d6d9b00825e",
+          "taskDefinitionHash": "8904f6296d30d99567b746b7772164794ef17dc0e53c42eb794f0acb252ab04e"
+        },
+        "reasons": [],
+        "robustness": {
+          "kv-8%": 1.0,
+          "mass+15%": 1.0,
+          "wind4ms": 1.0
+        },
+        "schemaVersion": "p7-scorecard-v1",
+        "successRate": 1.0,
+        "task": "waypoint-chain",
+        "taskVersion": "3.0.0",
+        "thresholds": {
+          "minRobustness": 0.7,
+          "minSuccess": 0.85
+        },
+        "trainedOnEstimator": true
+      },
+      "seed": 1207,
+      "task": "waypoint-chain",
+      "wallTimeS": 10.339856417034753
+    }
+  ],
+  "runtime": {
+    "gymnasium": "1.3.0",
+    "mujoco": "3.9.0",
+    "numpy": "2.5.1",
+    "onnx": "1.22.0",
+    "stable-baselines3": "2.9.0",
+    "torch": "2.13.0"
+  },
+  "schemaVersion": "p7-overnight-evidence/1.0.0",
+  "sourceRevision": "8e094c0b70e83bb4ccf35cf9f4d78d6d9b00825e",
+  "status": "passed",
+  "tasks": [
+    {
+      "seed": 1201,
+      "task": "hover-hold"
+    },
+    {
+      "seed": 1207,
+      "task": "waypoint-chain"
+    }
+  ],
+  "thresholds": {
+    "minRobustness": 0.7,
+    "minSuccess": 0.85
+  },
+  "trainingDevice": "cpu",
+  "wallTimeS": 10.341429667023476
+}

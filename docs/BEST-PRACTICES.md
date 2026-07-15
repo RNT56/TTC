@@ -174,8 +174,9 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     contract/parameter digests, robustness scenarios, and export decisions in
     lineage. Required smoke must execute real MuJoCo plus PPO/SAC/ONNX boundaries and
     fail closed on pin or authority drift. Short CI runs explicitly disclaim
-    learning quality and overnight SLOs (P7-012), deployed GPU economics (P7-013),
-    and field transfer (EXT-003); closing P7-003 does not close those gates.
+    learning quality and overnight SLOs; P7-012 closes those only through clean
+    protected consumer-hardware evidence. Deployed GPU economics (P7-013) and field
+    transfer (EXT-003) remain separate gates; closing P7-003 does not close them.
     Any observation/action/axis/reward correction that changes a valid policy's
     meaning requires coordinated task/tensor/bundle majors, an executable legacy
     read oracle, migration guidance, generated-runtime review, and retraining rather

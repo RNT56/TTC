@@ -3,13 +3,13 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected runtime descendant: `f220d25` (PR #70; P7-014 waypoint trainer)
+Latest verified protected runtime descendant: `8e094c0` (PR #72; P7-012 learning quality)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
 P7-011 policy-delivery evidence anchor: `9131289` (PR #68)
 P7-014 waypoint-training evidence anchor: `f220d25` (PR #70)
-Active unprotected implementation candidate: `codex/p7012-consumer-gpu` (P7-012; no evidence anchor yet)
+P7-012 consumer-hardware evidence anchor: `8e094c0` (PR #72)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -38,7 +38,7 @@ The standalone validator v0.1.0 is now **released and independently install-veri
 The broader ForgedTTC product remains **not production-ready or field-proven**: G0/G1
 prove a trustworthy baseline and release, not live operations, external-user
 acceptance, hardware safety, or field outcomes. Most P5-P12 product surfaces prove
-contracts or fixture workflows; live providers, deployed/passing training, hardware,
+contracts or fixture workflows; live providers, deployed training operations, hardware,
 external users, operational recovery, and field evidence remain incomplete.
 
 The native Anthropic ETL and queued vendor-normalizer paths are protected at
@@ -170,37 +170,40 @@ non-exportable. This satisfies D40's executable waypoint prerequisite for P7-012
 it does not prove overnight learning quality, consumer-GPU economics, deployed GPU
 operations, rover/legged coverage, external acceptance, or field transfer.
 
-P7-012 is now an implementation candidate, not a protected claim. D42 advances the
+P7-012 is closed at controlled consumer-hardware simulation maturity through PR #72.
+D42 advances the
 current executable boundary to `forge-policy-tensor` 2.0.0 `[1,14]`,
 `trainingMuJoCoBundle` 2.0.0, and `p7-v3`/3.0.0, correcting the under-observed
 position policy, Forge Y-up angular-axis order, raw-torque/hover-trim mismatch, and
 unbound reward/control semantics while retaining exact tensor-v1 ONNX/observer
 execution. A frozen estimator-only controller-distillation plus conservative
-randomized-PPO recipe passes unchanged local scorecard gates at seeds 1201/1207:
+randomized-PPO recipe passes unchanged scorecard gates at seeds 1201/1207:
 both hover-hold and waypoint-chain score 1.0 baseline and 1.0 for mass +15%, Kv -8%,
-and wind 4 m/s. The hover diagnostic retains a 78,152-byte ONNX at SHA-256
-`9afc1152…fc4c` and took 45.63 s task wall time; its host-energy field is explicitly
-only a 1.77 Wh upper bound from the declared 140 W adapter rating, not measured
-consumption. The waypoint diagnostic also passes but remains bound to the protected
-parent rather than an implementation commit, so neither file is acceptance evidence.
+and wind 4 m/s. Exact head `1bce0d1` passed PR CI `29425066833` and security
+`29425066479`; protected `8e094c0` passed post-merge CI `29426237373` and security
+`29426237345`. From a clean protected checkout, the evidence command intentionally
+stopped after atomically retaining hover, then resumed by validating the frozen
+request, byte count, SHA-256, and export gate before executing waypoint. The hover
+task took 30.203 s and retained a 78,152-byte ONNX at SHA-256 `9afc1152…fc4c`;
+waypoint took 10.340 s and retained 78,156 bytes at `b07b023a…b1a2`. All JSON/ONNX
+files and their independent hashes are committed under `docs/evidence/p7-012/`.
 D43 selects CPU after an exact-host 4,096-step MLP PPO pilot measured about 1.08 s
 CPU versus 13.38 s MPS; the 19-core MPS device is inventory, not the execution
-backend. The candidate passes 163 worker tests, 12 Studio runtime tests, Rust WASM
-tests, gateway tests, compatibility, and dual-task smoke. P7-012 remains `[~]` until
-the implementation is protected and the exact protected revision completes an
-intentional interrupt/resume run whose JSON/ONNX outputs are downloaded and checked.
+backend. The 140 W adapter-rating-times-wall-time host-energy fields are unmeasured
+upper bounds (1.175 Wh and 0.402 Wh), local provider cost is zero, and electricity
+cost is null. This is not deployed GPU, external-user, real-device, or field proof.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | latest verified protected runtime descendant is P7-014 waypoint anchor `f220d25`; P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #70 exact head `b66e4b3` passed CI `29413578031`/security `29413578124`; protected squash `f220d25` passed post-merge CI `29415036211`/security `29415036274`. PR #68/`9131289` remains the delivery anchor, PR #66/`0614272` the MJX-feasibility anchor, PR #64/`d1c4c38` the seeded-training anchor, and PR #62/`1de7974` the base browser-runtime anchor |
+| Git state | latest verified protected runtime descendant is P7-012 anchor `8e094c0`; P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #72 exact head `1bce0d1` passed CI `29425066833`/security `29425066479`; protected squash `8e094c0` passed post-merge CI `29426237373`/security `29426237345`. Earlier P7 anchors retain their owning evidence |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 39 current gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; PR #70 exact-head and protected security both pass with the exact training/MJX/waypoint and policy-delivery runtime audit |
-| `pnpm verify` | P7-014 exact head passes all 39 required non-DB gates locally under Python 3.12; PR and protected required remote checks are green | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 11 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 154 worker tests, dual-task training plus engine/MJX smokes, and patch hygiene; protected CI `29415036211` also passes the 22-migration Postgres/MinIO/browser acceptance |
+| `pnpm verify` | P7-012 exact head passes all 39 required non-DB gates locally under Python 3.12; PR and protected required remote checks are green | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 12 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 163 worker tests, dual-task training plus engine/MJX smokes, and patch hygiene; protected CI `29426237373` also passes the 22-migration Postgres/MinIO/browser acceptance |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
-| `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 1.0.0 joins gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
+| `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 2.0.0 is current with exact v1/v2 supported-major execution; gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor remain machine-checked |
 | DOC-005 contract documentation | closed through protected PR #53 at `22c263b`; current protected `f220d25` verifies 76 runtime routes, 2 event families, 15 compatibility surfaces, and 16 worker families | the original closeout snapshot contained 75/2/14/16; later additive surfaces remain covered by generated drift, compatibility, 65 gateway tests, native/WASM parity, packaging, and patch hygiene through exact PR/post-merge CI/security |
 | DOC-006 contributor workflow | complete through implementation PR #58 at `3078dba` and evidence PR #59 at `484aefa`: canonical onboarding, maintainer-only curation, linked entry surfaces, sensitive-authority exclusions, assignment/reassignment rules, and three live seed issues | all 69 Markdown files resolve locally, issue-form YAML parses, #55-#57 remain correctly labeled and unassigned, all 36 local gates pass, and exact PR/post-merge CI/security are green; no external contribution outcome is claimed |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
@@ -208,13 +211,13 @@ intentional interrupt/resume run whose JSON/ONNX outputs are downloaded and chec
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 65/65 with the real validator in the full gate | admitted snapshot/hash authority and training-ready multirotor estimator coverage join the digest-bound policy fixture, staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization |
 | Worker tests | protected 154/154 at P7-014 under Python 3.12 | adds exact task-v2 hover/waypoint authority, sequential estimator-only target transitions, task-bound export/provider checks, dual-task smoke, and unsupported-shape refusals to the P7-011 object-delivery, frozen MJX request/protocol/hash, real PPO/SAC/MuJoCo/ONNX, reproducibility, training-bundle authority, corpus consumers, real engine parity, commerce, native ETL, and SEC-006 coverage |
-| P7-012 candidate tests | all 39 required local gates pass under Python 3.12, including 163/163 workers, 12/12 Studio runtime tests, 65/65 gateway tests, Rust fmt/Clippy/workspace/WASM tests, generated-contract/golden/compatibility checks, dual-task MuJoCo/SB3/ONNX smoke, MJX parity, and patch hygiene | adds tensor-v2/task-v3/bundle-v2 authority, exact tensor-v1 execution, Y-up/velocity/action/reward regression coverage, CPU/MPS no-fallback authority, and atomic interrupt/resume/tamper evidence; local candidate green is not protected acceptance |
+| P7-012 implementation tests | protected through PR #72/`8e094c0`; all 39 local gates and exact-head/post-merge CI/security pass | 163/163 workers, 12/12 Studio runtime tests, tensor-v2/task-v3/bundle-v2 authority, exact tensor-v1 execution, Y-up/velocity/action/reward regressions, CPU/MPS no-fallback authority, atomic interrupt/resume/tamper evidence, dual-task smoke, MJX parity, and patch hygiene are protected |
 | P7-003 controlled trainer | protected through PR #64/`d1c4c38`; exact-head and post-merge CI/security pass, and artifact `8334594354` is a clean source-bound 256-step CPU PPO/MuJoCo/ONNX smoke | proves the seeded PPO/SAC runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound valid ONNX artifact; short blocked-export smoke does not prove learning quality, overnight SLO, GPU economics, deployed operations, or field transfer |
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
 | P7-011 authoritative policy delivery | complete through PR #68/`9131289`; exact-head and post-merge CI/security pass, and artifact `8340587390` is clean source/checkout-bound controlled S3-compatible evidence | two attempts yield one exact object/policy with no inline persistence; stale upload and digest substitution fail closed; cancellation creates no database authority; authenticated same-origin exact readback executes through the Rust estimator/motion browser boundary. Production object-store durability/SLO and OPS-006 orphan cleanup remain open |
-| P7-014 waypoint trainer | protected through PR #70/`f220d25`; exact-head and post-merge CI/security pass, and artifact `8342801418` is clean source/task/runtime-bound dual-task evidence | task v2/Y-up/hash authority, sequential estimator-only waypoint transitions, full-chain evaluation, task-bound PPO/SAC/ONNX/scorecard/provider output, Studio target-chain playback, reproducibility, and refusals are protected. Both short scorecards remain blocked; P7-012 overnight consumer-GPU quality and the rover/legged remainder of P7-014 remain open |
-| P7-012 learning quality candidate | local exact-seed hover and waypoint diagnostics pass 1.0 baseline and all three robustness rows on a declared M2 Pro host | proves the implementation can meet the frozen gate and recovery contract locally; it does not prove protected exact-source evidence, deployed GPU operations, measured host energy/electricity cost, external acceptance, or field transfer |
-| Postgres/pgvector gate | pass on protected P7-014 CI `29415036211` for 22 migrations | the clean plus 21 populated-predecessor matrix, migration 0022 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
+| P7-014 waypoint trainer | protected through PR #70/`f220d25`; exact-head and post-merge CI/security pass, and artifact `8342801418` is clean source/task/runtime-bound dual-task evidence | task v2/Y-up/hash authority, sequential estimator-only waypoint transitions, full-chain evaluation, task-bound PPO/SAC/ONNX/scorecard/provider output, Studio target-chain playback, reproducibility, and refusals are protected. P7-012 is now closed; the rover/legged remainder of P7-014 remains open |
+| P7-012 protected learning quality | complete through PR #72/`8e094c0`; clean intentional-interruption/resume evidence retains exact JSON and ONNX under `docs/evidence/p7-012/` | hover and waypoint each pass 1.0 baseline and mass/Kv/wind on the declared M2 Pro host under frozen seeds/runtime/thresholds. Exact CPU authority, recovery, bytes, hardware, task/runtime/source lineage, unmeasured host-energy upper bounds, zero provider cost, and null electricity cost are retained; deployed GPU, external-user, device, and field proof remain open |
+| Postgres/pgvector gate | pass on protected P7-012 CI `29426237373` for 22 migrations | the clean plus 21 populated-predecessor matrix, migration 0022 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | **pass on protected `6f8509b`; QA-012 closed** | scheduled run `29311327203` and exact-current-main rerun `29367911748` exposed missing isolation headers and stale semantic-wrapper chrome suppression. PR #50 restores the governed full-WebGL path and version-binds both JSON artifacts. Exact branch nightly `29370725355` and exact-main nightly `29372161650` pass. Downloaded artifact `8326520247` records one isolated full-Studio Chromium/high-WebGL preflight with no page errors and six low-WebGL captures at unchanged edge F1 0.957-0.995, 3 draws, and 2,208/4,662 triangles; source/checkout equal `6f8509b` and the worktree is clean |
@@ -497,7 +500,7 @@ decision; none is a hidden release claim.
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
-| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover and sequential-waypoint training with authoritative snapshots/bundles, D41 task-v2 authority, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback through Rust estimator observations, and a controlled CPU MuJoCo/MJX feasibility harness; local D42 tensor-v2/task-v3 passing diagnostics are candidate evidence | protect and download P7-012's clean interrupt/resume hover/waypoint run, then deployed Modal/GPU evidence, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
+| Training/policy | protected exact-pinned CPU SB3/MuJoCo hover and sequential-waypoint training, D42 tensor-v2/bundle-v2/task-v3 authority with exact v1 reads, seeded PPO/SAC, deterministic ONNX export, clean protected scorecard-passing consumer-hardware evidence, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback, and a controlled CPU MuJoCo/MJX feasibility harness | deployed Modal/GPU evidence, end-to-end object delivery of the exact passing policies, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
@@ -557,7 +560,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
 | Publish validator v0.1 | **Complete** | protected-main and tag workflows, annotated tag, nine assets, checksums/SPDX/provenance, and post-publication binary/WASM verification are green |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
-| Claim P7-012 protected overnight learning quality | **No-go yet** | both local exact-seed policies pass, but the implementation and interrupt/resume evidence are not yet protected or downloaded from the exact protected revision |
+| Claim P7-012 protected overnight learning quality | **Go at controlled consumer-hardware simulation maturity** | PR #72/protected `8e094c0` and exact retained interrupt/resume evidence pass; do not restate this as deployed GPU, measured host energy, external-user, device, or field proof |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
 | Enable live provider billing | **No-go** | provider, recovery, cost, and privacy evidence incomplete |
@@ -567,9 +570,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **204 tasks: 143 done, 35 in progress, 25 open,
+The stable ledger currently contains **204 tasks: 144 done, 34 in progress, 25 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
-The 61 remaining tasks include the phase/live/field program, 2 governance, 2
+The 60 remaining tasks include the phase/live/field program, 2 governance, 2
 security, 2 quality, 10 operations, and 9 external-proof tasks; the documentation
 completion lane is closed. Dependency
 order is owned by
