@@ -40,6 +40,10 @@ the regenerated internal-schema catalog, the complete Python 3.12 `pnpm verify`
 gate passes all 38 required local steps. Saved-model selection now loads the exact
 persisted contract/report into Studio, and model-bound fixture/reuse jobs omit a
 caller-derived hash so the gateway remains the authority for the selected revision.
+Studio tracks that exact snapshot SHA separately from the validator report's
+canonical typed-contract hash and clears the binding on non-model loads or patches;
+policy playback therefore fails closed unless its lineage matches the loaded saved
+revision.
 **Changed:** Rust training-bundle derivation and validator command; gateway job
 authority; worker bundle verifier, MuJoCo environment, SB3 trainer/runner, external
 job normalization, Modal pins, tests, exact optional dependencies, required CI

@@ -68,6 +68,13 @@ rejected. This prevents a queue request from substituting an unadmitted training
 contract; it does not yet complete one-click Studio orchestration or durable trained
 policy delivery.
 
+The saved-model `contractHash` is the SHA-256 of the gateway's exact stable-JSON
+snapshot bytes. It is intentionally distinct from the validator report's canonical
+typed-`ModelSpec` hash. Studio tracks both identities: the report hash explains the
+validator verdict, while model-bound jobs and policy playback use the loaded saved-
+model snapshot hash. Loading a demo, share, upload, or unsaved patch clears that
+model binding so stale scene state cannot authorize a policy.
+
 `GET/POST
 /v1/moderation/reports` records user reports with a 72-hour SLA target and
 repeat-infringer signal. Seller payouts and revenue share are intentionally absent.

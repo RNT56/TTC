@@ -303,7 +303,7 @@ try {
 
   await modelSelect.selectOption(admittedModel.value);
   await page.waitForFunction(
-    ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-contract-hash") === contractHash,
+    ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-model-contract-hash") === contractHash,
     { selector: '[data-testid="validator-report"]', contractHash: admittedModel.contractHash },
     { timeout: browserTimeoutMs },
   );
@@ -348,7 +348,7 @@ try {
 
   await modelSelect.selectOption(admittedModel.value);
   await page.waitForFunction(
-    ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-contract-hash") === contractHash,
+    ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-model-contract-hash") === contractHash,
     { selector: '[data-testid="validator-report"]', contractHash: admittedModel.contractHash },
     { timeout: browserTimeoutMs },
   );

@@ -276,6 +276,7 @@ export default function App() {
   const [models, setModels] = useState<ModelRecord[]>([]);
   const [modelError, setModelError] = useState<string | null>(null);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
+  const [loadedModelContractHash, setLoadedModelContractHash] = useState<string | null>(null);
   const [modelBusy, setModelBusy] = useState(false);
   const [editPrompt, setEditPrompt] = useState("make it blue and 15% longer");
   const [editMessage, setEditMessage] = useState<string | null>(null);
@@ -598,10 +599,15 @@ export default function App() {
   }, [reviewExportPolicies, reviewNotes, reviewStatus, reviews]);
 
   /** Load a contract end to end: bake handle + scene + session + report. */
-  const loadContract = useCallback(async (contract: string, reportOverride?: Report | null) => {
+  const loadContract = useCallback(async (
+    contract: string,
+    reportOverride?: Report | null,
+    modelContractHash: string | null = null,
+  ) => {
     policyPlaybackRef.current?.controller.dispose();
     policyPlaybackRef.current = null;
     setPolicyPlaybackMessage(null);
+    setLoadedModelContractHash(null);
     const handle = await CoreBake.create(contract);
     bakeRef.current?.dispose();
     bakeRef.current = handle;
@@ -622,6 +628,7 @@ export default function App() {
     const report = selectContractReport(localReport, reportOverride);
     useStudio.getState().setLoaded(artifact, report, contract);
     useStudio.getState().setSelected(null);
+    setLoadedModelContractHash(modelContractHash);
   }, []);
 
   const loadDemo = useCallback(
@@ -673,7 +680,11 @@ export default function App() {
       }
       if ((result.verdict === "admitted" || result.verdict === "draft") && result.contract !== null) {
         try {
-          await loadContract(JSON.stringify(result.contract), result.report);
+          await loadContract(
+            JSON.stringify(result.contract),
+            result.report,
+            result.registeredModel?.contractHash ?? null,
+          );
           setGenerationLoadMessage(
             result.verdict === "draft" ? "draft loaded into scene" : "contract loaded into scene",
           );
@@ -710,6 +721,7 @@ export default function App() {
     const st = useStudio.getState();
     const selected = st.selected;
     const before = st.artifact?.hud;
+    setLoadedModelContractHash(null);
     const artifact = handle.patch(JSON.stringify(ops));
     // consequence diff (D5): show what the change DID to the derived numbers
     const after = artifact.hud;
@@ -1172,6 +1184,7 @@ export default function App() {
     try {
       const { model } = await saveModel(JSON.parse(contract), true);
       setActiveModelId(model.id);
+      setLoadedModelContractHash(model.contractHash);
       await refreshModels();
     } catch (error) {
       setModelError(error instanceof Error ? error.message : String(error));
@@ -1187,7 +1200,7 @@ export default function App() {
     setModelBusy(true);
     setModelError(null);
     try {
-      await loadContract(JSON.stringify(model.contract), model.validatorReport);
+      await loadContract(JSON.stringify(model.contract), model.validatorReport, model.contractHash);
       setShareUrl(null);
     } catch (error) {
       setModelError(error instanceof Error ? error.message : String(error));
@@ -1209,7 +1222,7 @@ export default function App() {
       const patched = await corePatch(contract, JSON.stringify(candidate.patch));
       const { model, report } = await saveModel(JSON.parse(patched), false);
       setActiveModelId(model.id);
-      await loadContract(JSON.stringify(model.contract), report);
+      await loadContract(JSON.stringify(model.contract), report, model.contractHash);
       await refreshModels();
     } catch (error) {
       setModelError(error instanceof Error ? error.message : String(error));
@@ -1226,7 +1239,11 @@ export default function App() {
     try {
       const result = await editModel(activeModelId, editPrompt.trim());
       setActiveModelId(result.model.id);
-      await loadContract(JSON.stringify(result.model.contract), result.report);
+      await loadContract(
+        JSON.stringify(result.model.contract),
+        result.report,
+        result.model.contractHash,
+      );
       setEditMessage(`edited in ${result.elapsedMs} ms`);
       await refreshModels();
     } catch (error) {
@@ -1417,7 +1434,7 @@ export default function App() {
   const startPolicyPlayback = useCallback((output: PolicyOutput) => {
     void (async () => {
       const session = sessionRef.current;
-      const contractHash = useStudio.getState().report?.contractHash;
+      const contractHash = loadedModelContractHash ?? useStudio.getState().report?.contractHash;
       if (!session || !contractHash) {
         setPolicyPlaybackMessage("policy playback requires a loaded, validated driveable contract");
         return;
@@ -1445,7 +1462,7 @@ export default function App() {
         useStudio.getState().setDriving(false);
       }
     })();
-  }, []);
+  }, [loadedModelContractHash]);
 
   const publishFixtureCourse = async () => {
     setPlatformBusy(true);
@@ -2499,6 +2516,7 @@ export default function App() {
         <div
           data-testid="validator-report"
           data-contract-hash={s.report.contractHash}
+          data-model-contract-hash={loadedModelContractHash ?? ""}
           role="status"
           aria-live="polite"
           style={{
