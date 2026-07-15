@@ -402,12 +402,13 @@ versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
 SB3/MuJoCo hover runtime is protected through PR #64. P7-012's tensor-v2/task-v3
 implementation and clean protected scorecard-passing evidence are closed through PR
-#72/`8e094c0` and evidence PR #73/`6bfa60f`. The P7-009 D45 candidate now executes
+#72/`8e094c0` and evidence PR #73/`6bfa60f`. The protected P7-009 D45 path executes
 exact behavior cloning plus randomized PPO for flight and ground tensors, repeats
 same-seed dataset/warmstart/ONNX hashes, and reuses the ordinary scorecard/export
-gate. It is controlled-synthetic local evidence until protected CI and retained
-artifact inspection; recorder/device/field telemetry and deployed Modal/GPU runs
-remain open. P7-011 durable delivery is protected through
+gate. PR #77/protected `2c7562d`, exact PR/post-merge CI/security, the 23-migration
+database/browser matrix, and independently checked clean artifact `8359446894` close
+it at controlled-synthetic offline-training maturity; recorder/device/field telemetry
+and deployed Modal/GPU runs remain open. P7-011 durable delivery is protected through
 PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
 uploads one exact owner content-addressed object under the current D38 lease, and
 transactionally creates one byte-free job-bound policy. Clean artifact `8340587390`

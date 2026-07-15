@@ -325,16 +325,22 @@ scorecards remain honestly blocked. Exact implementation head `c0f3a8f` passed P
 post-merge CI `29448974932`/security `29448974951`. Downloaded artifact `8356753424`
 self-binds to clean protected source and has JSON SHA-256 `20f0c25d…56ba`.
 
-P7-009's current implementation candidate layers D45 source authority over those
+P7-009's protected implementation layers D45 source authority over those
 protected flight and ground trainers without changing their task, tensor, bundle,
 scorecard, or energy meanings. Gateway, consent, migration 0023, worker command,
 external normalizer, Modal CPU profile, exact dataset validator, and repeated native
-smoke are implemented. The candidate passes 188 worker tests, 65 gateway tests, the
-17-family generated artifact check, and the focused two-task smoke locally. It remains
-`[~]` until exact PR/post-merge CI/security and clean protected retained evidence are
-inspected. Real recorder/device telemetry belongs to P8, is rejected by the current
-worker, and cannot be inferred from a caller label or the controlled-synthetic smoke.
-Independent decoding and ONNX checking verifies hover 23,874 bytes/
+smoke are implemented. Exact head `8cb70c4`, protected PR #77 squash `2c7562d`, and
+their PR/post-merge CI/security pass with 188 worker tests, 65 gateway tests, the
+17-family generated artifact check, the focused two-task smoke, and the isolated
+23-migration Postgres/MinIO/browser matrix. Downloaded artifact `8359446894` self-binds
+to clean protected source and independently validates both dataset/warmstart/model
+digest chains and ONNX graphs. P7-009 is therefore `[x]` at controlled-synthetic
+offline-training maturity. Real recorder/device telemetry belongs to P8, is rejected
+by the current worker, and cannot be inferred from a caller label or the controlled-
+synthetic smoke.
+
+Separately, independent decoding and ONNX checking of P7-014 artifact `8356753424`
+verifies hover 23,874 bytes/
 `6b18908f…c555`, waypoint 23,878/`783753e3…4927`, rover 22,520/
 `fa6c3cac…e4ad`, and quadruped 28,890/`b400ac71…8c2e`, including exact layouts,
 task hashes, contract hashes, optimizer updates, estimator-only authority, and blocked
@@ -468,6 +474,6 @@ scorecards.
 Scorecard thresholds beyond the frozen multirotor v3 0.85/0.70 gate; policy-object
 orphan inventory/reconciliation; protected overnight evidence publication; fine-tune-
 on-corrected-twin workflow shape (post system-ID); recorded-device offline-learning
-acceptance and protected retained P7-009 evidence; exact D12 quad/rover/legged
+acceptance; exact D12 quad/rover/legged
 benchmark contracts, declared accelerator and cost source, and the CPU overnight/
 tier-2 budget envelope needed to finish P7-010.

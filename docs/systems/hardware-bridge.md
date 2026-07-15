@@ -90,7 +90,9 @@ Only a future P8 recorder that can attest the exact policy observation tensor pl
 reviewed or supervisor-approved normalized actions may declare `recorded-device`
 maturity. The current P7-009 worker rejects that maturity rather than trusting a
 client label. Its smoke uses `controlled-synthetic` pairs, so it does not close
-P8-002, P8-003, a D12 lab run, or any field evidence.
+P8-002, P8-003, a D12 lab run, or any field evidence. PR #77/protected `2c7562d`
+closes only the source-bound controlled-synthetic P7-009 seam; retained artifact
+`8359446894` does not upgrade this hardware boundary.
 
 ## 5. System identification (P8-005)
 
