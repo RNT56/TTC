@@ -1,5 +1,5 @@
 from forge_workers.training.scorecard import Scorecard, gate
-from forge_workers.training.tasks import task_definition, task_ids
+from forge_workers.training.tasks import task_definition, task_definition_hash, task_ids
 
 
 def card(**overrides):
@@ -56,7 +56,7 @@ def test_missing_lineage_is_prv_002():
     assert any("PRV-002" in r for r in result.reasons)
 
 
-def test_p7_v1_task_definitions_cover_expected_suite():
+def test_p7_v2_task_definitions_cover_expected_suite_and_bind_y_up_coordinates():
     assert set(task_ids()) == {
         "gate-slalom",
         "hover-hold",
@@ -71,10 +71,23 @@ def test_p7_v1_task_definitions_cover_expected_suite():
     }
     for task_id in task_ids():
         spec = task_definition(task_id)
-        assert spec["suite"] == "p7-v1"
-        assert spec["version"] == "1.0.0"
+        assert spec["suite"] == "p7-v2"
+        assert spec["version"] == "2.0.0"
+        assert spec["coordinateFrame"] == "forge-y-up-rh-m"
+        assert spec["definitionHash"] == task_definition_hash(spec)
         assert spec["observations"]
         assert spec["actions"]
         assert spec["reward"]
         assert spec["termination"]
         assert spec["success"]
+
+    hover = task_definition("hover-hold")
+    assert hover["env"]["spawn"]["pose"][:3] == [0, 1.2, 0]
+    assert hover["env"]["targets"][0]["xyz"] == [0, 1.5, 0]
+    waypoint = task_definition("waypoint-chain")
+    assert waypoint["env"]["spawn"]["pose"][:3] == [-10, 1.2, 0]
+    assert [target["xyz"] for target in waypoint["env"]["targets"]] == [
+        [-4, 2, 2],
+        [3, 2.5, -3],
+        [10, 1.8, 0],
+    ]

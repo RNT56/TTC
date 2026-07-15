@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import onnx
 import pytest
 
 pytest.importorskip("gymnasium")
@@ -13,9 +14,10 @@ pytest.importorskip("onnx")
 pytest.importorskip("torch")
 
 from forge_workers.training.bundle import SNAPSHOT_SCHEMA, compile_training_bundle
-from forge_workers.training.mujoco_env import ForgeHoverEnv
+from forge_workers.training.mujoco_env import ForgeHoverEnv, ForgeMultirotorTaskEnv
 from forge_workers.training.jobs import train_policy
 from forge_workers.training.sb3_training import train_sb3_policy
+from forge_workers.training.tasks import task_definition, task_definition_hash
 
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = ROOT / "target" / "debug" / "forge-validate"
@@ -58,6 +60,61 @@ def test_mujoco_environment_uses_exact_tensor_and_never_exposes_truth(bundle):
         assert info["truthExposedToPolicy"] is False
         if terminated or truncated:
             break
+
+
+def test_waypoint_environment_advances_sequential_targets_from_estimator_error_only(bundle):
+    env = ForgeMultirotorTaskEnv(
+        bundle,
+        task=task_definition("waypoint-chain"),
+        episode_steps=20,
+        fixed_scenario={"latencyMs": 1_000.0, "windMps": 0.0, "dropoutPct": 0.0},
+    )
+    observation, info = env.reset(seed=19)
+    assert info["activeTargetIndex"] == 0
+    assert info["targetCount"] == 3
+    assert info["targetAdvanceSource"] == "estimator.target.error"
+    assert info["truthExposedToPolicy"] is False
+
+    hover = np.asarray([2 * bundle["hoverThrottle"] - 1, 0, 0, 0], dtype=np.float32)
+    for expected_completed in (1, 2, 3):
+        env._estimated_position = env.target_forge_m.copy()
+        observation, reward, terminated, truncated, info = env.step(hover)
+        assert np.isfinite(observation).all()
+        assert np.isfinite(reward)
+        assert info["targetsCompleted"] == expected_completed
+        assert info["targetAdvanced"] is True
+        assert info["truthExposedToPolicy"] is False
+        if expected_completed < 3:
+            assert info["activeTargetIndex"] == expected_completed
+            assert not terminated
+        else:
+            assert info["taskCompleted"] is True
+            assert info["taskSuccessFraction"] == 1.0
+            assert terminated
+            assert not truncated
+
+
+def test_real_multirotor_environment_refuses_drifted_and_unsupported_task_shapes(bundle):
+    wrong_frame = task_definition("waypoint-chain")
+    wrong_frame["coordinateFrame"] = "z-up"
+    wrong_frame["definitionHash"] = task_definition_hash(wrong_frame)
+    with pytest.raises(ValueError, match="Y-up"):
+        ForgeMultirotorTaskEnv(bundle, task=wrong_frame)
+
+    rover_shape = task_definition("waypoint-chain")
+    rover_shape["family"] = "rover"
+    rover_shape["definitionHash"] = task_definition_hash(rover_shape)
+    with pytest.raises(ValueError, match="non-multirotor"):
+        ForgeMultirotorTaskEnv(bundle, task=rover_shape)
+
+    substituted_target = task_definition("waypoint-chain")
+    substituted_target["env"]["targets"][0]["xyz"] = [-3, 2, 2]
+    substituted_target["definitionHash"] = task_definition_hash(substituted_target)
+    with pytest.raises(ValueError, match="exact worker-owned definition"):
+        ForgeMultirotorTaskEnv(bundle, task=substituted_target)
+
+    with pytest.raises(ValueError, match="supports hover-hold and waypoint-chain only"):
+        ForgeMultirotorTaskEnv(bundle, task=task_definition("gate-slalom"))
 
 
 @pytest.mark.parametrize("algorithm", ["ppo", "sac"])
@@ -104,9 +161,42 @@ def test_real_sb3_algorithms_update_and_export_digest_bound_onnx(bundle, algorit
     assert hashlib.sha256(model_bytes).hexdigest() == result["onnx"]["sha256"]
 
 
+def test_real_waypoint_trainer_exports_task_bound_policy_and_scorecard(bundle):
+    result = train_sb3_policy(
+        {
+            "task": "waypoint-chain",
+            "algorithm": "ppo",
+            "seed": 29,
+            "totalTimesteps": 64,
+            "episodeSteps": 20,
+            "evalEpisodes": 1,
+        },
+        bundle,
+    )
+
+    assert result["task"]["suite"] == "p7-v2"
+    assert result["task"]["version"] == "2.0.0"
+    assert result["task"]["coordinateFrame"] == "forge-y-up-rh-m"
+    assert len(result["task"]["targets"]) == 3
+    assert result["io"]["onnxHeader"]["task"] == "waypoint-chain"
+    assert result["io"]["onnxHeader"]["taskDefinitionHash"] == result["task"]["definitionHash"]
+    assert result["scorecard"]["task"] == "waypoint-chain"
+    assert result["scorecard"]["taskVersion"] == "2.0.0"
+    assert result["scorecard"]["lineage"]["taskDefinitionHash"] == result["task"]["definitionHash"]
+    assert result["training"]["targetAdvanceSource"] == "estimator.target.error"
+    assert result["training"]["evaluations"]["baseline"]["completionRequired"] is True
+    graph = onnx.load_from_string(
+        __import__("base64").b64decode(result["onnx"]["modelBase64"], validate=True)
+    )
+    metadata = {entry.key: entry.value for entry in graph.metadata_props}
+    assert metadata["forge.task"] == "waypoint-chain"
+    assert metadata["forge.taskVersion"] == "2.0.0"
+    assert metadata["forge.taskDefinitionHash"] == result["task"]["definitionHash"]
+
+
 def test_same_seed_reproduces_policy_and_onnx_digests(bundle):
     payload = {
-        "task": "hover-hold",
+        "task": "waypoint-chain",
         "algorithm": "ppo",
         "seed": 31,
         "totalTimesteps": 64,

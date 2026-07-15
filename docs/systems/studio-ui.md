@@ -2,7 +2,7 @@
 
 **Status:** P1 shell and truthful equipped-variant configurator live; P4 account/model/generation/share/review/job panels live; output-aware heavy-job artifact registry and platform panels live · **Phases:** P1 shell, grows every phase · **Home:**
 `packages/studio` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D3, D4, D14, D15, D16, D32, D34
+(v3.0) · **Decisions:** D3, D4, D14, D15, D16, D32, D34, D41
 
 ## 1. Purpose
 
@@ -50,7 +50,7 @@ inventing a second CORS security surface.
 | P4 | account/session panel (`/v1/me`, Auth.js GitHub links), model registry save/list, deterministic edit prompt (`POST /v1/models/:id/edit`), server-backed admitted-only share (`?share=` viewer + public `/v1/share/:shareId`), catalog review panel (`GET/PATCH /v1/reviews`), generation panel using staged SSE (`POST /v1/generate/stream`) with template/Anthropic provider selection, BYO key in session storage, attempt diagnostics, draft/admitted scene loading, Brief-25 eval summary; expandable D34 privacy-authority panel shows exact notices and independent grant/withdraw state |
 | P5 | owned-upload-backed photoscan launcher requires explicit per-object processing consent, then renders D13/refit/cache/candidate details, linked blob access, recent photoscan artifacts, and editable alignment controls/readout for scale, axis, and ports; mesh-click placement remains polish |
 | P6 | HUD analytics full (AUW/TWR/hover/current/endurance with inspectable assumptions); disturbance controls |
-| P7 | training output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, and explicit per-log consent before telemetry-backed training; one click selects the active admitted model, starts the fixture or configured-local job with an idempotency key, polls to terminal state, and fetches retained bytes through the authenticated same-origin policy-model route; playback lazy-loads exact ONNX Runtime Web 1.27.0/WASM, verifies `forge-policy-tensor` 1.0.0 plus scorecard/lineage/model/delivery digest, consumes Rust estimator observations, and feeds bounded actions to CoreSession at 50 Hz; the controlled native SB3/MuJoCo trainer is protected through PR #64 and P7-011 object-backed delivery through PR #68/`9131289`; a full training workspace, real waypoint/rover/legged loading, passing overnight policy, deployed training, and production storage operations remain open |
+| P7 | training output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, and explicit per-log consent before telemetry-backed training; one click selects the active admitted model, starts the fixture or configured-local job with an idempotency key, polls to terminal state, and fetches retained bytes through the authenticated same-origin policy-model route; playback lazy-loads exact ONNX Runtime Web 1.27.0/WASM, verifies `forge-policy-tensor` 1.0.0 plus scorecard/lineage/model/delivery digest, consumes Rust estimator observations, and feeds bounded actions to CoreSession at 50 Hz; the P7-014 candidate also verifies D41 task-v2 frame/hash authority and advances bounded waypoint chains only from estimator target error; the controlled hover trainer is protected through PR #64 and P7-011 object-backed delivery through PR #68/`9131289`; protected waypoint evidence, a full training workspace, rover/legged loading, passing overnight policy, deployed training, and production storage operations remain open |
 | P8 | D30 lab-gated hardware bridge; config-diff, telemetry/replay, supervisor, system-ID, crash/ghost metadata, replay artifacts, telemetry logs, and maintenance records render in job/artifact panels; per-log sharing grant/withdraw and explicit share action are available; WebSerial write, ladder UX, recorder/ghost scrubber and **Desktop** serial/recorder plugins remain open |
 | P9–P12 | fixture co-design Pareto points, wear, crash, repair, and fleet outputs render in job details; co-design points can apply admitted JSON-Patch candidates through patch/re-bake and save admitted points as openable models through the model admission route; platform panel covers credits, license ledger/export-policy visibility, editable course creation, `?course=<id>` course URLs, replay-verified leaderboard filtering, classroom assignment/submission, marketplace kind/status filtering with row-level usage/equip actions, listing/policy-listing submission, and moderation reports; D34 requires explicit per-model pattern contribution and account-level leaderboard publication grants before those actions; artifact panel includes the maintenance twin dashboard with fleet counts, crash scrubber, wear cards, repair rows, reorder hints, and vendor/print handoff links; live optimizer-backed Pareto depth and live marketplace/provider economics remain open |
 
@@ -111,6 +111,14 @@ actual ONNX Runtime Web/WASM inference and completed CoreSession playback, and
 asserts the lazy JS and WASM assets came from the Studio origin. Focused Studio tests
 run the real 906-byte model in WASM and exercise tamper, held-scorecard, D8, lineage,
 layout, unsupported-version, and non-finite refusal paths.
+
+The P7-014 focused runtime tests preserve legacy one-target playback and add the
+versioned waypoint consumer. The consumer bounds target count/radius/coordinates,
+requires exact `p7-v2`/2.0.0 Y-up task/hash agreement across task metadata,
+scorecard lineage, and ONNX header, requests the next Rust estimator snapshot before
+running inference, and zeros the advisory after the final waypoint. Tests prove
+ordered target requests and refuse task-frame, lineage-hash, and header-version
+substitution; no render or MuJoCo truth value is accepted as target authority.
 
 P7-011 extends that flow rather than adding a second browser-only shortcut. The
 persisted terminal job must contain byte-free object-backed delivery metadata, the

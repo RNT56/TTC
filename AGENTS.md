@@ -190,6 +190,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   orphan reconciliation; production object-storage durability/SLO, passing learned
   policy quality, deployed GPU operations, external users, and field transfer remain
   open;
+- the P7-014 waypoint candidate implements D41 `p7-v2`/`2.0.0` task authority:
+  every built-in 3D task is explicitly Forge Y-up/right-handed/SI and canonically
+  hashed, while `p7-v1` stays historical. The real MuJoCo/SB3 command now supports
+  hover-hold and sequential waypoint-chain with estimator-only target advancement,
+  exact task-bound ONNX/scorecard/provider authority, Studio target-chain playback,
+  and a dual 256-step deterministic CPU smoke. Both short scorecards remain
+  non-exportable; all 39 required local gates pass under Python 3.12, while protected
+  exact-source evidence is still required before P7-012,
+  and rover/legged real trainers remain open under P7-014;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

@@ -10,6 +10,34 @@ function fixture(): PolicyOutput {
   return structuredClone(fixtureJobOutput("train.policy", { contractHash: CONTRACT_HASH })) as PolicyOutput;
 }
 
+function waypointFixture(): PolicyOutput {
+  const output = fixture();
+  const definitionHash = "cd".repeat(32);
+  output.task = {
+    id: "waypoint-chain",
+    suite: "p7-v2",
+    version: "2.0.0",
+    coordinateFrame: "forge-y-up-rh-m",
+    definitionHash,
+    horizonS: 90,
+    target: { xyzM: [-4, 2, 2] },
+    targets: [
+      { kind: "waypoint", xyzM: [-4, 2, 2], radiusM: 0.8 },
+      { kind: "waypoint", xyzM: [3, 2.5, -3], radiusM: 0.8 },
+    ],
+  };
+  output.scorecard!.task = "waypoint-chain";
+  output.scorecard!.taskVersion = "2.0.0";
+  output.scorecard!.lineage = { ...output.scorecard!.lineage, taskDefinitionHash: definitionHash };
+  output.io!.onnxHeader = {
+    ...output.io!.onnxHeader,
+    task: "waypoint-chain",
+    taskVersion: "2.0.0",
+    taskDefinitionHash: definitionHash,
+  };
+  return output;
+}
+
 function layout(output: PolicyOutput): string[] {
   return output.io?.tensor?.input?.layout ?? [];
 }
@@ -85,4 +113,53 @@ test("refuses non-finite core observations without retaining an action", async (
     }),
   };
   await assert.rejects(BrowserPolicyController.create(output, CONTRACT_HASH, source), /non-finite/);
+});
+
+test("advances a versioned waypoint chain only from estimator target error", async () => {
+  const output = waypointFixture();
+  const requestedTargets: number[][] = [];
+  let snapshotCount = 0;
+  const source = {
+    policySnapshot: async (target: readonly number[]) => {
+      requestedTargets.push([...target]);
+      const observations = [0, 0, 0, 0, 0, 0, snapshotCount === 0 ? 0 : 5, 0, 0, 1, 0];
+      snapshotCount += 1;
+      return { layout: layout(output), observations };
+    },
+  };
+
+  const controller = await BrowserPolicyController.create(output, CONTRACT_HASH, source);
+  assert.deepEqual(requestedTargets, [[-4, 2, 2], [3, 2.5, -3]]);
+  assert.equal(controller.targetIndex, 1);
+  assert.equal(controller.targetCount, 2);
+  assert.equal(controller.targetsCompleted, 1);
+  assert.equal(controller.taskCompleted, false);
+  assert.equal(controller.inferenceCount, 1);
+
+  snapshotCount = 0;
+  controller.schedule(1, {
+    policySnapshot: async (target: readonly number[]) => {
+      requestedTargets.push([...target]);
+      return { layout: layout(output), observations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0] };
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(controller.targetsCompleted, 2);
+  assert.equal(controller.taskCompleted, true);
+  assert.deepEqual(controller.input, { throttle: 0, roll: 0, pitch: 0, yaw: 0, drive: 0, turn: 0 });
+  controller.dispose();
+});
+
+test("refuses drift across versioned task, scorecard, and ONNX authority", async () => {
+  const wrongFrame = waypointFixture();
+  wrongFrame.task!.coordinateFrame = "z-up";
+  await assert.rejects(preparePolicyArtifact(wrongFrame, CONTRACT_HASH, layout(wrongFrame)), /Y-up/);
+
+  const wrongLineage = waypointFixture();
+  wrongLineage.scorecard!.lineage!.taskDefinitionHash = "ef".repeat(32);
+  await assert.rejects(preparePolicyArtifact(wrongLineage, CONTRACT_HASH, layout(wrongLineage)), /task definition/);
+
+  const wrongHeader = waypointFixture();
+  wrongHeader.io!.onnxHeader!.taskVersion = "1.0.0";
+  await assert.rejects(preparePolicyArtifact(wrongHeader, CONTRACT_HASH, layout(wrongHeader)), /ONNX header/);
 });

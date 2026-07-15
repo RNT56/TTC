@@ -135,6 +135,14 @@ readback, owner-scoped browser execution, and byte-free user-data export metadat
 controlled S3-compatible sandbox maturity. Production bucket policy, durability,
 orphan inventory/deletion, and storage SLO evidence remain deployment/OPS-006 work.
 
+D41 separately prevents task-semantic substitution. New policies declare task-v2,
+the Forge Y-up frame, ordered targets, and a canonical task hash; native and external
+worker output, scorecard lineage, ONNX header, and Studio must agree before export or
+playback. V1 remains a historical read rather than being silently remapped. Browser
+waypoint progression accepts only estimator target-error observations and never
+render state or simulator truth. This integrity boundary does not make a short
+policy safe, passing, hardware-authoritative, or field-ready.
+
 Consent ledger 1.0.0 records immutable grants and withdrawals separately for
 photoscan processing, telemetry sharing, pattern contribution, leaderboard
 publication, and training reuse. Each event binds the current notice/version/hash to

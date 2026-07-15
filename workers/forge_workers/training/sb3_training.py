@@ -27,10 +27,11 @@ import torch
 from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.monitor import Monitor
 
-from forge_workers.training.mujoco_env import ForgeHoverEnv
+from forge_workers.training.mujoco_env import ForgeMultirotorTaskEnv
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS
+from forge_workers.training.tasks import task_definition
 
-RUNTIME_VERSION = "forge-sb3-mujoco/1.0.0"
+RUNTIME_VERSION = "forge-sb3-mujoco/1.1.0"
 EXACT_RUNTIME = {
     "stable-baselines3": "2.9.0",
     "gymnasium": "1.3.0",
@@ -60,11 +61,15 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
     episode_steps = _integer(payload.get("episodeSteps", 3_000), "episodeSteps", 20, 100_000)
     eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 1, 100)
     device = _choice(payload.get("device", "cpu"), {"cpu"}, "device")
-    task = str(payload.get("task", "hover-hold"))
-    if task != "hover-hold":
-        raise ValueError("P7 SB3 runtime 1.0.0 currently supports hover-hold only")
+    task_id = _choice(payload.get("task", "hover-hold"), {"hover-hold", "waypoint-chain"}, "task")
+    curriculum_stage = _integer(payload.get("curriculumStage", 1), "curriculumStage", 1, 100)
+    task = task_definition(task_id, curriculum_stage=curriculum_stage)
     randomization = _randomization(payload.get("domainRandomization"))
     config = {
+        "task": task_id,
+        "taskSuite": task["suite"],
+        "taskVersion": task["version"],
+        "taskDefinitionHash": task["definitionHash"],
         "algorithm": algorithm,
         "seed": seed,
         "totalTimesteps": total_timesteps,
@@ -79,8 +84,9 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
     _seed_everything(seed)
 
     train_env = Monitor(
-        ForgeHoverEnv(
+        ForgeMultirotorTaskEnv(
             bundle,
+            task=task,
             randomization=randomization,
             episode_steps=episode_steps,
         )
@@ -115,6 +121,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         name: _evaluate(
             model,
             bundle,
+            task,
             scenario,
             seed=seed + 10_000 + index * 1_000,
             episodes=eval_episodes,
@@ -144,7 +151,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
     if energy_wh <= 0:
         reasons.append("energyWh must be positive")
 
-    onnx_artifact = _export_onnx(model, algorithm, bundle)
+    onnx_artifact = _export_onnx(model, algorithm, bundle, task)
     contract_hash = bundle["contractHash"]
     source_revision = _source_revision()
     lockfile_hash = _lockfile_hash(payload)
@@ -156,12 +163,22 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         "provider": "local-sb3-mujoco",
         "algorithm": algorithm,
         "task": {
-            "id": "hover-hold",
-            "suite": "p7-v1",
-            "version": "1.0.0",
-            "curriculumStage": _integer(payload.get("curriculumStage", 1), "curriculumStage", 1, 100),
+            "id": task_id,
+            "suite": task["suite"],
+            "version": task["version"],
+            "coordinateFrame": task["coordinateFrame"],
+            "definitionHash": task["definitionHash"],
+            "curriculumStage": curriculum_stage,
             "horizonS": episode_steps * float(bundle["controlPeriodS"]),
-            "target": {"xyzM": [0.0, 1.5, 0.0]},
+            "target": {"xyzM": list(task["env"]["targets"][0]["xyz"])},
+            "targets": [
+                {
+                    "kind": target["kind"],
+                    "xyzM": list(target["xyz"]),
+                    "radiusM": target["radiusM"],
+                }
+                for target in task["env"]["targets"]
+            ],
         },
         "io": {
             "observations": [
@@ -174,7 +191,9 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "actions": ["throttle", "roll", "pitch", "yaw"],
             "onnxHeader": {
                 "contractHash": contract_hash,
-                "task": "hover-hold",
+                "task": task_id,
+                "taskVersion": task["version"],
+                "taskDefinitionHash": task["definitionHash"],
                 "observationCount": "5",
                 "actionCount": "4",
                 "tensorSchema": tensor["schema"],
@@ -194,8 +213,8 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         },
         "scorecard": {
             "schemaVersion": "p7-scorecard-v1",
-            "task": "hover-hold",
-            "taskVersion": "1.0.0",
+            "task": task_id,
+            "taskVersion": task["version"],
             "successRate": success_rate,
             "robustness": robustness,
             "energyWh": energy_wh,
@@ -206,6 +225,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
                 "lockfileHash": lockfile_hash,
                 "dependencyManifestHash": dependency_manifest_hash,
                 "configHash": config_hash,
+                "taskDefinitionHash": task["definitionHash"],
                 "codeVersion": RUNTIME_VERSION,
                 "sourceRevision": source_revision,
                 "seed": str(seed),
@@ -229,6 +249,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "optimizerUpdated": True,
             "deterministicAlgorithms": True,
             "truthExposedToPolicy": False,
+            "targetAdvanceSource": "estimator.target.error",
             "evaluations": evaluations,
             "bundleAssumptions": bundle["assumptions"],
         },
@@ -285,6 +306,7 @@ def _model(
 def _evaluate(
     model: PPO | SAC,
     bundle: dict[str, Any],
+    task: dict[str, Any],
     scenario: dict[str, float],
     *,
     seed: int,
@@ -296,8 +318,9 @@ def _evaluate(
     rewards: list[float] = []
     fractions: list[float] = []
     for episode in range(episodes):
-        env = ForgeHoverEnv(
+        env = ForgeMultirotorTaskEnv(
             bundle,
+            task=task,
             randomization={},
             episode_steps=episode_steps,
             fixed_scenario=scenario,
@@ -312,7 +335,8 @@ def _evaluate(
             total_reward += float(reward)
             done = terminated or truncated
         fraction = float(info.get("successFraction", 0.0))
-        successes += int(fraction >= 0.6)
+        episode_success = bool(info.get("taskCompleted")) if task["id"] == "waypoint-chain" else fraction >= 0.6
+        successes += int(episode_success)
         fractions.append(fraction)
         energies.append(float(info.get("energyWh", 0.0)))
         rewards.append(total_reward)
@@ -323,6 +347,7 @@ def _evaluate(
         "meanSuccessFraction": float(np.mean(fractions)),
         "meanEnergyWh": float(np.mean(energies)),
         "meanReward": float(np.mean(rewards)),
+        "completionRequired": task["id"] == "waypoint-chain",
         "scenario": scenario,
     }
 
@@ -353,7 +378,12 @@ class _SacExport(torch.nn.Module):
         return torch.tanh(self.mu(latent))
 
 
-def _export_onnx(model: PPO | SAC, algorithm: str, bundle: dict[str, Any]) -> dict[str, Any]:
+def _export_onnx(
+    model: PPO | SAC,
+    algorithm: str,
+    bundle: dict[str, Any],
+    task: dict[str, Any],
+) -> dict[str, Any]:
     module: torch.nn.Module = _PpoExport(model) if algorithm == "ppo" else _SacExport(model)
     module.eval()
     dummy = torch.zeros((1, 11), dtype=torch.float32)
@@ -379,6 +409,9 @@ def _export_onnx(model: PPO | SAC, algorithm: str, bundle: dict[str, Any]) -> di
             "forge.inputLayout": ",".join(bundle["tensor"]["input"]["layout"]),
             "forge.outputLayout": ",".join(bundle["tensor"]["output"]["layout"]),
             "forge.contractHash": bundle["contractHash"],
+            "forge.task": task["id"],
+            "forge.taskVersion": task["version"],
+            "forge.taskDefinitionHash": task["definitionHash"],
         }
         for key, value in metadata.items():
             prop = graph.metadata_props.add()
@@ -423,7 +456,7 @@ def _runtime_versions() -> dict[str, str]:
         if metadata_version != expected:
             raise RuntimeError(f"{package} installed metadata drifted: expected {expected}, got {metadata_version}")
     if torch.version.cuda is not None:
-        raise RuntimeError("P7 SB3 runtime 1.0.0 requires the reviewed CPU-only PyTorch build")
+        raise RuntimeError("P7 SB3 runtime 1.1.0 requires the reviewed CPU-only PyTorch build")
     return versions
 
 

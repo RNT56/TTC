@@ -118,7 +118,8 @@
       ],
       "internalSchemas": {
         "admittedModelSnapshot": "1.0.0",
-        "trainingBundle": "1.0.0"
+        "trainingBundle": "1.0.0",
+        "trainingTask": "2.0.0"
       },
       "queueKinds": [
         "etl.ingest-component",

@@ -27,6 +27,12 @@ function typescriptConstant(path, name) {
   return match[1];
 }
 
+function pythonConstant(path, name) {
+  const match = read(path).match(new RegExp(`^${name}\\s*=\\s*"([^"]+)"`, "m"));
+  requireValue(match, `${path}: missing ${name}`);
+  return match[1];
+}
+
 function typescriptStringArray(path, name) {
   const match = read(path).match(new RegExp(`export const ${name}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as const`));
   requireValue(match, `${path}: missing ${name}`);
@@ -133,6 +139,11 @@ requireValue(
     sourceConstant("crates/forge-sim/src/training.rs", "TRAINING_BUNDLE_VERSION"),
   "worker training-bundle version does not match Rust source",
 );
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.trainingTask ===
+    pythonConstant("workers/forge_workers/training/tasks.py", "TASK_VERSION"),
+  "worker training-task version does not match Python source",
+);
 
 const workerContract = read("workers/forge_workers/contract.py");
 const trainingBundleContract = read("workers/forge_workers/training/bundle.py");
@@ -151,7 +162,9 @@ requireValue(
   ),
   "worker license export manifest version does not match compatibility matrix",
 );
-for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.internalSchemas)) {
+for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.internalSchemas).filter(
+  ([name]) => name !== "trainingTask",
+)) {
   requireValue(
     trainingBundleContract.includes(`${version}`),
     `worker internal schema ${name} does not match compatibility matrix`,

@@ -18,6 +18,42 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Implement task-v2 sequential waypoint training
+**Session:** Codex agent · branch `codex/p7014-waypoint-trainer` · **Phase:** P7 ·
+**TODO items:** P7-012 [ ], P7-014 [~]
+**Done:** Implemented the dependency-complete waypoint portion of P7-014 without
+claiming protected or learning-quality completion. D41 introduces `p7-v2`/2.0.0
+with explicit `forge-y-up-rh-m` and canonical task-definition SHA-256 while keeping
+v1 historical. The native exact-pinned MuJoCo/SB3 runtime now accepts only worker-
+owned hover-hold or waypoint-chain definitions, follows three ordered waypoints from
+estimator target error, requires complete-chain evaluation success, and keeps truth
+outside policy/transition authority. Task identity/hash is bound into training
+config, ONNX metadata/header, scorecard lineage, external-provider normalization,
+and Studio playback. The browser retains legacy single-target reads, validates
+bounded v2 chains, requests a new Rust estimator snapshot at each transition, and
+zeros advisories after completion. Focused worker/SB3 and Studio tests pass; the
+schema-2 dual CPU smoke executes 256 real PPO steps for each task, produces valid
+digest-bound ONNX graphs, and honestly blocks both sub-threshold scorecards.
+**Changed:** Training task definitions and compatibility matrix; MuJoCo task
+environment; SB3 evaluation/export; external worker authority; Studio policy output,
+playback, and tests; required smoke/CI label; canonical agent, project-state,
+roadmap, task, execution, compatibility, learning, worker, Studio, best-practice,
+decision, and changelog guidance.
+All 39 required local gates pass under Python 3.12, including the registered golden
+review, Rust formatting/Clippy/workspace tests, fresh and committed native/WASM
+parity, production Studio build plus 11 runtime tests, 65 gateway tests, Brief-25
+25/25, release packaging, all 154 worker tests, the dual-task training smoke,
+controlled MJX feasibility, and patch hygiene.
+**Decisions:** D41 makes the coordinate correction a task-major boundary rather than
+silently changing v1 meaning; the independent `forge-policy-tensor` remains 1.0.0
+because its Y-up 11-input/4-output contract did not change.
+**Next:** Run the complete required gate, publish the candidate through exact-head
+PR/CI/security, download and inspect the clean dual-task smoke artifact, merge, and
+reconcile protected evidence; only then start P7-012 overnight hover/waypoint runs.
+**Blockers:** none for local waypoint implementation. Protected exact-source proof
+is pending; P7-012 additionally requires declared consumer-GPU hardware, overnight
+passing scores, wall-time, energy/cost, recovery, and retained policy evidence.
+
 ## 2026-07-15 — Protect authoritative policy delivery and sequence waypoint training
 **Session:** Codex agent · branch `codex/p7011-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-011 [x], P7-012 [ ], P7-014 [ ]
