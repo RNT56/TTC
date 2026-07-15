@@ -96,6 +96,22 @@ async function assertCurrentLedger(client) {
   }
   assert.ok((await client.query("SELECT to_regclass('licenses') AS name")).rows[0].name);
   assert.ok((await client.query("SELECT to_regclass('jobs') AS name")).rows[0].name);
+  const jobsKindConstraint = (
+    await client.query(
+      `SELECT pg_get_constraintdef(oid) AS definition
+         FROM pg_constraint
+        WHERE conrelid = 'jobs'::regclass
+          AND conname = 'jobs_kind_check'`,
+    )
+  ).rows[0]?.definition;
+  assert.match(jobsKindConstraint ?? "", /train\.offline-bc/);
+  const offline = await client.query(
+    `INSERT INTO jobs (kind, status, provider, input)
+     VALUES ('train.offline-bc', 'queued', 'local', '{}'::jsonb)
+     RETURNING id`,
+  );
+  assert.equal(offline.rowCount, 1);
+  await client.query("DELETE FROM jobs WHERE id = $1", [offline.rows[0].id]);
   return rows;
 }
 

@@ -100,7 +100,8 @@ _PROFILES: dict[str, ModalTaskProfile] = {
         family="training",
         gpu=None,
         timeout_s=60 * 60,
-        pip_packages=(*BASE_PIP_PACKAGES, "numpy>=1.26", "onnx>=1.16"),
+        pip_packages=_SB3_PIP_PACKAGES,
+        apt_packages=_SIM_APT_PACKAGES,
         command_env=("FORGE_OFFLINE_RL_CMD",),
     ),
     "train.sysid-fit": ModalTaskProfile(

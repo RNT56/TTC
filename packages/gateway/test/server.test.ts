@@ -645,7 +645,10 @@ function platformMemoryDb(): GatewayDb {
       }
       if (text.includes("FROM telemetry_logs") && text.includes("id = $1") && text.includes("owner_user_id = $2")) {
         const row = telemetryLogs.find((candidate) => candidate.id === params[0] && candidate.owner_user_id === params[1]);
-        return { rows: row ? [{ id: row.id } as T] : [], rowCount: row ? 1 : 0 };
+        const selected = text.includes("SELECT model_id, tape")
+          ? row
+          : row ? { id: row.id } : null;
+        return { rows: selected ? [selected as T] : [], rowCount: selected ? 1 : 0 };
       }
       if (text.includes("FROM telemetry_logs")) {
         const rows = telemetryLogs.filter((row) => row.owner_user_id === params[0]);
@@ -2767,6 +2770,100 @@ test(
     const telemetryBody = telemetryLogs.json() as { logs: { id: string; source: string; tape: { frames?: unknown[] } }[] };
 	    assert.equal(telemetryBody.logs.length, 1);
 	    assert.equal(telemetryBody.logs[0].source, "fixture");
+
+      const offlineTrainingAuthority = {
+        schemaVersion: "forge-offline-training-tape/1.0.0",
+        task: { proof: "worker validates exact task authority" },
+        tensor: { proof: "worker validates exact tensor authority" },
+        observationSource: "estimator-policy-tensor",
+        actionSource: "reviewed-controller-action",
+        captureMaturity: "controlled-synthetic",
+      };
+      const offlineTelemetryJob = await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: authHeaders,
+        payload: {
+          kind: "bridge.telemetry-ingest",
+          payload: {
+            modelId: createdBody.model.id,
+            contractHash: queuedInput.contractHash,
+            training: offlineTrainingAuthority,
+            samples: Array.from({ length: 64 }, (_, index) => ({
+              t: index / 50,
+              observation: [index / 64],
+              action: [0],
+            })),
+          },
+        },
+      });
+      assert.equal(offlineTelemetryJob.statusCode, 201, offlineTelemetryJob.body);
+      const logsWithOfflineSource = await app.inject({
+        method: "GET",
+        url: "/v1/telemetry/logs",
+        headers: authHeaders,
+      });
+      const offlineLog = (logsWithOfflineSource.json() as {
+        logs: { id: string; modelId: string | null; tape: Record<string, unknown> }[];
+      }).logs.find((log) => log.modelId === createdBody.model.id);
+      assert.ok(offlineLog);
+
+      const offlineWithoutConsent = await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: authHeaders,
+        payload: {
+          kind: "train.offline-bc",
+          provider: "local",
+          payload: {
+            modelId: createdBody.model.id,
+            telemetryLogId: offlineLog.id,
+            task: "hover-hold",
+            recipe: "p7-offline-bc-v1",
+            algorithm: "ppo",
+          },
+        },
+      });
+      assert.equal(offlineWithoutConsent.statusCode, 409, offlineWithoutConsent.body);
+      assert.equal((offlineWithoutConsent.json() as { code: string }).code, "CONSENT_REQUIRED");
+
+      const offlineFixture = await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: authHeaders,
+        payload: {
+          kind: "train.offline-bc",
+          payload: {
+            modelId: createdBody.model.id,
+            telemetryLogId: offlineLog.id,
+            task: "hover-hold",
+            recipe: "p7-offline-bc-v1",
+            algorithm: "ppo",
+          },
+        },
+      });
+      assert.equal(offlineFixture.statusCode, 400, offlineFixture.body);
+      assert.match(offlineFixture.body, /local or modal worker provider/);
+
+      const offlineWithClientTape = await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: authHeaders,
+        payload: {
+          kind: "train.offline-bc",
+          provider: "local",
+          payload: {
+            modelId: createdBody.model.id,
+            telemetryLogId: offlineLog.id,
+            task: "hover-hold",
+            recipe: "p7-offline-bc-v1",
+            algorithm: "ppo",
+            tape: {},
+          },
+        },
+      });
+      assert.equal(offlineWithClientTape.statusCode, 400, offlineWithClientTape.body);
+      assert.match(offlineWithClientTape.body, /gateway-owned/);
       await grantConsent(
         "telemetry.sharing",
         "telemetry-log",
@@ -2787,6 +2884,50 @@ test(
         telemetryBody.logs[0].id,
         "training-reuse-grant",
       );
+      await grantConsent(
+        "training.reuse",
+        "telemetry-log",
+        offlineLog.id,
+        "offline-training-reuse-grant",
+      );
+      const offlineTraining = await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: authHeaders,
+        payload: {
+          kind: "train.offline-bc",
+          provider: "local",
+          idempotencyKey: "offline-training-local",
+          payload: {
+            modelId: createdBody.model.id,
+            telemetryLogId: offlineLog.id,
+            task: "hover-hold",
+            recipe: "p7-offline-bc-v1",
+            algorithm: "ppo",
+            seed: 7,
+          },
+        },
+      });
+      assert.equal(offlineTraining.statusCode, 201, offlineTraining.body);
+      const offlineInput = (offlineTraining.json() as {
+        job: {
+          status: string;
+          input: {
+            telemetryLogId: string;
+            telemetryLogIds: string[];
+            telemetryLogSha256: string;
+            tape: { header: { training: unknown }; frames: unknown[] };
+            modelSnapshot: { modelId: string };
+          };
+        };
+      }).job;
+      assert.equal(offlineInput.status, "queued");
+      assert.equal(offlineInput.input.telemetryLogId, offlineLog.id);
+      assert.deepEqual(offlineInput.input.telemetryLogIds, [offlineLog.id]);
+      assert.match(offlineInput.input.telemetryLogSha256, /^[0-9a-f]{64}$/);
+      assert.equal(offlineInput.input.tape.frames.length, 64);
+      assert.deepEqual(offlineInput.input.tape.header.training, offlineTrainingAuthority);
+      assert.equal(offlineInput.input.modelSnapshot.modelId, createdBody.model.id);
       const reusePolicy = await app.inject({
         method: "POST",
         url: "/v1/policies",
@@ -2893,7 +3034,7 @@ test(
 
     const jobs = await app.inject({ method: "GET", url: "/v1/jobs", headers: authHeaders });
     assert.equal(jobs.statusCode, 200, jobs.body);
-    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 11);
+    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 13);
 
     const course = await app.inject({
       method: "POST",

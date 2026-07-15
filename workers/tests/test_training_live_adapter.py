@@ -3,6 +3,11 @@ import sys
 
 from forge_workers.training.jobs import fit_sysid, train_offline_bc, train_policy
 from forge_workers.training.bundle import POLICY_INPUT_LAYOUT, POLICY_OUTPUT_LAYOUT
+from forge_workers.training.offline_dataset import (
+    offline_domain_randomization,
+    stable_sha256,
+    validate_offline_training_tape,
+)
 from forge_workers.training.tasks import task_definition
 
 
@@ -220,6 +225,175 @@ def test_external_offline_bc_fails_closed_without_actions(tmp_path, monkeypatch)
     assert result["rejectReason"] == "offline BC requires at least 3 samples"
     assert "offline BC requires action columns" in result["notes"]
     assert not result["scorecard"]["exportable"]
+
+
+def test_external_offline_bc_normalizes_exact_bc_to_ppo_policy(tmp_path, monkeypatch):
+    contract_hash = "ac" * 32
+    external = _authorized_policy(contract_hash)
+    task = task_definition("hover-hold")
+    tensor = external["io"]["tensor"]
+    tape = {
+        "schemaVersion": "1.0.0",
+        "header": {
+            "contractHash": contract_hash,
+            "training": {
+                "schemaVersion": "forge-offline-training-tape/1.0.0",
+                "task": {
+                    key: task[key]
+                    for key in ("id", "suite", "version", "coordinateFrame", "definitionHash")
+                },
+                "tensor": tensor,
+                "observationSource": "estimator-policy-tensor",
+                "actionSource": "reviewed-controller-action",
+                "captureMaturity": "controlled-synthetic",
+            },
+        },
+        "frames": [
+            {
+                "t": index * 0.02,
+                "state": {
+                    "t": index * 0.02,
+                    "observation": [index / 1000] * 14,
+                    "action": [0.1, -0.1, 0.05, -0.05],
+                },
+            }
+            for index in range(64)
+        ],
+    }
+    payload = {
+        "contractHash": contract_hash,
+        "seed": 11,
+        "task": "hover-hold",
+        "recipe": "p7-offline-bc-v1",
+        "telemetryLogId": "log-1",
+        "telemetryLogSha256": stable_sha256(tape),
+        "tape": tape,
+        "jobKind": "caller-controlled-value",
+    }
+    _, _, summary = validate_offline_training_tape(
+        payload,
+        {"contractHash": contract_hash, "tensor": tensor},
+        task,
+    )
+    parameter_before = "c" * 64
+    parameter_digest = "d" * 64
+    parameter_after = "e" * 64
+    randomization = offline_domain_randomization(ground=False)
+    external["scorecard"]["lineage"].update(
+        {
+            "sourceLogId": summary["sourceLogId"],
+            "sourceLogSha256": summary["sourceLogSha256"],
+            "offlineDatasetHash": summary["datasetHash"],
+            "warmstartParameterDigest": parameter_digest,
+        }
+    )
+    external.update(
+        {
+            "artifactKind": "policy",
+            "algorithm": "ppo",
+            "domainRandomization": randomization,
+            "onnx": {
+                "cacheKey": "offline-policy:pass",
+                "opset": 18,
+                "path": "offline-policy:pass/policy.onnx",
+                "modelBase64": "b25ueA==",
+                "byteSize": 4,
+                "sha256": "87e93f89f2be0db364e8be052f79f389e6c2da239831922e24513288af522a43",
+            },
+            "dataset": {**summary, "quality": "accepted"},
+            "policyWarmstart": {
+                "schemaVersion": "forge-policy-warmstart/1.0.0",
+                "datasetHash": summary["datasetHash"],
+                "parameterDigest": parameter_digest,
+                "compatible": True,
+            },
+            "training": {
+                "recipe": "p7-offline-bc-v1",
+                "requestedTimesteps": 256,
+                "completedTimesteps": 256,
+                "optimizerUpdated": True,
+                "deterministicAlgorithms": True,
+                "truthExposedToPolicy": False,
+                "device": "cpu",
+                "parameterDigestBefore": parameter_before,
+                "parameterDigestAfter": parameter_after,
+                "curriculum": [
+                    {
+                        "kind": "behavior-cloning",
+                        "datasetHash": summary["datasetHash"],
+                        "sourceLogSha256": summary["sourceLogSha256"],
+                        "samples": summary["sampleCount"],
+                        "epochs": 12,
+                        "batchSize": 64,
+                        "finalMeanSquaredError": 0.01,
+                        "parameterDigestAfter": parameter_digest,
+                        "observationSource": "estimator-policy-tensor",
+                        "actionSource": "reviewed-controller-action",
+                        "captureMaturity": "controlled-synthetic",
+                        "truthExposedToPolicy": False,
+                    },
+                    {
+                        "kind": "ppo-randomized-fine-tune",
+                        "timesteps": 256,
+                        "domainRandomization": randomization,
+                    },
+                ],
+            },
+        }
+    )
+    script = tmp_path / "offline_policy_cmd.py"
+    output = json.dumps(external)
+    script.write_text(
+        "import json, sys\n"
+        "request = json.loads(sys.stdin.read())\n"
+        "assert request['jobKind'] == 'train.offline-bc'\n"
+        f"print({output!r})\n"
+    )
+    monkeypatch.setenv("FORGE_OFFLINE_RL_CMD", f"{sys.executable} {script}")
+
+    result = train_offline_bc(payload)
+
+    assert result["artifactKind"] == "policy"
+    assert result["dataset"] == {**summary, "quality": "accepted"}
+    assert result["policyWarmstart"]["parameterDigest"] == parameter_digest
+    assert result["exportGate"] == "exportable"
+    assert result["scorecard"]["exportable"]
+
+    external["dataset"]["datasetHash"] = "0" * 64
+    script.write_text(
+        "import json, sys\n"
+        "request = json.loads(sys.stdin.read())\n"
+        "assert request['jobKind'] == 'train.offline-bc'\n"
+        f"print({json.dumps(external)!r})\n"
+    )
+    substituted = train_offline_bc(payload)
+    assert substituted["exportGate"] == "blocked"
+    assert substituted["dataset"]["quality"] == "held"
+    assert "dataset summary does not match" in " ".join(substituted["scorecard"]["reasons"])
+
+    external["dataset"] = {**summary, "quality": "accepted"}
+    external["training"]["curriculum"][1]["domainRandomization"] = {"massPct": 1.0}
+    script.write_text(
+        "import json, sys\n"
+        "request = json.loads(sys.stdin.read())\n"
+        "assert request['jobKind'] == 'train.offline-bc'\n"
+        f"print({json.dumps(external)!r})\n"
+    )
+    drifted_recipe = train_offline_bc(payload)
+    assert drifted_recipe["exportGate"] == "blocked"
+    assert "exact BC-to-PPO recipe" in " ".join(drifted_recipe["scorecard"]["reasons"])
+
+    external["training"]["curriculum"][1]["domainRandomization"] = randomization
+    external.pop("onnx")
+    script.write_text(
+        "import json, sys\n"
+        "request = json.loads(sys.stdin.read())\n"
+        "assert request['jobKind'] == 'train.offline-bc'\n"
+        f"print({json.dumps(external)!r})\n"
+    )
+    missing_onnx = train_offline_bc(payload)
+    assert missing_onnx["exportGate"] == "blocked"
+    assert "requires exact bounded ONNX bytes" in " ".join(missing_onnx["scorecard"]["reasons"])
 
 
 def test_external_sysid_requires_accepted_fit_and_sim_patch(tmp_path, monkeypatch):

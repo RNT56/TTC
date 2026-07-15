@@ -198,11 +198,17 @@ reconciliation and deletion of such orphans.
 ## Worker envelope 0.2 and queue changes
 
 Worker artifacts remain internal and follow worker package 0.2.0. The
-[artifact catalog](contracts/artifacts.v0.2.0.json) exact-matches all 16 gateway queue
+[artifact catalog](contracts/artifacts.v0.2.0.json) exact-matches all 17 gateway queue
 kinds.
 
 - `commerce.vendor-refresh` is additive. Before an older-worker rollback, stop
   enqueueing, then drain or cancel every commerce job.
+- `train.offline-bc` is additive in migration 0023. It accepts one consented owned
+  telemetry-log reference and emits either the legacy held warmstart envelope or a
+  normal policy after exact BC-to-PPO execution. Clients cannot supply tape/hash/
+  snapshot/training authority. Before rollback, stop enqueueing, drain or cancel the
+  new kind with a D45-capable worker, retain source/consent/lease evidence, and roll
+  forward; never relabel the row as `train.policy` or fabricate fixture output.
 - D38 attempt leases are additive persisted state. Stop all old workers before
   applying migration 0021. An older worker cannot resume after the lease constraint
   is active.

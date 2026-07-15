@@ -27,8 +27,13 @@ import torch
 from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.monitor import Monitor
 
+from forge_workers.training.bundle import OFFLINE_WARMSTART_SCHEMA, OFFLINE_WARMSTART_VERSION
 from forge_workers.training.ground_env import ForgeGroundTaskEnv
 from forge_workers.training.mujoco_env import ForgeMultirotorTaskEnv
+from forge_workers.training.offline_dataset import (
+    offline_domain_randomization,
+    validate_offline_training_tape,
+)
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS
 from forge_workers.training.tasks import GROUND_DOMAIN_RANDOMIZATION, task_definition
 
@@ -83,12 +88,28 @@ OVERNIGHT_RECIPE = {
         "logStd": -3.0,
     },
 }
+OFFLINE_RECIPE = {
+    "id": "p7-offline-bc-v1",
+    "minimumSamples": 64,
+    "distillationEpochs": 12,
+    "distillationBatchSize": 64,
+    "ppoTimesteps": 256,
+    "episodeSteps": 40,
+    "evalEpisodes": 2,
+    "network": [64, 64],
+    "learningRate": 3e-4,
+    "logStd": -2.0,
+}
 
 
 def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
     versions = _runtime_versions()
     ground = bundle.get("artifactKind") == "groundTrainingMuJoCoBundle"
-    recipe = _choice(payload.get("recipe", "direct-v1"), {"direct-v1", "p7-overnight-v1"}, "recipe")
+    recipe = _choice(
+        payload.get("recipe", "direct-v1"),
+        {"direct-v1", "p7-overnight-v1", "p7-offline-bc-v1"},
+        "recipe",
+    )
     algorithm = _choice(payload.get("algorithm", "ppo"), {"ppo", "sac"}, "algorithm")
     seed = _integer(payload.get("seed", 0), "seed", 0, 2_147_483_647)
     device = _training_device(payload.get("device", "cpu"))
@@ -108,9 +129,21 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         if any(key in payload for key in ("totalTimesteps", "episodeSteps", "curriculumStage")):
             raise ValueError("p7-overnight-v1 owns its timestep, horizon, and curriculum-stage authority")
         curriculum_stage = 3
+    elif recipe == "p7-offline-bc-v1":
+        if algorithm != "ppo":
+            raise ValueError("p7-offline-bc-v1 requires PPO")
+        if any(
+            key in payload
+            for key in ("totalTimesteps", "episodeSteps", "evalEpisodes", "curriculumStage")
+        ):
+            raise ValueError("p7-offline-bc-v1 owns its training and evaluation authority")
+        curriculum_stage = 1
     else:
         curriculum_stage = _integer(payload.get("curriculumStage", 1), "curriculumStage", 1, 100)
     task = task_definition(task_id, curriculum_stage=curriculum_stage)
+    offline_observations: list[list[float]] | None = None
+    offline_actions: list[list[float]] | None = None
+    offline_dataset: dict[str, Any] | None = None
     if recipe == "p7-overnight-v1":
         episode_steps = round(float(task["horizonS"]) / float(bundle["controlPeriodS"]))
         eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 8, 8)
@@ -118,6 +151,18 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         if randomization != DEFAULT_RANDOMIZATION:
             raise ValueError("p7-overnight-v1 requires the frozen domain-randomization envelope")
         total_timesteps = 10_000
+    elif recipe == "p7-offline-bc-v1":
+        if "domainRandomization" in payload:
+            raise ValueError("p7-offline-bc-v1 requires the frozen domain-randomization envelope")
+        total_timesteps = int(OFFLINE_RECIPE["ppoTimesteps"])
+        episode_steps = int(OFFLINE_RECIPE["episodeSteps"])
+        eval_episodes = int(OFFLINE_RECIPE["evalEpisodes"])
+        randomization = offline_domain_randomization(ground=ground)
+        offline_observations, offline_actions, offline_dataset = validate_offline_training_tape(
+            payload,
+            bundle,
+            task,
+        )
     else:
         total_timesteps = _integer(
             payload.get("totalTimesteps", 250_000), "totalTimesteps", 64, 20_000_000
@@ -127,7 +172,13 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         randomization = _randomization(payload.get("domainRandomization"), ground=ground)
     config = {
         "recipe": recipe,
-        "recipeAuthority": OVERNIGHT_RECIPE if recipe == "p7-overnight-v1" else None,
+        "recipeAuthority": (
+            OVERNIGHT_RECIPE
+            if recipe == "p7-overnight-v1"
+            else OFFLINE_RECIPE
+            if recipe == "p7-offline-bc-v1"
+            else None
+        ),
         "task": task_id,
         "taskSuite": task["suite"],
         "taskVersion": task["version"],
@@ -141,10 +192,12 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         "domainRandomization": randomization,
         "bundleVersion": bundle["schemaVersion"],
         "policyTensorVersion": bundle["tensor"]["schemaVersion"],
+        "offlineDatasetHash": offline_dataset["datasetHash"] if offline_dataset is not None else None,
     }
     config_hash = _digest_json(config)
     _seed_everything(seed, device)
 
+    warmstart_parameters: str | None = None
     if recipe == "p7-overnight-v1":
         model, initial_parameters, wall_time_s, curriculum = _overnight_model(
             bundle,
@@ -153,6 +206,61 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             device=device,
             episode_steps=episode_steps,
         )
+    elif recipe == "p7-offline-bc-v1":
+        assert offline_observations is not None
+        assert offline_actions is not None
+        assert offline_dataset is not None
+        train_env = _environment(bundle, task, randomization, episode_steps)
+        model = _ppo_model(
+            train_env,
+            seed,
+            device,
+            total_timesteps=total_timesteps,
+            network=list(OFFLINE_RECIPE["network"]),
+            learning_rate=float(OFFLINE_RECIPE["learningRate"]),
+            epochs=4,
+            gamma=0.99,
+            entropy=0.0,
+        )
+        initial_parameters = _parameter_digest(model.policy.state_dict())
+        _synchronize_device(device)
+        started = time.monotonic()
+        final_loss = _distill_teacher(
+            model,
+            np.asarray(offline_observations, dtype=np.float32),
+            np.asarray(offline_actions, dtype=np.float32),
+            seed=seed,
+            epochs=int(OFFLINE_RECIPE["distillationEpochs"]),
+            batch_size=int(OFFLINE_RECIPE["distillationBatchSize"]),
+        )
+        warmstart_parameters = _parameter_digest(model.policy.state_dict())
+        if warmstart_parameters == initial_parameters:
+            raise RuntimeError("behavior cloning did not update policy parameters")
+        model.policy.log_std.data.fill_(float(OFFLINE_RECIPE["logStd"]))
+        model.learn(total_timesteps=total_timesteps, progress_bar=False)
+        _synchronize_device(device)
+        wall_time_s = time.monotonic() - started
+        curriculum = [
+            {
+                "kind": "behavior-cloning",
+                "datasetHash": offline_dataset["datasetHash"],
+                "sourceLogSha256": offline_dataset["sourceLogSha256"],
+                "samples": offline_dataset["sampleCount"],
+                "epochs": OFFLINE_RECIPE["distillationEpochs"],
+                "batchSize": OFFLINE_RECIPE["distillationBatchSize"],
+                "finalMeanSquaredError": final_loss,
+                "parameterDigestAfter": warmstart_parameters,
+                "observationSource": offline_dataset["observationSource"],
+                "actionSource": offline_dataset["actionSource"],
+                "captureMaturity": offline_dataset["captureMaturity"],
+                "truthExposedToPolicy": False,
+            },
+            {
+                "kind": "ppo-randomized-fine-tune",
+                "timesteps": total_timesteps,
+                "domainRandomization": randomization,
+            },
+        ]
     else:
         train_env = _environment(bundle, task, randomization, episode_steps)
         model = _model(algorithm, train_env, seed, device, total_timesteps)
@@ -293,6 +401,19 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "tensor": tensor,
         },
         "domainRandomization": randomization,
+        **(
+            {
+                "dataset": {**offline_dataset, "quality": "accepted"},
+                "policyWarmstart": {
+                    "schemaVersion": f"{OFFLINE_WARMSTART_SCHEMA}/{OFFLINE_WARMSTART_VERSION}",
+                    "datasetHash": offline_dataset["datasetHash"],
+                    "parameterDigest": warmstart_parameters,
+                    "compatible": True,
+                },
+            }
+            if offline_dataset is not None and warmstart_parameters is not None
+            else {}
+        ),
         "onnx": {
             "cacheKey": cache_key,
             "opset": 18,
@@ -322,6 +443,16 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
                 "dependencyManifestHash": dependency_manifest_hash,
                 "configHash": config_hash,
                 "taskDefinitionHash": task["definitionHash"],
+                **(
+                    {
+                        "sourceLogId": offline_dataset["sourceLogId"],
+                        "sourceLogSha256": offline_dataset["sourceLogSha256"],
+                        "offlineDatasetHash": offline_dataset["datasetHash"],
+                        "warmstartParameterDigest": warmstart_parameters,
+                    }
+                    if offline_dataset is not None and warmstart_parameters is not None
+                    else {}
+                ),
                 "codeVersion": RUNTIME_VERSION,
                 "sourceRevision": source_revision,
                 "seed": str(seed),
@@ -356,6 +487,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             ),
             "evaluations": evaluations,
             "bundleAssumptions": bundle["assumptions"],
+            **({"offlineDataset": offline_dataset} if offline_dataset is not None else {}),
         },
     }
 

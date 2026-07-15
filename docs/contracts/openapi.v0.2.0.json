@@ -3378,6 +3378,10 @@
                         "type": "string"
                       },
                       {
+                        "const": "train.offline-bc",
+                        "type": "string"
+                      },
+                      {
                         "const": "train.sysid-fit",
                         "type": "string"
                       },

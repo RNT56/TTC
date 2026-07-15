@@ -25,6 +25,12 @@ from forge_workers.training.bundle import (
     POLICY_OUTPUT_LAYOUT as TENSOR_OUTPUT_LAYOUT,
     POLICY_TENSOR_SCHEMA,
     POLICY_TENSOR_VERSION,
+    OFFLINE_WARMSTART_SCHEMA,
+    OFFLINE_WARMSTART_VERSION,
+)
+from forge_workers.training.offline_dataset import (
+    offline_domain_randomization,
+    validate_offline_training_tape,
 )
 from forge_workers.training.policy_fixture import OUTPUT_LAYOUT, hover_policy_fixture
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS, Scorecard, gate
@@ -42,7 +48,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
     resolved_task = str(task_meta["id"])
     external = run_json_command(
         "FORGE_SB3_TRAIN_CMD",
-        {"jobKind": "train.policy", **payload},
+        {**payload, "jobKind": "train.policy"},
         timeout_s=float(payload.get("timeoutS", 12 * 3600)),
     )
     if external is not None:
@@ -515,10 +521,12 @@ def _bool(value: Any, default: bool) -> bool:
 def train_offline_bc(payload: dict[str, Any]) -> dict[str, Any]:
     external = run_json_command(
         "FORGE_OFFLINE_RL_CMD",
-        {"task": "train.offline-bc", **payload},
+        {**payload, "jobKind": "train.offline-bc"},
         timeout_s=float(payload.get("timeoutS", 3600)),
     )
     if external is not None:
+        if external.get("artifactKind") == "policy":
+            return _external_offline_policy_result(external, payload)
         return _external_offline_learning_result(external, payload)
 
     task = str(payload.get("task", "hover-hold"))
@@ -567,6 +575,142 @@ def train_offline_bc(payload: dict[str, Any]) -> dict[str, Any]:
         "rejectReason": None if accepted else reasons[0],
         "notes": reasons,
     }
+
+
+def _external_offline_policy_result(
+    external: dict[str, Any], payload: dict[str, Any]
+) -> dict[str, Any]:
+    task_meta = _task_meta(payload)
+    resolved_task = str(task_meta["id"])
+    contract_hash = str(payload.get("contractHash", "00" * 32))
+    seed = str(payload.get("seed", "0"))
+    policy = _external_policy_result(
+        external,
+        payload,
+        task_meta,
+        resolved_task,
+        contract_hash,
+        seed,
+    )
+    reasons: list[str] = []
+    expected_dataset: dict[str, Any] | None = None
+    io = external.get("io")
+    tensor = io.get("tensor") if isinstance(io, dict) else None
+    try:
+        if not isinstance(tensor, dict):
+            raise ValueError("offline fine-tune policy tensor is missing")
+        _, _, summary = validate_offline_training_tape(
+            payload,
+            {"contractHash": contract_hash, "tensor": tensor},
+            task_meta,
+        )
+        expected_dataset = {**summary, "quality": "accepted"}
+    except ValueError as error:
+        reasons.append(str(error))
+
+    raw_dataset = external.get("dataset")
+    if expected_dataset is None or raw_dataset != expected_dataset:
+        reasons.append("offline fine-tune dataset summary does not match the exact source tape")
+
+    warmstart = external.get("policyWarmstart")
+    if not isinstance(warmstart, dict):
+        reasons.append("offline fine-tune warmstart authority is missing")
+        warmstart = {}
+    expected_warmstart_schema = f"{OFFLINE_WARMSTART_SCHEMA}/{OFFLINE_WARMSTART_VERSION}"
+    parameter_digest = warmstart.get("parameterDigest")
+    if (
+        warmstart.get("schemaVersion") != expected_warmstart_schema
+        or expected_dataset is None
+        or warmstart.get("datasetHash") != expected_dataset.get("datasetHash")
+        or warmstart.get("compatible") is not True
+        or not _is_lower_sha256(parameter_digest)
+    ):
+        reasons.append("offline fine-tune warmstart does not match dataset and parameter authority")
+
+    training = external.get("training")
+    curriculum = training.get("curriculum") if isinstance(training, dict) else None
+    behavior_stage = curriculum[0] if isinstance(curriculum, list) and curriculum else None
+    ppo_stage = curriculum[1] if isinstance(curriculum, list) and len(curriculum) == 2 else None
+    expected_randomization = offline_domain_randomization(
+        ground=resolved_task in {"line-follow", "walk-to-target"}
+    )
+    parameter_before = training.get("parameterDigestBefore") if isinstance(training, dict) else None
+    parameter_after = training.get("parameterDigestAfter") if isinstance(training, dict) else None
+    final_loss = behavior_stage.get("finalMeanSquaredError") if isinstance(behavior_stage, dict) else None
+    if (
+        not isinstance(training, dict)
+        or external.get("algorithm") != "ppo"
+        or training.get("recipe") != "p7-offline-bc-v1"
+        or training.get("requestedTimesteps") != 256
+        or training.get("completedTimesteps") != 256
+        or training.get("optimizerUpdated") is not True
+        or training.get("deterministicAlgorithms") is not True
+        or training.get("truthExposedToPolicy") is not False
+        or training.get("device") != "cpu"
+        or not _is_lower_sha256(parameter_before)
+        or not _is_lower_sha256(parameter_after)
+        or parameter_before in {parameter_digest, parameter_after}
+        or parameter_digest == parameter_after
+        or not isinstance(curriculum, list)
+        or len(curriculum) != 2
+        or not isinstance(behavior_stage, dict)
+        or behavior_stage.get("kind") != "behavior-cloning"
+        or behavior_stage.get("parameterDigestAfter") != parameter_digest
+        or expected_dataset is None
+        or behavior_stage.get("datasetHash") != expected_dataset.get("datasetHash")
+        or behavior_stage.get("sourceLogSha256") != expected_dataset.get("sourceLogSha256")
+        or behavior_stage.get("samples") != expected_dataset.get("sampleCount")
+        or behavior_stage.get("epochs") != 12
+        or behavior_stage.get("batchSize") != 64
+        or isinstance(final_loss, bool)
+        or not isinstance(final_loss, (int, float))
+        or not 0 <= float(final_loss) < float("inf")
+        or behavior_stage.get("observationSource") != "estimator-policy-tensor"
+        or behavior_stage.get("actionSource") != expected_dataset.get("actionSource")
+        or behavior_stage.get("captureMaturity") != "controlled-synthetic"
+        or behavior_stage.get("truthExposedToPolicy") is not False
+        or not isinstance(ppo_stage, dict)
+        or ppo_stage.get("kind") != "ppo-randomized-fine-tune"
+        or ppo_stage.get("timesteps") != 256
+        or ppo_stage.get("domainRandomization") != expected_randomization
+        or external.get("domainRandomization") != expected_randomization
+    ):
+        reasons.append("offline fine-tune did not execute the exact BC-to-PPO recipe")
+
+    lineage = policy.get("scorecard", {}).get("lineage", {})
+    if (
+        expected_dataset is None
+        or not isinstance(lineage, dict)
+        or lineage.get("sourceLogId") != expected_dataset.get("sourceLogId")
+        or lineage.get("sourceLogSha256") != expected_dataset.get("sourceLogSha256")
+        or lineage.get("offlineDatasetHash") != expected_dataset.get("datasetHash")
+        or lineage.get("warmstartParameterDigest") != parameter_digest
+    ):
+        reasons.append("offline fine-tune scorecard lineage does not match source and warmstart authority")
+
+    onnx = external.get("onnx")
+    if not isinstance(onnx, dict) or not all(
+        key in onnx for key in ("modelBase64", "byteSize", "sha256")
+    ):
+        reasons.append("offline fine-tune requires exact bounded ONNX bytes")
+
+    if reasons:
+        policy["exportGate"] = "blocked"
+        policy["onnx"]["exportable"] = False
+        policy["scorecard"]["exportable"] = False
+        policy["scorecard"]["reasons"] = list(
+            dict.fromkeys([*policy["scorecard"].get("reasons", []), *reasons])
+        )
+    policy["dataset"] = (
+        expected_dataset
+        if expected_dataset is not None and raw_dataset == expected_dataset
+        else {
+            **(raw_dataset if isinstance(raw_dataset, dict) else {}),
+            "quality": "held",
+        }
+    )
+    policy["policyWarmstart"] = warmstart
+    return policy
 
 
 def _external_offline_learning_result(external: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
@@ -676,6 +820,14 @@ def _int(value: Any, default: int) -> int:
     if isinstance(value, float):
         return int(value)
     return default
+
+
+def _is_lower_sha256(value: Any) -> bool:
+    return bool(
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value)
+    )
 
 
 def fit_sysid(payload: dict[str, Any]) -> dict[str, Any]:

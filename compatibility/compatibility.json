@@ -89,6 +89,9 @@
         "groundTrainingBundle": "1.0.0",
         "groundTrainingTask": "1.0.0",
         "groundPolicyTensor": "1.0.0",
+        "offlineTrainingTape": "1.0.0",
+        "offlineTrainingDataset": "1.0.0",
+        "offlinePolicyWarmstart": "1.0.0",
         "sb3Runtime": "3.0.0"
       },
       "queueKinds": [
@@ -97,6 +100,7 @@
         "photoscan.single",
         "photoscan.multiview",
         "train.policy",
+        "train.offline-bc",
         "train.sysid-fit",
         "replay.verify",
         "codesign.evaluate",

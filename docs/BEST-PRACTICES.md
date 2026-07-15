@@ -194,6 +194,18 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     relabel it as battery, host, electricity-cost, device, or field evidence. A valid
     exported ground ONNX is not browser-playback proof until an exact ground observer,
     actuator, tensor consumer, failure fallback, and focused runtime test exist (D44).
+    Offline learning must start from one gateway-owned, consented telemetry log bound
+    to the same admitted model. Preserve the exact replay tape and hash; require its
+    header to bind task, tensor, estimator observation source, reviewed/supervisor
+    action source, and `controlled-synthetic` maturity. Reject `recorded-device`
+    until a P8 recorder can attest it under a reviewed version. Reject unsorted,
+    duplicate, non-finite,
+    hidden-truth, out-of-shape, or out-of-range samples instead of sorting, filling,
+    projecting, or clipping them. Hash the exact dataset and BC parameter state,
+    prove the frozen BC-to-randomized-PPO curriculum and same-seed output, then apply
+    the normal scorecard without special thresholds. Controlled synthetic pairs prove
+    the path, not recorder/device provenance, learning quality, transfer, or field
+    maturity (D45).
 15. **Accelerator benchmarks** — compare the same Rust-derived model, initial state,
     controls, solver, precision, timestep, and step count. Warm each path before
     timing, measure JAX lowering/compilation separately, synchronize every timed JAX

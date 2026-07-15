@@ -684,12 +684,19 @@ def test_bridge_config_telemetry_and_supervisor_paths():
         Job(
             id="j9",
             task="bridge.telemetry-ingest",
-            payload={"contractHash": "ab" * 32, "samples": [{"t": 1, "x": 1}, {"t": 0, "x": 0}]},
+            payload={
+                "contractHash": "ab" * 32,
+                "training": {"schemaVersion": "forge-offline-training-tape/1.0.0"},
+                "samples": [{"t": 1, "x": 1}, {"t": 0, "x": 0}],
+            },
             idempotency_key="bridge-2",
         )
     )
     assert replay["frameCount"] == 2
     assert replay["tape"]["frames"][0]["t"] == 0.0
+    assert replay["tape"]["header"]["training"] == {
+        "schemaVersion": "forge-offline-training-tape/1.0.0"
+    }
     supervisor = registry.dispatch(
         Job(
             id="j10",

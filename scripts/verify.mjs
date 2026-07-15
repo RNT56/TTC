@@ -156,6 +156,11 @@ try {
     "--out",
     join(temp, "p7-sb3-smoke.json"),
   ]);
+  run("Exact telemetry BC + randomized PPO fine-tune", "node", [
+    "scripts/offline-training-smoke.mjs",
+    "--out",
+    join(temp, "p7-offline-training.json"),
+  ]);
   run("Controlled MuJoCo-MJX feasibility", "node", [
     "scripts/mjx-feasibility-smoke.mjs",
     "--out",

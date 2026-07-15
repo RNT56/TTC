@@ -82,6 +82,16 @@ decimated overlay geometry). Logs feed two pipelines: the system-ID fitter and t
 curriculum-from-reality path (BC/offline RL). **Telemetry logs are the user's**;
 sharing is per-log explicit.
 
+D45 narrows the training handoff. Offline training requires a separate active
+`training.reuse` grant for the exact owned log; sharing consent never implies reuse.
+The gateway selects the stored tape and admitted model revision, and withdrawal
+cancels queued/running `train.policy` and `train.offline-bc` work that names that log.
+Only a future P8 recorder that can attest the exact policy observation tensor plus
+reviewed or supervisor-approved normalized actions may declare `recorded-device`
+maturity. The current P7-009 worker rejects that maturity rather than trusting a
+client label. Its smoke uses `controlled-synthetic` pairs, so it does not close
+P8-002, P8-003, a D12 lab run, or any field evidence.
+
 ## 5. System identification (P8-005)
 
 Bench thrust pulls, logged flights, joint step responses → fitting job

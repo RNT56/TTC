@@ -315,8 +315,13 @@ async function applyWithdrawal(
         `UPDATE jobs SET status = 'cancelled', error = 'training reuse consent withdrawn',
                          last_error_code = 'consent-withdrawn', finished_at = now(),
                          lease_token = NULL, lease_expires_at = NULL
-          WHERE owner_user_id = $1 AND kind = 'train.policy' AND status IN ('queued', 'running')
-            AND COALESCE(input -> 'telemetryLogIds', '[]'::jsonb) @> to_jsonb(ARRAY[$2]::text[])`,
+          WHERE owner_user_id = $1
+            AND kind IN ('train.policy', 'train.offline-bc')
+            AND status IN ('queued', 'running')
+            AND (
+              COALESCE(input -> 'telemetryLogIds', '[]'::jsonb) @> to_jsonb(ARRAY[$2]::text[])
+              OR input ->> 'telemetryLogId' = $2
+            )`,
         [user.id, subjectId],
       );
       return;

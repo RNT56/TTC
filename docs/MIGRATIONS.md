@@ -102,6 +102,15 @@ PR #68/`9131289` artifact `8340587390` proves the clean 22-migration install, al
 populated predecessors, one-winner/stale/substitution/cancellation policy scenarios,
 exact object readback, the 11-flow browser loop, and the declared browser matrix.
 
+Migration `0023` is an additive queue-enum expansion for D45's
+`train.offline-bc`. It rewrites only `jobs_kind_check`, preserving all existing rows,
+lease state, output, consent references, and policy authority. The populated `0022`
+predecessor must retain its delivered policy row while the new kind becomes
+insertable exactly once. Application acceptance must also prove that the gateway
+cannot enqueue the new kind through the fixture provider, without active per-log
+`training.reuse` consent, against a different model, or with client-supplied
+tape/hash/snapshot authority.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -162,6 +171,13 @@ version are deployed together. Inventory policy rows with missing/duplicate obje
 Verify the configured object bucket is reachable and private before resuming policy
 jobs. Older readers may ignore the additive columns, but older workers must not
 resume because they can publish database-only policy rows and inline model bytes.
+
+For `0023`, stop queue writers and workers before deploying the migration plus the
+D45 gateway/worker version. Record queued/running `train.policy` counts, verify no old
+binary can claim the new kind, apply the constraint expansion, then run the complete
+migration, consent, queue-fault, gateway, and offline-training acceptance. Resume
+only after the configured local/Modal worker advertises `FORGE_OFFLINE_RL_CMD`; an
+unconfigured worker must leave the row unclaimed rather than improvise a fixture.
 
 ### Apply and verify
 
@@ -233,6 +249,13 @@ read existing policy rows but must not expose the new authenticated model route,
 an older worker must not materialize new policies. Roll forward to the P7-011 writer;
 never repopulate inline model bytes, null authoritative job IDs, or mark an object
 complete without exact storage evidence.
+
+After `0023`, retain the expanded constraint during application rollback. First stop
+enqueueing `train.offline-bc`, cancel or drain those rows with the D45-capable worker,
+and preserve their consent/source/lease history. An older worker may ignore the new
+kind but must not be used to rewrite it as `train.policy` or a fixture artifact. Roll
+forward before offline queue service resumes; a down migration that rejects retained
+offline rows is not safe.
 
 Use roll-forward for a committed schema defect: add a new migration that restores
 the intended invariant and preserves evidence. Use backup restore only under the

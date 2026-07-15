@@ -86,8 +86,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-014 PR #75 at `90b1691`, with
-  post-merge CI `29448974932` and security `29448974951` green. PR #75 owns the
+  latest verified protected documentation descendant is P7-014 evidence PR #76 at
+  `f0bb4e2`, with post-merge CI `29451767820` and security `29451767650` green. The
+  latest protected runtime remains P7-014 PR #75 at `90b1691`; PR #75 owns the
   contract-derived rover/quadruped trainer evidence, PR #70/`f220d25` owns the
   task-v2 waypoint history, PR #68/`9131289` owns object-backed one-click delivery,
   PR #66/`0614272` owns controlled
@@ -246,6 +247,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   tests. This closes P7-014 at controlled deterministic trainer maturity. Studio
   deliberately refuses the ground tensor; passing learned ground policies, browser
   execution, device transfer, external acceptance, and field proof remain separate;
+- P7-009 now has a D45 implementation candidate over exact protected base `f0bb4e2`.
+  The gateway queues one consented owned telemetry log only through local/Modal,
+  binds it to the same admitted snapshot, and injects the tape/hash server-side.
+  Exact tape/dataset/warmstart 1.0.0 authorities reject sample, task, tensor, truth,
+  action, timestamp, and lineage drift. The native command performs 12 behavior-
+  cloning epochs then 256 recipe-owned randomized PPO steps through the existing
+  flight or ground trainer, ONNX exporter, and unchanged scorecard. A repeated
+  hover/rover controlled-synthetic smoke has identical dataset, warmstart-parameter,
+  and ONNX digests and correctly blocked scorecards; the complete 40-step local gate
+  passes with 188 worker tests, 65 gateway tests, and 17 generated worker families.
+  This is an unprotected implementation candidate, not recorder/device/
+  field data, learning quality, deployment, or external acceptance; keep P7-009
+  `[~]` until exact PR/post-merge CI/security and clean protected artifact inspection;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
@@ -615,7 +629,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Simulation engine/exporter | `cargo test -p forge-sim -p forge-validate`; `pnpm sim:parity:check`; for engine/exporter changes install `workers[dev,mujoco]` and run `pnpm sim:parity:live`; inspect source/provider/unit/timestep/substep-bound artifacts; append-only golden review for registered output; require the real-engine worker check before closure |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
-| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-012 additionally prove tensor-v1/v2 execution/refusal, exact device authority with no fallback, frozen recipes/thresholds/seeds, all baseline/mass/Kv/wind rows, atomic interruption/resume, request-hash and ONNX size/digest/export validation, safe hardware metadata, separate simulated-vehicle and host-energy fields, cost/nonclaims, exact retained policy bytes, clean protected source, and downloaded evidence; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes; for policy delivery prove lease checks before and after upload, one job/one policy, byte-free persistence, digest substitution refusal, cancellation-without-authority, and exact object readback |
+| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-009 additionally run `pnpm training:offline-smoke`, require one gateway-owned consented source log and exact tape/dataset/warmstart hashes, reject task/tensor/truth/action/timestamp/sample/provider substitution, prove the frozen BC-to-randomized-PPO stages plus optimizer update and same-seed dataset/warmstart/ONNX digests, apply the unchanged scorecard, and state controlled-synthetic versus recorder/device/field maturity; for P7-012 additionally prove tensor-v1/v2 execution/refusal, exact device authority with no fallback, frozen recipes/thresholds/seeds, all baseline/mass/Kv/wind rows, atomic interruption/resume, request-hash and ONNX size/digest/export validation, safe hardware metadata, separate simulated-vehicle and host-energy fields, cost/nonclaims, exact retained policy bytes, clean protected source, and downloaded evidence; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes; for policy delivery prove lease checks before and after upload, one job/one policy, byte-free persistence, digest substitution refusal, cancellation-without-authority, and exact object readback |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |

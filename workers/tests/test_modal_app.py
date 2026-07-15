@@ -25,6 +25,7 @@ def test_modal_profiles_cover_live_gpu_tasks():
 
 def test_modal_training_and_codesign_profiles_pin_live_dependencies():
     train = modal_profile("train.policy").as_dict()
+    offline = modal_profile("train.offline-bc").as_dict()
     codesign = modal_profile("codesign.evaluate").as_dict()
 
     assert train["timeoutS"] == 12 * 60 * 60
@@ -36,6 +37,11 @@ def test_modal_training_and_codesign_profiles_pin_live_dependencies():
     assert "onnx==1.22.0" in train["pipPackages"]
     assert "mujoco==3.9.0" in train["pipPackages"]
     assert train["commandEnv"] == ["FORGE_SB3_TRAIN_CMD"]
+    assert offline["timeoutS"] == 60 * 60
+    assert offline["gpu"] is None
+    assert offline["pipPackages"] == train["pipPackages"]
+    assert offline["aptPackages"] == train["aptPackages"]
+    assert offline["commandEnv"] == ["FORGE_OFFLINE_RL_CMD"]
     assert codesign["commandEnv"] == ["FORGE_CODESIGN_CMD", "FORGE_MUJOCO_PARITY_CMD", "FORGE_MJX_BENCH_CMD"]
     assert "optuna>=3.6" in codesign["pipPackages"]
 
