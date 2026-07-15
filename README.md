@@ -20,6 +20,8 @@
   <a href="#architecture"><strong>Architecture</strong></a>
   &nbsp;&nbsp;|&nbsp;&nbsp;
   <a href="#run-it-locally"><strong>Run locally</strong></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#contributing"><strong>Contribute</strong></a>
 </p>
 
 <p align="center">
@@ -42,7 +44,7 @@ studio, a Rust validator, a simulation/export stack, a Python worker plane, and 
 platform layer for sharing, courses, policy scorecards, quote links, and
 maintenance records.
 
-> **Current status (2026-07-14):** the standalone validator
+> **Current status (2026-07-15):** the standalone validator
 > [`v0.1.0`](https://github.com/RNT56/TTC/releases/tag/v0.1.0) is released with
 > checksums, SPDX SBOMs, provenance, and independent binary/WASM install proof. The
 > broader product remains an advanced deterministic prototype, not a production
@@ -517,6 +519,21 @@ as WebGL parity evidence.
 
 ---
 
+## Contributing
+
+New contributors can start with the maintainer-curated
+[`good first issue`](https://github.com/RNT56/TTC/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+queue. Each labeled issue names a bounded file set, exact local commands, a mentor,
+and the authority it must not change. Comment and ask to be assigned before starting.
+
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup/licensing and
+[`docs/CONTRIBUTOR-ONBOARDING.md`](docs/CONTRIBUTOR-ONBOARDING.md) for the complete
+claim, review, inactivity, and reassignment workflow. Security, credentials, private
+data, and unsafe hardware concerns always use
+[private reporting](https://github.com/RNT56/TTC/security/advisories/new).
+
+---
+
 ## Repo Map
 
 | Path | Purpose |
@@ -531,7 +548,7 @@ as WebGL parity evidence.
 | `catalog` | Component and reference rig data |
 | `contracts/documentation.json` | Reviewed source metadata for generated route/event/artifact documentation |
 | `examples` | First-party model contracts |
-| `docs` | Current state, roadmaps, system/compatibility docs, generated contract references, decisions, golden records, pilot playbooks |
+| `docs` | Current state, roadmaps, contributor onboarding, system/compatibility docs, generated contract references, decisions, golden records, pilot playbooks |
 | `evals` | Brief-25 generation benchmark |
 | `scripts` | Codegen, migrations, checks, parity, evals |
 

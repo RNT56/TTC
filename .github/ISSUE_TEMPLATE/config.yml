@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Curated first contributions
+    url: https://github.com/RNT56/TTC/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+    about: Browse maintainer-scoped, dependency-free starter issues and claim one before starting.
   - name: Private vulnerability report
     url: https://github.com/RNT56/TTC/security/advisories/new
     about: Report security issues privately.

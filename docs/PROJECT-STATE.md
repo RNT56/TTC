@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected `main` descendant: `22c263b` (PR #53; DOC-005 interface documentation)
+Latest verified protected `main` descendant: `41dee2d` (PR #54; DOC-005/GOV-003 evidence maintenance)
 Latest verified protected runtime/parity anchor: `6f8509b` (PR #50; QA-012 parity reliability)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
@@ -50,23 +50,33 @@ gate, exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
 `29376742319`/security `29376742373` pass. This advances deterministic documentation
 and compatibility evidence, not live-provider or broader product maturity.
 
-PR #54 exposed a registry-protocol regression after npm retired the legacy audit
-endpoints used by the pinned pnpm 10 client. This was not an advisory finding and
-must not be treated as a clean audit. The reviewed candidate pins pnpm 11.13.0,
-uses the replacement bulk-advisory path, and limits the three required dependency
-build scripts by exact package version. A frozen install and low-severity audit pass
-locally with no lockfile drift; protected exact-head and post-merge security evidence
-remain required before this maintenance is closed. The complete 36-step local gate
-also passes under Python 3.12.
+PR #54 exposed and closed a registry-protocol regression after npm retired the legacy
+audit endpoints used by the pinned pnpm 10 client. This was not an advisory finding
+and was never treated as a clean audit. pnpm 11.13.0 uses the replacement bulk-
+advisory path and limits the three required dependency build scripts by exact package
+version. Exact head `00ae9a0` passed CI `29378364147`/security `29378364143`, and
+protected squash `41dee2d` passed post-merge CI `29378749550`/security `29378749542`.
+Frozen install, low-severity audit, and the complete 36-step gate pass without
+lockfile drift.
+
+DOC-006 is now an exercised implementation candidate: the canonical onboarding
+contract and maintainer-only curation template are linked from contributor, support,
+issue, pull-request, repository, and agent entry surfaces. Live unassigned issues
+[#55](https://github.com/RNT56/TTC/issues/55),
+[#56](https://github.com/RNT56/TTC/issues/56), and
+[#57](https://github.com/RNT56/TTC/issues/57) prove the discovery, scope, mentor,
+assignment, acceptance, and exclusion shape against protected `41dee2d`. These open
+issues are process evidence, not evidence that an external contribution succeeded;
+protected implementation and post-merge proof remain pending.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected `main` descendant is DOC-005 `22c263b`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | DOC-005 PR #53 exact head `e79bbb1` passed CI `29375146614`/security `29375146592`; protected squash `22c263b` passed post-merge CI `29376742319`/security `29376742373`. QA-012 remains anchored to PR #50 and exact-main nightly `29372161650` |
+| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected `main` descendant is DOC-005/GOV-003 evidence `41dee2d`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | PR #54 exact head `00ae9a0` passed CI `29378364147`/security `29378364143`; protected squash `41dee2d` passed post-merge CI `29378749550`/security `29378749542`. QA-012 remains anchored to PR #50 and exact-main nightly `29372161650` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| JS supply-chain client | pnpm 11.13.0 candidate; frozen install, `pnpm audit --audit-level low`, and all 36 local gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except three version-exact reviewed entries; protected PR/post-merge proof is pending |
-| `pnpm verify` | protected DOC-005 baseline: 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance passed on protected `22c263b` in CI `29376742319` |
+| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install, `pnpm audit --audit-level low`, and all 36 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except three version-exact reviewed entries; exact-head and post-merge security are green |
+| `pnpm verify` | protected PR #54 baseline: 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance passed on protected `41dee2d` in CI `29378749550` |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | protected pass: 14/14 surfaces match policy 1.0.0 | gateway API/events now join source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |

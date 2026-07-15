@@ -85,10 +85,11 @@ compatibility domains, and sixteen worker queue kinds. Migration, deprecation, a
 synthetic example guides share the drift gate. The complete 36-step local gate,
 exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
 `29376742319`/security `29376742373` pass. DOC-006 is the remaining documentation
-lane. Before it starts, PR #54 must restore the GOV-003 audit client after npm's
-legacy-endpoint retirement and pass exact protected security; the local pnpm 11.13.0
-candidate already passes frozen install and low-severity bulk-advisory audit without
-lockfile drift plus the complete 36-step gate under Python 3.12.
+lane. PR #54 restored the GOV-003 audit client after npm's legacy-endpoint retirement:
+exact head `00ae9a0` passed CI `29378364147`/security `29378364143`, and protected
+`41dee2d` passed post-merge CI `29378749550`/security `29378749542`. DOC-006 now has
+an implementation candidate, a maintainer-only curation template, and three live
+bounded seed issues (#55-#57); protected implementation/post-merge proof remains.
 
 | Phase | Status | Est. |
 |---|---|---|

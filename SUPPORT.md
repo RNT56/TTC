@@ -4,6 +4,9 @@ ForgedTTC has no commercial support SLA and no production release yet.
 
 - Usage questions and reproducible defects: GitHub Discussions if enabled, otherwise
   a structured GitHub issue.
+- First contributions: use the maintainer-curated
+  [`good first issue`](https://github.com/RNT56/TTC/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+  list and follow [`docs/CONTRIBUTOR-ONBOARDING.md`](docs/CONTRIBUTOR-ONBOARDING.md).
 - Security vulnerabilities: private reporting under [`SECURITY.md`](SECURITY.md).
 - Roadmap proposals: an issue tied to user evidence and the relevant product rung.
 - Legal, trademark, licensing, takedown, or personal-data requests: do not post
