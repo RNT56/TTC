@@ -315,12 +315,10 @@ Work:
 - retain protected P6-010 real Rapier/MuJoCo 3.9.0 evidence on every engine/exporter
   upgrade, and treat a broader diverse import corpus as adjacent product QA rather
   than reopening the completed phase exit;
-- P7 real SB3/MuJoCo pipeline, ONNX Runtime Web, offline learning, and MJX decision
-  (`P7-003`, `P7-008..010`, `EXT-003`);
-  the 2026-07-15 P7-008 candidate now executes a real digest-bound hover model in
-  lazy ONNX Runtime Web/WASM through Rust estimator observations, but exact-head and
-  protected post-merge browser/CI/security evidence are still required before its
-  stable task closes;
+- P7 real SB3/MuJoCo pipeline, offline learning, and MJX decision (`P7-003`,
+  `P7-009`, `P7-010`, `EXT-003`); P7-008 is protected through PR #62/`1de7974`:
+  retained exact-head and post-merge browser artifacts prove a digest-bound real
+  hover model in lazy ONNX Runtime Web/WASM through Rust estimator observations;
 - P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
   `P9-005`);
 - provider reliability, cost, data-retention, and artifact-integrity work from

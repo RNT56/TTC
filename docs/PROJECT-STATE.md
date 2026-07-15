@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected `main` descendant: `c0f5172` (PR #60; real Rapier/MuJoCo parity)
-Latest verified protected runtime/parity anchor: `c0f5172` (PR #60; real engine parity)
+Latest verified protected `main` descendant: `1de7974` (PR #62; real browser ONNX policy execution)
+Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -84,40 +84,40 @@ MuJoCo 3.9.0 and Rapier passed all four contract-derived scenes at matched timin
 unchanged bands; this is engine/phase proof, not live training, broad external-corpus,
 GPU, provider, hardware, or field evidence.
 
-The `codex/p7008-onnx-runtime` candidate adds actual browser inference but is not yet
-protected evidence. A 906-byte digest-bound opset-18 hover graph executes through
-exact `onnxruntime-web` 1.27.0/WASM against an 11-scalar Rust estimator/powertrain
-observer under `forge-policy-tensor` 1.0.0; six Studio tests execute/refuse the real
-runtime boundary, gateway tests are 64/64, worker tests are 130/130, and the
-production browser harness now requires lazy same-origin ONNX assets plus completed
-motion playback. Exact-head CI/security, isolated-Postgres browser proof, protected
-merge, and post-merge checks remain required before P7-008 closes. This candidate is
-not live SB3 training, object-backed external-model transport, hardware authority, or
-field transfer.
+P7-008 is protected through PR #62. Exact head `2686d1a` passed CI `29387737921`
+and security `29387737947`; protected squash `1de7974` passed post-merge CI
+`29388166478` and security `29388166407`. A 906-byte digest-bound opset-18 hover
+graph executes through exact `onnxruntime-web` 1.27.0/WASM against an 11-scalar Rust
+estimator/powertrain observer under `forge-policy-tensor` 1.0.0. Both exact-head and
+protected browser artifacts record 11/11 flows, a production bundle, real WASM,
+completed hash/lineage-bound policy playback, and lazy same-origin ONNX JS/WASM
+assets; Chromium, Firefox, and WebKit support acceptance also passes. This closes
+fixture-grade browser execution, not live SB3/MuJoCo training, object-backed external
+model transport, hardware authority, or field transfer.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | latest protected `main` is P6-010 `c0f5172`; SEC-006 runtime/security anchor `d952f60`, DOC-006 evidence `484aefa`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #60 exact head `aa5b133` passed CI `29383163191`/security `29383163204`; protected squash `c0f5172` passed post-merge CI `29383489511`/security `29383489520`. Required worker artifact source-binds the passing real-engine comparison to the protected commit |
+| Git state | latest protected `main` is P7-008 `1de7974`; SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #62 exact head `2686d1a` passed CI `29387737921`/security `29387737947`; protected squash `1de7974` passed post-merge CI `29388166478`/security `29388166407`. Both retained browser artifacts record the 11-flow real-ONNX acceptance path |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install, `pnpm audit --audit-level low`, and all 36 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except three version-exact reviewed entries; exact-head and post-merge security are green |
-| `pnpm verify` | protected `c0f5172` retains the 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 128 worker tests including real required engine parity, and patch hygiene; required Postgres/browser acceptance passed in CI `29383489511` |
+| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install, `pnpm audit --audit-level low`, and all 37 current gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact-head and post-merge security are green |
+| `pnpm verify` | protected `1de7974` retains the 37 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 6 real-runtime Studio tests, 64 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 130 worker tests including real required engine parity, and patch hygiene; required Postgres/browser acceptance passed in CI `29388166478` |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
-| `pnpm verify:compatibility` | protected pass: 14/14 surfaces match policy 1.0.0 | gateway API/events now join source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
+| `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 1.0.0 joins gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
 | DOC-005 contract documentation | complete through protected PR #53 at `22c263b`: 75 runtime routes, 2 event families, 14 compatibility surfaces, and 16 worker families | `pnpm docs:contracts`, generated drift, compatibility, 63 gateway tests, 127 worker tests on Python 3.12, 19 golden-policy tests, native/WASM parity, packaging, and patch hygiene pass locally and through exact PR/post-merge CI/security |
 | DOC-006 contributor workflow | complete through implementation PR #58 at `3078dba` and evidence PR #59 at `484aefa`: canonical onboarding, maintainer-only curation, linked entry surfaces, sensitive-authority exclusions, assignment/reassignment rules, and three live seed issues | all 69 Markdown files resolve locally, issue-form YAML parses, #55-#57 remain correctly labeled and unassigned, all 36 local gates pass, and exact PR/post-merge CI/security are green; no external contribution outcome is claimed |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
-| Gateway tests | pass: 63/63 with the real validator in the full gate | includes staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
-| Worker tests | pass: 128/128 on protected P6-010 under Python 3.12 | the five corpus consumers cover replay/provider/citation/export/hardware boundaries; real MuJoCo parity, D38, commerce, native ETL, and SEC-006 coverage remain green |
-| Postgres/pgvector gate | pass on protected P6-010 CI `29383489511` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
+| Gateway tests | pass: 64/64 with the real validator in the full gate | includes the digest-bound policy fixture plus staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
+| Worker tests | pass: 130/130 on protected P7-008 under Python 3.12 | policy bytes/tensor authority joins the five corpus consumers, real MuJoCo parity, D38, commerce, native ETL, and SEC-006 coverage |
+| Postgres/pgvector gate | pass on protected P7-008 CI `29388166478` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | **pass on protected `6f8509b`; QA-012 closed** | scheduled run `29311327203` and exact-current-main rerun `29367911748` exposed missing isolation headers and stale semantic-wrapper chrome suppression. PR #50 restores the governed full-WebGL path and version-binds both JSON artifacts. Exact branch nightly `29370725355` and exact-main nightly `29372161650` pass. Downloaded artifact `8326520247` records one isolated full-Studio Chromium/high-WebGL preflight with no page errors and six low-WebGL captures at unchanged edge F1 0.957-0.995, 3 draws, and 2,208/4,662 triangles; source/checkout equal `6f8509b` and the worktree is clean |
-| QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb`; revalidated at `7970005` | exact PR CI `29272067712`/security `29272067617` and post-merge CI `29272532186`/security `29272531705` close the task; current protected CI re-proves the production bundle, real WASM, 21 migrations, catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed owner listing, job, and materialized maintenance; no live-provider or external-user claim |
+| QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb`; extended/revalidated through P7-008 PR #62 and protected `1de7974` | exact P7 head CI `29387737921` and protected CI `29388166478` retain artifacts `8332187895` and `8332317185`: 11/11 production-bundle/real-WASM flows now include hash/lineage-bound ONNX Runtime Web playback with lazy same-origin JS/WASM assets, alongside catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed listing, job, and maintenance materialization; no live-provider or external-user claim |
 | QA-003 browser/accessibility acceptance | complete at deterministic supported-browser maturity through PR #42 and protected `9c1802b` | exact PR CI `29282669499`/security `29282669468` and post-merge CI `29283250843`/security `29283250865` pass. The clean merge artifact records real WASM/validator admission and all semantic, skip/focus, keyboard orbit/equip/explode/blueprint, AA contrast, critical-target, responsive, reduced-motion, renderer, asset-isolation, and positive-draw assertions across Chromium 148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Chromium is full WebGL at 33 draws; Firefox/WebKit are core-baked Canvas2D at 17 draws with no scene/Three.js chunks. WebKit/narrow checks remain proxies, not Apple/mobile-device, assistive-technology, external-user, or field proof |
 | QA-004 migration acceptance | complete through PR #44 and protected `e362c54` | exact PR CI `29286731035`/security `29286731271` and post-merge CI `29287274236`/security `29287274293` pass. The clean merge artifact binds source/checkout to `e362c54`, applies 20/20 clean migrations, preserves and idempotently reruns all 19 populated predecessors, and proves atomic rollback/corrected roll-forward, checksum/gap refusal, advisory serialization, and apply once. Production backup/restore/RPO/RTO remains OPS-005 |
 | QA-005 fault acceptance | complete at deterministic isolated-Postgres maturity through PR #46 and protected `7970005` | exact implementation head `5663900` passed PR CI `29291536114`/security `29291536115`; synthetic merge `99024b8` had no non-doc implementation delta; post-merge CI `29292041469`/security `29292041441` pass. The clean artifact binds source/checkout to `7970005` and proves crash reclaim, two-attempt one-time materialization, stale/cancelled-result discard, bounded outage recovery, terminal rate exhaustion with its 17 s hint, partial-upload refusal/retry, exact metadata completion, and consent/job success. Multi-replica queues, deployed object storage, provider incidents, shared quotas, and production SLOs remain separate gates |
@@ -312,6 +312,16 @@ Live GitHub evidence checked on 2026-07-15:
   [29376742319](https://github.com/RNT56/TTC/actions/runs/29376742319) and security
   [29376742373](https://github.com/RNT56/TTC/actions/runs/29376742373) are green. This
   closes DOC-005 at deterministic documentation/compatibility maturity only;
+- browser policy execution [PR #62](https://github.com/RNT56/TTC/pull/62) passed
+  exact-head CI [29387737921](https://github.com/RNT56/TTC/actions/runs/29387737921)
+  and security [29387737947](https://github.com/RNT56/TTC/actions/runs/29387737947)
+  at `2686d1a`, then merged through protection as `1de7974`. Exact post-merge CI
+  [29388166478](https://github.com/RNT56/TTC/actions/runs/29388166478) and security
+  [29388166407](https://github.com/RNT56/TTC/actions/runs/29388166407) pass. Browser
+  jobs `87264528677` and `87265803914` retain artifacts `8332187895` and
+  `8332317185`, each recording 11/11 flows, real WASM, completed ONNX policy
+  playback, and lazy same-origin runtime assets. This closes P7-008 at fixture-grade
+  browser-execution maturity only;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -377,7 +387,7 @@ decision; none is a hidden release claim.
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
-| Training/policy | fixture scorecards and external command seams | real SB3/MuJoCo training and ONNX Runtime browser inference |
+| Training/policy | protected fixture scorecards, external command seams, and real digest-bound ONNX Runtime Web/WASM playback through Rust estimator observations | real SB3/MuJoCo training, object-backed external models, offline fine-tune evidence, and field transfer |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
@@ -446,9 +456,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **201 tasks: 141 done, 35 in progress, 24 open,
+The stable ledger currently contains **201 tasks: 142 done, 34 in progress, 24 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
-The 60 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
+The 59 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
 2 quality, 10 operations,
 and 9 external-proof tasks; the documentation completion lane is closed. Dependency
 order is owned by
