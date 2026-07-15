@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Close browser ONNX execution on protected main
+**Session:** Codex agent · branch `codex/p7008-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-008 [x]
+**Done:** Closed P7-008 through protected PR #62. Exact implementation head
+`2686d1a` passed CI `29387737921` and security `29387737947`; protected squash
+`1de7974` passed post-merge CI `29388166478` and security `29388166407`, including
+Rust, all 37 acceptance surfaces, 130 Python worker tests, Desktop, isolated
+Postgres, dependency audit, SPDX, and both CodeQL languages; exact-head dependency
+review also passed.
+Browser jobs `87264528677` and `87265803914` retained artifacts `8332187895` and
+`8332317185`: both record an 11/11 production-bundle/real-WASM flow set, completed
+hash/lineage-bound ONNX policy playback, and lazy same-origin runtime JS/WASM assets.
+The protected boundary is 15 compatibility surfaces, 64 gateway tests, 130 worker
+tests, and six focused real-runtime Studio tests.
+**Changed:** Canonical agent current boundary, project-state evidence/counts,
+phase/execution roadmaps, stable P7-008 ledger state, and changelog. No runtime code,
+dependency, public compatibility format, golden, provider, hardware authority, or
+product-maturity claim changed in this reconciliation.
+**Decisions:** none. D8, D9, D16, D17, and policy-tensor 1.0.0 remain binding; this
+evidence does not promote fixture playback into live training or field authority.
+**Next:** Execute the next dependency-complete P7 lane, beginning with a live
+feasibility audit of the pinned D12 MJX benchmark contract under P7-010.
+**Blockers:** none for P7-008. Live SB3/MuJoCo training, object-backed external
+models, offline fine-tune, D12 MJX measurements, hardware, and field transfer remain
+separately gated.
+
 ## 2026-07-15 — Execute the real browser ONNX policy boundary
 **Session:** Codex agent · branch `codex/p7008-onnx-runtime` · **Phase:** P7 ·
 **TODO items:** P7-008 [~]

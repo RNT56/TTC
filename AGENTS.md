@@ -86,8 +86,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is P6-010 PR #60 at `c0f5172`, with
-  post-merge CI `29383489511` and security `29383489520` green;
+  latest verified protected `main` descendant is P7-008 PR #62 at `1de7974`, with
+  post-merge CI `29388166478` and security `29388166407` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -108,9 +108,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - the byte-exact prototype is published as annotated tag `prototype-final`;
 - workflow Actions are immutable-SHA pinned and run under a selected allowlist; the
   security workflow emits a validated SPDX source SBOM;
-- compatibility policy 1.0.0 is machine-checked across fourteen API/event/format/
-  package
-  boundaries; the CLI/WASM facades expose their active versions;
+- compatibility policy 1.0.0 is machine-checked across fifteen API/event/format/
+  package boundaries; the CLI/WASM facades expose their active versions;
 - QA-008 is protected through PR #36: fourteen registered golden artifact families
   are machine-governed, the frozen prototype is immutable, and any registered re-pin
   requires a new append-only evidence record. QA-010 is protected through PR #40:
@@ -147,10 +146,20 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `29383489511`/security `29383489520` pass, and worker job `87252899630` retained a
   source-bound passing engine artifact. This closes the deterministic P6 phase exit,
   not SB3 training, GPU performance, diverse third-party imports, or field transfer;
+- P7-008 is protected through PR #62 at `1de7974`: a digest-bound real opset-18
+  hover policy executes in lazy exact ONNX Runtime Web 1.27.0/WASM against an
+  estimator-derived 11-scalar `forge-policy-tensor` 1.0.0 input and feeds bounded
+  50 Hz advisories through the 120 Hz Rust motion loop. Exact head `2686d1a` passed
+  CI `29387737921`/security `29387737947`; protected CI `29388166478`/security
+  `29388166407` pass, and the retained 11-flow browser artifacts prove real WASM,
+  completed policy playback, and lazy same-origin ONNX JS/WASM assets. This is real
+  fixture-grade browser execution, not live SB3/MuJoCo training, external model
+  storage, hardware authority, or field transfer;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
-  downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
-  flows under `pnpm verify:db` on the exact PR head and merge commit; this is
-  deterministic product acceptance, not live-provider or external-user proof;
+  downloaded validator artifact, gateway, and isolated Postgres established its ten
+  builder flows; PR #62 extends the current protected suite to eleven with real ONNX
+  policy execution. This is deterministic product acceptance, not live-provider or
+  external-user proof;
 - QA-003 is protected through PR #42 at `9c1802b`: the production share/configurator
   journey passes in Chromium, Firefox, and WebKit with real WASM plus semantic,
   keyboard, focus, contrast, target-size, responsive, and reduced-motion assertions.
