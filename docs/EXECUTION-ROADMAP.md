@@ -322,18 +322,20 @@ Work:
   request, real-engine comparison, parity bands, timing method, and fail-closed
   decision report. Its x86_64 reference row passed parity while native MuJoCo was
   about 4.9x faster than CPU-backed MJX, so it is harness feasibility, not D12
-  adoption or rejection evidence. The active P7-011 candidate implements one-click
-  admitted-model create/poll, D38/D39 one-winner content-addressed object delivery,
-  byte-free policy metadata, authenticated retained-byte readback, and double-
-  verified browser playback. Close it only after exact-head protected PostgreSQL/
-  MinIO/browser proof demonstrates stale-lease refusal, cancellation during upload
-  without database authority, substitution refusal, one job/one policy, and exact
-  readback, followed by protected-main reconciliation. Then acquire overnight
-  passing hover/waypoint evidence (`P7-012`), deployed GPU
-  operations (`P7-013`), broader real tasks (`P7-014`), offline fine-tuning
-  (`P7-009`), then run exact D12 quad/rover/legged on a declared accelerator with
-  CPU overnight/tier-2 budgets and cost evidence to finish the MJX decision
-  (`P7-010`), and external acceptance;
+  adoption or rejection evidence. P7-011 is protected through PR #68/`9131289`;
+  clean artifact `8340587390` proves one-click admitted-model create/poll,
+  D38/D39 one-winner content-addressed object delivery, byte-free policy metadata,
+  authenticated retained-byte readback, exact browser playback, stale-lease and
+  substitution refusal, and cancellation without database authority at controlled
+  S3-compatible sandbox maturity. D40 now sequences the waypoint slice of P7-014
+  first because the real command currently supports hover-hold only. Protect that
+  contract-derived environment, task-bound scorecard/export path, deterministic
+  smoke, and unsupported-shape refusal; then acquire overnight passing hover/
+  waypoint evidence (`P7-012`), deployed GPU operations (`P7-013`), remaining rover
+  and legged real tasks (`P7-014`), offline fine-tuning (`P7-009`), exact D12 quad/
+  rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
+  to finish the MJX decision (`P7-010`), and external acceptance. OPS-006 separately
+  closes policy-object inventory/orphan cleanup and production storage operations;
 - P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
   `P9-005`);
 - provider reliability, cost, data-retention, and artifact-integrity work from
@@ -346,8 +348,9 @@ Acceptance:
 - real engine baselines pass declared parity tolerances on the exact protected
   revision with source/provider/timestep/substep-bound artifacts;
 - one-click training delivery proves the browser executes the exact retained ONNX
-  object authorized by the winning owned-model job; separately, P7-012 proves a
-  scorecard-passing policy overnight on declared hardware;
+  object authorized by the winning owned-model job; this is closed through P7-011.
+  Separately, the P7-014 waypoint slice makes the second task executable and P7-012
+  proves both scorecard-passing policies overnight on declared hardware;
 - MJX adoption/rejection is based on D12 benchmark data;
 - co-design returns at least three admitted Pareto points from engine-backed tiers.
 
@@ -523,7 +526,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | P7-009..014 | OPS cost/storage/SLO, SEC policy data, EXT-003 | protected controlled trainer, then authoritative one-click object delivery plus overnight-passing hover/waypoint policy in browser |
+| P7 | P7-009, P7-010, P7-012..014; P7-011 closed | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled trainer and authoritative one-click object delivery; next waypoint trainer slice, then overnight-passing hover/waypoint policy in browser, deployed GPU operations, remaining archetypes, offline fine-tune, and final D12 MJX decision |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |

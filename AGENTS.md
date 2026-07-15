@@ -86,11 +86,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-010 PR #66 at `0614272`, with
-  post-merge CI `29399434491` and security `29399434519` green. PR #66 owns the
-  controlled MJX-feasibility evidence, PR #64/`d1c4c38` remains the owning seeded
-  training-runtime anchor, and PR #62/`1de7974` remains the owning browser-runtime
-  anchor;
+  latest verified protected runtime descendant is P7-011 PR #68 at `9131289`, with
+  post-merge CI `29409341830` and security `29409342305` green. PR #68 owns the
+  object-backed one-click delivery evidence, PR #66/`0614272` owns controlled
+  MJX-feasibility evidence, PR #64/`d1c4c38` remains the owning seeded-training
+  anchor, and PR #62/`1de7974` remains the owning base browser-runtime anchor;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -166,8 +166,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `29394580998`/security `29394580959` pass. Retained artifact `8334594354` binds a
   clean 256-step smoke to `d1c4c38`, and its valid `[1,11] -> [1,4]` ONNX remains
   honestly non-exportable at a zero success score. Overnight passing hover/waypoint
-  proof, object-backed one-click delivery, deployed Modal/GPU evidence, broader
-  archetypes, and external acceptance remain open under separate tasks;
+  proof, deployed Modal/GPU evidence, broader archetypes, and external acceptance
+  remain open under separate tasks;
 - P7-010's controlled feasibility foundation is protected through PR #66 at
   `0614272`. Required CI retained clean artifact `8337556569`, which binds exact
   Python 3.12.13, NumPy 2.5.1, MuJoCo/MuJoCo-MJX 3.9.0, JAX/JAXLIB 0.10.2, the
@@ -177,13 +177,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   decision-ineligible: exact D12 quad/rover/legged, declared accelerator,
   overnight/tier-2 budget, cost, and the existing 3x cost-normalized rule still own
   the adoption decision;
-- P7-011 has an implementation candidate on `codex/p7011-policy-delivery`: migration
-  0022, a lease-fenced content-addressed policy writer, byte-free job/policy metadata,
-  authenticated owner-scoped retained-model delivery, Studio one-click queue/poll/
-  playback, and isolated PostgreSQL/MinIO acceptance are wired. All 39 required
-  local non-DB gates pass, but no completion or protected evidence is claimed until the exact branch
-  passes required CI, the retained acceptance artifact is inspected, and protected
-  `main` is reconciled;
+- P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
+  lease-fenced content-addressed writer, byte-free job/policy authority,
+  authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
+  are closed at controlled S3-compatible sandbox maturity. Exact head `433ff3b`
+  passed CI `29408733457`/security `29408733461`; protected CI `29409341830` and
+  security `29409342305` pass. Downloaded artifact `8340587390` self-binds to clean
+  `9131289`, proves one winner across two attempts, stale-upload prevention, no
+  inline persistence, pre-upload digest-substitution refusal, cancellation without
+  database authority, exact retained-object readback, 22 migrations, all 11
+  production-browser flows, and the three declared browser tiers. OPS-006 still owns
+  orphan reconciliation; production object-storage durability/SLO, passing learned
+  policy quality, deployed GPU operations, external users, and field transfer remain
+  open;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

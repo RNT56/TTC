@@ -2,7 +2,7 @@
 
 **Status:** validation/BOM/review/generation/auth/model/share/job/platform and local user-data/consent lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34, D38, D39
 
 ## 1. Purpose
 
@@ -154,9 +154,11 @@ bytes when copying delivery evidence; it never invents authority for ambiguous
 rows. Deploy with policy workers stopped, verify the configured private bucket and
 new reader first, then resume writers. Rollback keeps the additive columns and any
 content-addressed objects, stops incompatible writers, and rolls forward. The
-protected `db:assert-policy-delivery` acceptance must prove stale-lease refusal,
+protected `db:assert-policy-delivery` acceptance proves stale-lease refusal,
 one-winner exact materialization, cancellation during upload without database
-authority, substitution refusal, byte-free persistence, and exact readback.
+authority, substitution refusal, byte-free persistence, and exact readback through
+PR #68/`9131289` artifact `8340587390`. Keep that assertion required on migration,
+queue, object-store, policy, export, or authenticated-read changes.
 
 Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
 filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,

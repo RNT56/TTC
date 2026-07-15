@@ -333,12 +333,15 @@ versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
 SB3/MuJoCo hover runtime is protected through PR #64. Overnight
 passing-policy proof, waypoint/general-archetype training, deployed Modal/GPU runs,
-protected proof for the P7-011 durable policy-delivery candidate, and offline-RL
-fine-tuning remain open. The candidate accepts ONNX bytes only in transient worker
-output, verifies/uploads one exact owner content-addressed object under the current
-D38 lease, and transactionally creates one byte-free job-bound policy. A database-
-only object row, inline byte field, or successful upload without the winning lease is
-not delivery proof. P8: config-diff,
+and offline-RL fine-tuning remain open. P7-011 durable delivery is protected through
+PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
+uploads one exact owner content-addressed object under the current D38 lease, and
+transactionally creates one byte-free job-bound policy. Clean artifact `8340587390`
+proves stale/substituted/cancelled attempts cannot create authority and exact retained
+bytes execute through the browser. Preserve that protected acceptance on changes; a
+database-only object row, inline byte field, or successful upload without the winning
+lease is not delivery proof. D40 makes real waypoint execution the next trainer
+dependency before overnight P7-012. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
 codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes
@@ -363,6 +366,6 @@ Multi-replica queue capacity, heartbeat policy for tasks that legitimately excee
 attempt deadline, dead-letter/reconciliation operations including unreferenced
 content-addressed policy uploads, and queue SLOs; TRELLIS-class model pick and hosting
 at P5 (the field moves fast — pin at implementation); live deployed Modal/GPU
-training, protected P7-011 object-backed delivery proof, overnight scorecard/SLO
-proof, MJX adoption evidence, and OCCT dependency/benchmark evidence; review queue UI
-ownership beyond the existing gateway/studio scaffolds.
+training, real waypoint/general-archetype environments, overnight scorecard/SLO
+proof, MJX adoption evidence, and OCCT dependency/benchmark evidence; review queue
+UI ownership beyond the existing gateway/studio scaffolds.

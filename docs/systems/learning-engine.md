@@ -1,13 +1,14 @@
 # Learning Engine — implementation doc
 
 **Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
-hover runtime, real browser ONNX/WASM execution, and a controlled CPU MuJoCo/MJX
-feasibility harness implemented; overnight scorecard passage, object-backed
-delivery, decision-grade D12 accelerator evidence, deployed GPU operations, and
-field transfer remain gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
+hover runtime, lease-fenced exact object-backed one-click delivery, real browser
+ONNX/WASM execution, and a controlled CPU MuJoCo/MJX feasibility harness implemented;
+the real waypoint trainer, overnight scorecard passage, decision-grade D12
+accelerator evidence, deployed GPU/storage operations, and field transfer remain
+gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
-**Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D-evals
-(adjacent)
+**Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D39, D40,
+D-evals (adjacent)
 
 ## 1. Purpose
 
@@ -180,10 +181,11 @@ stack, runs the complete worker suite, and executes a tiny source-bound hover sm
 through the same gateway-shaped snapshot and Rust bundle path. The smoke proves real
 simulation, optimization, deterministic fixed-shape opset-18 ONNX export, and
 scorecard generation, but is deliberately too short to claim a passing policy.
-P7-011 now has an implementation candidate for durable object upload plus one-click
-Studio queueing/download; protected isolated-Postgres/MinIO/browser evidence remains
-the closure gate. Deployed Modal/GPU proof and an overnight passing run remain
-P7-012..013.
+P7-011 is protected through PR #68/`9131289`: durable object upload, one-click Studio
+queueing/download/playback, isolated Postgres/S3-compatible acceptance, and the
+production-browser path are closed at controlled sandbox maturity. Deployed Modal/
+GPU proof and an overnight passing run remain P7-012..013, and D40 requires the real
+waypoint slice of P7-014 before P7-012.
 
 Live 2026-07-15: the hover fixture is a real 906-byte opset-18 Gemm+Tanh ONNX graph,
 generated with ONNX 1.19.1 and bound by SHA-256
@@ -197,16 +199,19 @@ loop consumes the last safe action. A missed inference holds the previous bounde
 advisory; any error zeros commands and stops playback. Non-hover keyless fixture
 tasks remain held rather than fabricating model bytes.
 
-P7-011's candidate treats inline bytes as transient producer transport. The current
-D38 attempt uploads one exact owner content-addressed object and a serializable
+P7-011 treats inline bytes as transient producer transport. The current D38 attempt
+uploads one exact owner content-addressed object and a serializable
 transaction materializes one job-bound, byte-free policy whose delivery metadata
 binds the model revision, scorecard, tensor header, lineage, size, and digest.
 Studio's one-click action selects the active admitted model, creates the appropriate
 fixture or configured-local job with an idempotency key, polls to a terminal state,
 then requests the retained bytes through the authenticated same-origin policy-model
-route. Both gateway and Studio rehash before ONNX runtime creation. This is not
-claimed protected until the P7-011 Postgres/MinIO/browser acceptance passes and the
-exact protected revision is recorded.
+route. Both gateway and Studio rehash before ONNX runtime creation. Protected
+artifact `8340587390` self-binds to clean `9131289` and proves one winner, stale-
+upload prevention, byte-free persistence, substitution refusal, cancellation
+without database authority, exact readback, 22 migrations, all 11 product-browser
+flows, and the declared three-browser matrix. This does not prove production
+object-store durability/SLO or bounded orphan cleanup; OPS-006 owns those operations.
 
 ## 8. Dependencies
 
@@ -260,13 +265,13 @@ boundary tests, same-seed ONNX digest checks, dependency-pin assertions, and a
 required controlled training smoke. The full worker suite must run with the training
 extra installed; a skipped or fixture-only runtime is not acceptance evidence.
 
-P7-011 adds gateway/Studio/worker unit coverage plus a protected isolated-Postgres
-and S3-compatible acceptance. The latter must prove stale-lease refusal before
-upload, one winner with byte-free persisted metadata, cancellation during upload
-without database authority, digest-substitution refusal, and exact retained-object
-readback. The production-browser flow must prove that one Studio action creates the
-owned-model job and fetches the authenticated retained object; a database-only row
-or fixture inline bytes cannot close the task.
+P7-011 adds gateway/Studio/worker unit coverage plus protected isolated-Postgres and
+S3-compatible acceptance. Protected artifact `8340587390` proves stale-lease refusal
+before upload, one winner with byte-free persisted metadata, cancellation during
+upload without database authority, digest-substitution refusal, exact retained-
+object readback, and one Studio action that creates the owned-model job and fetches
+the authenticated object. Keep this evidence required on delivery changes; a
+database-only row or fixture inline bytes cannot preserve the closed task.
 
 P7-010 adds strict request/hash/runtime/protocol and central-decision tests plus a
 required real feasibility command. Run it under Python 3.12 with
@@ -277,15 +282,15 @@ absolute parity errors, and every decision blocker are acceptance-critical.
 
 ## 10. Phase mapping & backlog
 
-P7: P7-001..010, XC-21. P8: BC/offline-RL ingestion from recorder logs (P7-009 seam).
+P7: P7-001..014, XC-21. P8: BC/offline-RL ingestion from recorder logs (P7-009 seam).
 P9: batch evaluation API for co-design. P11: skills marketplace consumes headers +
 scorecards.
 
 ## 11. Open questions
 
-Scorecard thresholds per task (set with P7 data, then frozen per task version);
-protected P7-011 object-backed delivery/one-click proof and orphan reconciliation;
-the overnight passing hover/waypoint envelope; fine-tune-on-corrected-twin workflow
-shape (post system-ID); exact D12 quad/rover/legged benchmark contracts, declared
-accelerator and cost source, and the CPU overnight/tier-2 budget envelope needed to
-finish P7-010.
+Scorecard thresholds per task (set with P7 data, then frozen per task version); the
+real waypoint environment and target-transition semantics; policy-object orphan
+inventory/reconciliation; the overnight passing hover/waypoint envelope; fine-tune-
+on-corrected-twin workflow shape (post system-ID); exact D12 quad/rover/legged
+benchmark contracts, declared accelerator and cost source, and the CPU overnight/
+tier-2 budget envelope needed to finish P7-010.

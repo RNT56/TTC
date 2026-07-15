@@ -65,8 +65,9 @@ gateway loads that authoritative model, verifies its storage hash, freezes a bou
 `forge-admitted-model-snapshot` 1.0.0, and supplies the matching SHA-256 to the
 worker. Caller-supplied `modelSnapshot` fields and mismatched contract hashes are
 rejected. This prevents a queue request from substituting an unadmitted training
-contract; it does not yet complete one-click Studio orchestration or durable trained
-policy delivery.
+contract. P7-011 later completes one-click Studio orchestration and durable exact
+object-backed delivery through protected PR #68/`9131289`; it does not add passing
+learning quality, deployed GPU/storage operations, or external transfer evidence.
 
 The saved-model `contractHash` is the SHA-256 of the gateway's exact stable-JSON
 snapshot bytes. It is intentionally distinct from the validator report's canonical

@@ -128,8 +128,12 @@ authoritative policy job binding and byte-free delivery metadata; it never embed
 the retained ONNX payload. That payload remains owner-scoped behind the authenticated
 same-origin policy route, so browser code receives neither cross-origin object-store
 credentials nor a durable inline copy. Populated Postgres and MinIO upload/delete/
-404 proof pass locally; the P7-011 protected policy-delivery proof remains required
-before its candidate is called complete.
+404 proof pass locally. P7-011 is complete through protected PR #68/`9131289`;
+artifact `8340587390` self-binds to that clean revision and proves one winner,
+stale/substitution refusal, cancellation without database authority, exact retained
+readback, owner-scoped browser execution, and byte-free user-data export metadata at
+controlled S3-compatible sandbox maturity. Production bucket policy, durability,
+orphan inventory/deletion, and storage SLO evidence remain deployment/OPS-006 work.
 
 Consent ledger 1.0.0 records immutable grants and withdrawals separately for
 photoscan processing, telemetry sharing, pattern contribution, leaderboard

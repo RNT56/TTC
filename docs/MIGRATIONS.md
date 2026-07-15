@@ -97,7 +97,10 @@ authority. Historical job output is copied only after removing `onnx.modelBase64
 The populated `0021` predecessor fixture must preserve the row, bind its job, strip
 the copied bytes, and retain the original job output for compatibility. The protected
 data-plane gate then runs `db:assert-policy-delivery` against PostgreSQL plus pinned
-S3-compatible storage and writes `artifacts/e2e/p7-policy-delivery.json`.
+S3-compatible storage and writes `artifacts/e2e/p7-policy-delivery.json`. Protected
+PR #68/`9131289` artifact `8340587390` proves the clean 22-migration install, all 21
+populated predecessors, one-winner/stale/substitution/cancellation policy scenarios,
+exact object readback, the 11-flow browser loop, and the declared browser matrix.
 
 ## 3. Writing a migration
 
