@@ -18,6 +18,47 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Protect authoritative policy delivery and sequence waypoint training
+**Session:** Codex agent · branch `codex/p7011-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-011 [x], P7-012 [ ], P7-014 [ ]
+**Done:** Closed P7-011 through protected PR #68. Exact implementation head
+`433ff3b` passed PR CI `29408733457` and security `29408733461`; the PR acceptance
+artifact `8340343505` binds source `433ff3b` to GitHub's exact synthetic merge
+`fc70ca2`, whose parents are the tested protected base and exact head. Protected
+squash `9131289` passed post-merge CI `29409341830` and security `29409342305`.
+Downloaded artifact `8340587390` self-binds source and checkout to clean
+`9131289`. Its `p7-policy-delivery.v1` record hashes to
+`fd6b53f3530a5de09dcafe3dd560bc793f5d6b1166a4cc90d4e7a83c79de82a2` and proves
+two attempts produce one authoritative policy/object, prevent the stale upload,
+persist no inline bytes, and read back the exact retained object. Digest
+substitution is rejected before upload with zero rows; cancellation after upload
+creates zero authoritative rows and leaves the bounded orphan to OPS-006. The
+companion QA-002 record hashes to
+`5f3242fc4cfc45e5bbfcd0b00bea29eb8c7340a3a3a591298757107182a3f6f7`, applies 22
+migrations, and passes all 11 production-browser flows, including authenticated
+same-origin retrieval and Rust estimator/motion execution of the exact 906-byte
+ONNX object with SHA-256 `222102cc9a55192f00696399f553781ffc095f6fc0e3195d7456fed01a564d62`.
+The QA-003 record hashes to
+`a107c8e814beb5a84d14f6ca2723b2b46ab2c42ee2b52c14991922693499ad6d`, is clean and
+self-bound to `9131289`, and passes full-Studio Chromium plus viewer-grade Firefox
+and WebKit. This is controlled S3-compatible sandbox and deterministic product
+acceptance, not production object-storage durability, a passing learned policy,
+deployed GPU operations, an external user result, or field transfer.
+**Changed:** Canonical agent boundary; project-state anchors/counts/evidence;
+P7 phase, execution, task, learning, worker, Studio, and risk guidance; dependency
+ordering for P7-012/P7-014; D40; and this changelog. No runtime, schema, golden,
+threshold, or compatibility behavior changed in this reconciliation.
+**Decisions:** D40 makes the waypoint portion of P7-014 a dependency of P7-012 while
+preserving both stable IDs; the rover and legged portions remain after overnight
+hover/waypoint proof.
+**Next:** Implement the sovereign real waypoint trainer slice under P7-014 with
+contract-derived observations/actions, held-out scorecard coverage, deterministic
+smoke, and explicit unsupported-shape refusal; then execute P7-012 on declared
+consumer GPU hardware.
+**Blockers:** none for P7-011. P7-012 still requires the waypoint trainer slice plus
+declared consumer-GPU runtime, wall-time, energy/cost, recovery, and retained-policy
+evidence.
+
 ## 2026-07-15 — Implement lease-fenced object-backed policy delivery
 **Session:** Codex agent · branch `codex/p7011-policy-delivery` · **Phase:** P7 ·
 **TODO items:** P7-011 [~]

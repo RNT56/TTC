@@ -3,10 +3,11 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected runtime descendant: `0614272` (PR #66; P7-010 controlled MJX feasibility)
+Latest verified protected runtime descendant: `9131289` (PR #68; P7-011 authoritative policy delivery)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
+P7-011 policy-delivery evidence anchor: `9131289` (PR #68)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -102,7 +103,8 @@ passed CI `29388759113` and security `29388759133`; protected squash `766f7b8`
 passed post-merge CI `29389051743` and security `29389051735`. This is the latest
 P7-008 evidence-only descendant and does not replace PR #62/`1de7974` as the owning
 runtime/browser evidence anchor; P7-003 PR #64 remains the owning seeded-training
-anchor, while P7-010 PR #66 is now the latest verified runtime descendant.
+anchor, P7-010 PR #66 owns MJX feasibility, and P7-011 PR #68 is now the latest
+verified runtime descendant.
 
 P7-003 is complete through protected PR #64 at `d1c4c38`. The gateway owns and
 freezes an admitted-model snapshot; the validator re-admits it and derives the exact
@@ -114,9 +116,9 @@ CI `29393871628` and security `29393871650`; the protected squash passed CI
 self-binds to a clean `d1c4c38`, records exact runtime/lock/dependency/contract/
 config/seed/parameter lineage, and contains a valid opset-18 `[1,11] -> [1,4]` graph.
 Its 256-step scorecard is correctly non-exportable at zero success. This closes the
-seeded PPO/SAC pipeline, not overnight learning quality, durable one-click delivery,
-deployed Modal/GPU operations, waypoint/general-archetype coverage, MJX, offline
-fine-tuning, external acceptance, or field transfer.
+seeded PPO/SAC pipeline, not overnight learning quality, deployed Modal/GPU
+operations, waypoint/general-archetype coverage, MJX, offline fine-tuning, external
+acceptance, or field transfer; durable one-click delivery closed later under P7-011.
 
 P7-010's controlled feasibility foundation is protected through PR #66. Exact head
 `f72ef09` passed PR CI `29398735858` and security `29398735849`; protected squash
@@ -131,30 +133,29 @@ protected harness/parity evidence, not an adoption decision: the report still bl
 missing D12 quad/rover/legged, declared accelerator, overnight/tier-2 budget, cost,
 and cost-normalized throughput evidence.
 
-P7-011 is an **unmerged implementation candidate**, not current protected truth. On
-`codex/p7011-policy-delivery`, D39 and migration 0022 bind one winning D38 job to one
-byte-free policy and one exact owner-scoped content-addressed ONNX object. The worker
-verifies/uploads under the current lease; one transaction rechecks the lease and
-materializes job, object, and policy authority. The gateway and Studio independently
-verify model revision, exportable scorecard, tensor, lineage, byte length, and digest
-through authenticated same-origin `GET /v1/policies/:id/model`; one Studio action
-creates/polls the owned-model job and loads the retained object. All 39 required
-local non-DB gates pass under Python 3.12, including 65/65 gateway, 9/9 Studio plus
-build, 151/151 worker, generated docs/compatibility, packaging, and real training/
-engine/MJX smokes. Completion remains explicitly open until exact-head CI/security,
-the isolated PostgreSQL/MinIO stale-lease/cancellation/substitution/readback artifact,
-the production-browser flow, merge, post-merge checks, and protected evidence
-reconciliation are green. It proves neither P7-012 learning quality nor P7-013
-deployed GPU operations.
+P7-011 is complete through protected PR #68. Exact head `433ff3b` passed CI
+`29408733457` and security `29408733461`; protected squash `9131289` passed
+post-merge CI `29409341830` and security `29409342305`. Downloaded artifact
+`8340587390` self-binds source and checkout to clean `9131289`. Its sandbox-maturity
+policy-delivery record proves one authoritative policy/object across two attempts,
+stale-upload prevention, no inline persistence, exact readback, pre-upload digest-
+substitution refusal with zero rows, and cancellation after upload with zero
+database authority. The companion QA-002 record applies 22 migrations and passes
+all 11 production-browser flows, including authenticated same-origin retrieval and
+Rust estimator/motion execution of the exact retained 906-byte ONNX object; QA-003
+passes full-Studio Chromium and viewer-grade Firefox/WebKit. This closes controlled
+authoritative delivery, not P7-012 learning quality, P7-013 deployed GPU operations,
+production object-store durability/SLO, OPS-006 orphan reconciliation, external
+acceptance, or field transfer.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | latest verified protected runtime descendant is P7-010 anchor `0614272`; P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #66 exact head `f72ef09` passed CI `29398735858`/security `29398735849`; protected squash `0614272` passed post-merge CI `29399434491`/security `29399434519`. PR #64/`d1c4c38` remains the owning seeded-training anchor and PR #62/`1de7974` the browser-runtime anchor |
+| Git state | latest verified protected runtime descendant is P7-011 anchor `9131289`; P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #68 exact head `433ff3b` passed CI `29408733457`/security `29408733461`; protected squash `9131289` passed post-merge CI `29409341830`/security `29409342305`. PR #66/`0614272` remains the MJX-feasibility anchor, PR #64/`d1c4c38` the seeded-training anchor, and PR #62/`1de7974` the base browser-runtime anchor |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 39 current gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; PR #66 exact-head and protected security both pass with the expanded exact MJX/JAX runtime audit |
-| `pnpm verify` | P7-010 exact head passes all 39 required non-DB gates locally under Python 3.12; PR and protected required remote checks are green | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 6 real-runtime Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 146 worker tests, real training/engine/MJX smokes, and patch hygiene; protected CI `29399434491` also passes isolated Postgres/browser acceptance |
+| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 39 current gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; PR #68 exact-head and protected security both pass with the exact training/MJX and policy-delivery runtime audit |
+| `pnpm verify` | P7-011 exact head passes all 39 required non-DB gates locally under Python 3.12; PR and protected required remote checks are green | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 9 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 151 worker tests, real training/engine/MJX smokes, and patch hygiene; protected CI `29409341830` also passes the 22-migration Postgres/MinIO/browser acceptance |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 1.0.0 joins gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
@@ -164,14 +165,15 @@ deployed GPU operations.
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 65/65 with the real validator in the full gate | admitted snapshot/hash authority and training-ready multirotor estimator coverage join the digest-bound policy fixture, staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization |
-| Worker tests | protected 146/146 at P7-010 under Python 3.12 | adds frozen MJX request/protocol/hash, direct checkout binding, finite-number/missing-evidence refusal, and eligible-adopt/eligible-reject policy coverage to real PPO/SAC/MuJoCo/ONNX, same-seed reproducibility, training-bundle authority, policy bytes/tensor authority, corpus consumers, real MuJoCo parity, D38, commerce, native ETL, and SEC-006 coverage |
+| Worker tests | protected 151/151 at P7-011 under Python 3.12 | adds exact S3-compatible SigV4 object transport, D38 lease rechecks around upload, byte-free one-winner policy materialization, substitution/cancellation refusal, and exact-readback coverage to the frozen MJX request/protocol/hash, real PPO/SAC/MuJoCo/ONNX, same-seed reproducibility, training-bundle authority, corpus consumers, real engine parity, commerce, native ETL, and SEC-006 coverage |
 | P7-003 controlled trainer | protected through PR #64/`d1c4c38`; exact-head and post-merge CI/security pass, and artifact `8334594354` is a clean source-bound 256-step CPU PPO/MuJoCo/ONNX smoke | proves the seeded PPO/SAC runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound valid ONNX artifact; short blocked-export smoke does not prove learning quality, overnight SLO, GPU economics, deployed operations, or field transfer |
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
-| Postgres/pgvector gate | pass on protected P7-010 CI `29399434491` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
+| P7-011 authoritative policy delivery | complete through PR #68/`9131289`; exact-head and post-merge CI/security pass, and artifact `8340587390` is clean source/checkout-bound controlled S3-compatible evidence | two attempts yield one exact object/policy with no inline persistence; stale upload and digest substitution fail closed; cancellation creates no database authority; authenticated same-origin exact readback executes through the Rust estimator/motion browser boundary. Production object-store durability/SLO and OPS-006 orphan cleanup remain open |
+| Postgres/pgvector gate | pass on protected P7-011 CI `29409341830` for 22 migrations | the clean plus 21 populated-predecessor matrix, migration 0022 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | **pass on protected `6f8509b`; QA-012 closed** | scheduled run `29311327203` and exact-current-main rerun `29367911748` exposed missing isolation headers and stale semantic-wrapper chrome suppression. PR #50 restores the governed full-WebGL path and version-binds both JSON artifacts. Exact branch nightly `29370725355` and exact-main nightly `29372161650` pass. Downloaded artifact `8326520247` records one isolated full-Studio Chromium/high-WebGL preflight with no page errors and six low-WebGL captures at unchanged edge F1 0.957-0.995, 3 draws, and 2,208/4,662 triangles; source/checkout equal `6f8509b` and the worktree is clean |
-| QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb`; extended through P7-008 and revalidated on P7-010 protected `0614272` | protected CI `29399434491` retained artifact `8337676801`: 11/11 production-bundle/real-WASM flows include exact saved-model revision binding and hash/lineage-bound ONNX Runtime Web playback with lazy same-origin JS/WASM assets, alongside catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed listing, job, and maintenance materialization; no live-provider or external-user claim |
+| QA-002 builder browser E2E | complete at deterministic product-acceptance maturity through PR #38 and protected `c80accb`; extended through P7-008/P7-011 and revalidated on protected `9131289` | protected CI `29409341830` retained artifact `8340587390`: 11/11 production-bundle/real-WASM flows include authenticated same-origin fetch of the retained 906-byte object, exact digest/lineage/tensor/model verification, and ONNX Runtime Web execution through the Rust estimator/motion boundary, alongside catalog review, generation, edit, draft refusal, anonymous share/private 401, course, governed listing, job, and maintenance materialization; no live-provider or external-user claim |
 | QA-003 browser/accessibility acceptance | complete at deterministic supported-browser maturity through PR #42 and protected `9c1802b` | exact PR CI `29282669499`/security `29282669468` and post-merge CI `29283250843`/security `29283250865` pass. The clean merge artifact records real WASM/validator admission and all semantic, skip/focus, keyboard orbit/equip/explode/blueprint, AA contrast, critical-target, responsive, reduced-motion, renderer, asset-isolation, and positive-draw assertions across Chromium 148.0.7778.96, Firefox 150.0.2, and WebKit 26.4. Chromium is full WebGL at 33 draws; Firefox/WebKit are core-baked Canvas2D at 17 draws with no scene/Three.js chunks. WebKit/narrow checks remain proxies, not Apple/mobile-device, assistive-technology, external-user, or field proof |
 | QA-004 migration acceptance | complete through PR #44 and protected `e362c54` | exact PR CI `29286731035`/security `29286731271` and post-merge CI `29287274236`/security `29287274293` pass. The clean merge artifact binds source/checkout to `e362c54`, applies 20/20 clean migrations, preserves and idempotently reruns all 19 populated predecessors, and proves atomic rollback/corrected roll-forward, checksum/gap refusal, advisory serialization, and apply once. Production backup/restore/RPO/RTO remains OPS-005 |
 | QA-005 fault acceptance | complete at deterministic isolated-Postgres maturity through PR #46 and protected `7970005` | exact implementation head `5663900` passed PR CI `29291536114`/security `29291536115`; synthetic merge `99024b8` had no non-doc implementation delta; post-merge CI `29292041469`/security `29292041441` pass. The clean artifact binds source/checkout to `7970005` and proves crash reclaim, two-attempt one-time materialization, stale/cancelled-result discard, bounded outage recovery, terminal rate exhaustion with its 17 s hint, partial-upload refusal/retry, exact metadata completion, and consent/job success. Multi-replica queues, deployed object storage, provider incidents, shared quotas, and production SLOs remain separate gates |
@@ -450,7 +452,7 @@ decision; none is a hidden release claim.
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
-| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover training with authoritative snapshots/bundles, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, real digest-bound browser playback through Rust estimator observations, and a local controlled CPU MuJoCo/MJX feasibility candidate | overnight passing hover/waypoint scorecard, one-click object-backed delivery, deployed Modal/GPU evidence, offline fine-tune evidence, broader archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, external acceptance, and field transfer |
+| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover training with authoritative snapshots/bundles, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback through Rust estimator observations, and a local controlled CPU MuJoCo/MJX feasibility candidate | real waypoint trainer slice, overnight passing hover/waypoint scorecard, deployed Modal/GPU evidence, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
