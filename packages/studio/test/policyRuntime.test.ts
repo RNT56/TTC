@@ -39,6 +39,18 @@ test("refuses model-byte tampering before session creation", async () => {
   await assert.rejects(preparePolicyArtifact(output, CONTRACT_HASH, layout(output)), /SHA-256 mismatch/);
 });
 
+test("accepts exact retained bytes when object-backed metadata omits inline ONNX", async () => {
+  const output = fixture();
+  const retained = Buffer.from(output.onnx?.modelBase64 ?? "", "base64");
+  delete output.onnx!.modelBase64;
+  const prepared = await preparePolicyArtifact(output, CONTRACT_HASH, layout(output), retained);
+  assert.deepEqual(Buffer.from(prepared.modelBytes), retained);
+  await assert.rejects(
+    preparePolicyArtifact(output, CONTRACT_HASH, layout(output)),
+    /ONNX model bytes/,
+  );
+});
+
 test("refuses held or estimator-unproven scorecards", async () => {
   const held = fixture();
   held.scorecard!.exportable = false;

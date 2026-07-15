@@ -67,6 +67,7 @@ import {
   currentPlatformGate,
   editModel,
   getOwnedObjectBlob,
+  getOwnedPolicyArtifact,
   getOwnedJob,
   getOwnedModel,
   getShare,
@@ -94,6 +95,8 @@ import {
   validatorError,
   verifyReplayTape,
   type JobKind,
+  MAX_POLICY_MODEL_BYTES,
+  POLICY_DELIVERY_ARTIFACT_VERSION,
   type PlatformGateKey,
   type PlatformGateStatus,
 } from "./platform.js";
@@ -102,8 +105,12 @@ import {
   inspectStoredObject,
   objectStorageConfigFromEnv,
   presignObjectAccess,
+  putStoredObject,
+  readStoredObject,
   type ObjectDeletionAdapter,
   type ObjectInspectionAdapter,
+  type ObjectReadAdapter,
+  type ObjectWriteAdapter,
 } from "./objectStorage.js";
 import {
   prohibitedBriefResponse,
@@ -137,6 +144,8 @@ export interface ServerOptions {
   persistGeneratedArtifacts?: boolean;
   deleteObjects?: ObjectDeletionAdapter;
   inspectObject?: ObjectInspectionAdapter;
+  writeObject?: ObjectWriteAdapter;
+  readObject?: ObjectReadAdapter;
   rateLimitPolicy?: RateLimitPolicy | null;
   rateLimitNow?: () => number;
   observeRoute?: (route: GatewayRouteObservation) => void;
@@ -749,6 +758,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     options.deleteObjects ??
     ((objects) => deleteStoredObjects(objectStorageConfigFromEnv(), objects));
   const inspectObject = options.inspectObject ?? inspectStoredObject;
+  const writeObject = options.writeObject ?? putStoredObject;
+  const readObject = options.readObject ?? readStoredObject;
+  const writePolicyObject = (input: Parameters<typeof putStoredObject>[1]) =>
+    writeObject(objectStorageConfigFromEnv(), input);
 
   app.get("/healthz", async () => ({
     ok: true,
@@ -1567,12 +1580,17 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         if (body.kind === "photoscan.multiview" && sourceBlobIds.length < 2) {
           throw Object.assign(new Error("multiview photoscan requires at least two source blobs"), { statusCode: 400 });
         }
-        const job = await createJob(db, user, {
-          kind: body.kind as JobKind,
-          provider: body.provider,
-          payload: body.payload,
-          idempotencyKey: body.idempotencyKey,
-        });
+        const job = await createJob(
+          db,
+          user,
+          {
+            kind: body.kind as JobKind,
+            provider: body.provider,
+            payload: body.payload,
+            idempotencyKey: body.idempotencyKey,
+          },
+          { writePolicyObject },
+        );
         return reply.status(201).send({ job });
       } catch (error) {
         const mapped = routeError(error);
@@ -1711,6 +1729,85 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     },
   );
 
+  app.get(
+    "/v1/policies/:id/model",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1, maxLength: 200 }) }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const artifact = await getOwnedPolicyArtifact(db, user, id);
+        if (!artifact || !artifact.artifactBlobId) {
+          return reply.status(404).send({ error: "policy artifact not found" });
+        }
+        if (artifact.exportGate !== "exportable") {
+          return reply.status(409).send({ error: "policy scorecard is held; model download is blocked" });
+        }
+        const blob = await getOwnedObjectBlob(db, user, artifact.artifactBlobId);
+        if (
+          !blob
+          || blob.uploadStatus !== "complete"
+          || blob.byteSize === null
+          || blob.sha256 === null
+          || blob.contentType !== "application/octet-stream"
+        ) {
+          return reply.status(409).send({ error: "policy object is not verified complete" });
+        }
+        const metadata = isRecord(artifact.policyMetadata) ? artifact.policyMetadata : null;
+        const delivery = metadata && isRecord(metadata.delivery) ? metadata.delivery : null;
+        const modelRevision = delivery && isRecord(delivery.modelRevision) ? delivery.modelRevision : null;
+        const onnx = metadata && isRecord(metadata.onnx) ? metadata.onnx : null;
+        const scorecard = metadata && isRecord(metadata.scorecard) ? metadata.scorecard : null;
+        const lineage = scorecard && isRecord(scorecard.lineage) ? scorecard.lineage : null;
+        const io = metadata && isRecord(metadata.io) ? metadata.io : null;
+        const onnxHeader = io && isRecord(io.onnxHeader) ? io.onnxHeader : null;
+        const tensor = io && isRecord(io.tensor) ? io.tensor : null;
+        if (
+          metadata?.artifactKind !== "policy"
+          || metadata.formatVersion !== POLICY_DELIVERY_ARTIFACT_VERSION
+          || artifact.jobId === null
+          || delivery?.objectBacked !== true
+          || delivery.jobId !== artifact.jobId
+          || delivery.policyArtifactId !== artifact.id
+          || delivery.artifactBlobId !== blob.id
+          || delivery.byteSize !== blob.byteSize
+          || delivery.sha256 !== blob.sha256
+          || modelRevision?.modelId !== artifact.modelId
+          || typeof modelRevision.contractHash !== "string"
+          || modelRevision.contractHash !== lineage?.contractHash
+          || modelRevision.contractHash !== onnxHeader?.contractHash
+          || tensor?.schema !== "forge-policy-tensor"
+          || onnx?.byteSize !== blob.byteSize
+          || onnx.sha256 !== blob.sha256
+          || Object.hasOwn(onnx, "modelBase64")
+          || scorecard?.exportable !== true
+          || stableJson(scorecard) !== stableJson(artifact.scorecard)
+        ) {
+          return reply.status(409).send({ error: "policy metadata does not bind the retained object" });
+        }
+        const bytes = await readObject(objectStorageConfigFromEnv(), {
+          bucket: blob.bucket,
+          objectKey: blob.objectKey,
+          byteSize: blob.byteSize,
+          sha256: blob.sha256,
+          maxBytes: MAX_POLICY_MODEL_BYTES,
+        });
+        reply.header("cache-control", "private, no-store");
+        reply.header("content-length", String(bytes.byteLength));
+        reply.header("x-content-type-options", "nosniff");
+        reply.header("x-forge-policy-sha256", blob.sha256);
+        return reply.type("application/octet-stream").send(Buffer.from(bytes));
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
   app.post(
     "/v1/policies",
     {
@@ -1722,7 +1819,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
       try {
         const user = await requireUser(request, db);
         const { payload } = request.body as { payload?: unknown };
-        const job = await createJob(db, user, { kind: "train.policy", payload, provider: "fixture" });
+        const job = await createJob(
+          db,
+          user,
+          { kind: "train.policy", payload, provider: "fixture" },
+          { writePolicyObject },
+        );
         return reply.status(202).send({ job });
       } catch (error) {
         const mapped = routeError(error);

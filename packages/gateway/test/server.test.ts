@@ -17,6 +17,7 @@ import {
 } from "../src/generation.js";
 import { buildServer } from "../src/server.js";
 import { fixtureLicenseFilteredGeometry } from "../src/licenseExports.js";
+import { HOVER_POLICY_FIXTURE_V1 } from "../src/policyFixture.js";
 import {
   assessBriefSafety,
   assertBriefAllowed,
@@ -454,6 +455,7 @@ function platformMemoryDb(): GatewayDb {
         const id = existingId ?? `obj-${nextBlob++}`;
         const previous = existingId ? objectBlobs.get(existingId) : null;
         const fullBlobRegistration = text.includes("byte_size");
+        const completedPolicyBlob = text.includes("'complete', now()");
         const row = {
           id,
           owner_user_id: previous?.owner_user_id ?? params[0],
@@ -461,15 +463,15 @@ function platformMemoryDb(): GatewayDb {
           cache_key: previous?.cache_key ?? cacheKey,
           bucket: previous?.bucket ?? params[2],
           object_key: previous?.object_key ?? params[3],
-          content_type: previous?.content_type ?? params[4],
-          byte_size: previous?.byte_size ?? (fullBlobRegistration ? params[5] : null),
-          sha256: previous?.sha256 ?? (fullBlobRegistration ? params[6] : null),
-          upload_status: previous?.upload_status ?? (fullBlobRegistration ? "staged" : "complete"),
-          verified_at: previous?.verified_at ?? (fullBlobRegistration ? null : now),
+          content_type: previous?.content_type ?? (completedPolicyBlob ? "application/octet-stream" : params[4]),
+          byte_size: previous?.byte_size ?? (completedPolicyBlob ? params[4] : fullBlobRegistration ? params[5] : null),
+          sha256: previous?.sha256 ?? (completedPolicyBlob ? params[5] : fullBlobRegistration ? params[6] : null),
+          upload_status: completedPolicyBlob ? "complete" : previous?.upload_status ?? (fullBlobRegistration ? "staged" : "complete"),
+          verified_at: completedPolicyBlob ? now : previous?.verified_at ?? (fullBlobRegistration ? null : now),
           verification_error_code: previous?.verification_error_code ?? null,
           metadata: {
             ...(previous?.metadata as Record<string, unknown> | undefined),
-            ...(parseJsonParam(fullBlobRegistration ? params[7] : params[5]) as Record<string, unknown>),
+            ...(parseJsonParam(completedPolicyBlob ? params[6] : fullBlobRegistration ? params[7] : params[5]) as Record<string, unknown>),
           },
           created_at: now,
         };
@@ -532,6 +534,14 @@ function platformMemoryDb(): GatewayDb {
       if (text.includes("UPDATE jobs SET status = 'cancelled'")) {
         return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
       }
+      if (text.includes("UPDATE jobs") && text.includes("SET output = $2::jsonb")) {
+        const row = jobs.get(String(params[0]));
+        if (row && row.owner_user_id === params[2] && row.status === "succeeded") {
+          row.output = parseJsonParam(params[1]);
+          return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
+        }
+        return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+      }
       if (text.includes("INSERT INTO replay_artifacts")) {
         const id = `replay-${nextReplay++}`;
         const row = {
@@ -580,21 +590,34 @@ function platformMemoryDb(): GatewayDb {
         return { rows: rows as T[], rowCount: rows.length };
       }
       if (text.includes("INSERT INTO policy_artifacts")) {
+        const existing = policyArtifacts.find((artifact) => artifact.job_id === params[1]);
+        if (existing) return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
         const row = {
           id: `pol-${nextPolicy++}`,
           owner_user_id: params[0],
-          model_id: params[1],
-          task_kind: params[2],
-          scorecard: parseJsonParam(params[3]),
-          artifact_blob_id: params[4],
-          export_gate: params[5],
+          job_id: params[1],
+          model_id: params[2],
+          task_kind: params[3],
+          scorecard: parseJsonParam(params[4]),
+          policy_metadata: parseJsonParam(params[5]),
+          artifact_blob_id: params[6],
+          export_gate: params[7],
           created_at: now,
         };
         policyArtifacts.push(row);
-        return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
+        return { rows: [{ id: row.id } as T], rowCount: 1 };
+      }
+      if (text.includes("UPDATE policy_artifacts") && text.includes("SET policy_metadata")) {
+        const row = policyArtifacts.find(
+          (artifact) => artifact.id === params[0] && artifact.owner_user_id === params[2] && artifact.job_id === params[3],
+        );
+        if (row) row.policy_metadata = parseJsonParam(params[1]);
+        return { rows: [], rowCount: row ? 1 : 0 } as { rows: T[]; rowCount: number };
       }
       if (text.includes("FROM policy_artifacts")) {
-        const rows = policyArtifacts.filter((row) => row.owner_user_id === params[0]);
+        const rows = text.includes("WHERE id = $1")
+          ? policyArtifacts.filter((row) => row.id === params[0] && row.owner_user_id === params[1])
+          : policyArtifacts.filter((row) => row.owner_user_id === params[0]);
         return { rows: rows as T[], rowCount: rows.length };
       }
       if (text.includes("INSERT INTO telemetry_logs")) {
@@ -2020,6 +2043,8 @@ test(
     const previousDevAuth = process.env.FORGE_DEV_AUTH;
     process.env.FORGE_DEV_AUTH = "1";
     let firstUploadInspection = true;
+    const policyModelBytes = Buffer.from(HOVER_POLICY_FIXTURE_V1.modelBase64, "base64");
+    let retainedPolicyObject: { bucket: string; objectKey: string; sha256: string } | null = null;
     const app = buildServer({
       db: platformMemoryDb(),
       inspectObject: async (_config, object) => {
@@ -2034,6 +2059,28 @@ test(
           return { ...inspection, byteSize: inspection.byteSize - 1 };
         }
         return inspection;
+      },
+      writeObject: async (_config, object) => {
+        assert.deepEqual(Buffer.from(object.bytes), policyModelBytes);
+        assert.equal(createHash("sha256").update(object.bytes).digest("hex"), object.sha256);
+        retainedPolicyObject = {
+          bucket: object.bucket,
+          objectKey: object.objectKey,
+          sha256: object.sha256,
+        };
+        return {
+          byteSize: object.bytes.byteLength,
+          contentType: object.contentType,
+          sha256: object.sha256,
+        };
+      },
+      readObject: async (_config, object) => {
+        assert.ok(retainedPolicyObject);
+        assert.equal(object.bucket, retainedPolicyObject.bucket);
+        assert.equal(object.objectKey, retainedPolicyObject.objectKey);
+        assert.equal(object.sha256, retainedPolicyObject.sha256);
+        assert.equal(object.byteSize, policyModelBytes.byteLength);
+        return policyModelBytes;
       },
     });
     try {
@@ -2573,9 +2620,23 @@ test(
       method: "POST",
       url: "/v1/policies",
       headers: authHeaders,
-      payload: { payload: { task: "hover" } },
+      payload: { payload: { modelId: createdBody.model.id, task: "hover" } },
     });
     assert.equal(policy.statusCode, 202, policy.body);
+    const policyJob = (policy.json() as {
+      job: {
+        id: string;
+        output: {
+          onnx: { modelBase64?: string; byteSize: number; sha256: string };
+          delivery: { objectBacked: boolean; artifactBlobId: string; policyArtifactId: string };
+        };
+      };
+    }).job;
+    assert.equal(policyJob.output.onnx.modelBase64, undefined);
+    assert.equal(policyJob.output.onnx.byteSize, policyModelBytes.byteLength);
+    assert.equal(policyJob.output.delivery.objectBacked, true);
+    assert.ok(policyJob.output.delivery.artifactBlobId);
+    assert.ok(policyJob.output.delivery.policyArtifactId);
     const draftPolicy = await app.inject({
       method: "POST",
       url: "/v1/policies",
@@ -2631,11 +2692,37 @@ test(
     });
     assert.equal(policyArtifacts.statusCode, 200, policyArtifacts.body);
     const policyArtifactBody = policyArtifacts.json() as {
-      artifacts: { artifactBlobId: string | null; exportGate: string; taskKind: string }[];
+      artifacts: {
+        id: string;
+        jobId: string | null;
+        modelId: string | null;
+        artifactBlobId: string | null;
+        exportGate: string;
+        taskKind: string;
+      }[];
     };
     assert.equal(policyArtifactBody.artifacts.length, 1);
     assert.ok(policyArtifactBody.artifacts[0].artifactBlobId);
     assert.equal(policyArtifactBody.artifacts[0].taskKind, "hover-hold");
+    assert.equal(policyArtifactBody.artifacts[0].jobId, policyJob.id);
+    assert.equal(policyArtifactBody.artifacts[0].modelId, createdBody.model.id);
+
+    const retainedPolicy = await app.inject({
+      method: "GET",
+      url: `/v1/policies/${policyArtifactBody.artifacts[0].id}/model`,
+      headers: authHeaders,
+    });
+    assert.equal(retainedPolicy.statusCode, 200, retainedPolicy.body);
+    assert.deepEqual(retainedPolicy.rawPayload, policyModelBytes);
+    assert.equal(retainedPolicy.headers["cache-control"], "private, no-store");
+    assert.equal(retainedPolicy.headers["x-forge-policy-sha256"], HOVER_POLICY_FIXTURE_V1.sha256);
+
+    const crossOwnerPolicy = await app.inject({
+      method: "GET",
+      url: `/v1/policies/${policyArtifactBody.artifacts[0].id}/model`,
+      headers: { ...authHeaders, "x-forge-user-id": "user-other" },
+    });
+    assert.equal(crossOwnerPolicy.statusCode, 404, crossOwnerPolicy.body);
 
     const replay = await app.inject({
       method: "POST",

@@ -24,6 +24,7 @@ const blobId = `db-blob-${suffix}`;
 const photoscanId = `db-scan-${suffix}`;
 const replayId = `db-replay-${suffix}`;
 const policyId = `db-policy-${suffix}`;
+const policyJobId = `db-policy-job-${suffix}`;
 const courseId = `db-course-${suffix}`;
 const telemetryId = `db-telemetry-${suffix}`;
 const listingId = `db-listing-${suffix}`;
@@ -91,10 +92,21 @@ try {
     [replayId, user.id, modelId],
   );
   await pool.query(
+    `INSERT INTO jobs (
+       id, owner_user_id, kind, status, provider, input, output, started_at, finished_at
+     ) VALUES ($1, $2, 'train.policy', 'succeeded', 'fixture',
+               jsonb_build_object('modelId', $3),
+               '{"artifactKind":"policy","formatVersion":"0.2.0","onnx":{"byteSize":12,"sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"delivery":{"objectBacked":true}}'::jsonb,
+               now(), now())`,
+    [policyJobId, user.id, modelId],
+  );
+  await pool.query(
     `INSERT INTO policy_artifacts (
-       id, owner_user_id, model_id, task_kind, scorecard, artifact_blob_id
-     ) VALUES ($1, $2, $3, 'inspection', '{}'::jsonb, $4)`,
-    [policyId, user.id, modelId, blobId],
+       id, owner_user_id, job_id, model_id, task_kind, scorecard, policy_metadata, artifact_blob_id
+     ) VALUES ($1, $2, $3, $4, 'inspection', '{}'::jsonb,
+               '{"artifactKind":"policy","formatVersion":"0.2.0","onnx":{"byteSize":12,"sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"delivery":{"objectBacked":true}}'::jsonb,
+               $5)`,
+    [policyId, user.id, policyJobId, modelId, blobId],
   );
   await pool.query(
     `INSERT INTO courses (id, owner_user_id, name, env_spec)
@@ -149,7 +161,9 @@ try {
   assert.equal(exported.data.courses.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
   assert.equal(exported.data.consentEvents.length, 1);
-  assert.equal(exported.formatVersion, "1.2.0");
+  assert.equal(exported.formatVersion, "1.3.0");
+  assert.equal(exported.data.policyArtifacts[0].jobId, policyJobId);
+  assert.equal(exported.data.policyArtifacts[0].policyMetadata.delivery.objectBacked, true);
   assert.equal(exported.data.lifecycleLegalHolds.length, 0);
   assert.equal(exported.data.backupCopies.length, 0);
   assert.equal(exported.data.marketplaceListings.length, 1);

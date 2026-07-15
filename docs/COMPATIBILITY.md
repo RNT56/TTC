@@ -27,7 +27,7 @@ package to adopt that same number.
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
-| user-data export | 1.2.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields are never part of the format | major 1 |
+| user-data export | 1.3.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy bytes are never part of the format | major 1 |
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
@@ -42,13 +42,16 @@ reads; replay producers emit `1.0.0`, while readers temporarily accept the histo
 manifest that binds every assembly asset to its ledger class, disposition,
 attribution/link-out evidence, and the derived assembly policy.
 
-`GET /v1/account/export` emits user-data export 1.2.0. It includes explicit
+`GET /v1/account/export` emits user-data export 1.3.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but
 never OAuth access/refresh/ID tokens, session or verification tokens, or provider
-API keys. Version 1.1 added complete consent history; 1.2 adds causal event sequences
+API keys. Version 1.1 added complete consent history; 1.2 added causal event sequences
 as exact decimal strings,
 redacted account/owned-object legal-hold history, and catalogued account/owned-object
-backup-copy status without authority/evidence references.
+backup-copy status without authority/evidence references. Version 1.3 adds each
+policy artifact's authoritative job binding and byte-free delivery/model/scorecard/
+tensor metadata. Policy ONNX bytes remain outside the export document and require
+the authenticated owner-scoped policy-model endpoint.
 Consent ledger 1.0.0 binds every append-only grant/withdrawal to a purpose, owned
 subject, policy version, exact notice hash, prior event, and bounded evidence; only
 the latest event under the current policy/hash can be active. Consent and legal-hold

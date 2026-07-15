@@ -174,7 +174,7 @@ Postgres adapter schema, GitHub OAuth provider wiring, `/v1/me`, user-owned
 can use the explicit development header path; production auth is cookie/session
 based.
 
-Live locally 2026-07-13: `/v1/account/export` emits versioned user-data format 1.2.0
+Live locally 2026-07-15: `/v1/account/export` emits versioned user-data format 1.3.0
 from a repeatable owner-scoped snapshot with authenticated blob download endpoints
 and no OAuth/session/verification/provider secrets. Exact-confirmation
 `DELETE /v1/account` explicitly purges account, photo/model/generated/blob,

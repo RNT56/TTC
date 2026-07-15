@@ -297,9 +297,11 @@ export interface PhotoscanPortInput {
 export interface PolicyArtifactRecord {
   id: string;
   ownerUserId: string | null;
+  jobId: string | null;
   modelId: string | null;
   taskKind: string;
   scorecard: unknown;
+  policyMetadata: unknown;
   artifactBlobId: string | null;
   exportGate: string;
   createdAt: string;
@@ -722,10 +724,19 @@ export function getJobCapabilities(): Promise<JobCapabilities> {
   return requestJson<JobCapabilities>("/v1/jobs/capabilities");
 }
 
-export function createJob(kind: string, payload: unknown = {}): Promise<{ job: JobRecord }> {
+export function createJob(
+  kind: string,
+  payload: unknown = {},
+  options: { provider?: "fixture" | "local" | "modal"; idempotencyKey?: string } = {},
+): Promise<{ job: JobRecord }> {
   return requestJson<{ job: JobRecord }>("/v1/jobs", {
     method: "POST",
-    body: JSON.stringify({ kind, provider: "fixture", payload }),
+    body: JSON.stringify({
+      kind,
+      provider: options.provider ?? "fixture",
+      payload,
+      ...(options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
+    }),
   });
 }
 
@@ -790,6 +801,57 @@ export async function listPolicyArtifacts(limit = 10): Promise<PolicyArtifactRec
   const params = new URLSearchParams({ limit: String(limit) });
   const body = await requestJson<{ artifacts: PolicyArtifactRecord[] }>(`/v1/policies?${params}`);
   return body.artifacts;
+}
+
+const MAX_POLICY_MODEL_BYTES = 4 * 1024 * 1024;
+
+export async function downloadPolicyModel(
+  id: string,
+  expected: { byteSize?: number; sha256?: string } = {},
+): Promise<Uint8Array> {
+  const response = await fetch(`${gatewayBase}/v1/policies/${encodeURIComponent(id)}/model`, {
+    credentials: "include",
+    headers: {
+      ...(reviewToken ? { authorization: `Bearer ${reviewToken}` } : {}),
+      ...devAuthHeaders(),
+    },
+  });
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      detail = body.error ?? detail;
+    } catch {
+      /* retain bounded status detail */
+    }
+    throw new Error(detail);
+  }
+  const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  const contentLength = Number(response.headers.get("content-length"));
+  const declaredSha256 = response.headers.get("x-forge-policy-sha256")?.toLowerCase() ?? "";
+  if (
+    contentType !== "application/octet-stream"
+    || !Number.isSafeInteger(contentLength)
+    || contentLength <= 0
+    || contentLength > MAX_POLICY_MODEL_BYTES
+    || !/^[a-f0-9]{64}$/.test(declaredSha256)
+  ) {
+    throw new Error("policy download lacks bounded content and checksum authority");
+  }
+  if (expected.byteSize !== undefined && expected.byteSize !== contentLength) {
+    throw new Error("policy download byte size differs from retained metadata");
+  }
+  if (expected.sha256 !== undefined && expected.sha256.toLowerCase() !== declaredSha256) {
+    throw new Error("policy download checksum differs from retained metadata");
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength !== contentLength) throw new Error("policy download is partial");
+  const actualSha256 = Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+  if (actualSha256 !== declaredSha256) throw new Error("policy download SHA-256 mismatch");
+  return bytes;
 }
 
 export async function listReplayArtifacts(limit = 10): Promise<ReplayArtifactRecord[]> {

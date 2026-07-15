@@ -322,8 +322,14 @@ Work:
   request, real-engine comparison, parity bands, timing method, and fail-closed
   decision report. Its x86_64 reference row passed parity while native MuJoCo was
   about 4.9x faster than CPU-backed MJX, so it is harness feasibility, not D12
-  adoption or rejection evidence. Next close one-click object delivery
-  (`P7-011`), overnight passing hover/waypoint evidence (`P7-012`), deployed GPU
+  adoption or rejection evidence. The active P7-011 candidate implements one-click
+  admitted-model create/poll, D38/D39 one-winner content-addressed object delivery,
+  byte-free policy metadata, authenticated retained-byte readback, and double-
+  verified browser playback. Close it only after exact-head protected PostgreSQL/
+  MinIO/browser proof demonstrates stale-lease refusal, cancellation during upload
+  without database authority, substitution refusal, one job/one policy, and exact
+  readback, followed by protected-main reconciliation. Then acquire overnight
+  passing hover/waypoint evidence (`P7-012`), deployed GPU
   operations (`P7-013`), broader real tasks (`P7-014`), offline fine-tuning
   (`P7-009`), then run exact D12 quad/rover/legged on a declared accelerator with
   CPU overnight/tier-2 budgets and cost evidence to finish the MJX decision
@@ -339,8 +345,9 @@ Acceptance:
   the SLO is explicitly revised from evidence;
 - real engine baselines pass declared parity tolerances on the exact protected
   revision with source/provider/timestep/substep-bound artifacts;
-- one-click training produces a scorecard-passing policy overnight on declared
-  hardware and the browser executes the actual ONNX model;
+- one-click training delivery proves the browser executes the exact retained ONNX
+  object authorized by the winning owned-model job; separately, P7-012 proves a
+  scorecard-passing policy overnight on declared hardware;
 - MJX adoption/rejection is based on D12 benchmark data;
 - co-design returns at least three admitted Pareto points from engine-backed tiers.
 

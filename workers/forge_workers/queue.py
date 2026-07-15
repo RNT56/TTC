@@ -7,6 +7,7 @@ handlers without requiring a database driver.
 
 from __future__ import annotations
 
+import base64
 import json
 import hashlib
 import ipaddress
@@ -18,6 +19,12 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Protocol, Sequence
 
 from forge_workers.faults import RetryableJobError, retry_delay_seconds
+from forge_workers.object_storage import (
+    MAX_POLICY_MODEL_BYTES,
+    PolicyObjectStore,
+    S3PolicyObjectStore,
+    StoredPolicyObject,
+)
 
 
 @dataclass
@@ -34,6 +41,16 @@ class Job:
     lease_expires_at: str | None = None
     max_attempts: int = 3
     timeout_seconds: int = 3600
+
+
+@dataclass(frozen=True)
+class PreparedPolicyDelivery:
+    output: dict[str, Any]
+    model_bytes: bytes
+    object_key: str
+    cache_key: str
+    byte_size: int
+    sha256: str
 
 
 class JobHandler(Protocol):
@@ -179,7 +196,7 @@ def run_forever(
 class PostgresQueueStore:
     """Postgres-backed job store using FOR UPDATE SKIP LOCKED claims."""
 
-    def __init__(self, dsn: str) -> None:
+    def __init__(self, dsn: str, *, policy_store: PolicyObjectStore | None = None) -> None:
         try:
             import psycopg
             from psycopg.rows import dict_row
@@ -190,6 +207,7 @@ class PostgresQueueStore:
             ) from exc
         self._jsonb = Jsonb
         self._conn = psycopg.connect(dsn, autocommit=False, row_factory=dict_row)
+        self._policy_store = policy_store or S3PolicyObjectStore()
 
     def claim_one(self, tasks: Sequence[str]) -> Job | None:
         if not tasks:
@@ -279,6 +297,26 @@ class PostgresQueueStore:
     def mark_succeeded(self, job: Job, output: dict[str, Any]) -> bool:
         if not job.lease_token:
             return False
+        authority = self._current_job_authority(job)
+        if authority is None:
+            return False
+        owner_user_id, job_input = authority
+        prepared_policy: PreparedPolicyDelivery | None = None
+        stored_policy: StoredPolicyObject | None = None
+        persisted_output = output
+        if output.get("artifactKind") == "policy":
+            prepared_policy = _prepare_policy_delivery(
+                job_id=job.id,
+                owner_user_id=owner_user_id,
+                job_input=job_input,
+                output=output,
+            )
+            stored_policy = self._policy_store.put_policy(
+                object_key=prepared_policy.object_key,
+                model_bytes=prepared_policy.model_bytes,
+                sha256=prepared_policy.sha256,
+            )
+            persisted_output = prepared_policy.output
         with self._conn.transaction():
             row = self._conn.execute(
                 """
@@ -296,17 +334,43 @@ class PostgresQueueStore:
                    AND lease_expires_at > now()
                 RETURNING owner_user_id, input
                 """,
-                [self._jsonb(output), job.id, job.lease_token],
+                [self._jsonb(persisted_output), job.id, job.lease_token],
             ).fetchone()
             if row is not None:
-                self._materialize_job_output(
+                final_output = self._materialize_job_output(
                     job_id=job.id,
                     owner_user_id=row["owner_user_id"],
                     job_input=_object(row["input"]),
-                    output=output,
+                    output=persisted_output,
+                    prepared_policy=prepared_policy,
+                    stored_policy=stored_policy,
                 )
+                if final_output is not None:
+                    self._conn.execute(
+                        "UPDATE jobs SET output = %s::jsonb WHERE id = %s AND status = 'succeeded'",
+                        [self._jsonb(final_output), job.id],
+                    )
                 return True
         return False
+
+    def _current_job_authority(self, job: Job) -> tuple[str | None, dict[str, Any]] | None:
+        if not job.lease_token:
+            return None
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                SELECT owner_user_id, input
+                  FROM jobs
+                 WHERE id = %s
+                   AND status = 'running'
+                   AND lease_token = %s
+                   AND lease_expires_at > now()
+                """,
+                [job.id, job.lease_token],
+            ).fetchone()
+        if row is None:
+            return None
+        return row["owner_user_id"], _object(row["input"])
 
     def mark_failed(self, job: Job, error: str, code: str) -> bool:
         if not job.lease_token:
@@ -382,7 +446,9 @@ class PostgresQueueStore:
         owner_user_id: str | None,
         job_input: dict[str, Any],
         output: dict[str, Any],
-    ) -> None:
+        prepared_policy: PreparedPolicyDelivery | None = None,
+        stored_policy: StoredPolicyObject | None = None,
+    ) -> dict[str, Any] | None:
         artifact_kind = output.get("artifactKind")
         if artifact_kind == "vendor-offer-refresh":
             offers = _materializable_vendor_offers(output)
@@ -449,31 +515,111 @@ class PostgresQueueStore:
             )
             return
         if artifact_kind == "policy":
+            if prepared_policy is None or stored_policy is None:
+                raise RuntimeError("policy materialization requires exact stored-object evidence")
+            if output != prepared_policy.output:
+                raise RuntimeError("policy materialization output differs from prepared byte-free authority")
+            if (
+                stored_policy.bucket != os.environ.get("FORGE_OBJECT_BUCKET", "forge-artifacts")
+                or stored_policy.object_key != prepared_policy.object_key
+                or stored_policy.byte_size != prepared_policy.byte_size
+                or stored_policy.sha256 != prepared_policy.sha256
+                or stored_policy.content_type != "application/octet-stream"
+            ):
+                raise RuntimeError("policy storage evidence does not match the prepared policy authority")
             scorecard = _object(output.get("scorecard"))
-            artifact_blob_id = self._upsert_artifact_blob(
-                owner_user_id=owner_user_id,
-                purpose="policy-onnx",
-                cache_key=_nested_cache_key(output, "onnx"),
-                content_type="application/octet-stream",
-                metadata={"jobId": job_id, "artifactKind": "policy"},
-            )
-            self._conn.execute(
+            blob_row = self._conn.execute(
                 """
-                INSERT INTO policy_artifacts (
-                  owner_user_id, model_id, task_kind, scorecard, artifact_blob_id, export_gate
+                INSERT INTO object_blobs (
+                  owner_user_id, visibility, cache_key, bucket, object_key,
+                  content_type, byte_size, sha256, upload_status, verified_at,
+                  verification_error_code, metadata
                 )
-                VALUES (%s, %s, %s, %s::jsonb, %s, %s)
+                VALUES (%s, 'private', %s, %s, %s, 'application/octet-stream',
+                        %s, %s, 'complete', now(), NULL, %s::jsonb)
+                ON CONFLICT (cache_key) DO UPDATE
+                SET verified_at = COALESCE(object_blobs.verified_at, EXCLUDED.verified_at),
+                    upload_status = 'complete',
+                    verification_error_code = NULL
+                WHERE object_blobs.owner_user_id IS NOT DISTINCT FROM EXCLUDED.owner_user_id
+                  AND object_blobs.bucket = EXCLUDED.bucket
+                  AND object_blobs.object_key = EXCLUDED.object_key
+                  AND object_blobs.content_type = EXCLUDED.content_type
+                  AND object_blobs.byte_size = EXCLUDED.byte_size
+                  AND object_blobs.sha256 = EXCLUDED.sha256
+                RETURNING id
                 """,
                 [
                     owner_user_id,
+                    prepared_policy.cache_key,
+                    stored_policy.bucket,
+                    stored_policy.object_key,
+                    stored_policy.byte_size,
+                    stored_policy.sha256,
+                    self._jsonb(
+                        {
+                            "jobId": job_id,
+                            "artifactKind": "policy",
+                            "purpose": "policy-onnx",
+                            "sha256": stored_policy.sha256,
+                            "byteSize": stored_policy.byte_size,
+                            "formatVersion": "0.2.0",
+                        }
+                    ),
+                ],
+            ).fetchone()
+            if blob_row is None:
+                raise RuntimeError("policy digest is already bound to different storage evidence")
+            artifact_blob_id = str(blob_row["id"])
+            provisional_output = {
+                **output,
+                "delivery": {
+                    **_object(output.get("delivery")),
+                    "artifactBlobId": artifact_blob_id,
+                },
+            }
+            policy_row = self._conn.execute(
+                """
+                INSERT INTO policy_artifacts (
+                  owner_user_id, job_id, model_id, task_kind, scorecard,
+                  policy_metadata, artifact_blob_id, export_gate
+                )
+                VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s)
+                ON CONFLICT (job_id) DO NOTHING
+                RETURNING id
+                """,
+                [
+                    owner_user_id,
+                    job_id,
                     _model_id_from(job_input),
                     _task_id_from(output),
                     self._jsonb(scorecard),
+                    self._jsonb(provisional_output),
                     artifact_blob_id,
                     "exportable" if scorecard.get("exportable") is True else "blocked",
                 ],
+            ).fetchone()
+            if policy_row is None:
+                raise RuntimeError("training job already owns a policy artifact")
+            policy_artifact_id = str(policy_row["id"])
+            final_output = {
+                **provisional_output,
+                "delivery": {
+                    **_object(provisional_output.get("delivery")),
+                    "policyArtifactId": policy_artifact_id,
+                },
+            }
+            self._conn.execute(
+                """
+                UPDATE policy_artifacts
+                   SET policy_metadata = %s::jsonb
+                 WHERE id = %s
+                   AND owner_user_id IS NOT DISTINCT FROM %s
+                   AND job_id = %s
+                """,
+                [self._jsonb(final_output), policy_artifact_id, owner_user_id, job_id],
             )
-            return
+            return final_output
         if artifact_kind == "telemetry-replay":
             self._conn.execute(
                 """
@@ -575,8 +721,89 @@ def _string_list(value: Any) -> list[str]:
 
 
 def _model_id_from(value: dict[str, Any]) -> str | None:
+    snapshot = _object(value.get("modelSnapshot"))
+    snapshot_model_id = snapshot.get("modelId")
+    if isinstance(snapshot_model_id, str):
+        return snapshot_model_id
     model_id = value.get("modelId")
     return model_id if isinstance(model_id, str) else None
+
+
+def _prepare_policy_delivery(
+    *,
+    job_id: str,
+    owner_user_id: str | None,
+    job_input: dict[str, Any],
+    output: dict[str, Any],
+) -> PreparedPolicyDelivery:
+    onnx = _object(output.get("onnx"))
+    scorecard = _object(output.get("scorecard"))
+    io = _object(output.get("io"))
+    tensor = _object(io.get("tensor"))
+    if not onnx or not scorecard or not io or not tensor:
+        raise RuntimeError("policy output lacks ONNX, scorecard, or tensor authority")
+    encoded = onnx.get("modelBase64")
+    if not isinstance(encoded, str) or not encoded:
+        raise RuntimeError("policy output requires inline ONNX bytes for exact storage")
+    if len(encoded) > ((MAX_POLICY_MODEL_BYTES + 2) // 3) * 4:
+        raise RuntimeError("policy ONNX bytes exceed the supported range")
+    try:
+        model_bytes = base64.b64decode(encoded, validate=True)
+    except (ValueError, base64.binascii.Error) as exc:
+        raise RuntimeError("policy ONNX bytes are not strict base64") from exc
+    if base64.b64encode(model_bytes).decode("ascii") != encoded:
+        raise RuntimeError("policy ONNX bytes are not canonical base64")
+    byte_size = onnx.get("byteSize")
+    declared_sha = onnx.get("sha256")
+    actual_sha = hashlib.sha256(model_bytes).hexdigest()
+    if (
+        isinstance(byte_size, bool)
+        or not isinstance(byte_size, int)
+        or not 0 < byte_size <= MAX_POLICY_MODEL_BYTES
+        or len(model_bytes) != byte_size
+        or not isinstance(declared_sha, str)
+        or declared_sha.lower() != actual_sha
+    ):
+        raise RuntimeError("policy ONNX bytes do not match their bounded size/digest authority")
+    snapshot = _object(job_input.get("modelSnapshot"))
+    lineage = _object(scorecard.get("lineage"))
+    contract_hash = (
+        snapshot.get("contractHash")
+        if isinstance(snapshot.get("contractHash"), str)
+        else job_input.get("contractHash")
+        if isinstance(job_input.get("contractHash"), str)
+        else lineage.get("contractHash")
+        if isinstance(lineage.get("contractHash"), str)
+        else None
+    )
+    onnx_metadata = {key: value for key, value in onnx.items() if key != "modelBase64"}
+    owner = _owner_segment(owner_user_id)
+    object_key = f"users/{owner}/policy-onnx/{actual_sha}"
+    cache_key = f"{owner}:sha256:{actual_sha}"
+    persisted_output = {
+        **output,
+        "formatVersion": "0.2.0",
+        "onnx": onnx_metadata,
+        "delivery": {
+            "storage": "s3-compatible-object",
+            "objectBacked": True,
+            "byteSize": byte_size,
+            "sha256": actual_sha,
+            "modelRevision": {
+                "modelId": _model_id_from(job_input),
+                "contractHash": contract_hash,
+            },
+            "jobId": job_id,
+        },
+    }
+    return PreparedPolicyDelivery(
+        output=persisted_output,
+        model_bytes=model_bytes,
+        object_key=object_key,
+        cache_key=cache_key,
+        byte_size=byte_size,
+        sha256=actual_sha,
+    )
 
 
 def _task_id_from(output: dict[str, Any]) -> str:

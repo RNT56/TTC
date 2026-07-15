@@ -252,7 +252,7 @@ ONNX export, in-browser policy playback; estimator-smoke gate (D8).
 **Owning docs:** [`systems/learning-engine.md`](systems/learning-engine.md).
 
 Exit criteria:
-- [~] A trained hover + waypoint policy flies the twin in-browser from a one-click job *(controlled real training and digest-bound browser inference are protected through P7-003/P7-008; P7-011 still owns one-click queue/object delivery and P7-012 owns passing hover/waypoint learning-quality evidence)*
+- [~] A trained hover + waypoint policy flies the twin in-browser from a one-click job *(controlled real training and digest-bound browser inference are protected through P7-003/P7-008. P7-011's candidate now owns one-click admitted-model create/poll, lease-fenced exact object materialization, authenticated retained-model fetch, and double-verified playback; it remains open until protected PostgreSQL/MinIO/browser evidence and merge reconciliation. P7-012 separately owns passing hover/waypoint learning-quality evidence.)*
 - [x] Ground-truth-trained policies rejected at scorecard time (estimator smoke) *(fixture and external SB3 worker gates reject SIM-004)*
 - [ ] Hover-class task to passing scorecard overnight on one consumer GPU
 - [x] Scorecard schema final: success rate, robustness grid, energy; sub-threshold policies do not export *(p7-scorecard-v1 plus blocked ONNX export metadata live)*

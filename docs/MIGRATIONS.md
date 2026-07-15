@@ -88,6 +88,17 @@ database then runs `db:assert-upload-faults` and `db:assert-queue-faults`; they 
 `artifacts/e2e/qa005-upload-acceptance.json` and
 `artifacts/e2e/qa005-fault-acceptance.json` respectively.
 
+Migration `0022` adds P7-011 delivery authority without rewriting object payloads.
+It adds nullable `policy_artifacts.job_id`, byte-free `policy_metadata`, an object
+shape constraint, and a partial unique job index. The backfill binds only the first
+unambiguous historical policy whose object metadata names a same-owner
+`train.policy` job; ambiguous rows remain nullable and cannot become current download
+authority. Historical job output is copied only after removing `onnx.modelBase64`.
+The populated `0021` predecessor fixture must preserve the row, bind its job, strip
+the copied bytes, and retain the original job output for compatibility. The protected
+data-plane gate then runs `db:assert-policy-delivery` against PostgreSQL plus pinned
+S3-compatible storage and writes `artifacts/e2e/p7-policy-delivery.json`.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -141,6 +152,13 @@ continue writing through an old process, record queued/running counts, and let t
 migration requeue tokenless legacy running rows. Deploy the D38-capable gateway and
 workers together; do not resume queue consumption until the lease-state invariant and
 the QA-005 upload/queue assertions pass.
+
+For `0022`, keep training workers stopped until the migration and P7-011 application
+version are deployed together. Inventory policy rows with missing/duplicate object
+`jobId` metadata; the migration intentionally leaves ambiguous history nullable.
+Verify the configured object bucket is reachable and private before resuming policy
+jobs. Older readers may ignore the additive columns, but older workers must not
+resume because they can publish database-only policy rows and inline model bytes.
 
 ### Apply and verify
 
@@ -205,6 +223,13 @@ D38 version, deploy the prior gateway only if it will not create new staged uplo
 retain the additive columns/constraints, and roll forward to the D38 worker before
 queue service resumes. Do not drop lease/upload evidence or mark staged rows complete
 as a rollback shortcut.
+
+After `0022`, retain both additive columns and the unique partial index during an
+application rollback. Stop policy creation and workers first. An older gateway may
+read existing policy rows but must not expose the new authenticated model route, and
+an older worker must not materialize new policies. Roll forward to the P7-011 writer;
+never repopulate inline model bytes, null authoritative job IDs, or mark an object
+complete without exact storage evidence.
 
 Use roll-forward for a committed schema defect: add a new migration that restores
 the intended invariant and preserves evidence. Use backup restore only under the

@@ -13,6 +13,7 @@ import {
   createListing,
   createPrintQuote,
   decideReview,
+  downloadPolicyModel,
   editModel,
   gatewayUrl,
   generateContractStream,
@@ -1046,6 +1047,14 @@ export default function App() {
     void refreshBriefEval();
   }, [refreshAccount, refreshArtifacts, refreshBriefEval, refreshConsents, refreshJobs, refreshModels, refreshPlatform]);
 
+  useEffect(() => {
+    if (!jobs.some((job) => job.status === "queued" || job.status === "running")) return;
+    const timer = window.setInterval(() => {
+      void Promise.all([refreshJobs(), refreshArtifacts()]);
+    }, 1_500);
+    return () => window.clearInterval(timer);
+  }, [jobs, refreshArtifacts, refreshJobs]);
+
   const selectCourse = useCallback((courseId: string | null) => {
     setActiveCourseId(courseId);
     if (courseId) replaceCourseUrl(courseId);
@@ -1284,6 +1293,10 @@ export default function App() {
       setJobsError("upload at least two owned photos, then grant processing consent for each");
       return;
     }
+    if (kind === "train.policy" && !activeModelId) {
+      setJobsError("policy training requires an owned admitted model");
+      return;
+    }
     const common = {
       ...(activeModelId
         ? { modelId: activeModelId }
@@ -1341,7 +1354,13 @@ export default function App() {
       "maintenance.fleet-summary": { vehicles: [{ id: "demo", packCycles: 81 }] },
     };
     try {
-      await createJob(kind, payloadByKind[kind] ?? common);
+      const liveTraining = kind === "train.policy"
+        && jobCapabilities?.providers.local.configured === true
+        && jobCapabilities.live.sb3.configured === true;
+      await createJob(kind, payloadByKind[kind] ?? common, {
+        provider: liveTraining ? "local" : "fixture",
+        idempotencyKey: globalThis.crypto.randomUUID(),
+      });
       await refreshJobs();
       await refreshArtifacts();
     } catch (error) {
@@ -1412,17 +1431,26 @@ export default function App() {
   const trainFromFirstTelemetry = async () => {
     const telemetryId = telemetryLogs[0]?.id;
     if (!telemetryId) return;
+    if (!activeModelId) {
+      setConsentMessage("consented training requires an owned admitted model");
+      return;
+    }
     setConsentBusy(true);
     try {
+      const liveTraining = jobCapabilities?.providers.local.configured === true
+        && jobCapabilities.live.sb3.configured === true;
       await createJob("train.policy", {
-        ...(activeModelId
-          ? { modelId: activeModelId }
-          : { contractHash: s.report?.contractHash }),
+        modelId: activeModelId,
         task: "hover-hold",
         seed: 7,
         telemetryLogIds: [telemetryId],
+      }, {
+        provider: liveTraining ? "local" : "fixture",
+        idempotencyKey: globalThis.crypto.randomUUID(),
       });
-      setConsentMessage(`started consented training reuse for ${telemetryId}`);
+      setConsentMessage(
+        `${liveTraining ? "queued local" : "completed fixture"} consented training reuse for ${telemetryId}`,
+      );
       await Promise.all([refreshJobs(), refreshArtifacts()]);
     } catch (error) {
       setConsentMessage(error instanceof Error ? error.message : String(error));
@@ -1431,7 +1459,7 @@ export default function App() {
     }
   };
 
-  const startPolicyPlayback = useCallback((output: PolicyOutput) => {
+  const startPolicyPlayback = useCallback((output: PolicyOutput, artifactId?: string) => {
     void (async () => {
       const session = sessionRef.current;
       const contractHash = loadedModelContractHash ?? useStudio.getState().report?.contractHash;
@@ -1443,7 +1471,18 @@ export default function App() {
       policyPlaybackRef.current = null;
       setPolicyPlaybackMessage("verifying policy bytes, lineage, tensor contract, and ONNX Runtime Web/WASM");
       try {
-        const controller = await BrowserPolicyController.create(output, contractHash, session);
+        const retainedModelBytes = output.onnx?.modelBase64
+          ? undefined
+          : await downloadPolicyModel(
+              artifactId ?? output.delivery?.policyArtifactId ?? "",
+              { byteSize: output.onnx?.byteSize, sha256: output.onnx?.sha256 },
+            );
+        const controller = await BrowserPolicyController.create(
+          output,
+          contractHash,
+          session,
+          retainedModelBytes,
+        );
         if (session !== sessionRef.current) {
           controller.dispose();
           throw new Error("active contract changed while the policy runtime was loading");
@@ -2309,6 +2348,7 @@ export default function App() {
             onRefresh={() => void refreshArtifacts()}
             onOpenBlob={(blobId) => void openArtifactBlob(blobId)}
             onAlignPhotoscan={(artifactId, input) => void alignPhotoscanArtifact(artifactId, input)}
+            onPlayPolicy={startPolicyPlayback}
           />
           <PlatformPanel
             credits={credits}
@@ -2845,6 +2885,7 @@ function ArtifactRegistry({
   onRefresh,
   onOpenBlob,
   onAlignPhotoscan,
+  onPlayPolicy,
 }: {
   photoscanArtifacts: PhotoscanArtifactRecord[];
   policyArtifacts: PolicyArtifactRecord[];
@@ -2859,6 +2900,7 @@ function ArtifactRegistry({
   onRefresh: () => void;
   onOpenBlob: (blobId: string | null) => void;
   onAlignPhotoscan: (artifactId: string, input: PhotoscanAlignmentInput) => void;
+  onPlayPolicy: (output: PolicyOutput, artifactId?: string) => void;
 }) {
   return (
     <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
@@ -2893,7 +2935,12 @@ function ArtifactRegistry({
         />
       ))}
       {policyArtifacts.slice(0, 3).map((artifact) => (
-        <PolicyArtifactRow key={artifact.id} artifact={artifact} onOpenBlob={onOpenBlob} />
+        <PolicyArtifactRow
+          key={artifact.id}
+          artifact={artifact}
+          onOpenBlob={onOpenBlob}
+          onPlay={onPlayPolicy}
+        />
       ))}
       {replayArtifacts.slice(0, 2).map((artifact) => (
         <ReplayArtifactRow key={artifact.id} artifact={artifact} />
@@ -3140,18 +3187,32 @@ function PhotoscanArtifactRow({
 function PolicyArtifactRow({
   artifact,
   onOpenBlob,
+  onPlay,
 }: {
   artifact: PolicyArtifactRecord;
   onOpenBlob: (blobId: string | null) => void;
+  onPlay: (output: PolicyOutput, artifactId?: string) => void;
 }) {
   const scorecard = asRecord(artifact.scorecard);
   const success = numberOrNull(scorecard?.successRate);
+  const policyOutput = isKnownJobOutput(artifact.policyMetadata)
+    && artifact.policyMetadata.artifactKind === "policy"
+    ? artifact.policyMetadata
+    : null;
   return (
     <div style={artifactRowStyle}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <span style={{ color: artifact.exportGate === "passed" ? "#7dd87d" : "#e6a23c", flex: 1 }}>
+        <span style={{ color: artifact.exportGate === "exportable" ? "#7dd87d" : "#e6a23c", flex: 1 }}>
           policy · {artifact.taskKind}
         </span>
+        <button
+          data-testid={`policy-artifact-play-${artifact.id}`}
+          disabled={!policyOutput || artifact.exportGate !== "exportable"}
+          onClick={() => policyOutput && onPlay(policyOutput, artifact.id)}
+          style={btn}
+        >
+          play
+        </button>
         <button disabled={!artifact.artifactBlobId} onClick={() => onOpenBlob(artifact.artifactBlobId)} style={btn}>
           onnx
         </button>
@@ -4274,7 +4335,7 @@ function JobDetails({
   job: JobRecord;
   onApplyPatch: (ops: JsonPatchOp[]) => void;
   onSaveCandidate: (candidate: CodesignCandidate) => void;
-  onPlayPolicy: (output: PolicyOutput) => void;
+  onPlayPolicy: (output: PolicyOutput, artifactId?: string) => void;
 }) {
   if (job.error) {
     return <div style={{ color: "#e66" }}>{job.error}</div>;
@@ -4329,7 +4390,7 @@ function JobDetails({
           <button
             data-testid="policy-play"
             disabled={scorecard?.exportable !== true}
-            onClick={() => onPlayPolicy(output)}
+            onClick={() => onPlayPolicy(output, output.delivery?.policyArtifactId)}
             style={{ ...btn, marginTop: 4 }}
           >
             play

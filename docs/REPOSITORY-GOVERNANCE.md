@@ -144,6 +144,11 @@ P1-015 parity evidence.
 - Every external workflow action uses an immutable 40-character commit SHA with a
   human-readable version comment. `pnpm verify:workflows` enforces this locally and
   the required `dependency review` job enforces it on pull requests.
+- CI and Compose service images that participate in persisted-data or artifact proof
+  use an explicit upstream release tag plus immutable manifest digest. Record why a
+  substitute distribution is used, review its provenance and license, and rerun the
+  complete dependent acceptance before changing either tag or digest. Never treat a
+  mutable `latest` image or an unpinned object-store client as release evidence.
 - Repository Actions policy permits GitHub-owned actions plus only the exact pinned
   third-party action revisions used in-tree; all other external actions are denied.
 - Security and release workflows generate a validated SPDX JSON source SBOM. Release

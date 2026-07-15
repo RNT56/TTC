@@ -37,7 +37,7 @@ their TypeBox request schemas:
 - [`../API-EVENT-ARTIFACT-REFERENCE.md`](../API-EVENT-ARTIFACT-REFERENCE.md) — human
   route/auth/maturity table plus event and artifact guidance;
 - [`../contracts/openapi.v0.2.0.json`](../contracts/openapi.v0.2.0.json) — OpenAPI
-  3.1 request contract for all 75 registered routes;
+  3.1 request contract for all 76 registered routes;
 - [`../contracts/events.v0.2.0.json`](../contracts/events.v0.2.0.json) — generation
   SSE and persisted job-event ordering/terminal semantics;
 - [`../contracts/artifacts.v0.2.0.json`](../contracts/artifacts.v0.2.0.json) — all
@@ -88,6 +88,16 @@ Fixture job outputs currently materialize to `photoscan_artifacts`,
 Docker Compose worker to claim and materialize. Photoscan result caches and policy
 ONNX outputs also upsert owner-scoped `object_blobs` rows and link those rows from
 their artifact tables.
+P7-011 policy delivery accepts canonical inline ONNX bytes only as transient
+producer output. The current D38 lease verifies and uploads the bounded bytes to an
+owner-scoped content-addressed key, then one serializable transaction rechecks that
+lease, marks the job successful, inserts the complete object declaration, and
+creates exactly one job-bound policy with byte-free model revision, scorecard,
+tensor, lineage, size, and digest metadata. Authenticated
+`GET /v1/policies/:id/model` owner-scopes the row and revalidates every binding plus
+the stored bytes before returning a non-cacheable octet stream; Studio hashes it
+again. Workers remain private and neither storage credentials nor presigned policy
+URLs cross the browser boundary.
 The local-only `commerce.vendor-refresh` kind is command-gated at enqueue and worker
 execution. Successful normalized rows materialize to `vendor_offers` in the same
 worker transaction as job success; a corrupt accepted row rolls back both state
@@ -137,6 +147,17 @@ all new gateway client registrations explicitly write `staged`. Rollback stops n
 workers and enqueueing first, then drains/cancels running jobs; retain 0021 and deploy
 forward because an older worker cannot satisfy the running-row constraint.
 
+Migration `0022_policy_delivery_authority.sql` adds the nullable historical
+`policy_artifacts.job_id` binding, byte-free `policy_metadata`, and a unique partial
+job index. It backfills only an unambiguous matching job and strips legacy inline
+bytes when copying delivery evidence; it never invents authority for ambiguous
+rows. Deploy with policy workers stopped, verify the configured private bucket and
+new reader first, then resume writers. Rollback keeps the additive columns and any
+content-addressed objects, stops incompatible writers, and rolls forward. The
+protected `db:assert-policy-delivery` acceptance must prove stale-lease refusal,
+one-winner exact materialization, cancellation during upload without database
+authority, substitution refusal, byte-free persistence, and exact readback.
+
 Review queue operations sit on the P3 `review_queue` table. `GET /v1/reviews`
 filters by status and export policy; `PATCH /v1/reviews/:id` records approve/reject,
 reviewer, audit note, decision payload, reviewed time, and the export policy the
@@ -161,10 +182,13 @@ caller forwarding headers, its CSRF behavior remains enabled, and unsafe cookie-
 authenticated requests require the configured origin.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.2.0 across every explicit owner-scoped table,
+transaction and returns format 1.3.0 across every explicit owner-scoped table,
 including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
+Policy rows add authoritative `jobId` and byte-free `policyMetadata`; retained ONNX
+bytes stay behind the authenticated policy-model endpoint and are never embedded in
+the export JSON.
 `DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
 user in a serializable transaction, removes user/derived rows explicitly rather than
 trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the

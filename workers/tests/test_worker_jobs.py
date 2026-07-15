@@ -8,7 +8,15 @@ from forge_workers.faults import (
     ProviderUnavailableError,
     retry_delay_seconds,
 )
-from forge_workers.queue import HandlerRegistry, Job, PostgresQueueStore, run_once, registry
+from forge_workers.object_storage import StoredPolicyObject
+from forge_workers.queue import (
+    HandlerRegistry,
+    Job,
+    PostgresQueueStore,
+    _prepare_policy_delivery,
+    run_once,
+    registry,
+)
 from forge_workers.training.tasks import task_ids
 
 
@@ -176,6 +184,82 @@ def test_vendor_refresh_materialization_revalidates_and_records_job_provenance(m
             output=bad_output,
         )
     assert len(connection.calls) == 1
+
+
+def test_policy_delivery_strips_bytes_and_materializes_exact_job_bound_evidence(monkeypatch):
+    register_all_handlers()
+    output = registry.dispatch(
+        Job(
+            id="policy-job",
+            task="train.policy",
+            payload={"contractHash": "ab" * 32, "seed": 7},
+            idempotency_key="policy-idempotency",
+        )
+    )
+    job_input = {
+        "modelId": "model-1",
+        "contractHash": "ab" * 32,
+        "modelSnapshot": {"modelId": "model-1", "contractHash": "ab" * 32},
+    }
+    prepared = _prepare_policy_delivery(
+        job_id="policy-job",
+        owner_user_id="user-fixture",
+        job_input=job_input,
+        output=output,
+    )
+    assert "modelBase64" not in prepared.output["onnx"]
+    assert prepared.output["delivery"]["modelRevision"] == {
+        "modelId": "model-1",
+        "contractHash": "ab" * 32,
+    }
+
+    class Result:
+        def __init__(self, row):
+            self.row = row
+
+        def fetchone(self):
+            return self.row
+
+    class CaptureConnection:
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, sql, params):
+            self.calls.append((sql, params))
+            if "INSERT INTO object_blobs" in sql:
+                return Result({"id": "blob-policy"})
+            if "INSERT INTO policy_artifacts" in sql:
+                return Result({"id": "policy-artifact"})
+            return Result(None)
+
+    connection = CaptureConnection()
+    store = object.__new__(PostgresQueueStore)
+    store._conn = connection
+    store._jsonb = lambda value: value
+    stored = StoredPolicyObject(
+        bucket="forge-artifacts",
+        object_key=prepared.object_key,
+        byte_size=prepared.byte_size,
+        sha256=prepared.sha256,
+    )
+    final_output = store._materialize_job_output(
+        job_id="policy-job",
+        owner_user_id="user-fixture",
+        job_input=job_input,
+        output=prepared.output,
+        prepared_policy=prepared,
+        stored_policy=stored,
+    )
+
+    assert final_output is not None
+    assert final_output["delivery"]["artifactBlobId"] == "blob-policy"
+    assert final_output["delivery"]["policyArtifactId"] == "policy-artifact"
+    policy_sql, policy_params = next(
+        (sql, params) for sql, params in connection.calls if "INSERT INTO policy_artifacts" in sql
+    )
+    assert "ON CONFLICT (job_id) DO NOTHING" in policy_sql
+    assert policy_params[1:4] == ["policy-job", "model-1", "hover-hold"]
+    assert "modelBase64" not in policy_params[5]["onnx"]
 
 
 def test_vendor_refresh_queue_handler_fails_closed_without_a_command(monkeypatch):

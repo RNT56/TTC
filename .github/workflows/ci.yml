@@ -138,6 +138,11 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://forge:forge-dev-only@localhost:5432/forge
+      FORGE_OBJECT_ENDPOINT: http://127.0.0.1:9000
+      FORGE_OBJECT_BUCKET: forge-artifacts
+      FORGE_OBJECT_ACCESS_KEY_ID: forge
+      FORGE_OBJECT_SECRET_ACCESS_KEY: forge-dev-only
+      FORGE_OBJECT_FORCE_PATH_STYLE: "1"
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
@@ -158,6 +163,27 @@ jobs:
           chmod +x target/debug/forge-validate
           pnpm exec playwright-core install --with-deps chromium firefox webkit
       - run: python -m pip install -e "workers[queue]"
+      - name: start pinned S3-compatible policy object store
+        run: |
+          docker run --detach --name forge-minio \
+            --publish 9000:9000 \
+            --env MINIO_ROOT_USER=forge \
+            --env MINIO_ROOT_PASSWORD=forge-dev-only \
+            alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4 \
+            server /data
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:9000/minio/health/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs forge-minio
+              exit 1
+            fi
+            sleep 1
+          done
+          docker run --rm --network host --entrypoint /bin/sh \
+            minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727 \
+            -c 'mc alias set forge http://127.0.0.1:9000 forge forge-dev-only && mc mb --ignore-existing forge/forge-artifacts && mc anonymous set none forge/forge-artifacts'
       - name: isolated Postgres and real-browser acceptance
         env:
           FORGE_BROWSER_E2E: "1"
