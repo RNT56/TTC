@@ -35,6 +35,10 @@ artifact. All 39 required local non-DB gates pass under Python 3.12, including
 gateway 65/65, Studio 9/9 and production build, workers 151/151, generated docs/
 compatibility, native/fresh-WASM parity, packaging, real training/engine/MJX smokes,
 and patch hygiene.
+The first protected data-plane attempt reached the pinned image and exposed that its
+declared non-root UID 100/GID 101 could not write a root-owned empty `/data` mount.
+The follow-up preserves non-root MinIO: CI supplies a UID/GID-owned tmpfs, while
+Compose runs a one-shot volume-permission initializer before the service starts.
 **Changed:** D39 and R26; migration 0022 plus populated-predecessor assertions;
 gateway object write/read, transactional policy materialization, policy-model route,
 and user-data export 1.3.0; worker S3-compatible transport/materializer and protected

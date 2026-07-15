@@ -167,6 +167,7 @@ jobs:
         run: |
           docker run --detach --name forge-minio \
             --publish 9000:9000 \
+            --tmpfs /data:rw,uid=100,gid=101,mode=0700 \
             --env MINIO_ROOT_USER=forge \
             --env MINIO_ROOT_PASSWORD=forge-dev-only \
             alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4 \

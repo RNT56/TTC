@@ -18,10 +18,20 @@ services:
       timeout: 3s
       retries: 10
 
-  minio:
+  minio-permissions:
     # MinIO stopped publishing official Docker images after the 2025-10-15
     # security release. This Alpine rebuild is pinned to that exact source tag
-    # and manifest digest; review both before any upgrade.
+    # and manifest digest; its declared minio user is UID 100/GID 101. This
+    # one-shot initializer owns only the persistent data volume and exits before
+    # the non-root service starts.
+    image: alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chown -R 100:101 /data"]
+    volumes:
+      - minio:/data
+
+  minio:
     image: alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4
     command: server /data --console-address ":9001"
     environment:
@@ -32,6 +42,9 @@ services:
       - "9001:9001"
     volumes:
       - minio:/data
+    depends_on:
+      minio-permissions:
+        condition: service_completed_successfully
 
   minio-init:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
