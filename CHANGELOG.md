@@ -18,6 +18,38 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Protect contract-derived rover and quadruped training
+**Session:** Codex agent · branch `codex/p7014-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-014 [x]
+**Done:** Closed P7-014 at controlled deterministic trainer maturity. PR #75 exact
+implementation head `c0f3a8f` passed CI `29433820358` and security `29433818798`;
+its synthetic merge `623d392` had exact protected parent `333e779` and exact
+implementation head. Protected squash `90b1691` passed post-merge CI `29448974932`
+and security `29448974951`. Downloaded protected artifact `8356753424` self-binds
+to clean source `90b1691` and hashes as `20f0c25d…56ba`. Independent base64 decode,
+SHA-256 recomputation, ONNX parsing/checking, graph-shape inspection, and metadata
+comparison validate hover 23,874 bytes/`6b18908f…c555`, waypoint 23,878/
+`783753e3…4927`, rover 22,520/`fa6c3cac…e4ad`, and quadruped 28,890/
+`b400ac71…8c2e`. All four paths bind exact contract/task/tensor lineage, run 256 CPU
+PPO steps with optimizer changes and estimator-only observations, and retain honest
+blocked scorecards. Ground rows additionally preserve exact mass +15%, torque -10%,
+friction -50%, and simulated-positive-mechanical-joint-work semantics. The exact-head
+local 39-step gate plus protected required matrix cover 174 worker tests, 13 Studio
+tests, the four-task smoke, Postgres/MinIO/browser acceptance, engine/MJX evidence,
+security, and patch hygiene. A direct
+stable-ID recount corrects the living summary to 205 total: 146 done, 33 in progress,
+25 open, and 1 blocked.
+**Changed:** Canonical agent boundary; project state; roadmap and atomic TODO;
+execution sequencing; learning, worker, and Studio system docs; and this changelog.
+No runtime, schema, golden, generated artifact, dependency, or threshold changed.
+**Decisions:** none; D44 remains binding.
+**Next:** Execute P7-009's remaining live offline fine-tune adapter as the smallest
+dependency-complete local P7 lane, preserving deterministic dataset/warmstart evidence
+and fail-closed live-provider authority.
+**Blockers:** none for P7-014 controlled trainer closure. Passing ground policies,
+browser ground playback, deployed GPU operations, external users, devices, and field
+transfer remain separate tasks and must not inherit this smoke claim.
+
 ## 2026-07-15 — Implement contract-derived rover and quadruped training
 **Session:** Codex agent · branch `codex/p7014-ground-trainers` · **Phase:** P7 ·
 **TODO items:** P7-014 [~]

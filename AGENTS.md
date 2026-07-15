@@ -86,9 +86,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-014 PR #70 at `f220d25`, with
-  post-merge CI `29415036211` and security `29415036274` green. PR #70 owns the
-  task-v2 waypoint evidence, PR #68/`9131289` owns object-backed one-click delivery,
+  latest verified protected runtime descendant is P7-014 PR #75 at `90b1691`, with
+  post-merge CI `29448974932` and security `29448974951` green. PR #75 owns the
+  contract-derived rover/quadruped trainer evidence, PR #70/`f220d25` owns the
+  task-v2 waypoint history, PR #68/`9131289` owns object-backed one-click delivery,
   PR #66/`0614272` owns controlled
   MJX-feasibility evidence, PR #64/`d1c4c38` remains the owning seeded-training
   anchor, and PR #62/`1de7974` remains the owning base browser-runtime anchor;
@@ -201,8 +202,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `29413578031`/security `29413578124`; protected CI `29415036211` and security
   `29415036274` pass. Downloaded artifact `8342801418` self-binds to clean `f220d25`
   and retains two valid, correctly non-exportable task-bound ONNX policies. D40's
-  prerequisite for P7-012 is satisfied; rover/legged real trainers remain open under
-  P7-014;
+  prerequisite for P7-012 was satisfied; the later D44/PR #75 ground implementation
+  closes the rover/legged trainer requirement without rewriting this history;
 - P7-012 is closed at controlled consumer-hardware simulation maturity. PR #72 and
   protected `8e094c0` own the executable implementation; PR #73 and protected
   `6bfa60f` own the retained JSON/ONNX evidence. It advances current multirotor
@@ -224,7 +225,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   but does not claim the 19-core MPS device as the training backend, and permits only
   an explicitly non-measured 140 W adapter-rating wall-time upper bound. This is not
   deployed GPU, measured electricity, external-user, real-device, or field proof;
-- P7-014's remaining ground candidate is governed by D44. It adds independent
+- P7-014's ground implementation is protected through PR #75/`90b1691` under D44.
+  It adds independent
   `groundTrainingMuJoCoBundle`, `p7-ground-v1`, and
   `forge-ground-policy-tensor` 1.0.0 authorities for exactly rover line-follow and
   quadruped walk-to-target. Rust derives mass/inertia, contact plane, wheel geometry,
@@ -233,10 +235,17 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   state, evaluates mass/torque/friction, and labels energy as simulated positive
   mechanical joint work. Unsupported tasks/morphologies, missing authority, task or
   tensor drift, and external substitution fail closed. The required smoke candidate
-  runs four real 256-step CPU PPO tasks. The complete 39-step local gate passes with
-  174 worker tests and 13 Studio runtime tests. Studio deliberately refuses the
-  ground tensor; protected exact-source checks and retained smoke still gate P7-014
-  closure;
+  runs four real 256-step CPU PPO tasks. The exact implementation head's complete
+  39-step local gate passed; `c0f3a8f` then passed
+  PR CI `29433820358` and security `29433818798`; protected squash `90b1691` passed
+  post-merge CI `29448974932` and security `29448974951`. Downloaded artifact
+  `8356753424` binds clean protected source `90b1691`; its JSON SHA-256 is
+  `20f0c25d…56ba`, and all four embedded ONNX graphs independently parse, validate,
+  and match their declared bytes, digests, tensor layouts, task hashes, and contract
+  hashes. The protected required matrix retains 174 worker tests and 13 Studio runtime
+  tests. This closes P7-014 at controlled deterministic trainer maturity. Studio
+  deliberately refuses the ground tensor; passing learned ground policies, browser
+  execution, device transfer, external acceptance, and field proof remain separate;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
