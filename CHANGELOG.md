@@ -44,7 +44,9 @@ Studio tracks that exact snapshot SHA separately from the validator report's
 canonical typed-contract hash and clears the binding on non-model loads or patches;
 policy playback therefore fails closed unless its lineage matches the loaded saved
 revision; browser acceptance re-reads that revision after an edit instead of trusting
-the pre-edit hash.
+the pre-edit hash. Template-generated multirotors now also carry the explicit
+complementary-estimator authority required by both training and browser playback,
+instead of being admitted but unusable at that boundary.
 **Changed:** Rust training-bundle derivation and validator command; gateway job
 authority; worker bundle verifier, MuJoCo environment, SB3 trainer/runner, external
 job normalization, Modal pins, tests, exact optional dependencies, required CI

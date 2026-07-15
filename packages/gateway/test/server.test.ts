@@ -1516,6 +1516,38 @@ test("generate repairs validator diagnostics and admits the repaired contract", 
   await app.close();
 });
 
+test("multirotor template carries explicit estimator authority for training and playback", async () => {
+  const adapter = new TemplateSynthesisAdapter(generationMaterials);
+  const candidate = await adapter.synthesize(
+    {
+      mode: "context-only",
+      catalogPolicy: "approved-review-rows-only",
+      brief: { prompt: "make a training-ready quad", archetype: "multirotor", categories: [] },
+      retrievedComponents: [],
+      retrievedPatterns: [],
+      promptPrefix: {
+        version: "p4-context-v1",
+        hash: "prefix",
+        schemaHash: "schema",
+        docsHash: "docs",
+        exemplarHashes: [],
+        text: null,
+      },
+      blockedReasons: [],
+    },
+    { prompt: "make a training-ready quad", archetype: "multirotor", seed: 7 },
+  );
+
+  const estimator = (candidate.contract as { sim: { estimator?: unknown } }).sim.estimator;
+  assert.deepEqual(estimator, {
+    accelNoise: 0.08,
+    bias: 0.01,
+    gyroNoise: 0.02,
+    kind: "complementary",
+    latency_ms: 8,
+  });
+});
+
 test("template repair splits an oversized primitive into printable modules", async () => {
   const adapter = new TemplateSynthesisAdapter(generationMaterials);
   const repaired = await adapter.repair({
