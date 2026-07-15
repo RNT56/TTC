@@ -1180,6 +1180,22 @@ export default function App() {
     }
   };
 
+  const selectActiveModel = async (modelId: string) => {
+    setActiveModelId(modelId || null);
+    const model = models.find((candidate) => candidate.id === modelId);
+    if (!model) return;
+    setModelBusy(true);
+    setModelError(null);
+    try {
+      await loadContract(JSON.stringify(model.contract), model.validatorReport);
+      setShareUrl(null);
+    } catch (error) {
+      setModelError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setModelBusy(false);
+    }
+  };
+
   const saveCodesignCandidate = useCallback(async (candidate: CodesignCandidate) => {
     if (!isPatchList(candidate.patch)) return;
     const contract = useStudio.getState().contractJson;
@@ -1252,8 +1268,9 @@ export default function App() {
       return;
     }
     const common = {
-      modelId: activeModelId,
-      contractHash: s.report?.contractHash,
+      ...(activeModelId
+        ? { modelId: activeModelId }
+        : { contractHash: s.report?.contractHash }),
       sourceObjectId: "fixture://asset",
     };
     const singleImages = scanImageRefs.slice(0, 1).map((id) => `obj:${id}`);
@@ -1381,8 +1398,9 @@ export default function App() {
     setConsentBusy(true);
     try {
       await createJob("train.policy", {
-        modelId: activeModelId,
-        contractHash: s.report?.contractHash,
+        ...(activeModelId
+          ? { modelId: activeModelId }
+          : { contractHash: s.report?.contractHash }),
         task: "hover-hold",
         seed: 7,
         telemetryLogIds: [telemetryId],
@@ -1888,11 +1906,12 @@ export default function App() {
               data-testid="model-select"
               aria-label="saved model"
               value={activeModelId ?? ""}
-              onChange={(event) => setActiveModelId(event.target.value || null)}
+              disabled={modelBusy}
+              onChange={(event) => void selectActiveModel(event.target.value)}
               style={{ ...selectStyle, width: "100%", marginTop: 6 }}
             >
               {models.map((model) => (
-                <option key={model.id} value={model.id}>
+                <option key={model.id} value={model.id} data-contract-hash={model.contractHash}>
                   {model.name} · {model.status}
                 </option>
               ))}
@@ -2479,6 +2498,7 @@ export default function App() {
       {s.report && (
         <div
           data-testid="validator-report"
+          data-contract-hash={s.report.contractHash}
           role="status"
           aria-live="polite"
           style={{

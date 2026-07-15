@@ -37,14 +37,17 @@ algorithms and same-seed ONNX reproducibility pass, and a 256-step local PPO smo
 produces a real graph. That dirty-worktree short smoke is explicitly not acceptance
 or learning-quality proof. After adding the required append-only review record for
 the regenerated internal-schema catalog, the complete Python 3.12 `pnpm verify`
-gate passes all 38 required local steps.
+gate passes all 38 required local steps. Saved-model selection now loads the exact
+persisted contract/report into Studio, and model-bound fixture/reuse jobs omit a
+caller-derived hash so the gateway remains the authority for the selected revision.
 **Changed:** Rust training-bundle derivation and validator command; gateway job
 authority; worker bundle verifier, MuJoCo environment, SB3 trainer/runner, external
 job normalization, Modal pins, tests, exact optional dependencies, required CI
 training installation/smoke/artifact, compatibility matrix/checker, full-gate
 registration, generated artifact catalog and append-only golden review record,
 exact Python training-runtime advisory audit and license record,
-system/compatibility/best-practice docs, current-state/phase/execution roadmaps,
+Studio saved-model/job binding, browser hash-alignment acceptance, system/
+compatibility/best-practice docs, current-state/phase/execution roadmaps,
 stable P7-003 ledger note, and this changelog.
 **Decisions:** none. D8, D9, D17, validator sovereignty, exact MuJoCo 3.9.0, and
 `forge-policy-tensor` 1.0.0 remain binding. The pinned legacy TorchScript ONNX
