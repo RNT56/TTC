@@ -39,6 +39,10 @@ The first protected data-plane attempt reached the pinned image and exposed that
 declared non-root UID 100/GID 101 could not write a root-owned empty `/data` mount.
 The follow-up preserves non-root MinIO: CI supplies a UID/GID-owned tmpfs, while
 Compose runs a one-shot volume-permission initializer before the service starts.
+The next exact-head attempt then reached the populated-predecessor matrix and exposed
+that PostgreSQL could not infer the type of job IDs passed only through
+`jsonb_build_object`. The fixtures now cast those bound IDs to text explicitly; the
+migration itself applied cleanly and was not weakened.
 **Changed:** D39 and R26; migration 0022 plus populated-predecessor assertions;
 gateway object write/read, transactional policy materialization, policy-model route,
 and user-data export 1.3.0; worker S3-compatible transport/materializer and protected

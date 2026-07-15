@@ -279,7 +279,7 @@ async function populatePredecessor(client, prefix) {
        ) VALUES (
          $1, $2, 'private', 'qa004', $3, 'application/octet-stream', 1,
          '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34',
-         'complete', now(), jsonb_build_object('jobId', $4, 'artifactKind', 'policy')
+         'complete', now(), jsonb_build_object('jobId', $4::text, 'artifactKind', 'policy')
        )`,
       [ids.policyBlob, ids.user, `users/${ids.user}/policy-onnx/fixture`, ids.policyJob],
     );
@@ -310,10 +310,10 @@ async function populatePredecessor(client, prefix) {
        ) VALUES
          ($1, $3, 'private', 'qa004', $4, 'application/octet-stream', 1,
           '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34',
-          'complete', now(), jsonb_build_object('jobId', $6, 'artifactKind', 'policy')),
+          'complete', now(), jsonb_build_object('jobId', $6::text, 'artifactKind', 'policy')),
          ($2, $3, 'private', 'qa004', $5, 'application/octet-stream', 1,
           '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34',
-          'complete', now(), jsonb_build_object('jobId', $6, 'artifactKind', 'policy'))`,
+          'complete', now(), jsonb_build_object('jobId', $6::text, 'artifactKind', 'policy'))`,
       [
         ids.ambiguousPolicyBlobA,
         ids.ambiguousPolicyBlobB,
