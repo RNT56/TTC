@@ -316,12 +316,11 @@ Work:
   upgrade, and treat a broader diverse import corpus as adjacent product QA rather
   than reopening the completed phase exit;
 - P7 real SB3/MuJoCo pipeline, offline learning, and MJX decision (`P7-003`,
-  `P7-009`, `P7-010`, `EXT-003`); P7-008 is protected through PR #62/`1de7974`.
-  The P7-003 candidate adds owned admitted snapshots, a sovereign Rust simulator
-  bundle, exact-pinned CPU PPO/SAC hover execution, real domain randomization,
-  deterministic ONNX export, and a required source-bound smoke. Protect that proof,
-  then close overnight scorecard passage, one-click object delivery, waypoint and
-  general-archetype coverage, deployed Modal/GPU evidence, and external acceptance;
+  `P7-009`..`P7-014`, `EXT-003`); P7-003 is protected through PR #64/`d1c4c38`
+  and P7-008 through PR #62/`1de7974`. Next close one-click object delivery
+  (`P7-011`), overnight passing hover/waypoint evidence (`P7-012`), deployed GPU
+  operations (`P7-013`), broader real tasks (`P7-014`), offline fine-tuning
+  (`P7-009`), the D12 MJX decision (`P7-010`), and external acceptance;
 - P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
   `P9-005`);
 - provider reliability, cost, data-retention, and artifact-integrity work from
@@ -510,7 +509,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | P7-003, 009, 010 | OPS cost/storage/SLO, SEC policy data, EXT-003 | protected controlled trainer, then live one-click overnight-passing hover/waypoint policy in browser |
+| P7 | P7-009..014 | OPS cost/storage/SLO, SEC policy data, EXT-003 | protected controlled trainer, then authoritative one-click object delivery plus overnight-passing hover/waypoint policy in browser |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |

@@ -157,7 +157,7 @@ requires D12 quad, D12 rover, and legged coverage, then adopts MJX only when CPU
 MuJoCo/SB3 needs help, parity stays inside frozen bands, and cost-normalized
 throughput is at least 3x.
 
-Implemented candidate 2026-07-15: the repository now supplies a native
+Protected through PR #64/`d1c4c38` on 2026-07-15: the repository supplies a native
 `FORGE_SB3_TRAIN_CMD` target rather than only an injection hook. The gateway freezes
 an owned admitted contract as `forge-admitted-model-snapshot` 1.0.0; the worker
 verifies its exact bytes/hash, invokes the validator's sovereign
@@ -313,7 +313,7 @@ OCCT/STEP artifact proof remains open. P6 real CPU Rapier/MuJoCo parity is prote
 through required PR and post-merge CI with retained source-bound evidence. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
-SB3/MuJoCo hover runtime is implemented as a protected-evidence candidate. Overnight
+SB3/MuJoCo hover runtime is protected through PR #64. Overnight
 passing-policy proof, waypoint/general-archetype training, deployed Modal/GPU runs,
 durable policy delivery, and offline-RL fine-tuning remain open. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:

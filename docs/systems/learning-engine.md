@@ -1,6 +1,9 @@
 # Learning Engine — implementation doc
 
-**Status:** deterministic training contract, controlled real CPU SB3/MuJoCo hover runtime, and real browser ONNX/WASM execution implemented; protected CI, overnight scorecard passage, object-backed delivery, and field transfer remain gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
+**Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
+hover runtime, and real browser ONNX/WASM execution implemented; overnight
+scorecard passage, object-backed delivery, deployed GPU operations, and field
+transfer remain gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
 **Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D-evals
 (adjacent)
@@ -50,9 +53,9 @@ out-of-bound targets, and layout drift refuse.
 
 PyTorch + Stable-Baselines3: **PPO** workhorse (clipped surrogate + GAE), **SAC**
 where sample efficiency matters. Seeded, reproducible runs; config + code version +
-contract hash + lockfile recorded as lineage (PRV-002). CPU MuJoCo handles
-hover-class tasks overnight on one consumer GPU host; **MJX** adoption only after the
-P7-010 benchmark says CPU PPO saturates (claims hedged until measured). Curriculum-
+contract hash + lockfile recorded as lineage (PRV-002). The P7 target is to train
+hover-class tasks overnight on declared consumer hardware; **MJX** adoption only
+after the P7-010 benchmark says CPU PPO saturates (claims hedged until measured). Curriculum-
 from-reality (P8+): behavior cloning over logged (o, a) pairs and conservative
 offline RL over telemetry tapes. These paths produce warmstarts first; they do not
 become exportable policies until a fine-tune/evaluation job emits a passing
@@ -69,9 +72,9 @@ The worker-side `mjx_benchmark_report` applies the same rule to payload or
 `FORGE_MJX_BENCH_CMD` output and blocks adoption unless D12 quad, D12 rover, and one
 legged morphology all have benchmark evidence.
 
-Implemented candidate 2026-07-15: the gateway, validator, Rust simulator, and Python
-worker now form one fail-closed training authority chain. The gateway accepts an
-owned admitted `modelId`, freezes the admitted contract as
+Protected through PR #64/`d1c4c38` on 2026-07-15: the gateway, validator, Rust
+simulator, and Python worker form one fail-closed training authority chain. The
+gateway accepts an owned admitted `modelId`, freezes the admitted contract as
 `forge-admitted-model-snapshot` 1.0.0, and rejects caller-supplied snapshots or hash
 drift. `forge-validate training-bundle` re-runs sovereign admission over the exact
 snapshot bytes and emits a `trainingMuJoCoBundle` 1.0.0 derived from Rust contract
@@ -102,9 +105,10 @@ assert it is present in the artifact. The P7 v1 task suite now has versioned
 environment definitions for hover, waypoint, slalom, velocity tracking, legged,
 rover, and arm reach tasks, and `train.policy` emits the selected definition.
 
-Implemented candidate 2026-07-15: the real hover environment applies each declared
-randomization source in execution rather than merely serializing the configuration.
-The same seed reproduces the exported ONNX digest in focused PPO and SAC tests.
+Protected through PR #64/`d1c4c38` on 2026-07-15: the real hover environment applies
+each declared randomization source in execution rather than merely serializing the
+configuration. The same seed reproduces the exported ONNX digest in focused PPO and
+SAC tests.
 
 ## 6. Scorecards (the gate)
 
@@ -144,18 +148,19 @@ artifact and Studio renders the scorecard, robustness grid, IO counts, ONNX
 metadata, and a one-click playback control that feeds the policy action header
 through `CoreSession`. `train.sysid-fit` estimates R_int plus a sim-block
 JSON-Patch, and `train.offline-bc` builds deterministic sorted behavior-cloning
-datasets plus warmstart artifact metadata from telemetry tapes. Live SB3/MuJoCo
-training and offline-RL fine-tune remain adapter work unless the external command/env
-integrations are configured.
+datasets plus warmstart artifact metadata from telemetry tapes. Controlled native
+SB3/MuJoCo training is protected through P7-003; offline-RL fine-tune remains adapter
+work unless the external command/env integration is configured.
 
-Implemented candidate 2026-07-15: `workers/.../sb3_runner.py` is the native JSON
-command boundary used by `FORGE_SB3_TRAIN_CMD`. The required CI worker job installs
-the exact CPU training stack, runs the complete worker suite, and executes a tiny
-source-bound hover smoke through the same gateway-shaped snapshot and Rust bundle
-path. The smoke proves real simulation, optimization, deterministic fixed-shape
-opset-18 ONNX export, and scorecard generation, but is deliberately too short to
-claim a passing policy. Durable object upload, one-click Studio queueing and
-download, deployed Modal/GPU proof, and an overnight passing run remain open.
+Protected through PR #64/`d1c4c38` on 2026-07-15:
+`workers/.../sb3_runner.py` is the native JSON command boundary used by
+`FORGE_SB3_TRAIN_CMD`. The required CI worker job installs the exact CPU training
+stack, runs the complete worker suite, and executes a tiny source-bound hover smoke
+through the same gateway-shaped snapshot and Rust bundle path. The smoke proves real
+simulation, optimization, deterministic fixed-shape opset-18 ONNX export, and
+scorecard generation, but is deliberately too short to claim a passing policy.
+Durable object upload, one-click Studio queueing/download, deployed Modal/GPU proof,
+and an overnight passing run remain P7-011..013.
 
 Live 2026-07-15: the hover fixture is a real 906-byte opset-18 Gemm+Tanh ONNX graph,
 generated with ONNX 1.19.1 and bound by SHA-256
@@ -169,7 +174,7 @@ loop consumes the last safe action. A missed inference holds the previous bounde
 advisory; any error zeros commands and stops playback. Non-hover keyless fixture
 tasks remain held rather than fabricating model bytes. Inline external model bytes
 can traverse the existing worker seam, but object-backed live-model download remains
-P7-003/operations work and is not claimed here.
+P7-011/operations work and is not claimed here.
 
 ## 8. Dependencies
 
@@ -208,7 +213,7 @@ WASM inference plus tamper/held/D8/lineage/layout/version/non-finite refusals, a
 production-browser flow that proves the ONNX JS/WASM assets are absent from first
 paint, load same-origin on demand, and execute through the Rust observer/motion path.
 
-P7-003's candidate adds Rust training-bundle tests, gateway ownership/snapshot/hash
+P7-003 adds Rust training-bundle tests, gateway ownership/snapshot/hash
 tests, strict Python bundle tests, real MuJoCo environment tests, PPO and SAC command
 boundary tests, same-seed ONNX digest checks, dependency-pin assertions, and a
 required controlled training smoke. The full worker suite must run with the training
