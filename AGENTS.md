@@ -34,29 +34,31 @@ Read in this order for every non-trivial session:
 5. `docs/TODO.md` — atomic task ledger with stable IDs.
 6. `docs/EXECUTION-ROADMAP.md` — dependency order, workstreams, and acceptance gates.
 7. The relevant `docs/systems/*.md` and `docs/BEST-PRACTICES.md` before implementation.
-8. `docs/BROWSER-SUPPORT.md` before changing Studio semantics, focus, keyboard or
+8. `docs/CONTRIBUTOR-ONBOARDING.md` before curating, claiming, assigning, reviewing,
+   re-scoping, or reassigning a `good first issue`.
+9. `docs/BROWSER-SUPPORT.md` before changing Studio semantics, focus, keyboard or
    pointer interaction, responsive layout, motion, browser detection, worker/local
    fallback, or browser-support claims.
-9. `docs/EXTERNAL-ACCEPTANCE.md` before preparing, executing, reviewing, publishing,
+10. `docs/EXTERNAL-ACCEPTANCE.md` before preparing, executing, reviewing, publishing,
    or using evidence from an external user, provider, course, print, lab, or field run.
-10. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
+11. `docs/GOLDEN-ARTIFACTS.md` before changing any registered schema, render,
    physics, validator, corpus, or committed generated-runtime artifact.
-11. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
+12. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
    outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
    or release archive handling.
-12. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
+13. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
     persisted-data compatibility, backup impact, or database recovery behavior.
-13. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
+14. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
     `docs/DEPRECATIONS.md` before changing gateway routes, authentication classes,
     events, externally consumed artifacts, examples, or removal plans.
-14. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+15. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
     EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-15. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+16. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
     dependencies, or releases.
-16. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+17. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
     a validator release.
-17. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-18. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+18. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+19. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -84,8 +86,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is DOC-005 PR #53 at `22c263b`, with
-  post-merge CI `29376742319` and security `29376742373` green;
+  latest verified protected `main` descendant is DOC-005/GOV-003 evidence PR #54 at
+  `41dee2d`, with post-merge CI `29378749550` and security `29378749542` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -125,6 +127,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   references plus migration, example, and deprecation guidance. The complete 36-step
   local gate, exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
   `29376742319`/security `29376742373` pass;
+- GOV-003 maintenance is protected through PR #54 at `41dee2d`: pnpm 11.13.0 uses
+  npm's bulk-advisory protocol, dependency build authority is version-exact, exact
+  head `00ae9a0` passed CI `29378364147`/security `29378364143`, and post-merge CI
+  `29378749550`/security `29378749542` pass;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -441,6 +447,9 @@ Shared checkout rules:
 
 - Preserve unrelated user/agent changes.
 - Check the live task/claim state before taking an overlapping lane.
+- For a curated first issue, require a current maintainer assignment before work;
+  follow the documented seven-day update and reassignment flow, and keep excluded
+  security/data/hardware/format/golden/release authority out of the issue.
 - Prefer a `codex/<lane>-<scope>` branch for implementation or publication work.
 - Rebase/merge conservatively and re-run gates on the resulting tree.
 - Do not use destructive reset/checkout operations to discard work.
@@ -553,6 +562,10 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - `docs/EXECUTION-ROADMAP.md` owns sequencing, workstreams, gates, and handoffs.
 - `docs/MIGRATIONS.md` owns the supported Postgres prefix, transactional runner,
   backup-impact, deployment, rollback/roll-forward, and failed-migration runbook.
+- `docs/CONTRIBUTOR-ONBOARDING.md` owns curated first-issue readiness, exclusions,
+  discovery, claim/assignment, inactivity, review, and maintenance. Public issue
+  forms never self-apply `good first issue`; maintainers copy the root `.github`
+  curation template only after verifying the task on protected `main`.
 - `docs/GOLDEN-ARTIFACTS.md` and its machine registry own re-pin procedure,
   immutable-oracle policy, regeneration commands, and append-only review evidence.
 - `docs/EXTERNAL-ACCEPTANCE.md` and its machine registry own external scripts,

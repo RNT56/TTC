@@ -18,6 +18,39 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Establish curated contributor onboarding
+**Session:** Codex agent · branch `codex/doc006-contributor-onboarding` · **Phase:** DOC /
+governance · **TODO items:** DOC-006 [~], GOV-003 maintenance [x]
+**Done:** Closed the prerequisite audit-client evidence gap: PR #54 exact head
+`00ae9a0` passed CI `29378364147`/security `29378364143`, and protected squash
+`41dee2d` passed post-merge CI `29378749550`/security `29378749542`. Added one
+canonical contributor-onboarding contract, a maintainer-only curation template, and
+consistent discovery/claim/assignment/review links across public and agent entry
+surfaces. Exercised the workflow with three live, bounded, unassigned issues:
+[#55](https://github.com/RNT56/TTC/issues/55) for a validator-report walkthrough,
+[#56](https://github.com/RNT56/TTC/issues/56) for a dependency-free link checker,
+and [#57](https://github.com/RNT56/TTC/issues/57) for Markdown-escaping tests. Each
+records a mentor, protected-main anchor, exact scope/exclusions, acceptance commands,
+and the same seven-day reassignment flow. Open issues prove process shape, not a
+successful external contribution. All 69 repository Markdown files resolve their
+local targets, all three issue-form YAML files parse, the seed issues remain open and
+unassigned with the intended labels, `pnpm audit --audit-level low` reports no known
+vulnerabilities, and the complete 36-step gate passes under Python 3.12, including
+63 gateway tests, Brief-25 25/25, native/WASM parity, packaging, 127 worker tests,
+and patch hygiene.
+**Changed:** Contributor onboarding, curation template, issue chooser, pull-request
+template, CONTRIBUTING, SUPPORT, README and docs index, canonical agent entry,
+repository governance, current state, phase/execution roadmaps, TODO ledger, and
+changelog.
+**Decisions:** none. Maintainers alone apply `good first issue`; assignment is the
+authoritative claim, and sensitive authority remains excluded from entry-level work.
+**Next:** Publish the exact candidate through protected PR, require exact-head and
+post-merge CI/security, then reconcile DOC-006 as complete without claiming external
+contributor success.
+**Blockers:** none for deterministic documentation/process work. External contributor
+success, credentials/providers, operations, controlled hardware, and field proof
+remain separate evidence gates.
+
 ## 2026-07-15 — Restore the fail-closed npm advisory gate
 **Session:** Codex agent · branch `codex/doc005-protected-evidence` · **Phase:** GOV /
 supply chain · **TODO items:** GOV-003 maintenance

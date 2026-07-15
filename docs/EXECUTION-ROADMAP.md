@@ -1,6 +1,6 @@
 # EXECUTION ROADMAP - complete program from recovery to field proof
 
-Last rebuilt: **2026-07-14**
+Last rebuilt: **2026-07-15**
 
 Evidence baseline: [`PROJECT-STATE.md`](PROJECT-STATE.md)
 
@@ -75,18 +75,19 @@ event, and artifact references now exact-match runtime routes and worker kinds;
 migration/deprecation guidance, synthetic examples, fourteen compatibility domains,
 and the registered schema family share the 36-step gate. Exact-head PR CI
 `29375146614`/security `29375146592` and post-merge CI `29376742319`/security
-`29376742373` pass. DOC-006 is the remaining dependency-complete X-lane: establish
-and exercise a maintainer-curated first-good-issue workflow without assigning
-security, credentials/providers, hardware, user data, compatibility migrations, or
-golden/oracle authority to entry-level work.
+`29376742373` pass. DOC-006 is the remaining dependency-complete X-lane. Its
+implementation candidate establishes a maintainer-curated first-good-issue workflow,
+links every entry surface, and exercises the contract with bounded live issues #55-
+#57 without assigning security, credentials/providers, hardware, user data,
+compatibility migrations, or golden/oracle authority to entry-level work. Protected
+implementation and post-merge evidence remain.
 
 PR #54's evidence closeout exposed a time-dependent GOV-003 maintenance prerequisite:
-npm retired pnpm 10's audit endpoints. The pnpm 11.13.0 candidate restores the
-bulk-advisory protocol, makes dependency lifecycle scripts version-exact and
-fail-closed, and passes frozen install plus low-severity audit locally without
-lockfile drift; the complete 36-step local gate also passes under Python 3.12.
-Protected exact-head and post-merge security evidence precede DOC-006 execution; an
-audit transport failure is never waived as a clean result.
+npm retired pnpm 10's audit endpoints. pnpm 11.13.0 restores the bulk-advisory
+protocol and makes dependency lifecycle scripts version-exact and fail-closed.
+Exact head `00ae9a0` passed CI `29378364147`/security `29378364143`, and protected
+`41dee2d` passed post-merge CI `29378749550`/security `29378749542`; an audit
+transport failure remains a failed control and is never waived as a clean result.
 
 Current Wave 1/2 boundary:
 

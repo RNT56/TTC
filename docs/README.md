@@ -14,6 +14,10 @@ This index maps the `docs/` tree and gives reading orders by role.
 **New to the project:** add [`FORGE-plan.md`](FORGE-plan.md) (the binding v3.0 plan,
 ~35 min), then [`GLOSSARY.md`](GLOSSARY.md) and [`architecture.md`](architecture.md).
 
+**Preparing or curating a first contribution:** read
+[`CONTRIBUTOR-ONBOARDING.md`](CONTRIBUTOR-ONBOARDING.md), then the issue's named
+owner document and exact acceptance commands.
+
 **About to implement something:** the relevant `systems/*.md` doc, plus
 [`BEST-PRACTICES.md`](BEST-PRACTICES.md) and the budgets in
 [`architecture.md`](architecture.md) §7. Anything touching admission, exports,
@@ -53,6 +57,7 @@ require [`MIGRATIONS.md`](MIGRATIONS.md).
 | [`DATA-LIFECYCLE.md`](DATA-LIFECYCLE.md) | Retention classes, legal-hold authority, primary deletion, backup expiry/restore, tombstones, audit events, operator commands, and maturity boundary | Living operating contract |
 | [`THREAT-MODEL.md`](THREAT-MODEL.md) | Assets, actors, trust boundaries, auth/secrets/network/input/object/worker/archive controls, negative-test matrix, deployment checklist, and residual risks | Living security contract |
 | [`DEBUGGING.md`](DEBUGGING.md) | Failure routing, evidence preservation, reproduction, redaction, and safety escalation | Living runbook |
+| [`CONTRIBUTOR-ONBOARDING.md`](CONTRIBUTOR-ONBOARDING.md) | First-contribution discovery, curation, exclusions, claim/assignment, review, reassignment, and maintenance | Living contributor-governance contract |
 | [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md) | Full-Studio/viewer-grade policy, accessibility and keyboard contract, engine matrix, evidence commands, and claim limits | Living; required-CI evidence contract |
 | [`TRADEMARK-SEARCH.md`](TRADEMARK-SEARCH.md) | Dated exact-name search evidence and remaining legal-clearance boundary | Living governance evidence |
 | [`GLOSSARY.md`](GLOSSARY.md) | Project vocabulary | Living |

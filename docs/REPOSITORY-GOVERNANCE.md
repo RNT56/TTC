@@ -1,7 +1,7 @@
 # Repository governance and required checks
 
 Owner: repository maintainers  
-Last reviewed: **2026-07-14**
+Last reviewed: **2026-07-15**
 
 This is the executable contract for default-branch protection, check stability,
 dependency/security triage, and release escalation. It complements `AGENTS.md`; it
@@ -163,3 +163,24 @@ and post-merge CI. For releases additionally record nightly/security conclusions
 artifact checksums, install/version proof, and rollback notes. Review this contract
 quarterly and whenever a workflow job, default branch, maintainer model, or release
 surface changes.
+
+## Curated contributor workflow
+
+`good first issue` is a maintainer-applied readiness label, never a user-selected
+category. Before applying it, copy `.github/GOOD_FIRST_ISSUE_TEMPLATE.md`, verify the
+focused commands on current protected `main`, and confirm the issue has one outcome,
+a stable TODO/decision, bounded files, deterministic keyless acceptance, a named
+mentor, explicit exclusions, and no new runtime dependency or protected authority.
+
+Do not curate security/credential, user-data/privacy, migration, public-format,
+golden/oracle, release/workflow, live-provider/operations, legal, or hardware-
+authority changes as first issues. The public bug and proposal forms must not
+auto-apply `good first issue`.
+
+Contributors comment and request assignment before work. Maintainers check overlap
+and scope, then assign; a comment alone is not a reservation. Ask for a status update
+after seven days without a draft or update, and allow reassignment after a further
+seven days without reply. Remove the label immediately when protected-main evidence,
+scope, prerequisites, or mentor availability drifts. The complete contract and
+monthly maintenance measures are in
+[`CONTRIBUTOR-ONBOARDING.md`](CONTRIBUTOR-ONBOARDING.md).

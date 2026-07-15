@@ -3,6 +3,23 @@
 Start with [`AGENTS.md`](AGENTS.md), then read the current project state, relevant
 TODO row, system document, compatibility policy, and repository governance contract.
 
+## Find the right contribution
+
+- New contributors should start from a maintainer-curated
+  [`good first issue`](https://github.com/RNT56/TTC/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+  and follow [`docs/CONTRIBUTOR-ONBOARDING.md`](docs/CONTRIBUTOR-ONBOARDING.md).
+- Reproducible defects and proposals use the structured GitHub forms. Include the
+  current commit and sanitized evidence.
+- Vulnerabilities, credentials, private data, or unsafe hardware authority use
+  [private reporting](https://github.com/RNT56/TTC/security/advisories/new), never a
+  public issue.
+
+For a curated issue, comment with the focused command you will run and ask to be
+assigned before editing. A maintainer confirms that the task is still current and
+assigns it; a comment alone is not a reservation. First issues never require secrets,
+paid providers, production access, migrations, public-format authority, golden
+re-pins, or hardware.
+
 ## Development setup
 
 Required: Rust 1.96.0 via the committed toolchain, Node 22.13+, pnpm 11.13.0, Python
@@ -30,6 +47,10 @@ changes require `pnpm verify:desktop-native` on macOS or the protected macOS che
    review. Report skips and unavailable prerequisites honestly.
 6. Submit a current pull request and resolve every review thread. Direct ordinary
    pushes to `main` are prohibited.
+
+If the task grows beyond its issue, stop and ask the maintainer to split or re-scope
+it. Follow-up ideas belong in separate issues; `good first issue` does not reduce the
+normal correctness, evidence, licensing, or protected-check bar.
 
 ## Licensing
 
