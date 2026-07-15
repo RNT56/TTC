@@ -32,6 +32,9 @@ the removal release.
 - Worker artifact envelopes follow worker package 0.2.0 until a family is promoted
   to an independently versioned public format. Promotion is additive documentation,
   not permission to drop the internal reader.
+- Policy tensor 1.0.0 is the first supported executable policy layout. It has no
+  legacy alias, no deprecated predecessor, and no removal clock. Unsupported majors,
+  markerless tensors, or layout drift are refusals, not deprecated reads.
 
 ## Required lifecycle for a new deprecation
 

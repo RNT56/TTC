@@ -15,6 +15,7 @@ import init, {
 import type {
   DriveInput,
   FocusVector,
+  PolicyObservationSnapshot,
   SessionWorkerRequest,
   SessionWorkerResponse,
 } from "./sessionProtocol";
@@ -121,6 +122,7 @@ interface CoreSessionDelegate {
   step(dt: number, input: DriveInput): number;
   poseView(): Float32Array;
   focus(): FocusVector;
+  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot>;
   setJog(node: string, rx: number, ry: number): void;
   clearJog(): void;
   drainPerf(): CoreSessionPerf;
@@ -175,6 +177,14 @@ class LocalCoreSession implements CoreSessionDelegate {
     return [f[0], f[1], f[2]];
   }
 
+  async policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot> {
+    if (this.disposed) throw new Error("core session is disposed");
+    return {
+      layout: this.session.policy_layout(),
+      observations: Array.from(this.session.policy_observations(...target)),
+    };
+  }
+
   /** Teach-pendant jog (P1-013): euler offset over the pose layers. */
   setJog(node: string, rx: number, ry: number): void {
     if (this.disposed) return;
@@ -216,6 +226,15 @@ class WorkerCoreSession implements CoreSessionDelegate {
   private coreAccumMs = 0;
   private workerAccumMs = 0;
   private workerSamples = 0;
+  private nextPolicyRequestId = 1;
+  private readonly pendingPolicy = new Map<
+    number,
+    {
+      resolve: (snapshot: PolicyObservationSnapshot) => void;
+      reject: (error: Error) => void;
+      timeout: number;
+    }
+  >();
 
   private constructor(
     private readonly worker: Worker,
@@ -229,6 +248,7 @@ class WorkerCoreSession implements CoreSessionDelegate {
     };
     this.worker.onerror = () => {
       this.stepPending = false;
+      this.rejectPendingPolicy("core session worker failed during policy observation");
     };
   }
 
@@ -283,6 +303,27 @@ class WorkerCoreSession implements CoreSessionDelegate {
     return this.disposed ? [0, 0, 0] : this.focusValue;
   }
 
+  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot> {
+    if (this.disposed) return Promise.reject(new Error("core session is disposed"));
+    const requestId = this.nextPolicyRequestId++;
+    return new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        const pending = this.pendingPolicy.get(requestId);
+        if (!pending) return;
+        this.pendingPolicy.delete(requestId);
+        pending.reject(new Error("core policy observation timed out after 2 seconds"));
+      }, 2_000);
+      this.pendingPolicy.set(requestId, { resolve, reject, timeout });
+      try {
+        this.worker.postMessage({ type: "policySnapshot", requestId, target } satisfies SessionWorkerRequest);
+      } catch (error) {
+        this.pendingPolicy.delete(requestId);
+        window.clearTimeout(timeout);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+
   setJog(node: string, rx: number, ry: number): void {
     if (this.disposed) return;
     this.worker.postMessage({ type: "setJog", node, rx, ry } satisfies SessionWorkerRequest);
@@ -313,6 +354,11 @@ class WorkerCoreSession implements CoreSessionDelegate {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    for (const pending of this.pendingPolicy.values()) {
+      window.clearTimeout(pending.timeout);
+      pending.reject(new Error("core session disposed before policy observation completed"));
+    }
+    this.pendingPolicy.clear();
     this.worker.postMessage({ type: "dispose" } satisfies SessionWorkerRequest);
     this.worker.terminate();
   }
@@ -332,7 +378,29 @@ class WorkerCoreSession implements CoreSessionDelegate {
       }
     } else if (message.type === "error") {
       this.stepPending = false;
+    } else if (message.type === "policySnapshot") {
+      const pending = this.pendingPolicy.get(message.requestId);
+      if (pending) {
+        this.pendingPolicy.delete(message.requestId);
+        window.clearTimeout(pending.timeout);
+        pending.resolve({ layout: message.layout, observations: message.observations });
+      }
+    } else if (message.type === "policySnapshotError") {
+      const pending = this.pendingPolicy.get(message.requestId);
+      if (pending) {
+        this.pendingPolicy.delete(message.requestId);
+        window.clearTimeout(pending.timeout);
+        pending.reject(new Error(message.message));
+      }
     }
+  }
+
+  private rejectPendingPolicy(message: string): void {
+    for (const pending of this.pendingPolicy.values()) {
+      window.clearTimeout(pending.timeout);
+      pending.reject(new Error(message));
+    }
+    this.pendingPolicy.clear();
   }
 
   private dispatchStep(dt: number, input: DriveInput): void {
@@ -394,6 +462,11 @@ export class CoreSession {
   /** Drive-mode camera focus: driver body position at viewing height. */
   focus(): FocusVector {
     return this.delegate.focus();
+  }
+
+  /** Estimator-derived, versioned policy tensor snapshot from the Rust core. */
+  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot> {
+    return this.delegate.policySnapshot(target);
   }
 
   /** Teach-pendant jog (P1-013): euler offset over the pose layers. */

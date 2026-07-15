@@ -31,6 +31,7 @@ package to adopt that same number.
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
+| policy tensor | 1.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds; public families must gain an independent `schemaVersion` before external publication | current minor line |
 
 `forge-validate version --json` and the WASM `version()` export report the active
@@ -128,6 +129,16 @@ internal required-CI evidence envelopes, not externally published worker formats
 Their exact source revision, MuJoCo 3.9.0 provider, canonical scene set, timestep,
 and substeps fail closed. Any external publication would first require promotion to
 the compatibility matrix and its normal migration/deprecation policy.
+
+P7-008 introduces the first independently versioned executable policy boundary:
+`io.tensor.schema = forge-policy-tensor` and `schemaVersion = 1.0.0`. A v1 consumer
+must reject an unsupported major, a non-Y-up/right-handed/SI coordinate frame,
+unknown or reordered scalar/action layouts, non-fixed `[1, N]` shapes, rates above
+D9's 50 Hz advisory ceiling, held or estimator-unproven scorecards, contract-lineage
+drift, digest/byte-count mismatch, non-finite values, and outputs outside normalized
+`[-1, 1]` motion bounds. This is the first version, so there is no legacy read or
+migration path. The five category-level observation labels remain transfer/search
+metadata; `io.tensor.input.layout` is the executable scalar truth.
 
 ## Change classification
 

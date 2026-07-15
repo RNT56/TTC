@@ -282,6 +282,37 @@ export class Session {
         return v1;
     }
     /**
+     * Exact scalar input order accepted by the multirotor browser policy
+     * boundary (`forge-policy-tensor` 1.0.0).
+     * @returns {string[]}
+     */
+    policy_layout() {
+        const ret = wasm.session_policy_layout(this.__wbg_ptr);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * Estimator-derived observation tensor for a world-space SI target.
+     * Simulator truth stays inside the Rust observer (D8).
+     * @param {number} target_x_m
+     * @param {number} target_y_m
+     * @param {number} target_z_m
+     * @returns {Float64Array}
+     */
+    policy_observations(target_x_m, target_y_m, target_z_m) {
+        const ret = wasm.session_policy_observations(this.__wbg_ptr, target_x_m, target_y_m, target_z_m);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+        return v1;
+    }
+    /**
      * Zero-copy pose view (16 f32 per node, column-major, `node_names`
      * order). Valid only until the next wasm memory growth — read it
      * synchronously every frame, never hold it.

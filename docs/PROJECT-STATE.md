@@ -84,6 +84,17 @@ MuJoCo 3.9.0 and Rapier passed all four contract-derived scenes at matched timin
 unchanged bands; this is engine/phase proof, not live training, broad external-corpus,
 GPU, provider, hardware, or field evidence.
 
+The `codex/p7008-onnx-runtime` candidate adds actual browser inference but is not yet
+protected evidence. A 906-byte digest-bound opset-18 hover graph executes through
+exact `onnxruntime-web` 1.27.0/WASM against an 11-scalar Rust estimator/powertrain
+observer under `forge-policy-tensor` 1.0.0; six Studio tests execute/refuse the real
+runtime boundary, gateway tests are 64/64, worker tests are 130/130, and the
+production browser harness now requires lazy same-origin ONNX assets plus completed
+motion playback. Exact-head CI/security, isolated-Postgres browser proof, protected
+merge, and post-merge checks remain required before P7-008 closes. This candidate is
+not live SB3 training, object-backed external-model transport, hardware authority, or
+field transfer.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |

@@ -130,6 +130,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `consentLedger` | 1.0.0 | major 1 |
 | `accountDeletionReceipt` | 2.0.0 | major 2 |
 | `dataLifecycle` | 1.0.0 | major 1 |
+| `policyTensor` | 1.0.0 | major 1 |
 | `workerArtifacts` | 0.2.0 | major 0 |
 
 These versions are independent. A package version, ModelSpec version, report version,

@@ -100,7 +100,8 @@ import {
   type PolicyOutput,
 } from "./jobOutputs";
 import { decodeShareFragment, encodeShareFragment } from "./share";
-import { CoreBake, CoreSession, corePatch, coreValidate, type DriveInput } from "./wasm";
+import { BrowserPolicyController } from "./policyRuntime";
+import { CoreBake, CoreSession, corePatch, coreValidate } from "./wasm";
 import type { Slot } from "./contract.gen";
 
 function selectContractReport(localReport: Report, serverReport?: Report | null): Report {
@@ -126,30 +127,8 @@ const panel: React.CSSProperties = {
 
 const DT = 1 / 120;
 interface PolicyPlaybackState {
-  taskId: string;
-  actions: string[];
-  durationS: number;
+  controller: BrowserPolicyController;
   elapsedS: number;
-  successRate: number;
-  exportable: boolean;
-}
-
-function policyPlaybackInput(playback: PolicyPlaybackState): DriveInput {
-  const t = playback.elapsedS;
-  const phase = playback.durationS > 0 ? Math.min(1, t / playback.durationS) : 1;
-  const confidence = Math.max(0, Math.min(1, playback.successRate));
-  const wobble = (1 - confidence) * 0.18;
-  const has = (action: string) => playback.actions.includes(action);
-  const hoverTask = playback.taskId.includes("hover");
-  const throttleBase = hoverTask ? 0.56 + confidence * 0.08 : 0.42 + confidence * 0.18;
-  return {
-    throttle: has("throttle") ? Math.max(0, Math.min(1, throttleBase + wobble * Math.sin(t * Math.PI * 2))) : 0,
-    roll: has("roll") ? wobble * Math.sin(t * Math.PI * 1.4) : 0,
-    pitch: has("pitch") ? wobble * Math.cos(t * Math.PI * 1.1) : 0,
-    yaw: has("yaw") ? 0.18 * Math.sin(phase * Math.PI * 2) : 0,
-    drive: has("speed") || has("bodyVelocity") ? 0.45 + confidence * 0.35 : 0,
-    turn: has("turnRate") ? 0.2 * Math.sin(t * Math.PI) : 0,
-  };
 }
 /** configurator palette (P1-014) — patch-applied through the live handle */
 const SWATCHES = [
@@ -620,6 +599,7 @@ export default function App() {
 
   /** Load a contract end to end: bake handle + scene + session + report. */
   const loadContract = useCallback(async (contract: string, reportOverride?: Report | null) => {
+    policyPlaybackRef.current?.controller.dispose();
     policyPlaybackRef.current = null;
     setPolicyPlaybackMessage(null);
     const handle = await CoreBake.create(contract);
@@ -849,13 +829,25 @@ export default function App() {
         const playback = policyPlaybackRef.current;
         if (playback) {
           playback.elapsedS += stepDt;
-          sticks = policyPlaybackInput(playback);
-          if (playback.elapsedS >= playback.durationS) {
+          playback.controller.schedule(playback.elapsedS, sessionRef.current);
+          sticks = playback.controller.input;
+          if (playback.controller.failure) {
+            const failure = playback.controller.failure;
+            playback.controller.dispose();
+            policyPlaybackRef.current = null;
+            setPolicyPlaybackMessage(`policy playback refused · ${failure}`);
+            st.setDriving(false);
+            sticks = { throttle: 0, pitch: 0, roll: 0, yaw: 0, drive: 0, turn: 0 };
+          } else if (playback.elapsedS >= playback.controller.durationS) {
+            const count = playback.controller.inferenceCount;
+            const taskId = playback.controller.taskId;
+            playback.controller.dispose();
             policyPlaybackRef.current = null;
             setPolicyPlaybackMessage(
-              `played ${playback.taskId} · ${playback.exportable ? "exportable" : "held"} scorecard`,
+              `played ${taskId} · ONNX Runtime Web/WASM · ${count} inferences`,
             );
             st.setDriving(false);
+            sticks = { throttle: 0, pitch: 0, roll: 0, yaw: 0, drive: 0, turn: 0 };
           }
         }
         const t0 = performance.now();
@@ -951,6 +943,8 @@ export default function App() {
 
     cleanup = () => {
       window.removeEventListener("resize", onResize);
+      policyPlaybackRef.current?.controller.dispose();
+      policyPlaybackRef.current = null;
       sessionRef.current?.dispose();
       sessionRef.current = null;
       bakeRef.current?.dispose();
@@ -1403,27 +1397,36 @@ export default function App() {
   };
 
   const startPolicyPlayback = useCallback((output: PolicyOutput) => {
-    if (!sessionRef.current) {
-      setPolicyPlaybackMessage("policy playback requires a loaded driveable contract");
-      return;
-    }
-    const scorecard = output.scorecard;
-    const successRate = numberOrNull(scorecard?.successRate ?? scorecard?.returnMean) ?? 0.5;
-    const actions = output.io?.actions?.filter((action): action is string => typeof action === "string") ?? [];
-    const durationS = Math.max(2, Math.min(8, Number(output.task?.horizonS ?? 6) / 10));
-    const taskId = output.task?.id ?? scorecard?.task ?? "fixture-policy";
-    policyPlaybackRef.current = {
-      taskId,
-      actions: actions.length ? actions : ["throttle", "roll", "pitch", "yaw"],
-      durationS,
-      elapsedS: 0,
-      successRate,
-      exportable: scorecard?.exportable === true,
-    };
-    const st = useStudio.getState();
-    st.setDriving(true);
-    st.setPaused(false);
-    setPolicyPlaybackMessage(`playing ${taskId} · ${(successRate * 100).toFixed(0)}% score`);
+    void (async () => {
+      const session = sessionRef.current;
+      const contractHash = useStudio.getState().report?.contractHash;
+      if (!session || !contractHash) {
+        setPolicyPlaybackMessage("policy playback requires a loaded, validated driveable contract");
+        return;
+      }
+      policyPlaybackRef.current?.controller.dispose();
+      policyPlaybackRef.current = null;
+      setPolicyPlaybackMessage("verifying policy bytes, lineage, tensor contract, and ONNX Runtime Web/WASM");
+      try {
+        const controller = await BrowserPolicyController.create(output, contractHash, session);
+        if (session !== sessionRef.current) {
+          controller.dispose();
+          throw new Error("active contract changed while the policy runtime was loading");
+        }
+        policyPlaybackRef.current = { controller, elapsedS: 0 };
+        const st = useStudio.getState();
+        st.setDriving(true);
+        st.setPaused(false);
+        setPolicyPlaybackMessage(
+          `playing ${controller.taskId} · ONNX Runtime Web/WASM · ${controller.inferenceCount} inference`,
+        );
+      } catch (error) {
+        setPolicyPlaybackMessage(
+          `policy playback refused · ${error instanceof Error ? error.message : String(error)}`,
+        );
+        useStudio.getState().setDriving(false);
+      }
+    })();
   }, []);
 
   const publishFixtureCourse = async () => {
@@ -2237,7 +2240,11 @@ export default function App() {
             ))}
           </div>
           {jobsError && <div style={{ color: "#e6a23c", marginTop: 5 }}>{jobsError}</div>}
-          {policyPlaybackMessage && <div style={{ color: "#7d899b", marginTop: 5 }}>{policyPlaybackMessage}</div>}
+          {policyPlaybackMessage && (
+            <div data-testid="policy-playback-status" style={{ color: "#7d899b", marginTop: 5 }}>
+              {policyPlaybackMessage}
+            </div>
+          )}
           {jobs.slice(0, 5).map((job) => (
             <div data-testid={`job-row-${job.kind}`} key={job.id} style={{ borderTop: "1px solid #242a33", marginTop: 5, paddingTop: 5 }}>
               <div style={{ color: verdictColor(job.status === "succeeded" ? "admitted" : "draft") }}>
@@ -4281,7 +4288,12 @@ function JobDetails({
           <div style={{ color: "#7d899b" }}>
             {(output.io?.observations?.length ?? 0)} obs · {(output.io?.actions?.length ?? 0)} actions
           </div>
-          <button onClick={() => onPlayPolicy(output)} style={{ ...btn, marginTop: 4 }}>
+          <button
+            data-testid="policy-play"
+            disabled={scorecard?.exportable !== true}
+            onClick={() => onPlayPolicy(output)}
+            style={{ ...btn, marginTop: 4 }}
+          >
             play
           </button>
           {scorecard?.reasons?.length ? (

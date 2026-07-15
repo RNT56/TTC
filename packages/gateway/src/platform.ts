@@ -10,6 +10,7 @@ import type { GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
 import type { StoredObjectInspection } from "./objectStorage.js";
 import { MAX_OBJECT_BYTES, assertBoundedJson } from "./security.js";
+import { HOVER_POLICY_FIXTURE_V1 } from "./policyFixture.js";
 import { runPatch, runValidator, type ValidateResult } from "./validator.js";
 
 export type ModelStatus = "admitted" | "draft" | "rejected";
@@ -1448,10 +1449,10 @@ export async function jobCapabilities(db: GatewayDb): Promise<JobCapabilities> {
         "FORGE_COLMAP_CMD or FORGE_PHOTOSCAN_CMD is required",
       ),
       onnxRuntime: capability(
-        envEnabled("FORGE_ONNX_RUNTIME_WEB"),
-        envEnabled("FORGE_ONNX_RUNTIME_WEB"),
-        "studio-web",
-        "FORGE_ONNX_RUNTIME_WEB=1 is required",
+        true,
+        true,
+        "studio-web-wasm",
+        null,
       ),
       vendorRefresh: capability(
         envConfigured("FORGE_VENDOR_REFRESH_CMD") || envEnabled("FORGE_VENDOR_REFRESH_SANDBOX"),
@@ -2343,7 +2344,13 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
         artifactKind: "policy",
         provider: "fixture",
         algorithm: "ppo-fixture",
-        task: { id: "hover-hold", suite: "p7-v1", curriculumStage: 1, horizonS: 60 },
+        task: {
+          id: "hover-hold",
+          suite: "p7-v1",
+          curriculumStage: 1,
+          horizonS: 60,
+          target: { xyzM: [...HOVER_POLICY_FIXTURE_V1.targetWorldM] },
+        },
         io: {
           observations: [
             "estimator.attitude",
@@ -2358,6 +2365,24 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
             task: "hover-hold",
             observationCount: "5",
             actionCount: "4",
+            tensorSchema: HOVER_POLICY_FIXTURE_V1.schema,
+            tensorVersion: HOVER_POLICY_FIXTURE_V1.schemaVersion,
+          },
+          tensor: {
+            schema: HOVER_POLICY_FIXTURE_V1.schema,
+            schemaVersion: HOVER_POLICY_FIXTURE_V1.schemaVersion,
+            coordinateFrame: HOVER_POLICY_FIXTURE_V1.coordinateFrame,
+            input: {
+              name: HOVER_POLICY_FIXTURE_V1.input.name,
+              shape: [...HOVER_POLICY_FIXTURE_V1.input.shape],
+              layout: [...HOVER_POLICY_FIXTURE_V1.input.layout],
+            },
+            output: {
+              name: HOVER_POLICY_FIXTURE_V1.output.name,
+              shape: [...HOVER_POLICY_FIXTURE_V1.output.shape],
+              layout: [...HOVER_POLICY_FIXTURE_V1.output.layout],
+            },
+            rateHz: HOVER_POLICY_FIXTURE_V1.rateHz,
           },
         },
         domainRandomization: {
@@ -2369,13 +2394,23 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           windMps: [0, 4],
           obsDropoutPct: [0, 5],
         },
-        onnx: { fixture: true, cacheKey: `onnx:${payloadHash}`, opset: 18, path: `onnx:${payloadHash}/policy.onnx` },
+        onnx: {
+          fixture: true,
+          cacheKey: `onnx:${payloadHash}`,
+          opset: HOVER_POLICY_FIXTURE_V1.opset,
+          path: `onnx:${payloadHash}/policy.onnx`,
+          byteSize: HOVER_POLICY_FIXTURE_V1.byteSize,
+          sha256: HOVER_POLICY_FIXTURE_V1.sha256,
+          modelBase64: HOVER_POLICY_FIXTURE_V1.modelBase64,
+        },
         scorecard: {
           task: "hover-hold",
           taskVersion: "1.0.0",
           successRate: 0.91,
           robustness: { "mass+15%": 0.84, "kv-8%": 0.88, wind4ms: 0.79 },
           energyWh: 2.2,
+          trainedOnEstimator: true,
+          estimatorSmoke: "passed",
           lineage: {
             contractHash: isRecord(payload) && typeof payload.contractHash === "string" ? payload.contractHash : "fixture",
             seed: "7",

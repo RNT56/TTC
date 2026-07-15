@@ -1,6 +1,6 @@
 # Learning Engine — implementation doc
 
-**Status:** deterministic training contract live; live SB3/MuJoCo adapter seams and MJX adoption helper live · **Phases:** P7 (service), P8+ (curricula from reality) ·
+**Status:** deterministic training contract plus real browser ONNX/WASM execution live; live SB3/MuJoCo training and object-backed external-model transport remain gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
 **Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D-evals
 (adjacent)
@@ -35,6 +35,16 @@ Derived from the ModelSpec, never hand-authored (P7-002):
 
 Live 2026-06-14: observation/action derivation is executable in Rust and the worker
 emits an ONNX header with contract hash, task, observation count, and action count.
+
+Live 2026-07-15: category labels remain transfer/search metadata, while the executable
+browser boundary is independently versioned as `forge-policy-tensor` 1.0.0. Its
+multirotor v1 input is an exact 11-scalar `[1, 11]` layout: estimator attitude and
+corrupted gyro rates, body-frame target error, normalized battery voltage, and
+normalized motor current. Its `[1, 4]` outputs are normalized throttle/roll/pitch/yaw
+targets at at most 50 Hz. `CoreSession` derives observations inside Rust from the
+contract estimator and inline physical constants; simulator truth never crosses the
+WASM boundary. Unsupported archetypes/estimators, missing constants, non-finite or
+out-of-bound targets, and layout drift refuse.
 
 ## 4. Training stack
 
@@ -109,15 +119,32 @@ metadata, and a one-click playback control that feeds the policy action header
 through `CoreSession`. `train.sysid-fit` estimates R_int plus a sim-block
 JSON-Patch, and `train.offline-bc` builds deterministic sorted behavior-cloning
 datasets plus warmstart artifact metadata from telemetry tapes. Live SB3/MuJoCo
-training, offline-RL fine-tune, and ONNX Runtime Web inference remain adapter work
-unless the external command/env integrations are configured.
+training and offline-RL fine-tune remain adapter work unless the external command/env
+integrations are configured.
+
+Live 2026-07-15: the hover fixture is a real 906-byte opset-18 Gemm+Tanh ONNX graph,
+generated with ONNX 1.19.1 and bound by SHA-256
+`222102cc9a55192f00696399f553781ffc095f6fc0e3195d7456fed01a564d62`.
+Studio dynamically imports exact `onnxruntime-web` 1.27.0's WASM-only entry only when
+the owner presses play, verifies exportable estimator-backed scorecard authority,
+contract lineage, tensor schema/version/frame/layout/shapes/rate, strict base64,
+byte count, digest, runtime names, output type/shape, finiteness, and normalized
+bounds, then runs inference asynchronously at 50 Hz while the 120 Hz Rust motion
+loop consumes the last safe action. A missed inference holds the previous bounded
+advisory; any error zeros commands and stops playback. Non-hover keyless fixture
+tasks remain held rather than fabricating model bytes. Inline external model bytes
+can traverse the existing worker seam, but object-backed live-model download remains
+P7-003/operations work and is not claimed here.
 
 ## 8. Dependencies
 
 `forge-sim` (MJCF compiler, estimator spec), `forge-contract` (schema for
-obs/action derivation), MuJoCo/SB3/PyTorch in `workers/training`; ONNX Runtime Web
-in the studio for playback. Co-design (P9) calls tier-2/3 evaluations through this
-service.
+obs/action derivation), MuJoCo/SB3/PyTorch in `workers/training`; exact
+`onnxruntime-web` 1.27.0 in the Studio for lazy WASM playback. Runtime integration
+follows the official [ONNX Runtime Web tutorial](https://onnxruntime.ai/docs/tutorials/web/)
+and [deployment guidance](https://onnxruntime.ai/docs/tutorials/web/deploy.html):
+conditional WASM import, same-origin bundled assets, and explicit WASM execution.
+Co-design (P9) calls tier-2/3 evaluations through this service.
 
 ## 9. Testing
 
@@ -125,6 +152,12 @@ Deterministic smoke-train on a tiny task in CI (minutes, fixed seed, asserts lea
 signal); scorecard reproducibility (same seed → same card server-side); estimator-
 smoke negative test (deliberately ground-truth-trained policy must be rejected);
 header derivation unit tests across archetypes.
+
+P7-008 adds Rust observer determinism/missing-authority tests, Python and gateway
+fixture digest/tensor tests, six Studio runtime tests including actual ONNX Runtime
+WASM inference plus tamper/held/D8/lineage/layout/version/non-finite refusals, and a
+production-browser flow that proves the ONNX JS/WASM assets are absent from first
+paint, load same-origin on demand, and execute through the Rust observer/motion path.
 
 ## 10. Phase mapping & backlog
 

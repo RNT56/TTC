@@ -29,6 +29,7 @@ pub struct FpvDriver {
     pub yaw_h: f64,
     t_p: f64,
     t_r: f64,
+    angular_rate: [f64; 3],
     spin_a: [f64; 4],
     cam_servo: [Servo; 3],
     move_target: Option<[f64; 2]>,
@@ -69,6 +70,7 @@ impl FpvDriver {
             yaw_h: 0.0,
             t_p: 0.0,
             t_r: 0.0,
+            angular_rate: [0.0; 3],
             spin_a: [0.0; 4],
             cam_servo: [Servo::new(14.0, 0.85, 0.0); 3],
             move_target: None,
@@ -84,6 +86,16 @@ impl FpvDriver {
     /// Camera focus point (monolith drvFocus).
     pub fn focus(&self) -> [f64; 3] {
         self.pos
+    }
+
+    /// Internal motion truth consumed only by the simulation-side estimator.
+    /// Browser policy callers never receive this value directly (D8).
+    pub fn policy_truth(&self) -> MultirotorMotionTruth {
+        MultirotorMotionTruth {
+            position_m: self.pos,
+            attitude_rad: [self.t_r, self.t_p, self.yaw_h],
+            angular_rate_rad_s: self.angular_rate,
+        }
     }
 
     /// Monolith drvReset: velocity only — pose, heading, tilt and servo
@@ -132,6 +144,7 @@ impl FpvDriver {
     /// velocity integration in the bounded arena → tilt servos → mixer.
     fn flight(&mut self, input: &StickInput, dt: f64) {
         use forge_num::{cos, hypot, sin};
+        let previous_attitude = [self.t_r, self.t_p, self.yaw_h];
         let mut p_in = input.mz;
         let mut r_in = input.mx;
         let y_in = input.yaw;
@@ -186,6 +199,13 @@ impl FpvDriver {
         }
         self.t_p += (p_in * self.tilt_max - self.t_p) * 1.0_f64.min(dt * 7.0);
         self.t_r += (-r_in * self.tilt_max - self.t_r) * 1.0_f64.min(dt * 7.0);
+        if dt > 0.0 {
+            self.angular_rate = [
+                (self.t_r - previous_attitude[0]) / dt,
+                (self.t_p - previous_attitude[1]) / dt,
+                (self.yaw_h - previous_attitude[2]) / dt,
+            ];
+        }
         // mixer: per-motor RPM from throttle / pitch / roll / yaw demand
         for q in 0..4 {
             let sx3 = if q == 0 || q == 3 { 1.0 } else { -1.0 };
@@ -225,6 +245,13 @@ impl FpvDriver {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MultirotorMotionTruth {
+    pub position_m: [f64; 3],
+    pub attitude_rad: [f64; 3],
+    pub angular_rate_rad_s: [f64; 3],
 }
 
 #[cfg(test)]

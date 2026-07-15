@@ -18,6 +18,42 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Execute the real browser ONNX policy boundary
+**Session:** Codex agent · branch `codex/p7008-onnx-runtime` · **Phase:** P7 ·
+**TODO items:** P7-008 [~]
+**Done:** Replaced procedural scorecard-derived playback with a real digest-bound
+opset-18 Gemm+Tanh hover policy executed by exact `onnxruntime-web` 1.27.0's lazy
+WASM-only entry. `CoreSession` now derives an independently versioned 11-scalar
+`forge-policy-tensor` 1.0.0 input from contract estimator and inline powertrain state;
+motion truth stays inside Rust. Studio verifies scorecard/D8 authority, exact contract
+lineage, schema/version/frame/layout/shapes/rate, strict model encoding/size/SHA-256,
+runtime names/type/shape, finite observations/actions, and normalized bounds before
+feeding asynchronous 50 Hz advisories into the 120 Hz motion loop. Failure or timeout
+zeros commands and stops. Only the real hover fixture exports bytes; other fixture
+tasks now stay held. Six Studio tests execute the model and its refusal matrix,
+gateway tests pass 64/64, worker tests pass 130/130, focused Rust crates pass, the
+production build emits a separate lazy ONNX JS/WASM pair, compatibility/docs drift
+passes at 15 surfaces, and the production audit reports no known vulnerabilities.
+The complete 37-step gate passes under Python 3.12, including Rust formatting,
+Clippy, workspace tests, WASM cross-compilation, native/WASM parity, generated and
+golden contracts, release packaging, 64 gateway tests, 130 worker tests, the six
+real-runtime Studio tests, and patch hygiene.
+**Changed:** Motion truth/estimator/powertrain observer boundary, WASM/local/worker
+session protocol, digest-bound gateway and Python fixtures, external inline-model
+pass-through, Studio controller/UI/tests, lazy runtime dependency and supply-chain
+allowlist, QA-002 browser flow (11 paths), policy-tensor compatibility/migration/
+deprecation contracts, system/best-practice docs, living task/phase/execution state,
+and generated contract references. The new runtime dependency is MIT-licensed,
+exact-pinned, same-origin, and excluded from first paint.
+**Decisions:** none. D8, D9, D16, D17, and the compatibility policy already govern
+the estimator, advisory rate, core boundary, determinism, and version semantics.
+**Next:** Publish the exact candidate through protected CI/security and
+isolated-Postgres browser acceptance, inspect retained ONNX evidence, then reconcile
+P7-008 to `[x]` only after post-merge checks pass.
+**Blockers:** none for implementation. Exact-head/protected evidence is outstanding;
+local browser acceptance also lacks an isolated `DATABASE_URL`. Live SB3/MuJoCo
+training, object-backed external models, hardware, and field transfer remain separate.
+
 ## 2026-07-15 — Close real engine parity on protected main
 **Session:** Codex agent · branch `codex/p6010-protected-evidence` · **Phase:** P6 / QA ·
 **TODO items:** P6-010 [x]

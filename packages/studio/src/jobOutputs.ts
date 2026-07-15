@@ -25,20 +25,43 @@ export interface PhotoscanOutput {
 export interface PolicyOutput {
   artifactKind: "policy";
   algorithm?: string;
-  task?: { id?: string; suite?: string; curriculumStage?: number; horizonS?: number };
+  task?: {
+    id?: string;
+    suite?: string;
+    curriculumStage?: number;
+    horizonS?: number;
+    target?: { xyzM?: number[] };
+  };
   io?: {
     observations?: string[];
     actions?: string[];
     onnxHeader?: Record<string, string | number | boolean | null>;
+    tensor?: {
+      schema?: string;
+      schemaVersion?: string;
+      coordinateFrame?: string;
+      input?: { name?: string; shape?: number[]; layout?: string[] };
+      output?: { name?: string; shape?: number[]; layout?: string[] };
+      rateHz?: number;
+    };
   };
   domainRandomization?: Record<string, unknown>;
-  onnx?: { cacheKey?: string; opset?: number; fixture?: boolean; path?: string };
+  onnx?: {
+    cacheKey?: string;
+    opset?: number;
+    fixture?: boolean;
+    path?: string;
+    byteSize?: number;
+    sha256?: string;
+    modelBase64?: string;
+  };
   scorecard?: {
     task?: string;
     taskVersion?: string;
     successRate?: number;
     returnMean?: number;
     estimatorSmoke?: string;
+    trainedOnEstimator?: boolean;
     exportGate?: string;
     robustness?: Record<string, number>;
     energyWh?: number;
