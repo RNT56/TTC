@@ -148,9 +148,9 @@ can exercise the product surfaces without SB3/MuJoCo/GPU dependencies in CI.
 ONNX I/O header; `train.sysid-fit` estimates internal resistance and emits a
 contract patch proposal. `FORGE_SB3_TRAIN_CMD` can supply live SB3 results, but the
 worker re-runs every external policy through the scorecard/export gate before
-marking ONNX exportable. Under D41, versioned external policies must also exact-match
+marking ONNX exportable. Under D41/D42, versioned external policies must also exact-match
 the worker-owned task ID, suite/version, Y-up frame, ordered targets, canonical task
-hash, scorecard task/hash lineage, ONNX task header, and unchanged tensor contract;
+hash, scorecard task/hash lineage, ONNX task header, and the declared tensor major/layout;
 any missing or substituted authority holds export. `FORGE_OFFLINE_RL_CMD` can supply behavior-cloning/offline
 RL warmstarts; those outputs are normalized, dataset-gated, and kept non-exportable
 until a fine-tune scorecard passes. `FORGE_SYSID_FIT_CMD` can supply live system-ID
@@ -177,7 +177,9 @@ Protected through PR #64/`d1c4c38` on 2026-07-15: the repository supplies a nati
 `FORGE_SB3_TRAIN_CMD` target rather than only an injection hook. The gateway freezes
 an owned admitted contract as `forge-admitted-model-snapshot` 1.0.0; the worker
 verifies its exact bytes/hash, invokes the validator's sovereign
-`training-bundle` command, and accepts only `trainingMuJoCoBundle` 1.0.0. The native
+`training-bundle` command; D42's current boundary accepts only
+`trainingMuJoCoBundle` 2.0.0 with policy tensor 2.0.0 and contract-derived tilt/yaw
+authority. The native
 runner executes real seeded PPO or SAC in a Rust-derived MuJoCo hover environment,
 evaluates baseline plus mass/Kv/wind robustness scenarios, and exports a digest-bound
 fixed-shape opset-18 ONNX graph with scorecard and lineage. The required CPU stack is
@@ -196,6 +198,18 @@ required training smoke now runs both tasks for 256 PPO steps and retains two ho
 blocked scorecards. Clean artifact `8342801418` binds them to exact protected source.
 This is controlled CPU runtime proof, not overnight learning quality, deployed GPU
 operations, or broader-archetype closure.
+
+The P7-012 implementation candidate advances new jobs to `p7-v3`/3.0.0 and tensor
+2.0.0. The worker fixes Forge Y-up angular-axis decomposition, exposes estimator-
+derived body velocity, interprets policy outputs as normalized flight targets around
+contract hover trim, and binds the inner loop and reward into the task definition.
+`p7-overnight-v1` freezes an estimator-only controller-distillation plus randomized
+PPO curriculum and the unchanged scorecard grid. The resumable evidence command
+writes atomic per-task JSON/ONNX checkpoints, reuses only a matching request hash and
+valid size/digest/export gate, and retains safe hardware/runtime/wall-time/host-energy/
+cost/nonclaim metadata. Local exact-seed M2 Pro diagnostics pass hover and waypoint;
+clean protected-source execution and downloaded artifact review remain required for
+P7-012 closure.
 
 Required CI installs the separate `mjx` extra, runs the complete worker suite, then
 retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
@@ -278,11 +292,14 @@ provider `mujoco-python-3.9.0`, matched timing, unchanged bands, and a passing r
 
 ## 4. GPU burst policy
 
-Burst-only (Modal by default): no idle GPU. Job cost is metered to credits (D3) at
+Burst-only (Modal by default): no idle deployed GPU. Job cost is metered to credits (D3) at
 transparent cost-plus. Permanent caching is the cost ceiling: cache key =
 content hash of inputs (photos / contract+lockfile+task+seed). The fixture adapter is
 the default; live Modal jobs require deployment configuration and are optional smoke
-tests, not CI prerequisites. Modal runtime profiles are test-covered in CI, but
+tests, not CI prerequisites. D43 separately allows CPU PPO on a declared GPU-capable
+consumer host when a same-workload exact-host pilot shows the MLP policy is faster
+on CPU; the accelerator is inventoried but never claimed as the training backend.
+MPS diagnostics forbid CPU fallback. Modal runtime profiles are test-covered in CI, but
 performance and provider billing are proved only by explicit live suites.
 
 ## 5. Dependencies
@@ -327,7 +344,9 @@ family). The suite materializes explicit non-finite sentinels only in memory, as
 bounded provider JSON, finite `[0,1]` confidence, credential-free HTTPS citation
 sources, most-restrictive export policy, command-token refusal, telemetry ordering,
 and supervisor fail-closed behavior. The QA-007 landing passed 127/127 under Python
-3.12; the protected suite now passes 128/128 with P6-010 engine parity. Credentialed
+3.12; protected P7-014 passed 154 tests. The P7-012 implementation candidate passes
+163/163, including exact tensor-v1/v2 fixtures, corrected multirotor semantics,
+device authority, and interruption/resume/tamper evidence. Credentialed
 providers and physical adapters remain separate acceptance lanes.
 
 P6-010 additionally tests request schema/version/source identity, exact engine pin,
@@ -346,8 +365,9 @@ OCCT/STEP artifact proof remains open. P6 real CPU Rapier/MuJoCo parity is prote
 through required PR and post-merge CI with retained source-bound evidence. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
-SB3/MuJoCo hover runtime is protected through PR #64. Overnight
-passing-policy proof, deployed Modal/GPU runs,
+SB3/MuJoCo hover runtime is protected through PR #64. P7-012's tensor-v2/task-v3
+implementation and passing local diagnostics are present on the candidate branch;
+overnight protected-source proof, deployed Modal/GPU runs,
 and offline-RL fine-tuning remain open. P7-011 durable delivery is protected through
 PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
 uploads one exact owner content-addressed object under the current D38 lease, and
@@ -382,6 +402,6 @@ Multi-replica queue capacity, heartbeat policy for tasks that legitimately excee
 attempt deadline, dead-letter/reconciliation operations including unreferenced
 content-addressed policy uploads, and queue SLOs; TRELLIS-class model pick and hosting
 at P5 (the field moves fast — pin at implementation); live deployed Modal/GPU
-training, real rover/legged environments, overnight scorecard/SLO
+training, real rover/legged environments, protected overnight scorecard/SLO
 proof, MJX adoption evidence, and OCCT dependency/benchmark evidence; review queue
 UI ownership beyond the existing gateway/studio scaffolds.

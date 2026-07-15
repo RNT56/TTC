@@ -17,14 +17,32 @@ use std::collections::BTreeMap;
 /// the oracle tapes were recorded under.
 const CAM_FORWARD: [f64; 3] = [0.0, 0.0, 1.0];
 
-/// `forge-policy-tensor` 1.0.0 multirotor input order. Category-level policy
-/// metadata remains stable; this scalar layout is the executable ONNX boundary.
-pub const MULTIROTOR_POLICY_LAYOUT: [&str; 11] =
+/// Legacy `forge-policy-tensor` 1.0.0 layout retained as a read path.
+pub const MULTIROTOR_POLICY_LAYOUT_V1: [&str; 11] = [
+    "estimator.attitude.rollRad",
+    "estimator.attitude.pitchRad",
+    "estimator.attitude.yawRad",
+    "estimator.angularRate.rollRadS",
+    "estimator.angularRate.pitchRadS",
+    "estimator.angularRate.yawRadS",
+    "target.error.bodyXM",
+    "target.error.bodyYM",
+    "target.error.bodyZM",
+    "battery.normalizedVoltage",
+    "powertrain.normalizedMotorCurrent",
+];
+
+/// Current `forge-policy-tensor` 2.0.0 layout adds estimator-derived body
+/// velocity so memoryless ONNX policies receive a controllable state.
+pub const MULTIROTOR_POLICY_LAYOUT_V2: [&str; 14] =
     forge_sim::training::MULTIROTOR_POLICY_INPUT_LAYOUT;
+
+type MultirotorPolicyState = ([f64; 3], [f64; 3], [f64; 3], [f64; 3]);
 
 struct MultirotorPolicyObserver {
     attitude: [ComplementaryFilter; 3],
     estimated_position_m: [f64; 3],
+    estimated_velocity_m_s: [f64; 3],
     position_alpha: f64,
     powertrain: Powertrain,
     nominal_voltage_v: f64,
@@ -76,6 +94,7 @@ impl MultirotorPolicyObserver {
         Ok(MultirotorPolicyObserver {
             attitude,
             estimated_position_m: truth.position_m,
+            estimated_velocity_m_s: [0.0; 3],
             position_alpha,
             powertrain,
             nominal_voltage_v,
@@ -86,10 +105,17 @@ impl MultirotorPolicyObserver {
     }
 
     fn step(&mut self, truth: MultirotorMotionTruth, input: &InputFrame) {
+        let previous_position = self.estimated_position_m;
         for axis in 0..3 {
             self.attitude[axis].step(truth.angular_rate_rad_s[axis], truth.attitude_rad[axis], DT);
             self.estimated_position_m[axis] +=
                 (truth.position_m[axis] - self.estimated_position_m[axis]) * self.position_alpha;
+        }
+        let velocity_alpha = DT / (0.06 + DT);
+        for (axis, previous) in previous_position.into_iter().enumerate() {
+            let raw_velocity = (self.estimated_position_m[axis] - previous) / DT;
+            self.estimated_velocity_m_s[axis] +=
+                (raw_velocity - self.estimated_velocity_m_s[axis]) * velocity_alpha;
         }
         let power = self.powertrain.at_throttle(input.throttle.abs());
         self.normalized_voltage = (power.v_eff / self.nominal_voltage_v).clamp(0.0, 1.0);
@@ -99,6 +125,45 @@ impl MultirotorPolicyObserver {
     }
 
     fn observations(&self, target_world_m: [f64; 3]) -> Result<[f64; 11], String> {
+        let (attitude, rate, _, error_body) = self.policy_state(target_world_m)?;
+        let values = [
+            attitude[0].clamp(-std::f64::consts::PI, std::f64::consts::PI),
+            attitude[1].clamp(-std::f64::consts::PI, std::f64::consts::PI),
+            attitude[2].clamp(-std::f64::consts::PI, std::f64::consts::PI),
+            rate[0].clamp(-20.0, 20.0),
+            rate[1].clamp(-20.0, 20.0),
+            rate[2].clamp(-20.0, 20.0),
+            error_body[0].clamp(-100.0, 100.0),
+            error_body[1].clamp(-100.0, 100.0),
+            error_body[2].clamp(-100.0, 100.0),
+            self.normalized_voltage,
+            self.normalized_current,
+        ];
+        Self::finite(values)
+    }
+
+    fn observations_v2(&self, target_world_m: [f64; 3]) -> Result<[f64; 14], String> {
+        let (attitude, rate, velocity_body, error_body) = self.policy_state(target_world_m)?;
+        let values = [
+            attitude[0].clamp(-std::f64::consts::PI, std::f64::consts::PI),
+            attitude[1].clamp(-std::f64::consts::PI, std::f64::consts::PI),
+            attitude[2].clamp(-std::f64::consts::PI, std::f64::consts::PI),
+            rate[0].clamp(-20.0, 20.0),
+            rate[1].clamp(-20.0, 20.0),
+            rate[2].clamp(-20.0, 20.0),
+            velocity_body[0].clamp(-20.0, 20.0),
+            velocity_body[1].clamp(-20.0, 20.0),
+            velocity_body[2].clamp(-20.0, 20.0),
+            error_body[0].clamp(-100.0, 100.0),
+            error_body[1].clamp(-100.0, 100.0),
+            error_body[2].clamp(-100.0, 100.0),
+            self.normalized_voltage,
+            self.normalized_current,
+        ];
+        Self::finite(values)
+    }
+
+    fn policy_state(&self, target_world_m: [f64; 3]) -> Result<MultirotorPolicyState, String> {
         if !target_world_m.iter().all(|value| value.is_finite()) {
             return Err("policy target must contain finite SI coordinates".to_string());
         }
@@ -126,19 +191,15 @@ impl MultirotorPolicyObserver {
             error_world[1],
             error_world[0] * sin_yaw + error_world[2] * cos_yaw,
         ];
-        let values = [
-            attitude[0].clamp(-std::f64::consts::PI, std::f64::consts::PI),
-            attitude[1].clamp(-std::f64::consts::PI, std::f64::consts::PI),
-            attitude[2].clamp(-std::f64::consts::PI, std::f64::consts::PI),
-            rate[0].clamp(-20.0, 20.0),
-            rate[1].clamp(-20.0, 20.0),
-            rate[2].clamp(-20.0, 20.0),
-            error_body[0].clamp(-100.0, 100.0),
-            error_body[1].clamp(-100.0, 100.0),
-            error_body[2].clamp(-100.0, 100.0),
-            self.normalized_voltage,
-            self.normalized_current,
+        let velocity_body = [
+            self.estimated_velocity_m_s[0] * cos_yaw - self.estimated_velocity_m_s[2] * sin_yaw,
+            self.estimated_velocity_m_s[1],
+            self.estimated_velocity_m_s[0] * sin_yaw + self.estimated_velocity_m_s[2] * cos_yaw,
         ];
+        Ok((attitude, rate, velocity_body, error_body))
+    }
+
+    fn finite<const N: usize>(values: [f64; N]) -> Result<[f64; N], String> {
         if values.iter().all(|value| value.is_finite()) {
             Ok(values)
         } else {
@@ -264,7 +325,17 @@ impl CoreSession {
         if let Some(error) = &self.policy_observer_error {
             return Err(error.clone());
         }
-        Ok(MULTIROTOR_POLICY_LAYOUT
+        Ok(MULTIROTOR_POLICY_LAYOUT_V1
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect())
+    }
+
+    pub fn policy_layout_v2(&self) -> Result<Vec<String>, String> {
+        if let Some(error) = &self.policy_observer_error {
+            return Err(error.clone());
+        }
+        Ok(MULTIROTOR_POLICY_LAYOUT_V2
             .iter()
             .map(|name| (*name).to_string())
             .collect())
@@ -282,6 +353,19 @@ impl CoreSession {
             .ok_or_else(|| "policy observer is unavailable".to_string())?;
         observer
             .observations(target_world_m)
+            .map(|values| values.to_vec())
+    }
+
+    pub fn policy_observations_v2(&self, target_world_m: [f64; 3]) -> Result<Vec<f64>, String> {
+        if let Some(error) = &self.policy_observer_error {
+            return Err(error.clone());
+        }
+        let observer = self
+            .policy_observer
+            .as_ref()
+            .ok_or_else(|| "policy observer is unavailable".to_string())?;
+        observer
+            .observations_v2(target_world_m)
             .map(|values| values.to_vec())
     }
 
@@ -449,6 +533,7 @@ mod tests {
         let run = || {
             let mut session = CoreSession::new(QUAD).unwrap();
             assert_eq!(session.policy_layout().unwrap().len(), 11);
+            assert_eq!(session.policy_layout_v2().unwrap().len(), 14);
             let initial = session.policy_observations([0.0, 1.5, 0.0]).unwrap();
             assert!(initial[7] > 1.0, "target starts above the browser twin");
             let input = InputFrame {
@@ -460,17 +545,28 @@ mod tests {
             };
             session.step(0.5, &input).unwrap();
             let observed = session.policy_observations([0.0, 1.5, 0.0]).unwrap();
+            let observed_v2 = session.policy_observations_v2([0.0, 1.5, 0.0]).unwrap();
             assert_eq!(observed.len(), 11);
+            assert_eq!(observed_v2.len(), 14);
             assert!(observed.iter().all(|value| value.is_finite()));
+            assert!(
+                observed_v2[6..9].iter().any(|value| value.abs() > 0.0),
+                "v2 carries estimator-derived body velocity"
+            );
             assert!(
                 (0.0..1.0).contains(&observed[9]),
                 "battery sag is normalized"
             );
             assert!(observed[10] > 0.0, "motor current is model-derived");
-            observed
+            (observed, observed_v2)
         };
         let (left, right) = (run(), run());
-        for (left, right) in left.iter().zip(right) {
+        for (left, right) in left
+            .0
+            .iter()
+            .chain(&left.1)
+            .zip(right.0.iter().chain(&right.1))
+        {
             assert_eq!(left.to_bits(), right.to_bits(), "D17 observer determinism");
         }
     }

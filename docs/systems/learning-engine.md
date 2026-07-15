@@ -28,13 +28,19 @@ slalom), and randomization config. P10 makes community courses importable as tas
 Live 2026-06-14: `forge-sim::heavy` defines task kinds/specs and the
 course-to-task adapter; `train.policy` emits task metadata and curriculum stage.
 
-Protected 2026-07-15 through PR #70/`f220d25` under D41: new tasks emit
+Protected 2026-07-15 through PR #70/`f220d25` under D41: new tasks initially emitted
 `p7-v2`/`2.0.0`, explicit
 `forge-y-up-rh-m`, and a SHA-256 over canonical sorted task JSON without the
 self-referential hash field. Every built-in 3D spawn, bound, target, gate, obstacle,
 and arm point is now expressed in Forge Y-up; 2D rover paths declare the `xz` plane.
 Stable task IDs are unchanged. `p7-v1` evidence is retained as historical/legacy
 read input and is never silently reinterpreted as v2.
+
+D42 advances the current executable multirotor task to `p7-v3`/3.0.0. Stable IDs
+and Y-up coordinates remain, but v3 additionally binds the corrected Y-up angular
+axis order, normalized-flight-target inner loop, estimator velocity filter, reward
+coefficients, and full-chain completion meaning. Task v2 remains immutable evidence;
+it is not relabeled or rewritten as v3.
 
 ## 3. Observation/action contract
 
@@ -51,14 +57,17 @@ Live 2026-06-14: observation/action derivation is executable in Rust and the wor
 emits an ONNX header with contract hash, task, observation count, and action count.
 
 Live 2026-07-15: category labels remain transfer/search metadata, while the executable
-browser boundary is independently versioned as `forge-policy-tensor` 1.0.0. Its
-multirotor v1 input is an exact 11-scalar `[1, 11]` layout: estimator attitude and
-corrupted gyro rates, body-frame target error, normalized battery voltage, and
-normalized motor current. Its `[1, 4]` outputs are normalized throttle/roll/pitch/yaw
-targets at at most 50 Hz. `CoreSession` derives observations inside Rust from the
-contract estimator and inline physical constants; simulator truth never crosses the
-WASM boundary. Unsupported archetypes/estimators, missing constants, non-finite or
-out-of-bound targets, and layout drift refuse.
+browser boundary is independently versioned as `forge-policy-tensor`. D42 makes v2
+current with an exact 14-scalar `[1, 14]` input: estimator attitude, corrupted gyro
+rates, estimator-derived body-frame linear velocity, body-frame target error,
+normalized battery voltage, and normalized motor current. Its `[1, 4]` outputs are
+normalized collective/roll/pitch/yaw flight targets at no more than 50 Hz; zero
+collective maps to contract-derived hover trim rather than half of maximum thrust.
+`CoreSession` derives observations inside Rust from the contract estimator and inline
+physical constants; simulator truth never crosses the WASM boundary. Tensor-v1's
+exact `[1, 11]` observer and 906-byte ONNX oracle remain readable through explicit
+version selection. Unsupported majors/archetypes/estimators, missing constants,
+non-finite or out-of-bound targets, and cross-version layout drift refuse.
 
 ## 4. Training stack
 
@@ -108,17 +117,19 @@ simulator, and Python worker form one fail-closed training authority chain. The
 gateway accepts an owned admitted `modelId`, freezes the admitted contract as
 `forge-admitted-model-snapshot` 1.0.0, and rejects caller-supplied snapshots or hash
 drift. `forge-validate training-bundle` re-runs sovereign admission over the exact
-snapshot bytes and emits a `trainingMuJoCoBundle` 1.0.0 derived from Rust contract
-truth. The native worker runs seeded PPO or SAC with exact NumPy 2.5.1, Gymnasium
+snapshot bytes; D42's current output is `trainingMuJoCoBundle` 2.0.0 derived from
+Rust contract truth, while v1 remains historical. The native worker runs seeded PPO
+or SAC with exact NumPy 2.5.1, Gymnasium
 1.3.0, CPU PyTorch 2.13.0, Stable-Baselines3 2.9.0, ONNX 1.22.0, and MuJoCo 3.9.0,
 then records dependency versions, seed, source/contract/config digests, and model
 parameter digests in lineage. Unsupported roots, archetypes, estimators, physical
 constants, runtime versions, payloads, or snapshot hashes refuse before training.
 
 The protected initial environment remains the floating-root multirotor hover task.
-P7-014 generalizes that same sovereign runtime to the worker-
-owned `hover-hold` and `waypoint-chain` v2 definitions with 11 estimator-only
-observations and four normalized actions. It uses
+P7-014 generalized that same sovereign runtime to the worker-owned `hover-hold` and
+`waypoint-chain` v2 definitions. D42's P7-012 implementation corrects that runtime
+under task v3 with 14 estimator-only observations and four normalized flight-target
+actions. It uses
 the Rust-derived MJCF, hover trim, mass, gravity, 101-point powertrain curve, control
 bounds, and declared torque assumptions. Randomization covers mass, motor Kv,
 battery sag, actuation latency, friction, wind, sensor noise/bias, and observation
@@ -128,8 +139,15 @@ only for bounded safety termination and never enters policy observation or targe
 authority. Evaluation records baseline, mass +15 %, Kv -8 %, and 4 m/s wind
 scenarios; waypoint success requires the complete chain, not a partial success
 fraction. Protected PR #70 and clean artifact `8342801418` establish a controlled
-CPU runtime for both multirotor tasks; they do not establish overnight scorecard
-passage, rover/legged coverage, GPU economics, live operations, or field transfer.
+CPU runtime for both multirotor tasks. The implementation candidate now adds a
+frozen `p7-overnight-v1` curriculum: estimator-only deterministic-controller
+distillation followed by conservative randomized PPO, eight held-out episodes per
+baseline/mass/Kv/wind row, exact source/runtime/hardware lineage, resumable atomic
+task checkpoints, retained ONNX bytes, and a separate host-energy upper bound. Local
+M2 Pro diagnostics pass both frozen tasks at 1.0 success/robustness without changing
+the scorecard; protected clean-source evidence is still required before P7-012 closes.
+This does not establish rover/legged coverage, deployed GPU operations, production
+economics, external users, or field transfer.
 
 ## 5. Domain randomization (first-class config)
 
@@ -141,14 +159,16 @@ Live 2026-06-14: fixture policy jobs carry the default randomization block and t
 assert it is present in the artifact. The task suite has versioned
 environment definitions for hover, waypoint, slalom, velocity tracking, legged,
 rover, and arm reach tasks, and `train.policy` emits the selected definition. D41
-advances new definitions to task v2 because the coordinate-frame correction is
-semantic, while the independent `forge-policy-tensor` stays at 1.0.0 because its
-11-scalar Y-up estimator layout and four normalized actions did not change.
+advanced the coordinate-frame correction to task v2. D42 advances the current
+multirotor task to v3 and tensor to v2 because velocity state, axis order, normalized
+action interpretation, reward, and inner-loop control are semantic changes.
 
 Protected through PR #64/`d1c4c38` on 2026-07-15: the real hover environment applies
 each declared randomization source in execution rather than merely serializing the
 configuration. The same seed reproduces the exported ONNX digest in focused PPO and
-SAC tests.
+SAC tests. P7-012's frozen curriculum samples the same complete envelope during
+training and evaluates exact held-out baseline, mass +15%, Kv -8%, and wind 4 m/s
+rows without weakening `p7-scorecard-v1`'s 0.85/0.70 thresholds.
 
 ## 6. Scorecards (the gate)
 
@@ -208,12 +228,20 @@ learning quality. P7-011 is protected through PR #68/`9131289`: durable object
 upload, one-click Studio queueing/download/playback, isolated Postgres/S3-compatible
 acceptance, and the
 production-browser path are closed at controlled sandbox maturity. Deployed Modal/
-GPU proof and an overnight passing run remain P7-012..013; D40's real-waypoint
-prerequisite is now satisfied.
+GPU proof and a protected overnight passing run remain P7-012..013; D40's real-waypoint
+prerequisite is now satisfied. The P7-012 implementation candidate adds
+`python -m forge_workers.training.overnight_evidence`: it freezes both task seeds,
+recipe, scorecard thresholds, exact runtime, safe hardware inventory, CPU device, and
+operator-declared power bound into one request hash; writes each passing JSON/ONNX
+pair atomically; validates request hash, byte count, digest, and exportability before
+resume; and deliberately supports interruption after either task. Failed/tampered
+checkpoints never become reusable authority.
 
-Live 2026-07-15: the hover fixture is a real 906-byte opset-18 Gemm+Tanh ONNX graph,
-generated with ONNX 1.19.1 and bound by SHA-256
-`222102cc9a55192f00696399f553781ffc095f6fc0e3195d7456fed01a564d62`.
+Live 2026-07-15: the current hover fixture is a real 1,056-byte tensor-v2 opset-18
+Gemm+Tanh ONNX graph bound by SHA-256
+`48c08ad27c27a5e78bb3b63ea722c14a2a8e35095c8a45ecbc1d8042f27976a0`.
+The historical 906-byte tensor-v1 graph remains an executable read-compatibility
+oracle at SHA-256 `222102cc9a55192f00696399f553781ffc095f6fc0e3195d7456fed01a564d62`.
 Studio dynamically imports exact `onnxruntime-web` 1.27.0's WASM-only entry only when
 the owner presses play, verifies exportable estimator-backed scorecard authority,
 contract lineage, tensor schema/version/frame/layout/shapes/rate, strict base64,
@@ -286,7 +314,7 @@ smoke negative test (deliberately ground-truth-trained policy must be rejected);
 header derivation unit tests across archetypes.
 
 P7-008 adds Rust observer determinism/missing-authority tests, Python and gateway
-fixture digest/tensor tests, six Studio runtime tests including actual ONNX Runtime
+fixture digest/tensor tests, Studio runtime tests including actual ONNX Runtime
 WASM inference plus tamper/held/D8/lineage/layout/version/non-finite refusals, and a
 production-browser flow that proves the ONNX JS/WASM assets are absent from first
 paint, load same-origin on demand, and execute through the Rust observer/motion path.
@@ -296,6 +324,13 @@ tests, strict Python bundle tests, real MuJoCo environment tests, PPO and SAC co
 boundary tests, same-seed ONNX digest checks, dependency-pin assertions, and a
 required controlled training smoke. The full worker suite must run with the training
 extra installed; a skipped or fixture-only runtime is not acceptance evidence.
+
+P7-012 adds v1/v2 observer and real ONNX compatibility oracles, Y-up axis and
+velocity-aware controller tests, frozen-recipe refusal tests, exact CPU/MPS device
+authority with no fallback, interruption/resume/tamper recovery tests, safe hardware
+redaction, host-energy nonclaims, and passing exact-seed diagnostics for both tasks.
+Closure additionally requires a clean protected revision, intentional interrupt then
+resume, downloaded JSON/ONNX digest verification, and protected CI/security.
 
 P7-011 adds gateway/Studio/worker unit coverage plus protected isolated-Postgres and
 S3-compatible acceptance. Protected artifact `8340587390` proves stale-lease refusal
@@ -320,9 +355,8 @@ scorecards.
 
 ## 11. Open questions
 
-Scorecard thresholds per task (set with P7 data, then frozen per task version); the
-real waypoint environment and target-transition semantics; policy-object orphan
-inventory/reconciliation; the overnight passing hover/waypoint envelope; fine-tune-
+Scorecard thresholds beyond the frozen multirotor v3 0.85/0.70 gate; policy-object
+orphan inventory/reconciliation; protected overnight evidence publication; fine-tune-
 on-corrected-twin workflow shape (post system-ID); exact D12 quad/rover/legged
 benchmark contracts, declared accelerator and cost source, and the CPU overnight/
 tier-2 budget envelope needed to finish P7-010.

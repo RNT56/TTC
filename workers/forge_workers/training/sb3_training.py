@@ -31,7 +31,7 @@ from forge_workers.training.mujoco_env import ForgeMultirotorTaskEnv
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS
 from forge_workers.training.tasks import task_definition
 
-RUNTIME_VERSION = "forge-sb3-mujoco/1.1.0"
+RUNTIME_VERSION = "forge-sb3-mujoco/2.0.0"
 EXACT_RUNTIME = {
     "stable-baselines3": "2.9.0",
     "gymnasium": "1.3.0",
@@ -51,21 +51,62 @@ DEFAULT_RANDOMIZATION = {
     "imuNoiseScale": [0.5, 1.5],
     "imuBiasScale": [0.5, 1.5],
 }
+OVERNIGHT_RECIPE = {
+    "id": "p7-overnight-v1",
+    "hover": {
+        "teacherEpisodes": 24,
+        "distillationEpochs": 30,
+        "distillationBatchSize": 512,
+        "ppoTimesteps": 10_000,
+        "network": [128, 128],
+        "learningRate": 1e-5,
+        "logStd": -3.0,
+    },
+    "waypoint": {
+        "teacherEpisodes": 64,
+        "distillationEpochs": 30,
+        "distillationBatchSize": 512,
+        "ppoTimesteps": 10_000,
+        "network": [128, 128],
+        "learningRate": 1e-5,
+        "logStd": -3.0,
+    },
+}
 
 
 def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
     versions = _runtime_versions()
+    recipe = _choice(payload.get("recipe", "direct-v1"), {"direct-v1", "p7-overnight-v1"}, "recipe")
     algorithm = _choice(payload.get("algorithm", "ppo"), {"ppo", "sac"}, "algorithm")
     seed = _integer(payload.get("seed", 0), "seed", 0, 2_147_483_647)
-    total_timesteps = _integer(payload.get("totalTimesteps", 250_000), "totalTimesteps", 64, 20_000_000)
-    episode_steps = _integer(payload.get("episodeSteps", 3_000), "episodeSteps", 20, 100_000)
-    eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 1, 100)
-    device = _choice(payload.get("device", "cpu"), {"cpu"}, "device")
+    device = _training_device(payload.get("device", "cpu"))
     task_id = _choice(payload.get("task", "hover-hold"), {"hover-hold", "waypoint-chain"}, "task")
-    curriculum_stage = _integer(payload.get("curriculumStage", 1), "curriculumStage", 1, 100)
+    if recipe == "p7-overnight-v1":
+        if algorithm != "ppo":
+            raise ValueError("p7-overnight-v1 requires PPO")
+        if any(key in payload for key in ("totalTimesteps", "episodeSteps", "curriculumStage")):
+            raise ValueError("p7-overnight-v1 owns its timestep, horizon, and curriculum-stage authority")
+        curriculum_stage = 3
+    else:
+        curriculum_stage = _integer(payload.get("curriculumStage", 1), "curriculumStage", 1, 100)
     task = task_definition(task_id, curriculum_stage=curriculum_stage)
-    randomization = _randomization(payload.get("domainRandomization"))
+    if recipe == "p7-overnight-v1":
+        episode_steps = round(float(task["horizonS"]) / float(bundle["controlPeriodS"]))
+        eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 8, 8)
+        randomization = _randomization(payload.get("domainRandomization"))
+        if randomization != DEFAULT_RANDOMIZATION:
+            raise ValueError("p7-overnight-v1 requires the frozen domain-randomization envelope")
+        total_timesteps = 10_000
+    else:
+        total_timesteps = _integer(
+            payload.get("totalTimesteps", 250_000), "totalTimesteps", 64, 20_000_000
+        )
+        episode_steps = _integer(payload.get("episodeSteps", 3_000), "episodeSteps", 20, 100_000)
+        eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 1, 100)
+        randomization = _randomization(payload.get("domainRandomization"))
     config = {
+        "recipe": recipe,
+        "recipeAuthority": OVERNIGHT_RECIPE if recipe == "p7-overnight-v1" else None,
         "task": task_id,
         "taskSuite": task["suite"],
         "taskVersion": task["version"],
@@ -81,21 +122,30 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         "policyTensorVersion": bundle["tensor"]["schemaVersion"],
     }
     config_hash = _digest_json(config)
-    _seed_everything(seed)
+    _seed_everything(seed, device)
 
-    train_env = Monitor(
-        ForgeMultirotorTaskEnv(
+    if recipe == "p7-overnight-v1":
+        model, initial_parameters, wall_time_s, curriculum = _overnight_model(
             bundle,
-            task=task,
-            randomization=randomization,
+            task,
+            seed=seed,
+            device=device,
             episode_steps=episode_steps,
         )
-    )
-    model = _model(algorithm, train_env, seed, device, total_timesteps)
-    initial_parameters = _parameter_digest(model.policy.state_dict())
-    started = time.monotonic()
-    model.learn(total_timesteps=total_timesteps, progress_bar=False)
-    wall_time_s = time.monotonic() - started
+    else:
+        train_env = _environment(bundle, task, randomization, episode_steps)
+        model = _model(algorithm, train_env, seed, device, total_timesteps)
+        initial_parameters = _parameter_digest(model.policy.state_dict())
+        _synchronize_device(device)
+        started = time.monotonic()
+        model.learn(total_timesteps=total_timesteps, progress_bar=False)
+        _synchronize_device(device)
+        wall_time_s = time.monotonic() - started
+        curriculum = [{"kind": "direct", "timesteps": total_timesteps}]
+    if str(model.device) != device:
+        raise RuntimeError(
+            f"SB3 resolved device {model.device} does not match requested device {device}"
+        )
     final_parameters = _parameter_digest(model.policy.state_dict())
     if final_parameters == initial_parameters:
         raise RuntimeError("SB3 optimizer did not update policy parameters")
@@ -184,6 +234,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "observations": [
                 "estimator.attitude",
                 "estimator.angularRate",
+                "estimator.linearVelocity",
                 "target.error",
                 "battery.normalizedVoltage",
                 "powertrain.motorCurrent",
@@ -194,7 +245,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
                 "task": task_id,
                 "taskVersion": task["version"],
                 "taskDefinitionHash": task["definitionHash"],
-                "observationCount": "5",
+                "observationCount": "6",
                 "actionCount": "4",
                 "tensorSchema": tensor["schema"],
                 "tensorVersion": tensor["schemaVersion"],
@@ -241,19 +292,146 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "runtime": RUNTIME_VERSION,
             "versions": versions,
             "device": device,
+            "deviceAuthority": _device_authority(device),
             "requestedTimesteps": total_timesteps,
             "completedTimesteps": int(model.num_timesteps),
+            "recipe": recipe,
+            "curriculum": curriculum,
             "wallTimeS": wall_time_s,
             "parameterDigestBefore": initial_parameters,
             "parameterDigestAfter": final_parameters,
             "optimizerUpdated": True,
-            "deterministicAlgorithms": True,
+            "deterministicAlgorithms": torch.are_deterministic_algorithms_enabled(),
             "truthExposedToPolicy": False,
             "targetAdvanceSource": "estimator.target.error",
             "evaluations": evaluations,
             "bundleAssumptions": bundle["assumptions"],
         },
     }
+
+
+def _environment(
+    bundle: dict[str, Any],
+    task: dict[str, Any],
+    randomization: dict[str, Any],
+    episode_steps: int,
+) -> Monitor:
+    return Monitor(
+        ForgeMultirotorTaskEnv(
+            bundle,
+            task=task,
+            randomization=randomization,
+            episode_steps=episode_steps,
+        )
+    )
+
+
+def _overnight_model(
+    bundle: dict[str, Any],
+    task: dict[str, Any],
+    *,
+    seed: int,
+    device: str,
+    episode_steps: int,
+) -> tuple[PPO, str, float, list[dict[str, Any]]]:
+    _synchronize_device(device)
+    started = time.monotonic()
+    if task["id"] == "hover-hold":
+        authority = OVERNIGHT_RECIPE["hover"]
+        model = _ppo_model(
+            _environment(bundle, task, DEFAULT_RANDOMIZATION, episode_steps),
+            seed,
+            device,
+            total_timesteps=int(authority["ppoTimesteps"]),
+            network=list(authority["network"]),
+            learning_rate=float(authority["learningRate"]),
+            epochs=4,
+            gamma=0.995,
+            entropy=0.0,
+        )
+        initial_parameters = _parameter_digest(model.policy.state_dict())
+        observations, actions = _teacher_dataset(
+            bundle,
+            task,
+            seed=seed,
+            episodes=int(authority["teacherEpisodes"]),
+            episode_steps=episode_steps,
+        )
+        final_loss = _distill_teacher(
+            model,
+            observations,
+            actions,
+            seed=seed,
+            epochs=int(authority["distillationEpochs"]),
+            batch_size=int(authority["distillationBatchSize"]),
+        )
+        model.policy.log_std.data.fill_(float(authority["logStd"]))
+        model.learn(total_timesteps=int(authority["ppoTimesteps"]), progress_bar=False)
+        curriculum = [
+            {
+                "kind": "estimator-only-controller-distillation",
+                "teacherEpisodes": authority["teacherEpisodes"],
+                "samples": len(observations),
+                "epochs": authority["distillationEpochs"],
+                "batchSize": authority["distillationBatchSize"],
+                "finalMeanSquaredError": final_loss,
+                "truthExposedToTeacher": False,
+            },
+            {
+                "kind": "ppo-randomized-fine-tune",
+                "timesteps": authority["ppoTimesteps"],
+                "domainRandomization": DEFAULT_RANDOMIZATION,
+            },
+        ]
+    else:
+        authority = OVERNIGHT_RECIPE["waypoint"]
+        model = _ppo_model(
+            _environment(bundle, task, DEFAULT_RANDOMIZATION, episode_steps),
+            seed,
+            device,
+            total_timesteps=int(authority["ppoTimesteps"]),
+            network=list(authority["network"]),
+            learning_rate=float(authority["learningRate"]),
+            epochs=4,
+            gamma=0.995,
+            entropy=0.0,
+        )
+        initial_parameters = _parameter_digest(model.policy.state_dict())
+        observations, actions = _teacher_dataset(
+            bundle,
+            task,
+            seed=seed,
+            episodes=int(authority["teacherEpisodes"]),
+            episode_steps=episode_steps,
+        )
+        final_loss = _distill_teacher(
+            model,
+            observations,
+            actions,
+            seed=seed,
+            epochs=int(authority["distillationEpochs"]),
+            batch_size=int(authority["distillationBatchSize"]),
+        )
+        model.policy.log_std.data.fill_(float(authority["logStd"]))
+        model.learn(total_timesteps=int(authority["ppoTimesteps"]), progress_bar=False)
+        curriculum = [
+            {
+                "kind": "estimator-only-controller-distillation",
+                "teacherEpisodes": authority["teacherEpisodes"],
+                "samples": len(observations),
+                "epochs": authority["distillationEpochs"],
+                "batchSize": authority["distillationBatchSize"],
+                "finalMeanSquaredError": final_loss,
+                "truthExposedToTeacher": False,
+            },
+            {
+                "kind": "ppo-randomized-fine-tune",
+                "timesteps": authority["ppoTimesteps"],
+                "domainRandomization": DEFAULT_RANDOMIZATION,
+            },
+        ]
+    _synchronize_device(device)
+    return model, initial_parameters, time.monotonic() - started, curriculum
 
 
 def _model(
@@ -263,28 +441,19 @@ def _model(
     device: str,
     total_timesteps: int,
 ) -> PPO | SAC:
-    policy_kwargs = {"net_arch": [64, 64], "activation_fn": torch.nn.Tanh}
     if algorithm == "ppo":
-        n_steps = min(1_024, max(32, 2 ** int(math.floor(math.log2(total_timesteps)))))
-        n_steps = min(n_steps, total_timesteps)
-        batch_size = max(8, min(64, n_steps))
-        while n_steps % batch_size != 0 and batch_size > 8:
-            batch_size //= 2
-        return PPO(
-            "MlpPolicy",
+        return _ppo_model(
             env,
-            seed=seed,
-            device=device,
-            n_steps=n_steps,
-            batch_size=batch_size,
-            n_epochs=4,
+            seed,
+            device,
+            total_timesteps=total_timesteps,
+            network=[64, 64],
             learning_rate=3e-4,
+            epochs=4,
             gamma=0.99,
-            gae_lambda=0.95,
-            ent_coef=0.0,
-            policy_kwargs=policy_kwargs,
-            verbose=0,
+            entropy=0.0,
         )
+    policy_kwargs = {"net_arch": [64, 64], "activation_fn": torch.nn.Tanh}
     learning_starts = min(1_000, max(16, total_timesteps // 10))
     return SAC(
         "MlpPolicy",
@@ -301,6 +470,147 @@ def _model(
         policy_kwargs=policy_kwargs,
         verbose=0,
     )
+
+
+def _ppo_model(
+    env: Monitor,
+    seed: int,
+    device: str,
+    *,
+    total_timesteps: int,
+    network: list[int],
+    learning_rate: float,
+    epochs: int,
+    gamma: float,
+    entropy: float,
+) -> PPO:
+    n_steps = min(1_024, max(32, 2 ** int(math.floor(math.log2(total_timesteps)))))
+    n_steps = min(n_steps, total_timesteps)
+    batch_size = max(8, min(64, n_steps))
+    while n_steps % batch_size != 0 and batch_size > 8:
+        batch_size //= 2
+    return PPO(
+        "MlpPolicy",
+        env,
+        seed=seed,
+        device=device,
+        n_steps=n_steps,
+        batch_size=batch_size,
+        n_epochs=epochs,
+        learning_rate=learning_rate,
+        gamma=gamma,
+        gae_lambda=0.95,
+        ent_coef=entropy,
+        policy_kwargs={"net_arch": network, "activation_fn": torch.nn.Tanh},
+        verbose=0,
+    )
+
+
+def _teacher_dataset(
+    bundle: dict[str, Any],
+    task: dict[str, Any],
+    *,
+    seed: int,
+    episodes: int,
+    episode_steps: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    observations: list[np.ndarray] = []
+    actions: list[np.ndarray] = []
+    for episode in range(episodes):
+        env = ForgeMultirotorTaskEnv(
+            bundle,
+            task=task,
+            randomization=DEFAULT_RANDOMIZATION,
+            episode_steps=episode_steps,
+        )
+        observation, _ = env.reset(seed=seed + episode)
+        done = False
+        while not done:
+            action = _teacher_action(observation, bundle, task["id"])
+            observations.append(observation.copy())
+            actions.append(action)
+            observation, _, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+        env.close()
+    if not observations:
+        raise RuntimeError("controller-distillation curriculum produced no samples")
+    return np.asarray(observations, dtype=np.float32), np.asarray(actions, dtype=np.float32)
+
+
+def _teacher_action(
+    observation: np.ndarray,
+    bundle: dict[str, Any],
+    task_id: str,
+) -> np.ndarray:
+    if observation.shape != (14,) or not np.isfinite(observation).all():
+        raise ValueError("teacher requires one finite forge-policy-tensor v2 observation")
+    roll, pitch, yaw = (float(value) for value in observation[:3])
+    _, _, yaw_rate = (float(value) for value in observation[3:6])
+    velocity_x, velocity_y, velocity_z = (float(value) for value in observation[6:9])
+    error_x, error_y, error_z = (float(value) for value in observation[9:12])
+    position_gain = 0.35 if task_id == "hover-hold" else 0.08
+    velocity_gain = 0.08
+    desired_roll = float(np.clip(position_gain * error_z - velocity_gain * velocity_z, -0.35, 0.35))
+    desired_pitch = float(np.clip(-position_gain * error_x + velocity_gain * velocity_x, -0.35, 0.35))
+    vertical_acceleration = float(np.clip(8.0 * error_y - 3.0 * velocity_y, -6.0, 6.0))
+    attitude_factor = max(0.7, math.cos(roll) * math.cos(pitch))
+    desired_thrust = (
+        float(bundle["massKg"])
+        * (float(bundle["gravityMS2"]) + vertical_acceleration)
+        / attitude_factor
+    )
+    curve = bundle["powertrain"]["curve"]
+    throttle = float(
+        np.interp(
+            desired_thrust,
+            [point["totalThrustN"] for point in curve],
+            [point["throttle"] for point in curve],
+        )
+    )
+    hover = float(bundle["hoverThrottle"])
+    collective = (throttle - hover) / (1.0 - hover) if throttle >= hover else throttle / hover - 1.0
+    tilt_max = float(bundle["control"]["tiltMaxRad"])
+    yaw_rate_max = float(bundle["control"]["yawRateRadS"])
+    return np.asarray(
+        [
+            np.clip(collective, -1.0, 1.0),
+            np.clip(-desired_roll / tilt_max, -1.0, 1.0),
+            np.clip(desired_pitch / tilt_max, -1.0, 1.0),
+            np.clip((-yaw - 0.3 * yaw_rate) / yaw_rate_max, -1.0, 1.0),
+        ],
+        dtype=np.float32,
+    )
+
+
+def _distill_teacher(
+    model: PPO,
+    observations: np.ndarray,
+    actions: np.ndarray,
+    *,
+    seed: int,
+    epochs: int,
+    batch_size: int,
+) -> float:
+    inputs = torch.as_tensor(observations, dtype=torch.float32)
+    targets = torch.as_tensor(actions, dtype=torch.float32)
+    generator = torch.Generator().manual_seed(seed)
+    final_loss = math.inf
+    for _ in range(epochs):
+        loss_sum = 0.0
+        for indices in torch.randperm(len(inputs), generator=generator).split(batch_size):
+            batch_inputs = inputs[indices].to(model.device)
+            batch_targets = targets[indices].to(model.device)
+            mean = model.policy.get_distribution(batch_inputs).distribution.mean
+            loss = torch.nn.functional.mse_loss(mean, batch_targets)
+            model.policy.optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.policy.parameters(), 1.0)
+            model.policy.optimizer.step()
+            loss_sum += float(loss.detach().cpu()) * len(indices)
+        final_loss = loss_sum / len(inputs)
+    if not math.isfinite(final_loss):
+        raise RuntimeError("controller distillation produced a non-finite loss")
+    return final_loss
 
 
 def _evaluate(
@@ -385,8 +695,12 @@ def _export_onnx(
     task: dict[str, Any],
 ) -> dict[str, Any]:
     module: torch.nn.Module = _PpoExport(model) if algorithm == "ppo" else _SacExport(model)
+    # The browser contract is device-neutral. Export from CPU after all training
+    # and evaluation so a retained graph never depends on MPS availability.
+    module = module.to("cpu")
     module.eval()
-    dummy = torch.zeros((1, 11), dtype=torch.float32)
+    input_shape = bundle["tensor"]["input"]["shape"]
+    dummy = torch.zeros(tuple(input_shape), dtype=torch.float32)
     with tempfile.NamedTemporaryFile(suffix=".onnx", prefix="forge-sb3-", delete=False) as handle:
         path = Path(handle.name)
     try:
@@ -456,7 +770,7 @@ def _runtime_versions() -> dict[str, str]:
         if metadata_version != expected:
             raise RuntimeError(f"{package} installed metadata drifted: expected {expected}, got {metadata_version}")
     if torch.version.cuda is not None:
-        raise RuntimeError("P7 SB3 runtime 1.1.0 requires the reviewed CPU-only PyTorch build")
+        raise RuntimeError("P7 SB3 runtime 2.0.0 does not admit CUDA builds")
     return versions
 
 
@@ -554,13 +868,68 @@ def _randomization(value: Any) -> dict[str, Any]:
     return result
 
 
-def _seed_everything(seed: int) -> None:
+def _training_device(value: Any) -> str:
+    device = _choice(value, {"cpu", "mps"}, "device")
+    if device == "cpu":
+        return device
+    fallback = os.getenv("PYTORCH_ENABLE_MPS_FALLBACK", "").strip().lower()
+    if fallback in {"1", "true", "yes", "on"}:
+        raise RuntimeError(
+            "MPS evidence forbids PYTORCH_ENABLE_MPS_FALLBACK because CPU fallback would obscure device authority"
+        )
+    if platform.system() != "Darwin" or platform.machine().lower() not in {"arm64", "aarch64"}:
+        raise RuntimeError("MPS training requires Apple silicon on macOS")
+    if not torch.backends.mps.is_built():
+        raise RuntimeError("the reviewed PyTorch build does not include MPS support")
+    if not torch.backends.mps.is_available():
+        raise RuntimeError("MPS was requested but is not available on this host")
+    return device
+
+
+def _device_authority(device: str) -> dict[str, Any]:
+    if device == "cpu":
+        return {
+            "requested": "cpu",
+            "resolved": "cpu",
+            "accelerator": False,
+            "backend": "cpu",
+            "cpuFallbackAllowed": False,
+        }
+    get_name = getattr(torch.backends.mps, "get_name", None)
+    get_core_count = getattr(torch.backends.mps, "get_core_count", None)
+    name = get_name() if callable(get_name) else "Apple Metal GPU"
+    core_count = get_core_count() if callable(get_core_count) else None
+    if not isinstance(name, str) or not name.strip():
+        raise RuntimeError("MPS device name is unavailable")
+    if isinstance(core_count, bool) or not isinstance(core_count, int) or core_count <= 0:
+        raise RuntimeError("MPS core count is unavailable")
+    return {
+        "requested": "mps",
+        "resolved": "mps",
+        "accelerator": True,
+        "backend": "mps",
+        "name": name,
+        "coreCount": core_count,
+        "mpsBuilt": torch.backends.mps.is_built(),
+        "mpsAvailable": torch.backends.mps.is_available(),
+        "cpuFallbackAllowed": False,
+    }
+
+
+def _synchronize_device(device: str) -> None:
+    if device == "mps":
+        torch.mps.synchronize()
+
+
+def _seed_everything(seed: int, device: str) -> None:
     os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+    if device == "mps":
+        torch.mps.manual_seed(seed)
     torch.set_num_threads(1)
     torch.use_deterministic_algorithms(True)
 
@@ -591,4 +960,10 @@ def _integer(value: Any, name: str, minimum: int, maximum: int) -> int:
     return value
 
 
-__all__ = ["DEFAULT_RANDOMIZATION", "EXACT_RUNTIME", "RUNTIME_VERSION", "train_sb3_policy"]
+__all__ = [
+    "DEFAULT_RANDOMIZATION",
+    "EXACT_RUNTIME",
+    "OVERNIGHT_RECIPE",
+    "RUNTIME_VERSION",
+    "train_sb3_policy",
+]

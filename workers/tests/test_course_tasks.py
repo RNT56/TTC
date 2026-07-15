@@ -20,8 +20,8 @@ def test_env_spec_compiles_to_p7_task_shape_without_conversion_work():
     task = course_task_definition(fixture_course())
 
     assert task["id"] == "course:fixture-slalom"
-    assert task["suite"] == "p7-v2"
-    assert task["version"] == "2.0.0"
+    assert task["suite"] == "p7-v3"
+    assert task["version"] == "3.0.0"
     assert task["coordinateFrame"] == "forge-y-up-rh-m"
     assert task["definitionHash"] == task_definition_hash(task)
     assert task["source"] == "course"

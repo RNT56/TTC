@@ -16,6 +16,7 @@ files until the failure is classified.
 | Browser support/accessibility failure | inspect `artifacts/e2e/qa003-browser-support.json`; rebuild Studio; rerun the failed engine with `FORGE_BROWSER_SUPPORT=1 FORGE_BROWSER_ENGINES=<engine> pnpm verify:browser-support`, then rerun all three | source revision, engine/version, tier, failed semantic/interaction/contrast/target/layout assertion, screenshot |
 | External acceptance policy/run failure | `pnpm verify:external-acceptance`; validate the private manifest with `node scripts/external-acceptance.mjs validate <path>` | exact revision/deployment, failed/stopped step, authority, content hashes, bounded findings/incidents, signoffs, limitations; no raw private evidence in Git |
 | Worker failure | `PYTHONPATH=workers python3 -m pytest workers/tests/<file> -q` | job kind, sanitized payload, deterministic output/error |
+| Training scorecard or evidence failure | build `forge-validate`; run the exact Python 3.12 environment and frozen seed; inspect baseline/mass/Kv/wind evaluations before changing code; validate retained ONNX size/SHA-256 | source/config/task/tensor/bundle/runtime/hardware/device lineage, per-family score, checkpoint request hash, failure/recovery state, host-energy method/nonclaim |
 | Migration acceptance failure | inspect `artifacts/e2e/qa004-migration-acceptance.json`; run `pnpm db:migrations:test`, then `DATABASE_URL=... pnpm db:assert-migrations` against disposable Postgres; follow `MIGRATIONS.md` | exact source/checkout, predecessor prefix/fixture family, checksum/history/failure/concurrency scenario, first SQL error; never edit the ledger |
 | Other database failure | `docker compose -f infra/docker-compose.yml up -d postgres`; `pnpm verify:db` | migration number, empty/populated state, SQL error |
 | Release failure | follow `docs/RELEASE.md`; inspect the exact job and downloaded aggregate | run ID, SHA, manifest, checksum, attestation |
@@ -47,6 +48,11 @@ files until the failure is classified.
   to obtain a pass. Start a new linked run, keep private/raw evidence outside Git, and
   follow `docs/EXTERNAL-ACCEPTANCE.md`.
 - Record recurring failure modes in the owning system document or risk register.
+- For training, first distinguish observer/layout drift, coordinate-axis error,
+  normalized-action interpretation, reward/termination incentives, backend fallback,
+  and ordinary optimizer instability. Do not tune thresholds, expose MuJoCo truth,
+  relabel a policy major, or reuse a failed/tampered checkpoint. Preserve the failed
+  scorecard, freeze any revised recipe, and rerun every held-out family unchanged.
 
 If a vulnerability, credential, user-data exposure, or unsafe hardware authority is
 suspected, stop ordinary debugging and follow [`../SECURITY.md`](../SECURITY.md).

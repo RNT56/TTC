@@ -17,7 +17,7 @@ export interface PolicyObservationSnapshot {
 export type SessionWorkerRequest =
   | { type: "create"; contractJson: string }
   | { type: "step"; dt: number; input: DriveInput }
-  | { type: "policySnapshot"; requestId: number; target: FocusVector }
+  | { type: "policySnapshot"; requestId: number; target: FocusVector; tensorVersion: string }
   | { type: "setJog"; node: string; rx: number; ry: number }
   | { type: "clearJog" }
   | { type: "dispose" };

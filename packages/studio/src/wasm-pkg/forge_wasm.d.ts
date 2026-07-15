@@ -78,15 +78,22 @@ export class Session {
     constructor(contract_json: string);
     node_names(): string[];
     /**
-     * Exact scalar input order accepted by the multirotor browser policy
-     * boundary (`forge-policy-tensor` 1.0.0).
+     * Legacy scalar input order for `forge-policy-tensor` 1.0.0.
      */
     policy_layout(): string[];
+    /**
+     * Current scalar input order for `forge-policy-tensor` 2.0.0.
+     */
+    policy_layout_v2(): string[];
     /**
      * Estimator-derived observation tensor for a world-space SI target.
      * Simulator truth stays inside the Rust observer (D8).
      */
     policy_observations(target_x_m: number, target_y_m: number, target_z_m: number): Float64Array;
+    /**
+     * Estimator-derived v2 observation tensor, including body velocity.
+     */
+    policy_observations_v2(target_x_m: number, target_y_m: number, target_z_m: number): Float64Array;
     /**
      * Zero-copy pose view (16 f32 per node, column-major, `node_names`
      * order). Valid only until the next wasm memory growth — read it
@@ -153,7 +160,9 @@ export interface InitOutput {
     readonly session_new: (a: number, b: number) => [number, number, number];
     readonly session_node_names: (a: number) => [number, number];
     readonly session_policy_layout: (a: number) => [number, number, number, number];
+    readonly session_policy_layout_v2: (a: number) => [number, number, number, number];
     readonly session_policy_observations: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly session_policy_observations_v2: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly session_pose_view: (a: number) => any;
     readonly session_set_jog: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly session_step: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];

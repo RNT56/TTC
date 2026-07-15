@@ -16,6 +16,8 @@ from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
 from forge_workers.training.bundle import (
+    LEGACY_POLICY_INPUT_LAYOUT,
+    LEGACY_POLICY_TENSOR_VERSION,
     POLICY_INPUT_LAYOUT,
     POLICY_OUTPUT_LAYOUT as TENSOR_OUTPUT_LAYOUT,
     POLICY_TENSOR_SCHEMA,
@@ -57,7 +59,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         lineage={
             "contractHash": contract_hash,
             "seed": seed,
-            "codeVersion": "fixture-p7-v2",
+            "codeVersion": "fixture-p7-v3",
             "taskDefinitionHash": str(task_meta["definitionHash"]),
         },
     )
@@ -65,6 +67,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
     observations = [
         "estimator.attitude",
         "estimator.angularRate",
+        "estimator.linearVelocity",
         "target.error",
         "battery.normalizedVoltage",
         "powertrain.motorCurrent",
@@ -379,15 +382,21 @@ def _external_policy_authority_reasons(
 def _policy_tensor_is_exact(value: dict[str, Any]) -> bool:
     input_axis = value.get("input")
     output_axis = value.get("output")
+    version = value.get("schemaVersion")
+    expected_input = (
+        LEGACY_POLICY_INPUT_LAYOUT
+        if version == LEGACY_POLICY_TENSOR_VERSION
+        else POLICY_INPUT_LAYOUT
+    )
     return bool(
         value.get("schema") == POLICY_TENSOR_SCHEMA
-        and value.get("schemaVersion") == POLICY_TENSOR_VERSION
+        and version in {LEGACY_POLICY_TENSOR_VERSION, POLICY_TENSOR_VERSION}
         and value.get("coordinateFrame") == "forge-y-up-rh-m"
         and value.get("rateHz") == 50
         and isinstance(input_axis, dict)
         and input_axis.get("name") == "observations"
-        and input_axis.get("shape") == [1, 11]
-        and input_axis.get("layout") == list(POLICY_INPUT_LAYOUT)
+        and input_axis.get("shape") == [1, len(expected_input)]
+        and input_axis.get("layout") == list(expected_input)
         and isinstance(output_axis, dict)
         and output_axis.get("name") == "actions"
         and output_axis.get("shape") == [1, 4]

@@ -151,6 +151,15 @@ Current Wave 1/2 boundary:
   maintainer-only curation, assignment/reassignment, sensitive-authority exclusions,
   seed issues, and all public/agent entry surfaces have exact PR/post-merge proof;
   open seed issues do not substitute for an external contributor outcome;
+- P7-012 is the active Wave-3 lane. The implementation candidate coordinates D42
+  tensor-v2/bundle-v2/task-v3 semantics, preserves executable tensor-v1 reads,
+  freezes an estimator-only distillation plus randomized-PPO recipe, and adds
+  interrupt/resume/tamper-validated evidence. Both exact-seed tasks pass all local
+  held-out rows on the declared M2 Pro host. D43 records honest CPU selection after
+  a same-workload MPS comparison and separates accelerator inventory, simulated
+  vehicle energy, a non-measured adapter-rating host upper bound, and provider/
+  electricity cost. This does not advance the protected boundary until PR CI,
+  post-merge CI/security, and clean-source downloaded evidence pass;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -335,8 +344,11 @@ Work:
   a contract-derived sequential environment, estimator-only target transitions,
   task-bound scorecard/export/Studio playback, deterministic dual-task smoke, and
   unsupported-shape/provider-drift refusal. Clean artifact `8342801418` satisfies
-  that prerequisite; next acquire overnight passing hover/
-  waypoint evidence (`P7-012`), deployed GPU operations (`P7-013`), remaining rover
+  that prerequisite. P7-012's implementation candidate now has D42 tensor-v2/
+  bundle-v2/task-v3 authority, a frozen resumable curriculum, and passing local
+  exact-seed hover/waypoint diagnostics; next protect it and execute/download the
+  clean intentional-interruption/resume evidence. Then acquire deployed GPU
+  operations (`P7-013`), remaining rover
   and legged real tasks (`P7-014`), offline fine-tuning (`P7-009`), exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
   to finish the MJX decision (`P7-010`), and external acceptance. OPS-006 separately
@@ -355,7 +367,9 @@ Acceptance:
 - one-click training delivery proves the browser executes the exact retained ONNX
   object authorized by the winning owned-model job; this is closed through P7-011.
   Separately, the P7-014 waypoint slice makes the second task executable and P7-012
-  proves both scorecard-passing policies overnight on declared hardware;
+  proves both scorecard-passing policies on declared consumer hardware with frozen
+  seeds/config/runtime, exact device authority, recovery, retained bytes, and honest
+  energy/cost evidence;
 - MJX adoption/rejection is based on D12 benchmark data;
 - co-design returns at least three admitted Pareto points from engine-backed tiers.
 
@@ -531,7 +545,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | P7-009, P7-010, P7-012..014; P7-011 closed, P7-014 waypoint slice protected while rover/legged remain | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled hover/waypoint trainer and authoritative one-click object delivery; next obtain overnight-passing hover/waypoint policy evidence, then deployed GPU operations, remaining rover/legged archetypes, offline fine-tune, and final D12 MJX decision |
+| P7 | P7-009, P7-010, P7-012..014; P7-011 closed, P7-012 implementation active, P7-014 waypoint slice protected while rover/legged remain | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled hover/waypoint trainer and authoritative one-click object delivery; protect and reconcile P7-012's locally passing tensor-v2/task-v3 evidence, then deployed GPU operations, remaining rover/legged archetypes, offline fine-tune, and final D12 MJX decision |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |

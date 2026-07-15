@@ -57,9 +57,9 @@ def _authorized_policy(contract_hash: str) -> dict:
             },
             "tensor": {
                 "schema": "forge-policy-tensor",
-                "schemaVersion": "1.0.0",
+                "schemaVersion": "2.0.0",
                 "coordinateFrame": "forge-y-up-rh-m",
-                "input": {"name": "observations", "shape": [1, 11], "layout": list(POLICY_INPUT_LAYOUT)},
+                "input": {"name": "observations", "shape": [1, 14], "layout": list(POLICY_INPUT_LAYOUT)},
                 "output": {"name": "actions", "shape": [1, 4], "layout": list(POLICY_OUTPUT_LAYOUT)},
                 "rateHz": 50,
             },

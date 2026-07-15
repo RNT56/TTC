@@ -9,6 +9,7 @@ P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
 P7-011 policy-delivery evidence anchor: `9131289` (PR #68)
 P7-014 waypoint-training evidence anchor: `f220d25` (PR #70)
+Active unprotected implementation candidate: `codex/p7012-consumer-gpu` (P7-012; no evidence anchor yet)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -169,6 +170,26 @@ non-exportable. This satisfies D40's executable waypoint prerequisite for P7-012
 it does not prove overnight learning quality, consumer-GPU economics, deployed GPU
 operations, rover/legged coverage, external acceptance, or field transfer.
 
+P7-012 is now an implementation candidate, not a protected claim. D42 advances the
+current executable boundary to `forge-policy-tensor` 2.0.0 `[1,14]`,
+`trainingMuJoCoBundle` 2.0.0, and `p7-v3`/3.0.0, correcting the under-observed
+position policy, Forge Y-up angular-axis order, raw-torque/hover-trim mismatch, and
+unbound reward/control semantics while retaining exact tensor-v1 ONNX/observer
+execution. A frozen estimator-only controller-distillation plus conservative
+randomized-PPO recipe passes unchanged local scorecard gates at seeds 1201/1207:
+both hover-hold and waypoint-chain score 1.0 baseline and 1.0 for mass +15%, Kv -8%,
+and wind 4 m/s. The hover diagnostic retains a 78,152-byte ONNX at SHA-256
+`9afc1152…fc4c` and took 45.63 s task wall time; its host-energy field is explicitly
+only a 1.77 Wh upper bound from the declared 140 W adapter rating, not measured
+consumption. The waypoint diagnostic also passes but remains bound to the protected
+parent rather than an implementation commit, so neither file is acceptance evidence.
+D43 selects CPU after an exact-host 4,096-step MLP PPO pilot measured about 1.08 s
+CPU versus 13.38 s MPS; the 19-core MPS device is inventory, not the execution
+backend. The candidate passes 163 worker tests, 12 Studio runtime tests, Rust WASM
+tests, gateway tests, compatibility, and dual-task smoke. P7-012 remains `[~]` until
+the implementation is protected and the exact protected revision completes an
+intentional interrupt/resume run whose JSON/ONNX outputs are downloaded and checked.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
@@ -187,10 +208,12 @@ operations, rover/legged coverage, external acceptance, or field transfer.
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 65/65 with the real validator in the full gate | admitted snapshot/hash authority and training-ready multirotor estimator coverage join the digest-bound policy fixture, staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization |
 | Worker tests | protected 154/154 at P7-014 under Python 3.12 | adds exact task-v2 hover/waypoint authority, sequential estimator-only target transitions, task-bound export/provider checks, dual-task smoke, and unsupported-shape refusals to the P7-011 object-delivery, frozen MJX request/protocol/hash, real PPO/SAC/MuJoCo/ONNX, reproducibility, training-bundle authority, corpus consumers, real engine parity, commerce, native ETL, and SEC-006 coverage |
+| P7-012 candidate tests | all 39 required local gates pass under Python 3.12, including 163/163 workers, 12/12 Studio runtime tests, 65/65 gateway tests, Rust fmt/Clippy/workspace/WASM tests, generated-contract/golden/compatibility checks, dual-task MuJoCo/SB3/ONNX smoke, MJX parity, and patch hygiene | adds tensor-v2/task-v3/bundle-v2 authority, exact tensor-v1 execution, Y-up/velocity/action/reward regression coverage, CPU/MPS no-fallback authority, and atomic interrupt/resume/tamper evidence; local candidate green is not protected acceptance |
 | P7-003 controlled trainer | protected through PR #64/`d1c4c38`; exact-head and post-merge CI/security pass, and artifact `8334594354` is a clean source-bound 256-step CPU PPO/MuJoCo/ONNX smoke | proves the seeded PPO/SAC runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound valid ONNX artifact; short blocked-export smoke does not prove learning quality, overnight SLO, GPU economics, deployed operations, or field transfer |
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
 | P7-011 authoritative policy delivery | complete through PR #68/`9131289`; exact-head and post-merge CI/security pass, and artifact `8340587390` is clean source/checkout-bound controlled S3-compatible evidence | two attempts yield one exact object/policy with no inline persistence; stale upload and digest substitution fail closed; cancellation creates no database authority; authenticated same-origin exact readback executes through the Rust estimator/motion browser boundary. Production object-store durability/SLO and OPS-006 orphan cleanup remain open |
 | P7-014 waypoint trainer | protected through PR #70/`f220d25`; exact-head and post-merge CI/security pass, and artifact `8342801418` is clean source/task/runtime-bound dual-task evidence | task v2/Y-up/hash authority, sequential estimator-only waypoint transitions, full-chain evaluation, task-bound PPO/SAC/ONNX/scorecard/provider output, Studio target-chain playback, reproducibility, and refusals are protected. Both short scorecards remain blocked; P7-012 overnight consumer-GPU quality and the rover/legged remainder of P7-014 remain open |
+| P7-012 learning quality candidate | local exact-seed hover and waypoint diagnostics pass 1.0 baseline and all three robustness rows on a declared M2 Pro host | proves the implementation can meet the frozen gate and recovery contract locally; it does not prove protected exact-source evidence, deployed GPU operations, measured host energy/electricity cost, external acceptance, or field transfer |
 | Postgres/pgvector gate | pass on protected P7-014 CI `29415036211` for 22 migrations | the clean plus 21 populated-predecessor matrix, migration 0022 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
@@ -474,7 +497,7 @@ decision; none is a hidden release claim.
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
-| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover and sequential-waypoint training with authoritative snapshots/bundles, D41 task-v2 authority, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback through Rust estimator observations, and a controlled CPU MuJoCo/MJX feasibility harness | overnight passing hover/waypoint scorecard on declared consumer GPU, deployed Modal/GPU evidence, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
+| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover and sequential-waypoint training with authoritative snapshots/bundles, D41 task-v2 authority, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback through Rust estimator observations, and a controlled CPU MuJoCo/MJX feasibility harness; local D42 tensor-v2/task-v3 passing diagnostics are candidate evidence | protect and download P7-012's clean interrupt/resume hover/waypoint run, then deployed Modal/GPU evidence, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
@@ -534,6 +557,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
 | Publish validator v0.1 | **Complete** | protected-main and tag workflows, annotated tag, nine assets, checksums/SPDX/provenance, and post-publication binary/WASM verification are green |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
+| Claim P7-012 protected overnight learning quality | **No-go yet** | both local exact-seed policies pass, but the implementation and interrupt/resume evidence are not yet protected or downloaded from the exact protected revision |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
 | Enable live provider billing | **No-go** | provider, recovery, cost, and privacy evidence incomplete |
@@ -543,11 +567,11 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **201 tasks: 142 done, 34 in progress, 24 open,
+The stable ledger currently contains **204 tasks: 143 done, 35 in progress, 25 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
-The 59 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
-2 quality, 10 operations,
-and 9 external-proof tasks; the documentation completion lane is closed. Dependency
+The 61 remaining tasks include the phase/live/field program, 2 governance, 2
+security, 2 quality, 10 operations, and 9 external-proof tasks; the documentation
+completion lane is closed. Dependency
 order is owned by
 `EXECUTION-ROADMAP.md`.
 

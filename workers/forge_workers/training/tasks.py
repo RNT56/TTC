@@ -12,8 +12,8 @@ import json
 from copy import deepcopy
 from typing import Any
 
-TASK_SUITE = "p7-v2"
-TASK_VERSION = "2.0.0"
+TASK_SUITE = "p7-v3"
+TASK_VERSION = "3.0.0"
 TASK_COORDINATE_FRAME = "forge-y-up-rh-m"
 
 DEFAULT_DOMAIN_RANDOMIZATION: dict[str, Any] = {
@@ -44,6 +44,7 @@ _DEFAULT_OBSERVATIONS: dict[str, list[str]] = {
     "multirotor": [
         "estimator.attitude",
         "estimator.angularRate",
+        "estimator.linearVelocity",
         "target.error",
         "battery.normalizedVoltage",
         "powertrain.motorCurrent",
@@ -218,11 +219,7 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
         **base,
         "observations": _DEFAULT_OBSERVATIONS.get(family, _DEFAULT_OBSERVATIONS["multirotor"]),
         "actions": _DEFAULT_ACTIONS.get(family, _DEFAULT_ACTIONS["multirotor"]),
-        "reward": {
-            "terms": base["metrics"],
-            "energyPenalty": "energyWh",
-            "safetyPenalty": "failsafeCount" if family == "multirotor" else "collisionCount",
-        },
+        "reward": _reward_definition(base["metrics"], family),
         "termination": {
             "timeoutS": base["horizonS"],
             "outOfBounds": base["env"]["boundsM"],
@@ -243,6 +240,37 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
         definition["horizonS"] = horizon_s
     definition["definitionHash"] = task_definition_hash(definition)
     return definition
+
+
+def _reward_definition(metrics: list[str], family: str) -> dict[str, Any]:
+    if family != "multirotor":
+        return {
+            "terms": metrics,
+            "energyPenalty": "energyWh",
+            "safetyPenalty": "collisionCount",
+        }
+    return {
+        "schema": "p7-multirotor-reward-v1",
+        "terms": metrics,
+        "proximityDecayPerM": 0.5,
+        "progressWeight": 8.0,
+        "instantSuccessBonus": 3.0,
+        "targetAdvanceBonus": 50.0,
+        "taskCompletionBonus": 100.0,
+        "unsafeTerminationPenalty": 100.0,
+        "tiltPenalty": 0.05,
+        "angularRatePenalty": 0.01,
+        "actionPenalty": 0.005,
+        "control": {
+            "mode": "normalized-flight-target-v1",
+            "attitudeProportional": 0.04,
+            "angularRateDamping": 0.004,
+            "yawRateProportional": 0.04,
+            "velocityFilterTauS": 0.06,
+        },
+        "energyPenalty": "energyWh",
+        "safetyPenalty": "failsafeCount",
+    }
 
 
 def task_definition_hash(definition: dict[str, Any]) -> str:

@@ -56,7 +56,7 @@ def test_missing_lineage_is_prv_002():
     assert any("PRV-002" in r for r in result.reasons)
 
 
-def test_p7_v2_task_definitions_cover_expected_suite_and_bind_y_up_coordinates():
+def test_p7_v3_task_definitions_cover_expected_suite_and_bind_executable_semantics():
     assert set(task_ids()) == {
         "gate-slalom",
         "hover-hold",
@@ -71,8 +71,8 @@ def test_p7_v2_task_definitions_cover_expected_suite_and_bind_y_up_coordinates()
     }
     for task_id in task_ids():
         spec = task_definition(task_id)
-        assert spec["suite"] == "p7-v2"
-        assert spec["version"] == "2.0.0"
+        assert spec["suite"] == "p7-v3"
+        assert spec["version"] == "3.0.0"
         assert spec["coordinateFrame"] == "forge-y-up-rh-m"
         assert spec["definitionHash"] == task_definition_hash(spec)
         assert spec["observations"]
@@ -82,6 +82,9 @@ def test_p7_v2_task_definitions_cover_expected_suite_and_bind_y_up_coordinates()
         assert spec["success"]
 
     hover = task_definition("hover-hold")
+    assert "estimator.linearVelocity" in hover["observations"]
+    assert hover["reward"]["schema"] == "p7-multirotor-reward-v1"
+    assert hover["reward"]["control"]["mode"] == "normalized-flight-target-v1"
     assert hover["env"]["spawn"]["pose"][:3] == [0, 1.2, 0]
     assert hover["env"]["targets"][0]["xyz"] == [0, 1.5, 0]
     waypoint = task_definition("waypoint-chain")

@@ -282,12 +282,24 @@ export class Session {
         return v1;
     }
     /**
-     * Exact scalar input order accepted by the multirotor browser policy
-     * boundary (`forge-policy-tensor` 1.0.0).
+     * Legacy scalar input order for `forge-policy-tensor` 1.0.0.
      * @returns {string[]}
      */
     policy_layout() {
         const ret = wasm.session_policy_layout(this.__wbg_ptr);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * Current scalar input order for `forge-policy-tensor` 2.0.0.
+     * @returns {string[]}
+     */
+    policy_layout_v2() {
+        const ret = wasm.session_policy_layout_v2(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
         }
@@ -305,6 +317,22 @@ export class Session {
      */
     policy_observations(target_x_m, target_y_m, target_z_m) {
         const ret = wasm.session_policy_observations(this.__wbg_ptr, target_x_m, target_y_m, target_z_m);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+        return v1;
+    }
+    /**
+     * Estimator-derived v2 observation tensor, including body velocity.
+     * @param {number} target_x_m
+     * @param {number} target_y_m
+     * @param {number} target_z_m
+     * @returns {Float64Array}
+     */
+    policy_observations_v2(target_x_m, target_y_m, target_z_m) {
+        const ret = wasm.session_policy_observations_v2(this.__wbg_ptr, target_x_m, target_y_m, target_z_m);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
         }

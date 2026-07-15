@@ -30,11 +30,41 @@ _FORGE_TO_MUJOCO = np.asarray(
 )
 
 _OBS_LOW = np.asarray(
-    [-math.pi, -math.pi, -math.pi, -20.0, -20.0, -20.0, -100.0, -100.0, -100.0, 0.0, 0.0],
+    [
+        -math.pi,
+        -math.pi,
+        -math.pi,
+        -20.0,
+        -20.0,
+        -20.0,
+        -20.0,
+        -20.0,
+        -20.0,
+        -100.0,
+        -100.0,
+        -100.0,
+        0.0,
+        0.0,
+    ],
     dtype=np.float32,
 )
 _OBS_HIGH = np.asarray(
-    [math.pi, math.pi, math.pi, 20.0, 20.0, 20.0, 100.0, 100.0, 100.0, 1.0, 1.0],
+    [
+        math.pi,
+        math.pi,
+        math.pi,
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+        100.0,
+        100.0,
+        100.0,
+        1.0,
+        1.0,
+    ],
     dtype=np.float32,
 )
 
@@ -131,6 +161,7 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         self._previous_error_m = 0.0
         self._estimated_angles = np.zeros(3, dtype=np.float64)
         self._estimated_position = self.target_forge_m.copy()
+        self._estimated_velocity = np.zeros(3, dtype=np.float64)
         self._last_gyro = np.zeros(3, dtype=np.float64)
         self._voltage = 1.0
         self._current = 0.0
@@ -176,16 +207,17 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         self.target_forge_m = self.targets[0]["xyz"].copy()
         self._estimated_angles.fill(0.0)
         self._estimated_position = spawn_forge.copy()
+        self._estimated_velocity.fill(0.0)
         self._previous_error_m = float(np.linalg.norm(self.target_forge_m - spawn_forge))
         self._last_gyro.fill(0.0)
         self._voltage = 1.0
         self._current = 0.0
         latency_steps = int(round(scenario["latencyMs"] / (self.control_period_s * 1_000.0)))
-        hover_action = np.asarray(
-            [2.0 * float(self.bundle["hoverThrottle"]) - 1.0, 0.0, 0.0, 0.0],
-            dtype=np.float64,
-        )
-        self._action_queue = deque((hover_action.copy() for _ in range(latency_steps + 1)))
+        # Policy actions are normalized flight targets. Zero collective means
+        # contract-derived hover trim, matching browser drive-mode semantics;
+        # latency therefore starts from a neutral stick frame.
+        neutral_action = np.zeros(4, dtype=np.float64)
+        self._action_queue = deque((neutral_action.copy() for _ in range(latency_steps + 1)))
         observation = self._observation(update=False)
         return observation, self._info(False, False)
 
@@ -197,7 +229,12 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         self._action_queue.append(bounded_action)
         applied = self._action_queue.popleft()
 
-        throttle = float((applied[0] + 1.0) * 0.5)
+        hover_throttle = float(self.bundle["hoverThrottle"])
+        throttle = (
+            hover_throttle + applied[0] * (1.0 - hover_throttle)
+            if applied[0] >= 0.0
+            else hover_throttle * (1.0 + applied[0])
+        )
         thrust_n = float(np.interp(throttle, self._curve_throttle, self._curve_thrust))
         thrust_n *= self._scenario["kvScale"] ** 2
         thrust_n *= self._scenario["sagScale"]
@@ -209,11 +246,35 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         force_local_mujoco = np.asarray([0.0, 0.0, thrust_n], dtype=np.float64)
         force_world = rotation_mujoco @ force_local_mujoco
         force_world += np.asarray([0.08 * self._scenario["windMps"], 0.0, 0.0])
+        # The public roll/pitch/yaw values are bounded flight targets, never
+        # raw torque fractions. This deterministic inner loop mirrors the
+        # angle/rate mode used by the browser motion driver while retaining
+        # the Rust-derived physical torque ceilings.
+        reward_contract = self.task["reward"]
+        inner_control = reward_contract["control"]
+        desired_roll = -applied[1] * float(self.bundle["control"]["tiltMaxRad"])
+        desired_pitch = applied[2] * float(self.bundle["control"]["tiltMaxRad"])
+        desired_yaw_rate = applied[3] * float(self.bundle["control"]["yawRateRadS"])
+        attitude_proportional = float(inner_control["attitudeProportional"])
+        rate_damping = float(inner_control["angularRateDamping"])
+        yaw_rate_proportional = float(inner_control["yawRateProportional"])
+        roll_effort = (
+            attitude_proportional * (desired_roll - self._estimated_angles[0])
+            - rate_damping * self._last_gyro[0]
+        )
+        pitch_effort = (
+            attitude_proportional * (desired_pitch - self._estimated_angles[1])
+            - rate_damping * self._last_gyro[1]
+        )
+        yaw_effort = yaw_rate_proportional * (desired_yaw_rate - self._last_gyro[2])
         torque_local_forge = np.asarray(
             [
-                applied[1] * float(self.bundle["control"]["maxRollPitchTorqueNm"]),
-                applied[3] * float(self.bundle["control"]["maxYawTorqueNm"]),
-                applied[2] * float(self.bundle["control"]["maxRollPitchTorqueNm"]),
+                np.clip(roll_effort, -1.0, 1.0)
+                * float(self.bundle["control"]["maxRollPitchTorqueNm"]),
+                np.clip(yaw_effort, -1.0, 1.0)
+                * float(self.bundle["control"]["maxYawTorqueNm"]),
+                np.clip(pitch_effort, -1.0, 1.0)
+                * float(self.bundle["control"]["maxRollPitchTorqueNm"]),
             ],
             dtype=np.float64,
         )
@@ -230,7 +291,7 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         amps = self._current * float(self.bundle["powertrain"]["maxTotalCurrentA"])
         self._energy_wh += volts * amps * self.control_period_s / 3_600.0
         observation = self._observation(update=True)
-        position_error = float(np.linalg.norm(observation[6:9]))
+        position_error = float(np.linalg.norm(observation[9:12]))
         tilt = float(np.linalg.norm(observation[:2]))
         rate = float(np.linalg.norm(observation[3:6]))
         active_target = self.targets[self._target_index]
@@ -252,18 +313,10 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
                 self.target_forge_m = self.targets[self._target_index]["xyz"].copy()
                 observation = self._observation(update=False)
         progress_m = self._previous_error_m - position_error
-        reward = (
-            1.0
-            - 0.45 * position_error
-            - 0.35 * tilt
-            - 0.04 * rate
-            - 0.025 * float(np.square(applied).sum())
-            - 0.15 * abs(throttle - float(self.bundle["hoverThrottle"]))
-            + 1.5 * progress_m
-            + (12.0 if target_advanced else 0.0)
-        )
         self._previous_error_m = (
-            float(np.linalg.norm(observation[6:9])) if target_advanced and not self._task_completed else position_error
+            float(np.linalg.norm(observation[9:12]))
+            if target_advanced and not self._task_completed
+            else position_error
         )
         position_forge = self._position_forge()
         unsafe = bool(
@@ -274,6 +327,17 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         )
         terminated = unsafe or self._task_completed
         truncated = self._step >= self.episode_steps
+        reward = (
+            math.exp(-float(reward_contract["proximityDecayPerM"]) * position_error)
+            + float(reward_contract["progressWeight"]) * progress_m
+            + (float(reward_contract["instantSuccessBonus"]) if instant_success else 0.0)
+            + (float(reward_contract["targetAdvanceBonus"]) if target_advanced else 0.0)
+            + (float(reward_contract["taskCompletionBonus"]) if self._task_completed else 0.0)
+            - float(reward_contract["tiltPenalty"]) * tilt
+            - float(reward_contract["angularRatePenalty"]) * rate
+            - float(reward_contract["actionPenalty"]) * float(np.square(applied).sum())
+            - (float(reward_contract["unsafeTerminationPenalty"]) if unsafe else 0.0)
+        )
         return observation, float(reward), terminated, truncated, self._info(instant_success, target_advanced)
 
     def _sample_scenario(self) -> dict[str, float]:
@@ -303,7 +367,11 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         rotation_forge = _FORGE_TO_MUJOCO.T @ rotation_mujoco @ _FORGE_TO_MUJOCO
         truth_angles = _matrix_to_rpy(rotation_forge)
         angular_mujoco = np.asarray(self.data.cvel[self.body_id, :3], dtype=np.float64)
-        truth_rate = _FORGE_TO_MUJOCO.T @ angular_mujoco
+        angular_forge_xyz = _FORGE_TO_MUJOCO.T @ angular_mujoco
+        # Forge is Y-up: roll is rotation about X, pitch about Z, and yaw
+        # about Y. The executable tensor is ordered roll/pitch/yaw, not raw
+        # coordinate-axis order.
+        truth_rate = angular_forge_xyz[[0, 2, 1]]
         truth_position = self._position_forge()
         if update:
             estimator = self.bundle["estimator"]
@@ -324,7 +392,12 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
             self._last_gyro = gyro
             latency_s = self._scenario["latencyMs"] / 1_000.0
             position_alpha = float(np.clip(self.control_period_s / (latency_s + self.control_period_s), 0.02, 1.0))
+            previous_position = self._estimated_position.copy()
             self._estimated_position += (truth_position - self._estimated_position) * position_alpha
+            raw_velocity = (self._estimated_position - previous_position) / self.control_period_s
+            velocity_tau_s = float(self.task["reward"]["control"]["velocityFilterTauS"])
+            velocity_alpha = self.control_period_s / (velocity_tau_s + self.control_period_s)
+            self._estimated_velocity += (raw_velocity - self._estimated_velocity) * velocity_alpha
         error_world = self.target_forge_m - self._estimated_position
         yaw = float(self._estimated_angles[2])
         sin_yaw, cos_yaw = math.sin(yaw), math.cos(yaw)
@@ -336,17 +409,26 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
             ],
             dtype=np.float64,
         )
+        velocity_body = np.asarray(
+            [
+                self._estimated_velocity[0] * cos_yaw - self._estimated_velocity[2] * sin_yaw,
+                self._estimated_velocity[1],
+                self._estimated_velocity[0] * sin_yaw + self._estimated_velocity[2] * cos_yaw,
+            ],
+            dtype=np.float64,
+        )
         observation = np.concatenate(
             [
                 np.clip(self._estimated_angles, -math.pi, math.pi),
                 np.clip(self._last_gyro, -20.0, 20.0),
+                np.clip(velocity_body, -20.0, 20.0),
                 np.clip(error_body, -100.0, 100.0),
                 np.asarray([self._voltage, self._current]),
             ]
         ).astype(np.float32)
         if update and self._scenario["dropoutPct"] > 0:
-            dropout = self.np_random.random(6) < self._scenario["dropoutPct"] / 100.0
-            observation[:6][dropout] = 0.0
+            dropout = self.np_random.random(9) < self._scenario["dropoutPct"] / 100.0
+            observation[:9][dropout] = 0.0
         return np.clip(observation, _OBS_LOW, _OBS_HIGH).astype(np.float32)
 
     def _position_forge(self) -> np.ndarray:
@@ -477,12 +559,19 @@ def _bounded_vector(value: Any, label: str, *, positive: bool = False) -> tuple[
 
 
 def _matrix_to_rpy(rotation: np.ndarray) -> np.ndarray:
-    pitch = math.asin(float(np.clip(-rotation[2, 0], -1.0, 1.0)))
+    """Decompose a Forge Y-up matrix as roll(X), pitch(Z), yaw(Y).
+
+    This inverts ``R = Ry(yaw) @ Rz(pitch) @ Rx(roll)``. The public policy
+    tensor names conceptual flight axes, so using the usual Z-up XYZ
+    decomposition would silently exchange pitch and yaw.
+    """
+
+    pitch = math.asin(float(np.clip(rotation[1, 0], -1.0, 1.0)))
     if abs(math.cos(pitch)) > 1e-8:
-        roll = math.atan2(float(rotation[2, 1]), float(rotation[2, 2]))
-        yaw = math.atan2(float(rotation[1, 0]), float(rotation[0, 0]))
-    else:
         roll = math.atan2(float(-rotation[1, 2]), float(rotation[1, 1]))
+        yaw = math.atan2(float(-rotation[2, 0]), float(rotation[0, 0]))
+    else:
+        roll = math.atan2(float(rotation[2, 1]), float(rotation[2, 2]))
         yaw = 0.0
     return np.asarray([roll, pitch, yaw], dtype=np.float64)
 

@@ -77,11 +77,19 @@ async function handleMessage(message: SessionWorkerRequest): Promise<void> {
         return;
       }
       try {
+        const v2 = message.tensorVersion === "2.0.0";
+        if (!v2 && message.tensorVersion !== "1.0.0") {
+          throw new Error(`unsupported policy tensor ${message.tensorVersion}`);
+        }
         post({
           type: "policySnapshot",
           requestId: message.requestId,
-          layout: session.policy_layout(),
-          observations: Array.from(session.policy_observations(...message.target)),
+          layout: v2 ? session.policy_layout_v2() : session.policy_layout(),
+          observations: Array.from(
+            v2
+              ? session.policy_observations_v2(...message.target)
+              : session.policy_observations(...message.target),
+          ),
         });
       } catch (error) {
         post({

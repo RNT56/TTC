@@ -9,21 +9,24 @@ use forge_contract::{Archetype, EstimatorKind, ModelSpec};
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
 
-pub const TRAINING_BUNDLE_VERSION: &str = "1.0.0";
+pub const TRAINING_BUNDLE_VERSION: &str = "2.0.0";
 pub const POLICY_TENSOR_SCHEMA: &str = "forge-policy-tensor";
-pub const POLICY_TENSOR_VERSION: &str = "1.0.0";
+pub const POLICY_TENSOR_VERSION: &str = "2.0.0";
 pub const TRAINING_MUJOCO_VERSION: &str = "3.9.0";
 pub const POLICY_RATE_HZ: u32 = 50;
 pub const MUJOCO_SUBSTEPS: u32 = 4;
 pub const MUJOCO_TIMESTEP_S: f64 = 1.0 / (POLICY_RATE_HZ as f64 * MUJOCO_SUBSTEPS as f64);
 
-pub const MULTIROTOR_POLICY_INPUT_LAYOUT: [&str; 11] = [
+pub const MULTIROTOR_POLICY_INPUT_LAYOUT: [&str; 14] = [
     "estimator.attitude.rollRad",
     "estimator.attitude.pitchRad",
     "estimator.attitude.yawRad",
     "estimator.angularRate.rollRadS",
     "estimator.angularRate.pitchRadS",
     "estimator.angularRate.yawRadS",
+    "estimator.linearVelocity.bodyXMps",
+    "estimator.linearVelocity.bodyYMps",
+    "estimator.linearVelocity.bodyZMps",
     "target.error.bodyXM",
     "target.error.bodyYM",
     "target.error.bodyZM",
@@ -73,6 +76,8 @@ pub struct TrainingPowertrain {
 #[serde(rename_all = "camelCase")]
 pub struct TrainingControlAuthority {
     pub arm_radius_m: f64,
+    pub tilt_max_rad: f64,
+    pub yaw_rate_rad_s: f64,
     pub max_roll_pitch_torque_nm: f64,
     pub max_yaw_torque_nm: f64,
 }
@@ -213,6 +218,27 @@ pub fn multirotor_training_bundle(
 
     let max_roll_pitch_torque_nm = max_thrust_n * arm_radius_m * 0.5;
     let max_yaw_torque_nm = max_thrust_n * (powertrain.prop_d_m * 0.5) * 0.02;
+    let tilt_max_rad = spec
+        .driver
+        .params
+        .get("tiltMaxRad")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(0.4);
+    let yaw_rate_rad_s = spec
+        .driver
+        .params
+        .get("yawRate")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(2.4);
+    if !tilt_max_rad.is_finite()
+        || !yaw_rate_rad_s.is_finite()
+        || tilt_max_rad <= 0.0
+        || yaw_rate_rad_s <= 0.0
+    {
+        return Err(
+            "P7 training requires positive finite multirotor flight-target bounds".to_string(),
+        );
+    }
     let mjcf = crate::export::to_mjcf_with_options(
         spec,
         baked,
@@ -272,6 +298,8 @@ pub fn multirotor_training_bundle(
         },
         control: TrainingControlAuthority {
             arm_radius_m,
+            tilt_max_rad,
+            yaw_rate_rad_s,
             max_roll_pitch_torque_nm,
             max_yaw_torque_nm,
         },
@@ -279,6 +307,7 @@ pub fn multirotor_training_bundle(
             "MuJoCo consumes forge-sim contract geometry, mass properties, gravity, and a floating root at four physics substeps per 50 Hz policy action".to_string(),
             "thrust, voltage, and current are sampled from forge-sim's inline-constant powertrain model; catalog-only authority fails closed".to_string(),
             "roll/pitch authority is a conservative differential-thrust bound; yaw uses an explicit 2% prop-radius drag-torque proxy pending sourced torque tables".to_string(),
+            "normalized roll/pitch/yaw outputs are flight targets consumed by a task-versioned deterministic inner loop; zero collective maps to contract-derived hover trim".to_string(),
             "the worker exposes estimator-derived observations only; simulator truth remains private (D8)".to_string(),
         ],
     })
@@ -302,7 +331,7 @@ mod tests {
         let bundle = multirotor_training_bundle(&spec, &baked, &"ab".repeat(32)).unwrap();
         assert_eq!(bundle.schema_version, TRAINING_BUNDLE_VERSION);
         assert_eq!(bundle.mujoco_version, TRAINING_MUJOCO_VERSION);
-        assert_eq!(bundle.tensor.input.shape, vec![1, 11]);
+        assert_eq!(bundle.tensor.input.shape, vec![1, 14]);
         assert_eq!(bundle.tensor.output.shape, vec![1, 4]);
         assert_eq!(bundle.tensor.input.layout[0], "estimator.attitude.rollRad");
         assert!(bundle.mjcf.contains("<freejoint/>"));
