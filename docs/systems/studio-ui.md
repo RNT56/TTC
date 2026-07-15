@@ -50,7 +50,7 @@ inventing a second CORS security surface.
 | P4 | account/session panel (`/v1/me`, Auth.js GitHub links), model registry save/list, deterministic edit prompt (`POST /v1/models/:id/edit`), server-backed admitted-only share (`?share=` viewer + public `/v1/share/:shareId`), catalog review panel (`GET/PATCH /v1/reviews`), generation panel using staged SSE (`POST /v1/generate/stream`) with template/Anthropic provider selection, BYO key in session storage, attempt diagnostics, draft/admitted scene loading, Brief-25 eval summary; expandable D34 privacy-authority panel shows exact notices and independent grant/withdraw state |
 | P5 | owned-upload-backed photoscan launcher requires explicit per-object processing consent, then renders D13/refit/cache/candidate details, linked blob access, recent photoscan artifacts, and editable alignment controls/readout for scale, axis, and ports; mesh-click placement remains polish |
 | P6 | HUD analytics full (AUW/TWR/hover/current/endurance with inspectable assumptions); disturbance controls |
-| P7 | fixture training job output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, one-click CoreSession policy playback, and explicit per-log consent before telemetry-backed training; full training tab and live ONNX Runtime inference remain open |
+| P7 | fixture training job output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, and explicit per-log consent before telemetry-backed training; one-click playback now lazy-loads exact ONNX Runtime Web 1.27.0/WASM, verifies `forge-policy-tensor` 1.0.0 plus scorecard/lineage/model digest, consumes Rust estimator observations, and feeds bounded actions to CoreSession at 50 Hz; full training tab, live SB3 training, and object-backed external-model loading remain open |
 | P8 | D30 lab-gated hardware bridge; config-diff, telemetry/replay, supervisor, system-ID, crash/ghost metadata, replay artifacts, telemetry logs, and maintenance records render in job/artifact panels; per-log sharing grant/withdraw and explicit share action are available; WebSerial write, ladder UX, recorder/ghost scrubber and **Desktop** serial/recorder plugins remain open |
 | P9–P12 | fixture co-design Pareto points, wear, crash, repair, and fleet outputs render in job details; co-design points can apply admitted JSON-Patch candidates through patch/re-bake and save admitted points as openable models through the model admission route; platform panel covers credits, license ledger/export-policy visibility, editable course creation, `?course=<id>` course URLs, replay-verified leaderboard filtering, classroom assignment/submission, marketplace kind/status filtering with row-level usage/equip actions, listing/policy-listing submission, and moderation reports; D34 requires explicit per-model pattern contribution and account-level leaderboard publication grants before those actions; artifact panel includes the maintenance twin dashboard with fleet counts, crash scrubber, wear cards, repair rows, reorder hints, and vendor/print handoff links; live optimizer-backed Pareto depth and live marketplace/provider economics remain open |
 
@@ -89,8 +89,9 @@ interaction, ≤ 10 ms re-bake).
 
 ## 7. Dependencies
 
-The core facade (`forge-wasm`), codegen'd contract types, gateway client, ONNX
-Runtime Web, recorder views (P8).
+The core facade (`forge-wasm`), codegen'd contract types, gateway client, exact
+`onnxruntime-web` 1.27.0 through the lazy WASM-only entry, and recorder views (P8).
+ONNX assets are bundled same-origin and excluded from first paint.
 
 ## 8. Testing
 
@@ -103,6 +104,13 @@ deterministic edit/revalidation, admitted anonymous share while private models r
 materialization. It writes structured evidence under `artifacts/e2e` and a full-page
 screenshot on failure. `pnpm verify:db` owns the supported setup/order and the required
 Postgres CI job installs Chromium and downloads the exact validator artifact.
+
+The P7-008 extension adds an eleventh browser flow. It proves no ONNX Runtime asset
+was requested during first paint, starts a contract-bound hover policy, waits for
+actual ONNX Runtime Web/WASM inference and completed CoreSession playback, and
+asserts the lazy JS and WASM assets came from the Studio origin. Focused Studio tests
+run the real 906-byte model in WASM and exercise tamper, held-scorecard, D8, lineage,
+layout, unsupported-version, and non-finite refusal paths.
 
 `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` is QA-003's separate
 production-bundle compatibility and accessibility harness. Chromium, Firefox, and

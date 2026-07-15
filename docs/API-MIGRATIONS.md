@@ -121,6 +121,22 @@ causal sequences plus redacted legal-hold and backup status. Deletion receipt 2.
 adds restore-suppression evidence but does not claim physical backup deletion. Do not
 downgrade these meanings into an older success boolean.
 
+## Policy tensor 1.0.0 introduction
+
+P7-008 is the first executable policy-tensor format, so no legacy policy-tensor
+reader or migration exists. Producers must emit `io.tensor.schema` as
+`forge-policy-tensor`, `schemaVersion` as `1.0.0`, the exact fixed `[1, N]` input and
+output shapes/layouts, `forge-y-up-rh-m`, and an integer advisory rate no greater
+than 50 Hz. The ONNX artifact must bind byte count and SHA-256 to the same contract
+hash recorded in the header and passing estimator-backed scorecard lineage.
+
+Consumers must fail closed before session creation when any of those fields drift.
+After creation they must also verify runtime input/output names, output shape/type,
+finite observations/actions, and normalized action bounds. There is no downgrade:
+stop playback, preserve the artifact and diagnostic, and use a runtime that supports
+the declared major. Category-level observation labels are search/transfer metadata,
+not a substitute for the scalar `io.tensor.input.layout`.
+
 ## Worker envelope 0.2 and queue changes
 
 Worker artifacts remain internal and follow worker package 0.2.0. The

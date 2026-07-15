@@ -269,6 +269,7 @@ dependencies = [
  "forge-contract",
  "forge-geometry",
  "forge-motion",
+ "forge-num",
  "forge-sim",
  "forge-validate",
  "js-sys",

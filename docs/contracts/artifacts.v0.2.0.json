@@ -102,6 +102,15 @@
       ],
       "versionField": "lifecycleVersion"
     },
+    "policyTensor": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-policy-tensor",
+      "versionField": "io.tensor.schemaVersion",
+      "versionRule": "exact scalar layouts, tensor names/shapes, coordinate frame, action meaning, and rate authority are major-version semantics"
+    },
     "workerArtifacts": {
       "current": "0.2.0",
       "supportedMajors": [
@@ -164,7 +173,8 @@
         "artifactKinds": [
           "policy"
         ],
-        "maturity": "fixture"
+        "maturity": "fixture",
+        "notes": "Hover fixture carries a digest-bound forge-policy-tensor 1.0.0 opset-18 model; unsupported fixture tasks remain held rather than fabricating executable bytes."
       },
       {
         "queueKind": "train.sysid-fit",

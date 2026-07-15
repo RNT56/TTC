@@ -71,6 +71,27 @@ async function handleMessage(message: SessionWorkerRequest): Promise<void> {
       post({ type: "stepped", steps, focus: focusFrom(session), workerMs: performance.now() - start });
       return;
     }
+    case "policySnapshot": {
+      if (!session) {
+        post({ type: "policySnapshotError", requestId: message.requestId, message: "core session is unavailable" });
+        return;
+      }
+      try {
+        post({
+          type: "policySnapshot",
+          requestId: message.requestId,
+          layout: session.policy_layout(),
+          observations: Array.from(session.policy_observations(...message.target)),
+        });
+      } catch (error) {
+        post({
+          type: "policySnapshotError",
+          requestId: message.requestId,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+      return;
+    }
     case "setJog":
       session?.set_jog(message.node, message.rx, message.ry);
       return;

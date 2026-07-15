@@ -350,6 +350,25 @@ mod wasm_bindings {
             self.inner.focus().to_vec()
         }
 
+        /// Exact scalar input order accepted by the multirotor browser policy
+        /// boundary (`forge-policy-tensor` 1.0.0).
+        pub fn policy_layout(&self) -> Result<Vec<String>, JsValue> {
+            self.inner.policy_layout().map_err(err)
+        }
+
+        /// Estimator-derived observation tensor for a world-space SI target.
+        /// Simulator truth stays inside the Rust observer (D8).
+        pub fn policy_observations(
+            &self,
+            target_x_m: f64,
+            target_y_m: f64,
+            target_z_m: f64,
+        ) -> Result<Vec<f64>, JsValue> {
+            self.inner
+                .policy_observations([target_x_m, target_y_m, target_z_m])
+                .map_err(err)
+        }
+
         /// Teach-pendant jog (P1-013): per-node euler offset over the pose
         /// layers; zeros clear the node.
         pub fn set_jog(&mut self, node: &str, rx: f64, ry: f64) {

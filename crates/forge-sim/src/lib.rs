@@ -68,6 +68,44 @@ pub struct Powertrain {
 }
 
 impl Powertrain {
+    /// Build the deterministic browser/fixture powertrain from inline
+    /// ModelSpec constants. Catalog-only contracts fail closed because the
+    /// browser facade deliberately has no mutable catalog authority.
+    pub fn from_inline_spec(spec: &ModelSpec) -> Result<Self, String> {
+        let battery =
+            spec.sim.battery.as_ref().ok_or_else(|| {
+                "policy observation requires inline battery constants".to_string()
+            })?;
+        let prop = spec.sim.props.first().ok_or_else(|| {
+            "policy observation requires an inline prop specification".to_string()
+        })?;
+        if spec.sim.motors.is_empty() {
+            return Err("policy observation requires inline motor constants".to_string());
+        }
+        let mut kv_sum = 0.0;
+        let mut resistance_sum = 0.0;
+        for motor in &spec.sim.motors {
+            kv_sum += motor
+                .kv
+                .ok_or_else(|| "policy observation requires every motor kv inline".to_string())?;
+            resistance_sum += motor.r_int_mohm.ok_or_else(|| {
+                "policy observation requires every motor resistance inline".to_string()
+            })? / 1000.0;
+        }
+        let motor_count = spec.sim.motors.len();
+        Ok(Powertrain {
+            motor_kv: kv_sum / motor_count as f64,
+            motor_r_ohm: resistance_sum / motor_count as f64,
+            battery_v0: battery.cells as f64 * NOMINAL_CELL_V,
+            battery_r_ohm: battery.r_int_mohm / 1000.0,
+            prop_d_m: prop.diameter_in * 0.0254,
+            ct: DEFAULT_CT,
+            n_motors: motor_count,
+            air_density: spec.env.air_density,
+            table: None,
+        })
+    }
+
     /// Evaluate the powertrain at throttle u ∈ [0,1]. Battery sag is resolved by
     /// fixed-point iteration on V_eff (converges in a handful of steps for sane
     /// configurations).
@@ -185,6 +223,7 @@ pub struct ComplementaryFilter {
     gyro_bias: f64,
     gyro_noise: f64,
     accel_noise: f64,
+    last_gyro: f64,
     noise: NoiseLcg,
 }
 
@@ -196,6 +235,7 @@ impl ComplementaryFilter {
             gyro_bias: est.bias,
             gyro_noise: est.gyro_noise,
             accel_noise: est.accel_noise,
+            last_gyro: 0.0,
             noise: NoiseLcg::new(seed),
         }
     }
@@ -206,8 +246,15 @@ impl ComplementaryFilter {
     pub fn step(&mut self, true_rate: f64, true_accel_angle: f64, dt: f64) -> f64 {
         let gyro = true_rate + self.gyro_bias + self.gyro_noise * self.noise.next_normal();
         let accel = true_accel_angle + self.accel_noise * self.noise.next_normal();
+        self.last_gyro = gyro;
         self.theta_hat = self.alpha * (self.theta_hat + gyro * dt) + (1.0 - self.alpha) * accel;
         self.theta_hat
+    }
+
+    /// Last corrupted gyro sample presented to the estimator. Policies may
+    /// consume this sensor-side value; simulator truth remains private.
+    pub fn last_gyro(&self) -> f64 {
+        self.last_gyro
     }
 }
 

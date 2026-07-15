@@ -58,6 +58,7 @@ try {
   assertSame("Schema drift", generatedSchema, "schema/forge-modelspec.schema.json");
 
   run("TypeScript workspace build", "pnpm", ["-r", "build"]);
+  run("Studio ONNX policy runtime tests", "pnpm", ["--filter", "@forge/studio", "test"]);
   run("Gateway tests with real validator", "pnpm", ["--filter", "@forge/gateway", "test"]);
   run("Brief-25 real-validator gate", "pnpm", [
     "eval:brief25",

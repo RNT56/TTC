@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 forge-contract = { version = "0.2.0", path = "../forge-contract" }
 forge-geometry = { version = "0.2.0", path = "../forge-geometry" }
 forge-motion = { version = "0.2.0", path = "../forge-motion" }
+forge-num = { version = "0.2.0", path = "../forge-num" }
 forge-sim = { version = "0.2.0", path = "../forge-sim" }
 forge-validate = { version = "0.2.0", path = "../forge-validate" }
 serde_json = { workspace = true }

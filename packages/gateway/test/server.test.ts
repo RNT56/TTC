@@ -2145,11 +2145,17 @@ test(
       assert.equal(capabilities.statusCode, 200, capabilities.body);
       const capabilityBody = capabilities.json() as {
         providers: { fixture: { enabled: boolean }; local: { enabled: boolean }; modal: { enabled: boolean } };
-        live: { printQuotes: { enabled: boolean } };
+        live: { onnxRuntime: { enabled: boolean; configured: boolean; mode: string }; printQuotes: { enabled: boolean } };
         hardware: { noAutoArm: boolean };
       };
       assert.equal(capabilityBody.providers.fixture.enabled, true);
       assert.equal(capabilityBody.providers.local.enabled, true);
+      assert.deepEqual(capabilityBody.live.onnxRuntime, {
+        enabled: true,
+        configured: true,
+        mode: "studio-web-wasm",
+        reason: null,
+      });
       assert.equal(capabilityBody.hardware.noAutoArm, true);
 
       const licenseLedger = await app.inject({ method: "GET", url: "/v1/license-ledger" });

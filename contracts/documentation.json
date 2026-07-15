@@ -118,7 +118,7 @@
     { "queueKind": "occt.tessellate", "artifactKinds": ["geometry"], "maturity": "fixture" },
     { "queueKind": "photoscan.single", "artifactKinds": ["photoscan"], "maturity": "fixture" },
     { "queueKind": "photoscan.multiview", "artifactKinds": ["photoscan"], "maturity": "fixture" },
-    { "queueKind": "train.policy", "artifactKinds": ["policy"], "maturity": "fixture" },
+    { "queueKind": "train.policy", "artifactKinds": ["policy"], "maturity": "fixture", "notes": "Hover fixture carries a digest-bound forge-policy-tensor 1.0.0 opset-18 model; unsupported fixture tasks remain held rather than fabricating executable bytes." },
     { "queueKind": "train.sysid-fit", "artifactKinds": ["sysid"], "maturity": "fixture" },
     { "queueKind": "replay.verify", "artifactKinds": ["replay"], "maturity": "fixture" },
     { "queueKind": "codesign.evaluate", "artifactKinds": ["codesign"], "maturity": "fixture" },

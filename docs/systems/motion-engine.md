@@ -1,7 +1,8 @@
 # Motion Engine (`forge-motion`) — implementation doc
 
 **Status:** P1 port done (2026-06-12 — biped/FPV oracle drivers tape-parity
-green); P2 arm/quadruped library work live · **Phases:** P1 (Rust port), P2 (library formalized) ·
+green); P2 arm/quadruped library and P7 multirotor policy-observer boundary live ·
+**Phases:** P1 (Rust port), P2 (library formalized), P7 (policy layer) ·
 **Home:** `crates/forge-motion` · **Plan refs:** §7.3, Appendix C
 (v3.0) · **Decisions:** D16, D17, D19, D20
 
@@ -34,8 +35,10 @@ recorded gait fixtures make it the gentlest oracle-checked start.
    self-collision guards fed by `forge-geometry`'s interference queries.
 3. **Secondary layer:** critically damped servos (ω, ζ per joint class), scan
    detents, actuator telltales, verlet cables/antennae.
-4. **Policy layer:** active ONNX policy writes joint/thrust *targets* into the
-   pipeline — below the constraint layer, never above it.
+4. **Policy layer:** active ONNX policy writes normalized joint/thrust *targets* into
+   the pipeline — below the constraint layer, never above it. P7-008's multirotor
+   path receives bounded throttle/roll/pitch/yaw targets from ONNX Runtime Web at no
+   more than 50 Hz; the fixed 120 Hz driver holds only the last verified advisory.
 
 Keyframe clips and blend trees exist as an additive authoring layer for cinematics,
 never required for function.
@@ -83,6 +86,12 @@ models combined) inside the frame.
 ONNX outputs from the TS side (ONNX Runtime Web) through the tick input; `forge-sim`
 couples physics forces at P6.
 
+The reverse observation boundary remains in Rust. `CoreSession::policy_observations`
+uses the contract's complementary estimator, a latency-derived position estimate,
+and the deterministic inline powertrain to emit `forge-policy-tensor` 1.0.0. Only
+this estimator-side tensor crosses WASM; `FpvDriver::policy_truth` is internal input
+to the observer and is never exposed to Studio policy code (D8).
+
 ## 7. Testing
 
 Differential tests vs the JS oracle: **done for biped + FPV** —
@@ -103,8 +112,9 @@ layer green against the oracle tapes; `CoreSession` drives biped + multirotor
 through the ported pipelines (`node_world_posed` = the monolith's nm() with
 base+animated euler). P2: driver library formalized with quadruped (P2-004) and
 arm DLS IK (P2-003) live, plus param schemas into the harness. Fixedwing remains
-a later driver. P6: physics coupling. P7: policy layer consumes real ONNX
-outputs.
+a later driver. P6: physics coupling. P7: policy layer consumes real ONNX outputs;
+the P7-008 protected evidence closeout remains separate from live SB3 training and
+hardware authority.
 
 ## 9. Open questions
 

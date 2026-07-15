@@ -94,6 +94,15 @@ event lines, and persisted artifact formats independently; preserve old document
 read fixtures while their support window is active. Examples use synthetic IDs and
 fixture values, never secrets, signed URLs, raw user content, or claims of live proof.
 
+**Executable policy artifacts:** keep category metadata separate from the exact
+scalar tensor contract. Version schema/layout/coordinate/rate semantics independently;
+bind model bytes, scorecard, and contract lineage by length plus SHA-256; reject held
+or estimator-unproven policies before loading untrusted bytes. Lazy-load an exact
+same-origin runtime, cap model/rate/value bounds, verify runtime names/shapes/types,
+never block the render loop, and zero/stop on any observation or inference failure.
+Fixture tasks without real executable bytes stay held rather than gaining a fake
+export path.
+
 ## 6. Testing pyramid
 
 1. **Unit** — math, geometry, schema validators (mass properties vs analytic solids,
@@ -137,7 +146,11 @@ fixture values, never secrets, signed URLs, raw user content, or claims of live 
     full-Studio/viewer-grade boundary and vendor-device limitations synchronized with
     [`BROWSER-SUPPORT.md`](BROWSER-SUPPORT.md); a proxy engine is not a real-device or
     screen-reader certification (QA-003).
-13. **External acceptance** — execute the versioned QA-010 milestone script against
+13. **Policy runtime** — execute a digest-bound real ONNX model in focused tests and
+    the production browser bundle; assert lazy same-origin runtime assets, D8-derived
+    observations, D9 cadence, action bounds, motion-layer consumption, and negative
+    authority/layout/version/hash/non-finite cases (P7-008).
+14. **External acceptance** — execute the versioned QA-010 milestone script against
     an exact product revision with the intended independent user, real provider, D30/
     D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,
     measurements, findings, limitations, and signoffs outside Git; machine-valid

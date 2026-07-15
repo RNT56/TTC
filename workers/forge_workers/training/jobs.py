@@ -14,6 +14,7 @@ from typing import Any
 from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
+from forge_workers.training.policy_fixture import OUTPUT_LAYOUT, hover_policy_fixture
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS, Scorecard, gate
 from forge_workers.training.tasks import course_task_definition, task_definition
 
@@ -57,6 +58,11 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         "powertrain.motorCurrent",
     ]
     actions = payload.get("actions") or ["throttle", "roll", "pitch", "yaw"]
+    fixture = hover_policy_fixture() if resolved_task == "hover-hold" and actions == OUTPUT_LAYOUT else None
+    exportable = result.exportable and fixture is not None
+    reasons = list(result.reasons)
+    if result.exportable and fixture is None:
+        reasons.append("no executable deterministic ONNX fixture exists for this task/action layout")
     randomization = payload.get(
         "domainRandomization",
         {
@@ -73,7 +79,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         "artifactKind": "policy",
         "provider": gpu["provider"],
         "algorithm": str(payload.get("algorithm", "ppo-fixture")),
-        "task": task_meta,
+        "task": {**task_meta, **({"target": fixture["target"]} if fixture is not None else {})},
         "io": {
             "observations": observations,
             "actions": actions,
@@ -82,18 +88,36 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
                 "task": resolved_task,
                 "observationCount": str(len(observations)),
                 "actionCount": str(len(actions)),
+                **(
+                    {
+                        "tensorSchema": fixture["tensor"]["schema"],
+                        "tensorVersion": fixture["tensor"]["schemaVersion"],
+                    }
+                    if fixture is not None
+                    else {}
+                ),
             },
+            **({"tensor": fixture["tensor"]} if fixture is not None else {}),
         },
         "domainRandomization": randomization,
         "onnx": {
             "cacheKey": gpu["cacheKey"],
-            "opset": 18,
-            "fixture": True,
+            "opset": fixture["onnx"]["opset"] if fixture is not None else 18,
+            "fixture": fixture is not None,
             "path": f"{gpu['cacheKey']}/policy.onnx",
-            "exportable": result.exportable,
+            "exportable": exportable,
+            **(
+                {
+                    "byteSize": fixture["onnx"]["byteSize"],
+                    "sha256": fixture["onnx"]["sha256"],
+                    "modelBase64": fixture["onnx"]["modelBase64"],
+                }
+                if fixture is not None
+                else {}
+            ),
         },
-        "exportGate": "exportable" if result.exportable else "blocked",
-        "scorecard": _scorecard_payload(card, result.reasons, result.exportable),
+        "exportGate": "exportable" if exportable else "blocked",
+        "scorecard": _scorecard_payload(card, reasons, exportable),
     }
 
 
@@ -151,6 +175,9 @@ def _external_policy_result(
         "path": onnx.get("path"),
         "exportable": exportable,
     }
+    for key in ("byteSize", "sha256", "modelBase64"):
+        if key in onnx:
+            onnx_payload[key] = onnx[key]
     return {
         "artifactKind": "policy",
         "provider": external.get("provider", "external-sb3"),
@@ -173,6 +200,7 @@ def _scorecard_payload(card: Scorecard, reasons: list[str], exportable: bool) ->
         "robustness": card.robustness,
         "energyWh": card.energy_wh,
         "trainedOnEstimator": card.trained_on_estimator,
+        "estimatorSmoke": "passed" if card.trained_on_estimator else "failed",
         "lineage": card.lineage,
         "thresholds": {"minSuccess": DEFAULT_MIN_SUCCESS, "minRobustness": DEFAULT_MIN_ROBUST},
         "exportable": exportable,

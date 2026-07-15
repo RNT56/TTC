@@ -247,10 +247,14 @@ try {
   page = await context.newPage();
   const pageErrors = [];
   const wasmUrls = [];
+  const onnxRuntimeUrls = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("response", (response) => {
     if (/\/forge_wasm_bg-[^/]+\.wasm(?:\?|$)/.test(response.url()) && response.status() === 200) {
       wasmUrls.push(response.url());
+    }
+    if (/\/(?:ort\.wasm\.bundle\.min-[^/]+\.js|ort-wasm-[^/]+\.wasm)(?:\?|$)/.test(response.url()) && response.status() === 200) {
+      onnxRuntimeUrls.push(response.url());
     }
   });
 
@@ -370,6 +374,19 @@ try {
   evidence.listingId = listingId;
   evidence.flows.push("create and render a governed model listing");
 
+  assert.deepEqual(onnxRuntimeUrls, [], "lazy ONNX Runtime assets must not join first paint");
+  await page.locator('[data-testid="job-run-train.policy"]').click();
+  const policyJob = page.locator('[data-testid="job-row-train.policy"]').first();
+  await waitForText(policyJob, /train\.policy · succeeded/i);
+  await policyJob.locator('[data-testid="policy-play"]').click();
+  await waitForText(page.locator('[data-testid="policy-playback-status"]'), /playing hover-hold · ONNX Runtime Web\/WASM · 1 inference/i);
+  await waitForText(page.locator('[data-testid="policy-playback-status"]'), /played hover-hold · ONNX Runtime Web\/WASM · [1-9][0-9]* inferences/i);
+  assert.ok(onnxRuntimeUrls.some((url) => /ort\.wasm\.bundle\.min-[^/]+\.js/.test(url)), "lazy ONNX JS chunk was not loaded");
+  assert.ok(onnxRuntimeUrls.some((url) => /ort-wasm-[^/]+\.wasm/.test(url)), "same-origin ONNX Runtime WASM was not loaded");
+  assert.ok(onnxRuntimeUrls.every((url) => new URL(url).origin === studioOrigin), "ONNX runtime assets must stay same-origin");
+  evidence.onnxRuntimeAssets = [...new Set(onnxRuntimeUrls.map((url) => new URL(url).pathname))];
+  evidence.flows.push("execute a hash- and lineage-bound ONNX policy in-browser through the Rust estimator/motion boundary");
+
   await page.locator('[data-testid="job-run-maintenance.estimate-wear"]').click();
   const maintenanceJob = page.locator('[data-testid="job-row-maintenance.estimate-wear"]').first();
   await waitForText(maintenanceJob, /maintenance\.estimate-wear · succeeded/i);
@@ -379,10 +396,10 @@ try {
   evidence.flows.push("render the job's Postgres-materialized maintenance record");
 
   assert.deepEqual(pageErrors, [], `authenticated Studio page errors: ${pageErrors.join(" | ")}`);
-  assert.equal(evidence.flows.length, 10);
+  assert.equal(evidence.flows.length, 11);
   evidence.status = "passed";
   writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
-  console.log(`browser-e2e: 10/10 QA-002 flows passed -> ${evidencePath}`);
+  console.log(`browser-e2e: 11/11 QA-002/P7-008 flows passed -> ${evidencePath}`);
 } catch (error) {
   evidence.status = "failed";
   evidence.error = error instanceof Error ? error.stack ?? error.message : String(error);

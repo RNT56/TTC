@@ -52,6 +52,7 @@ const required = [
   "consentLedger",
   "accountDeletionReceipt",
   "dataLifecycle",
+  "policyTensor",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -97,6 +98,10 @@ const expected = {
     "packages/gateway/src/dataLifecycle.ts",
     "DATA_LIFECYCLE_FORMAT_VERSION",
   ),
+  policyTensor: typescriptConstant(
+    "packages/studio/src/policyRuntime.ts",
+    "POLICY_TENSOR_VERSION",
+  ),
   workerArtifacts: workerVersion,
 };
 
@@ -107,6 +112,11 @@ for (const [name, version] of Object.entries(expected)) {
   );
 }
 requireValue(matrix.productVersion === workspaceVersion, "productVersion must match the Cargo workspace version");
+requireValue(
+  matrix.surfaces.policyTensor.schema ===
+    typescriptConstant("packages/studio/src/policyRuntime.ts", "POLICY_TENSOR_SCHEMA"),
+  "policyTensor schema token must match the Studio runtime",
+);
 
 const gatewayJobKinds = typescriptStringArray("packages/gateway/src/platform.ts", "JOB_KINDS");
 requireValue(
