@@ -151,6 +151,7 @@ compatibility fixtures, migration/deprecation guidance, and a documented read po
 | `photoscan.single` | `photoscan` | fixture |
 | `photoscan.multiview` | `photoscan` | fixture |
 | `train.policy` | `policy` | fixture |
+| `train.offline-bc` | `offline-learning`, `policy` | fixture |
 | `train.sysid-fit` | `sysid` | fixture |
 | `replay.verify` | `replay` | fixture |
 | `codesign.evaluate` | `codesign` | fixture |

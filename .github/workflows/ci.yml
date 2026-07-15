@@ -231,6 +231,12 @@ jobs:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/training-smoke.mjs --out artifacts/training/p7-sb3-smoke.json
+      - name: P7-009 exact telemetry BC + randomized PPO fine-tune
+        env:
+          FORGE_VALIDATE_BIN: target/debug/forge-validate
+          FORGE_SOURCE_REVISION: ${{ github.sha }}
+          FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
+        run: node scripts/offline-training-smoke.mjs --out artifacts/training/p7-offline-training.json
       - name: P6-010 live Rapier-MuJoCo engine parity
         env:
           FORGE_MUJOCO_PARITY_CMD: python -m forge_workers.mujoco_parity

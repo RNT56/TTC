@@ -49,6 +49,12 @@ POLICY_OUTPUT_LAYOUT = ("throttle", "roll", "pitch", "yaw")
 GROUND_TRAINING_BUNDLE_VERSION = "1.0.0"
 GROUND_POLICY_TENSOR_SCHEMA = "forge-ground-policy-tensor"
 GROUND_POLICY_TENSOR_VERSION = "1.0.0"
+OFFLINE_TRAINING_TAPE_SCHEMA = "forge-offline-training-tape"
+OFFLINE_TRAINING_TAPE_VERSION = "1.0.0"
+OFFLINE_DATASET_SCHEMA = "forge-behavior-cloning-dataset"
+OFFLINE_DATASET_VERSION = "1.0.0"
+OFFLINE_WARMSTART_SCHEMA = "forge-policy-warmstart"
+OFFLINE_WARMSTART_VERSION = "1.0.0"
 GROUND_POLICY_INPUT_LAYOUT = (
     "estimator.attitude.rollRad",
     "estimator.attitude.pitchRad",

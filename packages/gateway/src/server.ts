@@ -187,6 +187,7 @@ const jobKindSchema = Type.Union([
   Type.Literal("photoscan.single"),
   Type.Literal("photoscan.multiview"),
   Type.Literal("train.policy"),
+  Type.Literal("train.offline-bc"),
   Type.Literal("train.sysid-fit"),
   Type.Literal("replay.verify"),
   Type.Literal("codesign.evaluate"),

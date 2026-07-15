@@ -133,12 +133,14 @@ def ingest_telemetry(payload: dict[str, Any]) -> dict[str, Any]:
     frames.sort(key=lambda frame: frame["t"])
     if any(left["t"] >= right["t"] for left, right in zip(frames, frames[1:])):
         raise ValueError("telemetry timestamps must be unique and strictly increasing")
+    training = payload.get("training")
     tape = {
         "schemaVersion": REPLAY_FORMAT_VERSION,
         "header": {
             "contractHash": payload.get("contractHash"),
             "lockfileHash": payload.get("lockfileHash"),
             "seed": payload.get("seed", 0),
+            **({"training": training} if isinstance(training, dict) else {}),
         },
         "frames": frames,
     }

@@ -242,10 +242,23 @@ schema and export gate. The ONNX metadata carries `exportable: false` whenever t
 scorecard is blocked, and the gateway stores the same state as a blocked export
 gate.
 
-Behavior-cloning/offline-RL adapters are intentionally stricter: `FORGE_OFFLINE_RL_CMD`
-normalizes external output into a dataset and warmstart artifact, validates sample
-count and action columns, and always keeps the scorecard non-exportable until a
-separate live fine-tune/evaluation run passes the policy gate.
+Behavior-cloning/offline-RL adapters are intentionally stricter under D45. The
+gateway accepts only one owned `telemetryLogId` with active `training.reuse` consent,
+requires the log and admitted snapshot to name the same model, and injects the exact
+tape plus stable SHA-256 server-side. `forge-offline-training-tape/1.0.0` binds the
+current replay format, task definition, exact flight/ground tensor, estimator-only
+observation source, reviewed-controller or supervisor-approved action source, and
+explicit `controlled-synthetic` maturity. The current 1.0 worker rejects
+`recorded-device`; P8 must add recorder attestation under a reviewed version before
+that maturity can be admitted. The worker accepts
+64..100,000 exact finite strictly increasing `(observation, action)` pairs and never
+sorts, projects, fills, clips, or repairs them. It emits
+`forge-behavior-cloning-dataset/1.0.0` and
+`forge-policy-warmstart/1.0.0` digests, runs 12 frozen BC epochs followed by 256
+recipe-owned randomized PPO steps, and evaluates through the unchanged scorecard.
+`FORGE_OFFLINE_RL_CMD` policy output is independently re-derived against the tape,
+dataset, warmstart digest, and both curriculum stages; any substitution holds export.
+Legacy warmstart-only output remains accepted only as a held, non-exportable artifact.
 
 System-ID follows the same fail-closed rule for P8: `FORGE_SYSID_FIT_CMD` output is
 normalized through `train.sysid-fit`, and a live bench/log fit is accepted only when
@@ -263,10 +276,18 @@ Live 2026-06-14: the deterministic fixture path produces the ONNX/scorecard/head
 artifact and Studio renders the scorecard, robustness grid, IO counts, ONNX
 metadata, and a one-click playback control that feeds the policy action header
 through `CoreSession`. `train.sysid-fit` estimates R_int plus a sim-block
-JSON-Patch, and `train.offline-bc` builds deterministic sorted behavior-cloning
-datasets plus warmstart artifact metadata from telemetry tapes. Controlled native
-SB3/MuJoCo training is protected through P7-003; offline-RL fine-tune remains adapter
-work unless the external command/env integration is configured.
+JSON-Patch. The legacy unconfigured `train.offline-bc` path still produces held
+warmstart metadata for compatibility. The D45 candidate adds a real native command:
+`python -m forge_workers.training.offline_runner`. It compiles the gateway-owned
+admitted snapshot through the sovereign Rust bundle, validates the exact source tape,
+performs behavior cloning, continues with randomized PPO in the existing MuJoCo
+runtime, exports ONNX, and sends the result back through the outer worker's independent
+dataset/curriculum/scorecard authority. The required
+`pnpm training:offline-smoke` executes hover-hold and rover line-follow twice each on
+controlled synthetic estimator/action tensors and requires identical dataset,
+warmstart-parameter, and ONNX digests. Both 256-step scorecards remain honestly
+blocked. This proves the local BC-to-PPO-to-ONNX path, not recorder/device/field
+capture, learning quality, transfer, deployed compute, or external acceptance.
 
 Protected through PR #64/`d1c4c38` on 2026-07-15:
 `workers/.../sb3_runner.py` is the native JSON command boundary used by
@@ -303,6 +324,16 @@ scorecards remain honestly blocked. Exact implementation head `c0f3a8f` passed P
 `29433820358`/security `29433818798`; protected PR #75 squash `90b1691` passed
 post-merge CI `29448974932`/security `29448974951`. Downloaded artifact `8356753424`
 self-binds to clean protected source and has JSON SHA-256 `20f0c25d…56ba`.
+
+P7-009's current implementation candidate layers D45 source authority over those
+protected flight and ground trainers without changing their task, tensor, bundle,
+scorecard, or energy meanings. Gateway, consent, migration 0023, worker command,
+external normalizer, Modal CPU profile, exact dataset validator, and repeated native
+smoke are implemented. The candidate passes 188 worker tests, 65 gateway tests, the
+17-family generated artifact check, and the focused two-task smoke locally. It remains
+`[~]` until exact PR/post-merge CI/security and clean protected retained evidence are
+inspected. Real recorder/device telemetry belongs to P8, is rejected by the current
+worker, and cannot be inferred from a caller label or the controlled-synthetic smoke.
 Independent decoding and ONNX checking verifies hover 23,874 bytes/
 `6b18908f…c555`, waypoint 23,878/`783753e3…4927`, rover 22,520/
 `fa6c3cac…e4ad`, and quadruped 28,890/`b400ac71…8c2e`, including exact layouts,
@@ -436,6 +467,7 @@ scorecards.
 
 Scorecard thresholds beyond the frozen multirotor v3 0.85/0.70 gate; policy-object
 orphan inventory/reconciliation; protected overnight evidence publication; fine-tune-
-on-corrected-twin workflow shape (post system-ID); exact D12 quad/rover/legged
+on-corrected-twin workflow shape (post system-ID); recorded-device offline-learning
+acceptance and protected retained P7-009 evidence; exact D12 quad/rover/legged
 benchmark contracts, declared accelerator and cost source, and the CPU overnight/
 tier-2 budget envelope needed to finish P7-010.

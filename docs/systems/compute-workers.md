@@ -152,9 +152,15 @@ worker re-runs every external policy through the scorecard/export gate before
 marking ONNX exportable. Under D41/D42, versioned external policies must also exact-match
 the worker-owned task ID, suite/version, Y-up frame, ordered targets, canonical task
 hash, scorecard task/hash lineage, ONNX task header, and the declared tensor major/layout;
-any missing or substituted authority holds export. `FORGE_OFFLINE_RL_CMD` can supply behavior-cloning/offline
-RL warmstarts; those outputs are normalized, dataset-gated, and kept non-exportable
-until a fine-tune scorecard passes. `FORGE_SYSID_FIT_CMD` can supply live system-ID
+any missing or substituted authority holds export. Under D45,
+`FORGE_OFFLINE_RL_CMD` receives a worker-owned `jobKind=train.offline-bc` envelope and
+can return either the legacy held warmstart envelope or a normal policy. Policy
+results are exportable only when the worker independently reconstructs the exact
+source-bound dataset, verifies the warmstart parameter digest and both frozen BC/PPO
+curriculum stages, and the unchanged scorecard passes. The native
+`forge_workers.training.offline_runner` supplies that controlled path; caller job-kind,
+recipe, tape, hash, snapshot, and external-summary substitution fail closed.
+`FORGE_SYSID_FIT_CMD` can supply live system-ID
 results in the same artifact contract; external fits must include enough samples, an
 accepted fit, and a non-empty sim patch before the worker marks them accepted.
 `FORGE_MJX_BENCH_CMD` can supply P7-010 benchmark rows; the normalized report
@@ -396,8 +402,12 @@ versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
 SB3/MuJoCo hover runtime is protected through PR #64. P7-012's tensor-v2/task-v3
 implementation and clean protected scorecard-passing evidence are closed through PR
-#72/`8e094c0` and evidence PR #73/`6bfa60f`; deployed Modal/GPU runs,
-and offline-RL fine-tuning remain open. P7-011 durable delivery is protected through
+#72/`8e094c0` and evidence PR #73/`6bfa60f`. The P7-009 D45 candidate now executes
+exact behavior cloning plus randomized PPO for flight and ground tensors, repeats
+same-seed dataset/warmstart/ONNX hashes, and reuses the ordinary scorecard/export
+gate. It is controlled-synthetic local evidence until protected CI and retained
+artifact inspection; recorder/device/field telemetry and deployed Modal/GPU runs
+remain open. P7-011 durable delivery is protected through
 PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
 uploads one exact owner content-addressed object under the current D38 lease, and
 transactionally creates one byte-free job-bound policy. Clean artifact `8340587390`

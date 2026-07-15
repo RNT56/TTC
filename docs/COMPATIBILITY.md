@@ -184,6 +184,20 @@ reject `forge-ground-policy-tensor` until a separately versioned ground consumer
 implemented. External publication still requires compatibility-surface promotion,
 supported/unsupported fixtures, migration/deprecation policy, and release notes.
 
+D45 adds three independently versioned internal worker artifacts without changing a
+public package surface: `forge-offline-training-tape` 1.0.0,
+`forge-behavior-cloning-dataset` 1.0.0, and `forge-policy-warmstart` 1.0.0. Tape v1
+requires replay 1.0.0, exact task/tensor equality, estimator-policy observations,
+reviewed/supervisor actions, `controlled-synthetic` maturity, and 64..100,000 finite unique
+strictly increasing samples. Dataset v1 hashes the exact source log, timestamps,
+observations, actions, contract, task definition, and tensor. Warmstart v1 binds that
+dataset hash to an exact lower-case parameter SHA-256. `train.offline-bc` is an
+additive seventeenth queue kind; its native policy output still uses the existing
+worker policy envelope and scorecard. Any changed field set, task/tensor/source
+meaning, sample repair rule, hash preimage, action bound, or BC-to-PPO curriculum
+requires a new internal major and retraining guidance. External publication requires
+promotion, fixtures, migration/deprecation policy, and release notes.
+
 P7-010's controlled benchmark adds internal required-CI evidence envelopes
 `mjxBenchmarkRequest` 1.0.0 and `mjx-benchmark` 1.0.0 without changing a public or
 queued worker artifact. Request v1 freezes the admitted snapshot/hash, exact runtime

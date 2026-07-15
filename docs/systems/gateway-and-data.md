@@ -98,6 +98,16 @@ tensor, lineage, size, and digest metadata. Authenticated
 the stored bytes before returning a non-cacheable octet stream; Studio hashes it
 again. Workers remain private and neither storage credentials nor presigned policy
 URLs cross the browser boundary.
+`train.offline-bc` is a private queued worker kind, never a fixture compute path.
+The request may name only one `telemetryLogId`, admitted `modelId`, supported task,
+frozen recipe/algorithm, seed, and timeout. In the same serializable consent boundary,
+the gateway requires active `training.reuse`, rechecks ownership, binds the log to the
+same model, injects the immutable admitted snapshot and stored tape, and computes the
+tape SHA-256. Clients cannot supply a tape, frame set, hash, snapshot, device, domain
+randomization, or training override. Migration 0023 adds only the queue enum; no
+historical job is reclassified. Consent withdrawal cancels both policy and offline
+training jobs through singular or array log references. Workers remain responsible
+for exact task/tensor/sample validation and the unchanged scorecard export gate.
 The local-only `commerce.vendor-refresh` kind is command-gated at enqueue and worker
 execution. Successful normalized rows materialize to `vendor_offers` in the same
 worker transaction as job success; a corrupt accepted row rolls back both state

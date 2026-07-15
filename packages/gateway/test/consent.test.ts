@@ -227,6 +227,9 @@ test("every consent purpose validates subject ownership and executes bounded wit
     });
     assert.ok(statements.some((sql) => sql.includes(effect)), `missing ${purpose} withdrawal effect`);
   }
+  const trainingWithdrawal = statements.find((sql) => sql.includes("training reuse consent withdrawn"));
+  assert.match(trainingWithdrawal ?? "", /kind IN \('train\.policy', 'train\.offline-bc'\)/);
+  assert.match(trainingWithdrawal ?? "", /input ->> 'telemetryLogId'/);
 
   const current = policy("photoscan.processing");
   await assert.rejects(

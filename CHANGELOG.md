@@ -18,6 +18,53 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Implement source-bound offline fine-tuning
+**Session:** Codex agent · branch `codex/p7009-offline-finetune` · **Phase:** P7 ·
+**TODO items:** P7-009 [~]
+**Done:** Implemented the unprotected D45 P7-009 candidate on exact protected base
+`f0bb4e2` without claiming recorder, learning-quality, deployment, or field closure.
+The gateway admits only local/Modal jobs naming one consented owned telemetry log,
+binds the log to the same admitted model, and injects the exact tape, SHA-256, and
+snapshot server-side; fixture use, caller tape/hash/snapshot/device/training fields,
+missing consent, and cross-model authority fail closed. Exact tape/dataset/warmstart
+1.0.0 validators require 64..100,000 finite strictly increasing samples, the exact
+task/tensor, estimator-policy observations, reviewed/supervisor actions, and explicit
+`controlled-synthetic` maturity without sorting, filling, projection, clipping, or
+hidden truth. The worker rejects `recorded-device` until P8 recorder attestation is
+defined under a reviewed version; a caller label cannot manufacture that provenance.
+The native command runs the frozen 12-epoch behavior-cloning warmstart, verifies a
+parameter change, continues with 256 randomized PPO steps in the existing flight or
+ground MuJoCo trainer, exports ONNX, and re-enters the outer worker's independent
+dataset/curriculum/scorecard gate. Repeated hover-hold and rover line-follow controlled-
+synthetic runs have exact same-seed dataset, warmstart-parameter, and ONNX digests;
+both short scorecards correctly remain blocked. The complete 40-step local gate passes
+with 188 worker tests, 65 gateway tests, 15 compatibility surfaces, 17 generated
+worker families, and the native offline smoke.
+The final gate also exposed that the adjacent MJX smoke could import an editable
+worker package from another worktree while binding the current Git revision. It now
+prepends this checkout's `workers/` source, matching the training/offline smokes and
+making the benchmark's source claim executable rather than metadata-only.
+The first PR database run then exposed a newly reachable QA-004 predecessor case:
+when 0022 is already installed, its fixture must write current `job_id` and byte-free
+policy metadata instead of expecting the 0022 backfill to rerun. Older prefixes still
+exercise that backfill; the 0022 predecessor now exercises correct current writers.
+**Changed:** Gateway queue/schema/consent/source authority and tests; migration 0023;
+worker dataset, native runner, SB3 curriculum, external normalizer, Modal profile,
+bridge metadata, tests, required CI smoke, compatibility/artifact catalogs and golden
+review; canonical agent, decision, state, roadmap, TODO, execution, migration, best-
+practice, learning, worker, gateway, and hardware guidance; and this changelog.
+**Decisions:** D45 defines source-bound offline data, exact no-repair samples, the
+BC-to-randomized-PPO curriculum, and the unchanged scorecard as sole export authority.
+**Next:** Publish the exact implementation through protected PR CI/security and its
+required isolated-database gate, inspect the clean retained offline-training artifact,
+merge, verify exact-main checks, and reconcile P7-009 to `[x]` only if that evidence
+matches D45.
+**Blockers:** The local Docker VM is unavailable, so the populated Postgres/MinIO
+matrix awaits required CI; the static 23-migration ledger and both changed assertion
+scripts pass. Recorded-device telemetry remains P8; deployed GPU operations remain
+P7-013; learning quality, passing-policy delivery, transfer, external users, and field
+proof remain separate gates.
+
 ## 2026-07-15 — Protect contract-derived rover and quadruped training
 **Session:** Codex agent · branch `codex/p7014-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-014 [x]

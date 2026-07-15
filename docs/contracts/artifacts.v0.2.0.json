@@ -124,6 +124,9 @@
         "groundTrainingBundle": "1.0.0",
         "groundTrainingTask": "1.0.0",
         "groundPolicyTensor": "1.0.0",
+        "offlineTrainingTape": "1.0.0",
+        "offlineTrainingDataset": "1.0.0",
+        "offlinePolicyWarmstart": "1.0.0",
         "sb3Runtime": "3.0.0"
       },
       "queueKinds": [
@@ -132,6 +135,7 @@
         "photoscan.single",
         "photoscan.multiview",
         "train.policy",
+        "train.offline-bc",
         "train.sysid-fit",
         "replay.verify",
         "codesign.evaluate",
@@ -185,6 +189,15 @@
         ],
         "maturity": "fixture",
         "notes": "The artifact remains fixture maturity; its delivery subpath has protected sandbox proof. The retained envelope is byte-free and job-bound, exact digest-addressed ONNX bytes use S3-compatible storage, and the hover fixture is executable; unsupported fixture tasks remain held."
+      },
+      {
+        "queueKind": "train.offline-bc",
+        "artifactKinds": [
+          "offline-learning",
+          "policy"
+        ],
+        "maturity": "fixture",
+        "notes": "The legacy adapter retains a held dataset/warmstart envelope. The native command executes exact source-bound behavior cloning followed by recipe-owned randomized PPO and emits a normal policy envelope; the unchanged scorecard remains the sole export authority."
       },
       {
         "queueKind": "train.sysid-fit",

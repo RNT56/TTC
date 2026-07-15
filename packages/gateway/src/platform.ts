@@ -60,6 +60,7 @@ export const JOB_KINDS = [
   "photoscan.single",
   "photoscan.multiview",
   "train.policy",
+  "train.offline-bc",
   "train.sysid-fit",
   "replay.verify",
   "codesign.evaluate",
@@ -1311,6 +1312,7 @@ const ADMITTED_MODEL_SNAPSHOT_VERSION = "1.0.0";
 const ADMITTED_MODEL_JOB_KINDS = new Set<JobKind>([
   "occt.tessellate",
   "train.policy",
+  "train.offline-bc",
   "train.sysid-fit",
   "codesign.evaluate",
   "bridge.config-diff",
@@ -2277,6 +2279,7 @@ function jobTimeoutSeconds(input: CreateJobInput): number {
     "photoscan.single": 300,
     "photoscan.multiview": 300,
     "train.policy": 28_800,
+    "train.offline-bc": 3600,
     "train.sysid-fit": 3600,
     "codesign.evaluate": 28_800,
   };
@@ -2329,6 +2332,79 @@ function assertCommerceVendorRefreshJob(input: CreateJobInput): void {
   }
 }
 
+function assertOfflineTrainingJob(input: CreateJobInput): void {
+  const provider = input.provider ?? "fixture";
+  if (provider === "fixture") {
+    throw Object.assign(new Error("train.offline-bc requires the local or modal worker provider"), {
+      statusCode: 400,
+    });
+  }
+  if (!isRecord(input.payload)) {
+    throw Object.assign(new Error("train.offline-bc requires a bounded payload"), { statusCode: 400 });
+  }
+  const payload = input.payload;
+  for (const key of ["tape", "frames", "telemetryLogIds", "telemetryLogSha256", "modelSnapshot"]) {
+    if (Object.hasOwn(payload, key)) {
+      throw Object.assign(new Error(`${key} is gateway-owned for train.offline-bc`), { statusCode: 400 });
+    }
+  }
+  const allowedKeys = new Set([
+    "modelId",
+    "telemetryLogId",
+    "task",
+    "recipe",
+    "algorithm",
+    "seed",
+    "timeoutS",
+  ]);
+  if (Object.keys(payload).some((key) => !allowedKeys.has(key))) {
+    throw Object.assign(new Error("train.offline-bc payload contains unsupported fields"), {
+      statusCode: 400,
+    });
+  }
+  const telemetryLogIds = telemetryLogIdsFromPayload(payload);
+  if (
+    typeof payload.telemetryLogId !== "string"
+    || !payload.telemetryLogId
+    || payload.telemetryLogId.length > 200
+    || telemetryLogIds.length !== 1
+  ) {
+    throw Object.assign(new Error("train.offline-bc requires exactly one owned telemetryLogId"), {
+      statusCode: 400,
+    });
+  }
+  if (!modelIdFrom(payload)) {
+    throw Object.assign(new Error("train.offline-bc requires an admitted modelId"), { statusCode: 400 });
+  }
+  if (payload.recipe !== "p7-offline-bc-v1" || payload.algorithm !== "ppo") {
+    throw Object.assign(new Error("train.offline-bc requires the p7-offline-bc-v1 PPO recipe"), {
+      statusCode: 400,
+    });
+  }
+  if (!["hover-hold", "waypoint-chain", "line-follow", "walk-to-target"].includes(String(payload.task))) {
+    throw Object.assign(new Error("train.offline-bc task is unsupported"), { statusCode: 400 });
+  }
+  if (
+    payload.seed !== undefined
+    && (!Number.isInteger(payload.seed) || Number(payload.seed) < 0 || Number(payload.seed) > 2_147_483_647)
+  ) {
+    throw Object.assign(new Error("train.offline-bc seed must be an integer between 0 and 2147483647"), {
+      statusCode: 400,
+    });
+  }
+  if (
+    payload.timeoutS !== undefined
+    && (typeof payload.timeoutS !== "number"
+      || !Number.isFinite(payload.timeoutS)
+      || payload.timeoutS < 1
+      || payload.timeoutS > 3600)
+  ) {
+    throw Object.assign(new Error("train.offline-bc timeoutS must be between 1 and 3600"), {
+      statusCode: 400,
+    });
+  }
+}
+
 export async function createJob(
   db: GatewayDb,
   user: CurrentUser,
@@ -2348,6 +2424,9 @@ export async function createJob(
   if (input.kind === "commerce.vendor-refresh") {
     assertCommerceVendorRefreshJob(input);
   }
+  if (input.kind === "train.offline-bc") {
+    assertOfflineTrainingJob(input);
+  }
   const requirements = [] as {
     purpose: "photoscan.processing" | "training.reuse";
     subjectKind: "object-blob" | "telemetry-log";
@@ -2365,8 +2444,9 @@ export async function createJob(
       requirements.push({ purpose: "photoscan.processing", subjectKind: "object-blob", subjectId });
     }
   }
-  if (input.kind === "train.policy") {
-    for (const subjectId of telemetryLogIdsFromPayload(input.payload)) {
+  if (input.kind === "train.policy" || input.kind === "train.offline-bc") {
+    const telemetryLogIds = telemetryLogIdsFromPayload(input.payload);
+    for (const subjectId of telemetryLogIds) {
       requirements.push({ purpose: "training.reuse", subjectKind: "telemetry-log", subjectId });
     }
   }
@@ -2408,8 +2488,12 @@ async function createJobUnchecked(
       modelIdFrom(input.payload),
       `${input.kind} job`,
     );
-    if (provider !== "fixture" && input.kind === "train.policy" && model === null) {
-      throw Object.assign(new Error("live train.policy jobs require an admitted modelId"), {
+    if (
+      provider !== "fixture"
+      && (input.kind === "train.policy" || input.kind === "train.offline-bc")
+      && model === null
+    ) {
+      throw Object.assign(new Error(`live ${input.kind} jobs require an admitted modelId`), {
         statusCode: 400,
       });
     }
@@ -2445,10 +2529,40 @@ async function createJobUnchecked(
       };
     }
   }
+  if (input.kind === "train.offline-bc") {
+    const payload = isRecord(authoritativePayload) ? authoritativePayload : {};
+    const telemetryLogId = telemetryLogIdsFromPayload(payload)[0];
+    const source = await db.query<{ model_id: string | null; tape: unknown }>(
+      `SELECT model_id, tape
+         FROM telemetry_logs
+        WHERE id = $1 AND owner_user_id = $2
+        LIMIT 1`,
+      [telemetryLogId, user.id],
+    );
+    const telemetry = source.rows[0];
+    if (!telemetry) {
+      throw Object.assign(new Error("train.offline-bc telemetry log not found"), { statusCode: 404 });
+    }
+    if (telemetry.model_id !== modelIdFrom(payload)) {
+      throw Object.assign(new Error("train.offline-bc telemetry log belongs to a different model"), {
+        statusCode: 409,
+      });
+    }
+    if (!isRecord(telemetry.tape)) {
+      throw Object.assign(new Error("train.offline-bc telemetry tape is malformed"), { statusCode: 409 });
+    }
+    authoritativePayload = {
+      ...payload,
+      telemetryLogId,
+      telemetryLogIds: [telemetryLogId],
+      telemetryLogSha256: sha256(stableJson(telemetry.tape)),
+      tape: telemetry.tape,
+    };
+  }
   assertBoundedJson(authoritativePayload, "authoritative job payload", {
-    maxBytes: 512 * 1024,
-    maxDepth: 16,
-    maxNodes: 20_000,
+    maxBytes: input.kind === "train.offline-bc" ? 4 * 1024 * 1024 : 512 * 1024,
+    maxDepth: input.kind === "train.offline-bc" ? 32 : 16,
+    maxNodes: input.kind === "train.offline-bc" ? 100_000 : 20_000,
   });
   const resolvedInput: CreateJobInput = { ...input, payload: authoritativePayload };
   const databaseIdempotencyKey = input.idempotencyKey == null
@@ -2729,6 +2843,14 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           reasons: [],
         },
       };
+    case "train.offline-bc":
+      return {
+        artifactKind: "offline-learning",
+        provider: "fixture",
+        exportable: false,
+        held: true,
+        reasons: ["offline behavior cloning requires a configured local or modal worker"],
+      };
     case "train.sysid-fit":
       return {
         artifactKind: "sysid",
@@ -2806,11 +2928,12 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           .map((sample) => ({ t: typeof sample.t === "number" ? sample.t : 0, state: sample }))
           .sort((a, b) => a.t - b.t);
         const tape = {
-          schemaVersion: "replay.v1",
+          schemaVersion: "1.0.0",
           header: {
             contractHash: isRecord(payload) && typeof payload.contractHash === "string" ? payload.contractHash : null,
             lockfileHash: isRecord(payload) && typeof payload.lockfileHash === "string" ? payload.lockfileHash : null,
             seed: 0,
+            ...(isRecord(payload) && isRecord(payload.training) ? { training: payload.training } : {}),
           },
           frames,
         };

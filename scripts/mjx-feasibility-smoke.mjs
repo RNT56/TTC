@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { delimiter, dirname, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const outArg = process.argv.indexOf("--out");
@@ -101,6 +101,9 @@ const run = spawnSync("python", ["-m", "forge_workers.mjx_benchmark"], {
   maxBuffer: 16 * 1024 * 1024,
   env: {
     ...process.env,
+    PYTHONPATH: [resolve(root, "workers"), process.env.PYTHONPATH]
+      .filter(Boolean)
+      .join(delimiter),
     FORGE_VALIDATE_BIN:
       process.env.FORGE_VALIDATE_BIN || resolve(root, "target/debug/forge-validate"),
     JAX_ENABLE_X64: "1",
