@@ -196,10 +196,10 @@ completion in evaluation, includes task identity/hash in config, ONNX metadata a
 scorecard lineage, and rejects gate/rover/legged or drifted-frame/task shapes. The
 required training smoke now runs both tasks for 256 PPO steps and retains two honest
 blocked scorecards. Clean artifact `8342801418` binds them to exact protected source.
-This is controlled CPU runtime proof, not overnight learning quality, deployed GPU
-operations, or broader-archetype closure.
+This historical artifact is controlled CPU runtime proof, not P7-012's later
+overnight learning quality, deployed GPU operations, or broader-archetype closure.
 
-The P7-012 implementation candidate advances new jobs to `p7-v3`/3.0.0 and tensor
+P7-012 is protected through PR #72/`8e094c0` and advances new jobs to `p7-v3`/3.0.0 and tensor
 2.0.0. The worker fixes Forge Y-up angular-axis decomposition, exposes estimator-
 derived body velocity, interprets policy outputs as normalized flight targets around
 contract hover trim, and binds the inner loop and reward into the task definition.
@@ -207,9 +207,10 @@ contract hover trim, and binds the inner loop and reward into the task definitio
 PPO curriculum and the unchanged scorecard grid. The resumable evidence command
 writes atomic per-task JSON/ONNX checkpoints, reuses only a matching request hash and
 valid size/digest/export gate, and retains safe hardware/runtime/wall-time/host-energy/
-cost/nonclaim metadata. Local exact-seed M2 Pro diagnostics pass hover and waypoint;
-clean protected-source execution and downloaded artifact review remain required for
-P7-012 closure.
+cost/nonclaim metadata. Clean protected-source execution intentionally interrupts
+after hover, validates and reuses the atomic checkpoint, then passes waypoint. Exact
+JSON/ONNX files and their hashes are retained under `docs/evidence/p7-012/`. This
+closes controlled consumer-hardware simulation quality, not deployed GPU or field proof.
 
 Required CI installs the separate `mjx` extra, runs the complete worker suite, then
 retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
@@ -344,8 +345,8 @@ family). The suite materializes explicit non-finite sentinels only in memory, as
 bounded provider JSON, finite `[0,1]` confidence, credential-free HTTPS citation
 sources, most-restrictive export policy, command-token refusal, telemetry ordering,
 and supervisor fail-closed behavior. The QA-007 landing passed 127/127 under Python
-3.12; protected P7-014 passed 154 tests. The P7-012 implementation candidate passes
-163/163, including exact tensor-v1/v2 fixtures, corrected multirotor semantics,
+3.12; protected P7-014 passed 154 tests. Protected P7-012 passes 163/163, including
+exact tensor-v1/v2 fixtures, corrected multirotor semantics,
 device authority, and interruption/resume/tamper evidence. Credentialed
 providers and physical adapters remain separate acceptance lanes.
 
@@ -366,8 +367,8 @@ through required PR and post-merge CI with retained source-bound evidence. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
 SB3/MuJoCo hover runtime is protected through PR #64. P7-012's tensor-v2/task-v3
-implementation and passing local diagnostics are present on the candidate branch;
-overnight protected-source proof, deployed Modal/GPU runs,
+implementation and clean protected scorecard-passing evidence are closed through PR
+#72/`8e094c0`; deployed Modal/GPU runs,
 and offline-RL fine-tuning remain open. P7-011 durable delivery is protected through
 PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
 uploads one exact owner content-addressed object under the current D38 lease, and
@@ -376,8 +377,8 @@ proves stale/substituted/cancelled attempts cannot create authority and exact re
 bytes execute through the browser. Preserve that protected acceptance on changes; a
 database-only object row, inline byte field, or successful upload without the winning
 lease is not delivery proof. D40's real-waypoint dependency before overnight P7-012
-is satisfied through protected PR #70/`f220d25` and artifact `8342801418`; rover/
-legged real trainers remain P7-014. P8: config-diff,
+is satisfied through protected PR #70/`f220d25` and artifact `8342801418`; P7-012 is
+closed and rover/legged real trainers remain P7-014. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
 codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes

@@ -127,7 +127,7 @@ constants, runtime versions, payloads, or snapshot hashes refuse before training
 
 The protected initial environment remains the floating-root multirotor hover task.
 P7-014 generalized that same sovereign runtime to the worker-owned `hover-hold` and
-`waypoint-chain` v2 definitions. D42's P7-012 implementation corrects that runtime
+`waypoint-chain` v2 definitions. D42's protected P7-012 implementation corrects that runtime
 under task v3 with 14 estimator-only observations and four normalized flight-target
 actions. It uses
 the Rust-derived MJCF, hover trim, mass, gravity, 101-point powertrain curve, control
@@ -139,14 +139,16 @@ only for bounded safety termination and never enters policy observation or targe
 authority. Evaluation records baseline, mass +15 %, Kv -8 %, and 4 m/s wind
 scenarios; waypoint success requires the complete chain, not a partial success
 fraction. Protected PR #70 and clean artifact `8342801418` establish a controlled
-CPU runtime for both multirotor tasks. The implementation candidate now adds a
+CPU runtime for both multirotor tasks. PR #72/protected `8e094c0` adds a
 frozen `p7-overnight-v1` curriculum: estimator-only deterministic-controller
 distillation followed by conservative randomized PPO, eight held-out episodes per
 baseline/mass/Kv/wind row, exact source/runtime/hardware lineage, resumable atomic
-task checkpoints, retained ONNX bytes, and a separate host-energy upper bound. Local
-M2 Pro diagnostics pass both frozen tasks at 1.0 success/robustness without changing
-the scorecard; protected clean-source evidence is still required before P7-012 closes.
-This does not establish rover/legged coverage, deployed GPU operations, production
+task checkpoints, retained ONNX bytes, and a separate host-energy upper bound. Clean
+protected M2 Pro evidence intentionally interrupts after hover, validates and reuses
+that checkpoint on resume, and retains both frozen tasks at 1.0 success/robustness
+without changing the scorecard under `docs/evidence/p7-012/`. This closes P7-012 at
+controlled consumer-hardware simulation maturity. It does not establish rover/legged
+coverage, deployed GPU operations, production
 economics, external users, or field transfer.
 
 ## 5. Domain randomization (first-class config)
@@ -166,7 +168,7 @@ action interpretation, reward, and inner-loop control are semantic changes.
 Protected through PR #64/`d1c4c38` on 2026-07-15: the real hover environment applies
 each declared randomization source in execution rather than merely serializing the
 configuration. The same seed reproduces the exported ONNX digest in focused PPO and
-SAC tests. P7-012's frozen curriculum samples the same complete envelope during
+SAC tests. P7-012's protected frozen curriculum samples the same complete envelope during
 training and evaluates exact held-out baseline, mass +15%, Kv -8%, and wind 4 m/s
 rows without weakening `p7-scorecard-v1`'s 0.85/0.70 thresholds.
 
@@ -227,15 +229,16 @@ Protected artifact `8342801418` self-binds the two blocked outputs to clean sour
 learning quality. P7-011 is protected through PR #68/`9131289`: durable object
 upload, one-click Studio queueing/download/playback, isolated Postgres/S3-compatible
 acceptance, and the
-production-browser path are closed at controlled sandbox maturity. Deployed Modal/
-GPU proof and a protected overnight passing run remain P7-012..013; D40's real-waypoint
-prerequisite is now satisfied. The P7-012 implementation candidate adds
+production-browser path are closed at controlled sandbox maturity. P7-012's protected
+overnight passing run is closed; deployed Modal/GPU proof remains P7-013. D40's
+real-waypoint prerequisite is satisfied. The protected P7-012 runtime adds
 `python -m forge_workers.training.overnight_evidence`: it freezes both task seeds,
 recipe, scorecard thresholds, exact runtime, safe hardware inventory, CPU device, and
 operator-declared power bound into one request hash; writes each passing JSON/ONNX
 pair atomically; validates request hash, byte count, digest, and exportability before
 resume; and deliberately supports interruption after either task. Failed/tampered
-checkpoints never become reusable authority.
+checkpoints never become reusable authority. Exact clean-source evidence and retained
+hashes live under `docs/evidence/p7-012/`.
 
 Live 2026-07-15: the current hover fixture is a real 1,056-byte tensor-v2 opset-18
 Gemm+Tanh ONNX graph bound by SHA-256

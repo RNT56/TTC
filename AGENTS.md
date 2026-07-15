@@ -201,23 +201,25 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `29413578031`/security `29413578124`; protected CI `29415036211` and security
   `29415036274` pass. Downloaded artifact `8342801418` self-binds to clean `f220d25`
   and retains two valid, correctly non-exportable task-bound ONNX policies. D40's
-  prerequisite for P7-012 is satisfied, but overnight learning quality and the
-  rover/legged real trainers remain open under P7-012/P7-014;
-- the P7-012 implementation candidate advances current multirotor training to D42
+  prerequisite for P7-012 is satisfied; rover/legged real trainers remain open under
+  P7-014;
+- P7-012 is closed at controlled consumer-hardware simulation maturity through PR
+  #72 and protected `8e094c0`. It advances current multirotor training to D42
   policy tensor 2.0.0 `[1,14]`, `trainingMuJoCoBundle` 2.0.0, and
   `p7-v3`/3.0.0 while retaining an executable tensor-v1 observer/ONNX oracle. It
   fixes Forge Y-up angular-axis order, adds estimator body velocity, interprets
   normalized flight targets around contract hover trim, freezes an estimator-only
   distillation plus randomized-PPO curriculum, and adds atomic interruption/resume/
-  tamper-checked evidence. On the declared M2 Pro consumer host, exact-seed local
-  diagnostics pass hover and waypoint at 1.0 baseline and every mass/Kv/wind
-  robustness row; 163 worker tests and 12 Studio runtime tests pass. D43 selects CPU
+  tamper-checked evidence. Exact head `1bce0d1` passed PR CI `29425066833` and
+  security `29425066479`; protected CI `29426237373` and security `29426237345`
+  pass. From a clean protected checkout, an intentional post-hover interruption and
+  validated resume retained the exact hover/waypoint JSON and ONNX files under
+  `docs/evidence/p7-012/`; both score 1.0 baseline and every mass/Kv/wind robustness
+  row. All 163 worker tests and 12 Studio runtime tests pass. D43 selects CPU
   after the same 4,096-step MLP PPO pilot measured MPS about 12.4x slower, inventories
   but does not claim the 19-core MPS device as the training backend, and permits only
-  an explicitly non-measured 140 W adapter-rating wall-time upper bound. This is
-  unprotected candidate evidence: P7-012 remains in progress until the exact clean
-  implementation revision passes PR/post-merge checks and an intentional interrupt/
-  resume run is downloaded and reconciled from protected source;
+  an explicitly non-measured 140 W adapter-rating wall-time upper bound. This is not
+  deployed GPU, measured electricity, external-user, real-device, or field proof;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

@@ -18,6 +18,41 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Protect and reconcile consumer-hardware learning quality
+**Session:** Codex agent · branch `codex/p7012-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-012 [x], P7-014 [~]
+**Done:** Protected the P7-012 implementation through PR #72. Exact head `1bce0d1`
+passed PR CI `29425066833` and security `29425066479`; protected squash `8e094c0`
+passed post-merge CI `29426237373` and security `29426237345`. A clean protected
+checkout on the declared Apple M2 Pro host intentionally interrupted after atomic
+hover retention, confirmed no suite-success file existed, then resumed by validating
+the frozen request, byte count, SHA-256, and export gate before executing waypoint.
+Both eight-episode baseline and mass +15%/Kv -8%/wind 4 m/s rows pass at 1.0 under
+unchanged 0.85/0.70 thresholds. Hover took 30.203 s and retained a 78,152-byte ONNX
+at `9afc1152…fc4c`; waypoint took 10.340 s and retained 78,156 bytes at
+`b07b023a…b1a2`. Independent reconciliation parsed both ONNX graphs, recomputed all
+file digests/counts, confirmed exact `8e094c0` lineage, and found no serial/UUID or
+inline model bytes. The evidence checkout then passed the complete 39-step
+`pnpm verify` gate under its pinned Python 3.12 environment, including all 163
+worker tests, 12 Studio policy-runtime tests, 65 gateway tests, Rust/WASM and
+native/WASM parity, packaging, dual real seeded training smoke, MJX feasibility,
+compatibility, security, and patch hygiene. The exact suite/task JSON, ONNX files,
+and hash manifest are committed under `docs/evidence/p7-012/`.
+**Changed:** P7-012 retained evidence and README; canonical agent boundary; project
+state, roadmap, TODO, execution sequencing, best practices, learning/worker/Studio
+system guidance, and this changelog.
+**Decisions:** none; D42 and D43 are now backed by protected implementation and clean
+consumer-hardware evidence.
+**Next:** Execute the rover and legged remainder of P7-014, preserving contract-
+derived physics, estimator-only observations, task/tensor authority, deterministic
+smoke, scorecard/export rules, and explicit unsupported-shape refusals. Exact
+passing-policy object delivery, P7-013 deployed GPU operations, P7-010 final MJX
+decision evidence, and external/field proof remain separate lanes.
+**Blockers:** none for the next local P7-014 slice. P7-012 proves controlled CPU PPO
+on a GPU-capable consumer host; it does not prove GPU execution, measured host
+energy/electricity cost, deployed operations, external users, real devices, or field
+transfer.
+
 ## 2026-07-15 — Correct and prove the consumer-hardware training candidate
 **Session:** Codex agent · branch `codex/p7012-consumer-gpu` · **Phase:** P7 ·
 **TODO items:** P7-012 [~], P7-014 [~]
