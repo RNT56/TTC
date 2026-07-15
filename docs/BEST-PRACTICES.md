@@ -155,8 +155,9 @@ export path.
     every numerical/runtime dependency; keep estimator truth, seeds, source/config/
     contract/parameter digests, robustness scenarios, and export decisions in
     lineage. Required smoke must execute real MuJoCo plus PPO/SAC/ONNX boundaries and
-    fail closed on pin or authority drift, while short CI runs explicitly disclaim
-    learning quality, overnight SLOs, GPU economics, and field transfer (P7-003).
+    fail closed on pin or authority drift. Short CI runs explicitly disclaim
+    learning quality and overnight SLOs (P7-012), deployed GPU economics (P7-013),
+    and field transfer (EXT-003); closing P7-003 does not close those gates.
 15. **External acceptance** — execute the versioned QA-010 milestone script against
     an exact product revision with the intended independent user, real provider, D30/
     D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,

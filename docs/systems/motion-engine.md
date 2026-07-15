@@ -113,8 +113,8 @@ through the ported pipelines (`node_world_posed` = the monolith's nm() with
 base+animated euler). P2: driver library formalized with quadruped (P2-004) and
 arm DLS IK (P2-003) live, plus param schemas into the harness. Fixedwing remains
 a later driver. P6: physics coupling. P7: policy layer consumes real ONNX outputs;
-the P7-008 protected evidence closeout remains separate from live SB3 training and
-hardware authority.
+P7-008 browser playback and P7-003 controlled native training are protected, while
+passing/deployed policy proof and hardware authority remain separate.
 
 ## 9. Open questions
 

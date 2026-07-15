@@ -59,9 +59,9 @@ direct transfer requires an exportable scorecard plus matching archetype and
 observation/action layouts; non-matching buyer twins receive a fine-tune offer
 instead.
 
-Implemented candidate 2026-07-15: non-fixture local/Modal `train.policy` requests
-must name an authenticated owner's admitted `modelId`. The gateway loads that
-authoritative model, verifies its storage hash, freezes a bounded stable-JSON
+Protected through PR #64/`d1c4c38` on 2026-07-15: non-fixture local/Modal
+`train.policy` requests must name an authenticated owner's admitted `modelId`. The
+gateway loads that authoritative model, verifies its storage hash, freezes a bounded stable-JSON
 `forge-admitted-model-snapshot` 1.0.0, and supplies the matching SHA-256 to the
 worker. Caller-supplied `modelSnapshot` fields and mismatched contract hashes are
 rejected. This prevents a queue request from substituting an unadmitted training

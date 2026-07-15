@@ -86,9 +86,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is P7-008 evidence PR #63 at
-  `766f7b8`, with post-merge CI `29389051743` and security `29389051735` green;
-  PR #62/`1de7974` remains the owning browser/runtime evidence anchor;
+  latest verified protected runtime descendant is P7-003 PR #64 at `d1c4c38`, with
+  post-merge CI `29394580998` and security `29394580959` green; PR #64 owns the
+  controlled training-runtime evidence, while PR #62/`1de7974` remains the owning
+  browser-runtime evidence anchor;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -154,17 +155,18 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   CI `29387737921`/security `29387737947`; protected CI `29388166478`/security
   `29388166407` pass, and the retained 11-flow browser artifacts prove real WASM,
   completed policy playback, and lazy same-origin ONNX JS/WASM assets. This is real
-  fixture-grade browser execution, not live SB3/MuJoCo training, external model
+  fixture-grade browser execution, not a passing learned policy, external model
   storage, hardware authority, or field transfer;
-- P7-003 has an unprotected implementation candidate: the gateway freezes an owned
+- P7-003 is protected through PR #64 at `d1c4c38`: the gateway freezes an owned
   admitted-model snapshot, the validator re-admits it and emits a Rust-derived
   MuJoCo bundle, and an exact-pinned CPU worker executes seeded PPO/SAC hover
-  training, real randomization/evaluation, and deterministic opset-18 export. Focused
-  local proof passes 138 worker tests, a short real training smoke, and the complete
-  38-step local gate, but the dirty candidate artifact is not acceptance evidence.
-  Protected gates, overnight passing hover/waypoint proof, object-backed one-click
-  delivery, deployed Modal/GPU evidence, broader archetypes, and external acceptance
-  remain open;
+  training, real randomization/evaluation, and deterministic opset-18 export. Exact
+  head `d81a03c` passed CI `29393871628`/security `29393871650`; protected CI
+  `29394580998`/security `29394580959` pass. Retained artifact `8334594354` binds a
+  clean 256-step smoke to `d1c4c38`, and its valid `[1,11] -> [1,4]` ONNX remains
+  honestly non-exportable at a zero success score. Overnight passing hover/waypoint
+  proof, object-backed one-click delivery, deployed Modal/GPU evidence, broader
+  archetypes, and external acceptance remain open under separate tasks;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

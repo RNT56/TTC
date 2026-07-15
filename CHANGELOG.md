@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Protect the seeded SB3/MuJoCo training runtime
+**Session:** Codex agent · branch `codex/p7003-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-003 [x], P7-011..014 [ ]
+**Done:** Closed P7-003 through protected PR #64. Exact head `d81a03c` passed CI
+`29393871628` and security `29393871650`; protected squash `d1c4c38` passed CI
+`29394580998` and security `29394580959`. Downloaded protected artifact `8334594354`
+self-binds to a clean `d1c4c38`, exact runtime/lock/dependency/contract/config/seed
+lineage, changed optimizer parameters, estimator-only observations, and a real valid
+opset-18 `[1,11] -> [1,4]` ONNX graph whose decoded SHA-256 matches the envelope.
+Its 256-step zero-success scorecard remains honestly non-exportable. Browser artifact
+`8334722186` records 11/11 production-bundle/real-WASM/isolated-Postgres flows,
+including exact saved-model revision binding and completed ONNX playback.
+**Changed:** Canonical agent current boundary, project-state evidence/counts,
+P7 phase/execution roadmap, stable task ledger and adjacent delivery/quality/
+deployment/coverage tasks, learning/worker/Studio/platform status language, and this
+changelog. No runtime code, format version, threshold, golden, or maturity claim was
+changed by this evidence reconciliation.
+**Decisions:** none. D8, D9, D17, validator sovereignty, exact MuJoCo 3.9.0, and
+`forge-policy-tensor` 1.0.0 remain binding. A short runtime smoke cannot authorize
+policy export or stand in for overnight learning quality.
+**Next:** Execute P7-010's real D12 CPU-MuJoCo versus MJX benchmark to make the
+adoption decision before investing in tier-2/3 batching, then close P7-011/P7-012.
+**Blockers:** none for P7-003. Real D12 benchmark capacity, declared consumer-GPU
+overnight proof, deployed Modal operations, external participants, and field transfer
+remain explicit prerequisites for their owning tasks.
+
 ## 2026-07-15 — Execute the real seeded SB3/MuJoCo training boundary
 **Session:** Codex agent · branch `codex/p7003-sb3-runtime` · **Phase:** P7 ·
 **TODO items:** P7-003 [~]
