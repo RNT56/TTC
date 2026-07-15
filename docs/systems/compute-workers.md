@@ -214,7 +214,7 @@ after hover, validates and reuses the atomic checkpoint, then passes waypoint. E
 JSON/ONNX files and their hashes are retained under `docs/evidence/p7-012/`. This
 closes controlled consumer-hardware simulation quality, not deployed GPU or field proof.
 
-Local P7-014 candidate under D44 adds an independent ground path rather than
+Protected P7-014 under D44 adds an independent ground path rather than
 relabeling flight actions. `forge-validate training-bundle` emits
 `groundTrainingMuJoCoBundle` 1.0.0 for admitted rover/quadruped contracts only. Rust
 owns the floating-root MJCF, explicit flat plane, computed mass/inertia, equal rover
@@ -226,12 +226,16 @@ torque, mass/torque/friction robustness, and simulated-positive-mechanical-work
 energy semantics. Missing authority, unsupported morphology/task, external MJCF,
 task/path/hash drift, reordered joint channels, or model-byte substitution refuses.
 
-The required smoke candidate now executes hover, waypoint, rover, and quadruped for
+The required smoke executes hover, waypoint, rover, and quadruped for
 256 real CPU PPO steps apiece and verifies exact source/contract/task/tensor/ONNX
 lineage. Studio explicitly rejects the ground tensor because browser ground playback
-is not implemented. Focused local Rust, Python, worker-command, and Studio tests pass;
-protected exact-head/post-merge checks and retained clean artifact remain required
-before P7-014 closes.
+is not implemented. Exact implementation head `c0f3a8f` passed PR CI `29433820358`
+and security `29433818798`; protected PR #75 squash `90b1691` passed post-merge CI
+`29448974932` and security `29448974951`. Downloaded clean-source artifact
+`8356753424` has JSON SHA-256 `20f0c25d…56ba`; independent ONNX parsing/checking
+confirms all four exact byte counts, digests, layouts, task hashes, contract hashes,
+optimizer updates, estimator-only inputs, and blocked scorecards. This closes P7-014
+at controlled deterministic trainer maturity, not browser, device, or field maturity.
 
 Required CI installs the separate `mjx` extra, runs the complete worker suite, then
 retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
@@ -366,9 +370,12 @@ family). The suite materializes explicit non-finite sentinels only in memory, as
 bounded provider JSON, finite `[0,1]` confidence, credential-free HTTPS citation
 sources, most-restrictive export policy, command-token refusal, telemetry ordering,
 and supervisor fail-closed behavior. The QA-007 landing passed 127/127 under Python
-3.12; protected P7-014 passed 154 tests. Protected P7-012 passes 163/163, including
+3.12; protected P7-014 waypoint history passed 154 tests. Protected P7-012 passes
+163/163, including
 exact tensor-v1/v2 fixtures, corrected multirotor semantics,
-device authority, and interruption/resume/tamper evidence. Credentialed
+device authority, and interruption/resume/tamper evidence. Protected P7-014 ground
+closure passes 174/174 and adds contract-derived rover/quadruped execution,
+ground-tensor authority, outer-worker/ONNX validation, and fail-closed refusals. Credentialed
 providers and physical adapters remain separate acceptance lanes.
 
 P6-010 additionally tests request schema/version/source identity, exact engine pin,
@@ -399,8 +406,8 @@ bytes execute through the browser. Preserve that protected acceptance on changes
 database-only object row, inline byte field, or successful upload without the winning
 lease is not delivery proof. D40's real-waypoint dependency before overnight P7-012
 is satisfied through protected PR #70/`f220d25` and artifact `8342801418`; P7-012 is
-closed. P7-014's rover/quadruped implementation is locally verified under D44 but
-remains open until protected source and retained four-task smoke are reconciled. P8: config-diff,
+closed. P7-014's rover/quadruped implementation is closed through PR #75/protected
+`90b1691` and independently checked clean artifact `8356753424`. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
 codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes

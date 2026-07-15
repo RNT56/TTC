@@ -1,11 +1,11 @@
 # Learning Engine — implementation doc
 
 **Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
-multirotor runtime and consumer-hardware scorecard passage, a locally verified
-contract-derived rover/quadruped trainer candidate, lease-fenced exact object-backed
-delivery, real multirotor browser ONNX/WASM execution, and a controlled CPU MuJoCo/
-MJX feasibility harness; protected ground evidence, decision-grade D12 accelerator
-evidence, deployed GPU/storage operations, and field transfer remain gated ·
+multirotor runtime and consumer-hardware scorecard passage, protected contract-derived
+rover/quadruped trainer execution, lease-fenced exact object-backed delivery, real
+multirotor browser ONNX/WASM execution, and a controlled CPU MuJoCo/MJX feasibility
+harness; passing ground-policy quality, ground browser playback, decision-grade D12
+accelerator evidence, deployed GPU/storage operations, and field transfer remain gated ·
 **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
 **Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D39, D40, D41,
@@ -172,7 +172,7 @@ controlled consumer-hardware simulation maturity. It does not establish rover/le
 coverage, deployed GPU operations, production
 economics, external users, or field transfer.
 
-The P7-014 ground candidate extends the same admitted-snapshot -> sovereign Rust
+The protected P7-014 ground implementation extends the same admitted-snapshot -> sovereign Rust
 bundle -> exact Python runtime chain without changing multirotor v2/v3. Rust emits
 `groundTrainingMuJoCoBundle` 1.0.0 only for rover or quadruped contracts with one
 root, a complementary estimator, positive computed mass, explicit bounded revolute
@@ -294,13 +294,21 @@ resume; and deliberately supports interruption after either task. Failed/tampere
 checkpoints never become reusable authority. Exact clean-source evidence and retained
 hashes live under `docs/evidence/p7-012/`.
 
-The P7-014 candidate advances the required smoke envelope to 3.0.0 and executes four
+P7-014 advances the required smoke envelope to 3.0.0 and executes four
 independent 256-step CPU PPO paths: hover-hold, waypoint-chain, rover line-follow,
 and quadruped walk-to-target. It checks optimizer updates, estimator-only authority,
 task suite/version/hash, per-contract lineage, exact tensor schema/shape, ONNX byte
 count/digest, sequential path retention, and mechanical-energy labeling. Short
-scorecards remain honestly blocked. This is local acceptance until the exact branch,
-protected squash, post-merge checks, and downloaded clean-source artifact are verified.
+scorecards remain honestly blocked. Exact implementation head `c0f3a8f` passed PR CI
+`29433820358`/security `29433818798`; protected PR #75 squash `90b1691` passed
+post-merge CI `29448974932`/security `29448974951`. Downloaded artifact `8356753424`
+self-binds to clean protected source and has JSON SHA-256 `20f0c25d…56ba`.
+Independent decoding and ONNX checking verifies hover 23,874 bytes/
+`6b18908f…c555`, waypoint 23,878/`783753e3…4927`, rover 22,520/
+`fa6c3cac…e4ad`, and quadruped 28,890/`b400ac71…8c2e`, including exact layouts,
+task hashes, contract hashes, optimizer updates, estimator-only authority, and blocked
+export gates. This closes controlled deterministic trainer execution, not passing
+learned ground policies, browser playback, device transfer, or field readiness.
 
 Live 2026-07-15: the current hover fixture is a real 1,056-byte tensor-v2 opset-18
 Gemm+Tanh ONNX graph bound by SHA-256

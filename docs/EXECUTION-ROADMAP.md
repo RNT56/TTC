@@ -74,7 +74,7 @@ DOC-005 is closed through protected PR #53 at `22c263b`. Versioned generated API
 event, and artifact references now exact-match runtime routes and worker kinds;
 migration/deprecation guidance, synthetic examples, and the registered schema
 family share the drift gate. The closeout snapshot covered fourteen compatibility
-domains; current protected `f220d25` covers fifteen. Exact-head PR CI
+domains; current protected `90b1691` covers fifteen. Exact-head PR CI
 `29375146614`/security `29375146592` and post-merge CI `29376742319`/security
 `29376742373` pass. DOC-006 closes the documentation-completion X-lane through
 protected PR #58 at `3078dba`. The maintainer-curated first-good-issue workflow links
@@ -143,7 +143,7 @@ Current Wave 1/2 boundary:
   threshold, browser support tier, or product maturity claim changed;
 - DOC-005 is complete through protected PR #53 at `22c263b`: its 75 runtime routes,
   two event families, fourteen compatibility domains, and sixteen worker queue kinds
-  exact-matched the generated references; current protected `f220d25` additively
+  exact-matched the generated references; current protected `90b1691` additively
   verifies 76 routes, two event families, fifteen compatibility surfaces, and
   sixteen worker families through the same drift gate;
 - DOC-006 is complete through implementation PR #58 at `3078dba` and evidence PR #59
@@ -158,8 +158,10 @@ Current Wave 1/2 boundary:
   Clean evidence under `docs/evidence/p7-012/` binds both passing tasks to the exact
   M2 Pro host, source, seeds, runtime, thresholds, task/config/model digests, retained
   bytes, recovery, and honest energy/cost nonclaims. D43 records CPU execution on a
-  GPU-capable host rather than fabricating accelerator use. P7-014's rover/legged
-  remainder is the next dependency-complete controlled-training lane;
+  GPU-capable host rather than fabricating accelerator use. P7-014 is closed through
+  PR #75/protected `90b1691`: D44's contract-derived rover/quadruped path, independent
+  ground bundle/task/tensor v1 authority, four-task exact-source smoke, mechanical-
+  work semantics, and fail-closed unsupported/browser boundary are protected;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is
@@ -347,11 +349,12 @@ Work:
   that prerequisite. P7-012 implementation/evidence is closed through PR
   #72/`8e094c0` and PR #73/`6bfa60f`; its clean intentional-interruption/resume
   evidence retains both scorecard-passing policies
-  under exact D42/D43 authority. D44's P7-014 ground candidate now supplies exact
+  under exact D42/D43 authority. D44's P7-014 ground implementation supplies exact
   built-in rover line-follow and quadruped walk-to-target trainers, independent
   bundle/task/tensor v1 authority, four-task smoke, mechanical-energy semantics, and
-  explicit unsupported/browser refusals. Protect and reconcile its exact source and
-  retained smoke before closing P7-014. Then continue offline fine-tuning (`P7-009`), exact D12 quad/
+  explicit unsupported/browser refusals. PR #75/protected `90b1691` and independently
+  checked clean artifact `8356753424` close that controlled trainer requirement.
+  Continue offline fine-tuning (`P7-009`), exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
   to finish the MJX decision (`P7-010`), deployed GPU operations (`P7-013`), and
   external acceptance. OPS-006 separately
@@ -369,10 +372,11 @@ Acceptance:
   revision with source/provider/timestep/substep-bound artifacts;
 - one-click training delivery proves the browser executes the exact retained ONNX
   object authorized by the winning owned-model job; this is closed through P7-011.
-  Separately, the P7-014 waypoint slice makes the second task executable and P7-012
+  Separately, the P7-014 waypoint slice makes the second task executable, P7-012
   proves both scorecard-passing policies on declared consumer hardware with frozen
   seeds/config/runtime, exact device authority, recovery, retained bytes, and honest
-  energy/cost evidence;
+  energy/cost evidence, and PR #75/protected `90b1691` closes controlled rover and
+  quadruped trainer execution with clean exact-source four-task evidence;
 - MJX adoption/rejection is based on D12 benchmark data;
 - co-design returns at least three admitted Pareto points from engine-backed tiers.
 
@@ -548,7 +552,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | P7-009, P7-010, P7-013, and rover/legged remainder of P7-014; P7-011/P7-012 closed | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint trainer and authoritative one-click object delivery; next remaining rover/legged archetypes, deployed GPU operations, offline fine-tune, exact passing-policy delivery integration, and final D12 MJX decision |
+| P7 | P7-009, P7-010, and P7-013; P7-011/P7-012/P7-014 closed | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, and contract-derived rover/quadruped trainer execution; remaining deployed GPU operations, offline fine-tune, exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
