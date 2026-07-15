@@ -14,9 +14,9 @@ def test_hover_policy_fixture_binds_real_onnx_bytes_and_tensor_contract():
     assert result["scorecard"]["exportable"] is True
     assert result["scorecard"]["estimatorSmoke"] == "passed"
     assert result["io"]["tensor"]["schema"] == "forge-policy-tensor"
-    assert result["io"]["tensor"]["schemaVersion"] == "1.0.0"
+    assert result["io"]["tensor"]["schemaVersion"] == "2.0.0"
     assert result["io"]["tensor"]["coordinateFrame"] == "forge-y-up-rh-m"
-    assert result["io"]["tensor"]["input"]["shape"] == [1, 11]
+    assert result["io"]["tensor"]["input"]["shape"] == [1, 14]
     assert result["io"]["tensor"]["output"]["shape"] == [1, 4]
     assert result["onnx"]["modelBase64"] == MODEL_BASE64
     assert result["onnx"]["sha256"] == MODEL_SHA256

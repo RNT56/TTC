@@ -176,6 +176,13 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     fail closed on pin or authority drift. Short CI runs explicitly disclaim
     learning quality and overnight SLOs (P7-012), deployed GPU economics (P7-013),
     and field transfer (EXT-003); closing P7-003 does not close those gates.
+    Any observation/action/axis/reward correction that changes a valid policy's
+    meaning requires coordinated task/tensor/bundle majors, an executable legacy
+    read oracle, migration guidance, generated-runtime review, and retraining rather
+    than relabeling old bytes (D42). Overnight evidence freezes the recipe before the
+    final run, retains failed attempts honestly, writes atomic task checkpoints,
+    validates request hash plus ONNX size/digest/export gate before resume, and keeps
+    simulated vehicle energy separate from host energy.
 15. **Accelerator benchmarks** — compare the same Rust-derived model, initial state,
     controls, solver, precision, timestep, and step count. Warm each path before
     timing, measure JAX lowering/compilation separately, synchronize every timed JAX
@@ -186,6 +193,11 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     validate the harness and parity bands; it cannot establish accelerator speedup,
     training-wall-time savings, cost normalization, an overnight budget, D12
     morphology coverage, or an adoption decision (P7-010).
+    A GPU-capable host does not imply GPU execution: benchmark the same workload,
+    choose the measured backend, record requested/resolved device with fallback
+    forbidden, and label unused accelerator inventory separately. Adapter-rating ×
+    wall-time is only a conservative host-energy upper bound, never measured
+    consumption or a basis for electricity cost without telemetry and tariff (D43).
 16. **External acceptance** — execute the versioned QA-010 milestone script against
     an exact product revision with the intended independent user, real provider, D30/
     D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,

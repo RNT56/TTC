@@ -2,13 +2,14 @@ import type { PolicyOutput } from "./jobOutputs";
 import type { DriveInput, FocusVector, PolicyObservationSnapshot } from "./sessionProtocol";
 
 export const POLICY_TENSOR_SCHEMA = "forge-policy-tensor";
-export const POLICY_TENSOR_VERSION = "1.0.0";
+export const POLICY_TENSOR_VERSION = "2.0.0";
+export const LEGACY_POLICY_TENSOR_VERSION = "1.0.0";
 export const MAX_POLICY_MODEL_BYTES = 4 * 1024 * 1024;
 const ALLOWED_ACTIONS = new Set(["throttle", "roll", "pitch", "yaw", "drive", "turn"]);
 const ZERO_INPUT: DriveInput = { throttle: 0, pitch: 0, roll: 0, yaw: 0, drive: 0, turn: 0 };
 
 interface PolicySnapshotSource {
-  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot>;
+  policySnapshot(target: FocusVector, tensorVersion: string): Promise<PolicyObservationSnapshot>;
 }
 
 export interface PreparedPolicyArtifact {
@@ -17,6 +18,7 @@ export interface PreparedPolicyArtifact {
   targets: PreparedPolicyTarget[];
   durationS: number;
   rateHz: number;
+  tensorVersion: string;
   inputName: string;
   inputLayout: string[];
   outputName: string;
@@ -65,21 +67,26 @@ export async function preparePolicyArtifact(
   const targets = policyTargets(output);
   const versionedTask = Array.isArray(output.task?.targets) || output.task?.version !== undefined;
   if (versionedTask) {
-    if (output.task?.suite !== "p7-v2" || output.task.version !== "2.0.0") {
-      throw new Error("unsupported versioned policy task; expected p7-v2 2.0.0");
+    const task = output.task;
+    if (!task) throw new Error("versioned policy task metadata is missing");
+    const supportedTask =
+      (task.suite === "p7-v2" && task.version === "2.0.0")
+      || (task.suite === "p7-v3" && task.version === "3.0.0");
+    if (!supportedTask) {
+      throw new Error("unsupported versioned policy task; expected p7-v2 2.0.0 or p7-v3 3.0.0");
     }
-    if (output.task.coordinateFrame !== "forge-y-up-rh-m") {
+    if (task.coordinateFrame !== "forge-y-up-rh-m") {
       throw new Error("policy task must use FORGE Y-up/right-handed/SI coordinates");
     }
-    const taskDefinitionHash = stringField(output.task.definitionHash, "policy task definition hash").toLowerCase();
+    const taskDefinitionHash = stringField(task.definitionHash, "policy task definition hash").toLowerCase();
     assertSha256(taskDefinitionHash, "policy task definition hash");
-    if (scorecard.task !== taskId || scorecard.taskVersion !== output.task.version) {
+    if (scorecard.task !== taskId || scorecard.taskVersion !== task.version) {
       throw new Error("policy scorecard does not match the versioned task");
     }
     if (scorecard.lineage?.taskDefinitionHash !== taskDefinitionHash) {
       throw new Error("policy scorecard lineage does not match the task definition");
     }
-    const legacyTarget = output.task.target?.xyzM;
+    const legacyTarget = task.target?.xyzM;
     if (!sameVector(legacyTarget, targets[0].xyzM)) {
       throw new Error("policy task target does not match the first declared target");
     }
@@ -97,15 +104,17 @@ export async function preparePolicyArtifact(
       throw new Error("ONNX header does not match the versioned task authority");
     }
   }
-  if (
-    io?.onnxHeader?.tensorSchema !== POLICY_TENSOR_SCHEMA ||
-    io.onnxHeader.tensorVersion !== POLICY_TENSOR_VERSION
-  ) {
+  const tensorVersion = io?.tensor?.schemaVersion;
+  const supportedTensor =
+    tensorVersion === LEGACY_POLICY_TENSOR_VERSION || tensorVersion === POLICY_TENSOR_VERSION;
+  if (io?.onnxHeader?.tensorSchema !== POLICY_TENSOR_SCHEMA || io.onnxHeader.tensorVersion !== tensorVersion) {
     throw new Error(`unsupported ONNX tensor schema; expected ${POLICY_TENSOR_SCHEMA}`);
   }
   const tensor = io?.tensor;
-  if (tensor?.schema !== POLICY_TENSOR_SCHEMA || tensor.schemaVersion !== POLICY_TENSOR_VERSION) {
-    throw new Error(`missing ${POLICY_TENSOR_SCHEMA} ${POLICY_TENSOR_VERSION} tensor contract`);
+  if (tensor?.schema !== POLICY_TENSOR_SCHEMA || !supportedTensor) {
+    throw new Error(
+      `missing supported ${POLICY_TENSOR_SCHEMA} tensor contract (${LEGACY_POLICY_TENSOR_VERSION} or ${POLICY_TENSOR_VERSION})`,
+    );
   }
   if (tensor.coordinateFrame !== "forge-y-up-rh-m") {
     throw new Error("ONNX tensor contract must use FORGE Y-up/right-handed/SI coordinates");
@@ -149,6 +158,7 @@ export async function preparePolicyArtifact(
     targets,
     durationS,
     rateHz,
+    tensorVersion,
     inputName,
     inputLayout,
     outputName,
@@ -192,7 +202,8 @@ export class BrowserPolicyController {
     retainedModelBytes?: Uint8Array,
   ): Promise<BrowserPolicyController> {
     const declaredTargets = policyTargets(output);
-    const initialSnapshot = await source.policySnapshot(declaredTargets[0].xyzM);
+    const tensorVersion = stringField(output.io?.tensor?.schemaVersion, "policy tensor version");
+    const initialSnapshot = await source.policySnapshot(declaredTargets[0].xyzM, tensorVersion);
     const artifact = await preparePolicyArtifact(
       output,
       activeContractHash,
@@ -260,7 +271,7 @@ export class BrowserPolicyController {
     this.nextInferenceS = elapsedS + 1 / this.rateHz;
     this.pending = true;
     void source
-      .policySnapshot(this.target)
+      .policySnapshot(this.target, this.artifact.tensorVersion)
       .then((snapshot) => (this.disposed ? undefined : this.processSnapshot(snapshot, source)))
       .catch((error: unknown) => {
         if (this.disposed) return;
@@ -333,7 +344,7 @@ export class BrowserPolicyController {
         return;
       }
       this.targetIndexValue += 1;
-      current = await source.policySnapshot(this.target);
+      current = await source.policySnapshot(this.target, this.artifact.tensorVersion);
     }
     if (!this.disposed) await this.infer(current);
   }

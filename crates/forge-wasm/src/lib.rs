@@ -350,10 +350,14 @@ mod wasm_bindings {
             self.inner.focus().to_vec()
         }
 
-        /// Exact scalar input order accepted by the multirotor browser policy
-        /// boundary (`forge-policy-tensor` 1.0.0).
+        /// Legacy scalar input order for `forge-policy-tensor` 1.0.0.
         pub fn policy_layout(&self) -> Result<Vec<String>, JsValue> {
             self.inner.policy_layout().map_err(err)
+        }
+
+        /// Current scalar input order for `forge-policy-tensor` 2.0.0.
+        pub fn policy_layout_v2(&self) -> Result<Vec<String>, JsValue> {
+            self.inner.policy_layout_v2().map_err(err)
         }
 
         /// Estimator-derived observation tensor for a world-space SI target.
@@ -366,6 +370,18 @@ mod wasm_bindings {
         ) -> Result<Vec<f64>, JsValue> {
             self.inner
                 .policy_observations([target_x_m, target_y_m, target_z_m])
+                .map_err(err)
+        }
+
+        /// Estimator-derived v2 observation tensor, including body velocity.
+        pub fn policy_observations_v2(
+            &self,
+            target_x_m: f64,
+            target_y_m: f64,
+            target_z_m: f64,
+        ) -> Result<Vec<f64>, JsValue> {
+            self.inner
+                .policy_observations_v2([target_x_m, target_y_m, target_z_m])
                 .map_err(err)
         }
 

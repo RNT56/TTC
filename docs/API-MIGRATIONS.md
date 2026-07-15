@@ -139,6 +139,35 @@ stop playback, preserve the artifact and diagnostic, and use a runtime that supp
 the declared major. Category-level observation labels are search/transfer metadata,
 not a substitute for the scalar `io.tensor.input.layout`.
 
+## Policy tensor 1.0.0 to 2.0.0
+
+D42 makes this a deliberate major migration. New producers emit tensor 2.0.0 with
+input shape `[1, 14]` and insert these estimator-derived body-frame velocity scalars
+after the six attitude/rate entries:
+
+1. `estimator.linearVelocity.bodyXMps`
+2. `estimator.linearVelocity.bodyYMps`
+3. `estimator.linearVelocity.bodyZMps`
+
+The target-error, voltage, and current entries follow them. Output shape remains
+`[1, 4]`, but task v3 explicitly defines those values as normalized collective,
+roll, pitch, and yaw flight targets interpreted by the deterministic inner loop;
+zero collective maps to contract-derived hover trim. Training bundle 2.0.0 supplies
+the required tilt/yaw authority, and `p7-v3`/3.0.0 supplies the corrected Forge Y-up
+axis, reward, control, velocity-filter, and completion contract.
+
+There is no byte rewrite or zero-padding migration for an existing policy. Keep a
+v1 policy's exact ONNX bytes, v1 layout, and v1 observer, or retrain it from the
+admitted contract with bundle v2/task v3. Studio and WASM retain tested v1 execution;
+new training, fixtures, and evidence use v2. A producer must not relabel v1 bytes as
+v2, synthesize velocity semantics, or copy a v3 task hash onto an older task.
+
+Rollback stops new v2 training first. A v2-unaware client must refuse playback while
+retaining the artifact; deploying it does not authorize conversion to v1. A current
+client may continue exact v1 reads during rollback. Run `pnpm build:wasm`, focused
+Rust/Python/gateway/Studio compatibility tests, `pnpm verify:compatibility`,
+`pnpm docs:contracts`, `pnpm verify:docs-contracts`, and the full release gate.
+
 ## Object-backed policy delivery 0.2
 
 P7-011 changes policy delivery without changing policy-tensor 1.0.0. Producers may

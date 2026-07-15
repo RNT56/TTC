@@ -122,7 +122,7 @@ interface CoreSessionDelegate {
   step(dt: number, input: DriveInput): number;
   poseView(): Float32Array;
   focus(): FocusVector;
-  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot>;
+  policySnapshot(target: FocusVector, tensorVersion: string): Promise<PolicyObservationSnapshot>;
   setJog(node: string, rx: number, ry: number): void;
   clearJog(): void;
   drainPerf(): CoreSessionPerf;
@@ -177,11 +177,15 @@ class LocalCoreSession implements CoreSessionDelegate {
     return [f[0], f[1], f[2]];
   }
 
-  async policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot> {
+  async policySnapshot(target: FocusVector, tensorVersion: string): Promise<PolicyObservationSnapshot> {
     if (this.disposed) throw new Error("core session is disposed");
+    const v2 = tensorVersion === "2.0.0";
+    if (!v2 && tensorVersion !== "1.0.0") throw new Error(`unsupported policy tensor ${tensorVersion}`);
     return {
-      layout: this.session.policy_layout(),
-      observations: Array.from(this.session.policy_observations(...target)),
+      layout: v2 ? this.session.policy_layout_v2() : this.session.policy_layout(),
+      observations: Array.from(
+        v2 ? this.session.policy_observations_v2(...target) : this.session.policy_observations(...target),
+      ),
     };
   }
 
@@ -303,7 +307,7 @@ class WorkerCoreSession implements CoreSessionDelegate {
     return this.disposed ? [0, 0, 0] : this.focusValue;
   }
 
-  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot> {
+  policySnapshot(target: FocusVector, tensorVersion: string): Promise<PolicyObservationSnapshot> {
     if (this.disposed) return Promise.reject(new Error("core session is disposed"));
     const requestId = this.nextPolicyRequestId++;
     return new Promise((resolve, reject) => {
@@ -315,7 +319,9 @@ class WorkerCoreSession implements CoreSessionDelegate {
       }, 2_000);
       this.pendingPolicy.set(requestId, { resolve, reject, timeout });
       try {
-        this.worker.postMessage({ type: "policySnapshot", requestId, target } satisfies SessionWorkerRequest);
+        this.worker.postMessage(
+          { type: "policySnapshot", requestId, target, tensorVersion } satisfies SessionWorkerRequest,
+        );
       } catch (error) {
         this.pendingPolicy.delete(requestId);
         window.clearTimeout(timeout);
@@ -465,8 +471,8 @@ export class CoreSession {
   }
 
   /** Estimator-derived, versioned policy tensor snapshot from the Rust core. */
-  policySnapshot(target: FocusVector): Promise<PolicyObservationSnapshot> {
-    return this.delegate.policySnapshot(target);
+  policySnapshot(target: FocusVector, tensorVersion: string): Promise<PolicyObservationSnapshot> {
+    return this.delegate.policySnapshot(target, tensorVersion);
   }
 
   /** Teach-pendant jog (P1-013): euler offset over the pose layers. */

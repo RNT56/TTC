@@ -44,10 +44,14 @@ def test_gateway_snapshot_compiles_through_rust_training_authority(monkeypatch):
     assert bundle["artifactKind"] == "trainingMuJoCoBundle"
     assert bundle["contractHash"] == request()["contractHash"]
     assert bundle["mujocoVersion"] == "3.9.0"
-    assert bundle["tensor"]["input"]["shape"] == [1, 11]
+    assert bundle["schemaVersion"] == "2.0.0"
+    assert bundle["tensor"]["schemaVersion"] == "2.0.0"
+    assert bundle["tensor"]["input"]["shape"] == [1, 14]
     assert bundle["tensor"]["output"]["shape"] == [1, 4]
     assert "<freejoint/>" in bundle["mjcf"]
     assert len(bundle["powertrain"]["curve"]) == 101
+    assert bundle["control"]["tiltMaxRad"] == 0.4
+    assert bundle["control"]["yawRateRadS"] == 2.4
 
 
 def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):

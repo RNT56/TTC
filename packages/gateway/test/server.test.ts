@@ -17,7 +17,7 @@ import {
 } from "../src/generation.js";
 import { buildServer } from "../src/server.js";
 import { fixtureLicenseFilteredGeometry } from "../src/licenseExports.js";
-import { HOVER_POLICY_FIXTURE_V1 } from "../src/policyFixture.js";
+import { HOVER_POLICY_FIXTURE_V2 } from "../src/policyFixture.js";
 import {
   assessBriefSafety,
   assertBriefAllowed,
@@ -2043,7 +2043,7 @@ test(
     const previousDevAuth = process.env.FORGE_DEV_AUTH;
     process.env.FORGE_DEV_AUTH = "1";
     let firstUploadInspection = true;
-    const policyModelBytes = Buffer.from(HOVER_POLICY_FIXTURE_V1.modelBase64, "base64");
+    const policyModelBytes = Buffer.from(HOVER_POLICY_FIXTURE_V2.modelBase64, "base64");
     let retainedPolicyObject: { bucket: string; objectKey: string; sha256: string } | null = null;
     const app = buildServer({
       db: platformMemoryDb(),
@@ -2715,7 +2715,7 @@ test(
     assert.equal(retainedPolicy.statusCode, 200, retainedPolicy.body);
     assert.deepEqual(retainedPolicy.rawPayload, policyModelBytes);
     assert.equal(retainedPolicy.headers["cache-control"], "private, no-store");
-    assert.equal(retainedPolicy.headers["x-forge-policy-sha256"], HOVER_POLICY_FIXTURE_V1.sha256);
+    assert.equal(retainedPolicy.headers["x-forge-policy-sha256"], HOVER_POLICY_FIXTURE_V2.sha256);
 
     const crossOwnerPolicy = await app.inject({
       method: "GET",

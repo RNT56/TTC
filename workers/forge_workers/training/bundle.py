@@ -12,9 +12,23 @@ from pathlib import Path
 from typing import Any
 
 SNAPSHOT_SCHEMA = "forge-admitted-model-snapshot/1.0.0"
-TRAINING_BUNDLE_VERSION = "1.0.0"
+TRAINING_BUNDLE_VERSION = "2.0.0"
 POLICY_TENSOR_SCHEMA = "forge-policy-tensor"
-POLICY_TENSOR_VERSION = "1.0.0"
+POLICY_TENSOR_VERSION = "2.0.0"
+LEGACY_POLICY_TENSOR_VERSION = "1.0.0"
+LEGACY_POLICY_INPUT_LAYOUT = (
+    "estimator.attitude.rollRad",
+    "estimator.attitude.pitchRad",
+    "estimator.attitude.yawRad",
+    "estimator.angularRate.rollRadS",
+    "estimator.angularRate.pitchRadS",
+    "estimator.angularRate.yawRadS",
+    "target.error.bodyXM",
+    "target.error.bodyYM",
+    "target.error.bodyZM",
+    "battery.normalizedVoltage",
+    "powertrain.normalizedMotorCurrent",
+)
 POLICY_INPUT_LAYOUT = (
     "estimator.attitude.rollRad",
     "estimator.attitude.pitchRad",
@@ -22,6 +36,9 @@ POLICY_INPUT_LAYOUT = (
     "estimator.angularRate.rollRadS",
     "estimator.angularRate.pitchRadS",
     "estimator.angularRate.yawRadS",
+    "estimator.linearVelocity.bodyXMps",
+    "estimator.linearVelocity.bodyYMps",
+    "estimator.linearVelocity.bodyZMps",
     "target.error.bodyXM",
     "target.error.bodyYM",
     "target.error.bodyZM",
@@ -204,7 +221,7 @@ def _tensor(value: Any) -> None:
     if value.get("coordinateFrame") != "forge-y-up-rh-m" or value.get("rateHz") != 50:
         raise ValueError("training bundle policy tensor frame/rate drifted")
     expected = {
-        "input": ("observations", [1, 11], list(POLICY_INPUT_LAYOUT)),
+        "input": ("observations", [1, 14], list(POLICY_INPUT_LAYOUT)),
         "output": ("actions", [1, 4], list(POLICY_OUTPUT_LAYOUT)),
     }
     for key, (name, shape, layout) in expected.items():
@@ -263,8 +280,24 @@ def _powertrain(value: Any, *, mass_kg: float, gravity_m_s2: float) -> None:
 def _control(value: Any) -> None:
     if not isinstance(value, dict):
         raise ValueError("training bundle control authority is missing")
-    _exact(value, {"armRadiusM", "maxRollPitchTorqueNm", "maxYawTorqueNm"}, "control authority")
-    for key in ("armRadiusM", "maxRollPitchTorqueNm", "maxYawTorqueNm"):
+    _exact(
+        value,
+        {
+            "armRadiusM",
+            "tiltMaxRad",
+            "yawRateRadS",
+            "maxRollPitchTorqueNm",
+            "maxYawTorqueNm",
+        },
+        "control authority",
+    )
+    for key in (
+        "armRadiusM",
+        "tiltMaxRad",
+        "yawRateRadS",
+        "maxRollPitchTorqueNm",
+        "maxYawTorqueNm",
+    ):
         if _finite(value, key, positive=True) > 1_000_000:
             raise ValueError(f"training bundle control {key} exceeds the supported bound")
 
@@ -289,6 +322,8 @@ def _bounded_string(value: Any, minimum: int, maximum: int) -> bool:
 
 
 __all__ = [
+    "LEGACY_POLICY_INPUT_LAYOUT",
+    "LEGACY_POLICY_TENSOR_VERSION",
     "PINNED_MUJOCO_VERSION",
     "POLICY_INPUT_LAYOUT",
     "POLICY_OUTPUT_LAYOUT",

@@ -10,7 +10,7 @@ import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
 import type { StoredObjectInspection } from "./objectStorage.js";
 import { MAX_OBJECT_BYTES, assertBoundedJson } from "./security.js";
-import { HOVER_POLICY_FIXTURE_V1 } from "./policyFixture.js";
+import { HOVER_POLICY_FIXTURE_V2 } from "./policyFixture.js";
 import { runPatch, runValidator, type ValidateResult } from "./validator.js";
 
 export type ModelStatus = "admitted" | "draft" | "rejected";
@@ -2655,12 +2655,13 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           suite: "p7-v1",
           curriculumStage: 1,
           horizonS: 60,
-          target: { xyzM: [...HOVER_POLICY_FIXTURE_V1.targetWorldM] },
+          target: { xyzM: [...HOVER_POLICY_FIXTURE_V2.targetWorldM] },
         },
         io: {
           observations: [
             "estimator.attitude",
             "estimator.angularRate",
+            "estimator.linearVelocity",
             "target.error",
             "battery.normalizedVoltage",
             "powertrain.motorCurrent",
@@ -2669,26 +2670,26 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           onnxHeader: {
             contractHash: isRecord(payload) && typeof payload.contractHash === "string" ? payload.contractHash : "fixture",
             task: "hover-hold",
-            observationCount: "5",
+            observationCount: "6",
             actionCount: "4",
-            tensorSchema: HOVER_POLICY_FIXTURE_V1.schema,
-            tensorVersion: HOVER_POLICY_FIXTURE_V1.schemaVersion,
+            tensorSchema: HOVER_POLICY_FIXTURE_V2.schema,
+            tensorVersion: HOVER_POLICY_FIXTURE_V2.schemaVersion,
           },
           tensor: {
-            schema: HOVER_POLICY_FIXTURE_V1.schema,
-            schemaVersion: HOVER_POLICY_FIXTURE_V1.schemaVersion,
-            coordinateFrame: HOVER_POLICY_FIXTURE_V1.coordinateFrame,
+            schema: HOVER_POLICY_FIXTURE_V2.schema,
+            schemaVersion: HOVER_POLICY_FIXTURE_V2.schemaVersion,
+            coordinateFrame: HOVER_POLICY_FIXTURE_V2.coordinateFrame,
             input: {
-              name: HOVER_POLICY_FIXTURE_V1.input.name,
-              shape: [...HOVER_POLICY_FIXTURE_V1.input.shape],
-              layout: [...HOVER_POLICY_FIXTURE_V1.input.layout],
+              name: HOVER_POLICY_FIXTURE_V2.input.name,
+              shape: [...HOVER_POLICY_FIXTURE_V2.input.shape],
+              layout: [...HOVER_POLICY_FIXTURE_V2.input.layout],
             },
             output: {
-              name: HOVER_POLICY_FIXTURE_V1.output.name,
-              shape: [...HOVER_POLICY_FIXTURE_V1.output.shape],
-              layout: [...HOVER_POLICY_FIXTURE_V1.output.layout],
+              name: HOVER_POLICY_FIXTURE_V2.output.name,
+              shape: [...HOVER_POLICY_FIXTURE_V2.output.shape],
+              layout: [...HOVER_POLICY_FIXTURE_V2.output.layout],
             },
-            rateHz: HOVER_POLICY_FIXTURE_V1.rateHz,
+            rateHz: HOVER_POLICY_FIXTURE_V2.rateHz,
           },
         },
         domainRandomization: {
@@ -2705,11 +2706,11 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
         onnx: {
           fixture: true,
           cacheKey: `onnx:${payloadHash}`,
-          opset: HOVER_POLICY_FIXTURE_V1.opset,
+          opset: HOVER_POLICY_FIXTURE_V2.opset,
           path: `onnx:${payloadHash}/policy.onnx`,
-          byteSize: HOVER_POLICY_FIXTURE_V1.byteSize,
-          sha256: HOVER_POLICY_FIXTURE_V1.sha256,
-          modelBase64: HOVER_POLICY_FIXTURE_V1.modelBase64,
+          byteSize: HOVER_POLICY_FIXTURE_V2.byteSize,
+          sha256: HOVER_POLICY_FIXTURE_V2.sha256,
+          modelBase64: HOVER_POLICY_FIXTURE_V2.modelBase64,
         },
         scorecard: {
           task: "hover-hold",
@@ -2722,7 +2723,7 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           lineage: {
             contractHash: isRecord(payload) && typeof payload.contractHash === "string" ? payload.contractHash : "fixture",
             seed: "7",
-            codeVersion: "fixture-p7-v1",
+            codeVersion: "fixture-p7-v3",
           },
           exportable: true,
           reasons: [],

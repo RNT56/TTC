@@ -14,9 +14,18 @@ pytest.importorskip("onnx")
 pytest.importorskip("torch")
 
 from forge_workers.training.bundle import SNAPSHOT_SCHEMA, compile_training_bundle
-from forge_workers.training.mujoco_env import ForgeHoverEnv, ForgeMultirotorTaskEnv
+from forge_workers.training.mujoco_env import (
+    ForgeHoverEnv,
+    ForgeMultirotorTaskEnv,
+    _matrix_to_rpy,
+)
 from forge_workers.training.jobs import train_policy
-from forge_workers.training.sb3_training import train_sb3_policy
+from forge_workers.training.sb3_training import (
+    _device_authority,
+    _teacher_action,
+    _training_device,
+    train_sb3_policy,
+)
 from forge_workers.training.tasks import task_definition, task_definition_hash
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,12 +56,12 @@ def bundle() -> dict:
 def test_mujoco_environment_uses_exact_tensor_and_never_exposes_truth(bundle):
     env = ForgeHoverEnv(bundle, episode_steps=20, fixed_scenario={"windMps": 0.0})
     observation, info = env.reset(seed=17)
-    assert observation.shape == (11,)
+    assert observation.shape == (14,)
     assert np.isfinite(observation).all()
     assert info["trainedOnEstimator"] is True
     assert info["truthExposedToPolicy"] is False
 
-    hover = np.asarray([2 * bundle["hoverThrottle"] - 1, 0, 0, 0], dtype=np.float32)
+    hover = np.zeros(4, dtype=np.float32)
     for _ in range(5):
         observation, reward, terminated, truncated, info = env.step(hover)
         assert np.isfinite(observation).all()
@@ -60,6 +69,58 @@ def test_mujoco_environment_uses_exact_tensor_and_never_exposes_truth(bundle):
         assert info["truthExposedToPolicy"] is False
         if terminated or truncated:
             break
+
+
+def test_y_up_attitude_decomposition_preserves_roll_pitch_yaw_axis_meaning():
+    roll, pitch, yaw = 0.21, -0.17, 0.31
+    sin_r, cos_r = np.sin(roll), np.cos(roll)
+    sin_p, cos_p = np.sin(pitch), np.cos(pitch)
+    sin_y, cos_y = np.sin(yaw), np.cos(yaw)
+    rotate_x = np.asarray([[1, 0, 0], [0, cos_r, -sin_r], [0, sin_r, cos_r]])
+    rotate_z = np.asarray([[cos_p, -sin_p, 0], [sin_p, cos_p, 0], [0, 0, 1]])
+    rotate_y = np.asarray([[cos_y, 0, sin_y], [0, 1, 0], [-sin_y, 0, cos_y]])
+
+    actual = _matrix_to_rpy(rotate_y @ rotate_z @ rotate_x)
+
+    np.testing.assert_allclose(actual, [roll, pitch, yaw], atol=1e-12, rtol=0.0)
+
+
+def test_v2_teacher_uses_body_velocity_and_normalized_flight_targets(bundle):
+    observation = np.zeros(14, dtype=np.float32)
+    observation[6] = 1.0
+    observation[9] = 2.0
+    action = _teacher_action(observation, bundle, "waypoint-chain")
+
+    assert action.shape == (4,)
+    assert np.isfinite(action).all()
+    assert -1.0 <= action[0] <= 1.0
+    assert action[2] < 0.0
+
+    observation[6] = 0.0
+    without_velocity_damping = _teacher_action(observation, bundle, "waypoint-chain")
+    assert without_velocity_damping[2] < action[2]
+
+
+def test_overnight_recipe_owns_algorithm_horizon_and_randomization(bundle):
+    with pytest.raises(ValueError, match="requires PPO"):
+        train_sb3_policy(
+            {"task": "hover-hold", "recipe": "p7-overnight-v1", "algorithm": "sac"},
+            bundle,
+        )
+    with pytest.raises(ValueError, match="owns its timestep, horizon"):
+        train_sb3_policy(
+            {"task": "hover-hold", "recipe": "p7-overnight-v1", "totalTimesteps": 64},
+            bundle,
+        )
+    with pytest.raises(ValueError, match="frozen domain-randomization"):
+        train_sb3_policy(
+            {
+                "task": "hover-hold",
+                "recipe": "p7-overnight-v1",
+                "domainRandomization": {"windMps": [0.0, 0.0]},
+            },
+            bundle,
+        )
 
 
 def test_waypoint_environment_advances_sequential_targets_from_estimator_error_only(bundle):
@@ -75,7 +136,7 @@ def test_waypoint_environment_advances_sequential_targets_from_estimator_error_o
     assert info["targetAdvanceSource"] == "estimator.target.error"
     assert info["truthExposedToPolicy"] is False
 
-    hover = np.asarray([2 * bundle["hoverThrottle"] - 1, 0, 0, 0], dtype=np.float32)
+    hover = np.zeros(4, dtype=np.float32)
     for expected_completed in (1, 2, 3):
         env._estimated_position = env.target_forge_m.copy()
         observation, reward, terminated, truncated, info = env.step(hover)
@@ -154,7 +215,7 @@ def test_real_sb3_algorithms_update_and_export_digest_bound_onnx(bundle, algorit
     assert len(result["scorecard"]["lineage"]["sourceRevision"]) == 40
     assert len(result["scorecard"]["lineage"]["lockfileHash"]) == 64
     assert len(result["scorecard"]["lineage"]["dependencyManifestHash"]) == 64
-    assert result["io"]["tensor"]["input"]["shape"] == [1, 11]
+    assert result["io"]["tensor"]["input"]["shape"] == [1, 14]
     assert result["io"]["tensor"]["output"]["shape"] == [1, 4]
     model_bytes = __import__("base64").b64decode(result["onnx"]["modelBase64"], validate=True)
     assert len(model_bytes) == result["onnx"]["byteSize"]
@@ -174,14 +235,14 @@ def test_real_waypoint_trainer_exports_task_bound_policy_and_scorecard(bundle):
         bundle,
     )
 
-    assert result["task"]["suite"] == "p7-v2"
-    assert result["task"]["version"] == "2.0.0"
+    assert result["task"]["suite"] == "p7-v3"
+    assert result["task"]["version"] == "3.0.0"
     assert result["task"]["coordinateFrame"] == "forge-y-up-rh-m"
     assert len(result["task"]["targets"]) == 3
     assert result["io"]["onnxHeader"]["task"] == "waypoint-chain"
     assert result["io"]["onnxHeader"]["taskDefinitionHash"] == result["task"]["definitionHash"]
     assert result["scorecard"]["task"] == "waypoint-chain"
-    assert result["scorecard"]["taskVersion"] == "2.0.0"
+    assert result["scorecard"]["taskVersion"] == "3.0.0"
     assert result["scorecard"]["lineage"]["taskDefinitionHash"] == result["task"]["definitionHash"]
     assert result["training"]["targetAdvanceSource"] == "estimator.target.error"
     assert result["training"]["evaluations"]["baseline"]["completionRequired"] is True
@@ -190,8 +251,66 @@ def test_real_waypoint_trainer_exports_task_bound_policy_and_scorecard(bundle):
     )
     metadata = {entry.key: entry.value for entry in graph.metadata_props}
     assert metadata["forge.task"] == "waypoint-chain"
-    assert metadata["forge.taskVersion"] == "2.0.0"
+    assert metadata["forge.taskVersion"] == "3.0.0"
     assert metadata["forge.taskDefinitionHash"] == result["task"]["definitionHash"]
+
+
+def test_cpu_device_authority_is_explicit_and_never_claims_acceleration():
+    assert _training_device("cpu") == "cpu"
+    assert _device_authority("cpu") == {
+        "requested": "cpu",
+        "resolved": "cpu",
+        "accelerator": False,
+        "backend": "cpu",
+        "cpuFallbackAllowed": False,
+    }
+
+
+def test_mps_device_refuses_cpu_fallback(monkeypatch):
+    monkeypatch.setenv("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+    with pytest.raises(RuntimeError, match="forbids PYTORCH_ENABLE_MPS_FALLBACK"):
+        _training_device("mps")
+
+
+def test_mps_device_refuses_non_apple_host(monkeypatch):
+    monkeypatch.delenv("PYTORCH_ENABLE_MPS_FALLBACK", raising=False)
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr("platform.machine", lambda: "x86_64")
+    with pytest.raises(RuntimeError, match="Apple silicon"):
+        _training_device("mps")
+
+
+@pytest.mark.skipif(
+    not __import__("torch").backends.mps.is_available(),
+    reason="MPS consumer hardware is not available",
+)
+def test_real_mps_training_resolves_exact_accelerator_and_exports_cpu_onnx(bundle, monkeypatch):
+    monkeypatch.delenv("PYTORCH_ENABLE_MPS_FALLBACK", raising=False)
+    result = train_sb3_policy(
+        {
+            "task": "hover-hold",
+            "algorithm": "ppo",
+            "seed": 43,
+            "totalTimesteps": 64,
+            "episodeSteps": 20,
+            "evalEpisodes": 1,
+            "device": "mps",
+        },
+        bundle,
+    )
+
+    authority = result["training"]["deviceAuthority"]
+    assert result["training"]["device"] == "mps"
+    assert authority["requested"] == authority["resolved"] == "mps"
+    assert authority["backend"] == "mps"
+    assert authority["accelerator"] is True
+    assert authority["cpuFallbackAllowed"] is False
+    assert authority["name"]
+    assert authority["coreCount"] > 0
+    graph = onnx.load_from_string(
+        __import__("base64").b64decode(result["onnx"]["modelBase64"], validate=True)
+    )
+    assert graph.graph.input[0].name == "observations"
 
 
 def test_same_seed_reproduces_policy_and_onnx_digests(bundle):

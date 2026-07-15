@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LEGACY_HOVER_POLICY_FIXTURE_V1 } from "../../gateway/src/policyFixture.ts";
 import { fixtureJobOutput } from "../../gateway/src/platform.ts";
 import type { PolicyOutput } from "../src/jobOutputs.ts";
 import { BrowserPolicyController, preparePolicyArtifact } from "../src/policyRuntime.ts";
@@ -15,8 +16,8 @@ function waypointFixture(): PolicyOutput {
   const definitionHash = "cd".repeat(32);
   output.task = {
     id: "waypoint-chain",
-    suite: "p7-v2",
-    version: "2.0.0",
+    suite: "p7-v3",
+    version: "3.0.0",
     coordinateFrame: "forge-y-up-rh-m",
     definitionHash,
     horizonS: 90,
@@ -27,13 +28,42 @@ function waypointFixture(): PolicyOutput {
     ],
   };
   output.scorecard!.task = "waypoint-chain";
-  output.scorecard!.taskVersion = "2.0.0";
+  output.scorecard!.taskVersion = "3.0.0";
   output.scorecard!.lineage = { ...output.scorecard!.lineage, taskDefinitionHash: definitionHash };
   output.io!.onnxHeader = {
     ...output.io!.onnxHeader,
     task: "waypoint-chain",
-    taskVersion: "2.0.0",
+    taskVersion: "3.0.0",
     taskDefinitionHash: definitionHash,
+  };
+  return output;
+}
+
+function legacyFixture(): PolicyOutput {
+  const output = fixture();
+  output.io!.tensor = {
+    schema: LEGACY_HOVER_POLICY_FIXTURE_V1.schema,
+    schemaVersion: LEGACY_HOVER_POLICY_FIXTURE_V1.schemaVersion,
+    coordinateFrame: LEGACY_HOVER_POLICY_FIXTURE_V1.coordinateFrame,
+    input: {
+      name: LEGACY_HOVER_POLICY_FIXTURE_V1.input.name,
+      shape: [...LEGACY_HOVER_POLICY_FIXTURE_V1.input.shape],
+      layout: [...LEGACY_HOVER_POLICY_FIXTURE_V1.input.layout],
+    },
+    output: {
+      name: LEGACY_HOVER_POLICY_FIXTURE_V1.output.name,
+      shape: [...LEGACY_HOVER_POLICY_FIXTURE_V1.output.shape],
+      layout: [...LEGACY_HOVER_POLICY_FIXTURE_V1.output.layout],
+    },
+    rateHz: LEGACY_HOVER_POLICY_FIXTURE_V1.rateHz,
+  };
+  output.io!.onnxHeader!.tensorVersion = LEGACY_HOVER_POLICY_FIXTURE_V1.schemaVersion;
+  output.onnx = {
+    ...output.onnx!,
+    opset: LEGACY_HOVER_POLICY_FIXTURE_V1.opset,
+    byteSize: LEGACY_HOVER_POLICY_FIXTURE_V1.byteSize,
+    sha256: LEGACY_HOVER_POLICY_FIXTURE_V1.sha256,
+    modelBase64: LEGACY_HOVER_POLICY_FIXTURE_V1.modelBase64,
   };
   return output;
 }
@@ -47,7 +77,7 @@ test("executes the digest-bound opset-18 model through ONNX Runtime WASM", async
   const source = {
     policySnapshot: async () => ({
       layout: layout(output),
-      observations: [0, 0, 0, 0, 0, 0, 0, 1.1, 0, 1, 0],
+      observations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.1, 0, 1, 0],
     }),
   };
   const controller = await BrowserPolicyController.create(output, CONTRACT_HASH, source);
@@ -57,6 +87,26 @@ test("executes the digest-bound opset-18 model through ONNX Runtime WASM", async
     { ...controller.input, throttle: 0 },
     { throttle: 0, roll: 0, pitch: 0, yaw: 0, drive: 0, turn: 0 },
   );
+  controller.dispose();
+});
+
+test("retains exact tensor-v1 ONNX read compatibility", async () => {
+  const output = legacyFixture();
+  const requestedVersions: string[] = [];
+  const source = {
+    policySnapshot: async (_target: readonly number[], tensorVersion: string) => {
+      requestedVersions.push(tensorVersion);
+      return {
+        layout: layout(output),
+        observations: [0, 0, 0, 0, 0, 0, 0, 1.1, 0, 1, 0],
+      };
+    },
+  };
+
+  const controller = await BrowserPolicyController.create(output, CONTRACT_HASH, source);
+  assert.deepEqual(requestedVersions, ["1.0.0"]);
+  assert.equal(controller.inferenceCount, 1);
+  assert.ok(Math.abs(controller.input.throttle - 0.7064194083) < 1e-6);
   controller.dispose();
 });
 
@@ -100,8 +150,12 @@ test("refuses contract-lineage and core-layout drift", async () => {
 
 test("refuses an unsupported policy-tensor major", async () => {
   const output = fixture();
-  output.io!.tensor!.schemaVersion = "2.0.0";
-  await assert.rejects(preparePolicyArtifact(output, CONTRACT_HASH, layout(output)), /missing forge-policy-tensor 1\.0\.0/);
+  output.io!.tensor!.schemaVersion = "3.0.0";
+  output.io!.onnxHeader!.tensorVersion = "3.0.0";
+  await assert.rejects(
+    preparePolicyArtifact(output, CONTRACT_HASH, layout(output)),
+    /missing supported forge-policy-tensor tensor contract/,
+  );
 });
 
 test("refuses non-finite core observations without retaining an action", async () => {
@@ -109,7 +163,7 @@ test("refuses non-finite core observations without retaining an action", async (
   const source = {
     policySnapshot: async () => ({
       layout: layout(output),
-      observations: [Number.NaN, 0, 0, 0, 0, 0, 0, 1.1, 0, 1, 0],
+      observations: [Number.NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.1, 0, 1, 0],
     }),
   };
   await assert.rejects(BrowserPolicyController.create(output, CONTRACT_HASH, source), /non-finite/);
@@ -122,7 +176,7 @@ test("advances a versioned waypoint chain only from estimator target error", asy
   const source = {
     policySnapshot: async (target: readonly number[]) => {
       requestedTargets.push([...target]);
-      const observations = [0, 0, 0, 0, 0, 0, snapshotCount === 0 ? 0 : 5, 0, 0, 1, 0];
+      const observations = [0, 0, 0, 0, 0, 0, 0, 0, 0, snapshotCount === 0 ? 0 : 5, 0, 0, 1, 0];
       snapshotCount += 1;
       return { layout: layout(output), observations };
     },
@@ -140,7 +194,7 @@ test("advances a versioned waypoint chain only from estimator target error", asy
   controller.schedule(1, {
     policySnapshot: async (target: readonly number[]) => {
       requestedTargets.push([...target]);
-      return { layout: layout(output), observations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0] };
+      return { layout: layout(output), observations: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0] };
     },
   });
   await new Promise((resolve) => setTimeout(resolve, 10));

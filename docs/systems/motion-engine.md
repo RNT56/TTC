@@ -86,11 +86,15 @@ models combined) inside the frame.
 ONNX outputs from the TS side (ONNX Runtime Web) through the tick input; `forge-sim`
 couples physics forces at P6.
 
-The reverse observation boundary remains in Rust. `CoreSession::policy_observations`
-uses the contract's complementary estimator, a latency-derived position estimate,
-and the deterministic inline powertrain to emit `forge-policy-tensor` 1.0.0. Only
-this estimator-side tensor crosses WASM; `FpvDriver::policy_truth` is internal input
-to the observer and is never exposed to Studio policy code (D8).
+The reverse observation boundary remains in Rust. D42 makes
+`CoreSession::policy_observations_v2` current: it uses the contract's complementary
+estimator, a latency-derived position/linear-velocity estimate, and deterministic
+inline powertrain truth to emit `forge-policy-tensor` 2.0.0 `[1, 14]`. The legacy
+`policy_observations` v1 method remains exact `[1, 11]` read compatibility. Studio
+selects the observer from the artifact's declared major; no caller may reinterpret
+one layout as the other. Only estimator-side values cross WASM;
+`FpvDriver::policy_truth` is internal observer input and is never exposed to Studio
+policy code (D8).
 
 ## 7. Testing
 

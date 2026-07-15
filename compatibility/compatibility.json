@@ -73,8 +73,8 @@
       "versionField": "lifecycleVersion"
     },
     "policyTensor": {
-      "current": "1.0.0",
-      "supportedMajors": [1],
+      "current": "2.0.0",
+      "supportedMajors": [1, 2],
       "schema": "forge-policy-tensor",
       "versionField": "io.tensor.schemaVersion",
       "versionRule": "exact scalar layouts, tensor names/shapes, coordinate frame, action meaning, and rate authority are major-version semantics"
@@ -84,8 +84,8 @@
       "supportedMajors": [0],
       "internalSchemas": {
         "admittedModelSnapshot": "1.0.0",
-        "trainingBundle": "1.0.0",
-        "trainingTask": "2.0.0"
+        "trainingBundle": "2.0.0",
+        "trainingTask": "3.0.0"
       },
       "queueKinds": [
         "etl.ingest-component",

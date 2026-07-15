@@ -235,7 +235,11 @@ mass, confidence, license, and conflicts.
 Freeze the task and scorecard before training. Retain failed seeds and provider
 failures. The browser must load the exact hashed ONNX artifact; a fixture controller
 or visually similar flight is not acceptance. Record inference rate, simulator,
-hardware, seed, wall time, cost, estimator status, and held-out score.
+hardware inventory, requested/resolved execution device and fallback policy, seed,
+wall time, separate simulated-vehicle and host-energy meanings, provider/electricity
+cost basis, estimator status, held-out score, and interruption/resume evidence. A
+GPU-capable host is not proof that the GPU executed; an adapter-rating-times-wall-time
+upper bound is not measured consumption.
 
 ### Course
 

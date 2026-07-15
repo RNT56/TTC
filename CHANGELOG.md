@@ -18,6 +18,49 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Correct and prove the consumer-hardware training candidate
+**Session:** Codex agent · branch `codex/p7012-consumer-gpu` · **Phase:** P7 ·
+**TODO items:** P7-012 [~], P7-014 [~]
+**Done:** Implemented the P7-012 candidate without claiming protected completion.
+The first exact seed-1201 500k-step hover PPO run failed honestly at 0.375 baseline,
+0.0 mass/Kv, and 1.0 wind, exposing an unstable curriculum rather than a scorecard
+problem. Diagnosis found a memoryless position policy without velocity, Forge Y-up
+pitch/yaw decomposition drift, raw-torque versus normalized-flight-target mismatch,
+and reward/control semantics not bound to the task. D42 corrects these as coordinated
+policy-tensor 2.0.0 `[1,14]`, training-bundle 2.0.0, and `p7-v3`/3.0.0 majors while
+retaining exact tensor-v1 observer and 906-byte ONNX execution. The frozen
+`p7-overnight-v1` curriculum now distills an estimator-only deterministic controller,
+then runs conservative randomized PPO; unchanged `p7-scorecard-v1` thresholds remain
+0.85 success and 0.70 robustness. Exact local M2 Pro diagnostics pass hover seed
+1201 and waypoint seed 1207 at 1.0 baseline/mass/Kv/wind. Hover retained a
+78,152-byte ONNX with SHA-256 `9afc1152b0e99398652274a1b97c97d53292f51995784f03323094727866fc4c`
+in 45.63 s task wall time; waypoint retained a 78,156-byte ONNX with SHA-256
+`b07b023aa81c4c9d96f38a0f232e92277e5c71f51b0454fcbe1f722529edb1a2`.
+The resumable evidence runner freezes source/recipe/seeds/thresholds/runtime/safe
+hardware/device/power authority, writes task JSON/ONNX atomically, and reuses only a
+matching request hash plus valid byte count/SHA/export gate. Its interruption,
+resume, tamper repair, and host-energy nonclaim tests pass. The complete 39-step
+`pnpm verify` gate passes locally under Python 3.12: all 163 worker tests, 12 Studio
+runtime tests, gateway/Studio typechecks, 65 gateway tests, Rust fmt/Clippy/workspace
+and WASM tests, compatibility, generated-contract/golden checks, dual 256-step
+MuJoCo/SB3/ONNX smoke, controlled MJX parity, and patch hygiene are green.
+**Changed:** Rust training-bundle/control/tensor authority; WASM v1/v2 observers;
+Python task/environment/training/evidence runtime; current and legacy ONNX fixtures;
+gateway/Studio tensor-major selection; generated WASM; compatibility/migration/
+decision/golden policy; project, roadmap, execution, TODO, agent, risk, debugging,
+best-practice, learning, worker, motion, and Studio documentation.
+**Decisions:** D42 coordinates tensor-v2/bundle-v2/task-v3 semantics and exact legacy
+reads. D43 selects CPU on the declared GPU-capable M2 Pro after the same 4,096-step
+MLP PPO pilot measured about 1.08 s CPU versus 13.38 s MPS, forbids backend fallback,
+and separates accelerator inventory and energy/cost nonclaims from execution.
+**Next:** Protect the implementation through exact-head PR and post-merge CI/security,
+then run the
+exact protected revision with intentional interruption after hover and validated
+resume through waypoint; download and reconcile both JSON/ONNX artifacts before
+closing P7-012.
+**Blockers:** none for implementation/publication. Protected-source evidence is a
+required remaining acceptance step, not a waived local prerequisite.
+
 ## 2026-07-15 — Reconcile protected waypoint evidence
 **Session:** Codex agent · branch `codex/p7014-waypoint-evidence` · **Phase:** P7 ·
 **TODO items:** P7-012 [ ], P7-014 [~]

@@ -31,8 +31,8 @@ package to adopt that same number.
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
-| policy tensor | 1.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | major 1 |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training task v2 is current, while task-v1 policy metadata remains a legacy read only |
+| policy tensor | 2.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | majors 1 and 2; new producers emit 2, exact v1 execution remains a legacy read path |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
@@ -133,23 +133,38 @@ Their exact source revision, MuJoCo 3.9.0 provider, canonical scene set, timeste
 and substeps fail closed. Any external publication would first require promotion to
 the compatibility matrix and its normal migration/deprecation policy.
 
-P7-008 introduces the first independently versioned executable policy boundary:
-`io.tensor.schema = forge-policy-tensor` and `schemaVersion = 1.0.0`. A v1 consumer
+P7-008 introduced the first independently versioned executable policy boundary:
+`io.tensor.schema = forge-policy-tensor` and `schemaVersion = 1.0.0`. A consumer
 must reject an unsupported major, a non-Y-up/right-handed/SI coordinate frame,
-unknown or reordered scalar/action layouts, non-fixed `[1, N]` shapes, rates above
+unknown or reordered scalar/action layouts for the declared major, non-fixed `[1, N]` shapes, rates above
 D9's 50 Hz advisory ceiling, held or estimator-unproven scorecards, contract-lineage
 drift, digest/byte-count mismatch, non-finite values, and outputs outside normalized
-`[-1, 1]` motion bounds. This is the first version, so there is no legacy read or
-migration path. The five category-level observation labels remain transfer/search
+`[-1, 1]` motion bounds. The five category-level observation labels remain transfer/search
 metadata; `io.tensor.input.layout` is the executable scalar truth.
 
+D42 advances new producers to policy tensor 2.0.0. Tensor v2 is `[1, 14]`: the six
+v1 attitude/angular-rate scalars, three estimator-derived body-frame linear-velocity
+scalars, three body-frame target-error scalars, normalized voltage, and normalized
+motor current. It retains `[1, 4]` normalized collective/roll/pitch/yaw flight
+targets. The added velocity state and corrected output interpretation are semantic,
+so they cannot be smuggled into v1. Studio/WASM choose an exact v1 or v2 observer
+from the declared major; the committed 906-byte v1 fixture remains an executable
+read oracle, while the current 1,056-byte fixture and all new native training emit
+v2. Unsupported majors, cross-major layout substitution, and silent downgrade fail
+closed. There is no automatic policy migration: retrain against bundle v2/task v3,
+or retain the old policy with the exact v1 observer/runtime.
+
 P7-003 adds two internal machine-checked schemas under worker package 0.2.0:
-`forge-admitted-model-snapshot` 1.0.0 and `trainingMuJoCoBundle` 1.0.0. The former is
+`forge-admitted-model-snapshot` 1.0.0 and `trainingMuJoCoBundle`. The former is
 a gateway-owned immutable envelope around exact admitted ModelSpec bytes and their
 SHA-256. The latter is emitted only by `forge-validate training-bundle` after
 sovereign re-admission and carries the Rust-derived MJCF, mass/gravity/hover trim,
 powertrain curve, estimator, policy tensor layout, control bounds, and assumptions
-consumed by the Python environment. Gateway, Rust, Python, and the compatibility
+consumed by the Python environment. D42 advances the bundle to 2.0.0 by adding
+contract-derived `tiltMaxRad` and `yawRateRadS` authority and binding policy tensor
+2.0.0. It also advances the worker-owned task to `p7-v3`/3.0.0 to bind the corrected
+Y-up angular mapping, normalized-flight-target inner loop, estimator-velocity filter,
+reward, and completion meaning. Gateway, Rust, Python, and the compatibility
 checker must agree on both exact versions. These remain internal schemas; exposing
 either as a public API or independently published artifact requires an explicit
 compatibility-surface promotion, migration policy, fixtures, and release notes.

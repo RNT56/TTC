@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { delimiter, dirname, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const outArg = process.argv.indexOf("--out");
@@ -65,7 +65,8 @@ const requests = [
 }));
 
 function runRequest(request) {
-  const run = spawnSync("python", ["-m", "forge_workers.training.sb3_runner"], {
+  const python = process.env.FORGE_PYTHON || "python3";
+  const run = spawnSync(python, ["-m", "forge_workers.training.sb3_runner"], {
     cwd: root,
     encoding: "utf8",
     input: JSON.stringify(request),
@@ -74,9 +75,13 @@ function runRequest(request) {
       ...process.env,
       FORGE_VALIDATE_BIN: process.env.FORGE_VALIDATE_BIN || resolve(root, "target/debug/forge-validate"),
       FORGE_SOURCE_REVISION: sourceRevision,
+      PYTHONPATH: [resolve(root, "workers"), process.env.PYTHONPATH].filter(Boolean).join(delimiter),
     },
   });
-  if (run.status !== 0) throw new Error(`${request.task} training smoke failed (${run.status}): ${run.stderr.trim()}`);
+  if (run.error) throw new Error(`${request.task} training smoke could not launch ${python}: ${run.error.message}`);
+  if (run.status !== 0) {
+    throw new Error(`${request.task} training smoke failed (${run.status}): ${(run.stderr || "").trim()}`);
+  }
   const result = JSON.parse(run.stdout);
   if (result.provider !== "local-sb3-mujoco" || result.algorithm !== "ppo") {
     throw new Error(`${request.task} smoke did not use the real pinned PPO runtime`);
@@ -91,16 +96,16 @@ function runRequest(request) {
   const taskHash = result.task?.definitionHash;
   if (
     result.task?.id !== request.task
-    || result.task?.suite !== "p7-v2"
-    || result.task?.version !== "2.0.0"
+    || result.task?.suite !== "p7-v3"
+    || result.task?.version !== "3.0.0"
     || result.task?.coordinateFrame !== "forge-y-up-rh-m"
     || !/^[0-9a-f]{64}$/.test(taskHash || "")
     || result.scorecard?.task !== request.task
-    || result.scorecard?.taskVersion !== "2.0.0"
+    || result.scorecard?.taskVersion !== "3.0.0"
     || result.scorecard?.lineage?.taskDefinitionHash !== taskHash
     || result.io?.onnxHeader?.taskDefinitionHash !== taskHash
   ) {
-    throw new Error(`${request.task} smoke is not bound to the v2 task definition`);
+    throw new Error(`${request.task} smoke is not bound to the v3 task definition`);
   }
   if (request.task === "waypoint-chain" && result.task?.targets?.length !== 3) {
     throw new Error("waypoint smoke did not retain the sequential target chain");
@@ -113,7 +118,7 @@ function runRequest(request) {
   ) {
     throw new Error(`${request.task} smoke lineage is not source/contract bound`);
   }
-  if (result.io?.tensor?.schema !== "forge-policy-tensor" || result.io?.tensor?.schemaVersion !== "1.0.0") {
+  if (result.io?.tensor?.schema !== "forge-policy-tensor" || result.io?.tensor?.schemaVersion !== "2.0.0") {
     throw new Error(`${request.task} smoke tensor contract drifted`);
   }
   const onnxBytes = Buffer.from(result.onnx?.modelBase64 || "", "base64");

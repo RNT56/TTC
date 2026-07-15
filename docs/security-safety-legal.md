@@ -135,10 +135,12 @@ readback, owner-scoped browser execution, and byte-free user-data export metadat
 controlled S3-compatible sandbox maturity. Production bucket policy, durability,
 orphan inventory/deletion, and storage SLO evidence remain deployment/OPS-006 work.
 
-D41 separately prevents task-semantic substitution. New policies declare task-v2,
-the Forge Y-up frame, ordered targets, and a canonical task hash; native and external
-worker output, scorecard lineage, ONNX header, and Studio must agree before export or
-playback. V1 remains a historical read rather than being silently remapped. Browser
+D41/D42 separately prevent task/tensor-semantic substitution. Current policies
+declare task-v3, tensor-v2, the Forge Y-up frame, ordered targets, canonical task
+hash, exact scalar layout, and normalized-flight-target meaning; native and external
+worker output, scorecard lineage, ONNX header, WASM observer, and Studio must agree
+before export or playback. Task/tensor v1 and task v2 remain historical reads rather
+than being silently remapped. Browser
 waypoint progression accepts only estimator target-error observations and never
 render state or simulator truth. This integrity boundary does not make a short
 policy safe, passing, hardware-authoritative, or field-ready.

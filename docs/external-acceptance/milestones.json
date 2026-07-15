@@ -161,7 +161,7 @@
     {
       "id": "training",
       "title": "Real training and browser-policy acceptance",
-      "taskIds": ["QA-010", "EXT-003", "P7-003", "P7-008", "P7-009", "P7-010"],
+      "taskIds": ["QA-010", "EXT-003", "P7-003", "P7-008", "P7-009", "P7-010", "P7-011", "P7-012", "P7-013", "P7-014"],
       "programGate": "G3",
       "targetMaturity": "sandbox",
       "allowedEnvironments": ["sandbox", "live"],
@@ -169,9 +169,9 @@
       "independentRoles": [],
       "requiredSignoffs": ["training-operator", "scorecard-reviewer", "acceptance-owner"],
       "requiredAuthorityRefs": ["training-data-authority", "provider-budget-approval", "data-handling-notice"],
-      "requiredMeasurements": ["wallTimeSeconds", "providerCost", "trainingSeed", "scorecardValue", "browserInferenceRateHz"],
+      "requiredMeasurements": ["wallTimeSeconds", "providerCost", "trainingSeed", "scorecardValue", "browserInferenceRateHz", "executionDevice", "hostEnergyMethod"],
       "prerequisites": [
-        "The admitted model, exact task, observation/action contract, randomization grid, success threshold, and budget are frozen before training.",
+        "The admitted model, exact task/tensor/bundle majors, observation/action contract, randomization grid, success threshold, recipe, seeds, hardware, execution device, and budget are frozen before training.",
         "The real SB3/MuJoCo provider path and output retention/deletion behavior are configured.",
         "Ground-truth-only policies remain non-exportable."
       ],
@@ -179,19 +179,20 @@
         "Task, scorecard threshold, seed policy, or evaluation corpus changes after results are observed.",
         "Training data lacks authority or crosses its consent/retention boundary.",
         "The exported artifact lacks lineage, I/O header, estimator evidence, or integrity hash.",
-        "Browser playback uses a fixture controller instead of the recorded ONNX artifact."
+        "Browser playback uses a fixture controller instead of the recorded ONNX artifact.",
+        "Hardware inventory is presented as accelerator execution, a backend fallback is hidden, simulated vehicle energy is presented as host consumption, or an adapter-rating upper bound is presented as measured energy."
       ],
       "steps": [
         {
           "id": "training-freeze-inputs",
           "title": "Freeze task and reproducibility inputs",
-          "instruction": "Record model hash, task version, simulator, estimator, observation/action layout, seed policy, randomization, threshold, hardware, and budget.",
+          "instruction": "Record model hash, task/tensor/bundle versions, simulator, estimator, observation/action layout, recipe, seeds, randomization, threshold, safe hardware inventory, requested/resolved device with fallback policy, power-evidence method, and budget.",
           "requiredEvidenceKinds": ["task-spec", "training-plan", "contract", "validator-report"]
         },
         {
           "id": "training-live-run",
           "title": "Run the real training pipeline",
-          "instruction": "Execute the bounded SB3/MuJoCo training adapter with progress, cancellation, timeout, resource, latency, and cost evidence.",
+          "instruction": "Execute the bounded SB3/MuJoCo training adapter with progress, intentional interruption plus validated resume, timeout, resource, latency, exact backend, host-energy method/nonclaim, and cost evidence.",
           "requiredEvidenceKinds": ["job-log", "provider-receipt", "training-metrics"]
         },
         {
@@ -221,7 +222,7 @@
         {
           "id": "training-review",
           "title": "Review scorecard and economics",
-          "instruction": "A reviewer confirms the passing threshold, actual artifact identity, reproducibility limits, wall time, cost, and any revised SLO.",
+          "instruction": "A reviewer confirms the passing threshold, actual artifact identity, reproducibility limits, wall time, execution backend, separate vehicle/host energy meanings, provider/electricity cost basis, recovery evidence, and any revised SLO.",
           "requiredEvidenceKinds": ["scorecard-review", "cost-report", "acceptance-report"]
         }
       ]

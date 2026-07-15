@@ -203,6 +203,21 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   and retains two valid, correctly non-exportable task-bound ONNX policies. D40's
   prerequisite for P7-012 is satisfied, but overnight learning quality and the
   rover/legged real trainers remain open under P7-012/P7-014;
+- the P7-012 implementation candidate advances current multirotor training to D42
+  policy tensor 2.0.0 `[1,14]`, `trainingMuJoCoBundle` 2.0.0, and
+  `p7-v3`/3.0.0 while retaining an executable tensor-v1 observer/ONNX oracle. It
+  fixes Forge Y-up angular-axis order, adds estimator body velocity, interprets
+  normalized flight targets around contract hover trim, freezes an estimator-only
+  distillation plus randomized-PPO curriculum, and adds atomic interruption/resume/
+  tamper-checked evidence. On the declared M2 Pro consumer host, exact-seed local
+  diagnostics pass hover and waypoint at 1.0 baseline and every mass/Kv/wind
+  robustness row; 163 worker tests and 12 Studio runtime tests pass. D43 selects CPU
+  after the same 4,096-step MLP PPO pilot measured MPS about 12.4x slower, inventories
+  but does not claim the 19-core MPS device as the training backend, and permits only
+  an explicitly non-measured 140 W adapter-rating wall-time upper bound. This is
+  unprotected candidate evidence: P7-012 remains in progress until the exact clean
+  implementation revision passes PR/post-merge checks and an intentional interrupt/
+  resume run is downloaded and reconciled from protected source;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
@@ -572,7 +587,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Simulation engine/exporter | `cargo test -p forge-sim -p forge-validate`; `pnpm sim:parity:check`; for engine/exporter changes install `workers[dev,mujoco]` and run `pnpm sim:parity:live`; inspect source/provider/unit/timestep/substep-bound artifacts; append-only golden review for registered output; require the real-engine worker check before closure |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
-| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes; for policy delivery prove lease checks before and after upload, one job/one policy, byte-free persistence, digest substitution refusal, cancellation-without-authority, and exact object readback |
+| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-012 additionally prove tensor-v1/v2 execution/refusal, exact device authority with no fallback, frozen recipes/thresholds/seeds, all baseline/mass/Kv/wind rows, atomic interruption/resume, request-hash and ONNX size/digest/export validation, safe hardware metadata, separate simulated-vehicle and host-energy fields, cost/nonclaims, exact retained policy bytes, clean protected source, and downloaded evidence; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes; for policy delivery prove lease checks before and after upload, one job/one policy, byte-free persistence, digest substitution refusal, cancellation-without-authority, and exact object readback |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
