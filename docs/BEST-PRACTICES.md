@@ -158,7 +158,17 @@ export path.
     fail closed on pin or authority drift. Short CI runs explicitly disclaim
     learning quality and overnight SLOs (P7-012), deployed GPU economics (P7-013),
     and field transfer (EXT-003); closing P7-003 does not close those gates.
-15. **External acceptance** — execute the versioned QA-010 milestone script against
+15. **Accelerator benchmarks** — compare the same Rust-derived model, initial state,
+    controls, solver, precision, timestep, and step count. Warm each path before
+    timing, measure JAX lowering/compilation separately, synchronize every timed JAX
+    result with `block_until_ready`, report every sample plus the median, and compare
+    MJX against MuJoCo's native multithreaded rollout rather than a Python step loop.
+    Bind the exact source, contract, compiled MJCF, request, runtime pins, hardware,
+    and clean-checkout state. A single CPU/reference-morphology feasibility run can
+    validate the harness and parity bands; it cannot establish accelerator speedup,
+    training-wall-time savings, cost normalization, an overnight budget, D12
+    morphology coverage, or an adoption decision (P7-010).
+16. **External acceptance** — execute the versioned QA-010 milestone script against
     an exact product revision with the intended independent user, real provider, D30/
     D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,
     measurements, findings, limitations, and signoffs outside Git; machine-valid

@@ -1,9 +1,10 @@
 # Learning Engine — implementation doc
 
 **Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
-hover runtime, and real browser ONNX/WASM execution implemented; overnight
-scorecard passage, object-backed delivery, deployed GPU operations, and field
-transfer remain gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
+hover runtime, real browser ONNX/WASM execution, and a controlled CPU MuJoCo/MJX
+feasibility harness implemented; overnight scorecard passage, object-backed
+delivery, decision-grade D12 accelerator evidence, deployed GPU operations, and
+field transfer remain gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
 **Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D-evals
 (adjacent)
@@ -71,6 +72,26 @@ inside frozen parity bands, and cost-normalized throughput is at least 3x.
 The worker-side `mjx_benchmark_report` applies the same rule to payload or
 `FORGE_MJX_BENCH_CMD` output and blocks adoption unless D12 quad, D12 rover, and one
 legged morphology all have benchmark evidence.
+
+P7-010 now has a deliberately narrower executable foundation. The
+`mjxBenchmarkRequest` 1.0.0 command compiles the admitted `vx2-mini` snapshot through
+the sovereign Rust `training-bundle` path, then runs the same fixed initial states,
+controls, Newton solver, float64 precision, 0.005 s timestep, and 64-step scan through
+MuJoCo 3.9.0's native multithreaded `rollout.Rollout` and `mujoco-mjx` 3.9.0 on exact
+JAX/JAXLIB 0.10.2. The frozen 16-scene protocol uses seeded 1,000 microradian/s
+velocity perturbations and nonzero 100 nanonewton-meter motor controls so the
+low-inertia rotor joints remain inside a meaningful parity trajectory. It separates
+lowering/compilation, warms both engines, synchronizes every JAX pytree, records all
+timed samples and medians, and enforces qpos `1e-4`/qvel `5e-4` absolute bands.
+
+The resulting `mjx-benchmark` 1.0.0 report is source/request/contract/MJCF/runtime/
+hardware-bound and intentionally decision-ineligible. The current reference row is
+`p7-hover-multirotor`, not D12 quad, D12 rover, or legged; CPU-backed JAX is not a
+declared accelerator; and it has no PPO/SAC overnight, tier-2 budget, energy, or cost
+evidence. The central report therefore preserves every missing-morphology,
+accelerator, budget, cost, throughput, and dirty-source blocker. P9 tier-2/3 batching
+remains forbidden unless later clean protected D12 evidence clears the existing
+adoption rule.
 
 Protected through PR #64/`d1c4c38` on 2026-07-15: the gateway, validator, Rust
 simulator, and Python worker form one fail-closed training authority chain. The
@@ -180,7 +201,8 @@ P7-011/operations work and is not claimed here.
 
 `forge-sim` (MJCF compiler, estimator spec), `forge-contract` (schema for
 obs/action derivation), exact Python 3.12, NumPy 2.5.1, Gymnasium 1.3.0, CPU PyTorch 2.13.0,
-Stable-Baselines3 2.9.0, ONNX 1.22.0, and MuJoCo 3.9.0 in `workers/training`; exact
+Stable-Baselines3 2.9.0, ONNX 1.22.0, MuJoCo/MuJoCo-MJX 3.9.0, and JAX/JAXLIB
+0.10.2 in `workers/training`; exact
 `onnxruntime-web` 1.27.0 in the Studio for lazy WASM playback. Runtime integration
 follows the official [ONNX Runtime Web tutorial](https://onnxruntime.ai/docs/tutorials/web/)
 and [deployment guidance](https://onnxruntime.ai/docs/tutorials/web/deploy.html):
@@ -189,10 +211,18 @@ Co-design (P9) calls tier-2/3 evaluations through this service.
 
 Installed metadata records NumPy's BSD/0BSD/MIT/Zlib/CC0 license expression,
 Gymnasium and Stable-Baselines3 as MIT, PyTorch's Apache/LLVM/BSD/Boost/MIT set,
-and ONNX plus MuJoCo as Apache-2.0. Required security CI installs only the exact
+and ONNX, MuJoCo/MuJoCo-MJX, JAX, and JAXLIB as Apache-2.0. Required security CI installs only the exact
 reviewed CPU stack with binary dependencies, upgrades to exact pip 26.1.2, and runs
 exact pip-audit 2.10.1 against the installed environment; an advisory blocks the
 existing dependency-audit check.
+
+Benchmark timing follows the official
+[JAX benchmarking guidance](https://docs.jax.dev/en/latest/benchmarking.html) and
+[MuJoCo MJX guidance](https://mujoco.readthedocs.io/en/latest/mjx.html): compile and
+warm up before steady-state timing, synchronize asynchronous work, and use MJX for
+large identical batches rather than assuming one CPU scene is faster. The native
+reference uses MuJoCo's official
+[`rollout` API](https://mujoco.readthedocs.io/en/latest/python.html#rollout).
 
 The native exporter currently selects PyTorch's pinned legacy TorchScript ONNX path
 to obtain a deterministic, fixed-shape graph compatible with the browser contract.
@@ -219,6 +249,13 @@ boundary tests, same-seed ONNX digest checks, dependency-pin assertions, and a
 required controlled training smoke. The full worker suite must run with the training
 extra installed; a skipped or fixture-only runtime is not acceptance evidence.
 
+P7-010 adds strict request/hash/runtime/protocol and central-decision tests plus a
+required real feasibility command. Run it under Python 3.12 with
+`workers[dev,mujoco,training,mjx]`, `JAX_ENABLE_X64=1`, and an executable
+`FORGE_VALIDATE_BIN`. Inspect the retained JSON rather than trusting the console
+summary: source/checkout cleanliness, exact pins/devices, compile and sample times,
+absolute parity errors, and every decision blocker are acceptance-critical.
+
 ## 10. Phase mapping & backlog
 
 P7: P7-001..010, XC-21. P8: BC/offline-RL ingestion from recorder logs (P7-009 seam).
@@ -230,4 +267,6 @@ scorecards.
 Scorecard thresholds per task (set with P7 data, then frozen per task version);
 durable object-backed policy delivery and one-click Studio orchestration; the
 overnight passing hover/waypoint envelope; fine-tune-on-corrected-twin workflow
-shape (post system-ID); MJX migration trigger numbers (from P7-010).
+shape (post system-ID); exact D12 quad/rover/legged benchmark contracts, declared
+accelerator and cost source, and the CPU overnight/tier-2 budget envelope needed to
+finish P7-010.

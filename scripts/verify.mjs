@@ -156,6 +156,11 @@ try {
     "--out",
     join(temp, "p7-sb3-smoke.json"),
   ]);
+  run("Controlled MuJoCo-MJX feasibility", "node", [
+    "scripts/mjx-feasibility-smoke.mjs",
+    "--out",
+    join(temp, "p7-mjx-feasibility.json"),
+  ]);
   run("Whitespace and patch hygiene", "node", ["scripts/check-patch-hygiene.mjs"]);
 
   console.log(`\nverify: ${step} required local gates passed`);
