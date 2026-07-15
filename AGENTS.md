@@ -86,8 +86,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is DOC-006 evidence PR #59 at
-  `484aefa`, with post-merge CI `29381316922` and security `29381316924` green;
+  latest verified protected `main` descendant is P6-010 PR #60 at `c0f5172`, with
+  post-merge CI `29383489511` and security `29383489520` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -140,11 +140,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 - DOC-006 evidence PR #59 at `484aefa` passed exact-head and post-merge CI/security,
   so the documentation lane is closed without implying that seed issues #55-#57 have
   produced an external contribution;
-- the P6-010 implementation candidate runs real Rapier and exact MuJoCo 3.9.0 over
-  four contract-derived MJCF scenes with explicit radians, matched timestep/substeps,
-  unchanged tolerances, and evidence upload in the existing required worker check;
-  local live and registered-fixture gates pass, but the task stays in progress until
-  exact-head and protected-merge remote evidence exist;
+- P6-010 is protected through PR #60 at `c0f5172`: real Rapier and exact MuJoCo
+  3.9.0 execute four contract-derived MJCF scenes with explicit radians, matched
+  timestep/substeps, and unchanged tolerances in the existing required worker check.
+  Exact head `aa5b133` passed CI `29383163191`/security `29383163204`; protected CI
+  `29383489511`/security `29383489520` pass, and worker job `87252899630` retained a
+  source-bound passing engine artifact. This closes the deterministic P6 phase exit,
+  not SB3 training, GPU performance, diverse third-party imports, or field transfer;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is

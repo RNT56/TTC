@@ -1,8 +1,8 @@
 # Simulation Engine (`forge-sim`) — implementation doc
 
 **Status:** deterministic sim helpers/exporters/importers, engine-backed Rapier stepping,
-and local real-engine MuJoCo 3.9.0 parity implemented; protected required-check
-acceptance pending · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
+and real-engine MuJoCo 3.9.0 parity protected in required CI; deterministic P6 exit
+complete · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
 **Decisions:** D7, D8, D16, D17, D20, D32
 
@@ -123,11 +123,13 @@ After `python -m pip install -e "workers[dev,mujoco]"`, run
 local gate against the reviewed engine-backed fixture. The registered
 `--capture-baseline` path writes a baseline candidate only after a real pinned-engine
 comparison passes; every accepted re-pin still requires the append-only golden
-review procedure. The 2026-07-15 local MuJoCo 3.9.0 run measured drop delta
-0.001396765 s, pendulum delta 0.000069847 s, hover-trim delta 6.98e-10, and gait-CoM
-delta 0.000061964 m, inside the unchanged 0.002 s / 0.01 s / 0.02 / 0.02 m bands.
-P6-010 remains in progress until the exact PR head and protected merge both retain
-this required live-engine proof.
+review procedure. PR #60 exact head `aa5b133` passed required CI/security, and
+protected `c0f5172` passed CI `29383489511`/security `29383489520`. Worker job
+`87252899630` retained the exact protected source/request identity and measured drop,
+pendulum, hover-trim, and gait-CoM deltas of 0.001396765 s, 0.000070124 s, 6.98e-10,
+and 0.000061964 m, inside the unchanged 0.002 s / 0.01 s / 0.02 / 0.02 m bands.
+P6-010 and the deterministic P6 exit are complete; broader third-party import,
+training, GPU, hardware, and field evidence remain separate acceptance work.
 
 ## 8. Dependencies
 

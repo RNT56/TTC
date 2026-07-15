@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected `main` descendant: `484aefa` (PR #59; DOC-006 evidence reconciliation)
-Latest verified protected runtime/parity anchor: `6f8509b` (PR #50; QA-012 parity reliability)
+Latest verified protected `main` descendant: `c0f5172` (PR #60; real Rapier/MuJoCo parity)
+Latest verified protected runtime/parity anchor: `c0f5172` (PR #60; real engine parity)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -74,21 +74,24 @@ security `29380952454`; protected descendant `484aefa` passed post-merge CI
 `29381316922` and security `29381316924`. DOC-006 is therefore closed without
 turning its still-open seed issues into a contribution-success claim.
 
-The P6-010 implementation candidate now runs real Rapier and exact MuJoCo 3.9.0 over
-four MJCF scenes emitted from the same canonical scenario contracts. A local live run
-passes unchanged bands with drop/pendulum/hover/gait deltas of 0.001396765 s,
-0.000069847 s, 6.98e-10, and 0.000061964 m. The existing required worker job is wired
-to retain the request, both baselines, and comparison, but P6-010 remains in progress
-until the exact PR head and protected merge prove that remote path.
+P6-010 and the deterministic P6 exit are protected through PR #60. Exact head
+`aa5b133` passed CI `29383163191`/security `29383163204`; protected squash
+`c0f5172` passed post-merge CI `29383489511`/security `29383489520`. Required worker
+job `87252899630` retained a request and both real-engine baselines bound to protected
+source revision `c0f51726d09ebc28852b75f894266e2d2d78a7c3` and request SHA-256
+`66059445aae9ac24b4bd85abbff3bf71e38d355f3c2050d3e2df166db9e4103f`. Exact
+MuJoCo 3.9.0 and Rapier passed all four contract-derived scenes at matched timing and
+unchanged bands; this is engine/phase proof, not live training, broad external-corpus,
+GPU, provider, hardware, or field evidence.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | SEC-006 runtime/security evidence remains anchored at protected `d952f60`; latest protected `main` descendant is DOC-006 evidence `484aefa`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` are green; annotated `v0.1.0` published | PR #59 exact head `47f4e3d` passed CI `29380952442`/security `29380952454`; protected squash `484aefa` passed post-merge CI `29381316922`/security `29381316924`. QA-012 remains anchored to PR #50 and exact-main nightly `29372161650` |
+| Git state | latest protected `main` is P6-010 `c0f5172`; SEC-006 runtime/security anchor `d952f60`, DOC-006 evidence `484aefa`, QA-012 runtime/parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #60 exact head `aa5b133` passed CI `29383163191`/security `29383163204`; protected squash `c0f5172` passed post-merge CI `29383489511`/security `29383489520`. Required worker artifact source-binds the passing real-engine comparison to the protected commit |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install, `pnpm audit --audit-level low`, and all 36 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except three version-exact reviewed entries; exact-head and post-merge security are green |
-| `pnpm verify` | protected PR #59 descendant retains the 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 127 worker tests, and patch hygiene; required Postgres/browser acceptance passed on protected `484aefa` in CI `29381316922` |
+| `pnpm verify` | protected `c0f5172` retains the 36 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, compatibility, fmt, Clippy, full tests, WASM, schema, TS, 63 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 128 worker tests including real required engine parity, and patch hygiene; required Postgres/browser acceptance passed in CI `29383489511` |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | protected pass: 14/14 surfaces match policy 1.0.0 | gateway API/events now join source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor in the machine matrix |
@@ -98,8 +101,8 @@ until the exact PR head and protected merge prove that remote path.
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 63/63 with the real validator in the full gate | includes staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
-| Worker tests | pass: 127/127 on protected DOC-005 under Python 3.12 | the five corpus consumers cover replay/provider/citation/export/hardware boundaries; D38, commerce, native ETL, and SEC-006 coverage remain green |
-| Postgres/pgvector gate | pass on protected DOC-005 merge CI `29376742319` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
+| Worker tests | pass: 128/128 on protected P6-010 under Python 3.12 | the five corpus consumers cover replay/provider/citation/export/hardware boundaries; real MuJoCo parity, D38, commerce, native ETL, and SEC-006 coverage remain green |
+| Postgres/pgvector gate | pass on protected P6-010 CI `29383489511` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | **pass on protected `6f8509b`; QA-012 closed** | scheduled run `29311327203` and exact-current-main rerun `29367911748` exposed missing isolation headers and stale semantic-wrapper chrome suppression. PR #50 restores the governed full-WebGL path and version-binds both JSON artifacts. Exact branch nightly `29370725355` and exact-main nightly `29372161650` pass. Downloaded artifact `8326520247` records one isolated full-Studio Chromium/high-WebGL preflight with no page errors and six low-WebGL captures at unchanged edge F1 0.957-0.995, 3 draws, and 2,208/4,662 triangles; source/checkout equal `6f8509b` and the worktree is clean |
@@ -111,7 +114,7 @@ until the exact PR head and protected merge prove that remote path.
 | QA-012 parity reliability | complete through PR #50 and protected `6f8509b` | exact head `8d4bf63` passed all 35 local gates, branch nightly `29370725355`, PR CI `29370722178`, and security `29370722124`; protected merge passed CI `29371177801`, security `29371177809`, and exact-main nightly `29372161650`. Both downloaded JSON artifacts self-bind to the clean merge revision and refuse Canvas2D or source drift; this restores G0 parity acceptance without changing the QA-003 viewer fallback or any golden/threshold |
 | Rust coverage | pass: 84.34% lines | nightly floor is now 80% |
 | WASM budgets | pass | measured bake/patch stay inside binding budgets |
-| Rapier/MuJoCo parity | local implementation candidate passes real Rapier plus exact MuJoCo 3.9.0; registered keyless fixture also passes | four contract-derived scenes, explicit radian MJCF, matched 1/240 s driver/four substeps, and unchanged tolerances are implemented; exact-head/protected required-CI proof remains before P6-010 closure |
+| Rapier/MuJoCo parity | complete through PR #60 and protected `c0f5172`; real Rapier plus exact MuJoCo 3.9.0 and the registered keyless fixture pass | required worker job `87252899630` retained four contract-derived scenes, explicit radian MJCF, matched 1/240 s driver/four substeps, unchanged tolerances, protected source/request identity, and a passing comparison; re-run on every engine/exporter upgrade |
 | Validator v0.1.0 release | pass; G1 closed | protected-main run `29241883791` and tag run `29244972303` passed every contract/native/WASM/SPDX/checksum/attestation step; the public nine-asset Release was downloaded and independently re-verified on macOS |
 | XC-28 equipped variants | protected on `main` through PR #30 | ModelSpec 2.2 explicit selection, migration refusal for ambiguous legacy slots, selected-only physical consumers, stable source pointers, Studio cards, native/WASM/browser switch/HUD proof |
 | SEC-002 prohibited briefs | protected on `main` through PR #30 | versioned pre-retrieval/provider/mutation refusal across five HTTP surfaces and direct APIs, bounded explicit-exclusion handling, minimal non-content audit rows, and fail-closed storage |
@@ -362,7 +365,7 @@ decision; none is a hidden release claim.
 | Catalog/BOM/license ledger | fixture/local Postgres implementation, D10 exporter enforcement, and native bounded Anthropic ETL contract | credentialed ETL sandbox, real-result persistence/review operations, provider recovery, and live OCCT artifact audit |
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
-| Simulation/interop | real Rapier, exporters/importers, registered parity baseline, and a locally passing real MuJoCo 3.9.0 required-check candidate | protected exact-head/post-merge engine evidence and broader diverse external-model proof |
+| Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
 | Training/policy | fixture scorecards and external command seams | real SB3/MuJoCo training and ONNX Runtime browser inference |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
@@ -432,9 +435,9 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **201 tasks: 140 done, 36 in progress, 24 open,
+The stable ledger currently contains **201 tasks: 141 done, 35 in progress, 24 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
-The 61 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
+The 60 remaining tasks are the phase/live/field program plus 2 governance, 2 security,
 2 quality, 10 operations,
 and 9 external-proof tasks; the documentation completion lane is closed. Dependency
 order is owned by

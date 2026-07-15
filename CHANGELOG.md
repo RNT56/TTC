@@ -18,6 +18,33 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Close real engine parity on protected main
+**Session:** Codex agent · branch `codex/p6010-protected-evidence` · **Phase:** P6 / QA ·
+**TODO items:** P6-010 [x]
+**Done:** Closed P6-010 and the deterministic P6 phase exit through protected PR #60.
+Exact implementation head `aa5b133` passed CI `29383163191` and security
+`29383163204`; protected squash `c0f5172` passed post-merge CI `29383489511` and
+security `29383489520`, including Rust, TypeScript/gateway, Desktop, isolated
+Postgres/real-browser, dependency, SPDX, CodeQL, and the real engine worker. Worker
+job `87252899630` retained the request and both baselines plus a passing comparison
+bound to source revision `c0f51726d09ebc28852b75f894266e2d2d78a7c3` and request
+SHA-256 `66059445aae9ac24b4bd85abbff3bf71e38d355f3c2050d3e2df166db9e4103f`.
+Exact MuJoCo 3.9.0 remained paired with Rapier at a 1/240 s driver and four substeps;
+the unchanged bands passed with drop, pendulum, hover, and gait deltas of
+0.001396765 s, 0.000070124 s, 6.98e-10, and 0.000061964 m.
+**Changed:** Canonical agent boundary, project-state evidence/counts, phase and
+execution roadmaps, P6-010 ledger state, simulation/worker status, and changelog.
+No runtime code, dependency, public compatibility format, golden, tolerance,
+provider, hardware authority, or release claim changed in this reconciliation.
+**Decisions:** none. D20 and the reviewed MuJoCo 3.9.0 pin remain binding; the
+protected evidence did not justify a re-pin or tolerance change.
+**Next:** Begin P7-008 as the next dependency-complete product lane: execute a
+scorecard-authorized ONNX fixture through ONNX Runtime Web and feed bounded outputs
+through the motion policy layer without implying live SB3 training or hardware
+authority.
+**Blockers:** none for P6-010. Live SB3/GPU work, diverse third-party imports,
+providers, hardware, and field transfer remain separately gated.
+
 ## 2026-07-15 — Require real contract-derived engine parity
 **Session:** Codex agent · branch `codex/p6010-engine-parity` · **Phase:** P6 / QA ·
 **TODO items:** P6-010 [~]
