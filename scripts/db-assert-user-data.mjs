@@ -95,7 +95,7 @@ try {
     `INSERT INTO jobs (
        id, owner_user_id, kind, status, provider, input, output, started_at, finished_at
      ) VALUES ($1, $2, 'train.policy', 'succeeded', 'fixture',
-               jsonb_build_object('modelId', $3),
+               jsonb_build_object('modelId', $3::text),
                '{"artifactKind":"policy","formatVersion":"0.2.0","onnx":{"byteSize":12,"sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},"delivery":{"objectBacked":true}}'::jsonb,
                now(), now())`,
     [policyJobId, user.id, modelId],

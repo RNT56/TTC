@@ -47,6 +47,10 @@ That run passed all 21 populated predecessors and then exposed that the worker's
 `ON CONFLICT (job_id)` did not name the partial-index predicate. Both worker and
 gateway writers now spell `WHERE job_id IS NOT NULL`, so PostgreSQL can infer the
 one-winner index while historical nullable rows remain intentionally outside it.
+The following exact-head run passed the complete P7-011 stale-lease, exact-object,
+cancellation, and substitution proof, then found the same untyped-JSON parameter
+pattern in the downstream user-data 1.3.0 fixture. Its bound `modelId` is now also
+explicitly text-typed so export/deletion acceptance can continue past policy setup.
 **Changed:** D39 and R26; migration 0022 plus populated-predecessor assertions;
 gateway object write/read, transactional policy materialization, policy-model route,
 and user-data export 1.3.0; worker S3-compatible transport/materializer and protected
