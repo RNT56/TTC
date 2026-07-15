@@ -29,6 +29,7 @@
     "release:validator:check": "node scripts/prepare-validator-release.mjs --out /tmp/forge-validator-release-check",
     "release:validator:verify": "node scripts/verify-validator-release.mjs",
     "sim:parity": "node scripts/sim-parity.mjs",
+    "sim:parity:live": "FORGE_MUJOCO_PARITY_CMD='python -m forge_workers.mujoco_parity' node scripts/sim-parity.mjs --out artifacts/sim-parity",
     "sim:parity:check": "node scripts/sim-parity.mjs --mujoco crates/forge-sim/tests/fixtures/mujoco-parity-baseline.json --out /tmp/forge-sim-parity-check",
     "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/",
     "db:migrate": "node scripts/db-migrate.mjs",

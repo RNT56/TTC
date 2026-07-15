@@ -118,6 +118,17 @@ contradictory license authority were never valid supported evidence and now refu
 deterministically. The registered corpora pin both compatible reads and these
 refusals; no migration or deprecation clock is introduced.
 
+P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
+always been radians, but the exporter previously omitted MuJoCo's explicit radian
+compiler declaration and therefore allowed the engine's degree default to reinterpret
+valid values. Adding that declaration restores the documented meaning; it does not
+change ModelSpec, CLI/WASM, gateway, replay, EnvSpec, or worker-artifact versions.
+The new `simParityMuJoCoRequest` and `simParityMuJoCoBaseline` 1.0.0 documents are
+internal required-CI evidence envelopes, not externally published worker formats.
+Their exact source revision, MuJoCo 3.9.0 provider, canonical scene set, timestep,
+and substeps fail closed. Any external publication would first require promotion to
+the compatibility matrix and its normal migration/deprecation policy.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

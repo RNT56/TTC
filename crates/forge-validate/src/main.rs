@@ -6,6 +6,7 @@
 //!   forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]
 //!   forge-validate env <env.json> [--report out.json] [--as-draft]
 //!   forge-validate sim-parity rapier-baseline [--out baseline.json]
+//!   forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json]
 //!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
 //!   forge-validate schema [--out schema.json]
 //!   forge-validate version [--json]
@@ -14,6 +15,7 @@
 
 use forge_validate::{run_full, EmptyCatalog, Options, Severity, Verdict};
 use serde::{de::DeserializeOwned, Serialize};
+use sha2::{Digest, Sha256};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -34,7 +36,7 @@ fn main() -> ExitCode {
         }
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
             );
             ExitCode::from(1)
         }
@@ -511,6 +513,15 @@ struct SimParityRapierBaselineArtifact {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+struct SimParityMuJoCoRequestArtifact {
+    #[serde(flatten)]
+    request: forge_sim::interop::MuJoCoParityRequest,
+    source_revision: String,
+    request_sha256: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct SimParityComparisonArtifact {
     artifact_kind: &'static str,
     validator_version: String,
@@ -524,14 +535,76 @@ struct SimParityComparisonArtifact {
 fn cmd_sim_parity(args: &[String]) -> ExitCode {
     match args.first().map(String::as_str) {
         Some("rapier-baseline") => cmd_sim_parity_rapier_baseline(&args[1..]),
+        Some("mujoco-request") => cmd_sim_parity_mujoco_request(&args[1..]),
         Some("compare") => cmd_sim_parity_compare(&args[1..]),
         _ => {
             eprintln!(
-                "usage: forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]"
+                "usage: forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]"
             );
             ExitCode::from(1)
         }
     }
+}
+
+fn cmd_sim_parity_mujoco_request(args: &[String]) -> ExitCode {
+    let Some(source_revision) = flag_value(args, "--source-revision") else {
+        eprintln!("sim-parity mujoco-request: missing --source-revision <git-sha>");
+        return ExitCode::from(1);
+    };
+    if !(source_revision.len() == 40 || source_revision.len() == 64)
+        || !source_revision.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
+        eprintln!(
+            "sim-parity mujoco-request: --source-revision must be a full hexadecimal Git object ID"
+        );
+        return ExitCode::from(1);
+    }
+    let gravity = match flag_f64(args, "--gravity", 9.80665, "sim-parity mujoco-request") {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let pendulum_length_m =
+        match flag_f64(args, "--pendulum-length", 0.4, "sim-parity mujoco-request") {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+    let hover_trim = match flag_f64(args, "--hover-trim", 0.42, "sim-parity mujoco-request") {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let gait_com_m = match flag_f64(args, "--gait-com", 0.004, "sim-parity mujoco-request") {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let request = match forge_sim::interop::mujoco_parity_request(
+        gravity,
+        pendulum_length_m,
+        hover_trim,
+        gait_com_m,
+    ) {
+        Ok(request) => request,
+        Err(error) => {
+            eprintln!("sim-parity mujoco-request: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let artifact = SimParityMuJoCoRequestArtifact {
+        request_sha256: {
+            let mut hash = Sha256::new();
+            hash.update(serde_json::to_vec(&request).expect("MuJoCo parity request serializes"));
+            hash.finalize()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect()
+        },
+        request,
+        source_revision,
+    };
+    eprintln!(
+        "forge-validate sim-parity mujoco-request · MuJoCo {} · source {}",
+        artifact.request.mujoco_version, artifact.source_revision
+    );
+    emit_json("sim-parity mujoco-request", args, &artifact)
 }
 
 fn cmd_sim_parity_rapier_baseline(args: &[String]) -> ExitCode {

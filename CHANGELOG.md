@@ -18,6 +18,37 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Require real contract-derived engine parity
+**Session:** Codex agent · branch `codex/p6010-engine-parity` · **Phase:** P6 / QA ·
+**TODO items:** P6-010 [~]
+**Done:** Replaced the duplicate hand-authored MuJoCo parity scenes with four MJCF
+scenes emitted by the checked-out Rust exporter from the same canonical contracts
+Rapier executes. A real local MuJoCo 3.9.0 run passes the unchanged bands: drop delta
+0.001396765 s, pendulum delta 0.000069847 s, hover-trim delta 6.98e-10, and gait-CoM
+delta 0.000061964 m. The first contract-derived run failed closed and exposed that
+MJCF joint ranges in documented radians were being compiled under MuJoCo's degree
+default; the exporter now declares radians explicitly. The registered exporter and
+MuJoCo baseline candidates were regenerated through their named procedures and one
+append-only physics review record captures the before/after evidence. Focused Rust
+tests, five MuJoCo-worker tests, the registered keyless fixture check, golden policy,
+and the real live-engine command pass locally.
+**Changed:** Canonical parity scenario/runtime contracts; MJCF runtime export options
+and radian unit declaration; validator request CLI; bounded/versioned Python runner;
+exact MuJoCo dependency pin; live and reviewed-capture orchestration; registered
+physics fixtures/evidence; the existing required worker CI job and artifact upload;
+agent, state, phase, execution, simulation, worker, compatibility, governance,
+threat-model, risk, task, and changelog guidance.
+**Decisions:** none. D20 remains binding. The reviewed MuJoCo 3.9.0 baseline stays
+pinned even though official upstream sources list 3.10.0 as current on 2026-07-15;
+adopting a new engine version requires a separate measured parity review rather than
+an unbounded dependency update. No tolerance, authority, or public format changed.
+**Next:** Run the complete local gate, publish the exact candidate through the
+existing protected checks, inspect the uploaded real-engine evidence, then reconcile
+P6-010 to `[x]` only after exact-head and protected post-merge CI/security pass.
+**Blockers:** none for implementation. Protected remote evidence is still required;
+SB3 training, GPU performance, diverse external imports, providers, hardware, and
+field transfer remain separate tasks.
+
 ## 2026-07-15 — Close contributor onboarding on protected main
 **Session:** Codex agent · branch `codex/doc006-protected-evidence` · **Phase:** DOC /
 governance · **TODO items:** DOC-006 [x]

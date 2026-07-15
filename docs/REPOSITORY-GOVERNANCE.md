@@ -84,6 +84,16 @@ without failing the protected check. This deterministic policy check never stand
 for an actual external run; the protocol is owned by
 [`EXTERNAL-ACCEPTANCE.md`](EXTERNAL-ACCEPTANCE.md).
 
+The required `compute workers (Python)` job depends on the exact validator artifact
+from `forge-core`. In addition to the complete Python 3.12 suite, it installs the
+reviewed MuJoCo 3.9.0 parity extra, generates source-revision/request-hash-bound MJCF
+from the checked-out Rust exporter, executes real Rapier and MuJoCo
+drop/pendulum/hover/gait scenes, and uploads the request, both baselines, and
+comparison even on failure. A provider/version/source/timestep/substep mismatch or a
+tolerance failure blocks the same existing check; the job name and default-branch
+ruleset do not change. The keyless local full gate still compares against the
+registered engine-backed fixture.
+
 The required `studio + gateway (TypeScript)` job runs
 `pnpm verify:compatibility` and `pnpm verify:docs-contracts` before building. The
 generated OpenAPI, event/artifact catalogs, manifest, and human reference must

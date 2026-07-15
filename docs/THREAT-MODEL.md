@@ -1,7 +1,7 @@
 # ForgedTTC threat model
 
 Owner: repository maintainers and deployment operators
-Last reviewed: **2026-07-13**
+Last reviewed: **2026-07-15**
 Applies to: gateway, Auth.js boundary, Postgres, object storage, generation providers,
 Python workers, live command adapters, release archives, Studio-facing APIs
 Implementation maturity: **contract and deterministic fixture**; production egress,
@@ -164,6 +164,19 @@ Python command adapters accept at most 4 MiB JSON input, 8 MiB stdout, and 256 K
 stderr; run for 1 second to 8 hours; use temporary files instead of unbounded pipes;
 and kill the process group on timeout or overflow. Exit failures never reflect
 provider stdout/stderr. Output must be a bounded JSON object.
+
+The P6-010 MuJoCo parity command is a narrower internal proof surface. It accepts at
+most 4 MiB total and 512 KiB for each of four required MJCF scenes; requires a full
+source Git object ID, request schema 1.0.0, a recomputed matching request SHA-256,
+exact MuJoCo 3.9.0, finite SI inputs, a one-million-step ceiling, and an integer
+1..64 substep count; and accepts only contract-exporter-marked MJCF with the radian
+compiler declaration and a bounded safe body name. NUL, external include, asset,
+plugin, or file references are refused before MuJoCo parses the scene. The runner
+checks compiled gravity/timestep, the orchestrator rejects
+source/provider/timestep/substep drift, and capture writes a registered baseline
+candidate only after the Rust comparison passes. Required CI runs this command over
+repository-generated primitive scenes in the worker job; it is not a general
+user-supplied MJCF execution service or an OS sandbox.
 
 QA-007 adds narrower surface limits and governed negative cases. Supported URDF/MJCF
 text is capped at 4 MiB, contains no NUL, and must use finite supported numeric
@@ -432,6 +445,7 @@ and tracing defaults separately; application tests cannot prove those external l
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
 | Malicious/partial upload or archive | checksum-bound PUT, staged-until-exact HEAD completion, staged download/consent refusal, MIME/name refusal, forced download, exact release archive allowlist/caps | provider IAM/checksum audit and quarantine scanner for any future importer |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |
+| MuJoCo parity scene/file abuse or evidence drift | 4 MiB/512 KiB bounds, exact source/schema/request-hash/engine identity, contract-marker/radian checks, external include/asset/plugin/file refusal, matched timestep/substeps, required real-engine CI artifact | non-root container/filesystem isolation and reviewed engine-upgrade evidence |
 | Provider replay/late result | lease-fenced expiry/reclaim, stale duplicate discard, one-time materialization, retry ceiling, and cancellation authority tests | multi-replica outage/partition drill, dead-letter reconciliation, or callback signature/replay suite |
 | Abuse/cost exhaustion | deterministic class/identity/reset tests | shared limiter, cost/concurrency quotas, alert exercise |
 | Supply-chain archive poisoning | exact contents, traversal and expanded-size tests; checksum/SBOM/install smoke | repeated post-publication verification and incident rollback drill |

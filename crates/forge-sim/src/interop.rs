@@ -488,6 +488,104 @@ pub struct MuJoCoParityBaseline {
     pub substeps: Option<u32>,
 }
 
+pub const MUJOCO_PARITY_REQUEST_VERSION: &str = "1.0.0";
+pub const PINNED_MUJOCO_VERSION: &str = "3.9.0";
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MuJoCoParityScene {
+    pub body_name: String,
+    pub mjcf: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MuJoCoParityScenes {
+    pub drop: MuJoCoParityScene,
+    pub pendulum: MuJoCoParityScene,
+    pub hover: MuJoCoParityScene,
+    pub gait: MuJoCoParityScene,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MuJoCoParityRequest {
+    pub artifact_kind: String,
+    pub schema_version: String,
+    pub task: String,
+    pub mujoco_version: String,
+    pub gravity: f64,
+    pub drop_height_m: f64,
+    pub pendulum_length_m: f64,
+    pub hover_trim: f64,
+    pub gait_com_m: f64,
+    pub driver_dt_s: f64,
+    pub substeps: u32,
+    pub scenes: MuJoCoParityScenes,
+}
+
+pub fn mujoco_parity_request(
+    gravity: f64,
+    pendulum_length_m: f64,
+    hover_trim: f64,
+    gait_com_m: f64,
+) -> Result<MuJoCoParityRequest, String> {
+    validate_parity_inputs(gravity, pendulum_length_m, hover_trim, gait_com_m)?;
+    let config = parity_world_config();
+    let timestep_s = config.dt_s / f64::from(config.substeps);
+    let (drop, drop_baked) = parity_drop_scenario(gravity, 1.0)?;
+    let (pendulum, pendulum_baked) = parity_pendulum_scenario(gravity, pendulum_length_m)?;
+    let (hover, hover_baked) = parity_hover_scenario(gravity)?;
+    let (gait, gait_baked) = parity_gait_scenario(gravity)?;
+
+    let export = |spec: &ModelSpec,
+                  baked: &forge_geometry::BakedModel,
+                  floating_roots: bool|
+     -> Result<String, String> {
+        crate::export::to_mjcf_with_options(
+            spec,
+            baked,
+            crate::export::MjcfExportOptions {
+                floating_roots,
+                timestep_s: Some(timestep_s),
+                euler_integrator: true,
+            },
+        )
+    };
+
+    Ok(MuJoCoParityRequest {
+        artifact_kind: "simParityMuJoCoRequest".to_string(),
+        schema_version: MUJOCO_PARITY_REQUEST_VERSION.to_string(),
+        task: "sim.parity".to_string(),
+        mujoco_version: PINNED_MUJOCO_VERSION.to_string(),
+        gravity,
+        drop_height_m: 1.0,
+        pendulum_length_m,
+        hover_trim,
+        gait_com_m,
+        driver_dt_s: config.dt_s,
+        substeps: config.substeps,
+        scenes: MuJoCoParityScenes {
+            drop: MuJoCoParityScene {
+                body_name: "drop".to_string(),
+                mjcf: export(&drop, &drop_baked, true)?,
+            },
+            pendulum: MuJoCoParityScene {
+                body_name: "bob".to_string(),
+                mjcf: export(&pendulum, &pendulum_baked, false)?,
+            },
+            hover: MuJoCoParityScene {
+                body_name: "hover".to_string(),
+                mjcf: export(&hover, &hover_baked, true)?,
+            },
+            gait: MuJoCoParityScene {
+                body_name: "gait".to_string(),
+                mjcf: export(&gait, &gait_baked, true)?,
+            },
+        },
+    })
+}
+
 pub fn engine_parity_sample_from_baselines(
     rapier: RapierParityBaseline,
     mujoco: MuJoCoParityBaseline,
@@ -504,6 +602,22 @@ pub fn engine_parity_sample_from_baselines(
             "pendulum length mismatch: Rapier {:.9} m vs MuJoCo {:.9} m",
             rapier.pendulum_length_m, mujoco.pendulum_length_m
         ));
+    }
+    if let Some(driver_dt_s) = mujoco.driver_dt_s {
+        if (rapier.driver_dt_s - driver_dt_s).abs() > 1e-12 {
+            return Err(format!(
+                "driver timestep mismatch: Rapier {:.12} s vs MuJoCo {:.12} s",
+                rapier.driver_dt_s, driver_dt_s
+            ));
+        }
+    }
+    if let Some(substeps) = mujoco.substeps {
+        if rapier.substeps != substeps {
+            return Err(format!(
+                "substep mismatch: Rapier {} vs MuJoCo {}",
+                rapier.substeps, substeps
+            ));
+        }
     }
     Ok(EngineParitySample {
         rapier_drop_time_s: rapier.rapier_drop_time_s,
@@ -532,12 +646,8 @@ pub fn rapier_engine_baseline(
     hover_trim: f64,
     gait_com_m: f64,
 ) -> Result<RapierParityBaseline, String> {
-    let config = RapierWorldConfig {
-        dt_s: 1.0 / 240.0,
-        substeps: 4,
-        fixed_roots: true,
-        include_ground: false,
-    };
+    validate_parity_inputs(gravity, pendulum_length_m, hover_trim, gait_com_m)?;
+    let config = parity_world_config();
     let drop_height_m = 1.0;
     Ok(RapierParityBaseline {
         drop_height_m,
@@ -551,22 +661,112 @@ pub fn rapier_engine_baseline(
     })
 }
 
+fn validate_parity_inputs(
+    gravity: f64,
+    pendulum_length_m: f64,
+    hover_trim: f64,
+    gait_com_m: f64,
+) -> Result<(), String> {
+    if !gravity.is_finite() || gravity <= 0.0 {
+        return Err("parity gravity must be positive and finite".to_string());
+    }
+    if !pendulum_length_m.is_finite() || pendulum_length_m <= 0.0 {
+        return Err("parity pendulum length must be positive and finite".to_string());
+    }
+    if !hover_trim.is_finite() || !(0.0..=1.0).contains(&hover_trim) || hover_trim <= 0.0 {
+        return Err("parity hover trim must be finite and in (0, 1]".to_string());
+    }
+    if !gait_com_m.is_finite() || gait_com_m < 0.0 {
+        return Err("parity gait CoM must be non-negative and finite".to_string());
+    }
+    Ok(())
+}
+
+fn parity_world_config() -> RapierWorldConfig {
+    RapierWorldConfig {
+        dt_s: 1.0 / 240.0,
+        substeps: 4,
+        fixed_roots: true,
+        include_ground: false,
+    }
+}
+
+fn parity_scenario(
+    doc: serde_json::Value,
+) -> Result<(ModelSpec, forge_geometry::BakedModel), String> {
+    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
+    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    Ok((spec, baked))
+}
+
+fn parity_drop_scenario(
+    gravity: f64,
+    drop_height_m: f64,
+) -> Result<(ModelSpec, forge_geometry::BakedModel), String> {
+    parity_scenario(serde_json::json!({
+      "meta":{"id":"parity-drop","name":"parity-drop","version":"2.2.0","archetype":"rover",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[{"name":"drop","parent":null,"pos":[0,drop_height_m,0]}],
+      "parts":[{"node":"drop","geom":{"kind":"box","w":0.04,"h":0.04,"d":0.04},
+                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
+      "driver":{"archetype":"rover","params":{"wheelbaseM":0.2,"maxSpeedMs":1.0}}
+    }))
+}
+
+fn parity_pendulum_scenario(
+    gravity: f64,
+    pendulum_length_m: f64,
+) -> Result<(ModelSpec, forge_geometry::BakedModel), String> {
+    let initial_angle = 0.12_f64;
+    let pi = std::f64::consts::PI;
+    parity_scenario(serde_json::json!({
+      "meta":{"id":"parity-pendulum","name":"parity-pendulum","version":"2.2.0","archetype":"arm",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[
+        {"name":"pivot","parent":null,"pos":[0,0,0]},
+        {"name":"bob","parent":"pivot","pos":[0,0,0],"rot":[0,0,initial_angle],
+         "joint":{"type":"revolute","axis":[0,0,1],"maxTorqueNm":0.0,"maxVelRad":20.0},
+         "limits":[[-pi,pi],[-pi,pi],[-pi,pi]]}
+      ],
+      "parts":[{"node":"bob","geom":{"kind":"box","w":0.03,"h":0.03,"d":0.03},
+                "pose":{"p":[0,-pendulum_length_m,0]},
+                "material":"matte","color":"#777777","collision":"primitive","mass":{"valueG":100}}],
+      "driver":{"archetype":"arm","params":{"targetM":[0,-pendulum_length_m,0]}}
+    }))
+}
+
+fn parity_hover_scenario(gravity: f64) -> Result<(ModelSpec, forge_geometry::BakedModel), String> {
+    parity_scenario(serde_json::json!({
+      "meta":{"id":"parity-hover","name":"parity-hover","version":"2.2.0","archetype":"multirotor",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[{"name":"hover","parent":null,"pos":[0,0,0]}],
+      "parts":[{"node":"hover","geom":{"kind":"box","w":0.06,"h":0.02,"d":0.06},
+                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
+      "driver":{"archetype":"multirotor","params":{"tiltMaxRad":0.4,"yawRate":2.4,"mixer":"x4"}}
+    }))
+}
+
+fn parity_gait_scenario(gravity: f64) -> Result<(ModelSpec, forge_geometry::BakedModel), String> {
+    parity_scenario(serde_json::json!({
+      "meta":{"id":"parity-gait-com","name":"parity-gait-com","version":"2.2.0","archetype":"quadruped",
+              "provenance":{"kind":"human"},"license":"CC0"},
+      "env":{"gravity": gravity, "airDensity": 1.225},
+      "skeleton":[{"name":"gait","parent":null,"pos":[0,0,0]}],
+      "parts":[{"node":"gait","geom":{"kind":"box","w":0.08,"h":0.03,"d":0.04},
+                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
+      "driver":{"archetype":"quadruped","params":{"standHeightM":0.08,"strideM":0.05,"cadenceHz":1.0,"duty":0.5,"liftM":0.02,"yawRate":1.0}}
+    }))
+}
+
 fn rapier_drop_time(
     gravity: f64,
     drop_height_m: f64,
     config: RapierWorldConfig,
 ) -> Result<f64, String> {
-    let doc = serde_json::json!({
-      "meta":{"id":"parity-drop","name":"parity-drop","version":"2.1.0","archetype":"rover",
-              "provenance":{"kind":"human"},"license":"CC0"},
-      "env":{"gravity": gravity, "airDensity": 1.225},
-      "skeleton":[{"name":"root","parent":null,"pos":[0,drop_height_m,0]}],
-      "parts":[{"node":"root","geom":{"kind":"box","w":0.04,"h":0.04,"d":0.04},
-                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
-      "driver":{"archetype":"rover","params":{"wheelbaseM":0.2,"maxSpeedMs":1.0}}
-    });
-    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
-    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    let (spec, baked) = parity_drop_scenario(gravity, drop_height_m)?;
     let mut world = RapierWorld::from_contract(
         &spec,
         &baked,
@@ -578,13 +778,13 @@ fn rapier_drop_time(
     .map_err(|err| err.to_string())?;
     let mut prev_t = 0.0;
     let mut prev_y = world
-        .body_pose("root")
+        .body_pose("drop")
         .ok_or("missing parity drop body")?
         .translation_m[1];
     for _ in 0..2400 {
         let step = world.step(config.dt_s);
         let y = world
-            .body_pose("root")
+            .body_pose("drop")
             .ok_or("missing parity drop body")?
             .translation_m[1];
         if y <= 0.0 {
@@ -607,25 +807,7 @@ fn rapier_pendulum_period(
     pendulum_length_m: f64,
     config: RapierWorldConfig,
 ) -> Result<f64, String> {
-    let initial_angle = 0.12_f64;
-    let pi = std::f64::consts::PI;
-    let doc = serde_json::json!({
-      "meta":{"id":"parity-pendulum","name":"parity-pendulum","version":"2.1.0","archetype":"arm",
-              "provenance":{"kind":"human"},"license":"CC0"},
-      "env":{"gravity": gravity, "airDensity": 1.225},
-      "skeleton":[
-        {"name":"root","parent":null,"pos":[0,0,0]},
-        {"name":"bob","parent":"root","pos":[0,0,0],"rot":[0,0,initial_angle],
-         "joint":{"type":"revolute","axis":[0,0,1],"maxTorqueNm":0.0,"maxVelRad":20.0},
-         "limits":[[-pi,pi],[-pi,pi],[-pi,pi]]}
-      ],
-      "parts":[{"node":"bob","geom":{"kind":"box","w":0.03,"h":0.03,"d":0.03},
-                "pose":{"p":[0,-pendulum_length_m,0]},
-                "material":"matte","color":"#777777","collision":"primitive","mass":{"valueG":100}}],
-      "driver":{"archetype":"arm","params":{"targetM":[0,-pendulum_length_m,0]}}
-    });
-    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
-    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    let (spec, baked) = parity_pendulum_scenario(gravity, pendulum_length_m)?;
     let mut world =
         RapierWorld::from_contract(&spec, &baked, config).map_err(|err| err.to_string())?;
     let mut prev_t = 0.0;
@@ -667,18 +849,7 @@ fn rapier_hover_trim(
     let mass_kg = 0.1;
     let max_thrust_n = mass_kg * gravity / expected_hover_trim;
     let final_velocity = |throttle: f64| -> Result<f64, String> {
-        let doc = serde_json::json!({
-          "meta":{"id":"parity-hover","name":"parity-hover","version":"2.1.0","archetype":"multirotor",
-                  "provenance":{"kind":"human"},"license":"CC0"},
-          "env":{"gravity": gravity, "airDensity": 1.225},
-          "skeleton":[{"name":"root","parent":null,"pos":[0,0,0]}],
-          "parts":[{"node":"root","geom":{"kind":"box","w":0.06,"h":0.02,"d":0.06},
-                    "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
-          "driver":{"archetype":"multirotor","params":{"tiltMaxRad":0.4,"yawRate":2.4,"mixer":"x4"}}
-        });
-        let spec =
-            forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
-        let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+        let (spec, baked) = parity_hover_scenario(gravity)?;
         let mut world = RapierWorld::from_contract(
             &spec,
             &baked,
@@ -688,7 +859,7 @@ fn rapier_hover_trim(
             },
         )
         .map_err(|err| err.to_string())?;
-        if !world.set_body_force("root", [0.0, throttle * max_thrust_n, 0.0]) {
+        if !world.set_body_force("hover", [0.0, throttle * max_thrust_n, 0.0]) {
             return Err("missing parity hover body".to_string());
         }
         let steps = (1.0 / config.dt_s).ceil() as usize;
@@ -696,7 +867,7 @@ fn rapier_hover_trim(
             world.step(config.dt_s);
         }
         Ok(world
-            .body_pose("root")
+            .body_pose("hover")
             .ok_or("missing parity hover body")?
             .linvel_mps[1])
     };
@@ -737,17 +908,7 @@ fn rapier_gait_com(
     let omega = 2.0 * std::f64::consts::PI;
     let lateral_force_amp_n = mass_kg * target_gait_com_m * omega * omega / 2.0;
     let vertical_force_n = mass_kg * gravity;
-    let doc = serde_json::json!({
-      "meta":{"id":"parity-gait-com","name":"parity-gait-com","version":"2.1.0","archetype":"quadruped",
-              "provenance":{"kind":"human"},"license":"CC0"},
-      "env":{"gravity": gravity, "airDensity": 1.225},
-      "skeleton":[{"name":"body","parent":null,"pos":[0,0,0]}],
-      "parts":[{"node":"body","geom":{"kind":"box","w":0.08,"h":0.03,"d":0.04},
-                "material":"matte","color":"#888888","collision":"primitive","mass":{"valueG":100}}],
-          "driver":{"archetype":"quadruped","params":{"standHeightM":0.08,"strideM":0.05,"cadenceHz":1.0,"duty":0.5,"liftM":0.02,"yawRate":1.0}}
-    });
-    let spec = forge_contract::validate_shape(&doc.to_string()).map_err(|err| err.to_string())?;
-    let baked = forge_geometry::bake(&spec).map_err(|err| err.to_string())?;
+    let (spec, baked) = parity_gait_scenario(gravity)?;
     let mut world = RapierWorld::from_contract(
         &spec,
         &baked,
@@ -762,12 +923,12 @@ fn rapier_gait_com(
     for step in 0..steps {
         let t = step as f64 * config.dt_s;
         let lateral = lateral_force_amp_n * (omega * t).cos();
-        if !world.set_body_force("body", [lateral, vertical_force_n, 0.0]) {
+        if !world.set_body_force("gait", [lateral, vertical_force_n, 0.0]) {
             return Err("missing parity gait body".to_string());
         }
         world.step(config.dt_s);
         let x = world
-            .body_pose("body")
+            .body_pose("gait")
             .ok_or("missing parity gait body")?
             .translation_m[0]
             .abs();
@@ -1235,6 +1396,37 @@ mod tests {
     }
 
     #[test]
+    fn mujoco_request_uses_same_contract_derived_scenarios_and_runtime_step() {
+        let request = mujoco_parity_request(9.80665, 0.4, 0.42, 0.004)
+            .expect("MuJoCo request should compile from canonical contracts");
+        assert_eq!(request.schema_version, MUJOCO_PARITY_REQUEST_VERSION);
+        assert_eq!(request.mujoco_version, PINNED_MUJOCO_VERSION);
+        assert_eq!(request.driver_dt_s, 1.0 / 240.0);
+        assert_eq!(request.substeps, 4);
+        for scene in [
+            &request.scenes.drop,
+            &request.scenes.pendulum,
+            &request.scenes.hover,
+            &request.scenes.gait,
+        ] {
+            assert!(scene.mjcf.contains("generated by forge-sim from contract"));
+            assert!(scene.mjcf.contains("timestep=\"0.001041666667\""));
+            assert!(scene.mjcf.contains("integrator=\"Euler\""));
+            assert!(scene
+                .mjcf
+                .contains(&format!("name=\"{}\"", scene.body_name)));
+        }
+        assert!(request.scenes.drop.mjcf.contains("<freejoint/>"));
+        assert!(!request.scenes.pendulum.mjcf.contains("<freejoint/>"));
+        assert!(request.scenes.hover.mjcf.contains("<freejoint/>"));
+        assert!(request.scenes.gait.mjcf.contains("<freejoint/>"));
+
+        let err = mujoco_parity_request(-9.8, 0.4, 0.42, 0.004)
+            .expect_err("negative gravity should fail before scene compilation");
+        assert!(err.contains("gravity"), "{err}");
+    }
+
+    #[test]
     fn engine_baseline_comparison_rejects_fixture_mismatch() {
         let rapier = RapierParityBaseline {
             drop_height_m: 1.0,
@@ -1264,6 +1456,18 @@ mod tests {
         let err = compare_engine_baselines(rapier, mujoco, ParityTolerance::default())
             .expect_err("fixture mismatch should be rejected before tolerance math");
         assert!(err.contains("pendulum length mismatch"), "{err}");
+
+        mujoco.pendulum_length_m = 0.4;
+        mujoco.driver_dt_s = Some(1.0 / 120.0);
+        let err = compare_engine_baselines(rapier, mujoco, ParityTolerance::default())
+            .expect_err("timestep mismatch should be rejected before tolerance math");
+        assert!(err.contains("driver timestep mismatch"), "{err}");
+
+        mujoco.driver_dt_s = Some(1.0 / 240.0);
+        mujoco.substeps = Some(2);
+        let err = compare_engine_baselines(rapier, mujoco, ParityTolerance::default())
+            .expect_err("substep mismatch should be rejected before tolerance math");
+        assert!(err.contains("substep mismatch"), "{err}");
     }
 
     #[test]

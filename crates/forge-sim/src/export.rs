@@ -413,9 +413,37 @@ fn joint_kind_axis(node: &Node) -> (&'static str, Option<([f64; 3], f64, f64, f6
 // MJCF
 // ---------------------------------------------------------------------------
 
+/// Runtime-only MJCF controls. The default keeps fixed roots and MuJoCo's own
+/// timestep/integrator defaults. Engine-parity capture opts into a free root
+/// and an explicit Euler timestep; the universal radian declaration is emitted
+/// independently because contract angles are always SI radians.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct MjcfExportOptions {
+    pub floating_roots: bool,
+    pub timestep_s: Option<f64>,
+    pub euler_integrator: bool,
+}
+
 /// Export the contract as MJCF (Z-up). The body tree nests by skeleton parent;
 /// gravity/density come from the contract's env block — never ambient.
 pub fn to_mjcf(spec: &ModelSpec, baked: &BakedModel) -> String {
+    to_mjcf_with_options(spec, baked, MjcfExportOptions::default())
+        .expect("default MJCF export options are valid")
+}
+
+/// Export MJCF with explicit runtime controls. This is used by the P6-010
+/// parity harness so MuJoCo executes exporter output from the same canonical
+/// contracts and mass properties as Rapier at the same substep duration.
+pub fn to_mjcf_with_options(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    options: MjcfExportOptions,
+) -> Result<String, String> {
+    if let Some(timestep_s) = options.timestep_s {
+        if !timestep_s.is_finite() || timestep_s <= 0.0 {
+            return Err("MJCF timestep must be positive and finite".to_string());
+        }
+    }
     let physical_parts = spec.physical_parts_with_paths();
     let mut out = String::new();
     out.push_str(&format!(
@@ -427,11 +455,25 @@ pub fn to_mjcf(spec: &ModelSpec, baked: &BakedModel) -> String {
         "<mujoco model=\"{}\">\n",
         xml_escape(&spec.meta.id)
     ));
+    // Contract joint angles and limits are radians. MuJoCo's MJCF compiler
+    // otherwise interprets angle-valued attributes as degrees.
+    out.push_str("  <compiler angle=\"radian\"/>\n");
     out.push_str(&format!(
-        "  <option gravity=\"0 0 -{}\" density=\"{}\"/>\n",
+        "  <option gravity=\"0 0 -{}\" density=\"{}\"",
         fnum(spec.env.gravity),
         fnum(spec.env.air_density)
     ));
+    if let Some(timestep_s) = options.timestep_s {
+        let timestep = format!("{timestep_s:.12}")
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string();
+        out.push_str(&format!(" timestep=\"{timestep}\""));
+    }
+    if options.euler_integrator {
+        out.push_str(" integrator=\"Euler\"");
+    }
+    out.push_str("/>\n");
     out.push_str("  <worldbody>\n");
 
     let roots: Vec<&Node> = spec
@@ -440,16 +482,14 @@ pub fn to_mjcf(spec: &ModelSpec, baked: &BakedModel) -> String {
         .filter(|n| n.parent.is_none())
         .collect();
     let mut actuators = String::new();
+    let context = MjcfExportContext {
+        spec,
+        physical_parts: &physical_parts,
+        baked,
+        options,
+    };
     for root in roots {
-        mjcf_body(
-            spec,
-            &physical_parts,
-            baked,
-            root,
-            2,
-            &mut out,
-            &mut actuators,
-        );
+        mjcf_body(&context, root, 2, &mut out, &mut actuators);
     }
     out.push_str("  </worldbody>\n");
     if !actuators.is_empty() {
@@ -458,13 +498,18 @@ pub fn to_mjcf(spec: &ModelSpec, baked: &BakedModel) -> String {
         out.push_str("  </actuator>\n");
     }
     out.push_str("</mujoco>\n");
-    out
+    Ok(out)
+}
+
+struct MjcfExportContext<'a> {
+    spec: &'a ModelSpec,
+    physical_parts: &'a [(String, &'a Part)],
+    baked: &'a BakedModel,
+    options: MjcfExportOptions,
 }
 
 fn mjcf_body(
-    spec: &ModelSpec,
-    physical_parts: &[(String, &Part)],
-    baked: &BakedModel,
+    context: &MjcfExportContext<'_>,
     node: &Node,
     depth: usize,
     out: &mut String,
@@ -485,6 +530,10 @@ fn mjcf_body(
         fnum(q[3])
     ));
 
+    if node.parent.is_none() && context.options.floating_roots {
+        out.push_str(&format!("{pad}  <freejoint/>\n"));
+    }
+
     if let (kind, Some((axis, lo, hi, _effort, _vel))) = joint_kind_axis(node) {
         if kind == "revolute" {
             out.push_str(&format!(
@@ -501,7 +550,7 @@ fn mjcf_body(
         }
     }
 
-    let inertial = node_inertial(physical_parts, baked, &node.name);
+    let inertial = node_inertial(context.physical_parts, context.baked, &node.name);
     if inertial.mass_kg > 1e-9 {
         let [ixx, iyy, izz, ixy, ixz, iyz] = inertial.inertia_zup;
         out.push_str(&format!(
@@ -519,8 +568,8 @@ fn mjcf_body(
         ));
     }
 
-    for bp in baked.parts.iter().filter(|bp| bp.node == node.name) {
-        let part = physical_parts[bp.part_index].1;
+    for bp in context.baked.parts.iter().filter(|bp| bp.node == node.name) {
+        let part = context.physical_parts[bp.part_index].1;
         if part.collision == forge_contract::CollisionPolicy::None {
             continue; // MJCF geoms are contact geometry; visual-only parts stay client-side
         }
@@ -560,20 +609,13 @@ fn mjcf_body(
         }
     }
 
-    for child in spec
+    for child in context
+        .spec
         .skeleton
         .iter()
         .filter(|n| n.parent.as_deref() == Some(&node.name))
     {
-        mjcf_body(
-            spec,
-            physical_parts,
-            baked,
-            child,
-            depth + 1,
-            out,
-            actuators,
-        );
+        mjcf_body(context, child, depth + 1, out, actuators);
     }
     out.push_str(&format!("{pad}</body>\n"));
 }
@@ -675,11 +717,45 @@ mod tests {
         let (spec, baked) = load("../../examples/vx2-mini.forge.json");
         let mjcf = to_mjcf(&spec, &baked);
         assert!(mjcf.contains("gravity=\"0 0 -9.80665\""));
+        assert!(mjcf.contains("<compiler angle=\"radian\"/>"));
         assert!(mjcf.contains("type=\"hinge\""));
         assert!(mjcf.contains("<motor name=\"s0_motor\""));
         // visual-only props are not contact geoms
         assert_eq!(mjcf.matches("<geom ").count(), 12, "collidable parts only");
         assert!(xml_balanced(&mjcf), "unbalanced XML");
+    }
+
+    #[test]
+    fn mjcf_runtime_options_are_explicit_without_changing_default_export() {
+        let (spec, baked) = load("../../examples/vx2-mini.forge.json");
+        let default = to_mjcf(&spec, &baked);
+        let explicit_default =
+            to_mjcf_with_options(&spec, &baked, MjcfExportOptions::default()).unwrap();
+        assert_eq!(default, explicit_default);
+
+        let runtime = to_mjcf_with_options(
+            &spec,
+            &baked,
+            MjcfExportOptions {
+                floating_roots: true,
+                timestep_s: Some(1.0 / 960.0),
+                euler_integrator: true,
+            },
+        )
+        .unwrap();
+        assert!(runtime.contains("timestep=\"0.001041666667\" integrator=\"Euler\""));
+        assert_eq!(runtime.matches("<freejoint/>").count(), 1);
+
+        let err = to_mjcf_with_options(
+            &spec,
+            &baked,
+            MjcfExportOptions {
+                timestep_s: Some(f64::NAN),
+                ..MjcfExportOptions::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("positive and finite"));
     }
 
     #[test]

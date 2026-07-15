@@ -110,8 +110,12 @@ fixture values, never secrets, signed URLs, raw user content, or claims of live 
    attempts, unchanged structural thresholds, and reviewed composites. Viewer-grade
    Canvas2D is support evidence, never WebGL parity proof (P1-015/QA-012).
 6. **Harness** — the full validation suite on every first-party contract, every PR.
-7. **Simulation parity** — Rapier vs MuJoCo on canonical scenes on every engine/exporter bump
-   (training side canonical, D20).
+7. **Simulation parity** — real Rapier vs exact-pinned MuJoCo on contract-derived
+   canonical scenes in the required worker check on every engine/exporter bump
+   (training side canonical, D20). Keep the keyless registered fixture for local
+   determinism, but never use fixture-only green to close real-engine acceptance;
+   bind source, provider, SI/radian units, driver timestep, and substeps in retained
+   evidence, and review every engine or baseline re-pin under the golden policy.
 8. **Regression** — physics trajectory tolerance bands; minimized fuzz failures
    become permanent cases (XC-24).
 9. **Trust-boundary adversarial corpus** — imports, JSON Patch, EnvSpec, replay,

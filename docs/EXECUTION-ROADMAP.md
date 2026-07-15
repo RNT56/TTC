@@ -81,7 +81,10 @@ every entry surface and exercises the contract with bounded live issues #55-#57
 without assigning security, credentials/providers, hardware, user data,
 compatibility migrations, or golden/oracle authority to entry-level work. Exact head
 `c83f036` passed CI `29379546230`/security `29379546201`; post-merge CI
-`29380212006`/security `29380212007` pass. No external contribution is claimed.
+`29380212006`/security `29380212007` pass. Evidence PR #59 exact head `47f4e3d`
+passed CI `29380952442`/security `29380952454`, and protected `484aefa` passed
+post-merge CI `29381316922`/security `29381316924`. No external contribution is
+claimed.
 
 PR #54's evidence closeout exposed a time-dependent GOV-003 maintenance prerequisite:
 npm retired pnpm 10's audit endpoints. pnpm 11.13.0 restores the bulk-advisory
@@ -141,7 +144,8 @@ Current Wave 1/2 boundary:
   event families, fourteen compatibility domains, and sixteen worker queue kinds
   exact-match the generated references; all 36 local steps and exact PR/post-merge
   CI/security pass;
-- DOC-006 is complete through protected PR #58 at `3078dba`: contributor discovery,
+- DOC-006 is complete through implementation PR #58 at `3078dba` and evidence PR #59
+  at `484aefa`: contributor discovery,
   maintainer-only curation, assignment/reassignment, sensitive-authority exclusions,
   seed issues, and all public/agent entry surfaces have exact PR/post-merge proof;
   open seed issues do not substitute for an external contributor outcome;
@@ -308,7 +312,8 @@ Objective: move R2 from adapter contracts to measured live compute.
 Work:
 
 - P5 live photoscan/COLMAP/cache/SLO (`P5-001`, `P5-002`, `P5-006`, `EXT-002`);
-- P6 live Rapier/MuJoCo parity and broader external import corpus (`P6-010`);
+- P6 protect the locally passing real Rapier/MuJoCo 3.9.0 required-check evidence
+  and broaden the external import corpus (`P6-010`);
 - P7 real SB3/MuJoCo pipeline, ONNX Runtime Web, offline learning, and MJX decision
   (`P7-003`, `P7-008..010`, `EXT-003`);
 - P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
@@ -320,7 +325,8 @@ Acceptance:
 
 - a photographed motor becomes a reviewed equipable component under five minutes or
   the SLO is explicitly revised from evidence;
-- real engine baselines pass declared parity tolerances;
+- real engine baselines pass declared parity tolerances on the exact protected
+  revision with source/provider/timestep/substep-bound artifacts;
 - one-click training produces a scorecard-passing policy overnight on declared
   hardware and the browser executes the actual ONNX model;
 - MJX adoption/rejection is based on D12 benchmark data;

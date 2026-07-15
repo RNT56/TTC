@@ -1,6 +1,8 @@
 # Simulation Engine (`forge-sim`) — implementation doc
 
-**Status:** deterministic sim helpers/exporters/importers, engine-backed Rapier stepping, and Rapier↔MuJoCo parity live · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
+**Status:** deterministic sim helpers/exporters/importers, engine-backed Rapier stepping,
+and local real-engine MuJoCo 3.9.0 parity implemented; protected required-check
+acceptance pending · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
 **Decisions:** D7, D8, D16, D17, D20, D32
 
@@ -97,25 +99,35 @@ cannot pass a vacuous pairwise window.
 
 ## 7. The parity discipline (D20)
 
-Rapier and MuJoCo consume the **same compiled MJCF from the same contract**. Parity
-suite — drop tests, pendulum periods, hover trim, gait CoM trajectories — asserts
-agreement within stated tolerances and runs on **every engine or exporter upgrade**
+Rapier and MuJoCo now start from the **same four canonical ModelSpec scenarios**.
+Rapier compiles those contracts directly; MuJoCo receives MJCF emitted by the
+checked-out `forge-sim` exporter from those same contracts. The parity suite — drop
+tests, pendulum periods, hover trim, and gait CoM trajectories — asserts agreement
+within unchanged stated tolerances and runs in the existing merge-blocking
+`compute workers (Python)` check on every pull request and protected-main push
 (P6-010). Where they disagree, the training side is truth and the client side is
-presentation. (Distinct from the golden-number suite, which asserts *our own* code
-is bit-identical across targets — XT-001.) Current implementation has deterministic
-fixture checks in `forge-sim::interop`, a frozen parity tolerance contract, real
-Rapier drop-time and pendulum-period baselines measured through
-`rapier_engine_baseline`, a live engine-backed Rapier world/step adapter, and
-`forge-validate sim-parity` commands that emit Rapier baseline JSON and compare
-MuJoCo baseline JSON for worker/CI handoff. `pnpm sim:parity` materializes the
-request, Rapier baseline, MuJoCo baseline, and comparison artifacts, or calls
-`FORGE_MUJOCO_PARITY_CMD` when a deployment provides a live MuJoCo runner.
-`pnpm sim:parity:check` compares current Rapier against the frozen MuJoCo 3.9.0
-baseline fixture for drop, pendulum, hover trim, and gait CoM. The optional worker
-command `python -m forge_workers.mujoco_parity` refreshes live MuJoCo baselines when
-the Python `mujoco` extra is installed. Local MuJoCo 3.9.0 smoke measured drop
-Δ 0.000653 s, pendulum Δ 0.000517 s, hover-trim Δ 6.98e-10, and gait-CoM
-Δ 0.0000619 m, inside the frozen tolerance bands.
+presentation. This is distinct from XT-001's native/WASM bit-exact golden numbers.
+
+`forge-validate sim-parity mujoco-request` emits the source-revision- and
+request-hash-bound, versioned request and contract-derived MJCF; the Python runner
+refuses missing or external-file scenes, non-finite/bad bounds, source/version drift,
+oversized input, a request-hash mismatch, compiled gravity/timestep drift, and any
+installed engine other than the reviewed MuJoCo 3.9.0 pin. The MJCF exporter
+declares radians explicitly, and parity-only options declare free versus fixed roots,
+Euler integration, and the same 1/240 s driver with four 1/960 s substeps used by
+Rapier. The Rust comparator also refuses mismatched scenario dimensions, driver
+timestep, or substep count before applying the frozen tolerances.
+
+After `python -m pip install -e "workers[dev,mujoco]"`, run
+`pnpm sim:parity:live` for both engines. `pnpm sim:parity:check` remains the keyless
+local gate against the reviewed engine-backed fixture. The registered
+`--capture-baseline` path writes a baseline candidate only after a real pinned-engine
+comparison passes; every accepted re-pin still requires the append-only golden
+review procedure. The 2026-07-15 local MuJoCo 3.9.0 run measured drop delta
+0.001396765 s, pendulum delta 0.000069847 s, hover-trim delta 6.98e-10, and gait-CoM
+delta 0.000061964 m, inside the unchanged 0.002 s / 0.01 s / 0.02 / 0.02 m bands.
+P6-010 remains in progress until the exact PR head and protected merge both retain
+this required live-engine proof.
 
 ## 8. Dependencies
 
@@ -126,7 +138,8 @@ coupling). Server twin: the training worker consumes the MJCF this crate compile
 
 SIM-001..003 harness checks; battery/propulsion unit tests vs bench math;
 differential tests vs the JS oracle during the port; parity suite (canonical scenes,
-tolerance bands — also the physics-regression gates for engine bumps); replay
+tolerance bands — also the physics-regression gates for engine/exporter bumps, with
+the real pinned MuJoCo execution in required CI and a keyless reviewed fixture locally); replay
 determinism via the golden-number suite (bit-exact, any target); exporter goldens;
 importer round-trip (external URDF/MJCF → admitted contract → `RoverDriver`
 drive smoke, P6 exit criterion closed 2026-06-15). The registered QA-007 corpus adds

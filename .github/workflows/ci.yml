@@ -179,13 +179,32 @@ jobs:
   workers:
     name: compute workers (Python)
     runs-on: ubuntu-latest
+    needs: core
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
-      - run: pip install -e "workers[dev]"
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: forge-validate
+          path: target/debug
+      - run: chmod +x target/debug/forge-validate
+      - run: pip install -e "workers[dev,mujoco]"
       - run: python -m pytest workers -q
+      - name: P6-010 live Rapier-MuJoCo engine parity
+        env:
+          FORGE_MUJOCO_PARITY_CMD: python -m forge_workers.mujoco_parity
+          FORGE_SOURCE_REVISION: ${{ github.sha }}
+        run: node scripts/sim-parity.mjs --out artifacts/sim-parity
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: sim-engine-parity-evidence
+          path: artifacts/sim-parity
 
   desktop-native:
     name: desktop native (macOS)

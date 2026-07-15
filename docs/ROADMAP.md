@@ -90,8 +90,10 @@ exact head `00ae9a0` passed CI `29378364147`/security `29378364143`, and protect
 `41dee2d` passed post-merge CI `29378749550`/security `29378749542`. DOC-006 closed
 the documentation lane through PR #58 at `3078dba`: exact head `c83f036` passed CI
 `29379546230`/security `29379546201`, and post-merge CI `29380212006`/security
-`29380212007` pass. The curated workflow and seed issues #55-#57 are executable, but
-no external contribution outcome is claimed.
+`29380212007` pass. Evidence PR #59 protected the final ledger reconciliation at
+`484aefa` after exact-head CI `29380952442`/security `29380952454` and post-merge CI
+`29381316922`/security `29381316924`. The curated workflow and seed issues #55-#57
+are executable, but no external contribution outcome is claimed.
 
 | Phase | Status | Est. |
 |---|---|---|
@@ -102,7 +104,7 @@ no external contribution outcome is claimed.
 | P3 Component DB + proof pair + reference rigs | ● **deterministic/local exit** *(tag `p3-baseline`; Postgres runner/seed/assert, strict fixture rows, review queue, HUD/BOM, reference rigs, and native bounded Anthropic ETL contract; credentialed extraction through reviewed persistence remains P3-004/R1 work)* | 2–3 wk |
 | P4 Text-to-CAD GA | ◑ *(deterministic real-validator gate is 25/25, QA-002's ten-flow real-WASM/isolated-DB browser loop is protected through PR #38, and QA-003's three-engine semantic/interaction matrix is protected through PR #42; SEC-002..006 remain contract/fixture, D36 native ETL is contract/fixture only, and credentialed extraction, deployed egress/quotas/backup/DR, and external R1 proof remain gated)* | 3–4 wk |
 | P5 Image → 3D | ◑ *(2026-06-14: fixture photoscan jobs, normalized live-command TRELLIS/COLMAP adapter contract, object-cache keys linked through object_blobs, primitive-refit/candidate rows, editable owner alignment UI, Modal endpoint adapter; real GPU SLO and mesh-click placement remain adapter/config/UI work)* | 3 wk |
-| P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports now exist; pinned MuJoCo comparison passes; protected QA-007 adds malformed/non-finite import/replay/EnvSpec regression coverage, while live MuJoCo baseline and diverse real external corpus remain open)* | 3–4 wk |
+| P6 Sim depth + interop | ◑ *(engine-backed Rapier world/WASM worker and admitted driveable URDF/MJCF fixture imports exist; the 2026-07-15 candidate executes real pinned MuJoCo 3.9.0 over the same canonical scenario contracts in the existing required worker check, while exact protected evidence and a diverse real external corpus remain open)* | 3–4 wk |
 | P7 Training service | ◑ *(2026-06-14: task specs, obs/action derivation, domain randomization, curriculum metadata, fixture train.policy/train.sysid-fit jobs, external SB3 scorecard re-gating, ONNX headers/blob-linked policy artifacts, and Studio CoreSession policy playback; live SB3/MuJoCo/ONNX Runtime inference remains adapter work)* | 4 wk |
 | P8 Bridge + Desktop | ◑ *(D30 accepts controlled D12 lab pilots; config-diff, telemetry ingest, supervisor, sysid, replay/telemetry/maintenance side-table readers, Studio artifact rows, and gateway/Desktop lab gates exist; protected QA-007 bounds payloads and refuses command injection, duplicate/non-finite time, malformed vectors, and invalid safety limits; real lab adapters/evidence remain open)* | 5–7 wk |
 | P9 Co-design | ◑ *(2026-06-14: manifold encoding, deterministic JSON-Patch candidates, objective constraints, tier evidence, admitted-only Pareto outputs, Studio launch/save buttons; live CMA-ES/Optuna/full sim ladder open)* | 4 wk |
@@ -238,7 +240,7 @@ disturbance injectors; MJCF/URDF exporters with parity suite; URDF/MJCF **import
 [`systems/model-contract.md`](systems/model-contract.md) §6.
 
 Exit criteria:
-- [~] Hover trim agrees across Rapier and MuJoCo within tolerance (deterministic parity fixture green; engine-backed parity open)
+- [~] Hover trim agrees across Rapier and MuJoCo within tolerance *(2026-07-15: local real Rapier/MuJoCo 3.9.0 execution passes all four contract-derived scenarios under unchanged bands and is wired into the existing required worker check; protect the exact PR and merge evidence before closure)*
 - [x] An external URDF/MJCF fixture round-trips into an admitted driveable contract *(reconciled 2026-07-12: `import_driveable` tests pass; broaden external corpus under QA-007 without reopening this fixture criterion)*
 - [x] Endurance estimate within stated error of bench math; assumptions inspectable in HUD
 - [x] Replay format stable: {contract hash + lockfile, env, seed, input tape} — verifiable on any surface (D17)

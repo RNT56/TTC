@@ -1,14 +1,15 @@
 {
   "artifactKind": "simParityMuJoCoBaseline",
+  "schemaVersion": "1.0.0",
   "provider": "mujoco-python-3.9.0",
   "baseline": {
-    "dropHeightM": 1.0,
-    "mujocoDropTimeS": 0.4521218466494958,
-    "pendulumLengthM": 0.4,
-    "mujocoPendulumPeriodS": 1.270112620088624,
-    "mujocoHoverTrim": 0.4200000000419095,
-    "mujocoGaitComM": 0.004020575954833466,
     "driverDtS": 0.004166666666666667,
+    "dropHeightM": 1,
+    "mujocoDropTimeS": 0.45286544367797626,
+    "mujocoGaitComM": 0.00402050250861172,
+    "mujocoHoverTrim": 0.4200000000419095,
+    "mujocoPendulumPeriodS": 1.2706999182464798,
+    "pendulumLengthM": 0.4,
     "substeps": 4
   }
 }
