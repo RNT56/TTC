@@ -18,6 +18,44 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Protect source-bound offline fine-tuning
+**Session:** Codex agent · branch `codex/p7009-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-009 [x]
+**Done:** Closed P7-009 at controlled-synthetic offline-training maturity without
+promoting its result to recorder, device, field, deployed-GPU, learning-quality, or
+external-user proof. PR #77 exact head `8cb70c4` passed CI `29455576345` and security
+`29455576393`; synthetic merge `3bb877f` has exact protected parent `f0bb4e2` and
+implementation head; protected squash `2c7562d` passed post-merge CI `29456064537`
+and security `29456064498`. The required database job applies all 23 migrations on a
+clean database and every populated predecessor, then passes MinIO policy delivery,
+all 11 real-browser flows, supported-browser/accessibility acceptance, and commerce
+materialization. Downloaded protected artifact `8359446894` self-binds to clean
+`2c7562d`; `p7-offline-training.json` hashes as
+`d1fe7f7ac5ce94f9dc0c443303592f3e577b66500ebd0ad23be46b275e5eac66`.
+Independent base64 decoding, byte/digest recomputation, ONNX parsing/checking, and
+opset/shape inspection validate hover 23,874 bytes/
+`340090a84f2218772bf1b9a8818badc5ee225ae18579456b522f69f54c187c25`
+and rover 22,520 bytes/
+`c329ddc584846753ba46ca1acee2734d93a5a040e8715f19ca4274640352a05b`.
+Both 64-sample controlled-synthetic datasets are accepted, same-seed exactness is
+true, BC warmstarts and PPO final parameters are distinct, and the unchanged short
+scorecards remain correctly blocked. The hover dataset/warmstart hashes are
+`462a4cc1…8c3`/`cac762b8…fe7c`; rover hashes are
+`0ae76e66…c56`/`b5912a87…e41c`. The stable ledger is now 205 tasks: 147 done,
+32 in progress, 25 open, and 1 blocked.
+**Changed:** Canonical agent boundary; project state; roadmap and atomic TODO;
+execution sequencing; learning, worker, gateway, hardware, and golden-contract
+guidance; and this changelog. No runtime, schema, migration, generated contract,
+dependency, scorecard threshold, or golden artifact changed in this reconciliation.
+**Decisions:** none; D45 remains binding.
+**Next:** Finish P7-010's exact D12 morphology/accelerator/budget/cost decision evidence
+or P7-013's deployed Modal/GPU operations, whichever prerequisite-complete lane can be
+proved without inventing provider, hardware, or field authority.
+**Blockers:** none for P7-009 controlled-synthetic closure. Recorded-device attestation
+remains P8; deployed GPU operations remain P7-013; passing-policy delivery integration,
+ground browser playback, production storage operations, external users, and field
+transfer remain separate gates.
+
 ## 2026-07-15 — Implement source-bound offline fine-tuning
 **Session:** Codex agent · branch `codex/p7009-offline-finetune` · **Phase:** P7 ·
 **TODO items:** P7-009 [~]

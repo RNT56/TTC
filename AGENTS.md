@@ -86,9 +86,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected documentation descendant is P7-014 evidence PR #76 at
-  `f0bb4e2`, with post-merge CI `29451767820` and security `29451767650` green. The
-  latest protected runtime remains P7-014 PR #75 at `90b1691`; PR #75 owns the
+  latest verified protected runtime descendant is P7-009 PR #77 at `2c7562d`, with
+  post-merge CI `29456064537` and security `29456064498` green. PR #77 owns the
+  source-bound controlled-synthetic offline-training evidence; PR #75 owns the
   contract-derived rover/quadruped trainer evidence, PR #70/`f220d25` owns the
   task-v2 waypoint history, PR #68/`9131289` owns object-backed one-click delivery,
   PR #66/`0614272` owns controlled
@@ -247,7 +247,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   tests. This closes P7-014 at controlled deterministic trainer maturity. Studio
   deliberately refuses the ground tensor; passing learned ground policies, browser
   execution, device transfer, external acceptance, and field proof remain separate;
-- P7-009 now has a D45 implementation candidate over exact protected base `f0bb4e2`.
+- P7-009 is closed at controlled-synthetic offline-training maturity through PR #77/
+  protected `2c7562d` under D45. Exact head `8cb70c4` passed PR CI `29455576345` and
+  security `29455576393`; the synthetic merge `3bb877f` has exact parents `f0bb4e2`
+  and `8cb70c4`; and protected-main CI `29456064537`/security `29456064498` pass.
   The gateway queues one consented owned telemetry log only through local/Modal,
   binds it to the same admitted snapshot, and injects the tape/hash server-side.
   Exact tape/dataset/warmstart 1.0.0 authorities reject sample, task, tensor, truth,
@@ -255,11 +258,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   cloning epochs then 256 recipe-owned randomized PPO steps through the existing
   flight or ground trainer, ONNX exporter, and unchanged scorecard. A repeated
   hover/rover controlled-synthetic smoke has identical dataset, warmstart-parameter,
-  and ONNX digests and correctly blocked scorecards; the complete 40-step local gate
-  passes with 188 worker tests, 65 gateway tests, and 17 generated worker families.
-  This is an unprotected implementation candidate, not recorder/device/
-  field data, learning quality, deployment, or external acceptance; keep P7-009
-  `[~]` until exact PR/post-merge CI/security and clean protected artifact inspection;
+  and ONNX digests and correctly blocked scorecards; the complete 40-step gate and
+  isolated 23-migration Postgres/MinIO/browser matrix pass with 188 worker tests,
+  65 gateway tests, and 17 generated worker families. Downloaded protected artifact
+  `8359446894` self-binds to clean `2c7562d`; its offline JSON SHA-256 is
+  `d1fe7f7a…ac66`, and independent decoding validates exact 23,874-byte hover and
+  22,520-byte rover opset-18 graphs. This closes P7-009, not recorder/device/field
+  data, learning quality, deployment, passing-policy delivery, or external acceptance;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

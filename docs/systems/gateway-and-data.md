@@ -108,6 +108,9 @@ randomization, or training override. Migration 0023 adds only the queue enum; no
 historical job is reclassified. Consent withdrawal cancels both policy and offline
 training jobs through singular or array log references. Workers remain responsible
 for exact task/tensor/sample validation and the unchanged scorecard export gate.
+This boundary is protected through PR #77/`2c7562d`: exact PR/post-merge CI/security,
+the clean plus every-predecessor 23-migration matrix, and artifact `8359446894` prove
+the controlled-synthetic path. They do not attest a recorder or device source.
 The local-only `commerce.vendor-refresh` kind is command-gated at enqueue and worker
 execution. Successful normalized rows materialize to `vendor_offers` in the same
 worker transaction as job success; a corrupt accepted row rolls back both state

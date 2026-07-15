@@ -65,6 +65,7 @@ or maturity claim changed.
 
 ## Decision and task references
 
-D45 owns exact source-bound BC-to-PPO authority. P7-009 remains `[~]` until protected
-CI/security and clean retained artifact inspection. The current worker rejects
+D45 owns exact source-bound BC-to-PPO authority. P7-009 is protected and `[x]` through
+PR #77/`2c7562d`, exact PR/post-merge CI/security, and independently checked clean
+artifact `8359446894`. The current worker rejects
 `recorded-device`; P8 owns recorder attestation and a reviewed admission version.
