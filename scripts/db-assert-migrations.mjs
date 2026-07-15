@@ -21,11 +21,14 @@ const runSuffix = `${process.pid}-${randomUUID().slice(0, 8)}`;
 const migrations = loadMigrations(join(root, "infra", "migrations"));
 const d38MigrationPosition = migrations.findIndex((migration) =>
   migration.filename.startsWith("0021_job_leases_and_upload_verification")) + 1;
+const d39MigrationPosition = migrations.findIndex((migration) =>
+  migration.filename.startsWith("0022_policy_delivery_authority")) + 1;
 const noLog = () => undefined;
 
 if (!databaseUrl) throw new Error("DATABASE_URL is required for migration acceptance");
 assert.ok(migrations.length >= 2, "migration acceptance requires a current and a prior schema");
 assert.ok(d38MigrationPosition > 0, "migration acceptance requires the D38 migration");
+assert.ok(d39MigrationPosition > 0, "migration acceptance requires the D39 migration");
 
 function git(...args) {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -299,15 +302,27 @@ async function populatePredecessor(client, prefix) {
        )`,
       [ids.policyBlob, ids.user, `users/${ids.user}/policy-onnx/fixture`, ids.policyJob],
     );
+    const currentPolicyColumns = prefix >= d39MigrationPosition
+      ? ", job_id, policy_metadata"
+      : "";
+    const currentPolicyValues = prefix >= d39MigrationPosition
+      ? `, $4,
+         '{"artifactKind":"policy","onnx":{"byteSize":1,"sha256":"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34"},"io":{"tensor":{"schema":"forge-policy-tensor"}},"scorecard":{"exportable":true,"lineage":{"contractHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}'::jsonb`
+      : "";
     await client.query(
       `INSERT INTO policy_artifacts (
-         id, owner_user_id, task_kind, scorecard, artifact_blob_id, export_gate
+         id, owner_user_id, task_kind, scorecard, artifact_blob_id, export_gate${currentPolicyColumns}
        ) VALUES (
          $1, $2, 'hover-hold',
          '{"exportable":true,"lineage":{"contractHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}'::jsonb,
-         $3, 'exportable'
+         $3, 'exportable'${currentPolicyValues}
        )`,
-      [ids.policyArtifact, ids.user, ids.policyBlob],
+      [
+        ids.policyArtifact,
+        ids.user,
+        ids.policyBlob,
+        ...(prefix >= d39MigrationPosition ? [ids.policyJob] : []),
+      ],
     );
     await client.query(
       `INSERT INTO jobs (

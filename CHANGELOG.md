@@ -44,6 +44,10 @@ The final gate also exposed that the adjacent MJX smoke could import an editable
 worker package from another worktree while binding the current Git revision. It now
 prepends this checkout's `workers/` source, matching the training/offline smokes and
 making the benchmark's source claim executable rather than metadata-only.
+The first PR database run then exposed a newly reachable QA-004 predecessor case:
+when 0022 is already installed, its fixture must write current `job_id` and byte-free
+policy metadata instead of expecting the 0022 backfill to rerun. Older prefixes still
+exercise that backfill; the 0022 predecessor now exercises correct current writers.
 **Changed:** Gateway queue/schema/consent/source authority and tests; migration 0023;
 worker dataset, native runner, SB3 curriculum, external normalizer, Modal profile,
 bridge metadata, tests, required CI smoke, compatibility/artifact catalogs and golden
