@@ -18,6 +18,55 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Restore the fail-closed npm advisory gate
+**Session:** Codex agent · branch `codex/doc005-protected-evidence` · **Phase:** GOV /
+supply chain · **TODO items:** GOV-003 maintenance
+**Done:** Diagnosed PR #54 security run `29377444789` as an audit-client protocol
+failure, not a vulnerability result: npm returned HTTP 410 for pnpm 10.33.0's
+retired `/audits/quick` and `/audits` endpoints. Upgraded the reviewed toolchain pin
+to pnpm 11.13.0, whose audit client uses the replacement bulk-advisory endpoint, and
+made the required esbuild 0.25.12/esbuild 0.28.1/wasm-pack 0.15.0 lifecycle authority
+explicit and version-exact. `pnpm install --frozen-lockfile` and
+`pnpm audit --audit-level low` pass locally with no lockfile drift and no known
+vulnerabilities. The complete 36-step local gate also passes under Python 3.12,
+including generated-contract drift, 63 gateway tests, 127 worker tests, native/WASM
+parity, release packaging, and cumulative patch hygiene.
+**Changed:** Root package-manager pin; pnpm workspace lifecycle allowlist;
+contributor prerequisites; canonical agent and repository-governance supply-chain
+rules; current state, phase/execution guidance, stable GOV-003 maintenance record,
+and changelog. No application dependency, runtime API, compatibility format, live
+provider, hardware boundary, or maturity claim changed.
+**Decisions:** none. A registry/audit transport failure remains a failed control and
+cannot be waived or reported as a clean audit.
+**Next:** Publish the exact candidate to PR #54 and require a green replacement
+dependency-audit job plus all protected checks before merge and post-merge
+reconciliation.
+**Blockers:** none after the toolchain migration. External credentials/providers,
+independent users, operations, controlled hardware, and field proof remain separate.
+
+## 2026-07-14 — Close governed interface documentation on protected main
+**Session:** Codex agent · branch `codex/doc005-protected-evidence` · **Phase:** DOC /
+compatibility · **TODO items:** DOC-005 [x]
+**Done:** Closed DOC-005 through protected PR #53. Exact implementation head
+`e79bbb1` passed the complete 36-step local gate under Python 3.12, PR CI
+`29375146614`, security `29375146592`, and the separate CodeQL aggregate. Protected
+squash `22c263b` passed post-merge CI `29376742319` and security `29376742373`,
+including 75-route/two-event/sixteen-worker generated-reference drift, fourteen
+compatibility surfaces, isolated Postgres and real-browser acceptance, three-engine
+accessibility, native Desktop, dependency audits, SPDX, and both CodeQL languages.
+The first PR head exposed incomplete Markdown escaping; the exact-head backslash and
+newline fix passed all gates and no failing alert carried into protected `main`.
+**Changed:** Canonical agent entry, project state, phase/execution roadmaps, stable
+DOC-005 ledger row, counts, and changelog. No runtime API, dependency, live-provider
+path, hardware authority, or maturity claim changed in this evidence reconciliation.
+**Decisions:** none. D31 and the compatibility/deprecation contracts remain binding.
+**Next:** Execute DOC-006's maintainer-curated first-good-issue workflow, exercise it
+with bounded dependency-free issues, and close the final documentation task through
+protected evidence.
+**Blockers:** none for DOC-006 documentation/process work. Live credentials/providers,
+external users, operations, controlled hardware, and field evidence retain separate
+owners and prerequisites.
+
 ## 2026-07-14 — Generate governed interface documentation
 **Session:** Codex agent · branch `codex/doc005-contract-docs` · **Phase:** DOC /
 compatibility · **TODO items:** DOC-005 [~]

@@ -1,3 +1,10 @@
 packages:
   - "packages/*"
   - "workers"
+
+# pnpm 11 fails closed when a dependency lifecycle script is not explicitly
+# reviewed. Keep this list version-exact; dependency updates must re-review it.
+allowBuilds:
+  esbuild@0.25.12: true
+  esbuild@0.28.1: true
+  wasm-pack@0.15.0: true

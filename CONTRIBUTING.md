@@ -5,7 +5,7 @@ TODO row, system document, compatibility policy, and repository governance contr
 
 ## Development setup
 
-Required: Rust 1.96.0 via the committed toolchain, Node 22+, pnpm 10.33.0, Python
+Required: Rust 1.96.0 via the committed toolchain, Node 22.13+, pnpm 11.13.0, Python
 3.11+ (3.12 in CI), and the `wasm32-unknown-unknown` target.
 
 ```bash

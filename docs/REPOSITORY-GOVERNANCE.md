@@ -126,6 +126,11 @@ P1-015 parity evidence.
   protection remain enabled.
 - `.github/dependabot.yml` opens grouped weekly Cargo, pnpm, Python, and Actions
   updates. Major updates stay separate and require compatibility review.
+- The root `packageManager` pin and `pnpm-workspace.yaml` lifecycle allowlist are
+  supply-chain controls. Package-manager upgrades require a frozen install with no
+  lockfile drift, a low-severity audit, the full relevant local gate, and exact-head
+  protected security proof. `allowBuilds` entries stay version-exact; broad or
+  global lifecycle-script authority is prohibited.
 - Every external workflow action uses an immutable 40-character commit SHA with a
   human-readable version comment. `pnpm verify:workflows` enforces this locally and
   the required `dependency review` job enforces it on pull requests.
@@ -143,6 +148,9 @@ P1-015 parity evidence.
   the listed live deployment controls.
 - Low-or-higher advisories fail the security audit. Exceptions require a dated owner,
   expiry, exploitability analysis, compensating control, and TODO/decision record.
+- Registry or audit-client protocol failure is a failed security control, not a
+  clean result. Repair the client/toolchain against the current documented endpoint
+  and re-run the exact protected head; never use `|| true` or downgrade the gate.
 - Secret alerts are triaged immediately: revoke/rotate first, then remove exposure and
   document impact. Never merely delete history and assume the credential is safe.
 - CodeQL alerts are triaged within seven days; high/critical findings block merge and

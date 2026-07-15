@@ -84,8 +84,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is QA-007 PR #48 at `e89bb15`, with
-  CI `29367356078` and security `29367355993` green;
+  latest verified protected `main` descendant is DOC-005 PR #53 at `22c263b`, with
+  post-merge CI `29376742319` and security `29376742373` green;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -118,12 +118,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   proves its D38 queue and staged-upload recovery matrix. QA-007 is protected through
   PR #48 at `e89bb15`: the fifteenth family contains eight versioned boundary corpora
   and 89 reviewed cases, and exact PR/post-merge CI/security are green;
-- the DOC-005 candidate adds a sixteenth registered schema family: its generator
+- DOC-005 is protected through PR #53 at `22c263b`: its sixteenth registered schema
+  family and generator
   exact-matches all 75 Fastify routes, two event families, fourteen compatibility
   domains, and sixteen worker queue kinds, and emits versioned OpenAPI/event/artifact
   references plus migration, example, and deprecation guidance. The complete 36-step
-  local gate passes under Python 3.12; this remains branch evidence until protected
-  PR and post-merge checks pass;
+  local gate, exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
+  `29376742319`/security `29376742373` pass;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres pass all ten builder
   flows under `pnpm verify:db` on the exact PR head and merge commit; this is
@@ -531,6 +532,12 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - Explain new runtime dependencies in the changelog and system docs.
 - Pin reproducible toolchains and release inputs; pin GitHub Actions by immutable SHA
   for release-sensitive workflows.
+- The root `packageManager` pin is part of the reviewed toolchain. A pnpm upgrade must
+  pass a frozen install without lockfile drift, `pnpm audit --audit-level low`, the
+  full relevant verification gate, and protected security checks.
+- Keep dependency lifecycle authority fail-closed in `pnpm-workspace.yaml`.
+  `allowBuilds` entries are version-exact and reviewed; never replace them with
+  `dangerouslyAllowAllBuilds` or an unbounded package range.
 - Keep lockfiles committed and audit Rust, npm, Python, containers, and Actions.
 - Do not use mutable `latest` images for production or release evidence.
 - Never commit credentials. Development defaults in Compose are not production

@@ -78,13 +78,17 @@ security, post-merge CI/security, and exact-main nightly `29372161650` are green
 protected artifact passes all six scenes at unchanged edge F1 0.957-0.995 and 3 draws
 without re-pinning any golden or threshold.
 
-DOC-005 is in implementation on the protected `2dfc960` descendant. The candidate
-adds the sixteenth registered schema family and a 36th full-gate step: generated
-OpenAPI 3.1 plus event/artifact catalogs exact-match 75 registered routes, two event
-families, fourteen compatibility domains, and sixteen worker queue kinds. Migration,
-deprecation, and synthetic example guides are checked in the same drift gate. The
-complete 36-step local gate passes under Python 3.12; protected PR and post-merge
-evidence remain required before the task closes.
+DOC-005 is closed through protected PR #53 at `22c263b`. The sixteenth registered
+schema family and 36th full-gate step generate OpenAPI 3.1 plus event/artifact
+catalogs that exact-match 75 registered routes, two event families, fourteen
+compatibility domains, and sixteen worker queue kinds. Migration, deprecation, and
+synthetic example guides share the drift gate. The complete 36-step local gate,
+exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
+`29376742319`/security `29376742373` pass. DOC-006 is the remaining documentation
+lane. Before it starts, PR #54 must restore the GOV-003 audit client after npm's
+legacy-endpoint retirement and pass exact protected security; the local pnpm 11.13.0
+candidate already passes frozen install and low-severity bulk-advisory audit without
+lockfile drift plus the complete 36-step gate under Python 3.12.
 
 | Phase | Status | Est. |
 |---|---|---|
