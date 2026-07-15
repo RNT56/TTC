@@ -346,10 +346,14 @@ try {
   await waitForText(page.locator('[data-testid="model-error"]'), /only admitted models can be shared/i);
   evidence.flows.push("persist draft and prove the server refuses draft sharing");
 
-  await modelSelect.selectOption(admittedModel.value);
+  const editedAdmittedModel = await waitForOption(
+    modelSelect,
+    (option) => option.value === admittedModel.value && /admitted/i.test(option.text),
+  );
+  await modelSelect.selectOption(editedAdmittedModel.value);
   await page.waitForFunction(
     ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-model-contract-hash") === contractHash,
-    { selector: '[data-testid="validator-report"]', contractHash: admittedModel.contractHash },
+    { selector: '[data-testid="validator-report"]', contractHash: editedAdmittedModel.contractHash },
     { timeout: browserTimeoutMs },
   );
   await page.locator('[data-testid="share-model"]').click();
