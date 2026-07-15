@@ -80,6 +80,14 @@ and exercise a maintainer-curated first-good-issue workflow without assigning
 security, credentials/providers, hardware, user data, compatibility migrations, or
 golden/oracle authority to entry-level work.
 
+PR #54's evidence closeout exposed a time-dependent GOV-003 maintenance prerequisite:
+npm retired pnpm 10's audit endpoints. The pnpm 11.13.0 candidate restores the
+bulk-advisory protocol, makes dependency lifecycle scripts version-exact and
+fail-closed, and passes frozen install plus low-severity audit locally without
+lockfile drift; the complete 36-step local gate also passes under Python 3.12.
+Protected exact-head and post-merge security evidence precede DOC-006 execution; an
+audit transport failure is never waived as a clean result.
+
 Current Wave 1/2 boundary:
 
 - public support/security surfaces, ModelSpec 2.2, and SEC-001..006 are protected on

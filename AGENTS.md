@@ -532,6 +532,12 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - Explain new runtime dependencies in the changelog and system docs.
 - Pin reproducible toolchains and release inputs; pin GitHub Actions by immutable SHA
   for release-sensitive workflows.
+- The root `packageManager` pin is part of the reviewed toolchain. A pnpm upgrade must
+  pass a frozen install without lockfile drift, `pnpm audit --audit-level low`, the
+  full relevant verification gate, and protected security checks.
+- Keep dependency lifecycle authority fail-closed in `pnpm-workspace.yaml`.
+  `allowBuilds` entries are version-exact and reviewed; never replace them with
+  `dangerouslyAllowAllBuilds` or an unbounded package range.
 - Keep lockfiles committed and audit Rust, npm, Python, containers, and Actions.
 - Do not use mutable `latest` images for production or release evidence.
 - Never commit credentials. Development defaults in Compose are not production
