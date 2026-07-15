@@ -44,8 +44,8 @@ scorecards remain correctly blocked. The hover dataset/warmstart hashes are
 `0ae76e66…c56`/`b5912a87…e41c`. The stable ledger is now 205 tasks: 147 done,
 32 in progress, 25 open, and 1 blocked.
 **Changed:** Canonical agent boundary; project state; roadmap and atomic TODO;
-execution sequencing; learning, worker, gateway, hardware, and golden-contract
-guidance; and this changelog. No runtime, schema, migration, generated contract,
+execution sequencing; learning, worker, gateway, and hardware guidance; and this
+changelog. No runtime, schema, migration, generated contract,
 dependency, scorecard threshold, or golden artifact changed in this reconciliation.
 **Decisions:** none; D45 remains binding.
 **Next:** Finish P7-010's exact D12 morphology/accelerator/budget/cost decision evidence
