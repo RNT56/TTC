@@ -72,8 +72,9 @@ environment.
 
 DOC-005 is closed through protected PR #53 at `22c263b`. Versioned generated API,
 event, and artifact references now exact-match runtime routes and worker kinds;
-migration/deprecation guidance, synthetic examples, fourteen compatibility domains,
-and the registered schema family share the 36-step gate. Exact-head PR CI
+migration/deprecation guidance, synthetic examples, and the registered schema
+family share the drift gate. The closeout snapshot covered fourteen compatibility
+domains; current protected `f220d25` covers fifteen. Exact-head PR CI
 `29375146614`/security `29375146592` and post-merge CI `29376742319`/security
 `29376742373` pass. DOC-006 closes the documentation-completion X-lane through
 protected PR #58 at `3078dba`. The maintainer-curated first-good-issue workflow links
@@ -140,10 +141,11 @@ Current Wave 1/2 boundary:
   revision-bound full-WebGL parity contract across all six scenes. The QA-003
   Canvas2D viewer fallback remains intentional and separately accepted; no golden,
   threshold, browser support tier, or product maturity claim changed;
-- DOC-005 is complete through protected PR #53 at `22c263b`: 75 runtime routes, two
-  event families, fourteen compatibility domains, and sixteen worker queue kinds
-  exact-match the generated references; all 36 local steps and exact PR/post-merge
-  CI/security pass;
+- DOC-005 is complete through protected PR #53 at `22c263b`: its 75 runtime routes,
+  two event families, fourteen compatibility domains, and sixteen worker queue kinds
+  exact-matched the generated references; current protected `f220d25` additively
+  verifies 76 routes, two event families, fifteen compatibility surfaces, and
+  sixteen worker families through the same drift gate;
 - DOC-006 is complete through implementation PR #58 at `3078dba` and evidence PR #59
   at `484aefa`: contributor discovery,
   maintainer-only curation, assignment/reassignment, sensitive-authority exclusions,
@@ -328,10 +330,12 @@ Work:
   authenticated retained-byte readback, exact browser playback, stale-lease and
   substitution refusal, and cancellation without database authority at controlled
   S3-compatible sandbox maturity. D40 sequences the waypoint slice of P7-014
-  first. The current candidate implements it under D41 `p7-v2` Y-up/hash authority:
+  first. It is protected through PR #70/`f220d25` under D41 `p7-v2` Y-up/hash
+  authority:
   a contract-derived sequential environment, estimator-only target transitions,
   task-bound scorecard/export/Studio playback, deterministic dual-task smoke, and
-  unsupported-shape/provider-drift refusal. Protect exact-source evidence; then acquire overnight passing hover/
+  unsupported-shape/provider-drift refusal. Clean artifact `8342801418` satisfies
+  that prerequisite; next acquire overnight passing hover/
   waypoint evidence (`P7-012`), deployed GPU operations (`P7-013`), remaining rover
   and legged real tasks (`P7-014`), offline fine-tuning (`P7-009`), exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
@@ -527,7 +531,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | P7-009, P7-010, P7-012..014; P7-011 closed, P7-014 waypoint slice in progress | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled hover trainer and authoritative one-click object delivery; protect the implemented D41 waypoint candidate, then obtain overnight-passing hover/waypoint policy evidence, deployed GPU operations, remaining rover/legged archetypes, offline fine-tune, and final D12 MJX decision |
+| P7 | P7-009, P7-010, P7-012..014; P7-011 closed, P7-014 waypoint slice protected while rover/legged remain | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled hover/waypoint trainer and authoritative one-click object delivery; next obtain overnight-passing hover/waypoint policy evidence, then deployed GPU operations, remaining rover/legged archetypes, offline fine-tune, and final D12 MJX decision |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |

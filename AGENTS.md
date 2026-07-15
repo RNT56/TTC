@@ -86,9 +86,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-011 PR #68 at `9131289`, with
-  post-merge CI `29409341830` and security `29409342305` green. PR #68 owns the
-  object-backed one-click delivery evidence, PR #66/`0614272` owns controlled
+  latest verified protected runtime descendant is P7-014 PR #70 at `f220d25`, with
+  post-merge CI `29415036211` and security `29415036274` green. PR #70 owns the
+  task-v2 waypoint evidence, PR #68/`9131289` owns object-backed one-click delivery,
+  PR #66/`0614272` owns controlled
   MJX-feasibility evidence, PR #64/`d1c4c38` remains the owning seeded-training
   anchor, and PR #62/`1de7974` remains the owning base browser-runtime anchor;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
@@ -190,15 +191,18 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   orphan reconciliation; production object-storage durability/SLO, passing learned
   policy quality, deployed GPU operations, external users, and field transfer remain
   open;
-- the P7-014 waypoint candidate implements D41 `p7-v2`/`2.0.0` task authority:
+- the P7-014 waypoint slice is protected through PR #70 at `f220d25` and implements
+  D41 `p7-v2`/`2.0.0` task authority:
   every built-in 3D task is explicitly Forge Y-up/right-handed/SI and canonically
   hashed, while `p7-v1` stays historical. The real MuJoCo/SB3 command now supports
   hover-hold and sequential waypoint-chain with estimator-only target advancement,
   exact task-bound ONNX/scorecard/provider authority, Studio target-chain playback,
-  and a dual 256-step deterministic CPU smoke. Both short scorecards remain
-  non-exportable; all 39 required local gates pass under Python 3.12, while protected
-  exact-source evidence is still required before P7-012,
-  and rover/legged real trainers remain open under P7-014;
+  and a dual 256-step deterministic CPU smoke. Exact head `b66e4b3` passed PR CI
+  `29413578031`/security `29413578124`; protected CI `29415036211` and security
+  `29415036274` pass. Downloaded artifact `8342801418` self-binds to clean `f220d25`
+  and retains two valid, correctly non-exportable task-bound ONNX policies. D40's
+  prerequisite for P7-012 is satisfied, but overnight learning quality and the
+  rover/legged real trainers remain open under P7-012/P7-014;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

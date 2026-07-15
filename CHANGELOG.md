@@ -18,6 +18,43 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Reconcile protected waypoint evidence
+**Session:** Codex agent · branch `codex/p7014-waypoint-evidence` · **Phase:** P7 ·
+**TODO items:** P7-012 [ ], P7-014 [~]
+**Done:** Protected the dependency-complete waypoint portion of P7-014 through PR
+#70. Exact implementation head `b66e4b3` passed PR CI `29413578031` and security
+`29413578124`; protected squash `f220d25` passed post-merge CI `29415036211` and
+security `29415036274`. Downloaded artifact `8342801418` self-binds source and clean
+checkout to `f220d2592b41f844f40e8c8669704a249b4f3b20`, records schema 2.0.0, and
+its JSON hashes to
+`8d160870a1d729b4c307953aa84965770c754a5a316ee1e1f99702dbaae041b7`. It retains
+both real 256-step CPU PPO outputs. Hover-hold binds task hash
+`5fdfb0746707c61f0f36d4323e825d066c0d0b64fc033dfd5dbf60f860b103e0` to a
+23,004-byte ONNX graph with SHA-256
+`5ff2fc01d92281dff5838479b52a6c45be193e795fef4c69fe241267e06216a7`;
+waypoint-chain binds task hash
+`e8ab6a92860d6c33cc80a9256f6b1ec4a2989232105417f785d3c48bd0be014d` to a
+23,008-byte graph with SHA-256
+`f82dc08a24fce29a298f7b4039107f7dd5bb6309150309eb039843f142620a99`.
+Both scorecards remain correctly non-exportable, and the artifact explicitly
+disclaims overnight/GPU/SLO, live Modal, rover/legged, external-user, and field
+claims. D40's waypoint prerequisite is now satisfied; P7-012 is the next executable
+training lane while rover and legged trainers remain under P7-014.
+**Changed:** Canonical agent boundary; project-state anchors/counts/evidence; P7
+phase, task, execution, learning, worker, Studio, and risk guidance; and this
+changelog. No runtime, schema, golden, threshold, compatibility, or task semantics
+changed in this reconciliation.
+**Decisions:** none; D40 and D41 remain active and are now backed by protected
+waypoint evidence.
+**Next:** Execute P7-012 on declared consumer-GPU hardware without weakening either
+scorecard, retain exact seed/config/revision/runtime/hardware/wall-time/energy/cost/
+recovery/policy evidence, and reconcile the protected result before resuming the
+rover/legged remainder of P7-014.
+**Blockers:** none for starting the local consumer-GPU implementation/evidence lane.
+A passing overnight result is not yet established; P7-013 deployed Modal/GPU
+operations, production storage operations, external acceptance, and field transfer
+remain separately open.
+
 ## 2026-07-15 — Implement task-v2 sequential waypoint training
 **Session:** Codex agent · branch `codex/p7014-waypoint-trainer` · **Phase:** P7 ·
 **TODO items:** P7-012 [ ], P7-014 [~]
