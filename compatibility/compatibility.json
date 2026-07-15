@@ -85,7 +85,11 @@
       "internalSchemas": {
         "admittedModelSnapshot": "1.0.0",
         "trainingBundle": "2.0.0",
-        "trainingTask": "3.0.0"
+        "trainingTask": "3.0.0",
+        "groundTrainingBundle": "1.0.0",
+        "groundTrainingTask": "1.0.0",
+        "groundPolicyTensor": "1.0.0",
+        "sb3Runtime": "3.0.0"
       },
       "queueKinds": [
         "etl.ingest-component",

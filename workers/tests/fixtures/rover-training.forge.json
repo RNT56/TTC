@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "id": "training-rover",
+    "name": "Controlled differential-drive training rover",
+    "version": "0.1.0",
+    "archetype": "rover",
+    "provenance": {
+      "kind": "human",
+      "modelVersion": "p7-ground-fixture-v1"
+    },
+    "license": "CC0"
+  },
+  "env": {
+    "gravity": 9.80665,
+    "airDensity": 1.225,
+    "wind": {
+      "mean": 0.0,
+      "gust": 0.0
+    }
+  },
+  "skeleton": [
+    {
+      "name": "root",
+      "parent": null,
+      "pos": [0.0, 0.06, 0.0],
+      "rot": [0.0, 0.0, 0.0]
+    },
+    {
+      "name": "left_wheel",
+      "parent": "root",
+      "pos": [0.0, -0.02, 0.12],
+      "rot": [1.5707963267948966, 0.0, 0.0],
+      "limits": [[0.0, 0.0], [-1000.0, 1000.0], [0.0, 0.0]],
+      "joint": {
+        "type": "revolute",
+        "axis": [0.0, 1.0, 0.0],
+        "maxTorqueNm": 0.4,
+        "maxVelRad": 20.0
+      }
+    },
+    {
+      "name": "right_wheel",
+      "parent": "root",
+      "pos": [0.0, -0.02, -0.12],
+      "rot": [1.5707963267948966, 0.0, 0.0],
+      "limits": [[0.0, 0.0], [-1000.0, 1000.0], [0.0, 0.0]],
+      "joint": {
+        "type": "revolute",
+        "axis": [0.0, 1.0, 0.0],
+        "maxTorqueNm": 0.4,
+        "maxVelRad": 20.0
+      }
+    }
+  ],
+  "parts": [
+    {
+      "node": "root",
+      "geom": {"kind": "cbox", "w": 0.14, "h": 0.08, "d": 0.14, "ch": 0.01},
+      "material": "matte",
+      "color": "#4a5568",
+      "explode": {"dir": [0.0, 1.0, 0.0], "mag": 0.08, "t0": 0.6, "t1": 1.0, "leader": "chassis"},
+      "comp": "training-chassis",
+      "mass": {"valueG": 800.0},
+      "collision": "primitive"
+    },
+    {
+      "node": "left_wheel",
+      "geom": {"kind": "cyl", "r0": 0.04, "h": 0.028, "n": 24},
+      "material": "rubber",
+      "color": "#15171a",
+      "explode": {"dir": [0.0, 0.0, 1.0], "mag": 0.06, "t0": 0.1, "t1": 0.55, "leader": "drive wheels"},
+      "comp": "training-wheel-left",
+      "mass": {"valueG": 100.0},
+      "collision": "primitive"
+    },
+    {
+      "node": "right_wheel",
+      "geom": {"kind": "cyl", "r0": 0.04, "h": 0.028, "n": 24},
+      "material": "rubber",
+      "color": "#15171a",
+      "explode": {"dir": [0.0, 0.0, -1.0], "mag": 0.06, "t0": 0.1, "t1": 0.55},
+      "comp": "training-wheel-right",
+      "mass": {"valueG": 100.0},
+      "collision": "primitive"
+    }
+  ],
+  "chains": [
+    {"id": "drive-module", "stage": 0, "nodes": ["root", "left_wheel", "right_wheel"]}
+  ],
+  "driver": {
+    "archetype": "rover",
+    "params": {"wheelbaseM": 0.24, "maxSpeedMs": 1.2}
+  },
+  "sim": {
+    "colliders": {"policy": "per-node-compound", "budget": {"perNode": 8, "perModel": 24}},
+    "estimator": {"kind": "complementary", "gyroNoise": 0.02, "accelNoise": 0.08, "bias": 0.01, "latency_ms": 8.0},
+    "aggregateMassG": 1000.0
+  }
+}

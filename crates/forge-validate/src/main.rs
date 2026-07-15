@@ -111,17 +111,19 @@ fn cmd_training_bundle(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let bundle =
-        match forge_sim::training::multirotor_training_bundle(&spec, &baked, &expected_hash) {
-            Ok(bundle) => bundle,
-            Err(error) => {
-                eprintln!("training-bundle: {error}");
-                return ExitCode::from(2);
-            }
-        };
+    let bundle = match forge_sim::training::training_bundle(&spec, &baked, &expected_hash) {
+        Ok(bundle) => bundle,
+        Err(error) => {
+            eprintln!("training-bundle: {error}");
+            return ExitCode::from(2);
+        }
+    };
     eprintln!(
         "forge-validate training-bundle · {} · {:.3} kg · MuJoCo {} · tensor {}",
-        bundle.root_body_name, bundle.mass_kg, bundle.mujoco_version, bundle.tensor.schema_version
+        bundle.archetype(),
+        bundle.mass_kg(),
+        bundle.mujoco_version(),
+        bundle.tensor_version()
     );
     emit_json("training-bundle", args, &bundle)
 }

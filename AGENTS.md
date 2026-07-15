@@ -224,6 +224,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   but does not claim the 19-core MPS device as the training backend, and permits only
   an explicitly non-measured 140 W adapter-rating wall-time upper bound. This is not
   deployed GPU, measured electricity, external-user, real-device, or field proof;
+- P7-014's remaining ground candidate is governed by D44. It adds independent
+  `groundTrainingMuJoCoBundle`, `p7-ground-v1`, and
+  `forge-ground-policy-tensor` 1.0.0 authorities for exactly rover line-follow and
+  quadruped walk-to-target. Rust derives mass/inertia, contact plane, wheel geometry,
+  joint order/limits, and torque/velocity ceilings from the admitted contract; Python
+  independently revalidates those authorities, trains only on estimator/encoder
+  state, evaluates mass/torque/friction, and labels energy as simulated positive
+  mechanical joint work. Unsupported tasks/morphologies, missing authority, task or
+  tensor drift, and external substitution fail closed. The required smoke candidate
+  runs four real 256-step CPU PPO tasks. The complete 39-step local gate passes with
+  174 worker tests and 13 Studio runtime tests. Studio deliberately refuses the
+  ground tensor; protected exact-source checks and retained smoke still gate P7-014
+  closure;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

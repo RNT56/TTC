@@ -45,6 +45,18 @@ A `ModelSpec`:
 loft(profile, stations[]), mesh(ref)` — `mesh` admits imported real-part geometry with
 smoothing groups. Worked example: plan Appendix A (v2.1 JSON).
 
+D44 makes optional schema fields explicit capability gates rather than global
+defaults. A rover or quadruped entering the real ground trainer must declare one
+complementary estimator and, on every commanded revolute joint, a finite axis,
+angular limits, positive `maxTorqueNm`, and positive `maxVelRad`. Rover v1 must also
+carry equal-radius cylindrical left/right wheel geometry with at least 50 mm track.
+The trainer refuses absent authority; it never guesses a motor rating, wheel size,
+or control joint. The QD-Mini generator derives its joint torque ceiling as two times
+the equal-load static support moment from declared total mass, gravity, stand height,
+and leg count, assigns each moving segment's mass/inertia to its actuated parent body,
+and emits the explicit complementary estimator. These are generated contract facts,
+not Python-side overrides.
+
 ## 4. Conventions (binding, plan §4)
 
 Y-up right-handed meters internally (exporters convert to Z-up for URDF/MJCF/STEP);

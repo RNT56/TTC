@@ -1,14 +1,15 @@
 # Learning Engine — implementation doc
 
 **Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
-hover and real sequential-waypoint runtime, lease-fenced exact object-backed
-one-click delivery, real browser ONNX/WASM execution, and a controlled CPU MuJoCo/
-MJX feasibility harness implemented; overnight scorecard passage, decision-grade D12
-accelerator evidence, deployed GPU/storage operations, and field transfer remain
-gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
+multirotor runtime and consumer-hardware scorecard passage, a locally verified
+contract-derived rover/quadruped trainer candidate, lease-fenced exact object-backed
+delivery, real multirotor browser ONNX/WASM execution, and a controlled CPU MuJoCo/
+MJX feasibility harness; protected ground evidence, decision-grade D12 accelerator
+evidence, deployed GPU/storage operations, and field transfer remain gated ·
+**Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
 **Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D39, D40, D41,
-D-evals (adjacent)
+D42, D43, D44, D-evals (adjacent)
 
 ## 1. Purpose
 
@@ -42,6 +43,15 @@ axis order, normalized-flight-target inner loop, estimator velocity filter, rewa
 coefficients, and full-chain completion meaning. Task v2 remains immutable evidence;
 it is not relabeled or rewritten as v3.
 
+D44 adds a separate internal `p7-ground-v1`/1.0.0 authority only for the executable
+`line-follow` rover and `walk-to-target` quadruped definitions. Other historical
+rover/legged task IDs remain `p7-v3` metadata until they gain their own executable
+environment and compatibility decision. Ground v1 binds flat-contact terrain,
+differential-drive or normalized joint-torque control, estimator-only progress,
+full path/target completion, and simulated mechanical-work energy. Course-derived
+tasks remain under the existing `p7-v3` course adapter and are not silently admitted
+to the built-in ground runtime.
+
 ## 3. Observation/action contract
 
 Derived from the ModelSpec, never hand-authored (P7-002):
@@ -68,6 +78,16 @@ physical constants; simulator truth never crosses the WASM boundary. Tensor-v1's
 exact `[1, 11]` observer and 906-byte ONNX oracle remain readable through explicit
 version selection. Unsupported majors/archetypes/estimators, missing constants,
 non-finite or out-of-bound targets, and cross-version layout drift refuse.
+
+D44 deliberately does not reuse that flight tensor for ground robots. The internal
+`forge-ground-policy-tensor` 1.0.0 common prefix is `[1, 11]`: attitude, angular
+rate, X/Z body velocity, X/Z target error, and normalized applied effort. Rover
+output is `[1, 2]` ordered `drive, turn`. Quadruped input appends one ordered
+estimated joint-position scalar and one joint-velocity scalar per admitted control
+joint, and output carries the same ordered joint names as normalized torque commands;
+the current QD-Mini shape is `[1, 27] -> [1, 8]`. Rust and Python independently
+verify names, order, shapes, frame, and 50 Hz rate. Studio rejects this schema until
+an exact ground observer/actuator browser path is separately implemented and tested.
 
 ## 4. Training stack
 
@@ -152,6 +172,26 @@ controlled consumer-hardware simulation maturity. It does not establish rover/le
 coverage, deployed GPU operations, production
 economics, external users, or field transfer.
 
+The P7-014 ground candidate extends the same admitted-snapshot -> sovereign Rust
+bundle -> exact Python runtime chain without changing multirotor v2/v3. Rust emits
+`groundTrainingMuJoCoBundle` 1.0.0 only for rover or quadruped contracts with one
+root, a complementary estimator, positive computed mass, explicit bounded revolute
+joint limits, and positive contract-declared torque/velocity ceilings. Rover v1 also
+requires left/right cylindrical wheels with equal radius and at least 50 mm track;
+the bundle adds one explicit flat MuJoCo plane and records wheel/control authority.
+Quadruped control supports 8–24 ordered joints. Missing authority, biped/arm/other
+morphology, unequal wheel geometry, mismatched task, drifted task hash, external MJCF,
+or tensor substitution refuses before optimization.
+
+`ForgeGroundTaskEnv` runs real MuJoCo 3.9.0 with the same exact-pinned SB3 stack.
+It corrupts estimator/encoder observations, applies latency and dropout, keeps truth
+private except for bounded termination, advances the rover polyline or quadruped
+target only from estimator error, enforces velocity guards, and never commands above
+the admitted torque ceiling. PPO/SAC export fixed-shape opset-18 ONNX with exact
+contract/task/tensor metadata. The outer worker independently revalidates the ground
+task, path, dynamic joint layout, scorecard lineage, model bytes, and mechanical-
+energy semantics before accepting output.
+
 ## 5. Domain randomization (first-class config)
 
 mass ±15 % · motor Kv ±8 % · battery sag ±20 % · actuation latency 0–30 ms · IMU
@@ -173,6 +213,12 @@ SAC tests. P7-012's protected frozen curriculum samples the same complete envelo
 training and evaluates exact held-out baseline, mass +15%, Kv -8%, and wind 4 m/s
 rows without weakening `p7-scorecard-v1`'s 0.85/0.70 thresholds.
 
+Ground v1 samples mass up to ±15 %, available-torque degradation up to 10 % (never
+above the contract ceiling), latency 0–30 ms, contact friction 0.4–1.2, estimator
+noise/bias scaling, and estimator/encoder dropout. Its held-out grid is baseline,
+mass +15 %, torque -10 %, and friction -50 %. This grid is task-specific; Kv, sag,
+and wind remain multirotor dimensions and are not fabricated for ground contracts.
+
 ## 6. Scorecards (the gate)
 
 `p7-scorecard-v1 = {successRate, robustness: grid results, energyWh,
@@ -183,6 +229,13 @@ marketplace/leaderboard use. Gates: sub-threshold → no export;
 **estimator smoke (SIM-004/D8)** — a policy whose performance collapses when run on
 estimator output (i.e., trained on ground truth) is rejected at scorecard time.
 Renderer in studio: XC-21.
+
+For ground v1, `energyWh` is explicitly
+`simulated-positive-mechanical-joint-work`: the integral of positive applied joint
+torque times joint velocity. It is not battery energy, wall-plug energy, a tariff or
+cost estimate, device telemetry, or field evidence. The semantic label is required
+at the external worker boundary and drift holds the policy even if numerical
+thresholds pass.
 
 Live 2026-06-14: fixture and external SB3 policy artifacts both pass through this
 schema and export gate. The ONNX metadata carries `exportable: false` whenever the
@@ -241,6 +294,14 @@ resume; and deliberately supports interruption after either task. Failed/tampere
 checkpoints never become reusable authority. Exact clean-source evidence and retained
 hashes live under `docs/evidence/p7-012/`.
 
+The P7-014 candidate advances the required smoke envelope to 3.0.0 and executes four
+independent 256-step CPU PPO paths: hover-hold, waypoint-chain, rover line-follow,
+and quadruped walk-to-target. It checks optimizer updates, estimator-only authority,
+task suite/version/hash, per-contract lineage, exact tensor schema/shape, ONNX byte
+count/digest, sequential path retention, and mechanical-energy labeling. Short
+scorecards remain honestly blocked. This is local acceptance until the exact branch,
+protected squash, post-merge checks, and downloaded clean-source artifact are verified.
+
 Live 2026-07-15: the current hover fixture is a real 1,056-byte tensor-v2 opset-18
 Gemm+Tanh ONNX graph bound by SHA-256
 `48c08ad27c27a5e78bb3b63ea722c14a2a8e35095c8a45ecbc1d8042f27976a0`.
@@ -262,6 +323,12 @@ the controller requests the current target from `CoreSession`, advances only fro
 the returned estimator target-error scalars, requests a fresh snapshot for the next
 target before inference, and zeroes advisories after completing the chain. Render
 state and simulator truth do not authorize progression.
+
+Ground policy results may be retained by the worker only after their scorecard and
+exact ground tensor pass, but current Studio playback fails closed on
+`forge-ground-policy-tensor`. A ground training button or retained object therefore
+does not imply in-browser rover/quadruped control; that consumer remains an explicit
+future slice rather than an accidental reuse of flight actions.
 
 P7-011 treats inline bytes as transient producer transport. The current D38 attempt
 uploads one exact owner content-addressed object and a serializable

@@ -16,6 +16,9 @@ from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
 from forge_workers.training.bundle import (
+    GROUND_POLICY_INPUT_LAYOUT,
+    GROUND_POLICY_TENSOR_SCHEMA,
+    GROUND_POLICY_TENSOR_VERSION,
     LEGACY_POLICY_INPUT_LAYOUT,
     LEGACY_POLICY_TENSOR_VERSION,
     POLICY_INPUT_LAYOUT,
@@ -235,6 +238,9 @@ def _external_policy_result(
         "exportGate": "exportable" if exportable else "blocked",
         "scorecard": _scorecard_payload(card, reasons, exportable),
     }
+    if resolved_task in {"line-follow", "walk-to-target"}:
+        result["archetype"] = external.get("archetype", task_meta.get("archetype"))
+        result["scorecard"]["energySemantics"] = raw_scorecard.get("energySemantics")
     if isinstance(external.get("training"), dict):
         result["training"] = external["training"]
     return result
@@ -315,6 +321,10 @@ def _external_policy_authority_reasons(
         reasons.append("external policy successRate must be in [0, 1]")
     if card.energy_wh > 1_000_000_000:
         reasons.append("external policy energyWh exceeds the supported bound")
+    if task_meta.get("id") in {"line-follow", "walk-to-target"} and raw_scorecard.get(
+        "energySemantics"
+    ) != "simulated-positive-mechanical-joint-work":
+        reasons.append("external ground policy energy semantics are missing or drifted")
     raw_robustness = raw_scorecard.get("robustness", external.get("robustness"))
     if isinstance(raw_robustness, dict) and any(
         isinstance(value, bool)
@@ -325,10 +335,7 @@ def _external_policy_authority_reasons(
         reasons.append("external policy robustness values must be numeric rates in [0, 1]")
 
     external_task = external.get("task")
-    expected_targets = [
-        {"kind": target["kind"], "xyzM": target["xyz"], "radiusM": target["radiusM"]}
-        for target in task_meta["env"]["targets"]
-    ]
+    expected_targets = _task_targets(task_meta)
     if not isinstance(external_task, dict) or any(
         external_task.get(key) != task_meta[key]
         for key in ("id", "suite", "version", "coordinateFrame", "definitionHash")
@@ -351,7 +358,7 @@ def _external_policy_authority_reasons(
         if not isinstance(header, dict) or any(header.get(key) != value for key, value in expected_header.items()):
             reasons.append("external policy ONNX header does not match admitted contract/task authority")
         tensor = io.get("tensor")
-        if not isinstance(tensor, dict) or not _policy_tensor_is_exact(tensor):
+        if not isinstance(tensor, dict) or not _policy_tensor_is_exact(tensor, task_meta):
             reasons.append("external policy tensor contract is unsupported or drifted")
 
     onnx = external.get("onnx")
@@ -379,7 +386,9 @@ def _external_policy_authority_reasons(
     return reasons
 
 
-def _policy_tensor_is_exact(value: dict[str, Any]) -> bool:
+def _policy_tensor_is_exact(value: dict[str, Any], task_meta: dict[str, Any]) -> bool:
+    if value.get("schema") == GROUND_POLICY_TENSOR_SCHEMA:
+        return _ground_policy_tensor_is_exact(value, task_meta)
     input_axis = value.get("input")
     output_axis = value.get("output")
     version = value.get("schemaVersion")
@@ -402,6 +411,77 @@ def _policy_tensor_is_exact(value: dict[str, Any]) -> bool:
         and output_axis.get("shape") == [1, 4]
         and output_axis.get("layout") == list(TENSOR_OUTPUT_LAYOUT)
     )
+
+
+def _ground_policy_tensor_is_exact(value: dict[str, Any], task_meta: dict[str, Any]) -> bool:
+    input_axis = value.get("input")
+    output_axis = value.get("output")
+    if not (
+        value.get("schemaVersion") == GROUND_POLICY_TENSOR_VERSION
+        and value.get("coordinateFrame") == "forge-y-up-rh-m"
+        and value.get("rateHz") == 50
+        and isinstance(input_axis, dict)
+        and input_axis.get("name") == "observations"
+        and isinstance(input_axis.get("layout"), list)
+        and isinstance(output_axis, dict)
+        and output_axis.get("name") == "actions"
+        and isinstance(output_axis.get("layout"), list)
+    ):
+        return False
+    input_layout = input_axis["layout"]
+    output_layout = output_axis["layout"]
+    if input_axis.get("shape") != [1, len(input_layout)] or output_axis.get("shape") != [
+        1,
+        len(output_layout),
+    ]:
+        return False
+    if task_meta.get("id") == "line-follow":
+        return input_layout == list(GROUND_POLICY_INPUT_LAYOUT) and output_layout == [
+            "drive",
+            "turn",
+        ]
+    if task_meta.get("id") != "walk-to-target":
+        return False
+    if input_layout[: len(GROUND_POLICY_INPUT_LAYOUT)] != list(GROUND_POLICY_INPUT_LAYOUT):
+        return False
+    remaining = input_layout[len(GROUND_POLICY_INPUT_LAYOUT) :]
+    if len(remaining) % 2 != 0:
+        return False
+    joint_count = len(remaining) // 2
+    if not 8 <= joint_count <= 24 or len(output_layout) != joint_count:
+        return False
+    positions = remaining[:joint_count]
+    velocities = remaining[joint_count:]
+    names: list[str] = []
+    for position in positions:
+        prefix = "estimator.jointPosition."
+        if not isinstance(position, str) or not position.startswith(prefix) or not position.endswith("Rad"):
+            return False
+        name = position[len(prefix) : -3]
+        if not name or name in names:
+            return False
+        names.append(name)
+    return velocities == [
+        f"estimator.jointVelocity.{name}RadS" for name in names
+    ] and output_layout == [f"jointTorque.{name}" for name in names]
+
+
+def _task_targets(task_meta: dict[str, Any]) -> list[dict[str, Any]]:
+    env = task_meta["env"]
+    if task_meta.get("id") == "line-follow":
+        spawn_y = float(env["spawn"]["pose"][1])
+        return [
+            {
+                "kind": "path-point",
+                "xyzM": [float(point[0]), spawn_y, float(point[1])],
+                "radiusM": float(env["path"]["radiusM"]),
+            }
+            for point in env["path"]["points"]
+        ]
+    return [
+        {"kind": target["kind"], "xyzM": target["xyz"], "radiusM": target["radiusM"]}
+        for target in env.get("targets", [])
+    ]
 
 
 def _robustness(value: Any) -> dict[str, float]:

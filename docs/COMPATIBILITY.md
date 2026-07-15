@@ -169,6 +169,21 @@ checker must agree on both exact versions. These remain internal schemas; exposi
 either as a public API or independently published artifact requires an explicit
 compatibility-surface promotion, migration policy, fixtures, and release notes.
 
+D44 adds four independently machine-checked internal authorities without changing
+the public `forge-policy-tensor` surface: `groundTrainingMuJoCoBundle` 1.0.0,
+`p7-ground-v1` task 1.0.0, `forge-ground-policy-tensor` 1.0.0, and
+`forge-sb3-mujoco/3.0.0`. Ground task v1 applies only to the built-in rover
+`line-follow` and quadruped `walk-to-target` runtime. Its tensor has an exact common
+11-scalar estimator prefix; rover output is exact `[1,2]` drive/turn, while
+quadruped inputs and outputs append the same ordered 8–24 contract joint names.
+Bundle, task, runtime, or tensor major changes; reordered/renamed channels; altered
+frame/rate/action meaning; defaulted actuation authority; or changed mechanical-
+energy meaning require a new internal major and explicit retraining guidance. There
+is no conversion to the flight tensor and no Studio read support: the browser must
+reject `forge-ground-policy-tensor` until a separately versioned ground consumer is
+implemented. External publication still requires compatibility-surface promotion,
+supported/unsupported fixtures, migration/deprecation policy, and release notes.
+
 P7-010's controlled benchmark adds internal required-CI evidence envelopes
 `mjxBenchmarkRequest` 1.0.0 and `mjx-benchmark` 1.0.0 without changing a public or
 queued worker artifact. Request v1 freezes the admitted snapshot/hash, exact runtime

@@ -5,7 +5,7 @@
 //! Python owns the Gymnasium/SB3 orchestration, but it must consume this bounded
 //! bundle rather than reinterpret a user-authored contract.
 
-use forge_contract::{Archetype, EstimatorKind, ModelSpec};
+use forge_contract::{Archetype, EstimatorKind, Geom, JointKind, ModelSpec};
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +35,22 @@ pub const MULTIROTOR_POLICY_INPUT_LAYOUT: [&str; 14] = [
 ];
 
 pub const MULTIROTOR_POLICY_OUTPUT_LAYOUT: [&str; 4] = ["throttle", "roll", "pitch", "yaw"];
+pub const GROUND_TRAINING_BUNDLE_VERSION: &str = "1.0.0";
+pub const GROUND_POLICY_TENSOR_SCHEMA: &str = "forge-ground-policy-tensor";
+pub const GROUND_POLICY_TENSOR_VERSION: &str = "1.0.0";
+pub const GROUND_POLICY_INPUT_LAYOUT: [&str; 11] = [
+    "estimator.attitude.rollRad",
+    "estimator.attitude.pitchRad",
+    "estimator.attitude.yawRad",
+    "estimator.angularRate.rollRadS",
+    "estimator.angularRate.pitchRadS",
+    "estimator.angularRate.yawRadS",
+    "estimator.linearVelocity.bodyXMps",
+    "estimator.linearVelocity.bodyZMps",
+    "target.error.bodyXM",
+    "target.error.bodyZM",
+    "actuation.normalizedEffort",
+];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -112,6 +128,87 @@ pub struct TrainingBundle {
     pub powertrain: TrainingPowertrain,
     pub control: TrainingControlAuthority,
     pub assumptions: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroundTrainingJoint {
+    pub name: String,
+    pub motor_name: String,
+    pub side: String,
+    pub lower_rad: f64,
+    pub upper_rad: f64,
+    pub max_torque_nm: f64,
+    pub max_velocity_rad_s: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroundTrainingControl {
+    pub mode: String,
+    pub joints: Vec<GroundTrainingJoint>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wheel_radius_m: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub track_width_m: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroundTrainingBundle {
+    pub artifact_kind: String,
+    pub schema_version: String,
+    pub contract_hash: String,
+    pub archetype: String,
+    pub mujoco_version: String,
+    pub root_body_name: String,
+    pub mjcf: String,
+    pub timestep_s: f64,
+    pub control_period_s: f64,
+    pub substeps: u32,
+    pub mass_kg: f64,
+    pub gravity_m_s2: f64,
+    pub tensor: TrainingTensorContract,
+    pub estimator: TrainingEstimator,
+    pub control: GroundTrainingControl,
+    pub assumptions: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AnyTrainingBundle {
+    Multirotor(TrainingBundle),
+    Ground(GroundTrainingBundle),
+}
+
+impl AnyTrainingBundle {
+    pub fn archetype(&self) -> &str {
+        match self {
+            Self::Multirotor(bundle) => &bundle.archetype,
+            Self::Ground(bundle) => &bundle.archetype,
+        }
+    }
+
+    pub fn mass_kg(&self) -> f64 {
+        match self {
+            Self::Multirotor(bundle) => bundle.mass_kg,
+            Self::Ground(bundle) => bundle.mass_kg,
+        }
+    }
+
+    pub fn mujoco_version(&self) -> &str {
+        match self {
+            Self::Multirotor(bundle) => &bundle.mujoco_version,
+            Self::Ground(bundle) => &bundle.mujoco_version,
+        }
+    }
+
+    pub fn tensor_version(&self) -> &str {
+        match self {
+            Self::Multirotor(bundle) => &bundle.tensor.schema_version,
+            Self::Ground(bundle) => &bundle.tensor.schema_version,
+        }
+    }
 }
 
 pub fn multirotor_training_bundle(
@@ -313,6 +410,321 @@ pub fn multirotor_training_bundle(
     })
 }
 
+pub fn training_bundle(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    contract_hash: &str,
+) -> Result<AnyTrainingBundle, String> {
+    match spec.meta.archetype {
+        Archetype::Multirotor => multirotor_training_bundle(spec, baked, contract_hash)
+            .map(AnyTrainingBundle::Multirotor),
+        Archetype::Rover | Archetype::Quadruped => {
+            ground_training_bundle(spec, baked, contract_hash).map(AnyTrainingBundle::Ground)
+        }
+        _ => Err(
+            "P7 real training supports multirotor, rover, and quadruped contracts only".to_string(),
+        ),
+    }
+}
+
+pub fn ground_training_bundle(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    contract_hash: &str,
+) -> Result<GroundTrainingBundle, String> {
+    if !matches!(spec.meta.archetype, Archetype::Rover | Archetype::Quadruped) {
+        return Err(
+            "P7 ground training supports admitted rover and quadruped contracts only".to_string(),
+        );
+    }
+    if contract_hash.len() != 64 || !contract_hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("training bundle contract hash must be 64 hexadecimal characters".to_string());
+    }
+    let roots: Vec<_> = spec
+        .skeleton
+        .iter()
+        .filter(|node| node.parent.is_none())
+        .collect();
+    if roots.len() != 1 {
+        return Err("P7 ground training requires exactly one root body".to_string());
+    }
+    let estimator = spec.sim.estimator.as_ref().ok_or_else(|| {
+        "P7 ground training requires an explicit estimator block (D8)".to_string()
+    })?;
+    if !matches!(estimator.kind, EstimatorKind::Complementary) {
+        return Err(
+            "P7 ground training 1.0.0 supports the complementary estimator only".to_string(),
+        );
+    }
+    let mass_kg = forge_geometry::model_mass_g(spec, baked) / 1000.0;
+    if !mass_kg.is_finite() || mass_kg <= 0.0 {
+        return Err("P7 ground training requires positive computed model mass".to_string());
+    }
+
+    let mut joints = ground_control_joints(spec)?;
+    let (archetype, mode, wheel_radius_m, track_width_m, output_layout) = match spec.meta.archetype
+    {
+        Archetype::Rover => {
+            joints.retain(|joint| joint.side == "left" || joint.side == "right");
+            if joints.len() < 2
+                || !joints.iter().any(|joint| joint.side == "left")
+                || !joints.iter().any(|joint| joint.side == "right")
+            {
+                return Err(
+                    "P7 rover training requires at least one bounded left and right wheel joint"
+                        .to_string(),
+                );
+            }
+            let radius = rover_wheel_radius(spec, &joints)?;
+            let track = rover_track_width(baked, &joints)?;
+            (
+                "rover",
+                "differential-drive-torque-v1",
+                Some(radius),
+                Some(track),
+                vec!["drive".to_string(), "turn".to_string()],
+            )
+        }
+        Archetype::Quadruped => {
+            if joints.len() < 8 || joints.len() > 24 {
+                return Err(
+                    "P7 quadruped training requires between 8 and 24 bounded revolute joints"
+                        .to_string(),
+                );
+            }
+            let outputs = joints
+                .iter()
+                .map(|joint| format!("jointTorque.{}", joint.name))
+                .collect();
+            (
+                "quadruped",
+                "normalized-joint-torque-v1",
+                None,
+                None,
+                outputs,
+            )
+        }
+        _ => unreachable!(),
+    };
+
+    let mut input_layout = GROUND_POLICY_INPUT_LAYOUT
+        .iter()
+        .map(|value| (*value).to_string())
+        .collect::<Vec<_>>();
+    if matches!(spec.meta.archetype, Archetype::Quadruped) {
+        input_layout.extend(
+            joints
+                .iter()
+                .map(|joint| format!("estimator.jointPosition.{}Rad", joint.name)),
+        );
+        input_layout.extend(
+            joints
+                .iter()
+                .map(|joint| format!("estimator.jointVelocity.{}RadS", joint.name)),
+        );
+    }
+
+    let mjcf = crate::export::to_mjcf_with_options(
+        spec,
+        baked,
+        crate::export::MjcfExportOptions {
+            floating_roots: true,
+            timestep_s: Some(MUJOCO_TIMESTEP_S),
+            euler_integrator: true,
+        },
+    )?;
+    let mjcf = add_ground_plane(&mjcf)?;
+
+    Ok(GroundTrainingBundle {
+        artifact_kind: "groundTrainingMuJoCoBundle".to_string(),
+        schema_version: GROUND_TRAINING_BUNDLE_VERSION.to_string(),
+        contract_hash: contract_hash.to_ascii_lowercase(),
+        archetype: archetype.to_string(),
+        mujoco_version: TRAINING_MUJOCO_VERSION.to_string(),
+        root_body_name: roots[0].name.clone(),
+        mjcf,
+        timestep_s: MUJOCO_TIMESTEP_S,
+        control_period_s: 1.0 / f64::from(POLICY_RATE_HZ),
+        substeps: MUJOCO_SUBSTEPS,
+        mass_kg,
+        gravity_m_s2: spec.env.gravity,
+        tensor: TrainingTensorContract {
+            schema: GROUND_POLICY_TENSOR_SCHEMA.to_string(),
+            schema_version: GROUND_POLICY_TENSOR_VERSION.to_string(),
+            coordinate_frame: "forge-y-up-rh-m".to_string(),
+            input: TrainingTensorAxis {
+                name: "observations".to_string(),
+                shape: vec![1, input_layout.len()],
+                layout: input_layout,
+            },
+            output: TrainingTensorAxis {
+                name: "actions".to_string(),
+                shape: vec![1, output_layout.len()],
+                layout: output_layout,
+            },
+            rate_hz: POLICY_RATE_HZ,
+        },
+        estimator: TrainingEstimator {
+            gyro_noise: estimator.gyro_noise,
+            accel_noise: estimator.accel_noise,
+            bias: estimator.bias,
+            latency_ms: estimator.latency_ms,
+        },
+        control: GroundTrainingControl {
+            mode: mode.to_string(),
+            joints,
+            wheel_radius_m,
+            track_width_m,
+        },
+        assumptions: vec![
+            "MuJoCo consumes forge-sim contract geometry, computed mass properties, gravity, joint limits, and a floating root over an explicit flat contact plane at four physics substeps per 50 Hz policy action".to_string(),
+            "every commanded joint torque and velocity limit is explicit in the admitted contract; missing authority fails closed rather than receiving a default".to_string(),
+            "the worker exposes corrupted estimator and joint-encoder observations only; simulator pose, velocity, and contact truth remain private (D8)".to_string(),
+            "energyWh is simulated positive mechanical joint work only; it is not battery, wall-plug, electricity-cost, device, or field evidence".to_string(),
+        ],
+    })
+}
+
+fn ground_control_joints(spec: &ModelSpec) -> Result<Vec<GroundTrainingJoint>, String> {
+    let mut joints = Vec::new();
+    for node in spec.skeleton.iter().filter(|node| node.parent.is_some()) {
+        let Some(joint) = node.joint.as_ref() else {
+            continue;
+        };
+        if !matches!(joint.kind, JointKind::Revolute) {
+            continue;
+        }
+        let torque = joint.max_torque_nm.ok_or_else(|| {
+            format!(
+                "P7 ground training joint '{}' requires explicit maxTorqueNm",
+                node.name
+            )
+        })?;
+        let velocity = joint.max_vel_rad.ok_or_else(|| {
+            format!(
+                "P7 ground training joint '{}' requires explicit maxVelRad",
+                node.name
+            )
+        })?;
+        if !torque.is_finite() || torque <= 0.0 || !velocity.is_finite() || velocity <= 0.0 {
+            return Err(format!(
+                "P7 ground training joint '{}' requires positive finite torque and velocity authority",
+                node.name
+            ));
+        }
+        let axis = joint.axis.unwrap_or([0.0, 1.0, 0.0]);
+        let dominant = (0..3)
+            .max_by(|a, b| axis[*a].abs().total_cmp(&axis[*b].abs()))
+            .unwrap_or(1);
+        let limits = node.limits.ok_or_else(|| {
+            format!(
+                "P7 ground training joint '{}' requires explicit angular limits",
+                node.name
+            )
+        })?;
+        let [lower, upper] = limits[dominant];
+        if !lower.is_finite() || !upper.is_finite() || lower >= upper {
+            return Err(format!(
+                "P7 ground training joint '{}' has invalid angular limits",
+                node.name
+            ));
+        }
+        let folded = node.name.to_ascii_lowercase();
+        let side = if folded.contains("left") {
+            "left"
+        } else if folded.contains("right") {
+            "right"
+        } else if folded.ends_with("_l") || folded.ends_with('l') {
+            "left"
+        } else if folded.ends_with("_r") || folded.ends_with('r') {
+            "right"
+        } else {
+            "center"
+        };
+        joints.push(GroundTrainingJoint {
+            name: node.name.clone(),
+            motor_name: format!("{}_motor", node.name),
+            side: side.to_string(),
+            lower_rad: lower,
+            upper_rad: upper,
+            max_torque_nm: torque,
+            max_velocity_rad_s: velocity,
+        });
+    }
+    if joints.is_empty() {
+        return Err("P7 ground training requires bounded revolute control joints".to_string());
+    }
+    Ok(joints)
+}
+
+fn rover_wheel_radius(spec: &ModelSpec, joints: &[GroundTrainingJoint]) -> Result<f64, String> {
+    let names = joints
+        .iter()
+        .map(|joint| joint.name.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    let radii = spec
+        .physical_parts_with_paths()
+        .into_iter()
+        .filter_map(|(_, part)| {
+            if !names.contains(part.node.as_str()) {
+                return None;
+            }
+            match part.geom {
+                Geom::Cyl { r0, r1, .. } => Some((r0 + r1.unwrap_or(r0)) * 0.5),
+                _ => None,
+            }
+        })
+        .filter(|radius| radius.is_finite() && *radius > 0.0)
+        .collect::<Vec<_>>();
+    if radii.len() < joints.len() {
+        return Err(
+            "P7 rover training requires one cylindrical wheel on every control joint".to_string(),
+        );
+    }
+    let min = radii.iter().copied().fold(f64::INFINITY, f64::min);
+    let max = radii.iter().copied().fold(0.0_f64, f64::max);
+    if max - min > 1e-6 {
+        return Err("P7 rover training 1.0.0 requires equal wheel radii".to_string());
+    }
+    Ok((min + max) * 0.5)
+}
+
+fn rover_track_width(baked: &BakedModel, joints: &[GroundTrainingJoint]) -> Result<f64, String> {
+    let mut left = Vec::new();
+    let mut right = Vec::new();
+    for joint in joints {
+        let world = baked.node_world.get(&joint.name).ok_or_else(|| {
+            "P7 rover wheel joint disappeared from the baked transform table".to_string()
+        })?;
+        match joint.side.as_str() {
+            "left" => left.push(world[14]),
+            "right" => right.push(world[14]),
+            _ => {}
+        }
+    }
+    let left_mean = left.iter().sum::<f64>() / left.len() as f64;
+    let right_mean = right.iter().sum::<f64>() / right.len() as f64;
+    let width = (left_mean - right_mean).abs();
+    if !width.is_finite() || width < 0.05 {
+        return Err(
+            "P7 rover training requires left/right wheel separation of at least 5 cm".to_string(),
+        );
+    }
+    Ok(width)
+}
+
+fn add_ground_plane(mjcf: &str) -> Result<String, String> {
+    let marker = "  <worldbody>\n";
+    if mjcf.matches(marker).count() != 1 {
+        return Err("contract-derived MJCF is missing its exact worldbody marker".to_string());
+    }
+    Ok(mjcf.replacen(
+        marker,
+        "  <worldbody>\n    <geom name=\"forge_training_ground\" type=\"plane\" size=\"100 100 0.1\" friction=\"0.8 0.005 0.0001\"/>\n",
+        1,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -355,6 +767,55 @@ mod tests {
         let (mut spec, baked) = fixture();
         spec.sim.estimator = None;
         assert!(multirotor_training_bundle(&spec, &baked, &"ab".repeat(32))
+            .unwrap_err()
+            .contains("estimator"));
+    }
+
+    #[test]
+    fn ground_bundles_are_contract_derived_and_archetype_exact() {
+        let rover_doc = include_str!("../../../workers/tests/fixtures/rover-training.forge.json");
+        let rover = forge_contract::validate_shape(rover_doc).unwrap();
+        let rover_baked = forge_geometry::bake(&rover).unwrap();
+        let bundle = ground_training_bundle(&rover, &rover_baked, &"cd".repeat(32)).unwrap();
+        assert_eq!(bundle.artifact_kind, "groundTrainingMuJoCoBundle");
+        assert_eq!(bundle.schema_version, GROUND_TRAINING_BUNDLE_VERSION);
+        assert_eq!(bundle.archetype, "rover");
+        assert_eq!(bundle.tensor.input.shape, vec![1, 11]);
+        assert_eq!(bundle.tensor.output.layout, vec!["drive", "turn"]);
+        assert_eq!(bundle.control.joints.len(), 2);
+        assert_eq!(bundle.control.wheel_radius_m, Some(0.04));
+        assert_eq!(bundle.control.track_width_m, Some(0.24));
+        assert!(bundle.mjcf.contains("forge_training_ground"));
+
+        let quad_doc = include_str!("../../../examples/qd-mini.forge.json");
+        let quad = forge_contract::validate_shape(quad_doc).unwrap();
+        let quad_baked = forge_geometry::bake(&quad).unwrap();
+        let bundle = ground_training_bundle(&quad, &quad_baked, &"ef".repeat(32)).unwrap();
+        assert_eq!(bundle.archetype, "quadruped");
+        assert_eq!(bundle.tensor.input.shape, vec![1, 27]);
+        assert_eq!(bundle.tensor.output.shape, vec![1, 8]);
+        assert_eq!(bundle.control.joints.len(), 8);
+        assert!(bundle
+            .control
+            .joints
+            .iter()
+            .all(|joint| joint.max_torque_nm > 0.0));
+    }
+
+    #[test]
+    fn ground_bundle_refuses_missing_physical_or_estimator_authority() {
+        let doc = include_str!("../../../examples/qd-mini.forge.json");
+        let mut spec = forge_contract::validate_shape(doc).unwrap();
+        let baked = forge_geometry::bake(&spec).unwrap();
+        spec.skeleton[1].joint.as_mut().unwrap().max_torque_nm = None;
+        assert!(ground_training_bundle(&spec, &baked, &"ab".repeat(32))
+            .unwrap_err()
+            .contains("maxTorqueNm"));
+
+        let mut spec = forge_contract::validate_shape(doc).unwrap();
+        let baked = forge_geometry::bake(&spec).unwrap();
+        spec.sim.estimator = None;
+        assert!(ground_training_bundle(&spec, &baked, &"ab".repeat(32))
             .unwrap_err()
             .contains("estimator"));
     }

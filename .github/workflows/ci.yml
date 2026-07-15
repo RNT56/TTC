@@ -225,7 +225,7 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.13.0
           pip install -e "workers[dev,mujoco,training,mjx]"
       - run: python -m pytest workers -q
-      - name: P7-003/P7-014 real seeded hover + waypoint MuJoCo-SB3-ONNX smoke
+      - name: P7-003/P7-014 real seeded multirotor + ground MuJoCo-SB3-ONNX smoke
         env:
           FORGE_VALIDATE_BIN: target/debug/forge-validate
           FORGE_SOURCE_REVISION: ${{ github.sha }}

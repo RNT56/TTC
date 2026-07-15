@@ -7,7 +7,8 @@ GPU/provider stacks remain adapter-backed · **Phases:** P3/P4 (ETL), P5
 **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
 (fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue), D41
-(task coordinate/version authority)
+(task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
+trainer authority)
 
 ## 1. Purpose
 
@@ -213,6 +214,25 @@ after hover, validates and reuses the atomic checkpoint, then passes waypoint. E
 JSON/ONNX files and their hashes are retained under `docs/evidence/p7-012/`. This
 closes controlled consumer-hardware simulation quality, not deployed GPU or field proof.
 
+Local P7-014 candidate under D44 adds an independent ground path rather than
+relabeling flight actions. `forge-validate training-bundle` emits
+`groundTrainingMuJoCoBundle` 1.0.0 for admitted rover/quadruped contracts only. Rust
+owns the floating-root MJCF, explicit flat plane, computed mass/inertia, equal rover
+wheel radius/track, bounded joint order, and explicit torque/velocity ceilings.
+Python independently verifies the exact bundle and dynamic
+`forge-ground-policy-tensor` 1.0.0, then runs `line-follow` or `walk-to-target` under
+`p7-ground-v1` with estimator/encoder observations, bounded differential or per-joint
+torque, mass/torque/friction robustness, and simulated-positive-mechanical-work
+energy semantics. Missing authority, unsupported morphology/task, external MJCF,
+task/path/hash drift, reordered joint channels, or model-byte substitution refuses.
+
+The required smoke candidate now executes hover, waypoint, rover, and quadruped for
+256 real CPU PPO steps apiece and verifies exact source/contract/task/tensor/ONNX
+lineage. Studio explicitly rejects the ground tensor because browser ground playback
+is not implemented. Focused local Rust, Python, worker-command, and Studio tests pass;
+protected exact-head/post-merge checks and retained clean artifact remain required
+before P7-014 closes.
+
 Required CI installs the separate `mjx` extra, runs the complete worker suite, then
 retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
 pin drift, non-float64 JAX, request/source/hash drift, non-finite state, parity-band
@@ -379,7 +399,8 @@ bytes execute through the browser. Preserve that protected acceptance on changes
 database-only object row, inline byte field, or successful upload without the winning
 lease is not delivery proof. D40's real-waypoint dependency before overnight P7-012
 is satisfied through protected PR #70/`f220d25` and artifact `8342801418`; P7-012 is
-closed and rover/legged real trainers remain P7-014. P8: config-diff,
+closed. P7-014's rover/quadruped implementation is locally verified under D44 but
+remains open until protected source and retained four-task smoke are reconciled. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
 codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes

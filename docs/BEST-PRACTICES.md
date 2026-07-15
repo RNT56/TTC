@@ -184,6 +184,16 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     final run, retains failed attempts honestly, writes atomic task checkpoints,
     validates request hash plus ONNX size/digest/export gate before resume, and keeps
     simulated vehicle energy separate from host energy.
+    Ground trainers also keep flight and ground tensor majors separate: derive every
+    wheel/joint, mass/inertia, limit, torque, velocity, and contact-plane assumption
+    from the admitted contract in Rust; reject missing authority rather than inserting
+    a plausible default. Apply available-torque randomization only as degradation,
+    never above the contract ceiling. Keep MuJoCo pose/contact truth out of policy
+    observations and target progression. For ground scorecards, integrate only
+    positive simulated joint work and label it mechanical simulation energy; never
+    relabel it as battery, host, electricity-cost, device, or field evidence. A valid
+    exported ground ONNX is not browser-playback proof until an exact ground observer,
+    actuator, tensor consumer, failure fallback, and focused runtime test exist (D44).
 15. **Accelerator benchmarks** — compare the same Rust-derived model, initial state,
     controls, solver, precision, timestep, and step count. Warm each path before
     timing, measure JAX lowering/compilation separately, synchronize every timed JAX

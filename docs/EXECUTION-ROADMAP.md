@@ -347,8 +347,11 @@ Work:
   that prerequisite. P7-012 implementation/evidence is closed through PR
   #72/`8e094c0` and PR #73/`6bfa60f`; its clean intentional-interruption/resume
   evidence retains both scorecard-passing policies
-  under exact D42/D43 authority. Next complete remaining rover
-  and legged real tasks (`P7-014`), offline fine-tuning (`P7-009`), exact D12 quad/
+  under exact D42/D43 authority. D44's P7-014 ground candidate now supplies exact
+  built-in rover line-follow and quadruped walk-to-target trainers, independent
+  bundle/task/tensor v1 authority, four-task smoke, mechanical-energy semantics, and
+  explicit unsupported/browser refusals. Protect and reconcile its exact source and
+  retained smoke before closing P7-014. Then continue offline fine-tuning (`P7-009`), exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
   to finish the MJX decision (`P7-010`), deployed GPU operations (`P7-013`), and
   external acceptance. OPS-006 separately

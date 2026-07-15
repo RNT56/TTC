@@ -18,6 +18,51 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Implement contract-derived rover and quadruped training
+**Session:** Codex agent · branch `codex/p7014-ground-trainers` · **Phase:** P7 ·
+**TODO items:** P7-014 [~]
+**Done:** Implemented the unprotected P7-014 ground-training candidate without
+claiming protected or learning-quality completion. D44 introduces independent
+`groundTrainingMuJoCoBundle`, `p7-ground-v1`, and
+`forge-ground-policy-tensor` 1.0.0 boundaries while preserving every multirotor
+major. Rust now derives a strict flat-ground MuJoCo bundle from admitted rover and
+quadruped contracts, including exact joint names, position/velocity/torque limits,
+differential-drive wheel geometry, QD-mini joint channels, and unsupported-shape
+refusals. The worker admits only built-in line-follow and walk-to-target semantics,
+keeps policy observations estimator/encoder-derived, randomizes mass, friction,
+latency, sensor quality, and torque degradation without exceeding contract
+authority, and reports simulated positive mechanical joint work rather than host or
+battery energy. Real seeded PPO/ONNX training, evaluation, outer-worker authority,
+scorecard, tamper, same-seed, and Studio-refusal tests are present. Focused evidence
+is green: 39 Python tests, 13 Studio runtime tests, 15 compatibility surfaces, and a
+four-task 256-step MuJoCo/SB3/ONNX smoke whose sub-threshold outputs remain correctly
+blocked. QD-mini now carries generator-owned torque limits and physically owned leg
+segments, with its registered Studio mirror and generated contract catalog covered
+by an append-only golden review record. The first complete gate stopped correctly
+on QD-mini's changed bake hash; the registry-owned generator advanced only that hash,
+while all counts and its 600-step tick hash remained exact. The complete 39-step
+`pnpm verify` gate then passed under Python 3.12, including Rust fmt/Clippy/workspace,
+fresh and committed native/WASM parity, 13 Studio runtime tests, 65 gateway tests,
+Brief-25 25/25, packaging, all 174 worker tests, four-task real training smoke,
+controlled MJX feasibility, and patch hygiene.
+**Changed:** Rust generator, training compiler, validator CLI, QD-mini contract;
+Python ground environment, bundle/task/runtime/job authority and tests; four-task
+smoke and CI label; compatibility and generated artifact catalog; Studio unsupported-
+tensor refusal; canonical agent, decision, project-state, roadmap, TODO, execution,
+best-practice, compatibility, model, simulation, learning, worker, and Studio docs;
+native/WASM golden number plus golden record; and this changelog.
+**Decisions:** D44 makes ground training an exact independent internal contract,
+requires explicit contract control authority and estimator/encoder observations,
+defines simulated mechanical work narrowly, and refuses browser execution until a
+ground consumer is reviewed.
+**Next:** Publish the exact rebased head through PR CI/security, inspect the retained
+four-task artifact, merge, verify protected post-merge evidence, and only then
+reconcile P7-014 to `[x]`.
+**Blockers:** none for local implementation/publication. Passing learned ground
+policies, browser execution, accelerator use, host/device energy, deployed GPU
+operations, external acceptance, real-device transfer, and field proof are not
+established by this deterministic smoke candidate.
+
 ## 2026-07-15 — Reconcile the protected P7-012 evidence anchor
 **Session:** Codex agent · branch `codex/p7012-evidence-reconcile` · **Phase:** P7 ·
 **TODO items:** P7-012 [x], P7-014 [~]
