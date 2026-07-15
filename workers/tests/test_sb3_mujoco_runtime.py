@@ -14,6 +14,7 @@ pytest.importorskip("onnx")
 pytest.importorskip("torch")
 
 from forge_workers.training.bundle import SNAPSHOT_SCHEMA, compile_training_bundle
+from forge_workers.training.ground_env import ForgeGroundTaskEnv
 from forge_workers.training.mujoco_env import (
     ForgeHoverEnv,
     ForgeMultirotorTaskEnv,
@@ -31,19 +32,18 @@ from forge_workers.training.tasks import task_definition, task_definition_hash
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = ROOT / "target" / "debug" / "forge-validate"
 CONTRACT = ROOT / "examples" / "vx2-mini.forge.json"
+ROVER_CONTRACT = ROOT / "workers" / "tests" / "fixtures" / "rover-training.forge.json"
+QUADRUPED_CONTRACT = ROOT / "examples" / "qd-mini.forge.json"
 
 
-@pytest.fixture(scope="module")
-def bundle() -> dict:
-    if not VALIDATOR.is_file():
-        pytest.skip("forge-validate binary is not built")
-    contract_json = CONTRACT.read_text(encoding="utf-8")
+def _compile_contract(path: Path) -> dict:
+    contract_json = path.read_text(encoding="utf-8")
     contract_hash = hashlib.sha256(contract_json.encode("utf-8")).hexdigest()
     payload = {
         "contractHash": contract_hash,
         "modelSnapshot": {
             "schemaVersion": SNAPSHOT_SCHEMA,
-            "modelId": "vx2-mini",
+            "modelId": path.stem,
             "contractHash": contract_hash,
             "contractJson": contract_json,
         },
@@ -51,6 +51,27 @@ def bundle() -> dict:
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("FORGE_VALIDATE_BIN", str(VALIDATOR))
         return compile_training_bundle(payload)
+
+
+@pytest.fixture(scope="module")
+def bundle() -> dict:
+    if not VALIDATOR.is_file():
+        pytest.skip("forge-validate binary is not built")
+    return _compile_contract(CONTRACT)
+
+
+@pytest.fixture(scope="module")
+def rover_bundle() -> dict:
+    if not VALIDATOR.is_file():
+        pytest.skip("forge-validate binary is not built")
+    return _compile_contract(ROVER_CONTRACT)
+
+
+@pytest.fixture(scope="module")
+def quadruped_bundle() -> dict:
+    if not VALIDATOR.is_file():
+        pytest.skip("forge-validate binary is not built")
+    return _compile_contract(QUADRUPED_CONTRACT)
 
 
 def test_mujoco_environment_uses_exact_tensor_and_never_exposes_truth(bundle):
@@ -178,6 +199,99 @@ def test_real_multirotor_environment_refuses_drifted_and_unsupported_task_shapes
         ForgeMultirotorTaskEnv(bundle, task=task_definition("gate-slalom"))
 
 
+def test_ground_environments_use_exact_dynamic_tensors_and_mechanical_energy(
+    rover_bundle, quadruped_bundle
+):
+    cases = (
+        (rover_bundle, "line-follow", (11,), (2,)),
+        (quadruped_bundle, "walk-to-target", (27,), (8,)),
+    )
+    for ground_bundle, task_id, observation_shape, action_shape in cases:
+        env = ForgeGroundTaskEnv(
+            ground_bundle,
+            task=task_definition(task_id),
+            episode_steps=20,
+            fixed_scenario={"dropoutPct": 0.0},
+        )
+        observation, info = env.reset(seed=41)
+        assert observation.shape == observation_shape
+        assert env.action_space.shape == action_shape
+        assert np.isfinite(observation).all()
+        assert info["truthExposedToPolicy"] is False
+        action = np.full(action_shape, 0.25, dtype=np.float32)
+        for _ in range(5):
+            observation, reward, terminated, truncated, info = env.step(action)
+            assert np.isfinite(observation).all()
+            assert np.isfinite(reward)
+            if terminated or truncated:
+                break
+        assert info["energyWh"] > 0.0
+        assert info["energySemantics"] == "simulated-positive-mechanical-joint-work"
+        env.close()
+
+
+def test_ground_randomization_refuses_authority_beyond_v1_envelope(rover_bundle):
+    base = {
+        "task": "line-follow",
+        "algorithm": "ppo",
+        "seed": 42,
+        "totalTimesteps": 64,
+        "episodeSteps": 20,
+        "evalEpisodes": 1,
+    }
+    with pytest.raises(ValueError, match=r"massPct.*\[0, 15\]"):
+        train_sb3_policy(
+            {**base, "domainRandomization": {"massPct": 15.01}}, rover_bundle
+        )
+    with pytest.raises(ValueError, match=r"torquePct.*\[0, 10\]"):
+        train_sb3_policy(
+            {**base, "domainRandomization": {"torquePct": 10.01}}, rover_bundle
+        )
+
+
+def test_ground_target_progress_uses_estimator_state_only(rover_bundle, quadruped_bundle):
+    for ground_bundle, task_id in (
+        (rover_bundle, "line-follow"),
+        (quadruped_bundle, "walk-to-target"),
+    ):
+        env = ForgeGroundTaskEnv(
+            ground_bundle,
+            task=task_definition(task_id),
+            episode_steps=20,
+            fixed_scenario={"latencyMs": 1_000.0, "dropoutPct": 0.0},
+        )
+        _, info = env.reset(seed=43)
+        expected_targets = 3 if task_id == "line-follow" else 1
+        for completed in range(1, expected_targets + 1):
+            env._estimated_position = env.target_forge_m.copy()
+            observation, reward, terminated, truncated, info = env.step(
+                np.zeros(env.action_space.shape, dtype=np.float32)
+            )
+            assert np.isfinite(observation).all()
+            assert np.isfinite(reward)
+            assert info["targetsCompleted"] == completed
+            assert info["targetAdvanceSource"] == "estimator.target.error"
+            assert info["truthExposedToPolicy"] is False
+        assert info["taskCompleted"] is True
+        assert info["taskSuccessFraction"] == 1.0
+        assert terminated and not truncated
+        env.close()
+
+
+def test_ground_runtime_refuses_task_substitution_and_unsupported_shapes(rover_bundle):
+    with pytest.raises(ValueError, match="task/archetype mismatch"):
+        ForgeGroundTaskEnv(rover_bundle, task=task_definition("walk-to-target"))
+
+    substituted = task_definition("line-follow")
+    substituted["env"]["path"]["points"][1] = [-1, 1.5]
+    substituted["definitionHash"] = task_definition_hash(substituted)
+    with pytest.raises(ValueError, match="exact worker-owned definition"):
+        ForgeGroundTaskEnv(rover_bundle, task=substituted)
+
+    with pytest.raises(ValueError, match="unsupported task"):
+        ForgeGroundTaskEnv(rover_bundle, task=task_definition("obstacle-course"))
+
+
 @pytest.mark.parametrize("algorithm", ["ppo", "sac"])
 def test_real_sb3_algorithms_update_and_export_digest_bound_onnx(bundle, algorithm):
     result = train_sb3_policy(
@@ -255,6 +369,64 @@ def test_real_waypoint_trainer_exports_task_bound_policy_and_scorecard(bundle):
     assert metadata["forge.taskDefinitionHash"] == result["task"]["definitionHash"]
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "task_id", "archetype", "input_count", "action_count", "target_count"),
+    [
+        ("rover_bundle", "line-follow", "rover", 11, 2, 4),
+        ("quadruped_bundle", "walk-to-target", "quadruped", 27, 8, 1),
+    ],
+)
+def test_real_ground_trainers_update_and_export_exact_task_bound_onnx(
+    request,
+    fixture_name,
+    task_id,
+    archetype,
+    input_count,
+    action_count,
+    target_count,
+):
+    ground_bundle = request.getfixturevalue(fixture_name)
+    result = train_sb3_policy(
+        {
+            "task": task_id,
+            "algorithm": "ppo",
+            "seed": 47,
+            "totalTimesteps": 64,
+            "episodeSteps": 20,
+            "evalEpisodes": 1,
+        },
+        ground_bundle,
+    )
+
+    assert result["archetype"] == archetype
+    assert result["task"]["suite"] == "p7-ground-v1"
+    assert result["task"]["version"] == "1.0.0"
+    assert len(result["task"]["targets"]) == target_count
+    assert result["io"]["tensor"]["schema"] == "forge-ground-policy-tensor"
+    assert result["io"]["tensor"]["input"]["shape"] == [1, input_count]
+    assert result["io"]["tensor"]["output"]["shape"] == [1, action_count]
+    assert result["io"]["onnxHeader"]["observationCount"] == str(input_count)
+    assert result["io"]["onnxHeader"]["actionCount"] == str(action_count)
+    assert result["training"]["optimizerUpdated"] is True
+    assert result["training"]["truthExposedToPolicy"] is False
+    assert result["training"]["energySemantics"] == "simulated-positive-mechanical-joint-work"
+    assert result["training"]["evaluations"]["baseline"]["completionRequired"] is True
+    assert set(result["scorecard"]["robustness"]) == {
+        "mass+15%",
+        "torque-10%",
+        "friction-50%",
+    }
+    assert result["scorecard"]["energyWh"] > 0.0
+    assert result["scorecard"]["energySemantics"] == "simulated-positive-mechanical-joint-work"
+    graph = onnx.load_from_string(
+        __import__("base64").b64decode(result["onnx"]["modelBase64"], validate=True)
+    )
+    metadata = {entry.key: entry.value for entry in graph.metadata_props}
+    assert metadata["forge.archetype"] == archetype
+    assert metadata["forge.task"] == task_id
+    assert metadata["forge.taskDefinitionHash"] == result["task"]["definitionHash"]
+
+
 def test_cpu_device_authority_is_explicit_and_never_claims_acceleration():
     assert _training_device("cpu") == "cpu"
     assert _device_authority("cpu") == {
@@ -328,6 +500,61 @@ def test_same_seed_reproduces_policy_and_onnx_digests(bundle):
     assert first["scorecard"] == second["scorecard"]
     assert first["training"]["parameterDigestAfter"] == second["training"]["parameterDigestAfter"]
     assert first["onnx"]["sha256"] == second["onnx"]["sha256"]
+
+
+def test_ground_same_seed_reproduces_policy_scorecard_and_onnx(rover_bundle):
+    payload = {
+        "task": "line-follow",
+        "algorithm": "ppo",
+        "seed": 53,
+        "totalTimesteps": 64,
+        "episodeSteps": 20,
+        "evalEpisodes": 1,
+    }
+    first = train_sb3_policy(payload, rover_bundle)
+    second = train_sb3_policy(payload, rover_bundle)
+
+    assert first["scorecard"] == second["scorecard"]
+    assert first["training"]["parameterDigestAfter"] == second["training"]["parameterDigestAfter"]
+    assert first["onnx"]["sha256"] == second["onnx"]["sha256"]
+
+
+def test_worker_command_accepts_exact_ground_tensor_but_keeps_scorecard_gate(monkeypatch):
+    contract_json = ROVER_CONTRACT.read_text(encoding="utf-8")
+    contract_hash = hashlib.sha256(contract_json.encode("utf-8")).hexdigest()
+    monkeypatch.setenv("FORGE_VALIDATE_BIN", str(VALIDATOR))
+    monkeypatch.setenv(
+        "FORGE_SB3_TRAIN_CMD",
+        f"{sys.executable} -m forge_workers.training.sb3_runner",
+    )
+    result = train_policy(
+        {
+            "modelId": "rover-training",
+            "contractHash": contract_hash,
+            "modelSnapshot": {
+                "schemaVersion": SNAPSHOT_SCHEMA,
+                "modelId": "rover-training",
+                "contractHash": contract_hash,
+                "contractJson": contract_json,
+            },
+            "task": "line-follow",
+            "algorithm": "ppo",
+            "seed": 59,
+            "totalTimesteps": 64,
+            "episodeSteps": 20,
+            "evalEpisodes": 1,
+        }
+    )
+
+    assert result["provider"] == "local-sb3-mujoco"
+    assert result["archetype"] == "rover"
+    assert result["io"]["tensor"]["schema"] == "forge-ground-policy-tensor"
+    assert result["scorecard"]["energySemantics"] == "simulated-positive-mechanical-joint-work"
+    assert not any(
+        "authority" in reason or "unsupported or drifted" in reason
+        for reason in result["scorecard"]["reasons"]
+    )
+    assert result["exportGate"] in {"exportable", "blocked"}
 
 
 def test_worker_command_executes_real_runtime_and_reapplies_scorecard_gate(bundle, monkeypatch):

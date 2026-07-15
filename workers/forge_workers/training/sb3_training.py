@@ -27,11 +27,12 @@ import torch
 from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.monitor import Monitor
 
+from forge_workers.training.ground_env import ForgeGroundTaskEnv
 from forge_workers.training.mujoco_env import ForgeMultirotorTaskEnv
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS
-from forge_workers.training.tasks import task_definition
+from forge_workers.training.tasks import GROUND_DOMAIN_RANDOMIZATION, task_definition
 
-RUNTIME_VERSION = "forge-sb3-mujoco/2.0.0"
+RUNTIME_VERSION = "forge-sb3-mujoco/3.0.0"
 EXACT_RUNTIME = {
     "stable-baselines3": "2.9.0",
     "gymnasium": "1.3.0",
@@ -47,6 +48,16 @@ DEFAULT_RANDOMIZATION = {
     "latencyMs": [0.0, 30.0],
     "friction": [0.4, 1.2],
     "windMps": [0.0, 4.0],
+    "obsDropoutPct": [0.0, 5.0],
+    "imuNoiseScale": [0.5, 1.5],
+    "imuBiasScale": [0.5, 1.5],
+}
+DEFAULT_GROUND_RANDOMIZATION = {
+    **GROUND_DOMAIN_RANDOMIZATION,
+    "massPct": 15.0,
+    "torquePct": 10.0,
+    "latencyMs": [0.0, 30.0],
+    "friction": [0.4, 1.2],
     "obsDropoutPct": [0.0, 5.0],
     "imuNoiseScale": [0.5, 1.5],
     "imuBiasScale": [0.5, 1.5],
@@ -76,12 +87,22 @@ OVERNIGHT_RECIPE = {
 
 def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
     versions = _runtime_versions()
+    ground = bundle.get("artifactKind") == "groundTrainingMuJoCoBundle"
     recipe = _choice(payload.get("recipe", "direct-v1"), {"direct-v1", "p7-overnight-v1"}, "recipe")
     algorithm = _choice(payload.get("algorithm", "ppo"), {"ppo", "sac"}, "algorithm")
     seed = _integer(payload.get("seed", 0), "seed", 0, 2_147_483_647)
     device = _training_device(payload.get("device", "cpu"))
-    task_id = _choice(payload.get("task", "hover-hold"), {"hover-hold", "waypoint-chain"}, "task")
+    supported_tasks = (
+        {"line-follow"}
+        if bundle.get("archetype") == "rover"
+        else {"walk-to-target"}
+        if bundle.get("archetype") == "quadruped"
+        else {"hover-hold", "waypoint-chain"}
+    )
+    task_id = _choice(payload.get("task", "hover-hold"), supported_tasks, "task")
     if recipe == "p7-overnight-v1":
+        if ground:
+            raise ValueError("p7-overnight-v1 is multirotor-only")
         if algorithm != "ppo":
             raise ValueError("p7-overnight-v1 requires PPO")
         if any(key in payload for key in ("totalTimesteps", "episodeSteps", "curriculumStage")):
@@ -93,7 +114,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
     if recipe == "p7-overnight-v1":
         episode_steps = round(float(task["horizonS"]) / float(bundle["controlPeriodS"]))
         eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 8, 8)
-        randomization = _randomization(payload.get("domainRandomization"))
+        randomization = _randomization(payload.get("domainRandomization"), ground=False)
         if randomization != DEFAULT_RANDOMIZATION:
             raise ValueError("p7-overnight-v1 requires the frozen domain-randomization envelope")
         total_timesteps = 10_000
@@ -103,7 +124,7 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
         )
         episode_steps = _integer(payload.get("episodeSteps", 3_000), "episodeSteps", 20, 100_000)
         eval_episodes = _integer(payload.get("evalEpisodes", 8), "evalEpisodes", 1, 100)
-        randomization = _randomization(payload.get("domainRandomization"))
+        randomization = _randomization(payload.get("domainRandomization"), ground=ground)
     config = {
         "recipe": recipe,
         "recipeAuthority": OVERNIGHT_RECIPE if recipe == "p7-overnight-v1" else None,
@@ -150,23 +171,40 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
     if final_parameters == initial_parameters:
         raise RuntimeError("SB3 optimizer did not update policy parameters")
 
-    nominal = {
-        "massScale": 1.0,
-        "kvScale": 1.0,
-        "sagScale": 1.0,
-        "latencyMs": 0.0,
-        "frictionScale": 1.0,
-        "windMps": 0.0,
-        "dropoutPct": 0.0,
-        "imuNoiseScale": 1.0,
-        "imuBiasScale": 1.0,
-    }
-    scenarios = {
-        "baseline": nominal,
-        "mass+15%": {**nominal, "massScale": 1.15},
-        "kv-8%": {**nominal, "kvScale": 0.92},
-        "wind4ms": {**nominal, "windMps": 4.0},
-    }
+    if ground:
+        nominal = {
+            "massScale": 1.0,
+            "torqueScale": 1.0,
+            "latencyMs": 0.0,
+            "frictionScale": 1.0,
+            "dropoutPct": 0.0,
+            "imuNoiseScale": 1.0,
+            "imuBiasScale": 1.0,
+        }
+        scenarios = {
+            "baseline": nominal,
+            "mass+15%": {**nominal, "massScale": 1.15},
+            "torque-10%": {**nominal, "torqueScale": 0.90},
+            "friction-50%": {**nominal, "frictionScale": 0.50},
+        }
+    else:
+        nominal = {
+            "massScale": 1.0,
+            "kvScale": 1.0,
+            "sagScale": 1.0,
+            "latencyMs": 0.0,
+            "frictionScale": 1.0,
+            "windMps": 0.0,
+            "dropoutPct": 0.0,
+            "imuNoiseScale": 1.0,
+            "imuBiasScale": 1.0,
+        }
+        scenarios = {
+            "baseline": nominal,
+            "mass+15%": {**nominal, "massScale": 1.15},
+            "kv-8%": {**nominal, "kvScale": 0.92},
+            "wind4ms": {**nominal, "windMps": 4.0},
+        }
     evaluations = {
         name: _evaluate(
             model,
@@ -208,10 +246,26 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
     dependency_manifest_hash = _dependency_manifest_hash()
     cache_key = f"sb3:{contract_hash[:16]}:{config_hash[:16]}:{onnx_artifact['sha256'][:16]}"
     tensor = bundle["tensor"]
+    targets = _task_targets(task)
+    primary_target = targets[1] if task_id == "line-follow" else targets[0]
+    observations = (
+        list(task["observations"])
+        if ground
+        else [
+            "estimator.attitude",
+            "estimator.angularRate",
+            "estimator.linearVelocity",
+            "target.error",
+            "battery.normalizedVoltage",
+            "powertrain.motorCurrent",
+        ]
+    )
+    actions = list(task["actions"]) if ground else ["throttle", "roll", "pitch", "yaw"]
     return {
         "artifactKind": "policy",
         "provider": "local-sb3-mujoco",
         "algorithm": algorithm,
+        "archetype": bundle["archetype"],
         "task": {
             "id": task_id,
             "suite": task["suite"],
@@ -220,33 +274,19 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "definitionHash": task["definitionHash"],
             "curriculumStage": curriculum_stage,
             "horizonS": episode_steps * float(bundle["controlPeriodS"]),
-            "target": {"xyzM": list(task["env"]["targets"][0]["xyz"])},
-            "targets": [
-                {
-                    "kind": target["kind"],
-                    "xyzM": list(target["xyz"]),
-                    "radiusM": target["radiusM"],
-                }
-                for target in task["env"]["targets"]
-            ],
+            "target": {"xyzM": list(primary_target["xyzM"])},
+            "targets": targets,
         },
         "io": {
-            "observations": [
-                "estimator.attitude",
-                "estimator.angularRate",
-                "estimator.linearVelocity",
-                "target.error",
-                "battery.normalizedVoltage",
-                "powertrain.motorCurrent",
-            ],
-            "actions": ["throttle", "roll", "pitch", "yaw"],
+            "observations": observations,
+            "actions": actions,
             "onnxHeader": {
                 "contractHash": contract_hash,
                 "task": task_id,
                 "taskVersion": task["version"],
                 "taskDefinitionHash": task["definitionHash"],
-                "observationCount": "6",
-                "actionCount": "4",
+                "observationCount": str(tensor["input"]["shape"][1]) if ground else "6",
+                "actionCount": str(tensor["output"]["shape"][1]) if ground else "4",
                 "tensorSchema": tensor["schema"],
                 "tensorVersion": tensor["schemaVersion"],
             },
@@ -269,6 +309,11 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "successRate": success_rate,
             "robustness": robustness,
             "energyWh": energy_wh,
+            "energySemantics": (
+                "simulated-positive-mechanical-joint-work"
+                if ground
+                else "simulated-electrical-work"
+            ),
             "trainedOnEstimator": True,
             "estimatorSmoke": "passed",
             "lineage": {
@@ -304,6 +349,11 @@ def train_sb3_policy(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[st
             "deterministicAlgorithms": torch.are_deterministic_algorithms_enabled(),
             "truthExposedToPolicy": False,
             "targetAdvanceSource": "estimator.target.error",
+            "energySemantics": (
+                "simulated-positive-mechanical-joint-work"
+                if ground
+                else "simulated-electrical-work"
+            ),
             "evaluations": evaluations,
             "bundleAssumptions": bundle["assumptions"],
         },
@@ -316,8 +366,13 @@ def _environment(
     randomization: dict[str, Any],
     episode_steps: int,
 ) -> Monitor:
+    environment = (
+        ForgeGroundTaskEnv
+        if bundle.get("artifactKind") == "groundTrainingMuJoCoBundle"
+        else ForgeMultirotorTaskEnv
+    )
     return Monitor(
-        ForgeMultirotorTaskEnv(
+        environment(
             bundle,
             task=task,
             randomization=randomization,
@@ -628,7 +683,12 @@ def _evaluate(
     rewards: list[float] = []
     fractions: list[float] = []
     for episode in range(episodes):
-        env = ForgeMultirotorTaskEnv(
+        environment = (
+            ForgeGroundTaskEnv
+            if bundle.get("artifactKind") == "groundTrainingMuJoCoBundle"
+            else ForgeMultirotorTaskEnv
+        )
+        env = environment(
             bundle,
             task=task,
             randomization={},
@@ -645,7 +705,12 @@ def _evaluate(
             total_reward += float(reward)
             done = terminated or truncated
         fraction = float(info.get("successFraction", 0.0))
-        episode_success = bool(info.get("taskCompleted")) if task["id"] == "waypoint-chain" else fraction >= 0.6
+        completion_required = task["id"] in {
+            "waypoint-chain",
+            "line-follow",
+            "walk-to-target",
+        }
+        episode_success = bool(info.get("taskCompleted")) if completion_required else fraction >= 0.6
         successes += int(episode_success)
         fractions.append(fraction)
         energies.append(float(info.get("energyWh", 0.0)))
@@ -657,7 +722,16 @@ def _evaluate(
         "meanSuccessFraction": float(np.mean(fractions)),
         "meanEnergyWh": float(np.mean(energies)),
         "meanReward": float(np.mean(rewards)),
-        "completionRequired": task["id"] == "waypoint-chain",
+        "completionRequired": task["id"] in {
+            "waypoint-chain",
+            "line-follow",
+            "walk-to-target",
+        },
+        "energySemantics": (
+            "simulated-positive-mechanical-joint-work"
+            if bundle.get("artifactKind") == "groundTrainingMuJoCoBundle"
+            else "simulated-electrical-work"
+        ),
         "scenario": scenario,
     }
 
@@ -727,6 +801,8 @@ def _export_onnx(
             "forge.taskVersion": task["version"],
             "forge.taskDefinitionHash": task["definitionHash"],
         }
+        if bundle.get("artifactKind") == "groundTrainingMuJoCoBundle":
+            metadata["forge.archetype"] = str(bundle["archetype"])
         for key, value in metadata.items():
             prop = graph.metadata_props.add()
             prop.key = key
@@ -770,7 +846,7 @@ def _runtime_versions() -> dict[str, str]:
         if metadata_version != expected:
             raise RuntimeError(f"{package} installed metadata drifted: expected {expected}, got {metadata_version}")
     if torch.version.cuda is not None:
-        raise RuntimeError("P7 SB3 runtime 2.0.0 does not admit CUDA builds")
+        raise RuntimeError("P7 SB3 runtime does not admit CUDA builds")
     return versions
 
 
@@ -821,17 +897,19 @@ def _dependency_manifest_hash() -> str:
     return manifest_hash
 
 
-def _randomization(value: Any) -> dict[str, Any]:
+def _randomization(value: Any, *, ground: bool = False) -> dict[str, Any]:
+    defaults = DEFAULT_GROUND_RANDOMIZATION if ground else DEFAULT_RANDOMIZATION
     if value is None:
-        return dict(DEFAULT_RANDOMIZATION)
-    if not isinstance(value, dict) or not set(value).issubset(DEFAULT_RANDOMIZATION):
+        return dict(defaults)
+    if not isinstance(value, dict) or not set(value).issubset(defaults):
         raise ValueError("domainRandomization contains unsupported fields")
-    result = {**DEFAULT_RANDOMIZATION, **value}
-    for key, maximum in {
-        "massPct": 50.0,
-        "kvPct": 50.0,
-        "sagPct": 50.0,
-    }.items():
+    result = {**defaults, **value}
+    percentages = (
+        {"massPct": 15.0, "torquePct": 10.0}
+        if ground
+        else {"massPct": 50.0, "kvPct": 50.0, "sagPct": 50.0}
+    )
+    for key, maximum in percentages.items():
         raw = result[key]
         if (
             isinstance(raw, bool)
@@ -841,14 +919,16 @@ def _randomization(value: Any) -> dict[str, Any]:
         ):
             raise ValueError(f"domainRandomization {key} must be finite in [0, {maximum:g}]")
         result[key] = float(raw)
-    for key, lower_bound, upper_bound in (
+    pairs = [
         ("latencyMs", 0.0, 1_000.0),
         ("friction", 0.01, 5.0),
-        ("windMps", 0.0, 100.0),
         ("obsDropoutPct", 0.0, 100.0),
         ("imuNoiseScale", 0.01, 10.0),
         ("imuBiasScale", 0.01, 10.0),
-    ):
+    ]
+    if not ground:
+        pairs.insert(2, ("windMps", 0.0, 100.0))
+    for key, lower_bound, upper_bound in pairs:
         raw = result[key]
         if (
             not isinstance(raw, list)
@@ -866,6 +946,28 @@ def _randomization(value: Any) -> dict[str, Any]:
             raise ValueError(f"domainRandomization {key} is outside its supported range")
         result[key] = [low, high]
     return result
+
+
+def _task_targets(task: dict[str, Any]) -> list[dict[str, Any]]:
+    env = task["env"]
+    if task["id"] == "line-follow":
+        spawn_y = float(env["spawn"]["pose"][1])
+        return [
+            {
+                "kind": "path-point",
+                "xyzM": [float(point[0]), spawn_y, float(point[1])],
+                "radiusM": float(env["path"]["radiusM"]),
+            }
+            for point in env["path"]["points"]
+        ]
+    return [
+        {
+            "kind": target["kind"],
+            "xyzM": list(target["xyz"]),
+            "radiusM": target["radiusM"],
+        }
+        for target in env["targets"]
+    ]
 
 
 def _training_device(value: Any) -> str:
@@ -961,6 +1063,7 @@ def _integer(value: Any, name: str, minimum: int, maximum: int) -> int:
 
 
 __all__ = [
+    "DEFAULT_GROUND_RANDOMIZATION",
     "DEFAULT_RANDOMIZATION",
     "EXACT_RUNTIME",
     "OVERNIGHT_RECIPE",

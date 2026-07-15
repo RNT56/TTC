@@ -8,8 +8,9 @@
 #![forbid(unsafe_code)]
 
 use forge_contract::{
-    Archetype, Chain, CollisionPolicy, Driver, EnvBlock, Explode, Geom, Joint, JointKind, MassSpec,
-    MaterialClass, Meta, ModelSpec, Node, Part, Provenance, ProvenanceKind, SimBlock,
+    Archetype, Chain, CollisionPolicy, Driver, EnvBlock, Estimator, EstimatorKind, Explode, Geom,
+    Joint, JointKind, MassSpec, MaterialClass, Meta, ModelSpec, Node, Part, Provenance,
+    ProvenanceKind, SimBlock,
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -87,6 +88,11 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
     let body_mass = p.mass_g * 0.55;
     let leg_mass = p.mass_g * 0.45 / n_legs;
     let (upper_mass, lower_mass, pad_mass) = (leg_mass * 0.55, leg_mass * 0.35, leg_mass * 0.10);
+    // Two times the equal-load static support moment is the deterministic
+    // generator authority for each hip/knee. It is computed from declared mass,
+    // gravity, stand height, and leg count rather than injected by the trainer.
+    let joint_torque_nm =
+        2.0 * (p.mass_g / 1000.0) * EnvBlock::default().gravity * p.stand_m / n_legs;
 
     // Generated structural bodies are modular by construction: no individual tile
     // exceeds the declared 220 mm FDM bed. This keeps MFG-004 sovereign for every
@@ -139,7 +145,7 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
     let revolute_x = Joint {
         kind: JointKind::Revolute,
         axis: Some([1.0, 0.0, 0.0]),
-        max_torque_nm: None,
+        max_torque_nm: Some(joint_torque_nm),
         max_vel_rad: Some(12.0),
     };
     let leg_limits = Some([[-1.4, 1.4], [0.0, 0.0], [0.0, 0.0]]);
@@ -180,20 +186,21 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
                 joint: None,
             });
 
-            // segments grow +Y from their lower node, exactly spanning the bone.
+            // Each moving joint body owns the segment below it, so MJCF receives
+            // contract-derived mass/inertia on every actuated body.
             // Collider policy follows D7's fidelity-where-it-matters: modular body
             // tiles and foot pads collide; leg tubes are visual so the largest
             // 8-leg/body-grid combination stays inside the ≤24 model budget.
             let stagger = 0.04 * leg_index as f64 / n_legs;
             parts.push(leg_part(
-                &knee,
+                &hip,
                 Geom::Cyl {
                     r0: 0.018,
                     r1: Some(0.014),
                     h: l1,
                     n: Some(16),
                 },
-                l1 / 2.0,
+                -l1 / 2.0,
                 "#3a4048",
                 round_g(upper_mass),
                 CollisionPolicy::None,
@@ -206,14 +213,14 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
                 },
             ));
             parts.push(leg_part(
-                &foot,
+                &knee,
                 Geom::Cyl {
                     r0: 0.013,
                     r1: Some(0.010),
                     h: l2,
                     n: Some(16),
                 },
-                l2 / 2.0,
+                -l2 / 2.0,
                 "#3a4048",
                 round_g(lower_mass),
                 CollisionPolicy::None,
@@ -308,6 +315,13 @@ pub fn generate_quadruped(p: &QuadGenParams) -> Result<ModelSpec, GenError> {
         },
         sim: SimBlock {
             aggregate_mass_g: Some(round_g(total)),
+            estimator: Some(Estimator {
+                kind: EstimatorKind::Complementary,
+                gyro_noise: 0.02,
+                accel_noise: 0.08,
+                bias: 0.01,
+                latency_ms: 8.0,
+            }),
             ..Default::default()
         },
     };

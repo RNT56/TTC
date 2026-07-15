@@ -144,6 +144,31 @@ requireValue(
     pythonConstant("workers/forge_workers/training/tasks.py", "TASK_VERSION"),
   "worker training-task version does not match Python source",
 );
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.groundTrainingBundle ===
+    sourceConstant("crates/forge-sim/src/training.rs", "GROUND_TRAINING_BUNDLE_VERSION"),
+  "worker ground-training-bundle version does not match Rust source",
+);
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.groundTrainingTask ===
+    pythonConstant("workers/forge_workers/training/tasks.py", "GROUND_TASK_VERSION"),
+  "worker ground-training-task version does not match Python source",
+);
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.groundPolicyTensor ===
+    sourceConstant("crates/forge-sim/src/training.rs", "GROUND_POLICY_TENSOR_VERSION"),
+  "worker ground-policy-tensor version does not match Rust source",
+);
+requireValue(
+  pythonConstant("workers/forge_workers/training/bundle.py", "GROUND_POLICY_TENSOR_SCHEMA") ===
+    sourceConstant("crates/forge-sim/src/training.rs", "GROUND_POLICY_TENSOR_SCHEMA"),
+  "worker ground-policy-tensor schema token does not match Rust source",
+);
+requireValue(
+  pythonConstant("workers/forge_workers/training/sb3_training.py", "RUNTIME_VERSION") ===
+    `forge-sb3-mujoco/${matrix.surfaces.workerArtifacts.internalSchemas.sb3Runtime}`,
+  "worker SB3 runtime version does not match compatibility matrix",
+);
 
 const workerContract = read("workers/forge_workers/contract.py");
 const trainingBundleContract = read("workers/forge_workers/training/bundle.py");
@@ -163,7 +188,7 @@ requireValue(
   "worker license export manifest version does not match compatibility matrix",
 );
 for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.internalSchemas).filter(
-  ([name]) => name !== "trainingTask",
+  ([name]) => !["trainingTask", "groundTrainingTask", "sb3Runtime"].includes(name),
 )) {
   requireValue(
     trainingBundleContract.includes(`${version}`),

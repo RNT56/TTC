@@ -158,6 +158,18 @@ test("refuses an unsupported policy-tensor major", async () => {
   );
 });
 
+test("refuses ground-policy tensors until a ground browser observer and actuator exist", async () => {
+  const output = fixture();
+  output.io!.tensor!.schema = "forge-ground-policy-tensor";
+  output.io!.tensor!.schemaVersion = "1.0.0";
+  output.io!.onnxHeader!.tensorSchema = "forge-ground-policy-tensor";
+  output.io!.onnxHeader!.tensorVersion = "1.0.0";
+  await assert.rejects(
+    preparePolicyArtifact(output, CONTRACT_HASH, layout(output)),
+    /unsupported ONNX tensor schema; expected forge-policy-tensor/,
+  );
+});
+
 test("refuses non-finite core observations without retaining an action", async () => {
   const output = fixture();
   const source = {

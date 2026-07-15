@@ -68,6 +68,16 @@ The contract's estimator block (complementary filter
 actually observe (XC-08). Ground truth is never exposed to the policy path —
 enforced downstream by SIM-004.
 
+D44's ground-training compile path preserves that rule in native MuJoCo. Rust exports
+one floating root over one explicit flat plane and carries computed body mass/inertia,
+wheel geometry, ordered joint limits, and declared torque/velocity ceilings into
+`groundTrainingMuJoCoBundle` 1.0.0. The Python environment observes only corrupted
+estimator and joint-encoder state; MuJoCo pose/contact truth is reserved for bounded
+safety termination. Available-torque randomization only degrades declared authority,
+and velocity guards suppress further same-direction torque at the contract limit.
+Reported ground `energyWh` integrates positive simulated joint work only and must not
+be interpreted as battery, host, electricity-cost, device, or field evidence.
+
 ## 5. Disturbances & replay (D17)
 
 Disturbance injectors: gusts, payload shifts, sensor dropout — serving play and

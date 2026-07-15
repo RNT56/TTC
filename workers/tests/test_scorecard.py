@@ -56,7 +56,7 @@ def test_missing_lineage_is_prv_002():
     assert any("PRV-002" in r for r in result.reasons)
 
 
-def test_p7_v3_task_definitions_cover_expected_suite_and_bind_executable_semantics():
+def test_versioned_task_definitions_cover_expected_suites_and_bind_executable_semantics():
     assert set(task_ids()) == {
         "gate-slalom",
         "hover-hold",
@@ -71,8 +71,9 @@ def test_p7_v3_task_definitions_cover_expected_suite_and_bind_executable_semanti
     }
     for task_id in task_ids():
         spec = task_definition(task_id)
-        assert spec["suite"] == "p7-v3"
-        assert spec["version"] == "3.0.0"
+        ground = task_id in {"line-follow", "walk-to-target"}
+        assert spec["suite"] == ("p7-ground-v1" if ground else "p7-v3")
+        assert spec["version"] == ("1.0.0" if ground else "3.0.0")
         assert spec["coordinateFrame"] == "forge-y-up-rh-m"
         assert spec["definitionHash"] == task_definition_hash(spec)
         assert spec["observations"]
@@ -94,3 +95,8 @@ def test_p7_v3_task_definitions_cover_expected_suite_and_bind_executable_semanti
         [3, 2.5, -3],
         [10, 1.8, 0],
     ]
+    rover = task_definition("line-follow")
+    assert rover["reward"]["schema"] == "p7-ground-reward-v1"
+    assert rover["reward"]["control"]["mode"] == "differential-drive-torque-v1"
+    quadruped = task_definition("walk-to-target")
+    assert quadruped["reward"]["control"]["mode"] == "normalized-joint-torque-v1"

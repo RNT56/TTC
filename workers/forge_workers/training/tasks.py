@@ -14,6 +14,8 @@ from typing import Any
 
 TASK_SUITE = "p7-v3"
 TASK_VERSION = "3.0.0"
+GROUND_TASK_SUITE = "p7-ground-v1"
+GROUND_TASK_VERSION = "1.0.0"
 TASK_COORDINATE_FRAME = "forge-y-up-rh-m"
 
 DEFAULT_DOMAIN_RANDOMIZATION: dict[str, Any] = {
@@ -24,6 +26,16 @@ DEFAULT_DOMAIN_RANDOMIZATION: dict[str, Any] = {
     "friction": [0.4, 1.2],
     "windMps": [0, 4],
     "obsDropoutPct": [0, 5],
+}
+
+GROUND_DOMAIN_RANDOMIZATION: dict[str, Any] = {
+    "massPct": 15,
+    "torquePct": 10,
+    "latencyMs": [0, 30],
+    "friction": [0.4, 1.2],
+    "obsDropoutPct": [0, 5],
+    "imuNoiseScale": [0.5, 1.5],
+    "imuBiasScale": [0.5, 1.5],
 }
 
 _DEFAULT_OBSERVATIONS: dict[str, list[str]] = {
@@ -62,6 +74,30 @@ _DEFAULT_ACTIONS: dict[str, list[str]] = {
     "arm": ["jointPosition", "jointVelocity"],
     "legged": ["legPhase", "stepHeight", "turnRate", "bodyHeight"],
     "multirotor": ["throttle", "roll", "pitch", "yaw"],
+    "rover": ["drive", "turn"],
+}
+
+_GROUND_TRAINING_OBSERVATIONS: dict[str, list[str]] = {
+    "legged": [
+        "estimator.attitude",
+        "estimator.angularRate",
+        "estimator.linearVelocity",
+        "estimator.jointPosition",
+        "estimator.jointVelocity",
+        "target.error",
+        "actuation.normalizedEffort",
+    ],
+    "rover": [
+        "estimator.attitude",
+        "estimator.angularRate",
+        "estimator.linearVelocity",
+        "target.error",
+        "actuation.normalizedEffort",
+    ],
+}
+
+_GROUND_TRAINING_ACTIONS: dict[str, list[str]] = {
+    "legged": ["jointTorque"],
     "rover": ["drive", "turn"],
 }
 
@@ -169,7 +205,12 @@ _TASKS: dict[str, dict[str, Any]] = {
             "boundsM": [20, 2, 10],
             "terrain": {"kind": "flat", "friction": 0.75},
             "spawn": {"pose": [-8, 0.1, 0, 0, 0, 0]},
-            "path": {"kind": "polyline", "plane": "xz", "points": [[-8, 0], [-2, 1.5], [3, -1.5], [8, 0]]},
+            "path": {
+                "kind": "polyline",
+                "plane": "xz",
+                "radiusM": 0.6,
+                "points": [[-8, 0], [-2, 1.5], [3, -1.5], [8, 0]],
+            },
         },
         "metrics": ["crossTrackErrorM", "lapProgress", "energyWh"],
     },
@@ -210,16 +251,25 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
 
     base = deepcopy(_TASKS.get(task_id, _TASKS["hover-hold"]))
     family = str(base.get("family", "multirotor"))
+    ground = task_id in {"line-follow", "walk-to-target"}
     definition = {
         "id": task_id if task_id in _TASKS else "hover-hold",
-        "suite": TASK_SUITE,
-        "version": TASK_VERSION,
+        "suite": GROUND_TASK_SUITE if ground else TASK_SUITE,
+        "version": GROUND_TASK_VERSION if ground else TASK_VERSION,
         "coordinateFrame": TASK_COORDINATE_FRAME,
         "archetype": family,
         **base,
-        "observations": _DEFAULT_OBSERVATIONS.get(family, _DEFAULT_OBSERVATIONS["multirotor"]),
-        "actions": _DEFAULT_ACTIONS.get(family, _DEFAULT_ACTIONS["multirotor"]),
-        "reward": _reward_definition(base["metrics"], family),
+        "observations": (
+            _GROUND_TRAINING_OBSERVATIONS[family]
+            if ground
+            else _DEFAULT_OBSERVATIONS.get(family, _DEFAULT_OBSERVATIONS["multirotor"])
+        ),
+        "actions": (
+            _GROUND_TRAINING_ACTIONS[family]
+            if ground
+            else _DEFAULT_ACTIONS.get(family, _DEFAULT_ACTIONS["multirotor"])
+        ),
+        "reward": _reward_definition(base["metrics"], family, ground_training=ground),
         "termination": {
             "timeoutS": base["horizonS"],
             "outOfBounds": base["env"]["boundsM"],
@@ -230,7 +280,9 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
             "minSuccessRate": 0.9,
             "maxEnergyWh": None,
         },
-        "domainRandomization": deepcopy(DEFAULT_DOMAIN_RANDOMIZATION),
+        "domainRandomization": deepcopy(
+            GROUND_DOMAIN_RANDOMIZATION if ground else DEFAULT_DOMAIN_RANDOMIZATION
+        ),
     }
     if curriculum_stage is not None:
         definition["curriculumStage"] = curriculum_stage
@@ -242,7 +294,33 @@ def task_definition(task_id: str, *, curriculum_stage: int | None = None, horizo
     return definition
 
 
-def _reward_definition(metrics: list[str], family: str) -> dict[str, Any]:
+def _reward_definition(
+    metrics: list[str], family: str, *, ground_training: bool = False
+) -> dict[str, Any]:
+    if ground_training:
+        return {
+            "schema": "p7-ground-reward-v1",
+            "terms": metrics,
+            "proximityDecayPerM": 0.4,
+            "progressWeight": 6.0,
+            "instantSuccessBonus": 2.0,
+            "targetAdvanceBonus": 25.0,
+            "taskCompletionBonus": 75.0,
+            "unsafeTerminationPenalty": 75.0,
+            "tiltPenalty": 0.1,
+            "angularRatePenalty": 0.02,
+            "actionPenalty": 0.01,
+            "control": {
+                "mode": (
+                    "normalized-joint-torque-v1"
+                    if family == "legged"
+                    else "differential-drive-torque-v1"
+                ),
+                "velocityFilterTauS": 0.06,
+            },
+            "energyPenalty": "simulatedMechanicalWorkWh",
+            "safetyPenalty": "unsafeContact",
+        }
     if family != "multirotor":
         return {
             "terms": metrics,
@@ -309,6 +387,8 @@ def course_task_definition(
     compiled = {
         **base,
         "id": f"course:{resolved_id}",
+        "suite": TASK_SUITE,
+        "version": TASK_VERSION,
         "sourceTask": task_id,
         "source": "course",
         "family": family,
