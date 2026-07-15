@@ -1010,6 +1010,13 @@ function multirotorTemplate(
         dir: index % 2 === 0 ? 1 : -1,
       })),
       props: [{ diameterIn: 5, pitchIn: 4.3, blades: 3 }],
+      estimator: {
+        kind: "complementary",
+        gyroNoise: 0.02,
+        accelNoise: 0.08,
+        bias: 0.01,
+        latency_ms: 8,
+      },
       ...commonSim(),
     },
   };

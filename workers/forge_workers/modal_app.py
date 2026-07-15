@@ -50,11 +50,12 @@ class ModalTaskProfile:
 
 _SB3_PIP_PACKAGES = (
     *BASE_PIP_PACKAGES,
-    "numpy>=1.26",
-    "torch>=2.2",
-    "stable-baselines3>=2.3",
-    "onnx>=1.16",
-    "mujoco>=3.1",
+    "numpy==2.5.1",
+    "gymnasium==1.3.0",
+    "torch==2.13.0",
+    "stable-baselines3==2.9.0",
+    "onnx==1.22.0",
+    "mujoco==3.9.0",
 )
 _SIM_APT_PACKAGES = ("libgl1", "libglib2.0-0")
 

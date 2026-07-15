@@ -1131,6 +1131,9 @@ function modelIdFrom(value: unknown): string | null {
   return isRecord(value) && typeof value.modelId === "string" ? value.modelId : null;
 }
 
+const ADMITTED_MODEL_SNAPSHOT_SCHEMA = "forge-admitted-model-snapshot";
+const ADMITTED_MODEL_SNAPSHOT_VERSION = "1.0.0";
+
 const ADMITTED_MODEL_JOB_KINDS = new Set<JobKind>([
   "occt.tessellate",
   "train.policy",
@@ -1144,8 +1147,8 @@ async function assertAdmittedModelReference(
   user: CurrentUser,
   modelId: string | null,
   surface: string,
-): Promise<void> {
-  if (modelId === null) return;
+): Promise<ModelRecord | null> {
+  if (modelId === null) return null;
   const model = await getOwnedModel(db, user, modelId);
   if (model === null) {
     throw Object.assign(new Error(`${surface} model not found`), { statusCode: 404 });
@@ -1155,6 +1158,7 @@ async function assertAdmittedModelReference(
       statusCode: 409,
     });
   }
+  return model;
 }
 
 function rigIdFrom(value: unknown): string | null {
@@ -2143,6 +2147,62 @@ async function createJobUnchecked(
   input: CreateJobInput,
 ): Promise<JobRecord> {
   const provider = input.provider ?? "fixture";
+  if (isRecord(input.payload) && Object.hasOwn(input.payload, "modelSnapshot")) {
+    throw Object.assign(new Error("modelSnapshot is gateway-owned and cannot be supplied by clients"), {
+      statusCode: 400,
+    });
+  }
+  let authoritativePayload = input.payload ?? {};
+  if (ADMITTED_MODEL_JOB_KINDS.has(input.kind)) {
+    const model = await assertAdmittedModelReference(
+      db,
+      user,
+      modelIdFrom(input.payload),
+      `${input.kind} job`,
+    );
+    if (provider !== "fixture" && input.kind === "train.policy" && model === null) {
+      throw Object.assign(new Error("live train.policy jobs require an admitted modelId"), {
+        statusCode: 400,
+      });
+    }
+    if (model !== null) {
+      const payload = isRecord(input.payload) ? input.payload : {};
+      if (
+        Object.hasOwn(payload, "contractHash")
+        && payload.contractHash !== model.contractHash
+      ) {
+        throw Object.assign(new Error("job contractHash does not match the admitted model revision"), {
+          statusCode: 409,
+        });
+      }
+      const contractJson = stableJson(model.contract);
+      if (sha256(contractJson) !== model.contractHash) {
+        throw Object.assign(new Error("admitted model storage hash is inconsistent"), {
+          statusCode: 500,
+        });
+      }
+      authoritativePayload = {
+        ...payload,
+        contractHash: model.contractHash,
+        ...(provider === "fixture"
+          ? {}
+          : {
+              modelSnapshot: {
+                schemaVersion: `${ADMITTED_MODEL_SNAPSHOT_SCHEMA}/${ADMITTED_MODEL_SNAPSHOT_VERSION}`,
+                modelId: model.id,
+                contractHash: model.contractHash,
+                contractJson,
+              },
+            }),
+      };
+    }
+  }
+  assertBoundedJson(authoritativePayload, "authoritative job payload", {
+    maxBytes: 512 * 1024,
+    maxDepth: 16,
+    maxNodes: 20_000,
+  });
+  const resolvedInput: CreateJobInput = { ...input, payload: authoritativePayload };
   const databaseIdempotencyKey = input.idempotencyKey == null
     ? null
     : scopedJobIdempotencyKey(user.id, input.idempotencyKey);
@@ -2152,10 +2212,7 @@ async function createJobUnchecked(
     }
   }
   const costCredits = provider === "modal" ? 1 : 0;
-  if (ADMITTED_MODEL_JOB_KINDS.has(input.kind)) {
-    await assertAdmittedModelReference(db, user, modelIdFrom(input.payload), `${input.kind} job`);
-  }
-  await assertHardwareGateForJob(db, input.kind, provider, input.payload ?? {});
+  await assertHardwareGateForJob(db, input.kind, provider, authoritativePayload);
   await ensureCreditAccount(db, user);
   if (costCredits > 0) {
     const debitKey = databaseIdempotencyKey ? `${databaseIdempotencyKey}:credit` : randomUUID();
@@ -2177,7 +2234,7 @@ async function createJobUnchecked(
   }
   if (provider !== "fixture") {
     const proposedJobId = newJobId();
-    const timeoutSeconds = jobTimeoutSeconds(input);
+    const timeoutSeconds = jobTimeoutSeconds(resolvedInput);
     const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
       `INSERT INTO jobs (
          id, owner_user_id, kind, status, provider, idempotency_key, input, output,
@@ -2198,7 +2255,7 @@ async function createJobUnchecked(
         input.kind,
         provider,
         databaseIdempotencyKey,
-        json(input.payload ?? {}),
+        json(authoritativePayload),
         costCredits,
         proposedJobId,
         timeoutSeconds,
@@ -2212,7 +2269,7 @@ async function createJobUnchecked(
     return mapJob(result.rows[0]);
   }
 
-  const fixtureOutput = fixtureJobOutput(input.kind, input.payload ?? {});
+  const fixtureOutput = fixtureJobOutput(input.kind, authoritativePayload);
   const proposedJobId = newJobId();
   const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
     `INSERT INTO jobs (
@@ -2234,7 +2291,7 @@ async function createJobUnchecked(
       input.kind,
       provider,
       databaseIdempotencyKey,
-      json(input.payload ?? {}),
+      json(authoritativePayload),
       json(fixtureOutput),
       costCredits,
       proposedJobId,
@@ -2393,6 +2450,8 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           friction: [0.4, 1.2],
           windMps: [0, 4],
           obsDropoutPct: [0, 5],
+          imuNoiseScale: [0.5, 1.5],
+          imuBiasScale: [0.5, 1.5],
         },
         onnx: {
           fixture: true,

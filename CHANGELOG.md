@@ -18,6 +18,55 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Execute the real seeded SB3/MuJoCo training boundary
+**Session:** Codex agent · branch `codex/p7003-sb3-runtime` · **Phase:** P7 ·
+**TODO items:** P7-003 [~]
+**Done:** Implemented a controlled real CPU training path from an authenticated
+owner's admitted model to a deterministic fixed-shape opset-18 ONNX candidate. The
+gateway rejects caller-owned snapshots and freezes exact admitted bytes/hash;
+`forge-validate training-bundle` re-runs sovereign admission and derives the MJCF,
+mass/gravity/hover trim, powertrain curve, estimator, control bounds, and policy
+layout in Rust. The Python worker verifies both versioned envelopes, exact runtime
+pins, and every authoritative field before executing seeded PPO or SAC in a real
+MuJoCo hover environment with estimator-only observations, normalized actions, and
+mass/Kv/sag/latency/friction/wind/noise/dropout randomization. Evaluation covers
+baseline, mass +15 %, Kv -8 %, and 4 m/s wind; lineage binds source, contract,
+configuration, dependency, seed, parameter, and ONNX digests. Focused Rust and
+gateway tests pass, the complete worker suite passes 138/138 under Python 3.12, both
+algorithms and same-seed ONNX reproducibility pass, and a 256-step local PPO smoke
+produces a real graph. That dirty-worktree short smoke is explicitly not acceptance
+or learning-quality proof. After adding the required append-only review record for
+the regenerated internal-schema catalog, the complete Python 3.12 `pnpm verify`
+gate passes all 38 required local steps. Saved-model selection now loads the exact
+persisted contract/report into Studio, and model-bound fixture/reuse jobs omit a
+caller-derived hash so the gateway remains the authority for the selected revision.
+Studio tracks that exact snapshot SHA separately from the validator report's
+canonical typed-contract hash and clears the binding on non-model loads or patches;
+policy playback therefore fails closed unless its lineage matches the loaded saved
+revision; browser acceptance re-reads that revision after an edit instead of trusting
+the pre-edit hash. Template-generated multirotors now also carry the explicit
+complementary-estimator authority required by both training and browser playback,
+instead of being admitted but unusable at that boundary.
+**Changed:** Rust training-bundle derivation and validator command; gateway job
+authority; worker bundle verifier, MuJoCo environment, SB3 trainer/runner, external
+job normalization, Modal pins, tests, exact optional dependencies, required CI
+training installation/smoke/artifact, compatibility matrix/checker, full-gate
+registration, generated artifact catalog and append-only golden review record,
+exact Python training-runtime advisory audit and license record,
+Studio saved-model/job binding, browser hash-alignment acceptance, system/
+compatibility/best-practice docs, current-state/phase/execution roadmaps,
+stable P7-003 ledger note, and this changelog.
+**Decisions:** none. D8, D9, D17, validator sovereignty, exact MuJoCo 3.9.0, and
+`forge-policy-tensor` 1.0.0 remain binding. The pinned legacy TorchScript ONNX
+exporter is a controlled implementation detail; migration requires reviewed
+fixed-shape/browser parity evidence.
+**Next:** Publish the exact clean candidate through protected CI/security and
+isolated-Postgres/browser acceptance, inspect the retained clean-source training
+artifact, and reconcile only the maturity actually proven.
+**Blockers:** none for implementation. Protected evidence, an overnight passing
+hover/waypoint policy, one-click object-backed delivery, deployed Modal/GPU proof,
+offline fine-tune, broader archetypes, MJX measurements, and EXT-003 remain open.
+
 ## 2026-07-15 — Close browser ONNX execution on protected main
 **Session:** Codex agent · branch `codex/p7008-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-008 [x]

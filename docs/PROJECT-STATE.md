@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected `main` descendant: `1de7974` (PR #62; real browser ONNX policy execution)
+Latest verified protected `main` descendant: `766f7b8` (PR #63; P7-008 evidence reconciliation)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
@@ -95,11 +95,29 @@ assets; Chromium, Firefox, and WebKit support acceptance also passes. This close
 fixture-grade browser execution, not live SB3/MuJoCo training, object-backed external
 model transport, hardware authority, or field transfer.
 
+P7-008 evidence reconciliation is protected through PR #63. Exact head `9124427`
+passed CI `29388759113` and security `29388759133`; protected squash `766f7b8`
+passed post-merge CI `29389051743` and security `29389051735`. This is the latest
+verified protected descendant and does not replace PR #62/`1de7974` as the owning
+runtime/browser evidence anchor.
+
+An unprotected P7-003 candidate now adds an admitted-model snapshot owned by the
+gateway, a sovereign Rust-derived MuJoCo training bundle, exact-pinned CPU PPO/SAC,
+an estimator-only hover environment with executable randomization, four-scenario
+evaluation, deterministic fixed-shape ONNX export, and a required source-bound
+training smoke. Focused local proof passes 138/138 Python worker tests plus Rust and
+gateway coverage; the complete Python 3.12 gate passes all 38 required local steps.
+A 256-step PPO smoke produced a real ONNX artifact but was run from a dirty candidate
+worktree and is not acceptance evidence. The candidate remains `[~]` until protected
+CI/security pass; overnight scorecard passage, one-click object delivery,
+waypoint/general-archetype coverage, deployed Modal/GPU proof, and external
+acceptance remain open.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | latest protected `main` is P7-008 `1de7974`; SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #62 exact head `2686d1a` passed CI `29387737921`/security `29387737947`; protected squash `1de7974` passed post-merge CI `29388166478`/security `29388166407`. Both retained browser artifacts record the 11-flow real-ONNX acceptance path |
+| Git state | latest protected `main` is evidence descendant `766f7b8`; P7-008 runtime anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #63 exact head `9124427` passed CI `29388759113`/security `29388759133`; protected squash `766f7b8` passed post-merge CI `29389051743`/security `29389051735`. PR #62/`1de7974` remains the owning 11-flow real-ONNX runtime evidence |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install, `pnpm audit --audit-level low`, and all 37 current gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact-head and post-merge security are green |
 | `pnpm verify` | protected `1de7974` retains the 37 required non-DB gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 6 real-runtime Studio tests, 64 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 130 worker tests including real required engine parity, and patch hygiene; required Postgres/browser acceptance passed in CI `29388166478` |
@@ -113,6 +131,7 @@ model transport, hardware authority, or field transfer.
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
 | Gateway tests | pass: 64/64 with the real validator in the full gate | includes the digest-bound policy fixture plus staged object declaration/completion/refusal, worker-mode command/provider/idempotency/capability negatives, owner-scoped key digests, retry-drift conflict, cross-owner isolation, and no duplicate fixture materialization while retaining the synchronous sandbox route |
 | Worker tests | pass: 130/130 on protected P7-008 under Python 3.12 | policy bytes/tensor authority joins the five corpus consumers, real MuJoCo parity, D38, commerce, native ETL, and SEC-006 coverage |
+| P7-003 focused candidate | local pass: complete 38-step Python 3.12 gate, including 138/138 workers, Rust/Clippy/workspace, WASM/parity, six real browser-runtime tests, 64 gateway tests, packaging, and a real 256-step CPU PPO/MuJoCo/ONNX smoke | proves the candidate runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound artifact; dirty-worktree smoke, short training, and unprotected checks do not prove acceptance, learning quality, overnight SLO, GPU economics, or field transfer |
 | Postgres/pgvector gate | pass on protected P7-008 CI `29388166478` for 21 migrations | the clean plus 20 populated-predecessor matrix, migration 0021 invariants, QA-005 queue/upload fault artifacts, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
@@ -322,6 +341,15 @@ Live GitHub evidence checked on 2026-07-15:
   `8332317185`, each recording 11/11 flows, real WASM, completed ONNX policy
   playback, and lazy same-origin runtime assets. This closes P7-008 at fixture-grade
   browser-execution maturity only;
+- P7-008 evidence reconciliation [PR #63](https://github.com/RNT56/TTC/pull/63)
+  passed exact-head CI
+  [29388759113](https://github.com/RNT56/TTC/actions/runs/29388759113) and security
+  [29388759133](https://github.com/RNT56/TTC/actions/runs/29388759133) at `9124427`,
+  then merged through protection as `766f7b8`. Exact post-merge CI
+  [29389051743](https://github.com/RNT56/TTC/actions/runs/29389051743) and security
+  [29389051735](https://github.com/RNT56/TTC/actions/runs/29389051735) pass. This is
+  the latest protected documentation descendant; PR #62/`1de7974` remains the
+  runtime/browser evidence anchor;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
   branches, resolved threads, no force pushes/deletions, and six required checks,
   including the native macOS Desktop compile;
@@ -387,7 +415,7 @@ decision; none is a hidden release claim.
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
-| Training/policy | protected fixture scorecards, external command seams, and real digest-bound ONNX Runtime Web/WASM playback through Rust estimator observations | real SB3/MuJoCo training, object-backed external models, offline fine-tune evidence, and field transfer |
+| Training/policy | protected fixture scorecards and real digest-bound ONNX Runtime Web/WASM playback through Rust estimator observations; unprotected candidate adds controlled exact-pinned CPU SB3/MuJoCo hover training with authoritative snapshots/bundles and deterministic ONNX export | complete local/protected candidate proof, overnight passing hover/waypoint scorecard, one-click object-backed delivery, deployed Modal/GPU evidence, offline fine-tune evidence, broader archetypes, and field transfer |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |

@@ -58,6 +58,23 @@ Worker-side policy transfer assessment now enforces the skill-transfer promise:
 direct transfer requires an exportable scorecard plus matching archetype and
 observation/action layouts; non-matching buyer twins receive a fine-tune offer
 instead.
+
+Implemented candidate 2026-07-15: non-fixture local/Modal `train.policy` requests
+must name an authenticated owner's admitted `modelId`. The gateway loads that
+authoritative model, verifies its storage hash, freezes a bounded stable-JSON
+`forge-admitted-model-snapshot` 1.0.0, and supplies the matching SHA-256 to the
+worker. Caller-supplied `modelSnapshot` fields and mismatched contract hashes are
+rejected. This prevents a queue request from substituting an unadmitted training
+contract; it does not yet complete one-click Studio orchestration or durable trained
+policy delivery.
+
+The saved-model `contractHash` is the SHA-256 of the gateway's exact stable-JSON
+snapshot bytes. It is intentionally distinct from the validator report's canonical
+typed-`ModelSpec` hash. Studio tracks both identities: the report hash explains the
+validator verdict, while model-bound jobs and policy playback use the loaded saved-
+model snapshot hash. Loading a demo, share, upload, or unsaved patch clears that
+model binding so stale scene state cannot authorize a policy.
+
 `GET/POST
 /v1/moderation/reports` records user reports with a 72-hour SLA target and
 repeat-infringer signal. Seller payouts and revenue share are intentionally absent.

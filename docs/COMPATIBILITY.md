@@ -140,6 +140,17 @@ drift, digest/byte-count mismatch, non-finite values, and outputs outside normal
 migration path. The five category-level observation labels remain transfer/search
 metadata; `io.tensor.input.layout` is the executable scalar truth.
 
+P7-003 adds two internal machine-checked schemas under worker package 0.2.0:
+`forge-admitted-model-snapshot` 1.0.0 and `trainingMuJoCoBundle` 1.0.0. The former is
+a gateway-owned immutable envelope around exact admitted ModelSpec bytes and their
+SHA-256. The latter is emitted only by `forge-validate training-bundle` after
+sovereign re-admission and carries the Rust-derived MJCF, mass/gravity/hover trim,
+powertrain curve, estimator, policy tensor layout, control bounds, and assumptions
+consumed by the Python environment. Gateway, Rust, Python, and the compatibility
+checker must agree on both exact versions. These remain internal schemas; exposing
+either as a public API or independently published artifact requires an explicit
+compatibility-surface promotion, migration policy, fixtures, and release notes.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

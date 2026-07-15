@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
@@ -1515,6 +1516,38 @@ test("generate repairs validator diagnostics and admits the repaired contract", 
   await app.close();
 });
 
+test("multirotor template carries explicit estimator authority for training and playback", async () => {
+  const adapter = new TemplateSynthesisAdapter(generationMaterials);
+  const candidate = await adapter.synthesize(
+    {
+      mode: "context-only",
+      catalogPolicy: "approved-review-rows-only",
+      brief: { prompt: "make a training-ready quad", archetype: "multirotor", categories: [] },
+      retrievedComponents: [],
+      retrievedPatterns: [],
+      promptPrefix: {
+        version: "p4-context-v1",
+        hash: "prefix",
+        schemaHash: "schema",
+        docsHash: "docs",
+        exemplarHashes: [],
+        text: null,
+      },
+      blockedReasons: [],
+    },
+    { prompt: "make a training-ready quad", archetype: "multirotor", seed: 7 },
+  );
+
+  const estimator = (candidate.contract as { sim: { estimator?: unknown } }).sim.estimator;
+  assert.deepEqual(estimator, {
+    accelNoise: 0.08,
+    bias: 0.01,
+    gyroNoise: 0.02,
+    kind: "complementary",
+    latency_ms: 8,
+  });
+});
+
 test("template repair splits an oversized primitive into printable modules", async () => {
   const adapter = new TemplateSynthesisAdapter(generationMaterials);
   const repaired = await adapter.repair({
@@ -2436,6 +2469,77 @@ test(
     assert.equal(queuedJobBody.job.provider, "local");
     assert.equal(queuedJobBody.job.status, "queued");
     assert.equal(queuedJobBody.job.output, null);
+    const queuedInput = (queuedJobBody.job as unknown as {
+      input: {
+        contractHash: string;
+        modelSnapshot: { schemaVersion: string; modelId: string; contractHash: string; contractJson: string };
+      };
+    }).input;
+    assert.equal(queuedInput.modelSnapshot.schemaVersion, "forge-admitted-model-snapshot/1.0.0");
+    assert.equal(queuedInput.modelSnapshot.modelId, createdBody.model.id);
+    assert.equal(queuedInput.modelSnapshot.contractHash, queuedInput.contractHash);
+    assert.equal(
+      createHash("sha256").update(queuedInput.modelSnapshot.contractJson).digest("hex"),
+      queuedInput.contractHash,
+    );
+
+    const queuedTrainingJob = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "train.policy",
+        provider: "local",
+        payload: { modelId: createdBody.model.id, task: "hover-hold", seed: 7 },
+        idempotencyKey: "training-local",
+      },
+    });
+    assert.equal(queuedTrainingJob.statusCode, 201, queuedTrainingJob.body);
+    const trainingInput = (queuedTrainingJob.json() as {
+      job: { input: { contractHash: string; modelSnapshot: { modelId: string; contractJson: string } } };
+    }).job.input;
+    assert.equal(trainingInput.modelSnapshot.modelId, createdBody.model.id);
+    assert.equal(
+      createHash("sha256").update(trainingInput.modelSnapshot.contractJson).digest("hex"),
+      trainingInput.contractHash,
+    );
+
+    const localTrainingWithoutModel = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: { kind: "train.policy", provider: "local", payload: { task: "hover-hold" } },
+    });
+    assert.equal(localTrainingWithoutModel.statusCode, 400, localTrainingWithoutModel.body);
+    assert.match(localTrainingWithoutModel.body, /require an admitted modelId/);
+
+    const forgedSnapshot = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "train.policy",
+        provider: "local",
+        payload: { modelId: createdBody.model.id, modelSnapshot: { contractJson: "{}" } },
+      },
+    });
+    assert.equal(forgedSnapshot.statusCode, 400, forgedSnapshot.body);
+    assert.match(forgedSnapshot.body, /gateway-owned/);
+
+    for (const contractHash of ["0".repeat(64), 7]) {
+      const driftedHash = await app.inject({
+        method: "POST",
+        url: "/v1/jobs",
+        headers: authHeaders,
+        payload: {
+          kind: "train.policy",
+          provider: "local",
+          payload: { modelId: createdBody.model.id, contractHash },
+        },
+      });
+      assert.equal(driftedHash.statusCode, 409, driftedHash.body);
+      assert.match(driftedHash.body, /contractHash does not match/);
+    }
 
     const fetchedJob = await app.inject({
       method: "GET",
@@ -2702,7 +2806,7 @@ test(
 
     const jobs = await app.inject({ method: "GET", url: "/v1/jobs", headers: authHeaders });
     assert.equal(jobs.statusCode, 200, jobs.body);
-    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 10);
+    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 11);
 
     const course = await app.inject({
       method: "POST",

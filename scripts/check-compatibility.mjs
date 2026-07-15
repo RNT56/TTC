@@ -123,8 +123,19 @@ requireValue(
   JSON.stringify(matrix.surfaces.workerArtifacts.queueKinds) === JSON.stringify(gatewayJobKinds),
   "workerArtifacts.queueKinds must exactly match gateway JOB_KINDS",
 );
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.admittedModelSnapshot ===
+    sourceConstant("packages/gateway/src/platform.ts", "ADMITTED_MODEL_SNAPSHOT_VERSION"),
+  "worker admitted-model snapshot version does not match gateway source",
+);
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.trainingBundle ===
+    sourceConstant("crates/forge-sim/src/training.rs", "TRAINING_BUNDLE_VERSION"),
+  "worker training-bundle version does not match Rust source",
+);
 
 const workerContract = read("workers/forge_workers/contract.py");
+const trainingBundleContract = read("workers/forge_workers/training/bundle.py");
 for (const [name, version] of [
   ["WORKER_ARTIFACT_FORMAT_VERSION", matrix.surfaces.workerArtifacts.current],
   ["REPLAY_FORMAT_VERSION", matrix.surfaces.replay.current],
@@ -139,6 +150,16 @@ requireValue(
     `LICENSE_EXPORT_MANIFEST_FORMAT_VERSION = "${matrix.surfaces.licenseExportManifest.current}"`,
   ),
   "worker license export manifest version does not match compatibility matrix",
+);
+for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.internalSchemas)) {
+  requireValue(
+    trainingBundleContract.includes(`${version}`),
+    `worker internal schema ${name} does not match compatibility matrix`,
+  );
+}
+requireValue(
+  trainingBundleContract.includes("forge-admitted-model-snapshot/1.0.0"),
+  "worker admitted-model snapshot token does not match gateway source",
 );
 requireValue(
   read("packages/gateway/src/licenseExports.ts").includes(

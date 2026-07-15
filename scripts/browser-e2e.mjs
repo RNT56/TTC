@@ -118,7 +118,11 @@ async function waitForOption(select, predicate, timeoutMs = browserTimeoutMs) {
   while (Date.now() < deadline) {
     last = await select
       .locator("option")
-      .evaluateAll((options) => options.map((option) => ({ value: option.value, text: option.textContent ?? "" })))
+      .evaluateAll((options) => options.map((option) => ({
+        value: option.value,
+        text: option.textContent ?? "",
+        contractHash: option.getAttribute("data-contract-hash"),
+      })))
       .catch(() => []);
     const match = last.find(predicate);
     if (match) return match;
@@ -298,6 +302,11 @@ try {
   evidence.flows.push("generate admitted model through staged template SSE and persist it");
 
   await modelSelect.selectOption(admittedModel.value);
+  await page.waitForFunction(
+    ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-model-contract-hash") === contractHash,
+    { selector: '[data-testid="validator-report"]', contractHash: admittedModel.contractHash },
+    { timeout: browserTimeoutMs },
+  );
   await page.locator('[data-testid="model-edit-prompt"]').fill("make it blue");
   await page.locator('[data-testid="model-edit-run"]').click();
   await waitForText(page.locator('[data-testid="model-edit-status"]'), /edited in \d+ ms/i);
@@ -337,7 +346,16 @@ try {
   await waitForText(page.locator('[data-testid="model-error"]'), /only admitted models can be shared/i);
   evidence.flows.push("persist draft and prove the server refuses draft sharing");
 
-  await modelSelect.selectOption(admittedModel.value);
+  const editedAdmittedModel = await waitForOption(
+    modelSelect,
+    (option) => option.value === admittedModel.value && /admitted/i.test(option.text),
+  );
+  await modelSelect.selectOption(editedAdmittedModel.value);
+  await page.waitForFunction(
+    ({ selector, contractHash }) => document.querySelector(selector)?.getAttribute("data-model-contract-hash") === contractHash,
+    { selector: '[data-testid="validator-report"]', contractHash: editedAdmittedModel.contractHash },
+    { timeout: browserTimeoutMs },
+  );
   await page.locator('[data-testid="share-model"]').click();
   const shareUrlText = await waitForText(page.locator('[data-testid="share-url"]'), /\?share=/);
   const shareUrl = shareUrlText.trim();

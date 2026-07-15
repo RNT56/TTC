@@ -19,19 +19,8 @@ const CAM_FORWARD: [f64; 3] = [0.0, 0.0, 1.0];
 
 /// `forge-policy-tensor` 1.0.0 multirotor input order. Category-level policy
 /// metadata remains stable; this scalar layout is the executable ONNX boundary.
-pub const MULTIROTOR_POLICY_LAYOUT: [&str; 11] = [
-    "estimator.attitude.rollRad",
-    "estimator.attitude.pitchRad",
-    "estimator.attitude.yawRad",
-    "estimator.angularRate.rollRadS",
-    "estimator.angularRate.pitchRadS",
-    "estimator.angularRate.yawRadS",
-    "target.error.bodyXM",
-    "target.error.bodyYM",
-    "target.error.bodyZM",
-    "battery.normalizedVoltage",
-    "powertrain.normalizedMotorCurrent",
-];
+pub const MULTIROTOR_POLICY_LAYOUT: [&str; 11] =
+    forge_sim::training::MULTIROTOR_POLICY_INPUT_LAYOUT;
 
 struct MultirotorPolicyObserver {
     attitude: [ComplementaryFilter; 3],

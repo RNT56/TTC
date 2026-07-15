@@ -150,7 +150,14 @@ export path.
     the production browser bundle; assert lazy same-origin runtime assets, D8-derived
     observations, D9 cadence, action bounds, motion-layer consumption, and negative
     authority/layout/version/hash/non-finite cases (P7-008).
-14. **External acceptance** — execute the versioned QA-010 milestone script against
+14. **Training runtime** — train only from an immutable gateway-owned admitted-model
+    snapshot; re-run validator admission and derive simulator truth in Rust; exact-pin
+    every numerical/runtime dependency; keep estimator truth, seeds, source/config/
+    contract/parameter digests, robustness scenarios, and export decisions in
+    lineage. Required smoke must execute real MuJoCo plus PPO/SAC/ONNX boundaries and
+    fail closed on pin or authority drift, while short CI runs explicitly disclaim
+    learning quality, overnight SLOs, GPU economics, and field transfer (P7-003).
+15. **External acceptance** — execute the versioned QA-010 milestone script against
     an exact product revision with the intended independent user, real provider, D30/
     D12 controlled rig, or field event. Preserve pass/fail/stop evidence, authority,
     measurements, findings, limitations, and signoffs outside Git; machine-valid

@@ -156,6 +156,20 @@ accepted fit, and a non-empty sim patch before the worker marks them accepted.
 requires D12 quad, D12 rover, and legged coverage, then adopts MJX only when CPU
 MuJoCo/SB3 needs help, parity stays inside frozen bands, and cost-normalized
 throughput is at least 3x.
+
+Implemented candidate 2026-07-15: the repository now supplies a native
+`FORGE_SB3_TRAIN_CMD` target rather than only an injection hook. The gateway freezes
+an owned admitted contract as `forge-admitted-model-snapshot` 1.0.0; the worker
+verifies its exact bytes/hash, invokes the validator's sovereign
+`training-bundle` command, and accepts only `trainingMuJoCoBundle` 1.0.0. The native
+runner executes real seeded PPO or SAC in a Rust-derived MuJoCo hover environment,
+evaluates baseline plus mass/Kv/wind robustness scenarios, and exports a digest-bound
+fixed-shape opset-18 ONNX graph with scorecard and lineage. The required CPU stack is
+exact-pinned to NumPy 2.5.1, Gymnasium 1.3.0, PyTorch 2.13.0, Stable-Baselines3
+2.9.0, ONNX 1.22.0, and MuJoCo 3.9.0. Required CI runs both the complete worker suite
+and a tiny clean-source training smoke; that smoke is runtime proof, not a passing
+policy or overnight-SLO claim.
+
 The optional Modal app profiles `train.policy` for SB3/MuJoCo/ONNX dependencies and
 `codesign.evaluate` for MuJoCo/Optuna plus the live co-design/parity/MJX command
 hooks; deployments still need real images, credentials, and benchmark evidence
@@ -298,9 +312,12 @@ metadata, D10 policy enforcement, and runtime sim helpers are live; full live
 OCCT/STEP artifact proof remains open. P6 real CPU Rapier/MuJoCo parity is protected
 through required PR and post-merge CI with retained source-bound evidence. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
-`train.offline-bc` telemetry dataset ingestion are live; SB3/MuJoCo/offline-RL
-training remains open. P8: config-diff, telemetry ingest, supervisor, sysid, and replay.verify
-fixtures are live. P9: codesign.evaluate candidate/Pareto fixture is live. P12:
+`train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
+SB3/MuJoCo hover runtime is implemented as a protected-evidence candidate. Overnight
+passing-policy proof, waypoint/general-archetype training, deployed Modal/GPU runs,
+durable policy delivery, and offline-RL fine-tuning remain open. P8: config-diff,
+telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
+codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes
 matching outputs into `photoscan_artifacts`, `policy_artifacts`, `telemetry_logs`,
 `replay_artifacts`, and `maintenance_records`; non-fixture jobs enter the same
@@ -322,5 +339,6 @@ in flight.
 Multi-replica queue capacity, heartbeat policy for tasks that legitimately exceed one
 attempt deadline, dead-letter/reconciliation operations, and queue SLOs; TRELLIS-class
 model pick and hosting at P5 (the field moves fast — pin at implementation); live
-SB3/MuJoCo/MJX/OCCT dependency pinning and benchmark evidence; review queue UI
-ownership beyond the existing gateway/studio scaffolds.
+deployed Modal/GPU training, object-backed policy delivery, overnight scorecard/SLO
+proof, MJX adoption evidence, and OCCT dependency/benchmark evidence; review queue
+UI ownership beyond the existing gateway/studio scaffolds.

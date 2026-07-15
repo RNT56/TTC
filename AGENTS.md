@@ -86,8 +86,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected `main` descendant is P7-008 PR #62 at `1de7974`, with
-  post-merge CI `29388166478` and security `29388166407` green;
+  latest verified protected `main` descendant is P7-008 evidence PR #63 at
+  `766f7b8`, with post-merge CI `29389051743` and security `29389051735` green;
+  PR #62/`1de7974` remains the owning browser/runtime evidence anchor;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
@@ -155,6 +156,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   completed policy playback, and lazy same-origin ONNX JS/WASM assets. This is real
   fixture-grade browser execution, not live SB3/MuJoCo training, external model
   storage, hardware authority, or field transfer;
+- P7-003 has an unprotected implementation candidate: the gateway freezes an owned
+  admitted-model snapshot, the validator re-admits it and emits a Rust-derived
+  MuJoCo bundle, and an exact-pinned CPU worker executes seeded PPO/SAC hover
+  training, real randomization/evaluation, and deterministic opset-18 export. Focused
+  local proof passes 138 worker tests, a short real training smoke, and the complete
+  38-step local gate, but the dirty candidate artifact is not acceptance evidence.
+  Protected gates, overnight passing hover/waypoint proof, object-backed one-click
+  delivery, deployed Modal/GPU evidence, broader archetypes, and external acceptance
+  remain open;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
@@ -524,7 +534,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Simulation engine/exporter | `cargo test -p forge-sim -p forge-validate`; `pnpm sim:parity:check`; for engine/exporter changes install `workers[dev,mujoco]` and run `pnpm sim:parity:live`; inspect source/provider/unit/timestep/substep-bound artifacts; append-only golden review for registered output; require the real-engine worker check before closure |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
-| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |
+| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
