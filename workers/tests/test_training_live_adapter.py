@@ -100,6 +100,32 @@ def test_external_policy_with_complete_scorecard_exports(tmp_path, monkeypatch):
     assert result["scorecard"]["thresholds"] == {"minSuccess": 0.85, "minRobustness": 0.7}
     assert result["scorecard"]["reasons"] == []
 
+    drifted = train_policy({"contractHash": "aa" * 32, "seed": 11})
+    assert drifted["exportGate"] == "blocked"
+    assert "lineage contractHash does not match" in " ".join(drifted["scorecard"]["reasons"])
+
+    monkeypatch.setenv(
+        "FORGE_SB3_TRAIN_CMD",
+        _command(
+            tmp_path,
+            {
+                "provider": "live-sb3",
+                "onnx": {"modelBase64": "!!!", "byteSize": 3, "sha256": "0" * 64, "opset": 18},
+                "scorecard": {
+                    "successRate": 0.93,
+                    "robustness": {"mass+15%": 0.86},
+                    "energyWh": 2.0,
+                    "trainedOnEstimator": True,
+                    "lineage": {"contractHash": "ef" * 32, "seed": "11"},
+                    "exportable": True,
+                },
+            },
+        ),
+    )
+    tampered = train_policy({"contractHash": "ef" * 32, "seed": 11})
+    assert tampered["exportGate"] == "blocked"
+    assert "ONNX bytes do not match" in " ".join(tampered["scorecard"]["reasons"])
+
 
 def test_external_offline_bc_accepts_dataset_but_blocks_policy_export(tmp_path, monkeypatch):
     monkeypatch.setenv(

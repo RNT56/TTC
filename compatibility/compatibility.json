@@ -82,6 +82,10 @@
     "workerArtifacts": {
       "current": "0.2.0",
       "supportedMajors": [0],
+      "internalSchemas": {
+        "admittedModelSnapshot": "1.0.0",
+        "trainingBundle": "1.0.0"
+      },
       "queueKinds": [
         "etl.ingest-component",
         "occt.tessellate",

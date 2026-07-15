@@ -29,8 +29,12 @@ def test_modal_training_and_codesign_profiles_pin_live_dependencies():
 
     assert train["timeoutS"] == 12 * 60 * 60
     assert train["gpu"] == "any"
-    assert "stable-baselines3>=2.3" in train["pipPackages"]
-    assert "mujoco>=3.1" in train["pipPackages"]
+    assert "numpy==2.5.1" in train["pipPackages"]
+    assert "gymnasium==1.3.0" in train["pipPackages"]
+    assert "torch==2.13.0" in train["pipPackages"]
+    assert "stable-baselines3==2.9.0" in train["pipPackages"]
+    assert "onnx==1.22.0" in train["pipPackages"]
+    assert "mujoco==3.9.0" in train["pipPackages"]
     assert train["commandEnv"] == ["FORGE_SB3_TRAIN_CMD"]
     assert codesign["commandEnv"] == ["FORGE_CODESIGN_CMD", "FORGE_MUJOCO_PARITY_CMD", "FORGE_MJX_BENCH_CMD"]
     assert "optuna>=3.6" in codesign["pipPackages"]

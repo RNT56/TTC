@@ -151,6 +151,11 @@ try {
   run("Validator release packaging", "pnpm", ["release:validator:check"]);
   run("Pilot and hardware-policy invariants", "pnpm", ["pilot:check"]);
   run("Python worker tests", "pnpm", ["--filter", "@forge/workers", "test"]);
+  run("Real seeded MuJoCo-SB3-ONNX smoke", "node", [
+    "scripts/training-smoke.mjs",
+    "--out",
+    join(temp, "p7-sb3-smoke.json"),
+  ]);
   run("Whitespace and patch hygiene", "node", ["scripts/check-patch-hygiene.mjs"]);
 
   console.log(`\nverify: ${step} required local gates passed`);

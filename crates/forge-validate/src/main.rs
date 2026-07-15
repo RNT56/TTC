@@ -5,6 +5,7 @@
 //!   forge-validate patch <contract.json> <patch.json> [--out out.json]
 //!   forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]
 //!   forge-validate env <env.json> [--report out.json] [--as-draft]
+//!   forge-validate training-bundle <contract.json> --contract-hash <sha256> [--out bundle.json]
 //!   forge-validate sim-parity rapier-baseline [--out baseline.json]
 //!   forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json]
 //!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
@@ -27,6 +28,7 @@ fn main() -> ExitCode {
         Some("patch") => cmd_patch(&args[1..]),
         Some("migrate") => cmd_migrate(&args[1..]),
         Some("env") => cmd_env(&args[1..]),
+        Some("training-bundle") => cmd_training_bundle(&args[1..]),
         Some("sim-parity") => cmd_sim_parity(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         Some("version") => cmd_version(&args[1..]),
@@ -36,7 +38,7 @@ fn main() -> ExitCode {
         }
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate training-bundle <contract.json> --contract-hash <sha256> [--out bundle.json]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
             );
             ExitCode::from(1)
         }
@@ -57,6 +59,71 @@ fn flag_value(args: &[String], flag: &str) -> Option<String> {
     args.iter()
         .position(|a| a == flag)
         .and_then(|i| args.get(i + 1).cloned())
+}
+
+fn cmd_training_bundle(args: &[String]) -> ExitCode {
+    let Some(path) = args.first().filter(|arg| !arg.starts_with("--")) else {
+        eprintln!("training-bundle: missing <contract.json>");
+        return ExitCode::from(1);
+    };
+    let Some(expected_hash) = flag_value(args, "--contract-hash") else {
+        eprintln!("training-bundle: missing --contract-hash <sha256>");
+        return ExitCode::from(1);
+    };
+    if expected_hash.len() != 64 || !expected_hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        eprintln!("training-bundle: --contract-hash must be 64 hexadecimal characters");
+        return ExitCode::from(1);
+    }
+    let doc = match read_file("training-bundle", path) {
+        Ok(doc) => doc,
+        Err(code) => return code,
+    };
+    let actual_hash = {
+        let mut hash = Sha256::new();
+        hash.update(doc.as_bytes());
+        format!("{:x}", hash.finalize())
+    };
+    if actual_hash != expected_hash.to_ascii_lowercase() {
+        eprintln!(
+            "training-bundle: immutable admitted-model snapshot hash mismatch (expected {expected_hash}, got {actual_hash})"
+        );
+        return ExitCode::from(2);
+    }
+    let report = run_full(&doc, &EmptyCatalog, &Options::default());
+    if report.verdict != Verdict::Admitted {
+        eprintln!(
+            "training-bundle: sovereign validator verdict is {:?}; only admitted contracts may train",
+            report.verdict
+        );
+        return ExitCode::from(2);
+    }
+    let spec = match forge_contract::validate_shape(&doc) {
+        Ok(spec) => spec,
+        Err(error) => {
+            eprintln!("training-bundle: CTR-001 schema_invalid: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let baked = match forge_geometry::bake(&spec) {
+        Ok(baked) => baked,
+        Err(error) => {
+            eprintln!("training-bundle: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let bundle =
+        match forge_sim::training::multirotor_training_bundle(&spec, &baked, &expected_hash) {
+            Ok(bundle) => bundle,
+            Err(error) => {
+                eprintln!("training-bundle: {error}");
+                return ExitCode::from(2);
+            }
+        };
+    eprintln!(
+        "forge-validate training-bundle · {} · {:.3} kg · MuJoCo {} · tensor {}",
+        bundle.root_body_name, bundle.mass_kg, bundle.mujoco_version, bundle.tensor.schema_version
+    );
+    emit_json("training-bundle", args, &bundle)
 }
 
 fn cmd_run(args: &[String]) -> ExitCode {

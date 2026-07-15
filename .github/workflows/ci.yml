@@ -193,8 +193,17 @@ jobs:
           name: forge-validate
           path: target/debug
       - run: chmod +x target/debug/forge-validate
-      - run: pip install -e "workers[dev,mujoco]"
+      - name: install exact CPU training runtime
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.13.0
+          pip install -e "workers[dev,mujoco,training]"
       - run: python -m pytest workers -q
+      - name: P7-003 real seeded MuJoCo-SB3-ONNX smoke
+        env:
+          FORGE_VALIDATE_BIN: target/debug/forge-validate
+          FORGE_SOURCE_REVISION: ${{ github.sha }}
+          FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
+        run: node scripts/training-smoke.mjs --out artifacts/training/p7-sb3-smoke.json
       - name: P6-010 live Rapier-MuJoCo engine parity
         env:
           FORGE_MUJOCO_PARITY_CMD: python -m forge_workers.mujoco_parity
@@ -205,6 +214,11 @@ jobs:
         with:
           name: sim-engine-parity-evidence
           path: artifacts/sim-parity
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: training-runtime-evidence
+          path: artifacts/training
 
   desktop-native:
     name: desktop native (macOS)

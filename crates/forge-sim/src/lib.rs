@@ -18,6 +18,7 @@ pub mod interop;
 pub mod rapier;
 pub mod runtime;
 pub mod thrust_table;
+pub mod training;
 
 use forge_contract::{Archetype, CatalogComponent, CatalogSource, Estimator, ModelSpec};
 use forge_geometry::BakedModel;

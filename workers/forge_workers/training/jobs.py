@@ -7,6 +7,7 @@ same scorecard object used by tests.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from typing import Any
@@ -14,6 +15,12 @@ from typing import Any
 from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
 from forge_workers.queue import Job, registry
+from forge_workers.training.bundle import (
+    POLICY_INPUT_LAYOUT,
+    POLICY_OUTPUT_LAYOUT as TENSOR_OUTPUT_LAYOUT,
+    POLICY_TENSOR_SCHEMA,
+    POLICY_TENSOR_VERSION,
+)
 from forge_workers.training.policy_fixture import OUTPUT_LAYOUT, hover_policy_fixture
 from forge_workers.training.scorecard import DEFAULT_MIN_ROBUST, DEFAULT_MIN_SUCCESS, Scorecard, gate
 from forge_workers.training.tasks import course_task_definition, task_definition
@@ -30,7 +37,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
     resolved_task = str(task_meta["id"])
     external = run_json_command(
         "FORGE_SB3_TRAIN_CMD",
-        {"task": "train.policy", **payload},
+        {"jobKind": "train.policy", **payload},
         timeout_s=float(payload.get("timeoutS", 12 * 3600)),
     )
     if external is not None:
@@ -73,9 +80,11 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
             "friction": [0.4, 1.2],
             "windMps": [0, 4],
             "obsDropoutPct": [0, 5],
+            "imuNoiseScale": [0.5, 1.5],
+            "imuBiasScale": [0.5, 1.5],
         },
     )
-    return {
+    result = {
         "artifactKind": "policy",
         "provider": gpu["provider"],
         "algorithm": str(payload.get("algorithm", "ppo-fixture")),
@@ -119,6 +128,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         "exportGate": "exportable" if exportable else "blocked",
         "scorecard": _scorecard_payload(card, reasons, exportable),
     }
+    return result
 
 
 def _task_meta(payload: dict[str, Any]) -> dict[str, Any]:
@@ -165,8 +175,15 @@ def _external_policy_result(
     )
     gate_result = gate(card)
     provider_reasons = _provider_reasons(raw_scorecard, external)
-    reasons = [*gate_result.reasons, *provider_reasons]
-    exportable = gate_result.exportable and not provider_reasons
+    authority_reasons = _external_policy_authority_reasons(
+        external,
+        raw_scorecard,
+        card,
+        contract_hash=contract_hash,
+        resolved_task=resolved_task,
+    )
+    reasons = [*gate_result.reasons, *provider_reasons, *authority_reasons]
+    exportable = gate_result.exportable and not provider_reasons and not authority_reasons
     onnx = external.get("onnx") if isinstance(external.get("onnx"), dict) else {}
     onnx_payload = {
         "cacheKey": onnx.get("cacheKey", external.get("cacheKey", f"external-sb3:{contract_hash[:12]}")),
@@ -178,7 +195,7 @@ def _external_policy_result(
     for key in ("byteSize", "sha256", "modelBase64"):
         if key in onnx:
             onnx_payload[key] = onnx[key]
-    return {
+    result = {
         "artifactKind": "policy",
         "provider": external.get("provider", "external-sb3"),
         "algorithm": external.get("algorithm", payload.get("algorithm", "ppo")),
@@ -189,6 +206,9 @@ def _external_policy_result(
         "exportGate": "exportable" if exportable else "blocked",
         "scorecard": _scorecard_payload(card, reasons, exportable),
     }
+    if isinstance(external.get("training"), dict):
+        result["training"] = external["training"]
+    return result
 
 
 def _scorecard_payload(card: Scorecard, reasons: list[str], exportable: bool) -> dict[str, Any]:
@@ -237,12 +257,91 @@ def _provider_reasons(scorecard: dict[str, Any], external: dict[str, Any]) -> li
     return reasons
 
 
+def _external_policy_authority_reasons(
+    external: dict[str, Any],
+    raw_scorecard: dict[str, Any],
+    card: Scorecard,
+    *,
+    contract_hash: str,
+    resolved_task: str,
+) -> list[str]:
+    reasons: list[str] = []
+    if card.lineage.get("contractHash") != contract_hash:
+        reasons.append("external policy lineage contractHash does not match admitted job authority")
+    if card.task != resolved_task:
+        reasons.append("external policy scorecard task does not match the requested task")
+    if not 0.0 <= card.success_rate <= 1.0:
+        reasons.append("external policy successRate must be in [0, 1]")
+    if card.energy_wh > 1_000_000_000:
+        reasons.append("external policy energyWh exceeds the supported bound")
+    raw_robustness = raw_scorecard.get("robustness", external.get("robustness"))
+    if isinstance(raw_robustness, dict) and any(
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not 0.0 <= float(value) <= 1.0
+        for value in raw_robustness.values()
+    ):
+        reasons.append("external policy robustness values must be numeric rates in [0, 1]")
+
+    io = external.get("io")
+    if isinstance(io, dict):
+        header = io.get("onnxHeader")
+        if isinstance(header, dict) and header.get("contractHash") != contract_hash:
+            reasons.append("external policy ONNX header contractHash does not match admitted job authority")
+        tensor = io.get("tensor")
+        if isinstance(tensor, dict) and not _policy_tensor_is_exact(tensor):
+            reasons.append("external policy tensor contract is unsupported or drifted")
+
+    onnx = external.get("onnx")
+    if isinstance(onnx, dict) and any(key in onnx for key in ("modelBase64", "byteSize", "sha256")):
+        try:
+            encoded = onnx.get("modelBase64")
+            expected_size = onnx.get("byteSize")
+            expected_hash = onnx.get("sha256")
+            if (
+                not isinstance(encoded, str)
+                or isinstance(expected_size, bool)
+                or not isinstance(expected_size, int)
+                or not 0 < expected_size <= 5 * 1024 * 1024
+                or onnx.get("opset") != 18
+                or not isinstance(expected_hash, str)
+                or len(expected_hash) != 64
+                or any(char not in "0123456789abcdef" for char in expected_hash)
+            ):
+                raise ValueError
+            model_bytes = base64.b64decode(encoded, validate=True)
+            if len(model_bytes) != expected_size or hashlib.sha256(model_bytes).hexdigest() != expected_hash:
+                raise ValueError
+        except (ValueError, TypeError):
+            reasons.append("external policy ONNX bytes do not match their bounded size/digest authority")
+    return reasons
+
+
+def _policy_tensor_is_exact(value: dict[str, Any]) -> bool:
+    input_axis = value.get("input")
+    output_axis = value.get("output")
+    return bool(
+        value.get("schema") == POLICY_TENSOR_SCHEMA
+        and value.get("schemaVersion") == POLICY_TENSOR_VERSION
+        and value.get("coordinateFrame") == "forge-y-up-rh-m"
+        and value.get("rateHz") == 50
+        and isinstance(input_axis, dict)
+        and input_axis.get("name") == "observations"
+        and input_axis.get("shape") == [1, 11]
+        and input_axis.get("layout") == list(POLICY_INPUT_LAYOUT)
+        and isinstance(output_axis, dict)
+        and output_axis.get("name") == "actions"
+        and output_axis.get("shape") == [1, 4]
+        and output_axis.get("layout") == list(TENSOR_OUTPUT_LAYOUT)
+    )
+
+
 def _robustness(value: Any) -> dict[str, float]:
     if not isinstance(value, dict):
         return {}
     out: dict[str, float] = {}
     for key, raw in value.items():
-        if isinstance(raw, (int, float)):
+        if not isinstance(raw, bool) and isinstance(raw, (int, float)):
             out[str(key)] = float(raw)
     return out
 
@@ -254,7 +353,7 @@ def _string_dict(value: Any) -> dict[str, str]:
 
 
 def _number(value: Any, default: float) -> float:
-    if isinstance(value, (int, float)):
+    if not isinstance(value, bool) and isinstance(value, (int, float)):
         return float(value)
     return default
 
