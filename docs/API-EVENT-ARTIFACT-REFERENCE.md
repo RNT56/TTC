@@ -72,6 +72,7 @@ of the OpenAPI request body, persistence, examples, or response schemas.
 | `PATCH /v1/photoscan/artifacts/:id/alignment` | Record reviewed photoscan scale, axes, and ports | session | fixture | 200 |
 | `POST /v1/photoscan` | Queue a consent-gated photoscan job | session | fixture | 202 |
 | `GET /v1/policies` | List owner policy artifacts | session | fixture | 200 |
+| `GET /v1/policies/:id/model` | Stream an exportable owner's exact retained policy bytes after metadata and digest verification | session | sandbox | 200, 404, 409 |
 | `POST /v1/policies` | Queue a policy-training job | session | fixture | 202 |
 | `GET /v1/replays` | List owner replay artifacts | session | fixture | 200 |
 | `POST /v1/replays` | Queue deterministic replay verification | session | fixture | 202 |
@@ -126,7 +127,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `replay` | 1.0.0 | major 1 |
 | `envSpec` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
-| `userDataExport` | 1.2.0 | major 1 |
+| `userDataExport` | 1.3.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |
 | `accountDeletionReceipt` | 2.0.0 | major 2 |
 | `dataLifecycle` | 1.0.0 | major 1 |

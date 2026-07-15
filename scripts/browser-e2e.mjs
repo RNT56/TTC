@@ -252,6 +252,7 @@ try {
   const pageErrors = [];
   const wasmUrls = [];
   const onnxRuntimeUrls = [];
+  const policyModelResponses = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("response", (response) => {
     if (/\/forge_wasm_bg-[^/]+\.wasm(?:\?|$)/.test(response.url()) && response.status() === 200) {
@@ -259,6 +260,14 @@ try {
     }
     if (/\/(?:ort\.wasm\.bundle\.min-[^/]+\.js|ort-wasm-[^/]+\.wasm)(?:\?|$)/.test(response.url()) && response.status() === 200) {
       onnxRuntimeUrls.push(response.url());
+    }
+    if (/\/v1\/policies\/[^/]+\/model(?:\?|$)/.test(response.url()) && response.status() === 200) {
+      policyModelResponses.push({
+        url: response.url(),
+        contentType: response.headers()["content-type"],
+        contentLength: response.headers()["content-length"],
+        sha256: response.headers()["x-forge-policy-sha256"],
+      });
     }
   });
 
@@ -396,14 +405,26 @@ try {
   await page.locator('[data-testid="job-run-train.policy"]').click();
   const policyJob = page.locator('[data-testid="job-row-train.policy"]').first();
   await waitForText(policyJob, /train\.policy · succeeded/i);
+  const policyJobsResponse = await context.request.get(`${studioOrigin}/v1/jobs?limit=20`);
+  assert.equal(policyJobsResponse.status(), 200);
+  const policyJobRecord = (await policyJobsResponse.json()).jobs.find((job) => job.kind === "train.policy");
+  assert.ok(policyJobRecord, "materialized policy job was not persisted");
+  assert.equal(policyJobRecord.output?.delivery?.objectBacked, true);
+  assert.equal(Object.hasOwn(policyJobRecord.output?.onnx ?? {}, "modelBase64"), false);
   await policyJob.locator('[data-testid="policy-play"]').click();
   await waitForText(page.locator('[data-testid="policy-playback-status"]'), /playing hover-hold · ONNX Runtime Web\/WASM · 1 inference/i);
   await waitForText(page.locator('[data-testid="policy-playback-status"]'), /played hover-hold · ONNX Runtime Web\/WASM · [1-9][0-9]* inferences/i);
   assert.ok(onnxRuntimeUrls.some((url) => /ort\.wasm\.bundle\.min-[^/]+\.js/.test(url)), "lazy ONNX JS chunk was not loaded");
   assert.ok(onnxRuntimeUrls.some((url) => /ort-wasm-[^/]+\.wasm/.test(url)), "same-origin ONNX Runtime WASM was not loaded");
   assert.ok(onnxRuntimeUrls.every((url) => new URL(url).origin === studioOrigin), "ONNX runtime assets must stay same-origin");
+  assert.equal(policyModelResponses.length, 1, "playback must fetch one authenticated retained policy object");
+  assert.equal(new URL(policyModelResponses[0].url).origin, studioOrigin);
+  assert.equal(policyModelResponses[0].contentType, "application/octet-stream");
+  assert.match(policyModelResponses[0].contentLength ?? "", /^[1-9][0-9]*$/);
+  assert.match(policyModelResponses[0].sha256 ?? "", /^[a-f0-9]{64}$/);
   evidence.onnxRuntimeAssets = [...new Set(onnxRuntimeUrls.map((url) => new URL(url).pathname))];
-  evidence.flows.push("execute a hash- and lineage-bound ONNX policy in-browser through the Rust estimator/motion boundary");
+  evidence.policyDelivery = policyModelResponses[0];
+  evidence.flows.push("fetch retained object-backed ONNX through the authenticated same-origin gateway and execute it in-browser through the Rust estimator/motion boundary");
 
   await page.locator('[data-testid="job-run-maintenance.estimate-wear"]').click();
   const maintenanceJob = page.locator('[data-testid="job-row-maintenance.estimate-wear"]').first();

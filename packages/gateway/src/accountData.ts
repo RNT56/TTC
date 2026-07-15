@@ -9,7 +9,7 @@ import {
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.2.0";
+export const USER_DATA_EXPORT_VERSION = "1.3.0";
 export const ACCOUNT_DELETION_RECEIPT_VERSION = "2.0.0";
 
 interface ExportDataset {
@@ -109,7 +109,8 @@ const exportDatasets: readonly ExportDataset[] = [
   },
   {
     key: "policyArtifacts",
-    sql: `SELECT id, model_id AS "modelId", task_kind AS "taskKind", scorecard,
+    sql: `SELECT id, job_id AS "jobId", model_id AS "modelId", task_kind AS "taskKind", scorecard,
+                 policy_metadata AS "policyMetadata",
                  artifact_blob_id AS "artifactBlobId", export_gate AS "exportGate", created_at AS "createdAt"
             FROM policy_artifacts WHERE owner_user_id = $1 ORDER BY created_at, id`,
   },

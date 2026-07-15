@@ -180,8 +180,10 @@ stack, runs the complete worker suite, and executes a tiny source-bound hover sm
 through the same gateway-shaped snapshot and Rust bundle path. The smoke proves real
 simulation, optimization, deterministic fixed-shape opset-18 ONNX export, and
 scorecard generation, but is deliberately too short to claim a passing policy.
-Durable object upload, one-click Studio queueing/download, deployed Modal/GPU proof,
-and an overnight passing run remain P7-011..013.
+P7-011 now has an implementation candidate for durable object upload plus one-click
+Studio queueing/download; protected isolated-Postgres/MinIO/browser evidence remains
+the closure gate. Deployed Modal/GPU proof and an overnight passing run remain
+P7-012..013.
 
 Live 2026-07-15: the hover fixture is a real 906-byte opset-18 Gemm+Tanh ONNX graph,
 generated with ONNX 1.19.1 and bound by SHA-256
@@ -193,9 +195,18 @@ byte count, digest, runtime names, output type/shape, finiteness, and normalized
 bounds, then runs inference asynchronously at 50 Hz while the 120 Hz Rust motion
 loop consumes the last safe action. A missed inference holds the previous bounded
 advisory; any error zeros commands and stops playback. Non-hover keyless fixture
-tasks remain held rather than fabricating model bytes. Inline external model bytes
-can traverse the existing worker seam, but object-backed live-model download remains
-P7-011/operations work and is not claimed here.
+tasks remain held rather than fabricating model bytes.
+
+P7-011's candidate treats inline bytes as transient producer transport. The current
+D38 attempt uploads one exact owner content-addressed object and a serializable
+transaction materializes one job-bound, byte-free policy whose delivery metadata
+binds the model revision, scorecard, tensor header, lineage, size, and digest.
+Studio's one-click action selects the active admitted model, creates the appropriate
+fixture or configured-local job with an idempotency key, polls to a terminal state,
+then requests the retained bytes through the authenticated same-origin policy-model
+route. Both gateway and Studio rehash before ONNX runtime creation. This is not
+claimed protected until the P7-011 Postgres/MinIO/browser acceptance passes and the
+exact protected revision is recorded.
 
 ## 8. Dependencies
 
@@ -249,6 +260,14 @@ boundary tests, same-seed ONNX digest checks, dependency-pin assertions, and a
 required controlled training smoke. The full worker suite must run with the training
 extra installed; a skipped or fixture-only runtime is not acceptance evidence.
 
+P7-011 adds gateway/Studio/worker unit coverage plus a protected isolated-Postgres
+and S3-compatible acceptance. The latter must prove stale-lease refusal before
+upload, one winner with byte-free persisted metadata, cancellation during upload
+without database authority, digest-substitution refusal, and exact retained-object
+readback. The production-browser flow must prove that one Studio action creates the
+owned-model job and fetches the authenticated retained object; a database-only row
+or fixture inline bytes cannot close the task.
+
 P7-010 adds strict request/hash/runtime/protocol and central-decision tests plus a
 required real feasibility command. Run it under Python 3.12 with
 `workers[dev,mujoco,training,mjx]`, `JAX_ENABLE_X64=1`, and an executable
@@ -265,8 +284,8 @@ scorecards.
 ## 11. Open questions
 
 Scorecard thresholds per task (set with P7 data, then frozen per task version);
-durable object-backed policy delivery and one-click Studio orchestration; the
-overnight passing hover/waypoint envelope; fine-tune-on-corrected-twin workflow
+protected P7-011 object-backed delivery/one-click proof and orphan reconciliation;
+the overnight passing hover/waypoint envelope; fine-tune-on-corrected-twin workflow
 shape (post system-ID); exact D12 quad/rover/legged benchmark contracts, declared
 accelerator and cost source, and the CPU overnight/tier-2 budget envelope needed to
 finish P7-010.

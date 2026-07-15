@@ -24,6 +24,7 @@ export interface PhotoscanOutput {
 
 export interface PolicyOutput {
   artifactKind: "policy";
+  formatVersion?: string;
   algorithm?: string;
   task?: {
     id?: string;
@@ -54,6 +55,16 @@ export interface PolicyOutput {
     byteSize?: number;
     sha256?: string;
     modelBase64?: string;
+  };
+  delivery?: {
+    storage?: string;
+    objectBacked?: boolean;
+    jobId?: string;
+    byteSize?: number;
+    sha256?: string;
+    artifactBlobId?: string;
+    policyArtifactId?: string;
+    modelRevision?: { modelId?: string | null; contractHash?: string | null };
   };
   scorecard?: {
     task?: string;

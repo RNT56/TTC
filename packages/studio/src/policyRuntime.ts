@@ -42,6 +42,7 @@ export async function preparePolicyArtifact(
   output: PolicyOutput,
   activeContractHash: string,
   coreLayout: readonly string[],
+  retainedModelBytes?: Uint8Array,
 ): Promise<PreparedPolicyArtifact> {
   assertSha256(activeContractHash, "active contract hash");
   const scorecard = output.scorecard;
@@ -99,7 +100,8 @@ export async function preparePolicyArtifact(
   if (!Number.isSafeInteger(declaredSize) || declaredSize <= 0 || declaredSize > MAX_POLICY_MODEL_BYTES) {
     throw new Error(`ONNX model exceeds the ${MAX_POLICY_MODEL_BYTES}-byte playback bound`);
   }
-  const modelBytes = decodeBase64(stringField(onnx.modelBase64, "ONNX model bytes"));
+  const modelBytes = retainedModelBytes?.slice()
+    ?? decodeBase64(stringField(onnx.modelBase64, "ONNX model bytes"));
   if (modelBytes.byteLength !== declaredSize) throw new Error("ONNX model byte count does not match its header");
   const modelSha256 = stringField(onnx.sha256, "ONNX model SHA-256").toLowerCase();
   assertSha256(modelSha256, "ONNX model SHA-256");
@@ -152,6 +154,7 @@ export class BrowserPolicyController {
     output: PolicyOutput,
     activeContractHash: string,
     source: PolicySnapshotSource,
+    retainedModelBytes?: Uint8Array,
   ): Promise<BrowserPolicyController> {
     const targetValues = output.task?.target?.xyzM;
     if (!Array.isArray(targetValues) || targetValues.length !== 3) {
@@ -159,7 +162,12 @@ export class BrowserPolicyController {
     }
     const target = targetValues.map((value, axis) => finiteNumber(value, `policy target axis ${axis}`)) as FocusVector;
     const initialSnapshot = await source.policySnapshot(target);
-    const artifact = await preparePolicyArtifact(output, activeContractHash, initialSnapshot.layout);
+    const artifact = await preparePolicyArtifact(
+      output,
+      activeContractHash,
+      initialSnapshot.layout,
+      retainedModelBytes,
+    );
     const ort = await loadRuntime();
     const session = await ort.InferenceSession.create(artifact.modelBytes.slice(), {
       executionProviders: ["wasm"],

@@ -6,6 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createHash } from "node:crypto";
 import { MAX_OBJECT_BYTES } from "./security.js";
 
 export type ObjectAccessAction = "upload" | "download";
@@ -46,6 +47,18 @@ export interface StoredObjectRef {
   objectKey: string;
 }
 
+export interface StoredObjectWrite extends StoredObjectRef {
+  bytes: Uint8Array;
+  contentType: string;
+  sha256: string;
+}
+
+export interface StoredObjectRead extends StoredObjectRef {
+  byteSize: number;
+  sha256: string;
+  maxBytes: number;
+}
+
 export type ObjectDeletionAdapter = (objects: readonly StoredObjectRef[]) => Promise<void>;
 export interface StoredObjectInspection {
   byteSize: number;
@@ -56,6 +69,14 @@ export type ObjectInspectionAdapter = (
   config: ObjectStorageConfig,
   object: StoredObjectRef,
 ) => Promise<StoredObjectInspection>;
+export type ObjectWriteAdapter = (
+  config: ObjectStorageConfig,
+  object: StoredObjectWrite,
+) => Promise<StoredObjectInspection>;
+export type ObjectReadAdapter = (
+  config: ObjectStorageConfig,
+  object: StoredObjectRead,
+) => Promise<Uint8Array>;
 
 function assertObjectKey(objectKey: string): void {
   if (!objectKey || objectKey.startsWith("/") || /(?:^|\/)\.\.(?:\/|$)|[\0\r\n]/.test(objectKey)) {
@@ -226,6 +247,93 @@ export async function inspectStoredObject(
       contentType: result.ContentType?.split(";", 1)[0]?.trim().toLowerCase() ?? null,
       sha256,
     };
+  } finally {
+    client.destroy();
+  }
+}
+
+export async function putStoredObject(
+  config: ObjectStorageConfig,
+  object: StoredObjectWrite,
+): Promise<StoredObjectInspection> {
+  if (object.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+  assertObjectKey(object.objectKey);
+  const bytes = Buffer.from(object.bytes);
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_OBJECT_BYTES) {
+    throw new Error("object bytes are outside the supported range");
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9!#$&^_.+\/-]{0,159}$/.test(object.contentType)) {
+    throw new Error("object content type is invalid");
+  }
+  const declaredSha256 = normalizedSha256(object.sha256);
+  const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+  if (declaredSha256 !== actualSha256) throw new Error("object bytes do not match their SHA-256 declaration");
+
+  const client = objectStorageClient(config);
+  try {
+    await client.send(
+      new PutObjectCommand({
+        Bucket: object.bucket,
+        Key: object.objectKey,
+        Body: bytes,
+        ContentType: object.contentType,
+        ContentLength: bytes.byteLength,
+        ChecksumSHA256: sha256Base64(actualSha256),
+      }),
+      { abortSignal: AbortSignal.timeout(config.deleteTimeoutMs) },
+    );
+    return {
+      byteSize: bytes.byteLength,
+      contentType: object.contentType.toLowerCase(),
+      sha256: actualSha256,
+    };
+  } finally {
+    client.destroy();
+  }
+}
+
+export async function readStoredObject(
+  config: ObjectStorageConfig,
+  object: StoredObjectRead,
+): Promise<Uint8Array> {
+  if (object.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
+  assertObjectKey(object.objectKey);
+  if (
+    !Number.isSafeInteger(object.byteSize)
+    || object.byteSize <= 0
+    || !Number.isSafeInteger(object.maxBytes)
+    || object.maxBytes <= 0
+    || object.byteSize > object.maxBytes
+    || object.maxBytes > MAX_OBJECT_BYTES
+  ) {
+    throw new Error("object download size is outside the supported range");
+  }
+  const declaredSha256 = normalizedSha256(object.sha256);
+  const client = objectStorageClient(config);
+  try {
+    const result = await client.send(
+      new GetObjectCommand({ Bucket: object.bucket, Key: object.objectKey }),
+      { abortSignal: AbortSignal.timeout(config.deleteTimeoutMs) },
+    );
+    const body = result.Body as AsyncIterable<Uint8Array> | undefined;
+    if (!body || typeof body[Symbol.asyncIterator] !== "function") {
+      throw new Error("object storage returned a non-streaming body");
+    }
+    const chunks: Buffer[] = [];
+    let total = 0;
+    for await (const chunk of body) {
+      const bytes = Buffer.from(chunk);
+      total += bytes.byteLength;
+      if (total > object.maxBytes || total > object.byteSize) {
+        throw new Error("object storage exceeded the declared download size");
+      }
+      chunks.push(bytes);
+    }
+    if (total !== object.byteSize) throw new Error("object storage returned a partial download");
+    const bytes = Buffer.concat(chunks, total);
+    const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+    if (actualSha256 !== declaredSha256) throw new Error("object storage returned a checksum mismatch");
+    return bytes;
   } finally {
     client.destroy();
   }

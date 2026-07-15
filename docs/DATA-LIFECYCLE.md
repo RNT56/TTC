@@ -192,8 +192,9 @@ User/API:
 - `GET /v1/data-lifecycle/policy` — public versioned defaults and maturity boundary;
 - `GET /v1/account/lifecycle` — authenticated account-plus-owned-object hold count
   and catalogued backup exposure, without authority/evidence details;
-- `GET /v1/account/export` — export 1.2.0 adds causal-sequence-ordered redacted
-  account/owned-object hold history and backup-copy status;
+- `GET /v1/account/export` — export 1.3.0 retains causal-sequence-ordered redacted
+  account/owned-object hold history and backup-copy status and adds authoritative
+  policy job/byte-free delivery metadata without embedding retained ONNX bytes;
 - `DELETE /v1/account` — exact confirmation, hold-aware receipt 2.0.0.
 
 Operator CLI (builds the gateway first):

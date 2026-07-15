@@ -131,6 +131,22 @@ protected harness/parity evidence, not an adoption decision: the report still bl
 missing D12 quad/rover/legged, declared accelerator, overnight/tier-2 budget, cost,
 and cost-normalized throughput evidence.
 
+P7-011 is an **unmerged implementation candidate**, not current protected truth. On
+`codex/p7011-policy-delivery`, D39 and migration 0022 bind one winning D38 job to one
+byte-free policy and one exact owner-scoped content-addressed ONNX object. The worker
+verifies/uploads under the current lease; one transaction rechecks the lease and
+materializes job, object, and policy authority. The gateway and Studio independently
+verify model revision, exportable scorecard, tensor, lineage, byte length, and digest
+through authenticated same-origin `GET /v1/policies/:id/model`; one Studio action
+creates/polls the owned-model job and loads the retained object. All 39 required
+local non-DB gates pass under Python 3.12, including 65/65 gateway, 9/9 Studio plus
+build, 151/151 worker, generated docs/compatibility, packaging, and real training/
+engine/MJX smokes. Completion remains explicitly open until exact-head CI/security,
+the isolated PostgreSQL/MinIO stale-lease/cancellation/substitution/readback artifact,
+the production-browser flow, merge, post-merge checks, and protected evidence
+reconciliation are green. It proves neither P7-012 learning quality nor P7-013
+deployed GPU operations.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |

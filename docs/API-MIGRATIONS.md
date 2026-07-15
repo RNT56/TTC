@@ -111,15 +111,17 @@ uploads until the 0.2 gateway returns.
 
 ## User-data formats
 
-- user-data export is 1.2.0;
+- user-data export is 1.3.0;
 - consent ledger is 1.0.0;
 - account-deletion receipt is 2.0.0;
 - data lifecycle is 1.0.0.
 
-Readers must check each format's own version field. Export 1.2 adds exact decimal
-causal sequences plus redacted legal-hold and backup status. Deletion receipt 2.0
-adds restore-suppression evidence but does not claim physical backup deletion. Do not
-downgrade these meanings into an older success boolean.
+Readers must check each format's own version field. Export 1.2 added exact decimal
+causal sequences plus redacted legal-hold and backup status. Export 1.3 adds the
+policy artifact's authoritative `jobId` and byte-free `policyMetadata`; retained ONNX
+bytes are still downloaded separately through the authenticated policy-model route.
+Deletion receipt 2.0 adds restore-suppression evidence but does not claim physical
+backup deletion. Do not downgrade these meanings into an older success boolean.
 
 ## Policy tensor 1.0.0 introduction
 
@@ -136,6 +138,33 @@ finite observations/actions, and normalized action bounds. There is no downgrade
 stop playback, preserve the artifact and diagnostic, and use a runtime that supports
 the declared major. Category-level observation labels are search/transfer metadata,
 not a substitute for the scalar `io.tensor.input.layout`.
+
+## Object-backed policy delivery 0.2
+
+P7-011 changes policy delivery without changing policy-tensor 1.0.0. Producers may
+include canonical base64 bytes only inside the transient worker result. The current
+unexpired D38 attempt verifies the exact size and SHA-256, uploads the bytes to the
+owner-scoped content-addressed object key, and then wins a single transaction that
+marks the job successful and creates exactly one job-bound policy artifact. Persisted
+job output and `policy_artifacts.policy_metadata` contain only byte-free delivery,
+model-revision, scorecard, tensor, lineage, size, and digest evidence.
+
+Authenticated clients read retained bytes through `GET /v1/policies/:id/model`.
+The gateway requires owner scope, a complete matching object row, exportable
+scorecard authority, and exact agreement among the job, model snapshot, policy
+metadata, object declaration, response bytes, and checksum header. Studio then
+verifies the same size and digest again before ONNX session creation. The route is a
+same-origin byte relay; workers remain private and object-store credentials or
+presigned URLs are never exposed to Studio.
+
+Rows created before migration 0022 may have a null `job_id` and are not rewritten
+into fabricated authority. The migration backfills only an unambiguous matching job
+and strips historical inline bytes when copying delivery evidence. Application
+rollback must stop new policy writers and workers, retain migration 0022 and any
+uploaded content-addressed objects, and roll forward with a reader that understands
+the byte-free 0.2 envelope. A cancellation during upload may leave an unreferenced
+object, but cannot create database or download authority; OPS-006 owns bounded
+reconciliation and deletion of such orphans.
 
 ## Worker envelope 0.2 and queue changes
 

@@ -107,6 +107,14 @@ async function populatePredecessor(client, prefix) {
     user: `qa004-user-${prefix}`,
     job: `qa004-job-${prefix}`,
     blob: `qa004-blob-${prefix}`,
+    policyJob: `qa004-policy-job-${prefix}`,
+    policyBlob: `qa004-policy-blob-${prefix}`,
+    policyArtifact: `qa004-policy-${prefix}`,
+    ambiguousPolicyJob: `qa004-policy-job-ambiguous-${prefix}`,
+    ambiguousPolicyBlobA: `qa004-policy-blob-ambiguous-a-${prefix}`,
+    ambiguousPolicyBlobB: `qa004-policy-blob-ambiguous-b-${prefix}`,
+    ambiguousPolicyArtifactA: `qa004-policy-ambiguous-a-${prefix}`,
+    ambiguousPolicyArtifactB: `qa004-policy-ambiguous-b-${prefix}`,
     course: `qa004-course-${prefix}`,
     leaderboard: `qa004-leaderboard-${prefix}`,
     consentParent: `qa004-consent-parent-${prefix}`,
@@ -251,6 +259,86 @@ async function populatePredecessor(client, prefix) {
     );
   }
 
+  if (prefix >= 21) {
+    fixtureFamilies.push("policy-delivery-authority");
+    await client.query(
+      `INSERT INTO jobs (
+         id, owner_user_id, kind, status, provider, input, output, started_at, finished_at
+       ) VALUES (
+         $1, $2, 'train.policy', 'succeeded', 'local',
+         '{"modelId":null,"contractHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'::jsonb,
+         '{"artifactKind":"policy","onnx":{"modelBase64":"AQ==","byteSize":1,"sha256":"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34"},"io":{"tensor":{"schema":"forge-policy-tensor"}},"scorecard":{"exportable":true,"lineage":{"contractHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}'::jsonb,
+         now(), now()
+       )`,
+      [ids.policyJob, ids.user],
+    );
+    await client.query(
+      `INSERT INTO object_blobs (
+         id, owner_user_id, visibility, bucket, object_key, content_type,
+         byte_size, sha256, upload_status, verified_at, metadata
+       ) VALUES (
+         $1, $2, 'private', 'qa004', $3, 'application/octet-stream', 1,
+         '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34',
+         'complete', now(), jsonb_build_object('jobId', $4::text, 'artifactKind', 'policy')
+       )`,
+      [ids.policyBlob, ids.user, `users/${ids.user}/policy-onnx/fixture`, ids.policyJob],
+    );
+    await client.query(
+      `INSERT INTO policy_artifacts (
+         id, owner_user_id, task_kind, scorecard, artifact_blob_id, export_gate
+       ) VALUES (
+         $1, $2, 'hover-hold',
+         '{"exportable":true,"lineage":{"contractHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}'::jsonb,
+         $3, 'exportable'
+       )`,
+      [ids.policyArtifact, ids.user, ids.policyBlob],
+    );
+    await client.query(
+      `INSERT INTO jobs (
+         id, owner_user_id, kind, status, provider, input, output, started_at, finished_at
+       ) VALUES (
+         $1, $2, 'train.policy', 'succeeded', 'local', '{}'::jsonb,
+         '{"artifactKind":"policy","onnx":{"modelBase64":"AQ==","byteSize":1,"sha256":"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34"}}'::jsonb,
+         now(), now()
+       )`,
+      [ids.ambiguousPolicyJob, ids.user],
+    );
+    await client.query(
+      `INSERT INTO object_blobs (
+         id, owner_user_id, visibility, bucket, object_key, content_type,
+         byte_size, sha256, upload_status, verified_at, metadata
+       ) VALUES
+         ($1, $3, 'private', 'qa004', $4, 'application/octet-stream', 1,
+          '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34',
+          'complete', now(), jsonb_build_object('jobId', $6::text, 'artifactKind', 'policy')),
+         ($2, $3, 'private', 'qa004', $5, 'application/octet-stream', 1,
+          '4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7c0d7d5b7455e34',
+          'complete', now(), jsonb_build_object('jobId', $6::text, 'artifactKind', 'policy'))`,
+      [
+        ids.ambiguousPolicyBlobA,
+        ids.ambiguousPolicyBlobB,
+        ids.user,
+        `users/${ids.user}/policy-onnx/ambiguous-a`,
+        `users/${ids.user}/policy-onnx/ambiguous-b`,
+        ids.ambiguousPolicyJob,
+      ],
+    );
+    await client.query(
+      `INSERT INTO policy_artifacts (
+         id, owner_user_id, task_kind, scorecard, artifact_blob_id, export_gate
+       ) VALUES
+         ($1, $3, 'hover-a', '{}'::jsonb, $4, 'blocked'),
+         ($2, $3, 'hover-b', '{}'::jsonb, $5, 'blocked')`,
+      [
+        ids.ambiguousPolicyArtifactA,
+        ids.ambiguousPolicyArtifactB,
+        ids.user,
+        ids.ambiguousPolicyBlobA,
+        ids.ambiguousPolicyBlobB,
+      ],
+    );
+  }
+
   return { ids, fixtureFamilies };
 }
 
@@ -341,6 +429,36 @@ async function assertFixturePreserved(client, prefix, fixture) {
     const child = rows.find((row) => row.id === ids.holdChild);
     assert.ok(Number(parent.event_sequence) < Number(child.event_sequence));
     assert.equal(child.previous_event_id, parent.id);
+  }
+  if (prefix >= 21) {
+    const policy = (
+      await client.query(
+        `SELECT job_id, policy_metadata,
+                policy_metadata #>> '{onnx,modelBase64}' AS inline_model,
+                jsonb_typeof(policy_metadata) AS metadata_type
+           FROM policy_artifacts
+          WHERE id = $1`,
+        [ids.policyArtifact],
+      )
+    ).rows[0];
+    assert.equal(policy.job_id, ids.policyJob);
+    assert.equal(policy.policy_metadata.artifactKind, "policy");
+    assert.equal(policy.policy_metadata.onnx.byteSize, 1);
+    assert.equal(policy.inline_model, null);
+    assert.equal(policy.metadata_type, "object");
+    const ambiguous = (
+      await client.query(
+        `SELECT id, job_id, policy_metadata
+           FROM policy_artifacts
+          WHERE id IN ($1, $2)
+          ORDER BY id`,
+        [ids.ambiguousPolicyArtifactA, ids.ambiguousPolicyArtifactB],
+      )
+    ).rows;
+    assert.equal(ambiguous.length, 2);
+    assert.ok(ambiguous.every((row) => row.job_id === null));
+    assert.ok(ambiguous.every((row) => Object.keys(row.policy_metadata).length === 0));
+    assert.ok((await client.query("SELECT to_regclass('policy_artifacts_job_id_idx') AS name")).rows[0].name);
   }
 }
 

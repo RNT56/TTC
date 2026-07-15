@@ -18,6 +18,55 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Implement lease-fenced object-backed policy delivery
+**Session:** Codex agent · branch `codex/p7011-policy-delivery` · **Phase:** P7 ·
+**TODO items:** P7-011 [~]
+**Done:** Implemented the P7-011 candidate without claiming protected completion.
+D39 and migration 0022 bind one winning D38 job to one byte-free policy and one exact
+owner-scoped content-addressed ONNX object. Worker and fixture paths verify the
+bounded canonical bytes, upload under the current lease, recheck authority in the
+serializable success transaction, and prevent duplicate/stale/cancelled attempts
+from materializing. Authenticated `GET /v1/policies/:id/model` cross-checks owner,
+job, admitted model revision, exportable scorecard, tensor, lineage, complete object,
+length, digest, and stored bytes; Studio verifies the retained response again before
+ONNX playback. One Studio action now selects the active admitted model, creates a
+fixture or configured-local job with idempotency, polls it, and loads the retained
+artifact. All 39 required local non-DB gates pass under Python 3.12, including
+gateway 65/65, Studio 9/9 and production build, workers 151/151, generated docs/
+compatibility, native/fresh-WASM parity, packaging, real training/engine/MJX smokes,
+and patch hygiene.
+The first protected data-plane attempt reached the pinned image and exposed that its
+declared non-root UID 100/GID 101 could not write a root-owned empty `/data` mount.
+The follow-up preserves non-root MinIO: CI supplies a UID/GID-owned tmpfs, while
+Compose runs a one-shot volume-permission initializer before the service starts.
+The next exact-head attempt then reached the populated-predecessor matrix and exposed
+that PostgreSQL could not infer the type of job IDs passed only through
+`jsonb_build_object`. The fixtures now cast those bound IDs to text explicitly; the
+migration itself applied cleanly and was not weakened.
+That run passed all 21 populated predecessors and then exposed that the worker's
+`ON CONFLICT (job_id)` did not name the partial-index predicate. Both worker and
+gateway writers now spell `WHERE job_id IS NOT NULL`, so PostgreSQL can infer the
+one-winner index while historical nullable rows remain intentionally outside it.
+The following exact-head run passed the complete P7-011 stale-lease, exact-object,
+cancellation, and substitution proof, then found the same untyped-JSON parameter
+pattern in the downstream user-data 1.3.0 fixture. Its bound `modelId` is now also
+explicitly text-typed so export/deletion acceptance can continue past policy setup.
+**Changed:** D39 and R26; migration 0022 plus populated-predecessor assertions;
+gateway object write/read, transactional policy materialization, policy-model route,
+and user-data export 1.3.0; worker S3-compatible transport/materializer and protected
+PostgreSQL/MinIO acceptance; Studio create/poll/fetch/play flow and substitution
+tests; browser acceptance; exact-digest MinIO Compose/CI services; generated 76-route
+contract documents; compatibility, migration, security, system, roadmap, task,
+project-state, release, lifecycle, governance, and canonical `AGENTS.md` guidance.
+**Decisions:** D39 makes inline policy bytes transient, one job/one policy/object
+authority explicit, and same-origin gateway plus Studio double verification binding.
+**Next:** Push the exact branch, inspect required CI/security plus the retained P7
+policy-delivery and browser evidence, merge
+through protection, verify post-merge checks, and reconcile P7-011 to `[x]` only then.
+**Blockers:** No implementation blocker. The candidate is not complete until the
+isolated protected PostgreSQL/MinIO stale-lease, cancellation-during-upload,
+substitution, exact-readback, and production-browser proof is green and reconciled.
+
 ## 2026-07-15 — Protect the controlled MuJoCo/MJX feasibility foundation
 **Session:** Codex agent · branch `codex/p7010-protected-evidence` · **Phase:** P7/P9 ·
 **TODO items:** P7-010 [~], P9-005 [~]

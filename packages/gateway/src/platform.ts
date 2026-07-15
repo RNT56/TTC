@@ -6,7 +6,7 @@ import {
   withActiveConsents,
 } from "./consent.js";
 import type { CurrentUser } from "./auth.js";
-import type { GatewayDb } from "./db.js";
+import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { GenerationRequest, GenerationResponse } from "./generation.js";
 import type { StoredObjectInspection } from "./objectStorage.js";
 import { MAX_OBJECT_BYTES, assertBoundedJson } from "./security.js";
@@ -150,13 +150,25 @@ export interface PhotoscanArtifactRecord {
 export interface PolicyArtifactRecord {
   id: string;
   ownerUserId: string | null;
+  jobId: string | null;
   modelId: string | null;
   taskKind: string;
   scorecard: unknown;
+  policyMetadata: unknown;
   artifactBlobId: string | null;
   exportGate: string;
   createdAt: string;
 }
+
+export interface PolicyObjectWriteInput {
+  bucket: string;
+  objectKey: string;
+  bytes: Uint8Array;
+  contentType: string;
+  sha256: string;
+}
+
+export type PolicyObjectWriter = (input: PolicyObjectWriteInput) => Promise<StoredObjectInspection>;
 
 export interface ReplayArtifactRecord {
   id: string;
@@ -491,9 +503,11 @@ function mapPhotoscanArtifact(row: {
 function mapPolicyArtifact(row: {
   id: string;
   owner_user_id: string | null;
+  job_id: string | null;
   model_id: string | null;
   task_kind: string;
   scorecard: unknown;
+  policy_metadata: unknown;
   artifact_blob_id: string | null;
   export_gate: string;
   created_at: Date | string;
@@ -501,9 +515,11 @@ function mapPolicyArtifact(row: {
   return {
     id: row.id,
     ownerUserId: row.owner_user_id,
+    jobId: row.job_id,
     modelId: row.model_id,
     taskKind: row.task_kind,
     scorecard: row.scorecard,
+    policyMetadata: row.policy_metadata,
     artifactBlobId: row.artifact_blob_id,
     exportGate: row.export_gate,
     createdAt: nowIso(row.created_at),
@@ -761,6 +777,146 @@ function artifactObjectKey(user: CurrentUser, purpose: string, cacheKey: string)
   const safePurpose = safeObjectSegment(purpose);
   const safeKey = safeObjectSegment(cacheKey);
   return `users/${owner}/${safePurpose}/${safeKey}-${sha256(cacheKey).slice(0, 16)}`;
+}
+
+export const POLICY_DELIVERY_ARTIFACT_VERSION = "0.2.0";
+export const MAX_POLICY_MODEL_BYTES = 4 * 1024 * 1024;
+
+interface PreparedPolicyDelivery {
+  bytes: Uint8Array;
+  byteSize: number;
+  sha256: string;
+  objectKey: string;
+  cacheKey: string;
+  output: Record<string, unknown>;
+}
+
+function strictPolicyBytes(value: unknown): Uint8Array {
+  if (typeof value !== "string" || value.length === 0 || value.length > Math.ceil(MAX_POLICY_MODEL_BYTES / 3) * 4 + 4) {
+    throw Object.assign(new Error("policy output requires bounded inline ONNX bytes for materialization"), {
+      statusCode: 502,
+    });
+  }
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) {
+    throw Object.assign(new Error("policy ONNX bytes are not strict base64"), { statusCode: 502 });
+  }
+  const bytes = Buffer.from(value, "base64");
+  if (bytes.toString("base64") !== value) {
+    throw Object.assign(new Error("policy ONNX bytes are not canonical base64"), { statusCode: 502 });
+  }
+  return bytes;
+}
+
+function preparePolicyDelivery(
+  user: CurrentUser,
+  job: JobRecord,
+  output: Record<string, unknown>,
+): PreparedPolicyDelivery {
+  const onnx = isRecord(output.onnx) ? output.onnx : null;
+  const scorecard = isRecord(output.scorecard) ? output.scorecard : null;
+  const io = isRecord(output.io) ? output.io : null;
+  const tensor = io && isRecord(io.tensor) ? io.tensor : null;
+  if (!onnx || !scorecard || !io || !tensor) {
+    throw Object.assign(new Error("policy output lacks ONNX, scorecard, or tensor authority"), { statusCode: 502 });
+  }
+  const bytes = strictPolicyBytes(onnx.modelBase64);
+  const byteSize = onnx.byteSize;
+  const sha = typeof onnx.sha256 === "string" ? onnx.sha256.toLowerCase() : "";
+  const actualSha = createHash("sha256").update(bytes).digest("hex");
+  if (
+    !Number.isSafeInteger(byteSize)
+    || Number(byteSize) <= 0
+    || Number(byteSize) > MAX_POLICY_MODEL_BYTES
+    || bytes.byteLength !== byteSize
+    || !/^[a-f0-9]{64}$/.test(sha)
+    || actualSha !== sha
+  ) {
+    throw Object.assign(new Error("policy ONNX bytes do not match their bounded size/digest authority"), {
+      statusCode: 502,
+    });
+  }
+
+  const input = isRecord(job.input) ? job.input : {};
+  const snapshot = isRecord(input.modelSnapshot) ? input.modelSnapshot : null;
+  const lineage = isRecord(scorecard.lineage) ? scorecard.lineage : {};
+  const contractHash =
+    (snapshot && typeof snapshot.contractHash === "string" ? snapshot.contractHash : null)
+    ?? (typeof input.contractHash === "string" ? input.contractHash : null)
+    ?? (typeof lineage.contractHash === "string" ? lineage.contractHash : null);
+  const modelId =
+    (snapshot && typeof snapshot.modelId === "string" ? snapshot.modelId : null)
+    ?? modelIdFrom(input);
+  const onnxMetadata = { ...onnx };
+  delete onnxMetadata.modelBase64;
+  const cacheKey = blobCacheKey(user, { sha256: sha });
+  if (!cacheKey) throw Object.assign(new Error("policy object cache authority is missing"), { statusCode: 500 });
+  return {
+    bytes,
+    byteSize: Number(byteSize),
+    sha256: sha,
+    cacheKey,
+    objectKey: defaultObjectKey(user, "policy-onnx", sha),
+    output: {
+      ...output,
+      formatVersion: POLICY_DELIVERY_ARTIFACT_VERSION,
+      onnx: onnxMetadata,
+      delivery: {
+        storage: "s3-compatible-object",
+        objectBacked: true,
+        jobId: job.id,
+        byteSize: Number(byteSize),
+        sha256: sha,
+        modelRevision: { modelId, contractHash },
+      },
+    },
+  };
+}
+
+async function upsertCompletedPolicyBlob(
+  db: GatewayDb,
+  user: CurrentUser,
+  prepared: PreparedPolicyDelivery,
+): Promise<string> {
+  const result = await db.query<{ id: string }>(
+    `INSERT INTO object_blobs (
+       owner_user_id, visibility, cache_key, bucket, object_key,
+       content_type, byte_size, sha256, upload_status, verified_at,
+       verification_error_code, metadata
+     )
+     VALUES ($1, 'private', $2, $3, $4, 'application/octet-stream', $5, $6,
+             'complete', now(), NULL, $7::jsonb)
+     ON CONFLICT (cache_key) DO UPDATE
+     SET verified_at = COALESCE(object_blobs.verified_at, EXCLUDED.verified_at),
+         upload_status = 'complete',
+         verification_error_code = NULL
+     WHERE object_blobs.owner_user_id = EXCLUDED.owner_user_id
+       AND object_blobs.bucket = EXCLUDED.bucket
+       AND object_blobs.object_key = EXCLUDED.object_key
+       AND object_blobs.content_type = EXCLUDED.content_type
+       AND object_blobs.byte_size = EXCLUDED.byte_size
+       AND object_blobs.sha256 = EXCLUDED.sha256
+     RETURNING id`,
+    [
+      user.id,
+      prepared.cacheKey,
+      objectBucket(),
+      prepared.objectKey,
+      prepared.byteSize,
+      prepared.sha256,
+      json({
+        purpose: "policy-onnx",
+        sha256: prepared.sha256,
+        byteSize: prepared.byteSize,
+        formatVersion: POLICY_DELIVERY_ARTIFACT_VERSION,
+      }),
+    ],
+  );
+  if (!result.rows[0]) {
+    throw Object.assign(new Error("policy object digest is already bound to different storage evidence"), {
+      statusCode: 409,
+    });
+  }
+  return result.rows[0].id;
 }
 
 function nestedCacheKey(output: Record<string, unknown>, field: string): string | null {
@@ -1081,7 +1237,8 @@ export async function listPolicyArtifacts(
   limit: number,
 ): Promise<PolicyArtifactRecord[]> {
   const result = await db.query<Parameters<typeof mapPolicyArtifact>[0]>(
-    `SELECT id, owner_user_id, model_id, task_kind, scorecard, artifact_blob_id, export_gate, created_at
+    `SELECT id, owner_user_id, job_id, model_id, task_kind, scorecard, policy_metadata,
+            artifact_blob_id, export_gate, created_at
        FROM policy_artifacts
       WHERE owner_user_id = $1
       ORDER BY created_at DESC
@@ -1089,6 +1246,23 @@ export async function listPolicyArtifacts(
     [user.id, limit],
   );
   return result.rows.map(mapPolicyArtifact);
+}
+
+export async function getOwnedPolicyArtifact(
+  db: GatewayDb,
+  user: CurrentUser,
+  artifactId: string,
+): Promise<PolicyArtifactRecord | null> {
+  const result = await db.query<Parameters<typeof mapPolicyArtifact>[0]>(
+    `SELECT id, owner_user_id, job_id, model_id, task_kind, scorecard, policy_metadata,
+            artifact_blob_id, export_gate, created_at
+       FROM policy_artifacts
+      WHERE id = $1
+        AND owner_user_id = $2
+      LIMIT 1`,
+    [artifactId, user.id],
+  );
+  return result.rows[0] ? mapPolicyArtifact(result.rows[0]) : null;
 }
 
 export async function listReplayArtifacts(
@@ -1200,9 +1374,14 @@ async function assertHardwareGateForJob(
   }
 }
 
-async function materializeJobOutput(db: GatewayDb, user: CurrentUser, job: JobRecord): Promise<void> {
+async function materializeJobOutput(
+  db: GatewayDb,
+  user: CurrentUser,
+  job: JobRecord,
+  options: { writePolicyObject?: PolicyObjectWriter } = {},
+): Promise<Record<string, unknown> | null> {
   const output = isRecord(job.output) ? job.output : null;
-  if (!output || typeof output.artifactKind !== "string") return;
+  if (!output || typeof output.artifactKind !== "string") return null;
   const input = isRecord(job.input) ? job.input : {};
   switch (output.artifactKind) {
     case "photoscan": {
@@ -1231,30 +1410,80 @@ async function materializeJobOutput(db: GatewayDb, user: CurrentUser, job: JobRe
           artifactBlobId,
         ],
       );
-      return;
+      return null;
     }
     case "policy": {
-      const artifactBlobId = await upsertArtifactBlob(db, user, {
-        purpose: "policy-onnx",
-        cacheKey: nestedCacheKey(output, "onnx"),
+      if (!options.writePolicyObject) {
+        throw Object.assign(new Error("policy object storage writer is not configured"), { statusCode: 503 });
+      }
+      const prepared = preparePolicyDelivery(user, job, output);
+      const inspection = await options.writePolicyObject({
+        bucket: objectBucket(),
+        objectKey: prepared.objectKey,
+        bytes: prepared.bytes,
         contentType: "application/octet-stream",
-        metadata: { jobId: job.id, artifactKind: "policy" },
+        sha256: prepared.sha256,
       });
-      await db.query(
+      if (
+        inspection.byteSize !== prepared.byteSize
+        || inspection.contentType !== "application/octet-stream"
+        || inspection.sha256?.toLowerCase() !== prepared.sha256
+      ) {
+        throw Object.assign(new Error("policy object storage did not confirm exact bytes, type, and checksum"), {
+          statusCode: 503,
+        });
+      }
+      const artifactBlobId = await upsertCompletedPolicyBlob(db, user, prepared);
+      const provisionalOutput = {
+        ...prepared.output,
+        delivery: {
+          ...(isRecord(prepared.output.delivery) ? prepared.output.delivery : {}),
+          artifactBlobId,
+        },
+      };
+      const inserted = await db.query<{ id: string }>(
         `INSERT INTO policy_artifacts (
-           owner_user_id, model_id, task_kind, scorecard, artifact_blob_id, export_gate
+           owner_user_id, job_id, model_id, task_kind, scorecard, policy_metadata,
+           artifact_blob_id, export_gate
          )
-         VALUES ($1, $2, $3, $4::jsonb, $5, $6)`,
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)
+         ON CONFLICT (job_id) WHERE job_id IS NOT NULL DO NOTHING
+         RETURNING id`,
         [
           user.id,
+          job.id,
           modelIdFrom(input),
           isRecord(output.task) && typeof output.task.id === "string" ? output.task.id : "fixture",
           json(output.scorecard ?? {}),
+          json(provisionalOutput),
           artifactBlobId,
           isRecord(output.scorecard) && output.scorecard.exportable === true ? "exportable" : "blocked",
         ],
       );
-      return;
+      const policyArtifactId = inserted.rows[0]?.id;
+      if (!policyArtifactId) {
+        throw Object.assign(new Error("training job already owns a policy artifact"), { statusCode: 409 });
+      }
+      const persistedOutput = {
+        ...provisionalOutput,
+        delivery: {
+          ...(isRecord(provisionalOutput.delivery) ? provisionalOutput.delivery : {}),
+          policyArtifactId,
+        },
+      };
+      await db.query(
+        `UPDATE policy_artifacts
+            SET policy_metadata = $2::jsonb
+          WHERE id = $1 AND owner_user_id = $3 AND job_id = $4`,
+        [policyArtifactId, json(persistedOutput), user.id, job.id],
+      );
+      await db.query(
+        `UPDATE jobs
+            SET output = $2::jsonb
+          WHERE id = $1 AND owner_user_id = $3 AND status = 'succeeded'`,
+        [job.id, json(persistedOutput), user.id],
+      );
+      return persistedOutput;
     }
     case "telemetry-replay":
       await db.query(
@@ -1267,7 +1496,7 @@ async function materializeJobOutput(db: GatewayDb, user: CurrentUser, job: JobRe
           json({ sharing: "private" }),
         ],
       );
-      return;
+      return null;
     case "wear-estimate":
     case "crash-forensics":
     case "repair-sheet": {
@@ -1289,10 +1518,10 @@ async function materializeJobOutput(db: GatewayDb, user: CurrentUser, job: JobRe
           json(output),
         ],
       );
-      return;
+      return null;
     }
     default:
-      return;
+      return null;
   }
 }
 
@@ -2038,6 +2267,10 @@ type CreateJobInput = {
   idempotencyKey?: string | null;
 };
 
+export interface CreateJobOptions {
+  writePolicyObject?: PolicyObjectWriter;
+}
+
 function jobTimeoutSeconds(input: CreateJobInput): number {
   const defaults: Partial<Record<JobKind, number>> = {
     "commerce.vendor-refresh": 120,
@@ -2100,6 +2333,7 @@ export async function createJob(
   db: GatewayDb,
   user: CurrentUser,
   input: CreateJobInput,
+  options: CreateJobOptions = {},
 ): Promise<JobRecord> {
   assertBoundedJson(input.payload ?? {}, "job payload", {
     maxBytes: 512 * 1024,
@@ -2136,15 +2370,29 @@ export async function createJob(
       requirements.push({ purpose: "training.reuse", subjectKind: "telemetry-log", subjectId });
     }
   }
-  return requirements.length > 0
-    ? withActiveConsents(db, user, requirements, (transaction) => createJobUnchecked(transaction, user, input))
-    : createJobUnchecked(db, user, input);
+  if (requirements.length > 0) {
+    return withActiveConsents(
+      db,
+      user,
+      requirements,
+      (transaction) => createJobUnchecked(transaction, user, input, options),
+    );
+  }
+  if (input.kind === "train.policy" && (input.provider ?? "fixture") === "fixture") {
+    return withGatewayTransaction(
+      db,
+      { isolation: "serializable" },
+      (transaction) => createJobUnchecked(transaction, user, input, options),
+    );
+  }
+  return createJobUnchecked(db, user, input, options);
 }
 
 async function createJobUnchecked(
   db: GatewayDb,
   user: CurrentUser,
   input: CreateJobInput,
+  options: CreateJobOptions,
 ): Promise<JobRecord> {
   const provider = input.provider ?? "fixture";
   if (isRecord(input.payload) && Object.hasOwn(input.payload, "modelSnapshot")) {
@@ -2304,7 +2552,8 @@ async function createJobUnchecked(
   }
   const job = mapJob(result.rows[0]);
   if (result.rows[0].inserted) {
-    await materializeJobOutput(db, user, job);
+    const persistedOutput = await materializeJobOutput(db, user, job, options);
+    return persistedOutput ? { ...job, output: persistedOutput } : job;
   }
   return job;
 }

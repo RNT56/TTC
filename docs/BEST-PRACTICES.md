@@ -103,6 +103,16 @@ never block the render loop, and zero/stop on any observation or inference failu
 Fixture tasks without real executable bytes stay held rather than gaining a fake
 export path.
 
+Treat inline policy bytes as transient producer transport, never persisted product
+state. Verify the D38 lease immediately before upload, write a bounded exact
+content-addressed object under the owner's prefix, then use one transaction to
+recheck the lease, mark the job successful, and materialize one job-bound policy
+whose metadata contains no bytes. Recheck storage metadata and streamed bytes at the
+authenticated same-origin gateway, then let Studio independently verify length and
+digest before runtime creation. Cancellation during upload may leave an unreferenced
+object but must never create database authority; reconcile and delete such objects
+through the bounded OPS-006 operator path rather than weakening the lease fence.
+
 ## 6. Testing pyramid
 
 1. **Unit** — math, geometry, schema validators (mass properties vs analytic solids,

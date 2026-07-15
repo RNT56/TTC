@@ -114,17 +114,22 @@ live provider artifact audit.
   explicit per-model opt-in; no marketplace default, geometry, or attribution is
   inferred. Withdrawal removes the contributed retrieval row.
 
-Implementation evidence (2026-07-13, `SEC-003..005`): authenticated user-data export
-1.2.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+Implementation evidence (2026-07-13, `SEC-003..005`, extended by P7-011):
+authenticated user-data export 1.3.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
 session/verification tokens, and provider keys are excluded. Exact-confirmation
 account deletion locks the owner, explicitly removes content that `SET NULL` would
 orphan, deletes S3-compatible payloads before commit, and returns a versioned receipt
-only after both stores succeed. Version 1.2 adds redacted hold history and backup-copy
-status without operator authority/evidence references. Populated Postgres and MinIO
-upload/delete/404 proof pass locally.
+only after both stores succeed. Version 1.2 added redacted hold history and backup-
+copy status without operator authority/evidence references. Version 1.3 adds the
+authoritative policy job binding and byte-free delivery metadata; it never embeds
+the retained ONNX payload. That payload remains owner-scoped behind the authenticated
+same-origin policy route, so browser code receives neither cross-origin object-store
+credentials nor a durable inline copy. Populated Postgres and MinIO upload/delete/
+404 proof pass locally; the P7-011 protected policy-delivery proof remains required
+before its candidate is called complete.
 
 Consent ledger 1.0.0 records immutable grants and withdrawals separately for
 photoscan processing, telemetry sharing, pattern contribution, leaderboard

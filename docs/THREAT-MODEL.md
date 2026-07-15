@@ -344,6 +344,24 @@ Downloads are forced as attachments with `application/octet-stream` to prevent a
 content rendering. Metadata registration validates purpose, MIME, safe integer size,
 owner scope, and bounded metadata.
 
+Policy delivery has a separate worker-owned write path with a 4 MiB ceiling. Canonical
+base64 is decoded only in transient process memory; exact byte length and SHA-256
+select an owner-scoped content-addressed key. The worker checks its unexpired D38
+lease before upload and again in the serializable success transaction. A unique
+job-to-policy constraint plus the lease fence prevents duplicate or stale attempts
+from gaining product authority. Cancellation during the upload can leave an
+unreferenced object, but no `object_blobs` or `policy_artifacts` authority; OPS-006
+must inventory and delete such bounded orphans without treating them as user data.
+
+`GET /v1/policies/:id/model` is authenticated and owner-scoped. Before streaming, the
+gateway cross-checks the completed object declaration, job/model revision,
+scorecard/export gate, tensor header, lineage, size, digest, and byte-free delivery
+metadata, then rehashes the bounded stored bytes. The response is same-origin,
+non-cacheable octet-stream with exact length and checksum; Studio rechecks both before
+creating an ONNX session. Cross-owner IDs resolve as not found, and object-store
+credentials, URLs, and inline model bytes never enter persisted metadata or the user-
+data export.
+
 The current surface rejects archive MIME/name classes and does not extract uploaded
 archives. Future import must use a separate quarantine service with compressed and
 expanded quotas, exact allowed formats, entry-count/path/link/device checks, malware
