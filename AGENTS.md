@@ -167,6 +167,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   honestly non-exportable at a zero success score. Overnight passing hover/waypoint
   proof, object-backed one-click delivery, deployed Modal/GPU evidence, broader
   archetypes, and external acceptance remain open under separate tasks;
+- P7-010 now has a controlled feasibility runner that compiles the admitted hover
+  snapshot through Rust, compares native multithreaded MuJoCo 3.9.0 with exact
+  MuJoCo-MJX 3.9.0/JAX 0.10.2 under one frozen float64 protocol, and emits a
+  source/request/contract/MJCF/runtime/hardware-bound report. This reference CPU row
+  is deliberately decision-ineligible: exact D12 quad/rover/legged, declared
+  accelerator, overnight/tier-2 budget, cost, clean protected evidence, and the
+  existing 3x cost-normalized rule still own the adoption decision;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
@@ -536,7 +543,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Simulation engine/exporter | `cargo test -p forge-sim -p forge-validate`; `pnpm sim:parity:check`; for engine/exporter changes install `workers[dev,mujoco]` and run `pnpm sim:parity:live`; inspect source/provider/unit/timestep/substep-bound artifacts; append-only golden review for registered output; require the real-engine worker check before closure |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
-| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |
+| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |

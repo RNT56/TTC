@@ -18,6 +18,42 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Establish the controlled MuJoCo/MJX benchmark boundary
+**Session:** Codex agent · branch `codex/p7010-mjx-benchmark` · **Phase:** P7/P9 ·
+**TODO items:** P7-010 [~], P9-005 [~]
+**Done:** Implemented the first real, deliberately decision-ineligible P7-010
+measurement path. A strict `mjxBenchmarkRequest` 1.0.0 freezes the admitted hover
+snapshot, canonical request/source hashes, exact NumPy 2.5.1, MuJoCo/MuJoCo-MJX
+3.9.0, JAX/JAXLIB 0.10.2, float64, one SI-unit perturbation protocol, and identical
+solver/timestep/controls. The native command compiles through sovereign Rust truth,
+warms both engines, separates JAX lowering/compilation, synchronizes every timed
+pytree, compares native multithreaded MuJoCo with batched MJX, checks absolute qpos/
+qvel bands, and emits a source/request/contract/MJCF/runtime/hardware-bound
+`mjx-benchmark` 1.0.0 report. The central policy now distinguishes missing evidence
+from failed evidence and requires clean source, declared accelerator, budget, and
+cost authority for controlled/sandbox/live rows. A real dirty-checkout Apple ARM CPU
+run measured roughly 822k native MuJoCo versus 121k CPU-MJX steps/s with float64
+parity errors around `1e-11`; it correctly blocked adoption. All 146 worker tests and
+15 focused MJX tests pass under Python 3.12, including finite-number refusal,
+direct-checkout binding, and eligible-adopt/eligible-reject outcomes that remain
+distinct from missing evidence. The complete repository gate passes all
+39 required local steps, including the real seeded training smoke, the new real MJX
+feasibility smoke, native/fresh-WASM parity, release packaging, and patch hygiene;
+the exact expanded Python environment also passes the pinned advisory audit.
+**Changed:** Native MJX command and smoke wrapper; central decision policy and tests;
+exact optional dependencies; required local/CI smoke and retained evidence artifact;
+security audit installation; compatibility, learning, worker, best-practice, agent,
+phase/execution, task, project-state, and changelog documentation.
+**Decisions:** none. The existing P7-010 CPU-need + parity + 3x cost-normalized rule
+remains binding. Internal evidence envelope 1.0.0 freezes the controlled protocol;
+measured benchmark output is not a golden.
+**Next:** Publish through protected CI/security, inspect the retained clean-source
+artifact, then acquire exact D12 quad/rover/legged models and declared GPU/budget/
+cost evidence before making the adoption decision.
+**Blockers:** none for the controlled harness. The D12 rover/legged training-ready
+contracts and declared accelerator/cost/overnight evidence are prerequisites for
+finishing P7-010, not reasons to weaken or close it from this reference CPU run.
+
 ## 2026-07-15 — Protect the seeded SB3/MuJoCo training runtime
 **Session:** Codex agent · branch `codex/p7003-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-003 [x], P7-011..014 [ ]

@@ -151,6 +151,18 @@ checker must agree on both exact versions. These remain internal schemas; exposi
 either as a public API or independently published artifact requires an explicit
 compatibility-surface promotion, migration policy, fixtures, and release notes.
 
+P7-010's controlled benchmark adds internal required-CI evidence envelopes
+`mjxBenchmarkRequest` 1.0.0 and `mjx-benchmark` 1.0.0 without changing a public or
+queued worker artifact. Request v1 freezes the admitted snapshot/hash, exact runtime
+pins, source revision, clean-checkout marker, SI perturbation scales, batch/rollout
+shape, float64 requirement, solver, iterations, repetitions, and canonical request
+digest. Result v1 may gain additive measurements or nonclaims, but changing required
+morphologies, units, parity meanings, CPU-need rule, 3x cost-normalized threshold, or
+decision eligibility is a major change. These measured artifacts are not goldens and
+must not be re-pinned as deterministic expectations. External publication first
+requires compatibility-surface promotion, old/current/unsupported fixtures,
+migration/deprecation guidance, and release notes.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

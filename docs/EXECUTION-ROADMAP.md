@@ -317,10 +317,15 @@ Work:
   than reopening the completed phase exit;
 - P7 real SB3/MuJoCo pipeline, offline learning, and MJX decision (`P7-003`,
   `P7-009`..`P7-014`, `EXT-003`); P7-003 is protected through PR #64/`d1c4c38`
-  and P7-008 through PR #62/`1de7974`. Next close one-click object delivery
+  and P7-008 through PR #62/`1de7974`. P7-010's controlled CPU reference runner
+  now owns the frozen request, real-engine comparison, parity bands, timing method,
+  and fail-closed decision report; it is harness feasibility, not D12 adoption
+  evidence. Next close one-click object delivery
   (`P7-011`), overnight passing hover/waypoint evidence (`P7-012`), deployed GPU
   operations (`P7-013`), broader real tasks (`P7-014`), offline fine-tuning
-  (`P7-009`), the D12 MJX decision (`P7-010`), and external acceptance;
+  (`P7-009`), then run exact D12 quad/rover/legged on a declared accelerator with
+  CPU overnight/tier-2 budgets and cost evidence to finish the MJX decision
+  (`P7-010`), and external acceptance;
 - P9 live optimizer and multi-fidelity ladder (`P9-002`, `P9-003`, conditional
   `P9-005`);
 - provider reliability, cost, data-retention, and artifact-integrity work from

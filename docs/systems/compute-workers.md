@@ -157,6 +157,18 @@ requires D12 quad, D12 rover, and legged coverage, then adopts MJX only when CPU
 MuJoCo/SB3 needs help, parity stays inside frozen bands, and cost-normalized
 throughput is at least 3x.
 
+The repository also owns a native controlled command,
+`python -m forge_workers.mjx_benchmark`, and the required
+`pnpm sim:mjx:feasibility` wrapper. It reuses the admitted-model/Rust training-bundle
+authority, exact-pins MuJoCo/MuJoCo-MJX 3.9.0 plus NumPy 2.5.1 and JAX/JAXLIB 0.10.2,
+compares native multithreaded MuJoCo with synchronized JIT-compiled MJX over one
+frozen float64 batched protocol, and records source/request/contract/MJCF/runtime/
+hardware identity with measured parity and throughput. Its only morphology is the
+controlled `p7-hover-multirotor` reference on the available backend. The report must
+remain decision-ineligible until clean protected D12 quad/rover/legged accelerator,
+overnight/tier-2 budget, and cost evidence exists; a CPU feasibility run never
+promotes this command into a deployed GPU worker.
+
 Protected through PR #64/`d1c4c38` on 2026-07-15: the repository supplies a native
 `FORGE_SB3_TRAIN_CMD` target rather than only an injection hook. The gateway freezes
 an owned admitted contract as `forge-admitted-model-snapshot` 1.0.0; the worker
@@ -169,6 +181,12 @@ exact-pinned to NumPy 2.5.1, Gymnasium 1.3.0, PyTorch 2.13.0, Stable-Baselines3
 2.9.0, ONNX 1.22.0, and MuJoCo 3.9.0. Required CI runs both the complete worker suite
 and a tiny clean-source training smoke; that smoke is runtime proof, not a passing
 policy or overnight-SLO claim.
+
+Required CI installs the separate `mjx` extra, runs the complete worker suite, then
+retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
+pin drift, non-float64 JAX, request/source/hash drift, non-finite state, parity-band
+failure, missing measurements, or accidental decision eligibility. The artifact is
+measured evidence, not a committed golden.
 
 The optional Modal app profiles `train.policy` for SB3/MuJoCo/ONNX dependencies and
 `codesign.evaluate` for MuJoCo/Optuna plus the live co-design/parity/MJX command

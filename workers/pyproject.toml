@@ -21,9 +21,17 @@ training = [
   "onnx==1.22.0",
   "mujoco==3.9.0",
 ]
+mjx = [
+  "numpy==2.5.1",
+  "mujoco==3.9.0",
+  "mujoco-mjx==3.9.0",
+  "jax==0.10.2",
+  "jaxlib==0.10.2",
+]
 # Heavy runtime stacks stay out of the default worker install. The parity extra
-# and P7 training extra pin reviewed runtimes exactly; geometry and other GPU
-# stacks remain per-family image dependencies with their own reviewed pins.
+# and P7 training/MJX extras pin reviewed direct runtimes exactly; geometry and
+# other GPU stacks remain per-family image dependencies with their own reviewed
+# pins.
 
 [tool.setuptools.packages.find]
 include = ["forge_workers*"]
