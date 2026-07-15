@@ -18,6 +18,35 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Protect the controlled MuJoCo/MJX feasibility foundation
+**Session:** Codex agent · branch `codex/p7010-protected-evidence` · **Phase:** P7/P9 ·
+**TODO items:** P7-010 [~], P9-005 [~]
+**Done:** Protected the deliberately decision-ineligible P7-010 foundation through
+PR #66. Exact head `f72ef09` passed PR CI `29398735858` and security `29398735849`;
+protected squash `0614272` passed post-merge CI `29399434491` and security
+`29399434519`. The protected worker ran all 146 tests, seeded training, real engine
+parity, and the controlled MJX benchmark under exact dependencies. Downloaded
+artifact `8337556569` self-binds to clean `0614272`, request SHA-256
+`0d4bc68489bcb8fa44a17e193e3db918f022065b74221ff8aceed6b24ee73fc0`, the
+admitted contract/MJCF, exact Python 3.12.13, NumPy 2.5.1, MuJoCo/MuJoCo-MJX 3.9.0,
+JAX/JAXLIB 0.10.2, and GitHub's 4-CPU x86_64 runner. Native multithreaded MuJoCo
+measured 268,902 steps/s versus CPU-backed MJX at 54,698 steps/s. Float64 parity
+passed with qpos/qvel absolute errors `3.42e-12`/`2.00e-11`; the artifact JSON hashes
+to `d02a5820c21fd6d4640d1192b84c48c985db3341c96ca926e0ad89c688d6a7db`.
+**Changed:** Canonical agent current boundary; project-state anchors, counts, and
+evidence table; P7 phase/execution roadmap; stable P7-010 ledger; and this changelog.
+No runtime code, format, threshold, golden, or maturity claim changed in this
+evidence reconciliation.
+**Decisions:** none. The existing CPU-need + parity + at least 3x cost-normalized
+throughput rule remains binding. A clean CPU/reference row validates the harness; it
+cannot authorize MJX adoption, rejection, or P9 batching.
+**Next:** Close P7-011's object-backed one-click policy delivery, then acquire exact
+D12 quad/rover/legged models, declared accelerator hardware, CPU overnight/tier-2
+budgets, and cost evidence before finishing P7-010 or enabling P9-005.
+**Blockers:** none for the protected foundation. D12 rover/legged training-ready
+contracts and declared accelerator/budget/cost evidence remain prerequisites for the
+owning final decision.
+
 ## 2026-07-15 — Establish the controlled MuJoCo/MJX benchmark boundary
 **Session:** Codex agent · branch `codex/p7010-mjx-benchmark` · **Phase:** P7/P9 ·
 **TODO items:** P7-010 [~], P9-005 [~]
