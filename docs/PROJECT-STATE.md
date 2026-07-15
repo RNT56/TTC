@@ -3,13 +3,14 @@
 Snapshot date: **2026-07-15**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected runtime descendant: `8e094c0` (PR #72; P7-012 learning quality)
+Latest verified protected runtime descendant: `6bfa60f` (PR #73; P7-012 retained evidence)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
 P7-011 policy-delivery evidence anchor: `9131289` (PR #68)
 P7-014 waypoint-training evidence anchor: `f220d25` (PR #70)
-P7-012 consumer-hardware evidence anchor: `8e094c0` (PR #72)
+P7-012 implementation anchor: `8e094c0` (PR #72)
+P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
 QA-002 browser-builder evidence anchor: `c80accb` (PR #38)
 QA-010 external-acceptance evidence anchor: `8708de7` (PR #40)
@@ -170,8 +171,8 @@ non-exportable. This satisfies D40's executable waypoint prerequisite for P7-012
 it does not prove overnight learning quality, consumer-GPU economics, deployed GPU
 operations, rover/legged coverage, external acceptance, or field transfer.
 
-P7-012 is closed at controlled consumer-hardware simulation maturity through PR #72.
-D42 advances the
+P7-012 is closed at controlled consumer-hardware simulation maturity through the
+PR #72 implementation and PR #73 retained-evidence closeout. D42 advances the
 current executable boundary to `forge-policy-tensor` 2.0.0 `[1,14]`,
 `trainingMuJoCoBundle` 2.0.0, and `p7-v3`/3.0.0, correcting the under-observed
 position policy, Forge Y-up angular-axis order, raw-torque/hover-trim mismatch, and
@@ -180,9 +181,12 @@ execution. A frozen estimator-only controller-distillation plus conservative
 randomized-PPO recipe passes unchanged scorecard gates at seeds 1201/1207:
 both hover-hold and waypoint-chain score 1.0 baseline and 1.0 for mass +15%, Kv -8%,
 and wind 4 m/s. Exact head `1bce0d1` passed PR CI `29425066833` and security
-`29425066479`; protected `8e094c0` passed post-merge CI `29426237373` and security
-`29426237345`. From a clean protected checkout, the evidence command intentionally
-stopped after atomically retaining hover, then resumed by validating the frozen
+`29425066479`; protected implementation `8e094c0` passed post-merge CI
+`29426237373` and security `29426237345`. Evidence head `ecc83d0` passed PR CI
+`29428754530` and security `29428751871`; protected evidence `6bfa60f` passed
+post-merge CI `29429475932` and security `29429476183`. From a clean protected
+checkout, the evidence command intentionally stopped after atomically retaining
+hover, then resumed by validating the frozen
 request, byte count, SHA-256, and export gate before executing waypoint. The hover
 task took 30.203 s and retained a 78,152-byte ONNX at SHA-256 `9afc1152…fc4c`;
 waypoint took 10.340 s and retained 78,156 bytes at `b07b023a…b1a2`. All JSON/ONNX
@@ -197,7 +201,7 @@ cost is null. This is not deployed GPU, external-user, real-device, or field pro
 
 | Check | Result | Interpretation |
 |---|---|---|
-| Git state | latest verified protected runtime descendant is P7-012 anchor `8e094c0`; P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #72 exact head `1bce0d1` passed CI `29425066833`/security `29425066479`; protected squash `8e094c0` passed post-merge CI `29426237373`/security `29426237345`. Earlier P7 anchors retain their owning evidence |
+| Git state | latest verified protected runtime descendant is P7-012 retained-evidence anchor `6bfa60f`; implementation anchor `8e094c0`, P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, DOC-006 evidence `484aefa`, QA-012 parity anchor `6f8509b`, QA-007 anchor `e89bb15`, QA-005 anchor `7970005`, QA-004 anchor `e362c54`, QA-003 anchor `9c1802b`, QA-008 anchor `2589503`, and QA-010 anchor `8708de7` remain green; annotated `v0.1.0` published | PR #72 exact implementation head `1bce0d1` passed CI `29425066833`/security `29425066479`; protected implementation `8e094c0` passed CI `29426237373`/security `29426237345`. PR #73 exact evidence head `ecc83d0` passed CI `29428754530`/security `29428751871`; protected evidence `6bfa60f` passed CI `29429475932`/security `29429476183` |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 39 current gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; PR #70 exact-head and protected security both pass with the exact training/MJX/waypoint and policy-delivery runtime audit |
 | `pnpm verify` | P7-012 exact head passes all 39 required non-DB gates locally under Python 3.12; PR and protected required remote checks are green | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 12 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 163 worker tests, dual-task training plus engine/MJX smokes, and patch hygiene; protected CI `29426237373` also passes the 22-migration Postgres/MinIO/browser acceptance |
@@ -216,7 +220,7 @@ cost is null. This is not deployed GPU, external-user, real-device, or field pro
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
 | P7-011 authoritative policy delivery | complete through PR #68/`9131289`; exact-head and post-merge CI/security pass, and artifact `8340587390` is clean source/checkout-bound controlled S3-compatible evidence | two attempts yield one exact object/policy with no inline persistence; stale upload and digest substitution fail closed; cancellation creates no database authority; authenticated same-origin exact readback executes through the Rust estimator/motion browser boundary. Production object-store durability/SLO and OPS-006 orphan cleanup remain open |
 | P7-014 waypoint trainer | protected through PR #70/`f220d25`; exact-head and post-merge CI/security pass, and artifact `8342801418` is clean source/task/runtime-bound dual-task evidence | task v2/Y-up/hash authority, sequential estimator-only waypoint transitions, full-chain evaluation, task-bound PPO/SAC/ONNX/scorecard/provider output, Studio target-chain playback, reproducibility, and refusals are protected. P7-012 is now closed; the rover/legged remainder of P7-014 remains open |
-| P7-012 protected learning quality | complete through PR #72/`8e094c0`; clean intentional-interruption/resume evidence retains exact JSON and ONNX under `docs/evidence/p7-012/` | hover and waypoint each pass 1.0 baseline and mass/Kv/wind on the declared M2 Pro host under frozen seeds/runtime/thresholds. Exact CPU authority, recovery, bytes, hardware, task/runtime/source lineage, unmeasured host-energy upper bounds, zero provider cost, and null electricity cost are retained; deployed GPU, external-user, device, and field proof remain open |
+| P7-012 protected learning quality | implementation protected through PR #72/`8e094c0`; retained evidence protected through PR #73/`6bfa60f` | clean intentional interruption/resume retains exact JSON and ONNX under `docs/evidence/p7-012/`; hover and waypoint each pass 1.0 baseline and mass/Kv/wind on the declared M2 Pro host under frozen seeds/runtime/thresholds. Exact CPU authority, recovery, bytes, hardware, task/runtime/source lineage, unmeasured host-energy upper bounds, zero provider cost, and null electricity cost are retained; deployed GPU, external-user, device, and field proof remain open |
 | Postgres/pgvector gate | pass on protected P7-012 CI `29426237373` for 22 migrations | the clean plus 21 populated-predecessor matrix, migration 0022 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
@@ -560,7 +564,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Directly push ordinary work to `main` | **No-go by policy** | active ruleset requires a current PR and exact checks |
 | Publish validator v0.1 | **Complete** | protected-main and tag workflows, annotated tag, nine assets, checksums/SPDX/provenance, and post-publication binary/WASM verification are green |
 | Claim deterministic Brief-25 threshold | **Go** | current local result is 25/25 |
-| Claim P7-012 protected overnight learning quality | **Go at controlled consumer-hardware simulation maturity** | PR #72/protected `8e094c0` and exact retained interrupt/resume evidence pass; do not restate this as deployed GPU, measured host energy, external-user, device, or field proof |
+| Claim P7-012 protected overnight learning quality | **Go at controlled consumer-hardware simulation maturity** | PR #72/protected `8e094c0` owns the implementation and PR #73/protected `6bfa60f` owns the exact retained interrupt/resume evidence; do not restate this as deployed GPU, measured host energy, external-user, device, or field proof |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
 | Enable live provider billing | **No-go** | provider, recovery, cost, and privacy evidence incomplete |

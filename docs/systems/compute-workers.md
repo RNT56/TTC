@@ -199,7 +199,8 @@ blocked scorecards. Clean artifact `8342801418` binds them to exact protected so
 This historical artifact is controlled CPU runtime proof, not P7-012's later
 overnight learning quality, deployed GPU operations, or broader-archetype closure.
 
-P7-012 is protected through PR #72/`8e094c0` and advances new jobs to `p7-v3`/3.0.0 and tensor
+P7-012's implementation is protected through PR #72/`8e094c0` and its retained
+evidence through PR #73/`6bfa60f`. It advances new jobs to `p7-v3`/3.0.0 and tensor
 2.0.0. The worker fixes Forge Y-up angular-axis decomposition, exposes estimator-
 derived body velocity, interprets policy outputs as normalized flight targets around
 contract hover trim, and binds the inner loop and reward into the task definition.
@@ -368,7 +369,7 @@ versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
 SB3/MuJoCo hover runtime is protected through PR #64. P7-012's tensor-v2/task-v3
 implementation and clean protected scorecard-passing evidence are closed through PR
-#72/`8e094c0`; deployed Modal/GPU runs,
+#72/`8e094c0` and evidence PR #73/`6bfa60f`; deployed Modal/GPU runs,
 and offline-RL fine-tuning remain open. P7-011 durable delivery is protected through
 PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
 uploads one exact owner content-addressed object under the current D38 lease, and

@@ -151,7 +151,8 @@ Current Wave 1/2 boundary:
   maintainer-only curation, assignment/reassignment, sensitive-authority exclusions,
   seed issues, and all public/agent entry surfaces have exact PR/post-merge proof;
   open seed issues do not substitute for an external contributor outcome;
-- P7-012 is closed through PR #72/protected `8e094c0`. D42's tensor-v2/bundle-v2/
+- P7-012's implementation is closed through PR #72/protected `8e094c0` and its
+  retained evidence through PR #73/protected `6bfa60f`. D42's tensor-v2/bundle-v2/
   task-v3 semantics, exact tensor-v1 reads, frozen estimator-only distillation plus
   randomized-PPO recipe, and interruption/resume/tamper evidence are protected.
   Clean evidence under `docs/evidence/p7-012/` binds both passing tasks to the exact
@@ -343,8 +344,9 @@ Work:
   a contract-derived sequential environment, estimator-only target transitions,
   task-bound scorecard/export/Studio playback, deterministic dual-task smoke, and
   unsupported-shape/provider-drift refusal. Clean artifact `8342801418` satisfies
-  that prerequisite. P7-012 is closed through PR #72/protected `8e094c0`; its clean
-  intentional-interruption/resume evidence retains both scorecard-passing policies
+  that prerequisite. P7-012 implementation/evidence is closed through PR
+  #72/`8e094c0` and PR #73/`6bfa60f`; its clean intentional-interruption/resume
+  evidence retains both scorecard-passing policies
   under exact D42/D43 authority. Next complete remaining rover
   and legged real tasks (`P7-014`), offline fine-tuning (`P7-009`), exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence

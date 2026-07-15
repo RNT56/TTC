@@ -203,16 +203,20 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   and retains two valid, correctly non-exportable task-bound ONNX policies. D40's
   prerequisite for P7-012 is satisfied; rover/legged real trainers remain open under
   P7-014;
-- P7-012 is closed at controlled consumer-hardware simulation maturity through PR
-  #72 and protected `8e094c0`. It advances current multirotor training to D42
-  policy tensor 2.0.0 `[1,14]`, `trainingMuJoCoBundle` 2.0.0, and
+- P7-012 is closed at controlled consumer-hardware simulation maturity. PR #72 and
+  protected `8e094c0` own the executable implementation; PR #73 and protected
+  `6bfa60f` own the retained JSON/ONNX evidence. It advances current multirotor
+  training to D42 policy tensor 2.0.0 `[1,14]`, `trainingMuJoCoBundle` 2.0.0, and
   `p7-v3`/3.0.0 while retaining an executable tensor-v1 observer/ONNX oracle. It
   fixes Forge Y-up angular-axis order, adds estimator body velocity, interprets
   normalized flight targets around contract hover trim, freezes an estimator-only
   distillation plus randomized-PPO curriculum, and adds atomic interruption/resume/
   tamper-checked evidence. Exact head `1bce0d1` passed PR CI `29425066833` and
-  security `29425066479`; protected CI `29426237373` and security `29426237345`
-  pass. From a clean protected checkout, an intentional post-hover interruption and
+  security `29425066479`; protected implementation CI `29426237373` and security
+  `29426237345` pass. Evidence head `ecc83d0` passed CI `29428754530` and security
+  `29428751871`; protected evidence `6bfa60f` passed CI `29429475932` and security
+  `29429476183`. From a clean protected checkout, an intentional post-hover
+  interruption and
   validated resume retained the exact hover/waypoint JSON and ONNX files under
   `docs/evidence/p7-012/`; both score 1.0 baseline and every mass/Kv/wind robustness
   row. All 163 worker tests and 12 Studio runtime tests pass. D43 selects CPU

@@ -139,8 +139,9 @@ only for bounded safety termination and never enters policy observation or targe
 authority. Evaluation records baseline, mass +15 %, Kv -8 %, and 4 m/s wind
 scenarios; waypoint success requires the complete chain, not a partial success
 fraction. Protected PR #70 and clean artifact `8342801418` establish a controlled
-CPU runtime for both multirotor tasks. PR #72/protected `8e094c0` adds a
-frozen `p7-overnight-v1` curriculum: estimator-only deterministic-controller
+CPU runtime for both multirotor tasks. PR #72/protected `8e094c0` adds the
+implementation and PR #73/protected `6bfa60f` retains its clean evidence. The
+frozen `p7-overnight-v1` curriculum uses estimator-only deterministic-controller
 distillation followed by conservative randomized PPO, eight held-out episodes per
 baseline/mass/Kv/wind row, exact source/runtime/hardware lineage, resumable atomic
 task checkpoints, retained ONNX bytes, and a separate host-energy upper bound. Clean

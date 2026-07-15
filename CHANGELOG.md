@@ -18,6 +18,27 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Reconcile the protected P7-012 evidence anchor
+**Session:** Codex agent · branch `codex/p7012-evidence-reconcile` · **Phase:** P7 ·
+**TODO items:** P7-012 [x], P7-014 [~]
+**Done:** Reconciled P7-012's implementation and retained-evidence authorities after
+both protected changes completed. PR #72 exact implementation head `1bce0d1` passed
+CI `29425066833` and security `29425066479`; protected implementation squash
+`8e094c0` passed post-merge CI `29426237373` and security `29426237345`. PR #73 exact
+evidence head `ecc83d0` passed CI `29428754530` and security `29428751871`; protected
+evidence squash `6bfa60f` passed post-merge CI `29429475932` and security
+`29429476183`. The canonical current-state surfaces now distinguish the executable
+implementation source from the later protected commit that actually retains the
+clean interruption/resume JSON, ONNX, and hash manifest.
+**Changed:** Canonical agent boundary; project state, roadmap, TODO, execution
+sequencing, learning/worker/Studio system guidance, and this changelog.
+**Decisions:** none; this is an evidence-lineage correction under existing D42/D43.
+**Next:** Complete P7-014's rover and legged trainers with contract-derived authority,
+estimator-only observations, task/tensor compatibility, scorecards, deterministic
+smoke, export integrity, and explicit unsupported-shape refusals.
+**Blockers:** none for the local P7-014 slice. External users, deployed GPU operations,
+measured host electricity, real devices, and field transfer remain separate proof.
+
 ## 2026-07-15 — Protect and reconcile consumer-hardware learning quality
 **Session:** Codex agent · branch `codex/p7012-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-012 [x], P7-014 [~]
