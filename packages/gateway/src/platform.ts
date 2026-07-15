@@ -1447,7 +1447,7 @@ async function materializeJobOutput(
            artifact_blob_id, export_gate
          )
          VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)
-         ON CONFLICT (job_id) DO NOTHING
+         ON CONFLICT (job_id) WHERE job_id IS NOT NULL DO NOTHING
          RETURNING id`,
         [
           user.id,

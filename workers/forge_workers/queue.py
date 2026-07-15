@@ -585,7 +585,7 @@ class PostgresQueueStore:
                   policy_metadata, artifact_blob_id, export_gate
                 )
                 VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s)
-                ON CONFLICT (job_id) DO NOTHING
+                ON CONFLICT (job_id) WHERE job_id IS NOT NULL DO NOTHING
                 RETURNING id
                 """,
                 [

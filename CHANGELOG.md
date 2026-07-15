@@ -43,6 +43,10 @@ The next exact-head attempt then reached the populated-predecessor matrix and ex
 that PostgreSQL could not infer the type of job IDs passed only through
 `jsonb_build_object`. The fixtures now cast those bound IDs to text explicitly; the
 migration itself applied cleanly and was not weakened.
+That run passed all 21 populated predecessors and then exposed that the worker's
+`ON CONFLICT (job_id)` did not name the partial-index predicate. Both worker and
+gateway writers now spell `WHERE job_id IS NOT NULL`, so PostgreSQL can infer the
+one-winner index while historical nullable rows remain intentionally outside it.
 **Changed:** D39 and R26; migration 0022 plus populated-predecessor assertions;
 gateway object write/read, transactional policy materialization, policy-model route,
 and user-data export 1.3.0; worker S3-compatible transport/materializer and protected

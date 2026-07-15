@@ -257,7 +257,7 @@ def test_policy_delivery_strips_bytes_and_materializes_exact_job_bound_evidence(
     policy_sql, policy_params = next(
         (sql, params) for sql, params in connection.calls if "INSERT INTO policy_artifacts" in sql
     )
-    assert "ON CONFLICT (job_id) DO NOTHING" in policy_sql
+    assert "ON CONFLICT (job_id) WHERE job_id IS NOT NULL DO NOTHING" in policy_sql
     assert policy_params[1:4] == ["policy-job", "model-1", "hover-hold"]
     assert "modelBase64" not in policy_params[5]["onnx"]
 
