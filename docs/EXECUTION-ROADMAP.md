@@ -75,12 +75,13 @@ event, and artifact references now exact-match runtime routes and worker kinds;
 migration/deprecation guidance, synthetic examples, fourteen compatibility domains,
 and the registered schema family share the 36-step gate. Exact-head PR CI
 `29375146614`/security `29375146592` and post-merge CI `29376742319`/security
-`29376742373` pass. DOC-006 is the remaining dependency-complete X-lane. Its
-implementation candidate establishes a maintainer-curated first-good-issue workflow,
-links every entry surface, and exercises the contract with bounded live issues #55-
-#57 without assigning security, credentials/providers, hardware, user data,
-compatibility migrations, or golden/oracle authority to entry-level work. Protected
-implementation and post-merge evidence remain.
+`29376742373` pass. DOC-006 closes the documentation-completion X-lane through
+protected PR #58 at `3078dba`. The maintainer-curated first-good-issue workflow links
+every entry surface and exercises the contract with bounded live issues #55-#57
+without assigning security, credentials/providers, hardware, user data,
+compatibility migrations, or golden/oracle authority to entry-level work. Exact head
+`c83f036` passed CI `29379546230`/security `29379546201`; post-merge CI
+`29380212006`/security `29380212007` pass. No external contribution is claimed.
 
 PR #54's evidence closeout exposed a time-dependent GOV-003 maintenance prerequisite:
 npm retired pnpm 10's audit endpoints. pnpm 11.13.0 restores the bulk-advisory
@@ -140,6 +141,10 @@ Current Wave 1/2 boundary:
   event families, fourteen compatibility domains, and sixteen worker queue kinds
   exact-match the generated references; all 36 local steps and exact PR/post-merge
   CI/security pass;
+- DOC-006 is complete through protected PR #58 at `3078dba`: contributor discovery,
+  maintainer-only curation, assignment/reassignment, sensitive-authority exclusions,
+  seed issues, and all public/agent entry surfaces have exact PR/post-merge proof;
+  open seed issues do not substitute for an external contributor outcome;
 - registry publication is explicitly deferred to owner-scoped credentials and is not
   required to claim the verified GitHub release;
 - remaining security, operations, live-provider, external-user, and field work is

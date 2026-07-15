@@ -84,12 +84,14 @@ catalogs that exact-match 75 registered routes, two event families, fourteen
 compatibility domains, and sixteen worker queue kinds. Migration, deprecation, and
 synthetic example guides share the drift gate. The complete 36-step local gate,
 exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
-`29376742319`/security `29376742373` pass. DOC-006 is the remaining documentation
-lane. PR #54 restored the GOV-003 audit client after npm's legacy-endpoint retirement:
+`29376742319`/security `29376742373` pass. PR #54 restored the GOV-003 audit client
+after npm's legacy-endpoint retirement:
 exact head `00ae9a0` passed CI `29378364147`/security `29378364143`, and protected
-`41dee2d` passed post-merge CI `29378749550`/security `29378749542`. DOC-006 now has
-an implementation candidate, a maintainer-only curation template, and three live
-bounded seed issues (#55-#57); protected implementation/post-merge proof remains.
+`41dee2d` passed post-merge CI `29378749550`/security `29378749542`. DOC-006 closed
+the documentation lane through PR #58 at `3078dba`: exact head `c83f036` passed CI
+`29379546230`/security `29379546201`, and post-merge CI `29380212006`/security
+`29380212007` pass. The curated workflow and seed issues #55-#57 are executable, but
+no external contribution outcome is claimed.
 
 | Phase | Status | Est. |
 |---|---|---|
@@ -125,7 +127,7 @@ licensing groundwork.
 - [x] **v0 end-to-end implementation on all surfaces** (owner re-order, D21, 2026-06-12): core crates + validator CLI + WASM facade + studio + gateway + workers + CI — prototype-dependent criteria below remain open
 - [x] **`cad-object-studio.html` prototype committed and remotely tagged** byte-exact as annotated `prototype-final` at `0294a9d`; SHA-256 `ca93489e…` verified before publication *(2026-07-12; pre-configurator vintage — see prototype/README.md)*
 - [x] License files reflecting open-core split (D2/D24): Apache-2.0 (© RNT56) for crates/ + schema/ + examples/; proprietary for the rest *(2026-06-12)*
-- [~] Repo hygiene: `.gitignore` + `.editorconfig`, default-branch ruleset `18843164`, remote security scans, immutable Action pins, and the selected-Action allowlist are active; contributor/security surfaces and repository metadata remain GOV work.
+- [~] Repo hygiene: `.gitignore` + `.editorconfig`, default-branch ruleset `18843164`, remote security scans, immutable Action pins, the selected-Action allowlist, repository metadata, and contributor/security surfaces are protected; qualified name clearance and the Linux Desktop dependency route remain GOV work.
 
 ## P0 — Freeze & extract
 
