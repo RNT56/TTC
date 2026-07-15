@@ -29,9 +29,13 @@ export interface PolicyOutput {
   task?: {
     id?: string;
     suite?: string;
+    version?: string;
+    coordinateFrame?: string;
+    definitionHash?: string;
     curriculumStage?: number;
     horizonS?: number;
     target?: { xyzM?: number[] };
+    targets?: { kind?: string; xyzM?: number[]; radiusM?: number }[];
   };
   io?: {
     observations?: string[];

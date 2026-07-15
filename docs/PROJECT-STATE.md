@@ -148,6 +148,20 @@ authoritative delivery, not P7-012 learning quality, P7-013 deployed GPU operati
 production object-store durability/SLO, OPS-006 orphan reconciliation, external
 acceptance, or field transfer.
 
+The P7-014 waypoint slice is now an implementation candidate, not yet protected
+evidence. D41 corrects the new task line to `p7-v2`/2.0.0 with explicit
+`forge-y-up-rh-m` and a canonical task-definition digest while retaining v1 as a
+legacy read. The exact-pinned native command executes hover-hold or the three-target
+waypoint chain, advances targets only from estimator error, requires full-chain
+evaluation success, binds task/hash through config, ONNX metadata/header, scorecard
+lineage, external-provider authority, and Studio playback, and refuses unsupported
+task/archetype/frame drift. All 39 required local gates pass under Python 3.12,
+including 154 worker tests, 11 Studio runtime tests, and a dual 256-step CPU smoke
+with two valid but correctly non-exportable ONNX policies.
+This is controlled candidate runtime proof, not protected exact-source evidence,
+overnight learning quality, deployed GPU operations, rover/legged coverage, or
+field transfer.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
@@ -169,6 +183,7 @@ acceptance, or field transfer.
 | P7-003 controlled trainer | protected through PR #64/`d1c4c38`; exact-head and post-merge CI/security pass, and artifact `8334594354` is a clean source-bound 256-step CPU PPO/MuJoCo/ONNX smoke | proves the seeded PPO/SAC runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound valid ONNX artifact; short blocked-export smoke does not prove learning quality, overnight SLO, GPU economics, deployed operations, or field transfer |
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
 | P7-011 authoritative policy delivery | complete through PR #68/`9131289`; exact-head and post-merge CI/security pass, and artifact `8340587390` is clean source/checkout-bound controlled S3-compatible evidence | two attempts yield one exact object/policy with no inline persistence; stale upload and digest substitution fail closed; cancellation creates no database authority; authenticated same-origin exact readback executes through the Rust estimator/motion browser boundary. Production object-store durability/SLO and OPS-006 orphan cleanup remain open |
+| P7-014 waypoint trainer candidate | all 39 required local gates pass under Python 3.12, including 154 worker tests, 11 Studio runtime tests, and dual 256-step hover/waypoint CPU smoke; protection and a clean retained artifact are pending | task v2/Y-up/hash authority, sequential estimator-only waypoint transitions, full-chain evaluation, task-bound PPO/SAC/ONNX/scorecard/provider output, Studio target-chain playback, reproducibility, and refusals are implemented. Both short scorecards remain blocked; P7-012 overnight GPU quality and the rover/legged remainder of P7-014 remain open |
 | Postgres/pgvector gate | pass on protected P7-011 CI `29409341830` for 22 migrations | the clean plus 21 populated-predecessor matrix, migration 0022 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remains unhealthy and was not modified |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
@@ -452,7 +467,7 @@ decision; none is a hidden release claim.
 | Text generation | 25/25 deterministic template implementation, opt-in provider seam, protected SEC-002/D34/D35 authority, protected SEC-006 key/network/input/prompt bounds, and native ETL contract | credentialed model/extraction sandbox, deployed egress/quotas/log review, OPS-005 backup/DR, external R1 proof |
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
-| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover training with authoritative snapshots/bundles, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback through Rust estimator observations, and a local controlled CPU MuJoCo/MJX feasibility candidate | real waypoint trainer slice, overnight passing hover/waypoint scorecard, deployed Modal/GPU evidence, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
+| Training/policy | protected controlled exact-pinned CPU SB3/MuJoCo hover training with authoritative snapshots/bundles, seeded PPO/SAC, deterministic ONNX export, fixture scorecards, lease-fenced exact object-backed one-click delivery, real digest-bound browser playback through Rust estimator observations, a local controlled CPU MuJoCo/MJX feasibility candidate, and an unprotected real waypoint candidate under D41 task-v2 authority | protect the waypoint trainer slice, then overnight passing hover/waypoint scorecard, deployed Modal/GPU evidence, offline fine-tune evidence, broader rover/legged archetypes, exact D12 accelerator/budget/cost benchmark and final MJX decision, production object-store SLO/orphan operations, external acceptance, and field transfer |
 | Co-design | deterministic candidate/Pareto contracts | live optimizer and multi-fidelity simulator evidence |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |

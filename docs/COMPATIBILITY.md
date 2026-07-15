@@ -32,7 +32,7 @@ package to adopt that same number.
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
 | policy tensor | 1.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | major 1 |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds; public families must gain an independent `schemaVersion` before external publication | current minor line |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training task v2 is current, while task-v1 policy metadata remains a legacy read only |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.

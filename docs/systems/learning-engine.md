@@ -1,13 +1,14 @@
 # Learning Engine — implementation doc
 
 **Status:** deterministic training contract, protected controlled CPU SB3/MuJoCo
-hover runtime, lease-fenced exact object-backed one-click delivery, real browser
-ONNX/WASM execution, and a controlled CPU MuJoCo/MJX feasibility harness implemented;
-the real waypoint trainer, overnight scorecard passage, decision-grade D12
+hover runtime, candidate real sequential-waypoint runtime, lease-fenced exact
+object-backed one-click delivery, real browser ONNX/WASM execution, and a controlled
+CPU MuJoCo/MJX feasibility harness implemented; protected waypoint evidence,
+overnight scorecard passage, decision-grade D12
 accelerator evidence, deployed GPU/storage operations, and field transfer remain
 gated · **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
-**Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D39, D40,
+**Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D39, D40, D41,
 D-evals (adjacent)
 
 ## 1. Purpose
@@ -19,13 +20,21 @@ artifacts** — sub-threshold policies do not export.
 
 ## 2. Tasks (versioned environment definitions)
 
-v1 suite (P7-001): multirotor — hover-hold, waypoint chain, gate slalom, velocity
+The historical v1 suite (P7-001) established the stable task IDs: multirotor —
+hover-hold, waypoint chain, gate slalom, velocity
 tracking; legged — walk-to-target, rough-terrain traverse, push recovery; rover —
 line-follow, obstacle course; arm — reach/track. Task definition carries reward
 terms, termination conditions, **curriculum stages** (hover before waypoints before
 slalom), and randomization config. P10 makes community courses importable as tasks.
 Live 2026-06-14: `forge-sim::heavy` defines task kinds/specs and the
 course-to-task adapter; `train.policy` emits task metadata and curriculum stage.
+
+Candidate 2026-07-15 under D41: new tasks emit `p7-v2`/`2.0.0`, explicit
+`forge-y-up-rh-m`, and a SHA-256 over canonical sorted task JSON without the
+self-referential hash field. Every built-in 3D spawn, bound, target, gate, obstacle,
+and arm point is now expressed in Forge Y-up; 2D rover paths declare the `xz` plane.
+Stable task IDs are unchanged. `p7-v1` evidence is retained as historical/legacy
+read input and is never silently reinterpreted as v2.
 
 ## 3. Observation/action contract
 
@@ -106,15 +115,21 @@ then records dependency versions, seed, source/contract/config digests, and mode
 parameter digests in lineage. Unsupported roots, archetypes, estimators, physical
 constants, runtime versions, payloads, or snapshot hashes refuse before training.
 
-The initial real environment is intentionally narrow: a floating-root multirotor
-hover task with 11 estimator-only observations and four normalized actions. It uses
+The protected initial environment remains the floating-root multirotor hover task.
+The current P7-014 candidate generalizes that same sovereign runtime to the worker-
+owned `hover-hold` and `waypoint-chain` v2 definitions with 11 estimator-only
+observations and four normalized actions. It uses
 the Rust-derived MJCF, hover trim, mass, gravity, 101-point powertrain curve, control
 bounds, and declared torque assumptions. Randomization covers mass, motor Kv,
 battery sag, actuation latency, friction, wind, sensor noise/bias, and observation
-dropout. Evaluation records baseline, mass +15 %, Kv -8 %, and 4 m/s wind scenarios.
-This establishes a controlled local/CI CPU training runtime; it does not establish
-overnight scorecard passage, waypoint/general-archetype coverage, GPU economics, or
-field transfer.
+dropout. Waypoints advance in declared order only when the estimator-derived body-
+frame target-error norm reaches the active radius; MuJoCo truth remains available
+only for bounded safety termination and never enters policy observation or target
+authority. Evaluation records baseline, mass +15 %, Kv -8 %, and 4 m/s wind
+scenarios; waypoint success requires the complete chain, not a partial success
+fraction. This establishes a controlled local/CI CPU runtime for two multirotor
+tasks; it does not establish protected waypoint evidence, overnight scorecard
+passage, rover/legged coverage, GPU economics, or field transfer.
 
 ## 5. Domain randomization (first-class config)
 
@@ -123,9 +138,12 @@ noise/bias · ground friction 0.4–1.2 · wind 0–4 m/s · observation dropout
 randomization grid doubles as the **robustness axis of the scorecard**.
 
 Live 2026-06-14: fixture policy jobs carry the default randomization block and tests
-assert it is present in the artifact. The P7 v1 task suite now has versioned
+assert it is present in the artifact. The task suite has versioned
 environment definitions for hover, waypoint, slalom, velocity tracking, legged,
-rover, and arm reach tasks, and `train.policy` emits the selected definition.
+rover, and arm reach tasks, and `train.policy` emits the selected definition. D41
+advances new definitions to task v2 because the coordinate-frame correction is
+semantic, while the independent `forge-policy-tensor` stays at 1.0.0 because its
+11-scalar Y-up estimator layout and four normalized actions did not change.
 
 Protected through PR #64/`d1c4c38` on 2026-07-15: the real hover environment applies
 each declared randomization source in execution rather than merely serializing the
@@ -177,10 +195,13 @@ work unless the external command/env integration is configured.
 Protected through PR #64/`d1c4c38` on 2026-07-15:
 `workers/.../sb3_runner.py` is the native JSON command boundary used by
 `FORGE_SB3_TRAIN_CMD`. The required CI worker job installs the exact CPU training
-stack, runs the complete worker suite, and executes a tiny source-bound hover smoke
-through the same gateway-shaped snapshot and Rust bundle path. The smoke proves real
-simulation, optimization, deterministic fixed-shape opset-18 ONNX export, and
-scorecard generation, but is deliberately too short to claim a passing policy.
+stack, runs the complete worker suite, and executes the source-bound training smoke
+through the same gateway-shaped snapshot and Rust bundle path. The P7-014 candidate
+upgrades that artifact to schema 2.0 and runs both hover-hold and waypoint-chain for
+256 PPO steps. It verifies exact task version/frame/hash across task metadata, config,
+scorecard lineage and ONNX header, plus real optimization and byte/digest-valid
+fixed-shape opset-18 export. Both scorecards are deliberately blocked; the smoke is
+too short to claim learning quality.
 P7-011 is protected through PR #68/`9131289`: durable object upload, one-click Studio
 queueing/download/playback, isolated Postgres/S3-compatible acceptance, and the
 production-browser path are closed at controlled sandbox maturity. Deployed Modal/
@@ -198,6 +219,14 @@ bounds, then runs inference asynchronously at 50 Hz while the 120 Hz Rust motion
 loop consumes the last safe action. A missed inference holds the previous bounded
 advisory; any error zeros commands and stops playback. Non-hover keyless fixture
 tasks remain held rather than fabricating model bytes.
+
+The P7-014 Studio candidate preserves that legacy single-target read path and adds
+bounded v2 target chains. It requires exact task suite/version/frame/hash agreement
+across task metadata, scorecard lineage, and the ONNX header. For waypoint policies,
+the controller requests the current target from `CoreSession`, advances only from
+the returned estimator target-error scalars, requests a fresh snapshot for the next
+target before inference, and zeroes advisories after completing the chain. Render
+state and simulator truth do not authorize progression.
 
 P7-011 treats inline bytes as transient producer transport. The current D38 attempt
 uploads one exact owner content-addressed object and a serializable
@@ -248,7 +277,7 @@ that names, shapes, opset, digests, and browser execution remain authoritative.
 
 ## 9. Testing
 
-Deterministic smoke-train on a tiny task in CI (minutes, fixed seed, asserts learning
+Deterministic smoke-train on hover and waypoint tasks in CI (minutes, fixed seeds, asserts learning
 signal); scorecard reproducibility (same seed → same card server-side); estimator-
 smoke negative test (deliberately ground-truth-trained policy must be rejected);
 header derivation unit tests across archetypes.

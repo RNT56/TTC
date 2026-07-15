@@ -23,6 +23,10 @@ Binding on all contributors, human or agent. Where this file and
 
 - Internal coordinates: **Y-up, right-handed, meters** (matches prototype and
   Three.js). Exporters convert to Z-up for URDF/MJCF/STEP.
+- Training task coordinates follow that same frame and must declare
+  `forge-y-up-rh-m`; never infer a frame from field order or silently reinterpret a
+  stored task. A coordinate/meaning correction requires a task-major version, a
+  canonical definition hash, compatibility guidance, and retained legacy reads.
 - Angles in **radians**; time in **seconds**; masses in **grams at the schema
   surface**, kilograms internally; gravity default 9.80665 m/s², air density 1.225
   kg/m³ — but always from the contract's `env` block, never ambient constants.
@@ -100,6 +104,10 @@ bind model bytes, scorecard, and contract lineage by length plus SHA-256; reject
 or estimator-unproven policies before loading untrusted bytes. Lazy-load an exact
 same-origin runtime, cap model/rate/value bounds, verify runtime names/shapes/types,
 never block the render loop, and zero/stop on any observation or inference failure.
+For versioned waypoint policies, bind task ID/version/frame/definition hash and the
+ordered target chain through the worker authority, scorecard lineage, ONNX header,
+and consumer; advance only from estimator-derived target error, never simulator
+truth or render state.
 Fixture tasks without real executable bytes stay held rather than gaining a fake
 export path.
 

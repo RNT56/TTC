@@ -12,6 +12,13 @@ import numpy as np
 from gymnasium import spaces
 
 from forge_workers.training.bundle import PINNED_MUJOCO_VERSION, validate_training_bundle
+from forge_workers.training.tasks import (
+    TASK_COORDINATE_FRAME,
+    TASK_SUITE,
+    TASK_VERSION,
+    task_definition,
+    task_definition_hash,
+)
 
 _FORGE_TO_MUJOCO = np.asarray(
     [
@@ -32,8 +39,8 @@ _OBS_HIGH = np.asarray(
 )
 
 
-class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
-    """A bounded hover task whose policy sees estimator output, never MuJoCo truth."""
+class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
+    """A bounded multirotor task whose policy sees estimator output, never truth."""
 
     metadata = {"render_modes": []}
 
@@ -41,9 +48,9 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         self,
         bundle: dict[str, Any],
         *,
+        task: dict[str, Any] | None = None,
         randomization: dict[str, Any] | None = None,
         episode_steps: int = 500,
-        target_forge_m: tuple[float, float, float] = (0.0, 1.5, 0.0),
         fixed_scenario: dict[str, float] | None = None,
     ) -> None:
         contract_hash = bundle.get("contractHash") if isinstance(bundle, dict) else None
@@ -57,12 +64,19 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
             )
         if not 20 <= episode_steps <= 100_000:
             raise ValueError("episode_steps must be between 20 and 100000")
-        if (
-            len(target_forge_m) != 3
-            or not all(math.isfinite(value) for value in target_forge_m)
-            or any(abs(value) > 100.0 for value in target_forge_m)
-        ):
-            raise ValueError("hover target must be a bounded finite Forge-frame 3-vector")
+        self.task = _validate_multirotor_task(task or task_definition("hover-hold"))
+        self.task_id = str(self.task["id"])
+        task_env = self.task["env"]
+        self.spawn_forge_m = np.asarray(task_env["spawn"]["pose"][:3], dtype=np.float64)
+        self.bounds_forge_m = np.asarray(task_env["boundsM"], dtype=np.float64)
+        self.targets = tuple(
+            {
+                "kind": str(target["kind"]),
+                "xyz": np.asarray(target["xyz"], dtype=np.float64),
+                "radiusM": float(target["radiusM"]),
+            }
+            for target in task_env["targets"]
+        )
 
         self.model = mujoco.MjModel.from_xml_string(self.bundle["mjcf"])
         if abs(float(self.model.opt.timestep) - float(self.bundle["timestepS"])) > 1e-12:
@@ -84,7 +98,10 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
         self.observation_space = spaces.Box(low=_OBS_LOW, high=_OBS_HIGH, dtype=np.float32)
         self.episode_steps = episode_steps
-        self.target_forge_m = np.asarray(target_forge_m, dtype=np.float64)
+        self._target_index = 0
+        self._targets_completed = 0
+        self._task_completed = False
+        self.target_forge_m = self.targets[0]["xyz"].copy()
         self.randomization = dict(randomization or {})
         self.fixed_scenario = dict(fixed_scenario or {})
         self.substeps = int(self.bundle["substeps"])
@@ -111,6 +128,7 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         self._step = 0
         self._success_steps = 0
         self._energy_wh = 0.0
+        self._previous_error_m = 0.0
         self._estimated_angles = np.zeros(3, dtype=np.float64)
         self._estimated_position = self.target_forge_m.copy()
         self._last_gyro = np.zeros(3, dtype=np.float64)
@@ -141,7 +159,7 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         mujoco.mj_setConst(self.model, self.data)
 
         qpos = self.free_qpos_adr
-        spawn_forge = self.target_forge_m + self.np_random.uniform(
+        spawn_forge = self.spawn_forge_m + self.np_random.uniform(
             low=np.asarray([-0.35, -0.2, -0.35]),
             high=np.asarray([0.35, 0.2, 0.35]),
         )
@@ -152,8 +170,13 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         self._step = 0
         self._success_steps = 0
         self._energy_wh = 0.0
+        self._target_index = 0
+        self._targets_completed = 0
+        self._task_completed = False
+        self.target_forge_m = self.targets[0]["xyz"].copy()
         self._estimated_angles.fill(0.0)
         self._estimated_position = spawn_forge.copy()
+        self._previous_error_m = float(np.linalg.norm(self.target_forge_m - spawn_forge))
         self._last_gyro.fill(0.0)
         self._voltage = 1.0
         self._current = 0.0
@@ -164,7 +187,7 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         )
         self._action_queue = deque((hover_action.copy() for _ in range(latency_steps + 1)))
         observation = self._observation(update=False)
-        return observation, self._info(False)
+        return observation, self._info(False, False)
 
     def step(self, action: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict[str, Any]]:
         bounded_action = np.asarray(action, dtype=np.float64).reshape(-1)
@@ -210,26 +233,48 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
         position_error = float(np.linalg.norm(observation[6:9]))
         tilt = float(np.linalg.norm(observation[:2]))
         rate = float(np.linalg.norm(observation[3:6]))
-        instant_success = position_error < 0.3 and tilt < 0.25 and rate < 0.6
+        active_target = self.targets[self._target_index]
+        instant_success = (
+            position_error <= float(active_target["radiusM"])
+            and tilt < 0.25
+            and rate < 0.6
+        )
         if instant_success:
             self._success_steps += 1
+        target_advanced = False
+        if active_target["kind"] == "waypoint" and position_error <= float(active_target["radiusM"]):
+            self._targets_completed += 1
+            target_advanced = True
+            if self._targets_completed == len(self.targets):
+                self._task_completed = True
+            else:
+                self._target_index += 1
+                self.target_forge_m = self.targets[self._target_index]["xyz"].copy()
+                observation = self._observation(update=False)
+        progress_m = self._previous_error_m - position_error
         reward = (
-            1.5
-            - 1.2 * position_error
+            1.0
+            - 0.45 * position_error
             - 0.35 * tilt
             - 0.04 * rate
             - 0.025 * float(np.square(applied).sum())
             - 0.15 * abs(throttle - float(self.bundle["hoverThrottle"]))
+            + 1.5 * progress_m
+            + (12.0 if target_advanced else 0.0)
+        )
+        self._previous_error_m = (
+            float(np.linalg.norm(observation[6:9])) if target_advanced and not self._task_completed else position_error
         )
         position_forge = self._position_forge()
-        terminated = bool(
+        unsafe = bool(
             not np.isfinite(self.data.qpos).all()
             or position_forge[1] < -0.2
-            or np.linalg.norm(position_forge - self.target_forge_m) > 12.0
+            or np.any(np.abs(position_forge) > self.bounds_forge_m * 0.5 + 0.5)
             or tilt > 1.5
         )
+        terminated = unsafe or self._task_completed
         truncated = self._step >= self.episode_steps
-        return observation, float(reward), terminated, truncated, self._info(instant_success)
+        return observation, float(reward), terminated, truncated, self._info(instant_success, target_advanced)
 
     def _sample_scenario(self) -> dict[str, float]:
         mass_pct = _range_max(self.randomization.get("massPct"), 15.0)
@@ -307,15 +352,128 @@ class ForgeHoverEnv(gym.Env[np.ndarray, np.ndarray]):
     def _position_forge(self) -> np.ndarray:
         return _FORGE_TO_MUJOCO.T @ np.asarray(self.data.xpos[self.body_id], dtype=np.float64)
 
-    def _info(self, instant_success: bool) -> dict[str, Any]:
+    def _info(self, instant_success: bool, target_advanced: bool) -> dict[str, Any]:
+        success_fraction = (
+            self._targets_completed / len(self.targets)
+            if self.targets[0]["kind"] == "waypoint"
+            else self._success_steps / max(1, self._step)
+        )
         return {
+            "taskId": self.task_id,
             "instantSuccess": instant_success,
-            "successFraction": self._success_steps / max(1, self._step),
+            "successFraction": success_fraction,
+            "taskSuccessFraction": success_fraction,
+            "activeTargetIndex": self._target_index,
+            "targetsCompleted": self._targets_completed,
+            "targetCount": len(self.targets),
+            "targetAdvanced": target_advanced,
+            "taskCompleted": self._task_completed,
             "energyWh": self._energy_wh,
             "scenario": dict(self._scenario),
             "trainedOnEstimator": True,
+            "targetAdvanceSource": "estimator.target.error",
             "truthExposedToPolicy": False,
         }
+
+
+class ForgeHoverEnv(ForgeMultirotorTaskEnv):
+    """Compatibility entry point for the worker-owned hover task."""
+
+    def __init__(
+        self,
+        bundle: dict[str, Any],
+        *,
+        randomization: dict[str, Any] | None = None,
+        episode_steps: int = 500,
+        fixed_scenario: dict[str, float] | None = None,
+    ) -> None:
+        super().__init__(
+            bundle,
+            task=task_definition("hover-hold"),
+            randomization=randomization,
+            episode_steps=episode_steps,
+            fixed_scenario=fixed_scenario,
+        )
+
+
+def _validate_multirotor_task(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("training task must be a worker-owned object")
+    task_id = value.get("id")
+    if task_id not in {"hover-hold", "waypoint-chain"}:
+        raise ValueError("real multirotor runtime supports hover-hold and waypoint-chain only")
+    if value.get("suite") != TASK_SUITE or value.get("version") != TASK_VERSION:
+        raise ValueError(f"training task must use {TASK_SUITE} {TASK_VERSION}")
+    if value.get("coordinateFrame") != TASK_COORDINATE_FRAME:
+        raise ValueError("training task must use Forge Y-up/right-handed/SI coordinates")
+    if value.get("family") != "multirotor" or value.get("archetype") != "multirotor":
+        raise ValueError("real multirotor runtime refuses non-multirotor task shapes")
+    definition_hash = value.get("definitionHash")
+    if (
+        not isinstance(definition_hash, str)
+        or len(definition_hash) != 64
+        or definition_hash != task_definition_hash(value)
+    ):
+        raise ValueError("training task definition hash is missing or drifted")
+    curriculum_stage = value.get("curriculumStage")
+    if (
+        isinstance(curriculum_stage, bool)
+        or not isinstance(curriculum_stage, int)
+        or not 1 <= curriculum_stage <= 100
+    ):
+        raise ValueError("training task curriculum stage is outside its supported bound")
+    owned = task_definition(str(task_id), curriculum_stage=curriculum_stage)
+    if definition_hash != owned["definitionHash"]:
+        raise ValueError("training task is not the exact worker-owned definition")
+    env = value.get("env")
+    if not isinstance(env, dict):
+        raise ValueError("training task env is missing")
+    bounds = _bounded_vector(env.get("boundsM"), "training task bounds", positive=True)
+    spawn = env.get("spawn")
+    pose = spawn.get("pose") if isinstance(spawn, dict) else None
+    if not isinstance(pose, list) or len(pose) != 6:
+        raise ValueError("training task spawn must be a six-axis Forge pose")
+    spawn_xyz = _bounded_vector(pose[:3], "training task spawn")
+    if any(abs(spawn_xyz[index]) > bounds[index] * 0.5 for index in range(3)):
+        raise ValueError("training task spawn lies outside its declared bounds")
+    targets = env.get("targets")
+    if not isinstance(targets, list) or not 1 <= len(targets) <= 32:
+        raise ValueError("training task requires between one and 32 targets")
+    expected_kind = "position" if task_id == "hover-hold" else "waypoint"
+    for index, target in enumerate(targets):
+        if not isinstance(target, dict) or target.get("kind") != expected_kind:
+            raise ValueError(f"training task target {index} has an unsupported kind")
+        xyz = _bounded_vector(target.get("xyz"), f"training task target {index}")
+        if any(abs(xyz[axis]) > bounds[axis] * 0.5 for axis in range(3)):
+            raise ValueError(f"training task target {index} lies outside its declared bounds")
+        radius = target.get("radiusM")
+        if (
+            isinstance(radius, bool)
+            or not isinstance(radius, (int, float))
+            or not math.isfinite(radius)
+            or not 0.01 <= float(radius) <= 100.0
+        ):
+            raise ValueError(f"training task target {index} radius is outside its supported bound")
+    return value
+
+
+def _bounded_vector(value: Any, label: str, *, positive: bool = False) -> tuple[float, float, float]:
+    if (
+        not isinstance(value, list)
+        or len(value) != 3
+        or any(
+            isinstance(item, bool)
+            or not isinstance(item, (int, float))
+            or not math.isfinite(item)
+            or abs(float(item)) > 2_000.0
+            for item in value
+        )
+    ):
+        raise ValueError(f"{label} must be a bounded finite three-vector")
+    result = tuple(float(item) for item in value)
+    if positive and any(item <= 0 for item in result):
+        raise ValueError(f"{label} must be positive")
+    return result
 
 
 def _matrix_to_rpy(rotation: np.ndarray) -> np.ndarray:
@@ -394,4 +552,4 @@ def _pair(value: Any, default: tuple[float, float]) -> tuple[float, float]:
     return low, high
 
 
-__all__ = ["ForgeHoverEnv"]
+__all__ = ["ForgeHoverEnv", "ForgeMultirotorTaskEnv"]

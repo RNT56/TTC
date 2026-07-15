@@ -14,6 +14,7 @@ interface PolicySnapshotSource {
 export interface PreparedPolicyArtifact {
   taskId: string;
   target: FocusVector;
+  targets: PreparedPolicyTarget[];
   durationS: number;
   rateHz: number;
   inputName: string;
@@ -22,6 +23,12 @@ export interface PreparedPolicyArtifact {
   outputLayout: string[];
   modelBytes: Uint8Array;
   modelSha256: string;
+}
+
+export interface PreparedPolicyTarget {
+  kind: "position" | "waypoint";
+  xyzM: FocusVector;
+  radiusM: number;
 }
 
 type OrtModule = typeof import("onnxruntime-web/wasm");
@@ -54,9 +61,42 @@ export async function preparePolicyArtifact(
   const lineageHash = stringField(scorecard.lineage?.contractHash, "scorecard lineage contract hash");
   if (lineageHash !== activeContractHash) throw new Error("policy scorecard lineage does not match the active contract");
 
+  const taskId = boundedName(output.task?.id ?? scorecard.task, "policy task ID");
+  const targets = policyTargets(output);
+  const versionedTask = Array.isArray(output.task?.targets) || output.task?.version !== undefined;
+  if (versionedTask) {
+    if (output.task?.suite !== "p7-v2" || output.task.version !== "2.0.0") {
+      throw new Error("unsupported versioned policy task; expected p7-v2 2.0.0");
+    }
+    if (output.task.coordinateFrame !== "forge-y-up-rh-m") {
+      throw new Error("policy task must use FORGE Y-up/right-handed/SI coordinates");
+    }
+    const taskDefinitionHash = stringField(output.task.definitionHash, "policy task definition hash").toLowerCase();
+    assertSha256(taskDefinitionHash, "policy task definition hash");
+    if (scorecard.task !== taskId || scorecard.taskVersion !== output.task.version) {
+      throw new Error("policy scorecard does not match the versioned task");
+    }
+    if (scorecard.lineage?.taskDefinitionHash !== taskDefinitionHash) {
+      throw new Error("policy scorecard lineage does not match the task definition");
+    }
+    const legacyTarget = output.task.target?.xyzM;
+    if (!sameVector(legacyTarget, targets[0].xyzM)) {
+      throw new Error("policy task target does not match the first declared target");
+    }
+  }
+
   const io = output.io;
   const headerHash = stringField(io?.onnxHeader?.contractHash, "ONNX header contract hash");
   if (headerHash !== activeContractHash) throw new Error("ONNX header does not match the active contract");
+  if (versionedTask) {
+    if (
+      io?.onnxHeader?.task !== taskId
+      || io.onnxHeader.taskVersion !== output.task?.version
+      || io.onnxHeader.taskDefinitionHash !== output.task?.definitionHash
+    ) {
+      throw new Error("ONNX header does not match the versioned task authority");
+    }
+  }
   if (
     io?.onnxHeader?.tensorSchema !== POLICY_TENSOR_SCHEMA ||
     io.onnxHeader.tensorVersion !== POLICY_TENSOR_VERSION
@@ -87,13 +127,6 @@ export async function preparePolicyArtifact(
     throw new Error("policy rate must be an integer from 1 through 50 Hz (D9)");
   }
 
-  const targetValues = output.task?.target?.xyzM;
-  if (!Array.isArray(targetValues) || targetValues.length !== 3) {
-    throw new Error("policy task requires one three-axis SI world target");
-  }
-  const target = targetValues.map((value, axis) => finiteNumber(value, `policy target axis ${axis}`)) as FocusVector;
-  if (target.some((value) => Math.abs(value) > 1_000)) throw new Error("policy target exceeds the 1 km playback bound");
-
   const onnx = output.onnx;
   if (onnx?.opset !== 18) throw new Error("fixture policy must declare ONNX opset 18");
   const declaredSize = finiteNumber(onnx.byteSize, "ONNX byte size");
@@ -111,8 +144,9 @@ export async function preparePolicyArtifact(
   const horizonS = finiteNumber(output.task?.horizonS ?? 60, "policy task horizon");
   const durationS = Math.max(2, Math.min(8, horizonS / 10));
   return {
-    taskId: output.task?.id ?? scorecard.task ?? "policy",
-    target,
+    taskId,
+    target: targets[0].xyzM,
+    targets,
     durationS,
     rateHz,
     inputName,
@@ -126,7 +160,6 @@ export async function preparePolicyArtifact(
 
 export class BrowserPolicyController {
   readonly taskId: string;
-  readonly target: FocusVector;
   readonly durationS: number;
   readonly rateHz: number;
   readonly modelSha256: string;
@@ -137,6 +170,9 @@ export class BrowserPolicyController {
   private failureValue: string | null = null;
   private disposed = false;
   private releaseStarted = false;
+  private targetIndexValue = 0;
+  private targetsCompletedValue = 0;
+  private taskCompletedValue = false;
 
   private constructor(
     private readonly artifact: PreparedPolicyArtifact,
@@ -144,7 +180,6 @@ export class BrowserPolicyController {
     private readonly session: import("onnxruntime-web/wasm").InferenceSession,
   ) {
     this.taskId = artifact.taskId;
-    this.target = artifact.target;
     this.durationS = artifact.durationS;
     this.rateHz = artifact.rateHz;
     this.modelSha256 = artifact.modelSha256;
@@ -156,12 +191,8 @@ export class BrowserPolicyController {
     source: PolicySnapshotSource,
     retainedModelBytes?: Uint8Array,
   ): Promise<BrowserPolicyController> {
-    const targetValues = output.task?.target?.xyzM;
-    if (!Array.isArray(targetValues) || targetValues.length !== 3) {
-      throw new Error("policy task requires one three-axis SI world target");
-    }
-    const target = targetValues.map((value, axis) => finiteNumber(value, `policy target axis ${axis}`)) as FocusVector;
-    const initialSnapshot = await source.policySnapshot(target);
+    const declaredTargets = policyTargets(output);
+    const initialSnapshot = await source.policySnapshot(declaredTargets[0].xyzM);
     const artifact = await preparePolicyArtifact(
       output,
       activeContractHash,
@@ -177,7 +208,7 @@ export class BrowserPolicyController {
       assertExactList([...session.inputNames], [artifact.inputName], "runtime ONNX input names");
       assertExactList([...session.outputNames], [artifact.outputName], "runtime ONNX output names");
       const controller = new BrowserPolicyController(artifact, ort, session);
-      await controller.infer(initialSnapshot);
+      await controller.processSnapshot(initialSnapshot, source);
       controller.nextInferenceS = 1 / controller.rateHz;
       return controller;
     } catch (error) {
@@ -190,6 +221,26 @@ export class BrowserPolicyController {
     return { ...this.latestInput };
   }
 
+  get target(): FocusVector {
+    return [...this.artifact.targets[this.targetIndexValue].xyzM];
+  }
+
+  get targetIndex(): number {
+    return this.targetIndexValue;
+  }
+
+  get targetCount(): number {
+    return this.artifact.targets.length;
+  }
+
+  get targetsCompleted(): number {
+    return this.targetsCompletedValue;
+  }
+
+  get taskCompleted(): boolean {
+    return this.taskCompletedValue;
+  }
+
   get inferenceCount(): number {
     return this.inferenceCountValue;
   }
@@ -199,12 +250,18 @@ export class BrowserPolicyController {
   }
 
   schedule(elapsedS: number, source: PolicySnapshotSource): void {
-    if (this.disposed || this.pending || this.failureValue || elapsedS + 1e-9 < this.nextInferenceS) return;
+    if (
+      this.disposed
+      || this.pending
+      || this.failureValue
+      || this.taskCompletedValue
+      || elapsedS + 1e-9 < this.nextInferenceS
+    ) return;
     this.nextInferenceS = elapsedS + 1 / this.rateHz;
     this.pending = true;
     void source
       .policySnapshot(this.target)
-      .then((snapshot) => (this.disposed ? undefined : this.infer(snapshot)))
+      .then((snapshot) => (this.disposed ? undefined : this.processSnapshot(snapshot, source)))
       .catch((error: unknown) => {
         if (this.disposed) return;
         this.latestInput = { ...ZERO_INPUT };
@@ -263,11 +320,91 @@ export class BrowserPolicyController {
     }
   }
 
+  private async processSnapshot(
+    snapshot: PolicyObservationSnapshot,
+    source: PolicySnapshotSource,
+  ): Promise<void> {
+    let current = snapshot;
+    while (!this.disposed && this.currentTargetReached(current)) {
+      this.targetsCompletedValue += 1;
+      if (this.targetsCompletedValue >= this.artifact.targets.length) {
+        this.taskCompletedValue = true;
+        this.latestInput = { ...ZERO_INPUT };
+        return;
+      }
+      this.targetIndexValue += 1;
+      current = await source.policySnapshot(this.target);
+    }
+    if (!this.disposed) await this.infer(current);
+  }
+
+  private currentTargetReached(snapshot: PolicyObservationSnapshot): boolean {
+    const target = this.artifact.targets[this.targetIndexValue];
+    if (target.kind !== "waypoint") return false;
+    assertExactList(snapshot.layout, this.artifact.inputLayout, "runtime core observation layout");
+    if (snapshot.observations.length !== this.artifact.inputLayout.length) {
+      throw new Error("runtime core observation count changed");
+    }
+    if (!snapshot.observations.every(Number.isFinite)) throw new Error("runtime core observation is non-finite");
+    const indices = [
+      this.artifact.inputLayout.indexOf("target.error.bodyXM"),
+      this.artifact.inputLayout.indexOf("target.error.bodyYM"),
+      this.artifact.inputLayout.indexOf("target.error.bodyZM"),
+    ];
+    if (indices.some((index) => index < 0)) throw new Error("runtime tensor omits estimator target error");
+    const errorM = Math.hypot(...indices.map((index) => snapshot.observations[index]));
+    return errorM <= target.radiusM;
+  }
+
   private releaseRuntime(): void {
     if (this.releaseStarted) return;
     this.releaseStarted = true;
     void this.session.release();
   }
+}
+
+function policyTargets(output: PolicyOutput): PreparedPolicyTarget[] {
+  const declared = output.task?.targets;
+  if (declared !== undefined) {
+    if (!Array.isArray(declared) || declared.length < 1 || declared.length > 32) {
+      throw new Error("versioned policy task requires between one and 32 targets");
+    }
+    const targets = declared.map((target, targetIndex): PreparedPolicyTarget => {
+      const kind = target?.kind;
+      if (kind !== "position" && kind !== "waypoint") {
+        throw new Error(`policy target ${targetIndex} has an unsupported kind`);
+      }
+      const xyzM = focusVector(target.xyzM, `policy target ${targetIndex}`);
+      const radiusM = finiteNumber(target.radiusM, `policy target ${targetIndex} radius`);
+      if (radiusM < 0.01 || radiusM > 100) {
+        throw new Error(`policy target ${targetIndex} radius is outside its supported bound`);
+      }
+      return { kind, xyzM, radiusM };
+    });
+    if (output.task?.id === "waypoint-chain" && targets.some((target) => target.kind !== "waypoint")) {
+      throw new Error("waypoint-chain policy targets must all be waypoints");
+    }
+    if (output.task?.id === "hover-hold" && (targets.length !== 1 || targets[0].kind !== "position")) {
+      throw new Error("hover-hold policy task requires one position target");
+    }
+    return targets;
+  }
+  return [{ kind: "position", xyzM: focusVector(output.task?.target?.xyzM, "policy target"), radiusM: 0.25 }];
+}
+
+function focusVector(value: unknown, label: string): FocusVector {
+  if (!Array.isArray(value) || value.length !== 3) {
+    throw new Error(`${label} requires one three-axis SI world target`);
+  }
+  const vector = value.map((axis, index) => finiteNumber(axis, `${label} axis ${index}`)) as FocusVector;
+  if (vector.some((axis) => Math.abs(axis) > 1_000)) throw new Error(`${label} exceeds the 1 km playback bound`);
+  return vector;
+}
+
+function sameVector(value: unknown, expected: FocusVector): boolean {
+  return Array.isArray(value)
+    && value.length === expected.length
+    && value.every((entry, index) => typeof entry === "number" && entry === expected[index]);
 }
 
 function stringField(value: unknown, label: string): string {

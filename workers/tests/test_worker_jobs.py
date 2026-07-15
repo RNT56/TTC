@@ -496,7 +496,10 @@ def test_training_policy_uses_scorecard_gate():
     )
     assert not result["scorecard"]["exportable"]
     assert result["io"]["onnxHeader"]["actionCount"] == "4"
-    assert result["task"]["suite"] == "p7-v1"
+    assert result["task"]["suite"] == "p7-v2"
+    assert result["task"]["version"] == "2.0.0"
+    assert result["task"]["coordinateFrame"] == "forge-y-up-rh-m"
+    assert len(result["task"]["definitionHash"]) == 64
     assert result["task"]["env"]["targets"]
     assert result["domainRandomization"]["massPct"] == 15
     assert any("success_rate" in reason for reason in result["scorecard"]["reasons"])

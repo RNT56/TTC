@@ -327,10 +327,11 @@ Work:
   D38/D39 one-winner content-addressed object delivery, byte-free policy metadata,
   authenticated retained-byte readback, exact browser playback, stale-lease and
   substitution refusal, and cancellation without database authority at controlled
-  S3-compatible sandbox maturity. D40 now sequences the waypoint slice of P7-014
-  first because the real command currently supports hover-hold only. Protect that
-  contract-derived environment, task-bound scorecard/export path, deterministic
-  smoke, and unsupported-shape refusal; then acquire overnight passing hover/
+  S3-compatible sandbox maturity. D40 sequences the waypoint slice of P7-014
+  first. The current candidate implements it under D41 `p7-v2` Y-up/hash authority:
+  a contract-derived sequential environment, estimator-only target transitions,
+  task-bound scorecard/export/Studio playback, deterministic dual-task smoke, and
+  unsupported-shape/provider-drift refusal. Protect exact-source evidence; then acquire overnight passing hover/
   waypoint evidence (`P7-012`), deployed GPU operations (`P7-013`), remaining rover
   and legged real tasks (`P7-014`), offline fine-tuning (`P7-009`), exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
@@ -526,7 +527,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | P7-009, P7-010, P7-012..014; P7-011 closed | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled trainer and authoritative one-click object delivery; next waypoint trainer slice, then overnight-passing hover/waypoint policy in browser, deployed GPU operations, remaining archetypes, offline fine-tune, and final D12 MJX decision |
+| P7 | P7-009, P7-010, P7-012..014; P7-011 closed, P7-014 waypoint slice in progress | OPS cost/storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled hover trainer and authoritative one-click object delivery; protect the implemented D41 waypoint candidate, then obtain overnight-passing hover/waypoint policy evidence, deployed GPU operations, remaining rover/legged archetypes, offline fine-tune, and final D12 MJX decision |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |

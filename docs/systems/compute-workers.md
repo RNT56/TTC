@@ -6,7 +6,8 @@ GPU/provider stacks remain adapter-backed · **Phases:** P3/P4 (ETL), P5
 (photoscan), P6 (OCCT full), P7 (training), P11 (commerce) ·
 **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
-(fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue)
+(fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue), D41
+(task coordinate/version authority)
 
 ## 1. Purpose
 
@@ -147,7 +148,10 @@ can exercise the product surfaces without SB3/MuJoCo/GPU dependencies in CI.
 ONNX I/O header; `train.sysid-fit` estimates internal resistance and emits a
 contract patch proposal. `FORGE_SB3_TRAIN_CMD` can supply live SB3 results, but the
 worker re-runs every external policy through the scorecard/export gate before
-marking ONNX exportable. `FORGE_OFFLINE_RL_CMD` can supply behavior-cloning/offline
+marking ONNX exportable. Under D41, versioned external policies must also exact-match
+the worker-owned task ID, suite/version, Y-up frame, ordered targets, canonical task
+hash, scorecard task/hash lineage, ONNX task header, and unchanged tensor contract;
+any missing or substituted authority holds export. `FORGE_OFFLINE_RL_CMD` can supply behavior-cloning/offline
 RL warmstarts; those outputs are normalized, dataset-gated, and kept non-exportable
 until a fine-tune scorecard passes. `FORGE_SYSID_FIT_CMD` can supply live system-ID
 results in the same artifact contract; external fits must include enough samples, an
@@ -181,6 +185,15 @@ exact-pinned to NumPy 2.5.1, Gymnasium 1.3.0, PyTorch 2.13.0, Stable-Baselines3
 2.9.0, ONNX 1.22.0, and MuJoCo 3.9.0. Required CI runs both the complete worker suite
 and a tiny clean-source training smoke; that smoke is runtime proof, not a passing
 policy or overnight-SLO claim.
+
+Candidate 2026-07-15 for the P7-014 waypoint slice: the native runtime is generalized
+only to worker-owned `hover-hold` and `waypoint-chain` task-v2 definitions. It
+sequentially advances waypoint targets from estimator error, requires full-chain
+completion in evaluation, includes task identity/hash in config, ONNX metadata and
+scorecard lineage, and rejects gate/rover/legged or drifted-frame/task shapes. The
+required training smoke now runs both tasks for 256 PPO steps and retains two honest
+blocked scorecards. This is controlled CPU runtime proof, not protected evidence,
+overnight learning quality, deployed GPU operations, or broader-archetype closure.
 
 Required CI installs the separate `mjx` extra, runs the complete worker suite, then
 retains `mjx-feasibility-evidence` after the real command. The smoke fails on runtime
@@ -332,7 +345,7 @@ through required PR and post-merge CI with retained source-bound evidence. P7:
 versioned task definitions, fixture training scorecards, ONNX headers, and
 `train.offline-bc` telemetry dataset ingestion are live; a controlled native CPU
 SB3/MuJoCo hover runtime is protected through PR #64. Overnight
-passing-policy proof, waypoint/general-archetype training, deployed Modal/GPU runs,
+passing-policy proof, deployed Modal/GPU runs,
 and offline-RL fine-tuning remain open. P7-011 durable delivery is protected through
 PR #68/`9131289`: the worker accepts ONNX bytes only in transient output, verifies/
 uploads one exact owner content-addressed object under the current D38 lease, and
@@ -341,7 +354,8 @@ proves stale/substituted/cancelled attempts cannot create authority and exact re
 bytes execute through the browser. Preserve that protected acceptance on changes; a
 database-only object row, inline byte field, or successful upload without the winning
 lease is not delivery proof. D40 makes real waypoint execution the next trainer
-dependency before overnight P7-012. P8: config-diff,
+dependency before overnight P7-012; the candidate implementation now exists under
+D41, but protection is pending and rover/legged real trainers remain P7-014. P8: config-diff,
 telemetry ingest, supervisor, sysid, and replay.verify fixtures are live. P9:
 codesign.evaluate candidate/Pareto fixture is live. P12:
 wear/crash/repair/fleet workers are live. Gateway fixture job creation materializes
@@ -366,6 +380,6 @@ Multi-replica queue capacity, heartbeat policy for tasks that legitimately excee
 attempt deadline, dead-letter/reconciliation operations including unreferenced
 content-addressed policy uploads, and queue SLOs; TRELLIS-class model pick and hosting
 at P5 (the field moves fast — pin at implementation); live deployed Modal/GPU
-training, real waypoint/general-archetype environments, overnight scorecard/SLO
+training, protected waypoint evidence and real rover/legged environments, overnight scorecard/SLO
 proof, MJX adoption evidence, and OCCT dependency/benchmark evidence; review queue
 UI ownership beyond the existing gateway/studio scaffolds.

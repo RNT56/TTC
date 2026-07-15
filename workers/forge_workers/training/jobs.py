@@ -45,7 +45,7 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
     gpu = configured_gpu_adapter().run("train.policy", payload)
     card = Scorecard(
         task=resolved_task,
-        task_version=str(payload.get("taskVersion", task_meta["version"])),
+        task_version=str(task_meta["version"]),
         success_rate=float(payload.get("successRate", 0.91)),
         robustness={
             "mass+15%": float(payload.get("massRobustness", 0.84)),
@@ -54,7 +54,12 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
         },
         energy_wh=float(payload.get("energyWh", 2.2)),
         trained_on_estimator=bool(payload.get("trainedOnEstimator", True)),
-        lineage={"contractHash": contract_hash, "seed": seed, "codeVersion": "fixture-p7-v1"},
+        lineage={
+            "contractHash": contract_hash,
+            "seed": seed,
+            "codeVersion": "fixture-p7-v2",
+            "taskDefinitionHash": str(task_meta["definitionHash"]),
+        },
     )
     result = gate(card)
     observations = [
@@ -84,17 +89,37 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
             "imuBiasScale": [0.5, 1.5],
         },
     )
+    policy_targets = [
+        {
+            "kind": target["kind"],
+            "xyzM": target["xyz"],
+            "radiusM": target["radiusM"],
+        }
+        for target in task_meta["env"].get("targets", [])
+        if target.get("kind") in {"position", "waypoint"}
+        and isinstance(target.get("xyz"), list)
+        and isinstance(target.get("radiusM"), (int, float))
+    ]
     result = {
         "artifactKind": "policy",
         "provider": gpu["provider"],
         "algorithm": str(payload.get("algorithm", "ppo-fixture")),
-        "task": {**task_meta, **({"target": fixture["target"]} if fixture is not None else {})},
+        "task": {
+            **task_meta,
+            **(
+                {"target": {"xyzM": policy_targets[0]["xyzM"]}, "targets": policy_targets}
+                if policy_targets
+                else {}
+            ),
+        },
         "io": {
             "observations": observations,
             "actions": actions,
             "onnxHeader": {
                 "contractHash": contract_hash,
                 "task": resolved_task,
+                "taskVersion": task_meta["version"],
+                "taskDefinitionHash": task_meta["definitionHash"],
                 "observationCount": str(len(observations)),
                 "actionCount": str(len(actions)),
                 **(
@@ -181,6 +206,7 @@ def _external_policy_result(
         card,
         contract_hash=contract_hash,
         resolved_task=resolved_task,
+        task_meta=task_meta,
     )
     reasons = [*gate_result.reasons, *provider_reasons, *authority_reasons]
     exportable = gate_result.exportable and not provider_reasons and not authority_reasons
@@ -200,7 +226,7 @@ def _external_policy_result(
         "provider": external.get("provider", "external-sb3"),
         "algorithm": external.get("algorithm", payload.get("algorithm", "ppo")),
         "task": external.get("task", task_meta) if isinstance(external.get("task"), dict) else task_meta,
-        "io": _external_io(external, contract_hash, resolved_task),
+        "io": _external_io(external, contract_hash, resolved_task, task_meta),
         "domainRandomization": external.get("domainRandomization", payload.get("domainRandomization", {})),
         "onnx": onnx_payload,
         "exportGate": "exportable" if exportable else "blocked",
@@ -228,7 +254,12 @@ def _scorecard_payload(card: Scorecard, reasons: list[str], exportable: bool) ->
     }
 
 
-def _external_io(external: dict[str, Any], contract_hash: str, resolved_task: str) -> dict[str, Any]:
+def _external_io(
+    external: dict[str, Any],
+    contract_hash: str,
+    resolved_task: str,
+    task_meta: dict[str, Any],
+) -> dict[str, Any]:
     io = external.get("io")
     if isinstance(io, dict):
         return io
@@ -241,6 +272,8 @@ def _external_io(external: dict[str, Any], contract_hash: str, resolved_task: st
         "onnxHeader": {
             "contractHash": header.get("contractHash", contract_hash),
             "task": header.get("task", resolved_task),
+            "taskVersion": header.get("taskVersion", task_meta["version"]),
+            "taskDefinitionHash": header.get("taskDefinitionHash", task_meta["definitionHash"]),
             "observationCount": str(header.get("observationCount", len(observations))),
             "actionCount": str(header.get("actionCount", len(actions))),
         },
@@ -264,12 +297,17 @@ def _external_policy_authority_reasons(
     *,
     contract_hash: str,
     resolved_task: str,
+    task_meta: dict[str, Any],
 ) -> list[str]:
     reasons: list[str] = []
     if card.lineage.get("contractHash") != contract_hash:
         reasons.append("external policy lineage contractHash does not match admitted job authority")
     if card.task != resolved_task:
         reasons.append("external policy scorecard task does not match the requested task")
+    if card.task_version != task_meta["version"]:
+        reasons.append("external policy scorecard taskVersion does not match worker task authority")
+    if card.lineage.get("taskDefinitionHash") != task_meta["definitionHash"]:
+        reasons.append("external policy lineage taskDefinitionHash does not match worker task authority")
     if not 0.0 <= card.success_rate <= 1.0:
         reasons.append("external policy successRate must be in [0, 1]")
     if card.energy_wh > 1_000_000_000:
@@ -283,13 +321,34 @@ def _external_policy_authority_reasons(
     ):
         reasons.append("external policy robustness values must be numeric rates in [0, 1]")
 
+    external_task = external.get("task")
+    expected_targets = [
+        {"kind": target["kind"], "xyzM": target["xyz"], "radiusM": target["radiusM"]}
+        for target in task_meta["env"]["targets"]
+    ]
+    if not isinstance(external_task, dict) or any(
+        external_task.get(key) != task_meta[key]
+        for key in ("id", "suite", "version", "coordinateFrame", "definitionHash")
+    ):
+        reasons.append("external policy task metadata does not match worker task authority")
+    elif external_task.get("targets") != expected_targets:
+        reasons.append("external policy targets do not match worker task authority")
+
     io = external.get("io")
-    if isinstance(io, dict):
+    if not isinstance(io, dict):
+        reasons.append("external policy IO contract is missing")
+    else:
         header = io.get("onnxHeader")
-        if isinstance(header, dict) and header.get("contractHash") != contract_hash:
-            reasons.append("external policy ONNX header contractHash does not match admitted job authority")
+        expected_header = {
+            "contractHash": contract_hash,
+            "task": resolved_task,
+            "taskVersion": task_meta["version"],
+            "taskDefinitionHash": task_meta["definitionHash"],
+        }
+        if not isinstance(header, dict) or any(header.get(key) != value for key, value in expected_header.items()):
+            reasons.append("external policy ONNX header does not match admitted contract/task authority")
         tensor = io.get("tensor")
-        if isinstance(tensor, dict) and not _policy_tensor_is_exact(tensor):
+        if not isinstance(tensor, dict) or not _policy_tensor_is_exact(tensor):
             reasons.append("external policy tensor contract is unsupported or drifted")
 
     onnx = external.get("onnx")

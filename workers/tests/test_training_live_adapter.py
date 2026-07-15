@@ -2,6 +2,8 @@ import json
 import sys
 
 from forge_workers.training.jobs import fit_sysid, train_offline_bc, train_policy
+from forge_workers.training.bundle import POLICY_INPUT_LAYOUT, POLICY_OUTPUT_LAYOUT
+from forge_workers.training.tasks import task_definition
 
 
 def _command(tmp_path, payload):
@@ -24,6 +26,60 @@ def _offline_command(tmp_path, payload):
         f"print({output!r})\n"
     )
     return f"{sys.executable} {script}"
+
+
+def _authorized_policy(contract_hash: str) -> dict:
+    task = task_definition("hover-hold")
+    targets = [
+        {"kind": target["kind"], "xyzM": target["xyz"], "radiusM": target["radiusM"]}
+        for target in task["env"]["targets"]
+    ]
+    return {
+        "provider": "live-sb3",
+        "cacheKey": "policy:pass",
+        "task": {
+            "id": task["id"],
+            "suite": task["suite"],
+            "version": task["version"],
+            "coordinateFrame": task["coordinateFrame"],
+            "definitionHash": task["definitionHash"],
+            "target": {"xyzM": targets[0]["xyzM"]},
+            "targets": targets,
+        },
+        "io": {
+            "observations": ["estimator.attitude", "estimator.angularRate", "target.error"],
+            "actions": list(POLICY_OUTPUT_LAYOUT),
+            "onnxHeader": {
+                "contractHash": contract_hash,
+                "task": task["id"],
+                "taskVersion": task["version"],
+                "taskDefinitionHash": task["definitionHash"],
+            },
+            "tensor": {
+                "schema": "forge-policy-tensor",
+                "schemaVersion": "1.0.0",
+                "coordinateFrame": "forge-y-up-rh-m",
+                "input": {"name": "observations", "shape": [1, 11], "layout": list(POLICY_INPUT_LAYOUT)},
+                "output": {"name": "actions", "shape": [1, 4], "layout": list(POLICY_OUTPUT_LAYOUT)},
+                "rateHz": 50,
+            },
+        },
+        "scorecard": {
+            "task": task["id"],
+            "taskVersion": task["version"],
+            "successRate": 0.93,
+            "robustness": {"mass+15%": 0.86, "kv-8%": 0.84, "wind4ms": 0.79},
+            "energyWh": 2.0,
+            "trainedOnEstimator": True,
+            "lineage": {
+                "contractHash": contract_hash,
+                "seed": "11",
+                "codeVersion": "live",
+                "taskDefinitionHash": task["definitionHash"],
+            },
+            "exportable": True,
+        },
+    }
 
 
 def test_external_policy_is_rejected_when_trained_on_ground_truth(tmp_path, monkeypatch):
@@ -75,20 +131,7 @@ def test_external_policy_with_complete_scorecard_exports(tmp_path, monkeypatch):
         "FORGE_SB3_TRAIN_CMD",
         _command(
             tmp_path,
-            {
-                "provider": "live-sb3",
-                "cacheKey": "policy:pass",
-                "observations": ["estimator.attitude"],
-                "actions": ["throttle"],
-                "scorecard": {
-                    "successRate": 0.93,
-                    "robustness": {"mass+15%": 0.86, "kv-8%": 0.84, "wind4ms": 0.79},
-                    "energyWh": 2.0,
-                    "trainedOnEstimator": True,
-                    "lineage": {"contractHash": "ef" * 32, "seed": "11", "codeVersion": "live"},
-                    "exportable": True,
-                },
-            },
+            _authorized_policy("ef" * 32),
         ),
     )
 
