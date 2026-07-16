@@ -1,9 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![cfg_attr(test, allow(dead_code))]
 
+use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
+    collections::{BTreeMap, BTreeSet},
+    env,
     fs::{self, File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
@@ -22,6 +25,9 @@ const RECORDER_FRAME_SCHEMA_VERSION: &str = "forge-telemetry-frame/1.0.0";
 const RECORDER_RECEIPT_SCHEMA_VERSION: &str = "forge-recorder-receipt/1.0.0";
 const RECORDER_INSPECTION_SCHEMA_VERSION: &str = "forge-recorder-inspection/1.0.0";
 const RECORDER_CONTROL_SCHEMA_VERSION: &str = "forge-recorder-control/1.0.0";
+const RECORDER_UPLOAD_PLAN_SCHEMA_VERSION: &str = "forge-recorder-upload-plan/1.0.0";
+const RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION: &str = "forge-recorder-upload/1.0.0";
+const RECORDER_UPLOAD_ORIGIN_ENV: &str = "FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN";
 const REPLAY_SCHEMA_VERSION: &str = "1.0.0";
 const RECORDER_MANIFEST_FILE: &str = "forge-recorder-manifest.json";
 const RECORDER_FRAME_FILE: &str = "telemetry.frames.jsonl";
@@ -46,6 +52,8 @@ const MAX_RECORDER_FRAME_BYTES: usize = 64 * 1024;
 const MAX_RECORDER_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 const RECORDER_ARCHIVE_METADATA_RESERVE_BYTES: u64 = 1024 * 1024;
 const MAX_RECORDER_FRAMES: u64 = 1_000_000;
+const MAX_RECORDER_UPLOAD_URL_BYTES: usize = 8 * 1024;
+const RECORDER_UPLOAD_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 const D12_RIGS: &[&str] = &[
     "ref_quad_kakute-h7-source-one-5in",
     "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
@@ -358,6 +366,75 @@ struct RecorderArchiveInspection {
     recorded_device_attested: bool,
     device_identity_verified: bool,
     field_session_verified: bool,
+    no_auto_arm: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RecorderUploadFilePlan {
+    name: &'static str,
+    content_type: &'static str,
+    byte_size: u64,
+    sha256: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RecorderUploadPlan {
+    schema_version: &'static str,
+    archive_schema_version: &'static str,
+    inspection_schema_version: &'static str,
+    artifact_id: String,
+    reference_rig_id: String,
+    contract_hash: String,
+    lockfile_hash: String,
+    source_port_sha256: String,
+    sample_rate_hz: u32,
+    started_at_unix_ms: u128,
+    stopped_at_unix_ms: u128,
+    frame_count: u64,
+    duration_s: f64,
+    capture_maturity: String,
+    aggregate_byte_size: u64,
+    files: Vec<RecorderUploadFilePlan>,
+    local_integrity_verified: bool,
+    capture_complete: bool,
+    capture_consent_confirmed: bool,
+    user_owned: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
+    recorded_device_attested: bool,
+    device_identity_verified: bool,
+    field_session_verified: bool,
+    no_auto_arm: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecorderUploadContract {
+    name: String,
+    method: String,
+    url: String,
+    headers: BTreeMap<String, String>,
+    byte_size: u64,
+    sha256: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RecorderUploadReceipt {
+    schema_version: &'static str,
+    upload_plan_schema_version: &'static str,
+    artifact_id: String,
+    uploaded_file_count: usize,
+    uploaded_byte_size: u64,
+    local_integrity_verified: bool,
+    gateway_object_integrity_verified: bool,
+    recorded_device_attested: bool,
+    device_identity_verified: bool,
+    field_session_verified: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
     no_auto_arm: bool,
 }
 
@@ -1606,6 +1683,291 @@ fn inspect_recorder_archive_path(output_dir: &Path) -> Result<RecorderArchiveIns
     })
 }
 
+fn recorder_upload_files() -> [(&'static str, &'static str); 5] {
+    [
+        (RECORDER_MANIFEST_FILE, "application/json"),
+        (RECORDER_FRAME_FILE, "application/x-ndjson"),
+        (RECORDER_INDEX_FILE, "application/x-ndjson"),
+        (RECORDER_REPLAY_FILE, "application/json"),
+        (RECORDER_RECEIPT_FILE, "application/json"),
+    ]
+}
+
+fn recorder_upload_plan_path(output_dir: &Path) -> Result<RecorderUploadPlan, String> {
+    let inspection = inspect_recorder_archive_path(output_dir)?;
+    let aggregate_byte_size = recorder_archive_file_lengths(output_dir)?;
+    let mut files = Vec::with_capacity(5);
+    for (name, content_type) in recorder_upload_files() {
+        let path = output_dir.join(name);
+        let metadata = fs::symlink_metadata(&path)
+            .map_err(|err| format!("inspect recorder upload file '{name}': {err}"))?;
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(format!(
+                "recorder upload file '{name}' must be a real regular file"
+            ));
+        }
+        if metadata.len() == 0 {
+            return Err(format!("recorder upload file '{name}' must not be empty"));
+        }
+        files.push(RecorderUploadFilePlan {
+            name,
+            content_type,
+            byte_size: metadata.len(),
+            sha256: file_sha256(&path)?,
+        });
+    }
+    if recorder_archive_file_lengths(output_dir)? != aggregate_byte_size {
+        return Err("recorder archive changed size while preparing upload".to_string());
+    }
+    Ok(RecorderUploadPlan {
+        schema_version: RECORDER_UPLOAD_PLAN_SCHEMA_VERSION,
+        archive_schema_version: RECORDER_ARCHIVE_SCHEMA_VERSION,
+        inspection_schema_version: RECORDER_INSPECTION_SCHEMA_VERSION,
+        artifact_id: inspection.artifact_id,
+        reference_rig_id: inspection.reference_rig_id,
+        contract_hash: inspection.contract_hash,
+        lockfile_hash: inspection.lockfile_hash,
+        source_port_sha256: inspection.source_port_sha256,
+        sample_rate_hz: inspection.sample_rate_hz,
+        started_at_unix_ms: inspection.started_at_unix_ms,
+        stopped_at_unix_ms: inspection.stopped_at_unix_ms,
+        frame_count: inspection.frame_count,
+        duration_s: inspection.duration_s,
+        capture_maturity: inspection.capture_maturity,
+        aggregate_byte_size,
+        files,
+        local_integrity_verified: inspection.integrity_verified,
+        capture_complete: inspection.capture_complete,
+        capture_consent_confirmed: inspection.capture_consent_confirmed,
+        user_owned: inspection.user_owned,
+        sharing_authorized: inspection.sharing_authorized,
+        training_reuse_authorized: inspection.training_reuse_authorized,
+        recorded_device_attested: inspection.recorded_device_attested,
+        device_identity_verified: inspection.device_identity_verified,
+        field_session_verified: inspection.field_session_verified,
+        no_auto_arm: inspection.no_auto_arm,
+    })
+}
+
+fn strict_upload_origin(value: &str) -> Result<reqwest::Url, String> {
+    if value.is_empty() || value.len() > 2_048 {
+        return Err(format!(
+            "{RECORDER_UPLOAD_ORIGIN_ENV} must be an explicit bounded HTTP(S) origin"
+        ));
+    }
+    let url = reqwest::Url::parse(value)
+        .map_err(|_| format!("{RECORDER_UPLOAD_ORIGIN_ENV} is not a valid URL origin"))?;
+    if !url.username().is_empty()
+        || url.password().is_some()
+        || url.query().is_some()
+        || url.fragment().is_some()
+        || !matches!(url.path(), "" | "/")
+    {
+        return Err(format!(
+            "{RECORDER_UPLOAD_ORIGIN_ENV} must not contain credentials, a path, query, or fragment"
+        ));
+    }
+    let host = url
+        .host_str()
+        .ok_or_else(|| format!("{RECORDER_UPLOAD_ORIGIN_ENV} requires a host"))?;
+    let safe_loopback_http = url.scheme() == "http"
+        && (host.eq_ignore_ascii_case("localhost")
+            || host
+                .parse::<std::net::IpAddr>()
+                .is_ok_and(|address| address.is_loopback()));
+    if url.scheme() != "https" && !safe_loopback_http {
+        return Err(format!(
+            "{RECORDER_UPLOAD_ORIGIN_ENV} requires HTTPS except for an explicit loopback development origin"
+        ));
+    }
+    Ok(url)
+}
+
+fn same_url_origin(left: &reqwest::Url, right: &reqwest::Url) -> bool {
+    left.scheme() == right.scheme()
+        && left.host_str() == right.host_str()
+        && left.port_or_known_default() == right.port_or_known_default()
+}
+
+fn sha256_base64(sha256: &str) -> Result<String, String> {
+    if !is_sha256_hex(sha256) {
+        return Err("recorder upload SHA-256 must be lowercase hexadecimal".to_string());
+    }
+    let bytes = (0..32)
+        .map(|index| {
+            u8::from_str_radix(&sha256[index * 2..index * 2 + 2], 16)
+                .expect("validated recorder upload SHA-256")
+        })
+        .collect::<Vec<_>>();
+    Ok(BASE64_STANDARD.encode(bytes))
+}
+
+fn upload_recorder_archive_files_path(
+    output_dir: &Path,
+    uploads: Vec<RecorderUploadContract>,
+    expected_origin: &str,
+) -> Result<RecorderUploadReceipt, String> {
+    let plan = recorder_upload_plan_path(output_dir)?;
+    if uploads.len() != plan.files.len() {
+        return Err("recorder upload requires exactly five canonical file contracts".to_string());
+    }
+    let origin = strict_upload_origin(expected_origin)?;
+    let expected_names = plan
+        .files
+        .iter()
+        .map(|file| file.name)
+        .collect::<BTreeSet<_>>();
+    let supplied_names = uploads
+        .iter()
+        .map(|upload| upload.name.as_str())
+        .collect::<BTreeSet<_>>();
+    if supplied_names.len() != uploads.len() || supplied_names != expected_names {
+        return Err(
+            "recorder upload contracts do not name the exact five canonical files".to_string(),
+        );
+    }
+    let client = reqwest::blocking::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(RECORDER_UPLOAD_TIMEOUT)
+        .pool_max_idle_per_host(0)
+        .build()
+        .map_err(|err| format!("build recorder upload client: {err}"))?;
+
+    for planned in &plan.files {
+        let upload = uploads
+            .iter()
+            .find(|candidate| candidate.name == planned.name)
+            .expect("exact upload-name set checked");
+        if upload.method != "PUT"
+            || upload.byte_size != planned.byte_size
+            || upload.sha256 != planned.sha256
+        {
+            return Err(format!(
+                "recorder upload contract for '{}' does not match the inspected local file",
+                planned.name
+            ));
+        }
+        if upload.url.is_empty() || upload.url.len() > MAX_RECORDER_UPLOAD_URL_BYTES {
+            return Err(format!(
+                "recorder upload URL for '{}' is outside the bounded length",
+                planned.name
+            ));
+        }
+        let url = reqwest::Url::parse(&upload.url)
+            .map_err(|_| format!("recorder upload URL for '{}' is invalid", planned.name))?;
+        if !url.username().is_empty()
+            || url.password().is_some()
+            || url.fragment().is_some()
+            || !same_url_origin(&url, &origin)
+        {
+            return Err(format!(
+                "recorder upload URL for '{}' is outside the configured object origin",
+                planned.name
+            ));
+        }
+        let query_keys = url
+            .query_pairs()
+            .map(|(key, _)| key.to_ascii_lowercase())
+            .collect::<BTreeSet<_>>();
+        for required in [
+            "x-amz-algorithm",
+            "x-amz-credential",
+            "x-amz-date",
+            "x-amz-expires",
+            "x-amz-signedheaders",
+            "x-amz-signature",
+        ] {
+            if !query_keys.contains(required) {
+                return Err(format!(
+                    "recorder upload URL for '{}' is not a complete signed object request",
+                    planned.name
+                ));
+            }
+        }
+        let header_names = upload
+            .headers
+            .keys()
+            .map(|name| name.to_ascii_lowercase())
+            .collect::<BTreeSet<_>>();
+        if upload.headers.len() != 2
+            || header_names
+                != BTreeSet::from([
+                    "content-type".to_string(),
+                    "x-amz-checksum-sha256".to_string(),
+                ])
+        {
+            return Err(format!(
+                "recorder upload headers for '{}' are not the exact signed allowlist",
+                planned.name
+            ));
+        }
+        let content_type = upload
+            .headers
+            .iter()
+            .find(|(name, _)| name.eq_ignore_ascii_case("content-type"))
+            .map(|(_, value)| value.as_str());
+        let checksum = upload
+            .headers
+            .iter()
+            .find(|(name, _)| name.eq_ignore_ascii_case("x-amz-checksum-sha256"))
+            .map(|(_, value)| value.as_str());
+        let expected_checksum = sha256_base64(&planned.sha256)?;
+        if content_type != Some(planned.content_type)
+            || checksum != Some(expected_checksum.as_str())
+        {
+            return Err(format!(
+                "recorder upload headers for '{}' do not bind its type and SHA-256",
+                planned.name
+            ));
+        }
+        let path = output_dir.join(planned.name);
+        let file = File::open(&path)
+            .map_err(|err| format!("open recorder upload file '{}': {err}", planned.name))?;
+        if file
+            .metadata()
+            .map_err(|err| format!("inspect recorder upload file '{}': {err}", planned.name))?
+            .len()
+            != planned.byte_size
+        {
+            return Err(format!(
+                "recorder upload file '{}' changed after inspection",
+                planned.name
+            ));
+        }
+        let response = client
+            .put(url)
+            .header(reqwest::header::CONTENT_TYPE, planned.content_type)
+            .header("x-amz-checksum-sha256", expected_checksum)
+            .body(reqwest::blocking::Body::sized(file, planned.byte_size))
+            .send()
+            .map_err(|err| format!("upload recorder file '{}': {err}", planned.name))?;
+        if !response.status().is_success() {
+            return Err(format!(
+                "object storage rejected recorder file '{}' with HTTP {}",
+                planned.name,
+                response.status().as_u16()
+            ));
+        }
+    }
+
+    Ok(RecorderUploadReceipt {
+        schema_version: RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION,
+        upload_plan_schema_version: RECORDER_UPLOAD_PLAN_SCHEMA_VERSION,
+        artifact_id: plan.artifact_id,
+        uploaded_file_count: plan.files.len(),
+        uploaded_byte_size: plan.aggregate_byte_size,
+        local_integrity_verified: true,
+        gateway_object_integrity_verified: false,
+        recorded_device_attested: false,
+        device_identity_verified: false,
+        field_session_verified: false,
+        sharing_authorized: false,
+        training_reuse_authorized: false,
+        no_auto_arm: true,
+    })
+}
+
 fn record_serial_stream(
     request: RecorderRequest,
     manifest: RecorderArchiveManifest,
@@ -2120,16 +2482,42 @@ fn stop_background_recording() -> Result<RecorderStopReceipt, String> {
     stop_recorder(recorder_runtime())
 }
 
-#[tauri::command]
-fn inspect_recorder_archive(archive_path: String) -> Result<RecorderArchiveInspection, String> {
+fn strict_recorder_archive_path(archive_path: String) -> Result<PathBuf, String> {
     if archive_path.trim().is_empty() || archive_path.len() > 4_096 {
         return Err("archivePath must be a non-empty path of at most 4096 bytes".to_string());
     }
-    let output_dir = Path::new(&archive_path);
+    let output_dir = PathBuf::from(archive_path);
     if !output_dir.is_absolute() {
         return Err("archivePath must be absolute".to_string());
     }
-    inspect_recorder_archive_path(output_dir)
+    Ok(output_dir)
+}
+
+#[tauri::command]
+fn inspect_recorder_archive(archive_path: String) -> Result<RecorderArchiveInspection, String> {
+    let output_dir = strict_recorder_archive_path(archive_path)?;
+    inspect_recorder_archive_path(&output_dir)
+}
+
+#[tauri::command]
+fn prepare_recorder_archive_upload(archive_path: String) -> Result<RecorderUploadPlan, String> {
+    let output_dir = strict_recorder_archive_path(archive_path)?;
+    recorder_upload_plan_path(&output_dir)
+}
+
+#[tauri::command]
+async fn upload_recorder_archive_files(
+    archive_path: String,
+    uploads: Vec<RecorderUploadContract>,
+) -> Result<RecorderUploadReceipt, String> {
+    let output_dir = strict_recorder_archive_path(archive_path)?;
+    let expected_origin = env::var(RECORDER_UPLOAD_ORIGIN_ENV)
+        .map_err(|_| format!("{RECORDER_UPLOAD_ORIGIN_ENV} is required before recorder upload"))?;
+    tauri::async_runtime::spawn_blocking(move || {
+        upload_recorder_archive_files_path(&output_dir, uploads, &expected_origin)
+    })
+    .await
+    .map_err(|err| format!("recorder upload task failed: {err}"))?
 }
 
 #[cfg(not(test))]
@@ -2142,7 +2530,9 @@ fn main() {
             recorder_status,
             start_background_recording,
             stop_background_recording,
-            inspect_recorder_archive
+            inspect_recorder_archive,
+            prepare_recorder_archive_upload,
+            upload_recorder_archive_files
         ])
         .run(tauri::generate_context!())
         .expect("FORGE Desktop failed to start");
@@ -2156,6 +2546,8 @@ mod tests {
     use super::*;
     use serialport::SerialPort;
     use std::io::{Read, Write};
+    #[cfg(unix)]
+    use std::net::TcpListener;
 
     fn test_dir(name: &str) -> PathBuf {
         let stamp = SystemTime::now()
@@ -2246,6 +2638,80 @@ mod tests {
         master.flush().expect("flush test telemetry frames");
         thread::sleep(Duration::from_millis(150));
         stop_recorder(&runtime).expect("test recorder stops")
+    }
+
+    #[cfg(unix)]
+    fn recorder_upload_contracts(
+        plan: &RecorderUploadPlan,
+        origin: &str,
+    ) -> Vec<RecorderUploadContract> {
+        plan.files
+            .iter()
+            .map(|file| RecorderUploadContract {
+                name: file.name.to_string(),
+                method: "PUT".to_string(),
+                url: format!(
+                    "{origin}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=20260716T000000Z&X-Amz-Expires=60&X-Amz-SignedHeaders=content-type%3Bhost%3Bx-amz-checksum-sha256&X-Amz-Signature={}",
+                    file.name,
+                    "ab".repeat(32)
+                ),
+                headers: BTreeMap::from([
+                    ("content-type".to_string(), file.content_type.to_string()),
+                    (
+                        "x-amz-checksum-sha256".to_string(),
+                        sha256_base64(&file.sha256).expect("plan hash encodes"),
+                    ),
+                ]),
+                byte_size: file.byte_size,
+                sha256: file.sha256.clone(),
+            })
+            .collect()
+    }
+
+    #[cfg(unix)]
+    fn read_test_http_request(mut stream: std::net::TcpStream) -> (String, Vec<u8>) {
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .expect("test HTTP timeout");
+        let mut bytes = Vec::new();
+        let (header_end, content_length) = loop {
+            let mut chunk = [0_u8; 4096];
+            let count = stream.read(&mut chunk).expect("read upload request");
+            assert!(count > 0, "upload request ended before headers");
+            bytes.extend_from_slice(&chunk[..count]);
+            if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                let headers =
+                    std::str::from_utf8(&bytes[..header_end]).expect("HTTP headers UTF-8");
+                let content_length = headers
+                    .lines()
+                    .find_map(|line| {
+                        line.split_once(':').and_then(|(name, value)| {
+                            name.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().expect("content length"))
+                        })
+                    })
+                    .expect("sized upload has content length");
+                break (header_end + 4, content_length);
+            }
+            assert!(bytes.len() < 32 * 1024, "HTTP headers exceed test cap");
+        };
+        while bytes.len() < header_end + content_length {
+            let mut chunk = [0_u8; 4096];
+            let count = stream.read(&mut chunk).expect("read upload body");
+            assert!(count > 0, "upload request ended before declared body");
+            bytes.extend_from_slice(&chunk[..count]);
+        }
+        let request_line = std::str::from_utf8(&bytes[..header_end])
+            .expect("HTTP request UTF-8")
+            .lines()
+            .next()
+            .expect("HTTP request line")
+            .to_string();
+        let body = bytes[header_end..header_end + content_length].to_vec();
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            .expect("write upload response");
+        (request_line, body)
     }
 
     fn rewrite_pretty_json(path: &Path, value: &impl Serialize) {
@@ -2769,6 +3235,139 @@ mod tests {
         assert!(inspect_recorder_archive("relative/archive".to_string())
             .expect_err("relative archive path must fail")
             .contains("must be absolute"));
+        fs::remove_dir_all(dir).expect("cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recorder_upload_plan_is_exact_sanitized_and_non_authoritative() {
+        let dir = test_dir("recorder-upload-plan");
+        complete_test_recorder_archive(&dir, "art_upload_plan");
+        let plan = recorder_upload_plan_path(&dir).expect("upload plan");
+        assert_eq!(plan.schema_version, RECORDER_UPLOAD_PLAN_SCHEMA_VERSION);
+        assert_eq!(plan.artifact_id, "art_upload_plan");
+        assert_eq!(plan.files.len(), 5);
+        assert_eq!(
+            plan.files.iter().map(|file| file.name).collect::<Vec<_>>(),
+            recorder_upload_files()
+                .iter()
+                .map(|(name, _)| *name)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            plan.aggregate_byte_size,
+            plan.files.iter().map(|file| file.byte_size).sum::<u64>()
+        );
+        assert!(plan.files.iter().all(|file| is_sha256_hex(&file.sha256)));
+        assert!(plan.local_integrity_verified);
+        assert!(!plan.recorded_device_attested);
+        assert!(!plan.device_identity_verified);
+        assert!(!plan.field_session_verified);
+        assert!(!plan.sharing_authorized);
+        assert!(!plan.training_reuse_authorized);
+        let serialized = serde_json::to_string(&plan).expect("plan serializes");
+        assert!(!serialized.contains(&dir.to_string_lossy().to_string()));
+        assert!(!serialized.contains("archivePath"));
+        assert!(!serialized.contains("replayPath"));
+
+        let command_plan = prepare_recorder_archive_upload(dir.to_string_lossy().into_owned())
+            .expect("Tauri upload-plan command");
+        assert_eq!(command_plan.artifact_id, plan.artifact_id);
+        fs::remove_dir_all(dir).expect("cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recorder_upload_streams_exact_files_and_keeps_gateway_authority_false() {
+        let dir = test_dir("recorder-upload-stream");
+        complete_test_recorder_archive(&dir, "art_upload_stream");
+        let plan = recorder_upload_plan_path(&dir).expect("upload plan");
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind upload server");
+        let origin = format!(
+            "http://{}",
+            listener.local_addr().expect("listener address")
+        );
+        let uploads = recorder_upload_contracts(&plan, &origin);
+        let server = thread::spawn(move || {
+            let mut requests = Vec::new();
+            for _ in 0..5 {
+                let (stream, _) = listener.accept().expect("accept upload");
+                requests.push(read_test_http_request(stream));
+            }
+            requests
+        });
+
+        let receipt = upload_recorder_archive_files_path(&dir, uploads, &origin)
+            .expect("five files stream to the configured origin");
+        assert_eq!(
+            receipt.schema_version,
+            RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION
+        );
+        assert_eq!(receipt.artifact_id, "art_upload_stream");
+        assert_eq!(receipt.uploaded_file_count, 5);
+        assert_eq!(receipt.uploaded_byte_size, plan.aggregate_byte_size);
+        assert!(receipt.local_integrity_verified);
+        assert!(!receipt.gateway_object_integrity_verified);
+        assert!(!receipt.recorded_device_attested);
+        assert!(!receipt.device_identity_verified);
+        assert!(!receipt.field_session_verified);
+        assert!(!receipt.sharing_authorized);
+        assert!(!receipt.training_reuse_authorized);
+        assert!(receipt.no_auto_arm);
+
+        let requests = server.join().expect("upload server completes");
+        assert_eq!(requests.len(), plan.files.len());
+        for ((request_line, body), planned) in requests.iter().zip(&plan.files) {
+            assert!(
+                request_line.starts_with(&format!("PUT /{}?", planned.name)),
+                "unexpected request line: {request_line}"
+            );
+            assert_eq!(
+                body,
+                &fs::read(dir.join(planned.name)).expect("local file readable")
+            );
+        }
+        fs::remove_dir_all(dir).expect("cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recorder_upload_refuses_origin_header_and_local_identity_substitution() {
+        let dir = test_dir("recorder-upload-refusal");
+        complete_test_recorder_archive(&dir, "art_upload_refusal");
+        let plan = recorder_upload_plan_path(&dir).expect("upload plan");
+        let origin = "https://objects.example.test";
+
+        let mut wrong_origin = recorder_upload_contracts(&plan, origin);
+        wrong_origin[0].url =
+            wrong_origin[0]
+                .url
+                .replacen(origin, "https://substitute.example.test", 1);
+        assert!(
+            upload_recorder_archive_files_path(&dir, wrong_origin, origin)
+                .expect_err("origin substitution must fail")
+                .contains("outside the configured object origin")
+        );
+
+        let mut extra_header = recorder_upload_contracts(&plan, origin);
+        extra_header[0]
+            .headers
+            .insert("authorization".to_string(), "secret".to_string());
+        assert!(
+            upload_recorder_archive_files_path(&dir, extra_header, origin)
+                .expect_err("header substitution must fail")
+                .contains("exact signed allowlist")
+        );
+
+        let mut wrong_hash = recorder_upload_contracts(&plan, origin);
+        wrong_hash[0].sha256 = "00".repeat(32);
+        assert!(upload_recorder_archive_files_path(&dir, wrong_hash, origin)
+            .expect_err("hash substitution must fail")
+            .contains("does not match the inspected local file"));
+
+        assert!(strict_upload_origin("http://objects.example.test")
+            .expect_err("non-loopback cleartext origin must fail")
+            .contains("requires HTTPS"));
         fs::remove_dir_all(dir).expect("cleanup");
     }
 
