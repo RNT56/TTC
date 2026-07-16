@@ -2,14 +2,15 @@
 
 **Status:** Deterministic worker plane implemented across all families; native
 Anthropic ETL and queued vendor normalization at contract/fixture maturity; exact
-Modal training deployment controls exist as an unprotected contract/fixture candidate,
-while credentialed GPU/provider proof remains gated · **Phases:** P3/P4 (ETL), P5
+Modal training deployment controls and the D47 MJX decision contract are protected
+at contract/fixture maturity, while credentialed GPU/provider proof remains gated · **Phases:** P3/P4 (ETL), P5
 (photoscan), P6 (OCCT full), P7 (training), P11 (commerce) ·
 **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
 (fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue), D41
 (task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
-trainer authority), D45 (offline source authority), D46 (Modal deployment authority)
+trainer authority), D45 (offline source authority), D46 (Modal deployment authority),
+and D47 (MJX decision authority)
 
 ## 1. Purpose
 

@@ -3,11 +3,12 @@
 Snapshot date: **2026-07-16**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `ff39cd8` (PR #79; P7-013 deployment control)
-Latest verified protected runtime descendant: `ff39cd8` (PR #79; P7-013 deployment control)
+Latest verified protected descendant: `d19c911` (PR #81; P7-010 decision contract)
+Latest verified protected runtime descendant: `d19c911` (PR #81; P7-010 decision contract)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
+P7-010 decision-contract evidence anchor: `d19c911` (PR #81)
 P7-011 policy-delivery evidence anchor: `9131289` (PR #68)
 P7-014 waypoint-training evidence anchor: `f220d25` (PR #70)
 P7-014 ground-training evidence anchor: `90b1691` (PR #75)
@@ -144,17 +145,22 @@ protected harness/parity evidence, not an adoption decision: the report still bl
 missing D12 quad/rover/legged, declared accelerator, overnight/tier-2 budget, cost,
 and cost-normalized throughput evidence.
 
-The current unprotected P7-010 candidate adds D47's separate decision path without
-changing that protected v1 result. `mjxDecisionRequest`/`mjx-benchmark` 2.0.0 binds
+PR #81 protects D47's separate P7-010 decision path without changing that v1
+result. `mjxDecisionRequest`/`mjx-benchmark` 2.0.0 binds
 exact ordered quad/rover/legged simulation proxies, checked-in D12/proxy authority
 hashes, clean source, the unchanged float64 runtime/protocol, exact GPU/TPU device
 with no fallback, 12-hour scorecard and 200-candidate CPU budget artifacts, and a
 retained current USD/hour basis. The native worker measures all three sovereign Rust
 bundles and applies the existing centralized rule; `docs/MJX-DECISION.md` owns its
 operator and evidence procedure. The D12 registry bindings explicitly do not claim
-exact SKU-level twins. Focused tests pass 18/18, but this candidate is not protected
-and no supported-accelerator/budget/cost result exists. Apple's documented lack of
-JAX Metal float64 support means the local M2 Pro is not an admissible substitute.
+exact SKU-level twins. Exact head `6c633d5` passed PR CI `29465812702`/security
+`29465812703`; protected `d19c911` passed post-merge CI `29466150120`/security
+`29466150113`. Downloaded protected artifact `8363066891` self-binds its clean v1
+smoke to `d19c911` and remains decision-ineligible; it is protection/harness proof,
+not the missing v2 result. No supported-accelerator/budget/cost result exists, and
+this host exposes no Modal credential names, Modal CLI, NVIDIA device, or other
+declared GPU/TPU authority. Apple's documented lack of JAX Metal float64 support
+means the local M2 Pro is not an admissible substitute.
 
 P7-011 is complete through protected PR #68. Exact head `433ff3b` passed CI
 `29408733457` and security `29408733461`; protected squash `9131289` passed
@@ -649,6 +655,8 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim P7-012 protected overnight learning quality | **Go at controlled consumer-hardware simulation maturity** | PR #72/protected `8e094c0` owns the implementation and PR #73/protected `6bfa60f` owns the exact retained interrupt/resume evidence; do not restate this as deployed GPU, measured host energy, external-user, device, or field proof |
 | Claim P7-014 rover/quadruped trainer closure | **Go at controlled deterministic trainer maturity** | PR #75/protected `90b1691`, exact PR/post-merge CI/security, and independently checked artifact `8356753424` close executable contract-derived rover/quadruped training; passing learned policies, Studio ground playback, external users, devices, and field transfer are separately open |
 | Claim P7-009 source-bound offline-training closure | **Go at controlled-synthetic maturity** | PR #77/protected `2c7562d`, exact PR/post-merge CI/security, the 23-migration database/browser matrix, and independently checked artifact `8359446894` close the exact consented-log BC-to-PPO seam; recorder/device/field, deployed GPU, passing-policy, and external-user claims remain open |
+| Claim P7-010 decision-contract protection | **Go at contract/fixture maturity only** | PR #81/protected `d19c911`, exact PR/post-merge CI/security, and independently checked artifact `8363066891` protect D47's exact three-proxy request, source/authority/budget/cost hashes, float64 GPU/TPU no-fallback enforcement, centralized verdict, and operator runbook. The retained v1 CPU smoke remains decision-ineligible; no final adoption or rejection is proven |
+| Claim P7-010 MJX adoption or rejection | **No-go** | retain reviewed raw D12-proxy/legged scorecard and complete 200-candidate CPU budget artifacts, current CPU/accelerator price or bill, and one clean protected decision-eligible v2 run on an authorized float64 CUDA/ROCm GPU or TPU first |
 | Claim P7-013 deployment-control protection | **Go at contract/fixture maturity only** | PR #79/protected `ff39cd8`, exact PR/post-merge CI/security, the 24-migration database/browser matrix, and independently checked artifact `8362121226` protect fail-closed deployment identity, CUDA authority, call recovery, quota, cancellation/refund, and cost-reconciliation contracts. No Modal deployment, credentialed L4 execution, provider billing, delivered alert, automatic expiry, or live recovery is proven |
 | Claim P7-013 credentialed sandbox closure | **No-go** | execute and retain the exact clean-protected seven-day `MODAL-OPERATIONS.md` provider/billing/alert/spend-stop/cancel/delete/expiry/recovery evidence first |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |

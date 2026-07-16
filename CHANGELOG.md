@@ -18,6 +18,44 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect the decision-grade three-morphology MJX gate
+**Session:** Codex agent · branch `codex/p7010-decision-protected-evidence` ·
+**Phase:** P7 · **TODO items:** P7-010 [~]
+**Done:** Protected D47 and the complete decision-grade P7-010 contract through PR
+#81. Exact implementation head `6c633d5` passed PR CI `29465812702` and security
+`29465812703`; protected squash `d19c911` has reviewed tree
+`a17544219701a91b373ab3592b0748e0eee45da6` and passed exact post-merge CI
+`29466150120` and security `29466150113`. Downloaded protected artifact
+`8363066891` (`mjx-feasibility-evidence`, Actions digest
+`sha256:dd74f211832fa07a3d103f0226e85d723f062c58ac19b2b2aeed15bab33f8b5d`)
+self-binds to clean `d19c911`; its JSON SHA-256 is
+`627386b2edf5870977bee802e351e916999fcb608641f4c2ed698a3f7d63cf24`.
+The retained v1 CPU smoke passes float64 parity and remains explicitly
+decision-ineligible. It measured native MuJoCo at 272,093 steps/s and CPU-backed MJX
+at 54,918 steps/s and reports all missing D12 proxy, declared accelerator,
+overnight/tier-2 budget, provider cost, and cost-normalized-throughput evidence as
+blockers. The branch and protected runs cover the v2 request/report implementation,
+225 worker tests, and the full 40-step local gate; protected browser artifact
+`8363142398` separately binds the clean 24-migration Postgres/real-browser matrix to
+`d19c911`.
+Environment authority was also checked without reading secret values: this Darwin
+arm64 host exposes no Modal credential names, Modal CLI, NVIDIA device, or other
+declared GPU/TPU authority, so it cannot execute the credentialed accelerator
+acceptance run.
+**Changed:** Protected-evidence anchors and maturity language in `AGENTS.md`,
+project state, roadmap, execution overlay, TODO ledger, and compute-worker contract;
+this changelog.
+**Decisions:** none; D47 and R30 are now protected without changing the final
+adopt/reject rule.
+**Next:** Produce reviewed raw D12-proxy/legged scorecard and complete 200-candidate
+CPU budget artifacts on one priced CPU host, then execute `MJX-DECISION.md` from an
+exact clean protected revision on one authorized float64 CUDA/ROCm GPU or TPU and
+retain the current accelerator price/bill.
+**Blockers:** Final P7-010 evidence requires compute/provider authority and spend not
+available in this host. Apple Metal remains inadmissible because its current JAX
+plug-in lacks float64. P7-010 therefore stays `[~]`; protection is not the final MJX
+decision.
+
 ## 2026-07-16 — Add the decision-grade three-morphology MJX gate
 **Session:** Codex agent · branch `codex/p7010-decision-evidence` · **Phase:** P7 ·
 **TODO items:** P7-010 [~]
