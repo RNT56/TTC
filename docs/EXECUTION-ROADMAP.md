@@ -533,18 +533,19 @@ Work:
   and post-merge CI/security `29537565069`/`29537565062` pass. Raw D53/D54 frames
   remain object-backed; real-mid-hardware, real D54-to-twin, P8-014 and EXT-008
   evidence remain required;
-- D58/P8-007 is implemented locally at `local-ux-rehearsal` maturity. Internal
-  ladder/control 1.0.0 drive one shell-owned session through the exact contiguous
-  four-stage prefix, bind D12/report-hash/exportable-policy/passing-D9-supervisor-
+- D58/P8-007 is protected at local `local-ux-rehearsal` maturity through PR #104/
+  `f7e7f57`. Internal ladder/control 1.0.0 drive one shell-owned session through the
+  exact contiguous four-stage prefix, bind D12/report-hash/exportable-policy/passing-D9-supervisor-
   shaped inputs, require exact transition interactions, survive webview reloads,
   and refuse browser use, parallel sessions, skips, substitution, and authority
   promotion. The native path performs no hardware I/O; every physical/deployment/
   hardware/device/field/external-beta claim remains false. Four native ladder tests,
   28 total native Desktop tests, 37 Studio, 74 Gateway, and 227 worker tests pass.
   All 40 local gates under Python 3.12.13, the fresh clean/25-predecessor database,
-  all 12 production-browser flows, and Chromium/Firefox/WebKit pass. The candidate
-  still needs reviewed protected CI/security; real ladder execution remains an
-  external named-hardware lane;
+  all 12 production-browser flows, and Chromium/Firefox/WebKit pass. Exact head
+  `3f3c4ec`, reviewed tree `4b36fac`, PR CI/security `29541145577`/`29541145559`,
+  protected-tree equality, and post-merge CI/security `29541456427`/`29541456430`
+  pass; real ladder execution remains an external named-hardware lane;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -563,11 +564,11 @@ MSP transcript, fixture signature, adapter, import path, or acceptance-authority
 signature may promote a log to recorded-device or field maturity without a later
 reviewed format and acceptance proof.
 
-The current dependency-complete local step is to protect D58's separately bounded
-P8-007 deployment-ladder rehearsal through the complete gates, reviewed PR, and
-post-merge evidence while the real adapter/field prerequisite remains external.
-Do not fabricate a D54 ghost source: the real D57 successor must wait for the named-
-hardware/D54-to-twin gate above.
+The current dependency-complete external step is the named props-off D12 D49/D55/D56
+controlled-lab seam above, followed only after retained semantic review by a new
+real-transition boundary. No further local acknowledgment or fixture can satisfy
+that evidence requirement. Do not fabricate a D54 ghost source: the real D57
+successor must wait for the named-hardware/D54-to-twin gate above.
 
 Acceptance:
 

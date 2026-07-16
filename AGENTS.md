@@ -90,10 +90,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime anchor is D57/P8-004 PR #102 at `d33fd57`.
-  Exact implementation head `50abc92` passed PR CI `29536927436` and security
-  `29536927492`; reviewed tree `cc1d483` is byte-identical at the protected squash,
-  whose post-merge CI `29537565069` and security `29537565062` pass. D57 evidence-
+  latest verified protected runtime anchor is D58/P8-007 PR #104 at `f7e7f57`.
+  Exact implementation head `3f3c4ec` passed PR CI `29541145577` and security
+  `29541145559`; reviewed tree `4b36fac` is byte-identical at the protected squash,
+  whose post-merge CI `29541456427` and security `29541456430` pass. D57 evidence-
   reconciliation PR #103/`dd29789`, D56 evidence-
   reconciliation PR #101/`9035d09` and runtime PR #100/`1bf127d`, D55 evidence-
   reconciliation PR #98/`9e94c71` and runtime PR
@@ -122,14 +122,16 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   main evidence is recorded above. Real D54 replay/twin execution, named-mid-
   hardware performance, P8-014 and EXT-008 remain separate gates; never put raw
   recorder frames into job JSON or maintenance JSONB;
-- D58/P8-007 is implemented only as an unprotected local UX-rehearsal candidate:
+- D58/P8-007 is protected at local UX-rehearsal maturity through PR #104/`f7e7f57`:
   internal ladder/control 1.0.0, one shell-owned contiguous SITL → HITL →
   constrained → free session, exact D9 rates/fallback, exact transition
   interactions, browser fail-close, and permanent false physical/deployment/
   hardware/device/field/external-beta authority. Four native ladder tests, 37
   Studio tests, 74 Gateway tests, 227 worker tests, all 40 local gates under Python
   3.12.13, a fresh clean/25-predecessor Postgres matrix, all 12 production-browser
-  flows, and Chromium/Firefox/WebKit pass.
+  flows, and Chromium/Firefox/WebKit pass. Exact head `3f3c4ec`, reviewed tree
+  `4b36fac`, PR CI/security `29541145577`/`29541145559`, protected-tree equality,
+  and post-merge CI/security `29541456427`/`29541456430` pass.
   It performs no hardware I/O and its acknowledgments may not be cited as HITL,
   constrained, free, deployment, lab, or physical-evidence proof until separately
   exercised under the named D12/D30 external-acceptance boundary;

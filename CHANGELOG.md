@@ -18,6 +18,31 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Reconcile protected D58 deployment-ladder evidence
+**Session:** Codex agent · branch `codex/p8007-d58-protected-evidence` ·
+**Phase:** P8 · **TODO items:** P8-007 [~], P8-008 [~]
+**Done:** Reconciled the living D58 boundary to protected local UX-rehearsal
+maturity. PR #104 exact head `3f3c4ecd9850b1958cc06ca8c3568bee23510866`
+passed PR CI `29541145577` and security `29541145559`; reviewed tree
+`4b36fac3a2c82736ca90ad4ff657bc50f20ebeb0` is byte-identical at protected
+squash `f7e7f57eaeee65cd7b4527118a00308205c6b15d`, whose post-merge CI
+`29541456427` and security `29541456430` pass. The remote implementation branch
+was deleted. This protects the shell-owned contiguous four-stage rehearsal, strict
+Studio/browser fail-close, exact D9 display and skip-prevention mechanics only; it
+performs no hardware I/O and every physical/deployment/hardware/device/field/
+external-beta authority bit remains false.
+**Changed:** Entry guidance, changelog, project-state, roadmap, TODO, and execution
+roadmap only; no runtime, dependency, schema, migration, artifact, recorder, replay,
+policy, consent, sharing, training, hardware, or release format changed.
+**Decisions:** none; D58 remains active unchanged and D59 remains the next regular
+decision ID.
+**Next:** Execute the named props-off D12 controlled-lab D49/D55/D56 seam under a
+real deployment trust bundle and retained semantic review before adding any real
+ladder transition or physical-evidence authority.
+**Blockers:** Named hardware, real trust-root operations, physical confirmation,
+measured supervisor/kill-switch behavior, D30/EXT-004 lab acceptance, and field
+evidence require controlled external execution and remain open.
+
 ## 2026-07-16 — Implement the fail-closed deployment-ladder rehearsal
 **Session:** Codex agent · branch `codex/p8007-d58-deployment-ladder` ·
 **Phase:** P8 · **TODO items:** P8-007 [~], P8-008 [~]
