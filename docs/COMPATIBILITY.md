@@ -215,6 +215,22 @@ must not be re-pinned as deterministic expectations. External publication first
 requires compatibility-surface promotion, old/current/unsupported fixtures,
 migration/deprecation guidance, and release notes.
 
+D47 adds separate internal evidence envelopes `mjxDecisionRequest` 2.0.0 and
+`mjx-benchmark` 2.0.0; v1 remains accepted only by its existing controlled-feasibility
+command and is not reinterpreted. Request v2 requires exact ordered `d12-quad`,
+`d12-rover`, and `legged` cases; canonical contract snapshots; D12/proxy authority
+identity and file hashes; clean protected source; the unchanged float64 solver/parity
+protocol and runtime pins; exact GPU/TPU device authority with fallback forbidden;
+12-hour scorecard and 200-candidate CPU budget artifacts with exact CPU host,
+hardware, protocol, and throughput; and a current retained matching
+CPU/accelerator USD/hour source. Result v2 adds all three model measurements,
+authority/budget/cost lineage, and the centralized adoption-or-rejection verdict.
+Changing proxy identity or exactness meaning, budget envelopes, evidence hash
+preimages, accepted backend/precision, required morphology/order, cost-normalization,
+parity bands, CPU-need rule, or the 3x threshold requires a new internal major. These
+artifacts remain non-public measured evidence: publication still requires registered
+compatibility fixtures, deprecation/migration guidance, and release notes.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

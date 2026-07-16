@@ -263,3 +263,44 @@ def test_strict_complete_evidence_can_authorize_rejection_when_cpu_meets_budget(
     assert result["decisionEligible"]
     assert not result["adoptionTriggered"]
     assert not result["adopt"]
+
+
+def test_decision_measurements_promote_only_the_internal_report_major(monkeypatch):
+    monkeypatch.delenv("FORGE_MJX_BENCH_CMD", raising=False)
+    rows = _rows(cpu_hit=False, tier2_miss=31.0)
+    request_sha = "4" * 64
+    for row in rows:
+        row.update(
+            {
+                "sourceBound": True,
+                "sourceRevision": "5" * 40,
+                "worktreeClean": True,
+                "contractSha256": "6" * 64,
+                "mjcfSha256": "7" * 64,
+                "requestSha256": request_sha,
+                "acceleratorBackend": "gpu",
+                "budgetEvidence": True,
+                "costEvidence": True,
+            }
+        )
+    source = {
+        "artifactKind": "mjxDecisionMeasurements",
+        "schemaVersion": "2.0.0",
+        "provider": "decision-runner",
+        "maturity": "sandbox",
+        "sourceRevision": "5" * 40,
+        "requestSha256": request_sha,
+        "worktreeClean": True,
+        "models": [{"morphology": row["morphology"]} for row in rows],
+        "budgetEvidence": {"artifactKind": "p7-mjx-cpu-budget-evidence"},
+        "costEvidence": {"artifactKind": "p7-mjx-cost-evidence"},
+        "morphologies": rows,
+    }
+
+    result = mjx_benchmark_report({"benchmark": source})
+
+    assert result["schemaVersion"] == "2.0.0"
+    assert result["decisionEligible"]
+    assert result["models"] == source["models"]
+    assert result["budgetEvidence"] == source["budgetEvidence"]
+    assert result["costEvidence"] == source["costEvidence"]

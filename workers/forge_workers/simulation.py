@@ -124,7 +124,13 @@ def evaluate_mjx_benchmark_source(
     decision_eligible = bool(decisions) and not blockers
     report = {
         "artifactKind": "mjx-benchmark",
-        "schemaVersion": "1.0.0",
+        "schemaVersion": (
+            "2.0.0"
+            if isinstance(source, dict)
+            and source.get("artifactKind") == "mjxDecisionMeasurements"
+            and source.get("schemaVersion") == "2.0.0"
+            else "1.0.0"
+        ),
         "provider": _provider(source),
         "requiredMorphologies": list(REQUIRED_MJX_MORPHOLOGIES),
         "morphologies": rows,
@@ -148,6 +154,9 @@ def evaluate_mjx_benchmark_source(
             "mjx",
             "parity",
             "nonClaims",
+            "models",
+            "budgetEvidence",
+            "costEvidence",
         ):
             if key in source:
                 report[key] = source[key]

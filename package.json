@@ -32,6 +32,7 @@
     "sim:parity:live": "FORGE_MUJOCO_PARITY_CMD='python -m forge_workers.mujoco_parity' node scripts/sim-parity.mjs --out artifacts/sim-parity",
     "sim:parity:check": "node scripts/sim-parity.mjs --mujoco crates/forge-sim/tests/fixtures/mujoco-parity-baseline.json --out /tmp/forge-sim-parity-check",
     "sim:mjx:feasibility": "node scripts/mjx-feasibility-smoke.mjs",
+    "sim:mjx:decision": "node scripts/mjx-decision-benchmark.mjs",
     "training:smoke": "node scripts/training-smoke.mjs",
     "training:offline-smoke": "node scripts/offline-training-smoke.mjs",
     "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/",

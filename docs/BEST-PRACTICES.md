@@ -231,6 +231,12 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     validate the harness and parity bands; it cannot establish accelerator speedup,
     training-wall-time savings, cost normalization, an overnight budget, D12
     morphology coverage, or an adoption decision (P7-010).
+    The decision-grade run is a separate major: bind explicit D12 simulation-proxy
+    identities without claiming SKU-level twin fidelity, hash the raw scorecard/
+    200-candidate budget and provider-cost sources, resolve exactly to requested
+    float64-capable GPU/TPU with no fallback, and preserve all three rows under one
+    clean request. Do not splice revisions or weaken precision/parity for a locally
+    available backend; follow D47 and `MJX-DECISION.md`.
     A GPU-capable host does not imply GPU execution: benchmark the same workload,
     choose the measured backend, record requested/resolved device with fallback
     forbidden, and label unused accelerator inventory separately. Adapter-rating ×
