@@ -90,8 +90,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-013 PR #79 at `ff39cd8`, with
-  post-merge CI `29463344103` and security `29463344085` green. PR #79 owns the
+  latest verified protected runtime descendant is P7-010 PR #81 at `d19c911`, with
+  post-merge CI `29466150120` and security `29466150113` green. PR #81 owns the
+  decision-grade D47 MJX request/report contract while PR #79 owns the
   fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
   controlled-synthetic offline-training evidence; PR #75 owns the
   contract-derived rover/quadruped trainer evidence, PR #70/`f220d25` owns the
@@ -185,6 +186,17 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   decision-ineligible: exact D12 quad/rover/legged, declared accelerator,
   overnight/tier-2 budget, cost, and the existing 3x cost-normalized rule still own
   the adoption decision;
+- P7-010's decision-grade D47 contract is protected through PR #81 at `d19c911`.
+  Exact head `6c633d5` passed PR CI `29465812702`/security `29465812703`; the
+  protected squash passed CI `29466150120`/security `29466150113`. Downloaded
+  artifact `8363066891` binds a clean v1 smoke to `d19c911`, passes float64 parity,
+  and correctly refuses decision eligibility because the D12 proxy, declared
+  accelerator, overnight/tier-2 budget, cost, and cost-normalized-throughput rows
+  remain absent. D47's exact three-proxy v2 request, authority/budget/cost hashes,
+  GPU/TPU no-fallback enforcement, centralized verdict, and runbook are protected;
+  a real clean supported-accelerator v2 result is not. The current Darwin arm64 host
+  exposes no Modal credential names, Modal CLI, NVIDIA device, or other declared
+  GPU/TPU authority, and Apple Metal cannot satisfy the frozen float64 protocol;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play

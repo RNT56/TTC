@@ -335,14 +335,16 @@ Work:
   request, real-engine comparison, parity bands, timing method, and fail-closed
   decision report. Its x86_64 reference row passed parity while native MuJoCo was
   about 4.9x faster than CPU-backed MJX, so it is harness feasibility, not D12
-  adoption or rejection evidence. The current unprotected D47 candidate preserves
-  v1 and adds the final-request machinery: three explicit D12/controlled simulation
+  adoption or rejection evidence. PR #81/protected `d19c911` preserves v1 and
+  protects D47's final-request machinery: three explicit D12/controlled simulation
   proxies and authority hashes, 12-hour scorecard and complete 200-candidate CPU
   envelopes, retained provider USD/hour authority, exact GPU/TPU resolution with
   float64/no fallback, a three-bundle native runner, centralized v2 verdict, and
-  `MJX-DECISION.md`. Protect that contract, then run it from the exact clean protected
-  revision with real raw budget/cost artifacts and a supported accelerator; the M2
-  Pro/Metal path cannot satisfy the frozen float64 protocol. P7-011 is protected
+  `MJX-DECISION.md`. Exact head `6c633d5` and protected `d19c911` passed PR and
+  post-merge CI/security; downloaded artifact `8363066891` is a clean protected v1
+  smoke and remains decision-ineligible. Run v2 from an exact clean protected
+  revision with reviewed raw budget/cost artifacts and a supported accelerator; the
+  M2 Pro/Metal path cannot satisfy the frozen float64 protocol. P7-011 is protected
   through PR #68/`9131289`;
   clean artifact `8340587390` proves one-click admitted-model create/poll,
   D38/D39 one-winner content-addressed object delivery, byte-free policy metadata,
