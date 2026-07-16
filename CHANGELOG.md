@@ -18,6 +18,57 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Add the decision-grade three-morphology MJX gate
+**Session:** Codex agent · branch `codex/p7010-decision-evidence` · **Phase:** P7 ·
+**TODO items:** P7-010 [~]
+**Done:** Implemented the unprotected D47 decision-evidence candidate on exact
+protected base `0695261b0784e468181b286f1f85286dd9b66a3b` without changing or
+overclaiming the protected v1 CPU feasibility row. New internal
+`mjxDecisionRequest`/`mjx-benchmark` 2.0.0 requires exact ordered `d12-quad`,
+`d12-rover`, and `legged` cases; canonical contract snapshots; checked-in
+D12/proxy authority identities and file hashes; clean exact source; the unchanged
+MuJoCo/MJX 3.9.0, JAX/JAXLIB 0.10.2 float64 protocol; requested GPU/TPU device
+authority with fallback forbidden; raw CPU budget-artifact hashes; and a retained
+current USD/hour source. The quad and rover bindings are explicitly simulation
+proxies rather than exact SKU twins; the controlled legged row is explicitly not a
+D12 rig. D47 makes overnight one scorecard-passing exact recipe within 12 hours and
+tier 2 the complete declared 200-candidate workload within 12 hours.
+The native command refuses CPU, Metal, fallback, wrong-device, runtime, source,
+contract, authority, budget, cost, hash, and non-finite substitution before those
+claims gain authority. On a supported accelerator it compiles every case through
+the sovereign Rust bundle, measures warmed native MuJoCo and synchronized MJX,
+retains compile/sample/parity details, computes cost-normalized throughput, and
+returns the existing centralized adopt/reject/block rule. `pnpm sim:mjx:decision`
+owns all contract and authority paths; callers may provide only reviewed budget and
+cost evidence. The operator runbook records prerequisites, input schemas, stop
+conditions, exact command, semantic review, retention, nonclaims, and whole-run
+recovery. Apple's current primary JAX Metal documentation was rechecked and still
+lists the experimental plug-in's `np.float64` support as unavailable, so the local
+M2 Pro cannot honestly close this float64 gate. Focused request/report/backend tests
+pass 18/18; the exact Python 3.12 worker suite passes 225/225; all 40 required local
+gates pass with 15 compatibility surfaces, 77 routes, 17 worker families, native/
+WASM parity, four-task training, offline fine-tuning, the unchanged controlled v1 MJX
+smoke, and patch hygiene. Ruff reports no issues, 239 local Markdown targets resolve,
+and the stable ledger remains 205 unique tasks (147 done, 33 in progress, 24 open,
+1 blocked).
+**Changed:** New decision benchmark worker and wrapper; centralized internal result
+major propagation; P7-010 tests; package command; canonical agent read/gate/ownership
+rules; D47; compatibility policy; learning/compute contracts; operator runbook and
+documentation index; this changelog.
+**Decisions:** D47 fixes proxy honesty, 12-hour overnight and 200-candidate tier-2
+envelopes, float64, exact GPU/TPU authority, cost basis, and the final adopt/reject
+meaning while preserving v1. R30 tracks false decisions caused by proxy, backend,
+cross-request, precision, budget, or price substitution.
+**Next:** Run full verification, protect this contract through PR/post-merge
+CI/security, then from that exact clean protected revision produce the three raw CPU
+budget artifacts and execute the runbook on a reviewed CUDA/ROCm GPU or TPU with a
+current retained provider rate/bill.
+**Blockers:** The implementation candidate is not protected yet. Final P7-010 still
+requires scorecard-passing D12-proxy/legged CPU recipe evidence, the complete
+200-candidate tier-2 measurement, current reviewed CPU/accelerator price or billing
+evidence, and one authorized supported-accelerator run. Apple Metal cannot supply the
+required float64 parity evidence.
+
 ## 2026-07-16 — Protect fail-closed Modal training operations
 **Session:** Codex agent · branch `codex/p7013-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-013 [~]

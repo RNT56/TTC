@@ -182,6 +182,20 @@ remain decision-ineligible until clean protected D12 quad/rover/legged accelerat
 overnight/tier-2 budget, and cost evidence exists; a CPU feasibility run never
 promotes this command into a deployed GPU worker.
 
+D47's separate decision command is
+`python -m forge_workers.mjx_decision_benchmark`, normally invoked through
+`pnpm sim:mjx:decision` and [`../MJX-DECISION.md`](../MJX-DECISION.md). It accepts
+only internal `mjxDecisionRequest` 2.0.0: exact ordered quad/rover/legged proxy
+contracts and authority hashes, clean protected source, the unchanged float64
+protocol/pins, one scorecard/200-candidate CPU budget artifact per row, a retained
+current USD/hour source, and a requested GPU/TPU device with fallback forbidden.
+The wrapper owns all contract and authority paths. The worker refuses CPU/Metal or a
+different device before timing, then compiles each Rust bundle, measures native and
+MJX rows, binds MJCF and evidence hashes, computes cost-normalized throughput, and
+returns the centralized `mjx-benchmark` 2.0.0 verdict. Registry identity makes the
+D12 rows named simulation proxies, not exact SKU twins. v1 remains the required CI
+harness; v2 remains an operator sandbox gate and cannot close from fixtures.
+
 Protected through PR #64/`d1c4c38` on 2026-07-15: the repository supplies a native
 `FORGE_SB3_TRAIN_CMD` target rather than only an injection hook. The gateway freezes
 an owned admitted contract as `forge-admitted-model-snapshot` 1.0.0; the worker

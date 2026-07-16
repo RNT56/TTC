@@ -134,6 +134,29 @@ accelerator, budget, cost, throughput, and dirty-source blocker. P9 tier-2/3 bat
 remains forbidden unless later clean protected D12 evidence clears the existing
 adoption rule.
 
+D47 adds the separate decision-grade `mjxDecisionRequest`/`mjx-benchmark` 2.0.0
+path without reinterpreting v1. `pnpm sim:mjx:decision` constructs three
+caller-immutable cases: the synthetic `vx2-mini` contract is bound as a simulation
+proxy to the frozen D12 quad registry identity, the controlled training-rover is
+bound as a simulation proxy to the frozen D12 rover identity, and `qd-mini` supplies
+the non-D12 controlled legged row. Every authority file and canonical contract is
+hashed; both D12 bindings explicitly deny exact SKU-level twin or field fidelity.
+
+The v2 command additionally requires clean protected source, reviewed raw budget
+artifact hashes, one scorecard-passing CPU recipe within 12 hours per morphology, a
+complete 200-candidate tier-2 CPU workload within 12 hours, and a current retained
+CPU/accelerator USD/hour source. It refuses before timing unless JAX resolves exactly
+to the requested `gpu` or `tpu` device with float64 enabled and fallback forbidden.
+Apple's current Metal plug-in is not an accepted substitute because its primary
+documentation lists `np.float64` as unsupported. For each case the command compiles
+sovereign Rust MJCF, measures the frozen native/MJX protocol, records all timing and
+parity data, computes cost-normalized throughput from the retained rate basis, and
+passes the strict rows through the existing centralized rule. Follow
+[`../MJX-DECISION.md`](../MJX-DECISION.md); a complete report may reject MJX when CPU
+meets both budgets or adopt only when CPU needs help and every row passes parity and
+3x cost-normalized throughput. Until that clean protected accelerator run exists,
+P7-010 remains open and P9 MJX batching remains forbidden.
+
 Protected through PR #64/`d1c4c38` on 2026-07-15: the gateway, validator, Rust
 simulator, and Python worker form one fail-closed training authority chain. The
 gateway accepts an owned admitted `modelId`, freezes the admitted contract as

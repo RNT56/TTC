@@ -144,6 +144,18 @@ protected harness/parity evidence, not an adoption decision: the report still bl
 missing D12 quad/rover/legged, declared accelerator, overnight/tier-2 budget, cost,
 and cost-normalized throughput evidence.
 
+The current unprotected P7-010 candidate adds D47's separate decision path without
+changing that protected v1 result. `mjxDecisionRequest`/`mjx-benchmark` 2.0.0 binds
+exact ordered quad/rover/legged simulation proxies, checked-in D12/proxy authority
+hashes, clean source, the unchanged float64 runtime/protocol, exact GPU/TPU device
+with no fallback, 12-hour scorecard and 200-candidate CPU budget artifacts, and a
+retained current USD/hour basis. The native worker measures all three sovereign Rust
+bundles and applies the existing centralized rule; `docs/MJX-DECISION.md` owns its
+operator and evidence procedure. The D12 registry bindings explicitly do not claim
+exact SKU-level twins. Focused tests pass 18/18, but this candidate is not protected
+and no supported-accelerator/budget/cost result exists. Apple's documented lack of
+JAX Metal float64 support means the local M2 Pro is not an admissible substitute.
+
 P7-011 is complete through protected PR #68. Exact head `433ff3b` passed CI
 `29408733457` and security `29408733461`; protected squash `9131289` passed
 post-merge CI `29409341830` and security `29409342305`. Downloaded artifact

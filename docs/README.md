@@ -51,6 +51,7 @@ require [`MIGRATIONS.md`](MIGRATIONS.md).
 | [`REPOSITORY-GOVERNANCE.md`](REPOSITORY-GOVERNANCE.md) | Exact required checks, ruleset contract, security/dependency operations, and evidence cadence | Living |
 | [`COMPATIBILITY.md`](COMPATIBILITY.md) | SemVer domains, support matrix, deprecation windows, migration and breaking-change rules | Living; machine-checked |
 | [`MIGRATIONS.md`](MIGRATIONS.md) | Postgres predecessor support, transactional runner, acceptance matrix, deployment, backup impact, roll-forward, rollback, and failure recovery | Living; required-CI evidence contract |
+| [`MJX-DECISION.md`](MJX-DECISION.md) | P7-010 proxy bindings, CPU budget/cost inputs, accelerator stop conditions, three-morphology command, verdict review, evidence retention, and rerun policy | Living operator runbook |
 | [`GOLDEN-ARTIFACTS.md`](GOLDEN-ARTIFACTS.md) | Machine-registered golden inventory, immutable-oracle rule, re-pin procedure, review evidence, and focused commands | Living; machine-enforced |
 | [`RELEASE.md`](RELEASE.md) | Cross-platform validator artifact, attestation, verification, tag, publication, and rollback procedure | Living runbook |
 | [`PUBLICATION.md`](PUBLICATION.md) | crates.io/npm ownership, credentials, ordered publication, explicit deferral, and clean-consumer evidence | Living policy |
