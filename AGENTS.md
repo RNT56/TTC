@@ -90,11 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D54 evidence PR #96 at `b4b5ad9`; the
-  latest protected runtime anchor is D54/P8-003 PR #95 at `f8efb6f`. Exact head
-  `81282f7` passed PR CI `29512245375` and security
-  `29512245387`; reviewed tree `f71ee1a` is byte-identical at the protected squash,
-  whose post-merge CI `29512921138` and security `29512920367` pass. D53
+  latest verified protected descendant and runtime anchor is D55/P8-002/P8-003 PR
+  #97 at `370d214`. Exact head `4321eaa` passed PR CI `29519984713` and security
+  `29519984764`; reviewed tree `673a50c` is byte-identical at the protected squash,
+  whose post-merge CI `29520651520` and security `29520651581` pass. D54 evidence
+  PR #96/`b4b5ad9` and admission PR #95/`f8efb6f`, plus D53
   materialization PR #93/`08d892f`, D52 evidence
   reconciliation PR #92/`237e46b` and controls PR #91/`a8120ab`, D51 evidence-
   reconciliation PR #90/`9e81ddd` and recorder-import PR #89/`b5418ac`, D50
@@ -297,7 +297,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   under Python 3.12.13. Exact head `81282f7`, reviewed tree `f71ee1a`, PR
   CI/security `29512245375`/`29512245387`, protected-tree equality, and post-merge
   CI/security `29512921138`/`29512920367` pass;
-- D55/P8-002/P8-003 is an unprotected local read-only adapter-identity candidate.
+- D55/P8-002/P8-003 is protected at local read-only protocol-fixture maturity
+  through PR #97/`370d214`. Exact head `4321eaa`, reviewed tree `673a50c`, PR
+  CI/security `29519984713`/`29519984764`, protected-tree equality, and post-merge
+  CI/security `29520651520`/`29520651581` pass.
   It re-enforces D30/D12/props-off and one OS-enumerated 115200-baud port, permits
   only MSP-v1 commands 1/2/3/4/5/160, requires protocol 0/API 1.47/`BTFL`/stable
   `2025.12.x`/`KAKUTEH7`, and requires two byte-stable observations on one open
@@ -307,7 +310,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   self-reported, replayable protocol observation—not cryptographic attestation,
   recorder start/end custody, physical-device, suspend, lab, or field evidence. The
   locked Desktop native gate, all 40 repository gates under Python 3.12.13, the
-  clean/25-predecessor database, 11-flow browser, and three-engine matrices pass;
+  clean/25-predecessor database, 11-flow browser, and three-engine matrices pass.
+  Named hardware, trusted recorder start/end custody, suspend, lab, and field proof
+  remain separately gated;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play

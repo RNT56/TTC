@@ -488,7 +488,10 @@ Work:
   head `81282f7`, reviewed tree `f71ee1a`, PR CI/security
   `29512245375`/`29512245387`, protected-tree equality, and post-merge CI/security
   `29512921138`/`29512920367` pass;
-- D55/P8-002/P8-003 is an unprotected local read-only adapter-identity candidate.
+- D55/P8-002/P8-003 is protected at local read-only protocol-fixture maturity
+  through PR #97/`370d214`. Exact head `4321eaa`, reviewed tree `673a50c`, PR
+  CI/security `29519984713`/`29519984764`, protected-tree equality, and post-merge
+  CI/security `29520651520`/`29520651581` pass.
   Native Desktop re-enforces D30/D12/props-off and an OS-enumerated 115200-baud
   port, issues only MSP-v1 API/variant/version/board/build/UID queries, requires
   protocol 0/API 1.47/`BTFL`/stable `2025.12.x`/`KAKUTEH7`, and compares two exact
@@ -498,8 +501,8 @@ Work:
   authority remains false because a stable self-reported transcript is neither
   cryptographic attestation nor recorder-bound custody. The locked Desktop native
   gate, all 40 repository gates under Python 3.12.13, clean/25-predecessor database,
-  11-flow production-browser, and three-engine matrices pass. Review, PR/protected
-  evidence, and real named-controller evidence remain pending;
+  11-flow production-browser, and three-engine matrices pass. Real named-controller,
+  trusted recorder-bound custody, suspend, lab, and field evidence remain pending;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -508,9 +511,9 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: finish and protect D55's exact read-only protocol
-boundary, then define a successor that binds a reviewed trust/custody result to both
-recorder start and clean stop without mutating D54 or promoting any consent. In
+Next dependency-complete step: define a successor to protected D55 that binds a
+reviewed trust/custody result to both recorder start and clean stop without mutating
+D54 or promoting any consent. In
 parallel, execute D49 and D55 on the named D12 Kakute H7 V1.5 under controlled-lab
 authority with propellers removed, retain bounded raw responses/hashes plus failure/
 reconnect/power-loss evidence, and exercise the recorder seam under P8-009's SITL ->
