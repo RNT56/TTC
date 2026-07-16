@@ -112,6 +112,9 @@ sharing, and training remain false, and the D45 job path rejects the object-back
 reference even under active training consent. `FORGE_OBJECT_READ_TIMEOUT_MS` and
 `FORGE_RECORDER_VERIFY_TIMEOUT_MS` are bounded from 30 seconds to one hour, default
 to 30 minutes, and timeout/unavailable verifier states fail closed.
+PR #95 exact head `81282f7`, reviewed tree `f71ee1a`, protected `f8efb6f`, PR
+CI/security `29512245375`/`29512245387`, and post-merge CI/security
+`29512921138`/`29512920367` protect only this local semantic-admission maturity.
 Fixture job outputs currently materialize to `photoscan_artifacts`,
 `policy_artifacts`, `telemetry_logs`, `replay_artifacts`, and
 `maintenance_records`; `local` and `modal` jobs persist as queued rows for the

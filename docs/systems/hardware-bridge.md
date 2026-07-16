@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is an unprotected local candidate; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54
 
@@ -215,10 +215,13 @@ recorded-device and field provenance, sharing, training, and auto-arm authority 
 false. D45 also rejects the object-backed descriptor even if a training-reuse grant
 exists, so a future recorded-device training format must be a separately reviewed
 versioned contract. User-data export 1.6 and account deletion include the admission
-and descriptor without exporting frames. This is currently an unprotected local
-candidate: focused native, Gateway, Studio, clean/25-predecessor Postgres, 11-flow
+and descriptor without exporting frames. This is protected at local semantic-
+admission maturity through PR #95/`f8efb6f`: focused native, Gateway, Studio,
+clean/25-predecessor Postgres, 11-flow
 browser E2E, three-engine browser, and complete 40-step repository proof passes under
-Python 3.12.13, while protected PR/post-merge evidence remains due.
+Python 3.12.13. Exact head `81282f7`, reviewed tree `f71ee1a`, PR CI/security
+`29512245375`/`29512245387`, and post-merge CI/security
+`29512921138`/`29512920367` pass.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the
