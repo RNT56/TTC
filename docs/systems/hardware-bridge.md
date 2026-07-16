@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is an unprotected local-integration candidate; D30 accepted controlled D12 lab pilots; real-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50
 
@@ -96,7 +96,7 @@ for manual inspection. A two-session real Unix pseudo-terminal fixture proves th
 wire protocol and refusals; it does not identify a physical FC uniquely or prove a
 real FC, lab, HITL, tethered, supervisor, or field run.
 
-D50's P8-013 implementation candidate replaces the manifest-only recorder stub with
+D50's protected P8-013 implementation replaces the manifest-only recorder stub with
 one exclusive in-shell background capture thread. Start requires the same D30/D12
 environment gates, exact per-log consent phrase, one OS-enumerated port at 115200
 baud, a new non-existing archive path, lowercase contract/lockfile SHA-256 values,
@@ -116,6 +116,12 @@ Real pseudo-terminal tests prove background capture, exact replay/index/hash out
 sequence-drift refusal, single-recorder exclusivity, and no overwrite. This is not
 adapter/device identity, OS suspend, WebSerial/WebUSB, lab, field, ghost, system-ID,
 or recorded-device training evidence.
+
+PR #87 protects that local boundary at `d8afe7f`: exact head `5e668a1` passed PR CI
+`29485412948`/security `29485412987`, reviewed tree `528a878` is byte-identical at
+the squash, and post-merge CI `29486146093`/security `29486147436` pass. The next
+local lane is a reviewed adapter plus verified Studio controls/archive import; the
+named D12 device, suspend, lab, field, and recorded-device gates remain separate.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the

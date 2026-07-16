@@ -90,12 +90,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D49 evidence reconciliation PR #86 at
-  `63e144c`. Exact head `c1523c3` passed PR CI `29480985615` and security
-  `29480985208`; reviewed tree `c006acb` is byte-identical at the protected squash,
-  whose post-merge CI `29481540556` and security `29481540540` pass. The latest
-  protected runtime descendant remains D49 target/readback PR #85/`4647a10`, with
-  exact PR/post-merge CI/security green. PR #81 owns the
+  latest verified protected descendant and runtime anchor are D50/P8-013 PR #87 at
+  `d8afe7f`. Exact head `5e668a1` passed PR CI `29485412948` and security
+  `29485412987`; reviewed tree `528a878` is byte-identical at the protected squash,
+  whose post-merge CI `29486146093` and security `29486147436` pass. D49 evidence
+  reconciliation PR #86/`63e144c` and target/readback PR #85/`4647a10` remain green.
+  PR #81 owns the
   decision-grade D47 MJX request/report contract while PR #79 owns the
   fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
   controlled-synthetic offline-training evidence; PR #75 owns the
@@ -219,8 +219,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `failsafe_delay` readback across two real pseudo-terminal sessions, with SHA-256
   digests for the four authoritative response byte streams. That remains protected
   local protocol integration only until executed on the named FC;
-- D50/P8-013 is an unprotected local recorder candidate on exact protected
-  `63e144c`: one exclusive in-shell thread captures bounded, versioned, contiguous,
+- D50/P8-013 is protected at local recorder-integration maturity through PR #87 at
+  `d8afe7f`. Exact implementation head `5e668a1` passed PR CI `29485412948` and
+  security `29485412987`; reviewed tree `528a878` is byte-identical at the protected
+  squash, whose post-merge CI `29486146093` and security `29486147436` pass. One
+  exclusive in-shell thread captures bounded, versioned, contiguous,
   strictly time-increasing serial JSONL into a no-overwrite recorder-archive v1,
   canonical append-only frames, and sparse byte-offset index; clean stop drains,
   flushes/syncs, finalizes replay v1, hashes frames/index/replay, and only then emits
@@ -228,7 +231,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   gates, persisted capture-confirmation, privacy/no-training/no-auto-arm defaults,
   and false device attestation remain explicit. Real
   pseudo-terminal proof plus the complete 40-step local gate under Python 3.12.13
-  covers mechanics only; protection, adapter/device identity, OS suspend,
+  covers protected local mechanics only; adapter/device identity, OS suspend,
   WebSerial/WebUSB, lab/field, ghost/system-ID, and recorded-device training
   authority remain open;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
