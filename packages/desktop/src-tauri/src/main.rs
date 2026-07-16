@@ -27,6 +27,8 @@ const RECORDER_INSPECTION_SCHEMA_VERSION: &str = "forge-recorder-inspection/1.0.
 const RECORDER_CONTROL_SCHEMA_VERSION: &str = "forge-recorder-control/1.0.0";
 const RECORDER_UPLOAD_PLAN_SCHEMA_VERSION: &str = "forge-recorder-upload-plan/1.0.0";
 const RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION: &str = "forge-recorder-upload/1.0.0";
+const RECORDER_ADAPTER_PROBE_SCHEMA_VERSION: &str = "forge-recorder-adapter-probe/1.0.0";
+const RECORDER_ADAPTER_SCHEMA_VERSION: &str = "forge-betaflight-msp-adapter/1.0.0";
 const RECORDER_UPLOAD_ORIGIN_ENV: &str = "FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN";
 const REPLAY_SCHEMA_VERSION: &str = "1.0.0";
 const RECORDER_MANIFEST_FILE: &str = "forge-recorder-manifest.json";
@@ -38,6 +40,8 @@ const BETAFLIGHT_CLI_VERSION: &str = "2025.12";
 const SERIAL_PHYSICAL_CONFIRMATION: &str =
     "I confirm propellers are removed and understand this will write hardware configuration";
 const RECORDER_PHYSICAL_CONFIRMATION: &str = "I consent to record this telemetry log";
+const RECORDER_ADAPTER_PROBE_CONFIRMATION: &str =
+    "I confirm propellers are removed and authorize a read-only adapter identity probe";
 const BETAFLIGHT_SERIAL_BAUD: u32 = 115_200;
 const BETAFLIGHT_FAILSAFE_DELAY_MIN_DS: u16 = 2;
 const BETAFLIGHT_FAILSAFE_DELAY_MAX_DS: u16 = 200;
@@ -54,6 +58,24 @@ const RECORDER_ARCHIVE_METADATA_RESERVE_BYTES: u64 = 1024 * 1024;
 const MAX_RECORDER_FRAMES: u64 = 1_000_000;
 const MAX_RECORDER_UPLOAD_URL_BYTES: usize = 8 * 1024;
 const RECORDER_UPLOAD_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+const MSP_RESPONSE_DEADLINE: Duration = Duration::from_secs(3);
+const MSP_PROTOCOL_VERSION: u8 = 0;
+const MSP_API_MAJOR: u8 = 1;
+const MSP_API_MINOR: u8 = 47;
+const MSP_API_VERSION: u8 = 1;
+const MSP_FC_VARIANT: u8 = 2;
+const MSP_FC_VERSION: u8 = 3;
+const MSP_BOARD_INFO: u8 = 4;
+const MSP_BUILD_INFO: u8 = 5;
+const MSP_UID: u8 = 160;
+const READ_ONLY_MSP_COMMANDS: [u8; 6] = [
+    MSP_API_VERSION,
+    MSP_FC_VARIANT,
+    MSP_FC_VERSION,
+    MSP_BOARD_INFO,
+    MSP_BUILD_INFO,
+    MSP_UID,
+];
 const D12_RIGS: &[&str] = &[
     "ref_quad_kakute-h7-source-one-5in",
     "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
@@ -148,6 +170,102 @@ enum SerialResponseTerminator {
 struct SerialPortInfo {
     name: String,
     kind: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecorderAdapterProbeRequest {
+    port: String,
+    baud: u32,
+    reference_rig_id: Option<String>,
+    physical_confirmation: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RecorderAdapterProbe {
+    schema_version: &'static str,
+    adapter_schema_version: &'static str,
+    probe_maturity: &'static str,
+    reference_rig_id: String,
+    source_port_sha256: String,
+    os_descriptor_sha256: String,
+    baud: u32,
+    observed_at_unix_ms: u128,
+    firmware: &'static str,
+    firmware_version: String,
+    msp_protocol_version: u8,
+    msp_api_major: u8,
+    msp_api_minor: u8,
+    flight_controller_variant: String,
+    board_identifier: String,
+    target_name: String,
+    board_name: String,
+    manufacturer_id: String,
+    device_uid_sha256: String,
+    identity_sha256: String,
+    pre_identity_response_sha256: String,
+    post_identity_response_sha256: String,
+    transcript_sha256: String,
+    read_only_command_ids: Vec<u8>,
+    adapter_protocol_verified: bool,
+    stable_identity_observed: bool,
+    device_identity_verified: bool,
+    cryptographic_device_attestation: bool,
+    recorded_device_attested: bool,
+    field_session_verified: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
+    no_auto_arm: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct MspIdentityObservation {
+    firmware_version: String,
+    flight_controller_variant: String,
+    board_identifier: String,
+    target_name: String,
+    board_name: String,
+    manufacturer_id: String,
+    device_uid_sha256: String,
+    identity_sha256: String,
+    response_sha256: String,
+    packets: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, Clone)]
+struct MspReply {
+    raw: Vec<u8>,
+    payload: Vec<u8>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MspIdentityBinding<'a> {
+    schema_version: &'static str,
+    firmware_version: &'a str,
+    msp_protocol_version: u8,
+    msp_api_major: u8,
+    msp_api_minor: u8,
+    flight_controller_variant: &'a str,
+    board_identifier: &'a str,
+    target_name: &'a str,
+    board_name: &'a str,
+    manufacturer_id: &'a str,
+    device_uid_sha256: &'a str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OsSerialDescriptor<'a> {
+    schema_version: &'static str,
+    port_name: &'a str,
+    kind: &'static str,
+    usb_vid: Option<u16>,
+    usb_pid: Option<u16>,
+    usb_serial_number: Option<&'a str>,
+    usb_manufacturer: Option<&'a str>,
+    usb_product: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -503,6 +621,409 @@ fn serial_port_kind(kind: &serialport::SerialPortType) -> String {
 
 fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
+}
+
+fn domain_sha256(domain: &[u8], bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    hasher.update(bytes);
+    format!("{:x}", hasher.finalize())
+}
+
+fn packet_set_sha256(domain: &[u8], packets: &[Vec<u8>]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    for packet in packets {
+        hasher.update((packet.len() as u32).to_be_bytes());
+        hasher.update(packet);
+    }
+    format!("{:x}", hasher.finalize())
+}
+
+fn os_serial_descriptor_sha256(port: &serialport::SerialPortInfo) -> Result<String, String> {
+    let descriptor = match &port.port_type {
+        serialport::SerialPortType::UsbPort(info) => OsSerialDescriptor {
+            schema_version: "forge-os-serial-descriptor/1.0.0",
+            port_name: &port.port_name,
+            kind: "usb",
+            usb_vid: Some(info.vid),
+            usb_pid: Some(info.pid),
+            usb_serial_number: info.serial_number.as_deref(),
+            usb_manufacturer: info.manufacturer.as_deref(),
+            usb_product: info.product.as_deref(),
+        },
+        serialport::SerialPortType::BluetoothPort => OsSerialDescriptor {
+            schema_version: "forge-os-serial-descriptor/1.0.0",
+            port_name: &port.port_name,
+            kind: "bluetooth",
+            usb_vid: None,
+            usb_pid: None,
+            usb_serial_number: None,
+            usb_manufacturer: None,
+            usb_product: None,
+        },
+        serialport::SerialPortType::PciPort => OsSerialDescriptor {
+            schema_version: "forge-os-serial-descriptor/1.0.0",
+            port_name: &port.port_name,
+            kind: "pci",
+            usb_vid: None,
+            usb_pid: None,
+            usb_serial_number: None,
+            usb_manufacturer: None,
+            usb_product: None,
+        },
+        serialport::SerialPortType::Unknown => OsSerialDescriptor {
+            schema_version: "forge-os-serial-descriptor/1.0.0",
+            port_name: &port.port_name,
+            kind: "unknown",
+            usb_vid: None,
+            usb_pid: None,
+            usb_serial_number: None,
+            usb_manufacturer: None,
+            usb_product: None,
+        },
+    };
+    let bytes = serde_json::to_vec(&descriptor)
+        .map_err(|err| format!("serialize OS serial descriptor: {err}"))?;
+    Ok(domain_sha256(b"forge-os-serial-descriptor/1.0.0\0", &bytes))
+}
+
+fn validate_adapter_probe_request(
+    request: &RecorderAdapterProbeRequest,
+    gate_enabled: bool,
+) -> Result<String, String> {
+    if !gate_enabled {
+        return Err(
+            "native adapter identity probing requires the hardware-enable, D30-signoff, and lab-mode gates"
+                .to_string(),
+        );
+    }
+    if request.physical_confirmation != RECORDER_ADAPTER_PROBE_CONFIRMATION {
+        return Err("adapter identity probe props-off confirmation phrase mismatch".to_string());
+    }
+    if request.port.trim().is_empty() || request.port.len() > 4_096 {
+        return Err("adapter identity probe requires a bounded non-empty serial port".to_string());
+    }
+    if request.baud != BETAFLIGHT_SERIAL_BAUD {
+        return Err(format!(
+            "adapter identity probe requires exactly {BETAFLIGHT_SERIAL_BAUD} baud"
+        ));
+    }
+    let rig_id = request.reference_rig_id.as_deref().ok_or_else(|| {
+        "referenceRigId is required for the D12 Betaflight adapter probe".to_string()
+    })?;
+    if rig_id != D12_RIGS[0] {
+        return Err("Betaflight MSP adapter v1 is limited to the D12 reference quad".to_string());
+    }
+    Ok(rig_id.to_string())
+}
+
+fn msp_v1_request(command: u8) -> Result<[u8; 6], String> {
+    if !READ_ONLY_MSP_COMMANDS.contains(&command) {
+        return Err(
+            "MSP adapter probe attempted a command outside the read-only allowlist".to_string(),
+        );
+    }
+    Ok([b'$', b'M', b'<', 0, command, command])
+}
+
+fn read_exact_before_deadline(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    size: usize,
+    deadline: std::time::Instant,
+) -> Result<Vec<u8>, String> {
+    let mut bytes = vec![0_u8; size];
+    let mut offset = 0;
+    while offset < size && std::time::Instant::now() < deadline {
+        match port.read(&mut bytes[offset..]) {
+            Ok(0) => thread::sleep(Duration::from_millis(2)),
+            Ok(count) => offset += count,
+            Err(err)
+                if matches!(
+                    err.kind(),
+                    std::io::ErrorKind::TimedOut
+                        | std::io::ErrorKind::WouldBlock
+                        | std::io::ErrorKind::Interrupted
+                ) => {}
+            Err(err) => {
+                return Err(format!(
+                    "read MSP adapter response from '{port_label}': {err}"
+                ));
+            }
+        }
+    }
+    if offset != size {
+        return Err(format!(
+            "timed out waiting for a complete bounded MSP adapter response from '{port_label}'"
+        ));
+    }
+    Ok(bytes)
+}
+
+fn query_msp_v1(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    command: u8,
+) -> Result<MspReply, String> {
+    let request = msp_v1_request(command)?;
+    port.write_all(&request)
+        .map_err(|err| format!("write read-only MSP request to '{port_label}': {err}"))?;
+    port.flush()
+        .map_err(|err| format!("flush read-only MSP request to '{port_label}': {err}"))?;
+
+    let deadline = std::time::Instant::now() + MSP_RESPONSE_DEADLINE;
+    let header = read_exact_before_deadline(port, port_label, 5, deadline)?;
+    if header[..3] != *b"$M>" {
+        return Err("MSP adapter response has an invalid or error direction header".to_string());
+    }
+    let payload_size = header[3] as usize;
+    if header[4] != command {
+        return Err("MSP adapter response command does not match the active request".to_string());
+    }
+    let tail = read_exact_before_deadline(port, port_label, payload_size + 1, deadline)?;
+    let mut checksum = header[3] ^ header[4];
+    for byte in &tail[..payload_size] {
+        checksum ^= byte;
+    }
+    if checksum != tail[payload_size] {
+        return Err("MSP adapter response checksum is invalid".to_string());
+    }
+    let mut raw = header;
+    raw.extend_from_slice(&tail);
+    Ok(MspReply {
+        raw,
+        payload: tail[..payload_size].to_vec(),
+    })
+}
+
+fn bounded_ascii(
+    bytes: &[u8],
+    label: &str,
+    minimum: usize,
+    maximum: usize,
+) -> Result<String, String> {
+    if bytes.len() < minimum
+        || bytes.len() > maximum
+        || !bytes
+            .iter()
+            .all(|byte| byte.is_ascii_graphic() || *byte == b' ')
+    {
+        return Err(format!(
+            "MSP {label} is outside its bounded printable ASCII contract"
+        ));
+    }
+    String::from_utf8(bytes.to_vec()).map_err(|_| format!("MSP {label} is not UTF-8"))
+}
+
+fn parse_pstring(
+    payload: &[u8],
+    offset: usize,
+    label: &str,
+    minimum: usize,
+    maximum: usize,
+) -> Result<(String, usize), String> {
+    let length = *payload
+        .get(offset)
+        .ok_or_else(|| format!("MSP {label} length is missing"))? as usize;
+    let start = offset + 1;
+    let end = start
+        .checked_add(length)
+        .filter(|end| *end <= payload.len())
+        .ok_or_else(|| format!("MSP {label} is truncated"))?;
+    Ok((
+        bounded_ascii(&payload[start..end], label, minimum, maximum)?,
+        end,
+    ))
+}
+
+fn parse_firmware_version(payload: &[u8]) -> Result<String, String> {
+    if payload.len() < 4 || payload[0] != 25 || payload[1] != 12 {
+        return Err("MSP adapter probe requires stable Betaflight 2025.12.x".to_string());
+    }
+    let patch = payload[2];
+    let (version, end) = parse_pstring(payload, 3, "firmware version", 9, 32)?;
+    let expected = format!("2025.12.{patch}");
+    if end != payload.len() || version != expected {
+        return Err("MSP firmware version bytes and version string disagree".to_string());
+    }
+    Ok(version)
+}
+
+fn parse_board_info(payload: &[u8]) -> Result<(String, String, String, String), String> {
+    if payload.len() < 8 {
+        return Err("MSP board information is truncated before target identity".to_string());
+    }
+    if !payload[..4]
+        .iter()
+        .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit() || matches!(*byte, 0 | b' '))
+    {
+        return Err("MSP board identifier contains unsupported bytes".to_string());
+    }
+    let board_identifier = String::from_utf8(payload[..4].to_vec())
+        .map_err(|_| "MSP board identifier is not UTF-8".to_string())?
+        .trim_matches(|character| character == '\0' || character == ' ')
+        .to_string();
+    if board_identifier.is_empty()
+        || !board_identifier
+            .bytes()
+            .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit())
+    {
+        return Err("MSP board identifier is not uppercase alphanumeric".to_string());
+    }
+    let (target_name, offset) = parse_pstring(payload, 8, "target name", 1, 64)?;
+    let (board_name, offset) = parse_pstring(payload, offset, "board name", 1, 64)?;
+    let (manufacturer_id, offset) = parse_pstring(payload, offset, "manufacturer ID", 1, 32)?;
+    if target_name != "KAKUTEH7" {
+        return Err("MSP adapter v1 requires the reviewed KAKUTEH7 target".to_string());
+    }
+    if payload.len().saturating_sub(offset) != 42 {
+        return Err(
+            "MSP board information must have the exact API 1.47 signature/status tail".to_string(),
+        );
+    }
+    Ok((board_identifier, target_name, board_name, manufacturer_id))
+}
+
+fn validate_build_info(payload: &[u8]) -> Result<(), String> {
+    if payload.len() < 26
+        || !(payload.len() - 26).is_multiple_of(2)
+        || !payload[..19]
+            .iter()
+            .all(|byte| byte.is_ascii_graphic() || *byte == b' ')
+        || !payload[19..26]
+            .iter()
+            .all(|byte| byte.is_ascii_digit() || matches!(*byte, b'a'..=b'f'))
+    {
+        return Err("MSP build information is truncated or malformed".to_string());
+    }
+    Ok(())
+}
+
+fn observe_msp_identity(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+) -> Result<MspIdentityObservation, String> {
+    let replies = READ_ONLY_MSP_COMMANDS
+        .iter()
+        .map(|command| query_msp_v1(port, port_label, *command))
+        .collect::<Result<Vec<_>, _>>()?;
+    if replies[0].payload != [MSP_PROTOCOL_VERSION, MSP_API_MAJOR, MSP_API_MINOR] {
+        return Err("MSP adapter probe requires protocol 0 and API 1.47".to_string());
+    }
+    let flight_controller_variant =
+        bounded_ascii(&replies[1].payload, "flight-controller variant", 4, 4)?;
+    if flight_controller_variant != "BTFL" {
+        return Err("MSP adapter probe requires the Betaflight BTFL variant".to_string());
+    }
+    let firmware_version = parse_firmware_version(&replies[2].payload)?;
+    let (board_identifier, target_name, board_name, manufacturer_id) =
+        parse_board_info(&replies[3].payload)?;
+    validate_build_info(&replies[4].payload)?;
+    if replies[5].payload.len() != 12
+        || replies[5].payload.iter().all(|byte| *byte == 0)
+        || replies[5].payload.iter().all(|byte| *byte == u8::MAX)
+    {
+        return Err("MSP UID must be one non-placeholder 96-bit device observation".to_string());
+    }
+    let device_uid_sha256 =
+        domain_sha256(b"forge-recorder-device-uid/1.0.0\0", &replies[5].payload);
+    let binding = MspIdentityBinding {
+        schema_version: RECORDER_ADAPTER_SCHEMA_VERSION,
+        firmware_version: &firmware_version,
+        msp_protocol_version: MSP_PROTOCOL_VERSION,
+        msp_api_major: MSP_API_MAJOR,
+        msp_api_minor: MSP_API_MINOR,
+        flight_controller_variant: &flight_controller_variant,
+        board_identifier: &board_identifier,
+        target_name: &target_name,
+        board_name: &board_name,
+        manufacturer_id: &manufacturer_id,
+        device_uid_sha256: &device_uid_sha256,
+    };
+    let binding_bytes = serde_json::to_vec(&binding)
+        .map_err(|err| format!("serialize MSP identity binding: {err}"))?;
+    let packets = replies
+        .into_iter()
+        .map(|reply| reply.raw)
+        .collect::<Vec<_>>();
+    Ok(MspIdentityObservation {
+        firmware_version,
+        flight_controller_variant,
+        board_identifier,
+        target_name,
+        board_name,
+        manufacturer_id,
+        device_uid_sha256,
+        identity_sha256: domain_sha256(b"forge-recorder-adapter-identity/1.0.0\0", &binding_bytes),
+        response_sha256: packet_set_sha256(
+            b"forge-recorder-adapter-response-set/1.0.0\0",
+            &packets,
+        ),
+        packets,
+    })
+}
+
+fn probe_recorder_adapter_with_port(
+    request: RecorderAdapterProbeRequest,
+    gate_enabled: bool,
+    os_descriptor_sha256: String,
+    mut port: Box<dyn serialport::SerialPort>,
+) -> Result<RecorderAdapterProbe, String> {
+    let rig_id = validate_adapter_probe_request(&request, gate_enabled)?;
+    if !is_sha256_hex(&os_descriptor_sha256) {
+        return Err("OS serial descriptor identity must be a lowercase SHA-256".to_string());
+    }
+    let pre = observe_msp_identity(port.as_mut(), &request.port)?;
+    let post = observe_msp_identity(port.as_mut(), &request.port)?;
+    if pre != post {
+        return Err(
+            "MSP adapter identity changed between the required pre/post observations".to_string(),
+        );
+    }
+    let mut transcript = pre.packets.clone();
+    transcript.extend(post.packets.clone());
+    Ok(RecorderAdapterProbe {
+        schema_version: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION,
+        adapter_schema_version: RECORDER_ADAPTER_SCHEMA_VERSION,
+        probe_maturity: "unattested-read-only-probe",
+        reference_rig_id: rig_id,
+        source_port_sha256: domain_sha256(
+            b"forge-recorder-source-port/1.0.0\0",
+            request.port.as_bytes(),
+        ),
+        os_descriptor_sha256,
+        baud: request.baud,
+        observed_at_unix_ms: unix_ms()?,
+        firmware: "betaflight",
+        firmware_version: pre.firmware_version,
+        msp_protocol_version: MSP_PROTOCOL_VERSION,
+        msp_api_major: MSP_API_MAJOR,
+        msp_api_minor: MSP_API_MINOR,
+        flight_controller_variant: pre.flight_controller_variant,
+        board_identifier: pre.board_identifier,
+        target_name: pre.target_name,
+        board_name: pre.board_name,
+        manufacturer_id: pre.manufacturer_id,
+        device_uid_sha256: pre.device_uid_sha256,
+        identity_sha256: pre.identity_sha256,
+        pre_identity_response_sha256: pre.response_sha256.clone(),
+        post_identity_response_sha256: post.response_sha256,
+        transcript_sha256: packet_set_sha256(
+            b"forge-recorder-adapter-transcript/1.0.0\0",
+            &transcript,
+        ),
+        read_only_command_ids: READ_ONLY_MSP_COMMANDS.to_vec(),
+        adapter_protocol_verified: true,
+        stable_identity_observed: true,
+        device_identity_verified: false,
+        cryptographic_device_attestation: false,
+        recorded_device_attested: false,
+        field_session_verified: false,
+        sharing_authorized: false,
+        training_reuse_authorized: false,
+        no_auto_arm: true,
+    })
 }
 
 fn artifact_failsafe_delay(artifact: &BridgeConfigArtifact) -> Result<u16, String> {
@@ -2224,6 +2745,22 @@ fn stop_recorder(runtime: &RecorderRuntime) -> Result<RecorderStopReceipt, Strin
     result
 }
 
+fn lock_inactive_recorder(
+    runtime: &RecorderRuntime,
+) -> Result<std::sync::MutexGuard<'_, Option<ActiveRecorder>>, String> {
+    let guard = runtime
+        .active
+        .lock()
+        .map_err(|_| "recorder runtime lock is poisoned".to_string())?;
+    if guard.is_some() {
+        return Err(
+            "read-only adapter identity probing requires the Desktop recorder to be inactive"
+                .to_string(),
+        );
+    }
+    Ok(guard)
+}
+
 #[tauri::command]
 fn bridge_status() -> BridgeStatus {
     disabled_status()
@@ -2245,6 +2782,32 @@ fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
                 })
                 .collect()
         })
+}
+
+#[tauri::command]
+fn probe_recorder_adapter(
+    request: RecorderAdapterProbeRequest,
+    runtime: tauri::State<'_, RecorderRuntime>,
+) -> Result<RecorderAdapterProbe, String> {
+    validate_adapter_probe_request(&request, hardware_enabled())?;
+    let recorder_guard = lock_inactive_recorder(&runtime)?;
+    let available = serialport::available_ports()
+        .map_err(|err| format!("list serial ports before adapter probe: {err}"))?;
+    let descriptor = available
+        .iter()
+        .find(|candidate| candidate.port_name == request.port)
+        .ok_or_else(|| {
+            "adapter identity probe port must be reported by the operating system".to_string()
+        })?;
+    let descriptor_sha256 = os_serial_descriptor_sha256(descriptor)?;
+    let port = serialport::new(&request.port, request.baud)
+        .timeout(SERIAL_READ_TIMEOUT)
+        .open()
+        .map_err(|err| format!("open adapter identity probe port '{}': {err}", request.port))?;
+    let result =
+        probe_recorder_adapter_with_port(request, hardware_enabled(), descriptor_sha256, port);
+    drop(recorder_guard);
+    result
 }
 
 #[tauri::command]
@@ -2526,6 +3089,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             bridge_status,
             list_serial_ports,
+            probe_recorder_adapter,
             write_serial_config,
             recorder_status,
             start_background_recording,
@@ -2748,6 +3312,284 @@ mod tests {
             }
             std::thread::sleep(Duration::from_millis(50));
         })
+    }
+
+    fn adapter_probe_request() -> RecorderAdapterProbeRequest {
+        RecorderAdapterProbeRequest {
+            port: "pseudo-terminal".to_string(),
+            baud: BETAFLIGHT_SERIAL_BAUD,
+            reference_rig_id: Some(D12_RIGS[0].to_string()),
+            physical_confirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION.to_string(),
+        }
+    }
+
+    fn msp_reply(command: u8, payload: &[u8]) -> Vec<u8> {
+        assert!(payload.len() <= u8::MAX as usize);
+        let mut bytes = vec![b'$', b'M', b'>', payload.len() as u8, command];
+        bytes.extend_from_slice(payload);
+        let checksum = bytes[3..].iter().fold(0_u8, |value, byte| value ^ byte);
+        bytes.push(checksum);
+        bytes
+    }
+
+    fn pstring(value: &str) -> Vec<u8> {
+        assert!(value.len() <= u8::MAX as usize);
+        let mut bytes = vec![value.len() as u8];
+        bytes.extend_from_slice(value.as_bytes());
+        bytes
+    }
+
+    fn msp_board_info_payload(target: &str) -> Vec<u8> {
+        let mut payload = b"KH7\0".to_vec();
+        payload.extend_from_slice(&[0, 0, 2, 1]);
+        payload.extend_from_slice(&pstring(target));
+        payload.extend_from_slice(&pstring("Kakute H7 V1.5"));
+        payload.extend_from_slice(&pstring("HBRO"));
+        payload.extend_from_slice(&[0_u8; 32]);
+        payload.extend_from_slice(&[9, 0, 0x80, 0x3e, 0, 0, 0, 0, 4, 1]);
+        payload
+    }
+
+    fn msp_identity_payloads(uid: [u8; 12]) -> Vec<(u8, Vec<u8>)> {
+        let mut version = vec![25, 12, 5];
+        version.extend_from_slice(&pstring("2025.12.5"));
+        vec![
+            (
+                MSP_API_VERSION,
+                vec![MSP_PROTOCOL_VERSION, MSP_API_MAJOR, MSP_API_MINOR],
+            ),
+            (MSP_FC_VARIANT, b"BTFL".to_vec()),
+            (MSP_FC_VERSION, version),
+            (MSP_BOARD_INFO, msp_board_info_payload("KAKUTEH7")),
+            (MSP_BUILD_INFO, b"Jul 16 202612:00:00abcdef0".to_vec()),
+            (MSP_UID, uid.to_vec()),
+        ]
+    }
+
+    #[cfg(unix)]
+    fn spawn_fake_msp(
+        mut master: serialport::TTYPort,
+        passes: Vec<Vec<(u8, Vec<u8>)>>,
+    ) -> std::thread::JoinHandle<()> {
+        std::thread::spawn(move || {
+            master
+                .set_timeout(Duration::from_secs(2))
+                .expect("fake MSP target timeout");
+            for pass in passes {
+                for (command, payload) in pass {
+                    let expected = msp_v1_request(command).expect("read-only MSP request");
+                    let mut request = [0_u8; 6];
+                    master
+                        .read_exact(&mut request)
+                        .expect("read exact MSP request from Desktop");
+                    assert_eq!(request, expected);
+                    master
+                        .write_all(&msp_reply(command, &payload))
+                        .expect("write fake MSP response");
+                }
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        })
+    }
+
+    #[cfg(unix)]
+    fn query_fake_msp_reply(reply: Vec<u8>) -> Result<MspReply, String> {
+        let (mut master, mut slave) =
+            serialport::TTYPort::pair().expect("single-reply pseudo terminal pair");
+        slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("single-reply pseudo terminal timeout");
+        let target = std::thread::spawn(move || {
+            let mut request = [0_u8; 6];
+            master
+                .read_exact(&mut request)
+                .expect("read single MSP request");
+            assert_eq!(
+                request,
+                msp_v1_request(MSP_API_VERSION).expect("API version request")
+            );
+            master.write_all(&reply).expect("write single MSP reply");
+            std::thread::sleep(Duration::from_millis(50));
+        });
+        let result = query_msp_v1(&mut slave, "pseudo-terminal", MSP_API_VERSION);
+        target.join().expect("single-reply target completes");
+        result
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_only_msp_adapter_probe_observes_stable_identity_without_attestation() {
+        let uid = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        let (master, mut slave) =
+            serialport::TTYPort::pair().expect("adapter pseudo terminal pair");
+        slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("adapter pseudo terminal timeout");
+        let target = spawn_fake_msp(
+            master,
+            vec![msp_identity_payloads(uid), msp_identity_payloads(uid)],
+        );
+        let probe = probe_recorder_adapter_with_port(
+            adapter_probe_request(),
+            true,
+            "aa".repeat(32),
+            Box::new(slave),
+        )
+        .expect("read-only adapter probe succeeds");
+        target.join().expect("fake MSP target completes");
+
+        assert_eq!(probe.schema_version, RECORDER_ADAPTER_PROBE_SCHEMA_VERSION);
+        assert_eq!(
+            probe.adapter_schema_version,
+            RECORDER_ADAPTER_SCHEMA_VERSION
+        );
+        assert_eq!(probe.probe_maturity, "unattested-read-only-probe");
+        assert_eq!(probe.reference_rig_id, D12_RIGS[0]);
+        assert_eq!(probe.firmware_version, "2025.12.5");
+        assert_eq!(probe.flight_controller_variant, "BTFL");
+        assert_eq!(probe.board_identifier, "KH7");
+        assert_eq!(probe.target_name, "KAKUTEH7");
+        assert_eq!(probe.read_only_command_ids, READ_ONLY_MSP_COMMANDS);
+        assert_eq!(
+            probe.pre_identity_response_sha256,
+            probe.post_identity_response_sha256
+        );
+        for digest in [
+            &probe.source_port_sha256,
+            &probe.os_descriptor_sha256,
+            &probe.device_uid_sha256,
+            &probe.identity_sha256,
+            &probe.pre_identity_response_sha256,
+            &probe.post_identity_response_sha256,
+            &probe.transcript_sha256,
+        ] {
+            assert!(is_sha256_hex(digest));
+        }
+        assert!(probe.adapter_protocol_verified);
+        assert!(probe.stable_identity_observed);
+        assert!(!probe.device_identity_verified);
+        assert!(!probe.cryptographic_device_attestation);
+        assert!(!probe.recorded_device_attested);
+        assert!(!probe.field_session_verified);
+        assert!(!probe.sharing_authorized);
+        assert!(!probe.training_reuse_authorized);
+        assert!(probe.no_auto_arm);
+        let serialized = serde_json::to_string(&probe).expect("probe serializes");
+        assert!(!serialized.contains("0102030405060708090a0b0c"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn msp_adapter_probe_refuses_checksum_protocol_target_and_identity_drift() {
+        assert!(msp_v1_request(99)
+            .expect_err("write-capable or unknown command must fail")
+            .contains("read-only allowlist"));
+        assert!(parse_firmware_version(&[26, 6, 1, 8, b'2'])
+            .expect_err("wrong firmware family must fail")
+            .contains("2025.12"));
+        assert!(parse_board_info(&msp_board_info_payload("OTHERH7"))
+            .expect_err("wrong target must fail")
+            .contains("KAKUTEH7"));
+        let mut truncated_board = msp_board_info_payload("KAKUTEH7");
+        truncated_board.pop();
+        assert!(parse_board_info(&truncated_board)
+            .expect_err("board API tail drift must fail")
+            .contains("exact API 1.47"));
+        assert!(validate_build_info(b"Jul 16 202612:00:00ABCDEF0")
+            .expect_err("uppercase git identity must fail")
+            .contains("build information"));
+        assert!(validate_build_info(b"Jul 16 202612:00:00abcdef0\x01")
+            .expect_err("partial build option must fail")
+            .contains("build information"));
+
+        let mut bad_checksum = msp_reply(MSP_API_VERSION, &[0, 1, 47]);
+        *bad_checksum.last_mut().expect("checksum byte") ^= 0xff;
+        let checksum_error =
+            query_fake_msp_reply(bad_checksum).expect_err("bad checksum must fail");
+        assert!(
+            checksum_error.contains("checksum"),
+            "unexpected checksum refusal: {checksum_error}"
+        );
+
+        let mut error_direction = msp_reply(MSP_API_VERSION, &[0, 1, 47]);
+        error_direction[2] = b'!';
+        assert!(query_fake_msp_reply(error_direction)
+            .expect_err("MSP error direction must fail")
+            .contains("direction"));
+
+        let mut wrong_command = msp_reply(MSP_FC_VARIANT, b"BTFL");
+        wrong_command[4] = MSP_FC_VARIANT;
+        assert!(query_fake_msp_reply(wrong_command)
+            .expect_err("wrong echoed command must fail")
+            .contains("active request"));
+
+        let first_uid = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        let (api_master, mut api_slave) =
+            serialport::TTYPort::pair().expect("wrong-API pseudo terminal pair");
+        api_slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("wrong-API pseudo terminal timeout");
+        let mut wrong_api = msp_identity_payloads(first_uid);
+        wrong_api[0].1 = vec![MSP_PROTOCOL_VERSION, MSP_API_MAJOR, MSP_API_MINOR - 1];
+        let api_target = spawn_fake_msp(api_master, vec![wrong_api]);
+        assert!(probe_recorder_adapter_with_port(
+            adapter_probe_request(),
+            true,
+            "cc".repeat(32),
+            Box::new(api_slave),
+        )
+        .expect_err("wrong MSP API must fail")
+        .contains("API 1.47"));
+        api_target.join().expect("wrong-API target completes");
+
+        let (uid_master, mut uid_slave) =
+            serialport::TTYPort::pair().expect("placeholder-UID pseudo terminal pair");
+        uid_slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("placeholder-UID pseudo terminal timeout");
+        let uid_target = spawn_fake_msp(uid_master, vec![msp_identity_payloads([0_u8; 12])]);
+        assert!(probe_recorder_adapter_with_port(
+            adapter_probe_request(),
+            true,
+            "dd".repeat(32),
+            Box::new(uid_slave),
+        )
+        .expect_err("placeholder UID must fail")
+        .contains("non-placeholder"));
+        uid_target.join().expect("placeholder-UID target completes");
+
+        let second_uid = [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+        let (master, mut slave) = serialport::TTYPort::pair().expect("drift pseudo terminal pair");
+        slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("drift pseudo terminal timeout");
+        let target = spawn_fake_msp(
+            master,
+            vec![
+                msp_identity_payloads(first_uid),
+                msp_identity_payloads(second_uid),
+            ],
+        );
+        assert!(probe_recorder_adapter_with_port(
+            adapter_probe_request(),
+            true,
+            "bb".repeat(32),
+            Box::new(slave),
+        )
+        .expect_err("identity drift must fail")
+        .contains("changed between"));
+        target.join().expect("drift target completes");
+
+        let mut wrong_rig = adapter_probe_request();
+        wrong_rig.reference_rig_id = Some(D12_RIGS[1].to_string());
+        assert!(validate_adapter_probe_request(&wrong_rig, true)
+            .expect_err("rover cannot use Betaflight adapter")
+            .contains("reference quad"));
+        assert!(
+            validate_adapter_probe_request(&adapter_probe_request(), false)
+                .expect_err("disabled gates must fail")
+                .contains("hardware-enable")
+        );
     }
 
     #[test]
@@ -3052,6 +3894,7 @@ mod tests {
         let dir = test_dir("recorder");
         let request = recorder_request(&dir, "art_replay_1");
         let runtime = RecorderRuntime::default();
+        assert!(lock_inactive_recorder(&runtime).is_ok());
         let inactive = recorder_status_for(&runtime).expect("inactive recorder status");
         assert_eq!(inactive.schema_version, RECORDER_CONTROL_SCHEMA_VERSION);
         assert_eq!(inactive.state, "inactive");
@@ -3063,6 +3906,11 @@ mod tests {
         let (mut master, slave) = serialport::TTYPort::pair().expect("recorder pseudo terminal");
         let start = start_recorder_with_port(&runtime, request, Box::new(slave), true)
             .expect("recorder starts");
+        let probe_while_recording_error = match lock_inactive_recorder(&runtime) {
+            Ok(_) => panic!("adapter probe must refuse an active recorder"),
+            Err(error) => error,
+        };
+        assert!(probe_while_recording_error.contains("recorder to be inactive"));
         assert_eq!(start.schema_version, RECORDER_CONTROL_SCHEMA_VERSION);
         assert_eq!(start.state, "recording");
         assert_eq!(start.artifact_id.as_deref(), Some("art_replay_1"));

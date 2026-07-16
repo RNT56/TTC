@@ -38,6 +38,7 @@ const main = await readFile(resolve(root, "src-tauri/src/main.rs"), "utf8");
 for (const command of [
   "bridge_status",
   "list_serial_ports",
+  "probe_recorder_adapter",
   "write_serial_config",
   "start_background_recording",
   "stop_background_recording",
@@ -67,6 +68,12 @@ assert(main.includes("post_write_version_response_sha256"), "desktop receipts mu
 assert(main.includes("readback_response_sha256"), "desktop receipts must bind the exact readback response");
 assert(main.includes("cli_left_arming_disabled: true"), "desktop must leave the verified target CLI-arming-disabled");
 assert(main.includes("keep the rig disarmed and inspect it manually"), "ambiguous post-write state must fail with disarmed operator guidance");
+assert(main.includes("forge-recorder-adapter-probe/1.0.0"), "desktop must version the read-only recorder adapter probe");
+assert(main.includes("forge-betaflight-msp-adapter/1.0.0"), "desktop must bind the reviewed Betaflight MSP adapter contract");
+assert(main.includes("unattested-read-only-probe"), "adapter probing must not imply device attestation");
+assert(main.includes("READ_ONLY_MSP_COMMANDS"), "adapter probing must use an exact read-only MSP command allowlist");
+assert(main.includes("cryptographic_device_attestation: false"), "MSP identity observation must not fabricate cryptographic attestation");
+assert(main.includes("adapter identity probing requires the Desktop recorder to be inactive"), "adapter probing must not race the recorder on one serial port");
 assert(main.includes("forge-recorder-manifest.json"), "desktop recorder must initialize a filesystem archive manifest");
 assert(main.includes("forge-recorder-archive/1.0.0"), "desktop recorder archives must carry an independent persisted format version");
 assert(main.includes("forge-telemetry-frame/1.0.0"), "desktop recorder input frames must carry an exact versioned schema");

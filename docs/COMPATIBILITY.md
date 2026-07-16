@@ -250,6 +250,21 @@ Older applications may ignore migration 0026 rows but must retain them, preserve
 their linked telemetry/object rows, and roll forward; they may not inline the replay
 or infer provenance from archive self-consistency.
 
+D55 adds `forge-recorder-adapter-probe/1.0.0` as a bounded ephemeral Desktop
+command response, not a persisted archive, telemetry, or compatibility-matrix
+surface. Its exact meanings are one D30/props-off/D12-quad/OS-enumerated-port gate,
+an atomically inactive native recorder,
+adapter `forge-betaflight-msp-adapter/1.0.0`, two byte-identical decoded identity
+passes over read-only MSP-v1 commands `[1,2,3,4,5,160]`, Betaflight 2025.12/API
+1.47/KAKUTEH7 authority, domain-separated hashes, and explicit false device/field/
+sharing/training/attestation flags. Adding a command, accepting another protocol,
+firmware family, target, or rig, exposing raw UID/responses, changing any hash
+preimage, persisting the probe, binding it to archive v1, or promoting any false
+authority requires a probe/adapter major and a superseding decision. Older Studio
+builds may ignore the command. A successful probe cannot be migrated into D54 or a
+recorded-device claim because MSP identity is self-reported and the probe is not
+bound to recorder start/end custody.
+
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian
 compiler declaration and therefore allowed the engine's degree default to reinterpret

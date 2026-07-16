@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   D12_REFERENCE_RIG_IDS,
+  RECORDER_ADAPTER_PROBE_CONFIRMATION,
+  RECORDER_ADAPTER_PROBE_SCHEMA_VERSION,
+  RECORDER_ADAPTER_READ_ONLY_COMMAND_IDS,
+  RECORDER_ADAPTER_SCHEMA_VERSION,
   RECORDER_ARCHIVE_SCHEMA_VERSION,
   RECORDER_BAUD,
   RECORDER_CONTROL_SCHEMA_VERSION,
@@ -18,18 +22,58 @@ import {
   listDesktopSerialPorts,
   parseDesktopBridgeStatus,
   parseDesktopSerialPorts,
+  parseRecorderAdapterProbe,
   parseRecorderArchiveInspection,
   parseRecorderControlStatus,
   parseRecorderStopReceipt,
   parseRecorderUploadPlan,
   parseRecorderUploadReceipt,
   prepareRecorderArchiveUpload,
+  probeDesktopRecorderAdapter,
   startDesktopRecorder,
   stopDesktopRecorder,
   uploadRecorderArchiveFiles,
   type DesktopCommandRuntime,
   type RecorderStartRequest,
 } from "../src/desktopRecorder.ts";
+
+function adapterProbeFixture(): Record<string, unknown> {
+  return {
+    schemaVersion: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION,
+    adapterSchemaVersion: RECORDER_ADAPTER_SCHEMA_VERSION,
+    probeMaturity: "unattested-read-only-probe",
+    referenceRigId: D12_REFERENCE_RIG_IDS[0],
+    sourcePortSha256: "10".repeat(32),
+    osDescriptorSha256: "20".repeat(32),
+    baud: RECORDER_BAUD,
+    observedAtUnixMs: 1_750_000_000_000,
+    firmware: "betaflight",
+    firmwareVersion: "2025.12.5",
+    mspProtocolVersion: 0,
+    mspApiMajor: 1,
+    mspApiMinor: 47,
+    flightControllerVariant: "BTFL",
+    boardIdentifier: "KH7",
+    targetName: "KAKUTEH7",
+    boardName: "Kakute H7 V1.5",
+    manufacturerId: "HBRO",
+    deviceUidSha256: "30".repeat(32),
+    identitySha256: "40".repeat(32),
+    preIdentityResponseSha256: "50".repeat(32),
+    postIdentityResponseSha256: "50".repeat(32),
+    transcriptSha256: "60".repeat(32),
+    readOnlyCommandIds: [...RECORDER_ADAPTER_READ_ONLY_COMMAND_IDS],
+    adapterProtocolVerified: true,
+    stableIdentityObserved: true,
+    deviceIdentityVerified: false,
+    cryptographicDeviceAttestation: false,
+    recordedDeviceAttested: false,
+    fieldSessionVerified: false,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
+    noAutoArm: true,
+  };
+}
 
 function inspectionFixture(): Record<string, unknown> {
   return {
@@ -193,6 +237,73 @@ test("invokes the exact Desktop inspection command and parses its bounded summar
   assert.equal(inspection.integrityVerified, true);
   assert.equal(inspection.recordedDeviceAttested, false);
   assert.equal(inspection.trainingReuseAuthorized, false);
+});
+
+test("invokes the exact read-only adapter probe and retains every non-attestation flag", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const runtime: DesktopCommandRuntime = {
+    available: () => true,
+    invoke: async <T>(command: string, args?: Record<string, unknown>) => {
+      calls.push({ command, args });
+      return adapterProbeFixture() as T;
+    },
+  };
+  const request = {
+    port: "/dev/tty.usbmodem1",
+    baud: RECORDER_BAUD,
+    referenceRigId: D12_REFERENCE_RIG_IDS[0],
+    physicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+  } as const;
+  const probe = await probeDesktopRecorderAdapter(request, runtime);
+  assert.deepEqual(calls, [{ command: "probe_recorder_adapter", args: { request } }]);
+  assert.equal(probe.adapterProtocolVerified, true);
+  assert.equal(probe.stableIdentityObserved, true);
+  assert.equal(probe.deviceIdentityVerified, false);
+  assert.equal(probe.cryptographicDeviceAttestation, false);
+  assert.equal(probe.recordedDeviceAttested, false);
+});
+
+test("adapter probe refuses browser, request, response, command, identity, and authority drift", async () => {
+  let invoked = false;
+  const unavailable: DesktopCommandRuntime = {
+    available: () => false,
+    invoke: async <T>() => {
+      invoked = true;
+      return adapterProbeFixture() as T;
+    },
+  };
+  const request = {
+    port: "/dev/tty.usbmodem1",
+    baud: RECORDER_BAUD,
+    referenceRigId: D12_REFERENCE_RIG_IDS[0],
+    physicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+  } as const;
+  await assert.rejects(probeDesktopRecorderAdapter(request, unavailable), /require FORGE Desktop/);
+  const available = { ...unavailable, available: () => true };
+  await assert.rejects(
+    probeDesktopRecorderAdapter({ ...request, referenceRigId: D12_REFERENCE_RIG_IDS[1] } as never, available),
+    /props-off D12 quad contract/,
+  );
+  assert.equal(invoked, false);
+
+  const extra = adapterProbeFixture();
+  extra.rawUid = "010203";
+  assert.throws(() => parseRecorderAdapterProbe(extra), /fields have drifted/);
+  const commands = adapterProbeFixture();
+  commands.readOnlyCommandIds = [1, 2, 3, 4, 5, 99];
+  assert.throws(() => parseRecorderAdapterProbe(commands), /command allowlist/);
+  const unstable = adapterProbeFixture();
+  unstable.postIdentityResponseSha256 = "99".repeat(32);
+  assert.throws(() => parseRecorderAdapterProbe(unstable), /stability or authority/);
+  const promoted = adapterProbeFixture();
+  promoted.cryptographicDeviceAttestation = true;
+  assert.throws(() => parseRecorderAdapterProbe(promoted), /stability or authority/);
+  const wrongTarget = adapterProbeFixture();
+  wrongTarget.targetName = "OTHERH7";
+  assert.throws(() => parseRecorderAdapterProbe(wrongTarget), /identity or numeric bounds/);
+  const controlCharacter = adapterProbeFixture();
+  controlCharacter.boardName = "Kakute\nH7";
+  assert.throws(() => parseRecorderAdapterProbe(controlCharacter), /identity or numeric bounds/);
 });
 
 test("refuses browser use and invalid archive paths without invoking Desktop", async () => {

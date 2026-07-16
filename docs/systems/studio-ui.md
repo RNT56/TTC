@@ -2,7 +2,7 @@
 
 **Status:** P1 shell and truthful equipped-variant configurator live; P4 account/model/generation/share/review/job panels live; output-aware heavy-job artifact registry and platform panels live · **Phases:** P1 shell, grows every phase · **Home:**
 `packages/studio` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D3, D4, D14, D15, D16, D32, D34, D41
+(v3.0) · **Decisions:** D3, D4, D14, D15, D16, D32, D34, D41, D55
 
 ## 1. Purpose
 
@@ -51,7 +51,7 @@ inventing a second CORS security surface.
 | P5 | owned-upload-backed photoscan launcher requires explicit per-object processing consent, then renders D13/refit/cache/candidate details, linked blob access, recent photoscan artifacts, and editable alignment controls/readout for scale, axis, and ports; mesh-click placement remains polish |
 | P6 | HUD analytics full (AUW/TWR/hover/current/endurance with inspectable assumptions); disturbance controls |
 | P7 | training output renders scorecard, robustness grid, IO counts, ONNX metadata, linked policy artifacts, owner-scoped artifact access, and explicit per-log consent before telemetry-backed training; one click selects the active admitted model, starts the fixture or configured-local job with an idempotency key, polls to terminal state, and fetches retained bytes through the authenticated same-origin policy-model route; playback lazy-loads exact ONNX Runtime Web 1.27.0/WASM, verifies the declared `forge-policy-tensor` major plus scorecard/lineage/model/delivery digest, selects Rust estimator observer v1 or v2, and feeds bounded actions to CoreSession at 50 Hz; D42 makes tensor-v2 `[1,14]` current with estimator body velocity while retaining exact v1 `[1,11]` read execution; current task-v3 consumers verify frame/hash/control authority and advance bounded waypoint chains only from estimator target error; the controlled hover trainer is protected through PR #64, P7-011 object-backed delivery through PR #68/`9131289`, the waypoint trainer/consumer through PR #70/`f220d25`, P7-012 implementation/evidence through PR #72/`8e094c0` and PR #73/`6bfa60f`, and D44's worker-side ground trainers through PR #75/`90b1691`; the flight-only browser consumer explicitly refuses `forge-ground-policy-tensor` until a reviewed ground observer/actuator exists; exact passing-policy delivery integration, a full training workspace, rover/quadruped browser loading, deployed training, and production storage operations remain open |
-| P8 | D30 lab-gated hardware bridge; config-diff, telemetry/replay, supervisor, system-ID, crash/ghost metadata, replay artifacts, telemetry logs, and maintenance records render in job/artifact panels; per-log sharing grant/withdraw and explicit share action are available; protected Desktop serial target/readback exists and D50's native background-recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 protects a Desktop-only path input, native streaming verifier, and strict bounded archive-self-consistency summary with device/field/sharing/training nonclaims through PR #89/`b5418ac`; D52 protects strict bridge/port/status/start/stop controls sourced only from the active admitted report through PR #91/`a8120ab` and keeps raw frames plus device/field/sharing/training authority outside Studio; D53 protects authenticated private-object staging, exact native Desktop streaming PUTs, and object-integrity/archive-semantics separation through PR #93/`08d892f`; D54 protects the explicit authenticated sovereign-verification action, exact report/model binding, and bounded object-backed telemetry reference with all broader nonclaims retained through PR #95/`f8efb6f`; WebSerial/WebUSB, ladder UX, ghost scrubber, real adapter/device capture, and field proof remain open |
+| P8 | D30 lab-gated hardware bridge; config-diff, telemetry/replay, supervisor, system-ID, crash/ghost metadata, replay artifacts, telemetry logs, and maintenance records render in job/artifact panels; per-log sharing grant/withdraw and explicit share action are available; protected Desktop serial target/readback exists and D50's native background-recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 protects a Desktop-only path input, native streaming verifier, and strict bounded archive-self-consistency summary with device/field/sharing/training nonclaims through PR #89/`b5418ac`; D52 protects strict bridge/port/status/start/stop controls sourced only from the active admitted report through PR #91/`a8120ab` and keeps raw frames plus device/field/sharing/training authority outside Studio; D53 protects authenticated private-object staging, exact native Desktop streaming PUTs, and object-integrity/archive-semantics separation through PR #93/`08d892f`; D54 protects the explicit authenticated sovereign-verification action, exact report/model binding, and bounded object-backed telemetry reference with all broader nonclaims retained through PR #95/`f8efb6f`; D55 adds a strict Desktop-only props-off/read-only MSP adapter probe that displays stable hashed identity while keeping cryptographic/device/field/sharing/training authority false; WebSerial/WebUSB, recorder-bound real-device capture, ladder UX, ghost scrubber, and field proof remain open |
 | P9–P12 | fixture co-design Pareto points, wear, crash, repair, and fleet outputs render in job details; co-design points can apply admitted JSON-Patch candidates through patch/re-bake and save admitted points as openable models through the model admission route; platform panel covers credits, license ledger/export-policy visibility, editable course creation, `?course=<id>` course URLs, replay-verified leaderboard filtering, classroom assignment/submission, marketplace kind/status filtering with row-level usage/equip actions, listing/policy-listing submission, and moderation reports; D34 requires explicit per-model pattern contribution and account-level leaderboard publication grants before those actions; artifact panel includes the maintenance twin dashboard with fleet counts, crash scrubber, wear cards, repair rows, reorder hints, and vendor/print handoff links; live optimizer-backed Pareto depth and live marketplace/provider economics remain open |
 
 Variant cards are not presentation-only state. XC-28 makes the equipped variant
@@ -121,6 +121,24 @@ This UI and client are protected at local semantic-admission maturity through PR
 #95/`f8efb6f`, exact head `81282f7`, reviewed tree `f71ee1a`, PR CI/security
 `29512245375`/`29512245387`, and post-merge CI/security
 `29512921138`/`29512920367`.
+
+D55 adds a separate read-only action above the port selector without changing start,
+stop, inspection, materialization, or admission. The button is enabled only in the
+Tauri runtime when the D30 bridge is enabled, the shell recorder is inactive, the
+D12 reference quad and one enumerated port are selected, and the operator explicitly
+confirms propellers are removed. Studio sends only that bounded intent and strictly
+parses `forge-recorder-adapter-probe/1.0.0`: exact Betaflight/MSP/target versions,
+six read-only command IDs, equal pre/post response-set hashes, bounded decoded board
+labels, descriptor/UID/identity/transcript hashes, and the complete false-authority
+set. Unknown fields, raw UID/response additions, command drift, unstable identity,
+or any device/cryptographic-attestation/recorded-device/field/sharing/training
+promotion fail closed. The result visibly says “cryptographic attestation off” and
+is not attached to recorder or D54 state. Browser builds cannot invoke it. This
+deliberately useful probe proves the adapter protocol shape only; it does not make a
+pseudo-terminal or self-reported MSP UID into real-device provenance. Studio
+typecheck/build and 28/28 tests, all 40 repository gates, the isolated database and
+11-flow production-browser suite, and Chromium/Firefox/WebKit pass locally; review
+and protected evidence remain pending.
 
 ## 5. Browser floor & surfaces (D15)
 
