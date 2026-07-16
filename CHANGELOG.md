@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Reconcile protected D57 ghost-replay evidence
+**Session:** Codex agent · branch `codex/p8005-d57-ghost-evidence` ·
+**Phase:** P8/P12 · **TODO items:** P8-004 [~], P12-002 [~], XC-20 [~]
+**Done:** Reconciled the living D57 boundary to protected local view maturity. PR
+#102 exact head `50abc922a4c695ee3100df6fdf381334d3f86e9a` passed PR CI
+`29536927436` and security `29536927492`; reviewed tree
+`cc1d483919a799b565d0783b7258d90420d495af` is byte-identical at protected squash
+`d33fd57980081e90990e2d4bb96a5c08dbe3c87b`, whose post-merge CI
+`29537565069` and security `29537565062` pass. The remote implementation branch was
+deleted. This protects the compact controlled-synthetic/unverified overlay, strict
+parsing, indexed seeking, and explicit controls only; raw frames remain object-
+backed and device, recorded-device, field, sharing, and training authority remain
+false.
+**Changed:** Entry guidance, changelog, project-state, roadmap, TODO, and execution
+roadmap only; no runtime, dependency, schema, migration, artifact, replay, archive,
+recorder, consent, sharing, training, or hardware format changed.
+**Decisions:** none; D57 remains active unchanged and D58 remains the next regular ID.
+**Next:** Implement the separately bounded P8-007 deployment-ladder UX while the
+real adapter/device/field prerequisite for a D54-backed ghost remains external.
+**Blockers:** Real D54 replay-to-admitted-twin execution, named-mid-hardware render
+performance, P8-014, EXT-008, and field provenance remain separately gated.
+
 ## 2026-07-16 — Implement bounded indexed ghost replay mechanics
 **Session:** Codex agent · branch `codex/p8005-p8-004-ghost-scrubber` ·
 **Phase:** P8/P12 · **TODO items:** P8-004 [~], P12-002 [~], XC-20 [~]

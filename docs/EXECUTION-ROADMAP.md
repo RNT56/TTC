@@ -518,8 +518,9 @@ Work:
   Postgres plus 11-flow production-browser matrix pass. Exact head `69c0dd7`,
   reviewed tree `de12c5a`, PR CI/security `29530839367`/`29530839338`, protected-tree
   equality, and post-merge CI/security `29531470442`/`29531470118` pass;
-- D57/P8-004 is an implementation candidate at local controlled-synthetic view
-  maturity. `forge-ghost-overlay/1.0.0` caps one compact Y-up/SI trace at ten minutes
+- D57/P8-004 is protected at local controlled-synthetic/unverified view maturity
+  through PR #102/`d33fd57`. `forge-ghost-overlay/1.0.0` caps one compact Y-up/SI
+  trace at ten minutes
   and 6,001 points, exact-matches Euclidean divergence and a sparse seek index, and
   permanently keeps device/recorded-device/field authority false. Worker tests cover
   a 36,001-sample 60 Hz source and refusal; Gateway produces the keyless equivalent;
@@ -527,9 +528,11 @@ Work:
   explicit 60 Hz play/pause/frame steps. Focused worker/Gateway/Studio/build and
   compatibility gates pass, as do all 40 local gates under Python 3.12.13 with 227
   worker tests, a fresh clean/25-predecessor Postgres matrix, all 12 production-
-  browser flows, and Chromium/Firefox/WebKit. Raw D53/D54 frames remain object-
-  backed; exact PR/protected-main, real-mid-hardware, real D54-to-twin, P8-014 and
-  EXT-008 evidence remain required;
+  browser flows, and Chromium/Firefox/WebKit. Exact head `50abc92`, reviewed tree
+  `cc1d483`, PR CI/security `29536927436`/`29536927492`, protected-tree equality,
+  and post-merge CI/security `29537565069`/`29537565062` pass. Raw D53/D54 frames
+  remain object-backed; real-mid-hardware, real D54-to-twin, P8-014 and EXT-008
+  evidence remain required;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -548,12 +551,10 @@ MSP transcript, fixture signature, adapter, import path, or acceptance-authority
 signature may promote a log to recorded-device or field maturity without a later
 reviewed format and acceptance proof.
 
-The current dependency-complete local step is to protect D57 with its now-green
-production-browser/full-repository/database evidence and reconcile exact protected
-hashes. After that,
-do not fabricate a D54 ghost source: either run the named-hardware gate above or move
-to the separately bounded P8-007 deployment-ladder UX slice while the adapter/field
-prerequisite remains external.
+The current dependency-complete local step is the separately bounded P8-007
+deployment-ladder UX slice while the adapter/field prerequisite remains external.
+Do not fabricate a D54 ghost source: the real D57 successor must wait for the named-
+hardware/D54-to-twin gate above.
 
 Acceptance:
 
