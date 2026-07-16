@@ -18,6 +18,29 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect the D55 read-only adapter identity boundary
+**Session:** Codex agent · branch `codex/p8002-d55-adapter-identity-evidence` ·
+**Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
+**Done:** Reconciled the D55 implementation with exact protected evidence. PR #97
+head `4321eaafd5d2c0ef60cf9f38cd1000d16d660668` passed CI
+`29519984713` and security `29519984764`; reviewed tree
+`673a50c94ecc17a2bd266542cd5f2c611d8a248b` is byte-identical at protected
+`370d2140142d1f0cdbfde0625aa024d9b3bbfd81`, whose post-merge CI
+`29520651520` and security `29520651581` pass. The remote implementation branch
+was deleted. This protects only the strict read-only, two-pass, self-reported MSP
+protocol observation and its false-authority boundary. It does not establish
+cryptographic attestation, recorder start/end custody, named-controller identity,
+host-suspend behavior, lab or field provenance, sharing consent, or training reuse.
+**Changed:** Entry-agent, project-state, roadmap, TODO, execution, risk, hardware,
+Studio, and changelog evidence language only; no runtime, schema, migration, archive,
+telemetry, consent, or compatibility semantics changed.
+**Decisions:** D55 remains active and unchanged; D56 remains the next regular ID.
+**Next:** Design a separate recorder-bound trust/custody contract, then execute D49
+and D55 on the named props-off D12 Kakute H7 V1.5 under controlled-lab authority.
+**Blockers:** Trusted identity/custody, named hardware/operator proof, host suspend,
+lab/field execution, WebSerial/WebUSB capture, signed Desktop delivery, ghost,
+system-ID, sharing, and training authority remain separate gates.
+
 ## 2026-07-16 — Add the fail-closed D55 read-only adapter identity probe
 **Session:** Codex agent · branch `codex/p8002-d55-adapter-identity` ·
 **Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
