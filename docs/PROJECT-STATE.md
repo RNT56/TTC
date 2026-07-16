@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-16**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `4647a10` (PR #85; D49 target/readback)
+Latest verified protected descendant: `63e144c` (PR #86; D49 evidence reconciliation)
 Latest verified protected runtime descendant: `4647a10` (PR #85; D49 target/readback)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
@@ -18,6 +18,7 @@ P7-013 deployment-control evidence anchor: `ff39cd8` (PR #79)
 P8-012 native-serial evidence anchor: `fd26845` (PR #83)
 P8-012 evidence-reconciliation anchor: `15c3be2` (PR #84)
 D49 target/readback evidence anchor: `4647a10` (PR #85)
+D49 evidence-reconciliation anchor: `63e144c` (PR #86)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -64,9 +65,10 @@ with migration/deprecation guides and synthetic examples. The complete 36-step l
 gate, exact-head PR CI `29375146614`/security `29375146592`, and post-merge CI
 `29376742319`/security `29376742373` pass. This advances deterministic documentation
 and compatibility evidence, not live-provider or broader product maturity. That is
-the DOC-005 closeout snapshot; current protected `2c7562d` additively verifies 76
+the DOC-005 closeout snapshot; current protected `63e144c` additively verifies 77
 routes, two event families, fifteen compatibility surfaces, and seventeen worker
-families through the same drift gate.
+families through the same drift gate. D50's unprotected recorder candidate adds the
+sixteenth compatibility surface locally without changing route/event/worker counts.
 
 PR #54 exposed and closed a registry-protocol regression after npm retired the legacy
 audit endpoints used by the pinned pnpm 10 client. This was not an advisory finding
@@ -323,20 +325,38 @@ byte-identical at protected squash `4647a10`, whose post-merge CI `29480132737` 
 security `29480131433` pass. This is protected local protocol integration, not a
 physical FC identity, lab, HITL, tethered, supervisor, or field result.
 
+PR #86 protects that D49 evidence reconciliation at `63e144c`; exact docs head
+`c1523c3` passed PR CI `29480985615` and security `29480985208`, reviewed tree
+`c006acb` is byte-identical at the protected squash, and post-merge CI
+`29481540556`/security `29481540540` pass. D50/P8-013 is now an unprotected local
+implementation candidate on that base. The Desktop accepts only a new exclusive
+archive, D30/D12/consent/OS-enumerated 115200-baud input, and bounded contiguous,
+strictly time-increasing `forge-telemetry-frame/1.0.0` serial JSONL. One in-shell
+thread writes canonical append-only frames and a sparse byte-offset index, drains on
+explicit stop, flushes/syncs, finalizes replay 1.0.0, hashes frames/index/replay, and
+only then emits `forge-recorder-receipt/1.0.0`. Empty, partial, malformed, drifted,
+over-budget, interrupted, concurrent, and overwrite paths emit no success receipt.
+Eleven locked Rust tests include real pseudo-terminal recorder round-trip, exact
+replay/index/hash assertions, drift refusal, exclusivity, and no overwrite. This is
+local capture-mechanics evidence with user-owned/private/no-training/no-auto-arm
+defaults and `recordedDeviceAttested=false`, not an adapter, physical device, OS
+suspend, WebSerial/WebUSB, lab, field, ghost, system-ID, or training result.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
+| P8-013 Desktop recorder candidate | Desktop Cargo fmt/Clippy and 11/11 Rust tests pass; a real Unix pseudo-terminal feeds three exact versioned frames through the background thread into canonical frames, a two-entry sparse byte-offset index, replay 1.0.0, and exact frame/index/replay hashes. Focused tests reject unenumerated authority, consent/hash drift, non-contiguous sequence/time, oversized/empty/partial input, concurrent capture, and archive overwrite. The complete 40-step local gate passes under Python 3.12.13 with 225 workers, 66 gateway tests, 13 Studio tests, 16 compatibility surfaces, generated 77-route/2-event/17-worker docs, native/WASM parity, packaging, training/offline/MJX smokes, and patch hygiene | proves the unprotected local D50 archive/frame/receipt semantics and background capture mechanics only. No real adapter/device identity, host suspend, WebSerial/WebUSB, lab, field, ghost, system-ID, sharing/training grant, or recorded-device attestation is claimed; exact-head PR and post-merge CI/security remain required |
 | D49 protected native target/readback | Desktop Cargo fmt/Clippy/tests pass 6/6; `pnpm verify:desktop-native`, the Desktop package contract, root Rust fmt/Clippy/tests, and the complete 40-step `pnpm verify` pass. Real Unix pseudo-terminals prove the two-session pre-write/version/set/save/reboot-session/readback protocol, exact receipt digests, response caps, and timeouts; focused tests reject wrong/duplicate identity, wrong/duplicate readback, target errors, command/hash/path drift, and unsafe bounds | proves the protected local bounded protocol and receipt 2.0.0 semantics only through PR #85 exact head `f18185d`, reviewed tree `dfa0007`, protected `4647a10`, PR CI/security `29479621677`/`29479621689`, and post-merge CI/security `29480132737`/`29480131433`. The D48 config artifact remains 1.0.0. No physical FC, device-unique identity, lab, HITL, tethered, supervisor, WebSerial, or field evidence is claimed |
 | P8-012 protected native serial transport | PR #83 exact head `758fd9a` and protected `fd26845` retain the complete 40-step local gate under exact Python 3.12, 225/225 workers, 66/66 gateway with the real validator, 15/15 compatibility surfaces, the governed 14-case hardware corpus, generated 77-route/2-event/17-worker docs, Desktop native Cargo check, locked Desktop fmt/Clippy, and 4/4 Rust tests including exact bytes over a real Unix pseudo-terminal plus OS-enumerated-path refusal | proves D48 producer/consumer/native transport and the honest receipt at protected deterministic integration maturity. PR CI `29468611033`/security `29468611094` and post-merge CI `29468966929`/security `29468966748` pass. Target-version handshake, post-write readback, real FC, HITL, lab, and field evidence are not claimed |
 | P7-013 protected deployment control | PR #79 exact head `bc02324` and protected `ff39cd8` pass the exact Python 3.12 40-step gate: 218/218 workers, 65/65 gateway with the real validator, 15/15 compatibility surfaces, 77 generated routes, 17 worker families, 24 migration sources, and all native training/offline/MJX smokes | proves D46's contract/fixture and fail-closed CUDA/deployment/call/quota/cancellation/refund/recovery boundaries. Exact PR CI `29462960862`/security `29462960834` and post-merge CI `29463344103`/security `29463344085` are green; no deployment, credentialed L4 call, provider billing, delivered alert, automatic provider expiry, real recovery drill, or production result is claimed |
-| Git state | latest verified protected descendant and runtime descendant is D49 target/readback `4647a10`. P8-012 evidence `15c3be2`, native serial transport `fd26845`, P7-010 reconciliation `f91c339`, P7-010 decision contract `d19c911`, P7-013 deployment-control `ff39cd8`, P7-009 offline-training `2c7562d`, P7-014 reconciliation `f0bb4e2`, ground training `90b1691`, P7-012 evidence `6bfa60f`, waypoint `f220d25`, P7-011 delivery `9131289`, P7-010 feasibility `0614272`, P7-003 training `d1c4c38`, P7-008 browser `1de7974`, SEC-006 `d952f60`, P6 engine `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` is published | PR #85 exact head `f18185d` passed CI `29479621677`/security `29479621689`; reviewed tree `dfa0007` is byte-identical at protected `4647a10`, which passed post-merge CI `29480132737` and security `29480131433` |
+| Git state | latest verified protected descendant is D49 evidence reconciliation `63e144c`; latest protected runtime descendant is D49 target/readback `4647a10`. P8-012 evidence `15c3be2`, native serial transport `fd26845`, P7-010 reconciliation `f91c339`, P7-010 decision contract `d19c911`, P7-013 deployment-control `ff39cd8`, P7-009 offline-training `2c7562d`, P7-014 reconciliation `f0bb4e2`, ground training `90b1691`, P7-012 evidence `6bfa60f`, waypoint `f220d25`, P7-011 delivery `9131289`, P7-010 feasibility `0614272`, P7-003 training `d1c4c38`, P7-008 browser `1de7974`, SEC-006 `d952f60`, P6 engine `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` is published | PR #86 exact head `c1523c3` passed CI `29480985615`/security `29480985208`; reviewed tree `c006acb` is byte-identical at protected `63e144c`, which passed post-merge CI `29481540556` and security `29481540540`. PR #85/`4647a10` remains the owning runtime anchor until P8-013 is protected |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 40 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact PR and post-merge security for Modal 1.5.2 and the complete training runtime are green |
-| `pnpm verify` | the protected D49 tree passes all 40 required local gates under Python 3.12.13 and exact PR/post-merge CI/security | generated contract-doc drift, migration policy, external acceptance, registered golden updates, Action pins, 15-surface compatibility, Rust fmt/Clippy/tests, WASM/schema/TS, 13 Studio tests, 66 gateway tests, Brief-25 25/25, oracles, budgets, the governed 89-case boundary family, sim, packaging, pilots, 225 worker tests, four-task/offline/MJX smokes, and patch hygiene all pass |
+| `pnpm verify` | the protected D49 tree and unprotected D50 candidate pass all 40 required local gates under Python 3.12.13; D49 also has exact PR/post-merge CI/security | generated contract-doc drift, migration policy, external acceptance, registered golden updates, Action pins, Rust fmt/Clippy/tests, WASM/schema/TS, 13 Studio tests, 66 gateway tests, Brief-25 25/25, oracles, budgets, the governed 89-case boundary family, sim, packaging, pilots, 225 worker tests, four-task/offline/MJX smokes, and patch hygiene all pass. D50 expands local compatibility from 15 to 16 surfaces but remains unprotected |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
-| `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 2.0.0 is current with exact v1/v2 supported-major execution; gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor remain machine-checked |
+| `pnpm verify:compatibility` | protected D49 pass: 15/15; unprotected D50 candidate pass: 16/16 surfaces match policy 1.0.0 | the additive Desktop recorder archive 1.0.0 joins the existing policy tensor, gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle, and deprecation boundaries without changing their supported-major contracts |
 | DOC-005 contract documentation | closed through protected PR #53 at `22c263b`; current protected `ff39cd8` verifies 77 runtime routes, 2 event families, 15 compatibility surfaces, and 17 worker families | P7-013's additive cancellation route, artifact format, and migration 0024 are protected through exact PR/post-merge CI/security without changing event or worker-family counts |
 | DOC-006 contributor workflow | complete through implementation PR #58 at `3078dba` and evidence PR #59 at `484aefa`: canonical onboarding, maintainer-only curation, linked entry surfaces, sensitive-authority exclusions, assignment/reassignment rules, and three live seed issues | all 69 Markdown files resolve locally, issue-form YAML parses, #55-#57 remain correctly labeled and unassigned, all 36 local gates pass, and exact PR/post-merge CI/security are green; no external contribution outcome is claimed |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
@@ -640,7 +660,7 @@ decision; none is a hidden release claim.
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
 | Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
-| Desktop/hardware | fail-closed scaffold plus protected D48 versioned native serial transport and protected D49 bounded pre/post `2025.12.x` handshake, set/save acknowledgement, reconnect, exact readback, and receipt 2.0.0 across two real pseudo-terminal sessions at deterministic integration maturity | execute D49 on the named props-off D12 FC with retained acceptance evidence; browser WebSerial/WebUSB; signed apps; recorder/capture; Link image; lab pilots; field logs |
+| Desktop/hardware | fail-closed scaffold plus protected D48 versioned native serial transport and protected D49 bounded pre/post `2025.12.x` target/readback at deterministic integration maturity; D50/P8-013 unprotected candidate adds an exclusive bounded background serial-JSONL recorder, append-only frames, sparse index, replay-v1 finalization, exact hashes, private defaults, and false device attestation over a real pseudo-terminal | protect P8-013; execute D49/recorder seams with reviewed real adapters and named D12 hardware; browser WebSerial/WebUSB; signed apps; ghost/system-ID; Link image; lab pilots; field logs |
 | Maintenance | deterministic wear/crash/repair/fleet contracts | Desktop-captured field evidence and operating fleet data |
 | External acceptance governance | versioned QA-010 registry/CLI/templates are protected through PR #40 at `8708de7` | separately execute and review `EXT-001..008` runs with intended people/providers/hardware; structural validation alone never closes them |
 
@@ -708,6 +728,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Execute controlled D12 lab work | **Conditional go** | only under D30 gates and documented physical supervision |
 | Claim P8-012 native serial transport closure | **Go at protected deterministic/native integration maturity only** | PR #83/`fd26845`, exact PR/post-merge CI/security, independent cross-language artifact validation, and real pseudo-terminal byte proof close transport. They do not prove target-version match, applied config, FC, HITL, lab, or field maturity |
 | Claim D49 target/readback protocol closure | **Go at protected local integration maturity only** | PR #85/`4647a10`, exact PR/post-merge CI/security, and two-session pseudo-terminal proof protect the bounded handshake/save/reconnect/readback protocol. The named physical FC must still produce reviewed lab evidence before any physical-device or applied-configuration claim |
+| Claim P8-013 recorder closure | **No-go until protected** | focused local proof covers D50's candidate archive/frame/receipt, background thread, replay/index/hash, refusal, exclusivity, and no-overwrite behavior; exact-head PR and post-merge CI/security still own protection. Even after protection, real adapter/device, host suspend, lab/field, ghost/system-ID, sharing/training reuse, and recorded-device claims require separate evidence |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 

@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D30 accepted controlled D12 lab pilots; real-FC execution, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is an unprotected local-integration candidate; D30 accepted controlled D12 lab pilots; real-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50
 
 ## 1. Purpose
 
@@ -94,9 +94,28 @@ operator-readback false, and the target still CLI-arming-disabled. Any ambiguity
 after transmission returns no receipt and tells the operator to keep the rig disarmed
 for manual inspection. A two-session real Unix pseudo-terminal fixture proves the
 wire protocol and refusals; it does not identify a physical FC uniquely or prove a
-real FC, lab, HITL, tethered, supervisor, or field run. The recorder command
-separately initializes a real filesystem archive manifest under the same fail-closed
-lab boundary.
+real FC, lab, HITL, tethered, supervisor, or field run.
+
+D50's P8-013 implementation candidate replaces the manifest-only recorder stub with
+one exclusive in-shell background capture thread. Start requires the same D30/D12
+environment gates, exact per-log consent phrase, one OS-enumerated port at 115200
+baud, a new non-existing archive path, lowercase contract/lockfile SHA-256 values,
+and a bounded environment. The dedicated `forge-telemetry-frame/1.0.0` serial-JSONL
+codec binds every finite object-shaped frame to the artifact ID, exact contiguous
+sequence, and strictly increasing time; 64-KiB frame, depth/node, one-million-frame,
+and aggregate 512-MiB caps fail closed. `forge-recorder-archive/1.0.0` retains canonical
+append-only frames plus a sparse byte-offset index. Explicit stop drains buffered
+input, rejects an empty or partial frame, flushes and syncs both files, finalizes one
+replay 1.0.0 document, hashes frames/index/replay, and only then emits
+`forge-recorder-receipt/1.0.0`. Invalid/interrupted archives have no completed replay
+or success receipt, and existing paths are never overwritten. Manifest, replay, and
+receipt bind exact capture-consent confirmation, user ownership, sharing/training
+reuse false, no-auto-arm, `local-serial-integration`, and
+`recordedDeviceAttested=false`; capture consent grants neither sharing nor training.
+Real pseudo-terminal tests prove background capture, exact replay/index/hash output,
+sequence-drift refusal, single-recorder exclusivity, and no overwrite. This is not
+adapter/device identity, OS suspend, WebSerial/WebUSB, lab, field, ghost, system-ID,
+or recorded-device training evidence.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the
@@ -104,7 +123,7 @@ protected local target-firmware handshake and post-write readback protocol throu
 PR #85/`4647a10`, reviewed tree `dfa0007`, and exact PR/post-merge CI/security; the
 first real props-off D12 execution and retained acceptance pack remain required
 before any lab-applied-configuration claim. Browser WebSerial write/capture, live
-sidecar telemetry capture, build/signing, and updater delivery remain open; real
+device adapter capture, build/signing, and updater delivery remain open; real
 bench/field evidence is still P8-001/P8-009/P8-010/P8-014/EXT-004. A native-core
 fast path inside the shell (bypassing WASM) is available
 later if profiling asks — not v1 scope. Desktop exit proof: **a field log captured
@@ -225,8 +244,14 @@ two-session serial protocol over real pseudo-terminals. The minimum implementati
 3.12 hardware-boundary tests, and `pnpm verify:desktop-native`; a real-device claim
 additionally requires the D49 protocol to pass against the named FC with retained raw
 responses/hashes and signed lab evidence. HITL harness against the reference FC
-(timing/interface validation); recorder
-round-trip (log → replay → ghost render — bit-exact under D17); sysid fit on
+responses/hashes and signed lab evidence. Recorder changes additionally require
+exact archive/frame/receipt versions, consent and OS-enumerated-source refusal,
+bounded JSON/bytes/frames, contiguous sequence and increasing time, exclusive
+no-overwrite creation, background-thread start/stop, partial/empty/error refusal,
+flush/sync-before-receipt ordering, exact frame/index/replay hashes, replay-v1
+round-trip, sparse byte-offset indexing, private-by-default flags, and explicit false
+device attestation over a real pseudo-terminal. HITL harness against the reference FC
+(timing/interface validation); recorder round-trip (log → replay → ghost render — bit-exact under D17); sysid fit on
 synthetic telemetry with known ground truth (fit must recover injected constants);
 supervisor unit tests (envelope breach → fallback within deadline); pairing-auth
 tests; Desktop plugin integration tests on all three OSes; gateway/Desktop gate tests
@@ -238,7 +263,6 @@ advisory/hold outcomes.
 
 ## 12. Open questions
 
-Tauri updater/signing strategy per OS (decide at P8-011); exact telemetry tape codec
-(must support indexing for 60 fps scrub); whether the background recorder is a Tauri
-sidecar process or in-shell thread; FORGE Link build tooling (pi-gen assumed
-*(proposed)*).
+Tauri updater/signing strategy per OS (decide at P8-011); real device-adapter codec
+and identity/attestation contract above D50's local serial-JSONL seam; FORGE Link
+build tooling (pi-gen assumed *(proposed)*).

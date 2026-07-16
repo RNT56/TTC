@@ -32,6 +32,7 @@ package to adopt that same number.
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
 | policy tensor | 2.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | majors 1 and 2; new producers emit 2, exact v1 execution remains a legacy read path |
+| Desktop recorder archive | 1.0.0 | `forge-recorder-archive` binds the manifest, exact serial-JSONL input-frame authority, ordered canonical replay frames, sparse byte-offset index, clean-stop replay/receipt hashes, privacy defaults, and explicit non-attestation semantics; changes to any of those meanings are major | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
@@ -157,6 +158,32 @@ never be migrated or displayed as v2 application proof. The config artifact rema
 old/current/unsupported fixtures, migration and deprecation guidance, and release
 notes. Neither receipt major identifies a physical device uniquely or establishes
 real-FC, lab, HITL, tethered, supervisor, or field evidence.
+
+D50 introduces persisted Desktop `forge-recorder-archive/1.0.0`, exact wire input
+`forge-telemetry-frame/1.0.0`, and clean-stop
+`forge-recorder-receipt/1.0.0`. Archive v1 binds the replay 1.0.0 header authority,
+manifest filenames/privacy/non-attestation fields, canonical append-only replay
+frames, sparse sequence/time/byte-offset JSONL index, and receipt hashes for the
+frame, index, and completed replay files. The input frame schema admits exactly
+schema version, active artifact ID, contiguous zero-based sequence, finite strictly
+increasing time, and one bounded object state. Adding optional manifest/receipt
+evidence is minor only when old readers can safely ignore it. Changing input codec,
+sequence/time meaning, canonical frame encoding, index offsets, clean-stop/receipt
+semantics, privacy or device-attestation meaning, hash preimages, filenames, or replay
+major is an archive major. Readers must refuse unsupported majors rather than infer a
+new meaning. There is no migration from the historical manifest-only stub because it
+never emitted a completed versioned archive or success receipt.
+
+Archive v1 explicitly records local serial integration, user ownership, sharing
+false, training reuse false, no-auto-arm, exact capture-consent confirmation, and
+`recordedDeviceAttested=false`. Capture consent authorizes this local log only; it
+does not authorize sharing or training reuse. Changing either false value requires
+external authority/evidence, not a compatible parser update. An incomplete directory
+without the receipt and completed replay is recoverable raw local data only; it is
+never a successful archive. Publishing a device-attested or training-admissible
+successor requires a reviewed adapter/device identity contract, consent-ledger
+bindings, fixtures for old/current/unsupported majors, migration/deprecation
+guidance, and a superseding decision.
 
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian

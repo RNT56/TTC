@@ -143,9 +143,10 @@ Current Wave 1/2 boundary:
   threshold, browser support tier, or product maturity claim changed;
 - DOC-005 is complete through protected PR #53 at `22c263b`: its 75 runtime routes,
   two event families, fourteen compatibility domains, and sixteen worker queue kinds
-  exact-matched the generated references; current protected `90b1691` additively
-  verifies 76 routes, two event families, fifteen compatibility surfaces, and
-  sixteen worker families through the same drift gate;
+  exact-matched the generated references; current protected `63e144c` additively
+  verifies 77 routes, two event families, fifteen compatibility surfaces, and
+  seventeen worker families through the same drift gate. D50's unprotected recorder
+  candidate adds a sixteenth compatibility surface locally;
 - DOC-006 is complete through implementation PR #58 at `3078dba` and evidence PR #59
   at `484aefa`: contributor discovery,
   maintainer-only curation, assignment/reassignment, sensitive-authority exclusions,
@@ -427,6 +428,14 @@ Work:
   response byte streams by SHA-256. Two real pseudo-terminal sessions prove the
   protected protocol and refusals; this is still local
   integration evidence, not a physical target or lab result;
+- D50/P8-013 is an unprotected local-integration candidate: one exclusive in-shell
+  thread accepts only D30/D12/consent/OS-enumerated 115200-baud versioned JSONL,
+  exact artifact/sequence/increasing time, and bounded object frames; it retains
+  no-overwrite append-only canonical frames plus a sparse byte-offset index, flushes
+  and syncs before finalizing replay 1.0.0, and emits a hash-bound receipt only on a
+  clean explicit stop. Privacy/training authorization and device attestation remain
+  false; pseudo-terminal proof is not an adapter, device, lab, field, ghost,
+  system-ID, host-suspend, or recorded-device result;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -439,9 +448,10 @@ Next dependency-complete slice: execute the protected D49 protocol on
 the named D12 quad FC under the controlled-lab authority with propellers removed,
 retain the bounded raw responses/hashes and failure/reconnect/power-loss record, and
 then exercise that seam under P8-009's SITL -> HITL procedure. Browser WebSerial
-should consume the unchanged D48 artifact only after that native real-target proof;
-P8-013 recorder capture can proceed in parallel without widening configuration
-authority.
+should consume the unchanged D48 artifact only after that native real-target proof.
+Protect and reconcile P8-013's local recorder candidate in parallel without widening
+configuration or device-provenance authority; then bind one reviewed real adapter
+before any recorded-device or field claim.
 
 Acceptance:
 

@@ -68,5 +68,17 @@ assert(main.includes("readback_response_sha256"), "desktop receipts must bind th
 assert(main.includes("cli_left_arming_disabled: true"), "desktop must leave the verified target CLI-arming-disabled");
 assert(main.includes("keep the rig disarmed and inspect it manually"), "ambiguous post-write state must fail with disarmed operator guidance");
 assert(main.includes("forge-recorder-manifest.json"), "desktop recorder must initialize a filesystem archive manifest");
+assert(main.includes("forge-recorder-archive/1.0.0"), "desktop recorder archives must carry an independent persisted format version");
+assert(main.includes("forge-telemetry-frame/1.0.0"), "desktop recorder input frames must carry an exact versioned schema");
+assert(main.includes("forge-recorder-receipt/1.0.0"), "clean recorder completion must emit a versioned receipt");
+assert(main.includes("serial-jsonl"), "desktop recorder must bind its exact local serial input codec");
+assert(main.includes("telemetry.frames.jsonl"), "desktop recorder must retain crash-tolerant ordered frame storage");
+assert(main.includes("telemetry.index.jsonl"), "desktop recorder must retain a sparse byte-offset index");
+assert(main.includes("telemetry.replay.json"), "desktop recorder must finalize a replay-v1 artifact");
+assert(main.includes("recorded_device_attested: false"), "local recorder integration must not fabricate device provenance");
+assert(main.includes("capture_consent_confirmed: true"), "completed local archives must retain exact capture-consent confirmation");
+assert(main.includes("sharing_authorized: false"), "local recorder archives must remain private by default");
+assert(main.includes("training_reuse_authorized: false"), "capture consent must not imply training reuse");
+assert(main.includes("create_new(true)"), "desktop recorder files must never overwrite an existing archive");
 
 console.log("desktop: scaffold, FORGE Link manifest, and deployment ladder checks passed");

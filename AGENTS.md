@@ -90,11 +90,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant and runtime descendant is D49 target/readback
-  PR #85 at `4647a10`. Exact head `f18185d` passed PR CI `29479621677` and security
-  `29479621689`; its reviewed tree `dfa0007` is byte-identical at the protected
-  squash, whose post-merge CI `29480132737` and security `29480131433` pass. PR #81
-  owns the
+  latest verified protected descendant is D49 evidence reconciliation PR #86 at
+  `63e144c`. Exact head `c1523c3` passed PR CI `29480985615` and security
+  `29480985208`; reviewed tree `c006acb` is byte-identical at the protected squash,
+  whose post-merge CI `29481540556` and security `29481540540` pass. The latest
+  protected runtime descendant remains D49 target/readback PR #85/`4647a10`, with
+  exact PR/post-merge CI/security green. PR #81 owns the
   decision-grade D47 MJX request/report contract while PR #79 owns the
   fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
   controlled-synthetic offline-training evidence; PR #75 owns the
@@ -218,6 +219,18 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `failsafe_delay` readback across two real pseudo-terminal sessions, with SHA-256
   digests for the four authoritative response byte streams. That remains protected
   local protocol integration only until executed on the named FC;
+- D50/P8-013 is an unprotected local recorder candidate on exact protected
+  `63e144c`: one exclusive in-shell thread captures bounded, versioned, contiguous,
+  strictly time-increasing serial JSONL into a no-overwrite recorder-archive v1,
+  canonical append-only frames, and sparse byte-offset index; clean stop drains,
+  flushes/syncs, finalizes replay v1, hashes frames/index/replay, and only then emits
+  receipt v1 under an aggregate 512-MiB cap. D30/D12/consent/OS-enumerated-source
+  gates, persisted capture-confirmation, privacy/no-training/no-auto-arm defaults,
+  and false device attestation remain explicit. Real
+  pseudo-terminal proof plus the complete 40-step local gate under Python 3.12.13
+  covers mechanics only; protection, adapter/device identity, OS suspend,
+  WebSerial/WebUSB, lab/field, ghost/system-ID, and recorded-device training
+  authority remain open;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
@@ -697,7 +710,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization; run `pnpm db:assert-modal-operations` for P7-013 provider-call/cancellation/refund and idempotent report-bound cost-reconciliation authority |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
-| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; locked Desktop Cargo fmt/Clippy/tests; D30/D12 gate tests; no-auto-arm/props-off physical-confirmation/supervisor assertions; for D48 config writes prove exact schema/firmware version/command/range/hash, 115200 baud, OS-enumerated-port refusal, real pseudo-terminal bytes, and receipt-v1 nonclaims; for D49 prove bounded two-session stable-2025.12.x handshake, set/save acknowledgement, reconnect, repeated reported-identity hash, exact readback, SHA-256 binding of the four authoritative raw response streams, v2 receipt semantics, malformed/ambiguous/timeout/partial-state refusal, and CLI-arming-disabled state; execute the exact protocol on the named props-off FC with retained controlled-lab evidence before physical-device or lab claims |
+| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; locked Desktop Cargo fmt/Clippy/tests; D30/D12 gate tests; no-auto-arm/props-off physical-confirmation/supervisor assertions; for D48 config writes prove exact schema/firmware version/command/range/hash, 115200 baud, OS-enumerated-port refusal, real pseudo-terminal bytes, and receipt-v1 nonclaims; for D49 prove bounded two-session stable-2025.12.x handshake, set/save acknowledgement, reconnect, repeated reported-identity hash, exact readback, SHA-256 binding of the four authoritative raw response streams, v2 receipt semantics, malformed/ambiguous/timeout/partial-state refusal, and CLI-arming-disabled state; execute the exact protocol on the named props-off FC with retained controlled-lab evidence before physical-device or lab claims; for D50/P8-013 prove independent archive/frame/receipt v1 versions, exact consent/D30/D12/OS-enumerated 115200-baud gates, one exclusive in-shell thread, bounded exact artifact/sequence/increasing-time object frames, no-overwrite append-only storage, sparse byte-offset index, drain/flush/sync before replay/receipt, exact frame/index/replay hashes, empty/partial/drift/cap/interruption refusal, private/no-training/no-auto-arm/false-device-attestation semantics, and a real pseudo-terminal round-trip; never call local capture adapter/device, host-suspend, lab/field, ghost/system-ID, or recorded-device proof |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
 | External acceptance/evidence | `pnpm verify:external-acceptance`; initialize packs outside Git; freeze exact revision/environment/roles/authority; execute the registered milestone script; preserve pass/fail/stop evidence; validate the completed manifest; semantically inspect retained hashes/signoffs; required protected checks; no maturity/task closure from a template or structural pass alone |

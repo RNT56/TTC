@@ -355,6 +355,19 @@ every user-facing capability claim.
   its current hold remains active.
 - Legal gates are entry conditions, not afterthoughts: ToS review before P8,
   dual-use check before P11 policy sharing.
+- Treat recorder completion as a transaction over append-only evidence. Create one
+  exclusive archive, accept only a versioned and bounded input frame, preserve exact
+  contiguous sequence and strictly increasing time, retain sparse byte offsets, then
+  flush and sync frames/index before finalizing replay and its hash-bound receipt.
+  Never overwrite an archive or emit a completed replay/receipt after partial,
+  malformed, empty, interrupted, or over-budget input.
+- Separate capture mechanics from provenance and consent authority. A D30-gated,
+  OS-enumerated serial path or pseudo-terminal proves only the path it actually ran;
+  a port/path hash is not device identity. Persist exact capture-consent confirmation
+  while keeping archives user-owned and sharing/training reuse false until their
+  separate ledger grants exist; capture consent grants neither. Keep
+  `recordedDeviceAttested=false` until a reviewed adapter and real-device acceptance
+  can prove it. An in-process background thread is not host-suspend/lid-closed proof.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

@@ -79,6 +79,13 @@
       "versionField": "io.tensor.schemaVersion",
       "versionRule": "exact scalar layouts, tensor names/shapes, coordinate frame, action meaning, and rate authority are major-version semantics"
     },
+    "desktopRecorderArchive": {
+      "current": "1.0.0",
+      "supportedMajors": [1],
+      "schema": "forge-recorder-archive",
+      "versionField": "schemaVersion",
+      "versionRule": "archive manifest, ordered frame codec and aggregate bounds, sparse-index offsets, replay finalization, capture/privacy/non-attestation flags, and receipt hash semantics are major-version authority"
+    },
     "workerArtifacts": {
       "current": "0.2.0",
       "supportedMajors": [0],
