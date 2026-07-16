@@ -125,6 +125,16 @@ cancellation request/provider cancellation, idempotent exact credit reversal,
 idempotent same-report cost reconciliation plus conflict refusal, and no late
 materialization through `pnpm db:assert-modal-operations`.
 
+Migration `0025` additively creates `recorder_archive_materializations` for D53. One
+owner/artifact row binds exactly five distinct private object IDs plus the sanitized
+upload plan and aggregate size. Database constraints keep the row staged until object
+integrity and `materialized_at` advance together and permanently keep archive
+semantics, device/field authority, sharing, and training reuse false. No existing row
+or object is rewritten. `db:assert-migrations` creates five real object rows, proves
+the staged defaults, rejects semantic promotion and a partial state transition,
+proves the only allowed materialized transition, and verifies owner deletion removes
+the row before object cleanup.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -202,6 +212,15 @@ Run the full migration/queue assertions plus `pnpm db:assert-modal-operations` b
 resuming one job at a time. Older applications may ignore the additive columns, but
 older workers must not resume because they cannot fence or cancel provider calls.
 
+For `0025`, stop D53 recorder staging while the migration and matching gateway are
+deployed. Inventory any manually uploaded recorder objects; the migration does not
+discover or fabricate materialization rows for them. Apply 0025, deploy the D53
+gateway/Desktop pair, verify the object bucket is private and its presigned origin
+matches `FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN`, then run migration, gateway, Studio,
+Desktop, and object-storage assertions before enabling one staged archive. Older
+applications may ignore the additive table but must not resume writers that bypass
+its exact five-object and nonclaim rules.
+
 ### Apply and verify
 
 1. Run `pnpm db:migrate` from the exact release checkout.
@@ -257,6 +276,11 @@ new writes that the older application cannot understand and drain/cancel incompa
 jobs. Migration-specific rules remain in the owning system docs; for example,
 `0020` requires commerce jobs to stop and drain while the expanded job-kind
 constraint stays in place.
+For `0025`, stop new recorder staging, let issued PUT contracts expire, and reconcile
+or delete every staged private object under OPS-006. Retain the table and export 1.5
+metadata, deploy an application that ignores them safely, and roll forward; never
+convert these objects into `telemetry_logs` or mark archive semantics verified as a
+rollback shortcut.
 
 After `0021`, an older worker is not application-compatible: it cannot create the
 required token/expiry when setting a row to `running`. To roll the application back,

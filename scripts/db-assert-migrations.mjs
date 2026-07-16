@@ -90,6 +90,86 @@ async function migrationRows(client) {
   ).rows;
 }
 
+async function assertRecorderMaterializationConstraints(client) {
+  assert.ok(
+    (await client.query("SELECT to_regclass('recorder_archive_materializations') AS name")).rows[0].name,
+  );
+  const userId = "qa004-recorder-user";
+  const blobIds = ["manifest", "frame", "index", "replay", "receipt"].map(
+    (role) => `qa004-recorder-${role}`,
+  );
+  await client.query(
+    "INSERT INTO users (id, name, email) VALUES ($1, 'QA-004 recorder', 'qa004-recorder@example.test')",
+    [userId],
+  );
+  for (let index = 0; index < blobIds.length; index += 1) {
+    await client.query(
+      `INSERT INTO object_blobs (
+         id, owner_user_id, visibility, bucket, object_key, content_type,
+         byte_size, sha256, upload_status, verified_at, metadata
+       ) VALUES ($1, $2, 'private', 'qa004', $3, $4, $5, $6, 'complete', now(), '{}'::jsonb)`,
+      [
+        blobIds[index],
+        userId,
+        `users/${userId}/recorder/${index}`,
+        index === 1 || index === 2 ? "application/x-ndjson" : "application/json",
+        100 + index,
+        String(index + 1).repeat(64),
+      ],
+    );
+  }
+  const inserted = await client.query(
+    `INSERT INTO recorder_archive_materializations (
+       id, owner_user_id, artifact_id, manifest_blob_id, frame_blob_id, index_blob_id,
+       replay_blob_id, receipt_blob_id, upload_plan, aggregate_byte_size
+     ) VALUES (
+       'qa004-recorder-materialization', $1, 'qa004-recorder-artifact', $2, $3, $4, $5, $6,
+       '{"schemaVersion":"forge-recorder-upload-plan/1.0.0"}'::jsonb, 510
+     ) RETURNING status, gateway_object_integrity_verified, gateway_archive_semantics_verified,
+                 recorded_device_attested, sharing_authorized, training_reuse_authorized, no_auto_arm`,
+    [userId, ...blobIds],
+  );
+  assert.deepEqual(inserted.rows[0], {
+    status: "staged",
+    gateway_object_integrity_verified: false,
+    gateway_archive_semantics_verified: false,
+    recorded_device_attested: false,
+    sharing_authorized: false,
+    training_reuse_authorized: false,
+    no_auto_arm: true,
+  });
+  await assert.rejects(
+    client.query(
+      "UPDATE recorder_archive_materializations SET gateway_archive_semantics_verified = true WHERE id = 'qa004-recorder-materialization'",
+    ),
+    /check constraint/,
+  );
+  await assert.rejects(
+    client.query(
+      "UPDATE recorder_archive_materializations SET status = 'materialized' WHERE id = 'qa004-recorder-materialization'",
+    ),
+    /check constraint/,
+  );
+  const materialized = await client.query(
+    `UPDATE recorder_archive_materializations
+        SET status = 'materialized', gateway_object_integrity_verified = true, materialized_at = now()
+      WHERE id = 'qa004-recorder-materialization'
+      RETURNING status, gateway_object_integrity_verified,
+                gateway_archive_semantics_verified, materialized_at IS NOT NULL AS has_materialized_at`,
+  );
+  assert.deepEqual(materialized.rows[0], {
+    status: "materialized",
+    gateway_object_integrity_verified: true,
+    gateway_archive_semantics_verified: false,
+    has_materialized_at: true,
+  });
+  await client.query("DELETE FROM users WHERE id = $1", [userId]);
+  assert.equal(
+    Number((await client.query("SELECT count(*) AS n FROM recorder_archive_materializations")).rows[0].n),
+    0,
+  );
+}
+
 async function assertCurrentLedger(client) {
   const rows = await migrationRows(client);
   assert.equal(rows.length, migrations.length);
@@ -141,6 +221,7 @@ async function assertCurrentLedger(client) {
     1,
   );
   await client.query("DELETE FROM jobs WHERE id = $1", [modalJob.rows[0].id]);
+  await assertRecorderMaterializationConstraints(client);
   return rows;
 }
 

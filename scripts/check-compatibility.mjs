@@ -60,6 +60,7 @@ const required = [
   "dataLifecycle",
   "policyTensor",
   "desktopRecorderArchive",
+  "desktopRecorderMaterialization",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -128,6 +129,21 @@ requireValue(
   sourceConstant("packages/desktop/src-tauri/src/main.rs", "RECORDER_ARCHIVE_SCHEMA_VERSION") ===
     `${matrix.surfaces.desktopRecorderArchive.schema}/${matrix.surfaces.desktopRecorderArchive.current}`,
   "Desktop recorder archive schema/version does not match compatibility matrix",
+);
+requireValue(
+  typescriptConstant("packages/gateway/src/recorderArchives.ts", "RECORDER_MATERIALIZATION_SCHEMA_VERSION") ===
+    `${matrix.surfaces.desktopRecorderMaterialization.schema}/${matrix.surfaces.desktopRecorderMaterialization.current}`,
+  "recorder materialization schema/version does not match compatibility matrix",
+);
+requireValue(
+  sourceConstant("packages/desktop/src-tauri/src/main.rs", "RECORDER_UPLOAD_PLAN_SCHEMA_VERSION") ===
+    matrix.surfaces.desktopRecorderMaterialization.uploadPlanSchema,
+  "Desktop recorder upload-plan version does not match compatibility matrix",
+);
+requireValue(
+  sourceConstant("packages/desktop/src-tauri/src/main.rs", "RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION") ===
+    matrix.surfaces.desktopRecorderMaterialization.uploadReceiptSchema,
+  "Desktop recorder upload-receipt version does not match compatibility matrix",
 );
 
 const gatewayJobKinds = typescriptStringArray("packages/gateway/src/platform.ts", "JOB_KINDS");

@@ -1,4 +1,8 @@
 import type { Report } from "./types";
+import type {
+  RecorderArchiveFileName,
+  RecorderUploadPlan,
+} from "./desktopRecorder";
 
 export type ReviewStatus = "needs_review" | "approved" | "rejected";
 export type ReviewDecision = "approved" | "rejected";
@@ -265,6 +269,38 @@ export interface ObjectAccessContract {
   expiresAt: string;
   bucket: string;
   objectKey: string;
+}
+
+export interface RecorderArchiveMaterialization {
+  id: string;
+  ownerUserId: string;
+  artifactId: string;
+  schemaVersion: "forge-recorder-materialization/1.0.0";
+  status: "staged" | "materialized";
+  manifestBlobId: string;
+  frameBlobId: string;
+  indexBlobId: string;
+  replayBlobId: string;
+  receiptBlobId: string;
+  uploadPlan: RecorderUploadPlan;
+  aggregateByteSize: number;
+  gatewayObjectIntegrityVerified: boolean;
+  gatewayArchiveSemanticsVerified: false;
+  recordedDeviceAttested: false;
+  deviceIdentityVerified: false;
+  fieldSessionVerified: false;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
+  noAutoArm: true;
+  verificationErrorCode: string | null;
+  createdAt: string;
+  materializedAt: string | null;
+}
+
+export interface RecorderArchiveUpload {
+  name: RecorderArchiveFileName;
+  blob: ObjectBlobRecord;
+  upload: ObjectAccessContract;
 }
 
 export interface PhotoscanArtifactRecord {
@@ -550,6 +586,118 @@ async function requestJson<T>(
   return (await res.json()) as T;
 }
 
+const recorderArchiveFileNames = [
+  "forge-recorder-manifest.json",
+  "telemetry.frames.jsonl",
+  "telemetry.index.jsonl",
+  "telemetry.replay.json",
+  "forge-recorder-receipt.json",
+] as const;
+
+const recorderMaterializationFields = [
+  "id", "ownerUserId", "artifactId", "schemaVersion", "status", "manifestBlobId",
+  "frameBlobId", "indexBlobId", "replayBlobId", "receiptBlobId", "uploadPlan",
+  "aggregateByteSize", "gatewayObjectIntegrityVerified", "gatewayArchiveSemanticsVerified",
+  "recordedDeviceAttested", "deviceIdentityVerified", "fieldSessionVerified",
+  "sharingAuthorized", "trainingReuseAuthorized", "noAutoArm", "verificationErrorCode",
+  "createdAt", "materializedAt",
+] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function requireExactFields(value: unknown, expected: readonly string[], label: string): asserts value is Record<string, unknown> {
+  if (!isRecord(value)) throw new Error(`${label} must be an object`);
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+  if (actual.length !== wanted.length || actual.some((field, index) => field !== wanted[index])) {
+    throw new Error(`${label} fields have drifted`);
+  }
+}
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (isRecord(value)) {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function parseRecorderMaterialization(
+  value: unknown,
+  expectedPlan?: RecorderUploadPlan,
+): RecorderArchiveMaterialization {
+  requireExactFields(value, recorderMaterializationFields, "recorder materialization");
+  if (typeof value.id !== "string" || value.id.length === 0
+    || typeof value.ownerUserId !== "string" || value.ownerUserId.length === 0
+    || typeof value.artifactId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(value.artifactId)
+    || value.schemaVersion !== "forge-recorder-materialization/1.0.0"
+    || (value.status !== "staged" && value.status !== "materialized")
+    || !isRecord(value.uploadPlan)
+    || value.uploadPlan.schemaVersion !== "forge-recorder-upload-plan/1.0.0"
+    || value.uploadPlan.artifactId !== value.artifactId
+    || !Number.isSafeInteger(value.aggregateByteSize) || Number(value.aggregateByteSize) <= 0
+    || Number(value.aggregateByteSize) > 512 * 1024 * 1024) {
+    throw new Error("recorder materialization identity or bounds have drifted");
+  }
+  for (const field of ["manifestBlobId", "frameBlobId", "indexBlobId", "replayBlobId", "receiptBlobId"] as const) {
+    if (typeof value[field] !== "string" || value[field].length === 0) {
+      throw new Error("recorder materialization object bindings have drifted");
+    }
+  }
+  if (new Set([
+    value.manifestBlobId, value.frameBlobId, value.indexBlobId, value.replayBlobId, value.receiptBlobId,
+  ]).size !== 5) {
+    throw new Error("recorder materialization object bindings are not distinct");
+  }
+  if ((value.status === "staged" && (value.gatewayObjectIntegrityVerified !== false || value.materializedAt !== null))
+    || (value.status === "materialized" && (value.gatewayObjectIntegrityVerified !== true || typeof value.materializedAt !== "string"))
+    || value.gatewayArchiveSemanticsVerified !== false || value.recordedDeviceAttested !== false
+    || value.deviceIdentityVerified !== false || value.fieldSessionVerified !== false
+    || value.sharingAuthorized !== false || value.trainingReuseAuthorized !== false
+    || value.noAutoArm !== true
+    || (value.verificationErrorCode !== null && typeof value.verificationErrorCode !== "string")
+    || typeof value.createdAt !== "string") {
+    throw new Error("recorder materialization state or authority has drifted");
+  }
+  if (expectedPlan && stableJson(value.uploadPlan) !== stableJson(expectedPlan)) {
+    throw new Error("recorder materialization upload plan does not match Desktop evidence");
+  }
+  return value as unknown as RecorderArchiveMaterialization;
+}
+
+function parseRecorderStageResponse(
+  value: unknown,
+  expectedPlan: RecorderUploadPlan,
+): { materialization: RecorderArchiveMaterialization; uploads: RecorderArchiveUpload[] } {
+  requireExactFields(value, ["materialization", "uploads"], "recorder materialization stage response");
+  const materialization = parseRecorderMaterialization(value.materialization, expectedPlan);
+  if (materialization.status !== "staged" || materialization.gatewayObjectIntegrityVerified !== false
+    || !Array.isArray(value.uploads) || value.uploads.length !== recorderArchiveFileNames.length) {
+    throw new Error("recorder materialization stage response is not a five-object staged contract");
+  }
+  const blobIds = [
+    materialization.manifestBlobId, materialization.frameBlobId, materialization.indexBlobId,
+    materialization.replayBlobId, materialization.receiptBlobId,
+  ];
+  const uploads = value.uploads.map((candidate, index) => {
+    requireExactFields(candidate, ["name", "blob", "upload"], `recorder object upload ${index}`);
+    const file = expectedPlan.files[index];
+    if (candidate.name !== recorderArchiveFileNames[index] || candidate.name !== file.name
+      || !isRecord(candidate.blob) || candidate.blob.id !== blobIds[index]
+      || candidate.blob.visibility !== "private" || candidate.blob.contentType !== file.contentType
+      || candidate.blob.byteSize !== file.byteSize || candidate.blob.sha256 !== file.sha256
+      || !isRecord(candidate.upload) || candidate.upload.action !== "upload" || candidate.upload.method !== "PUT"
+      || candidate.upload.bucket !== candidate.blob.bucket || candidate.upload.objectKey !== candidate.blob.objectKey
+      || typeof candidate.upload.url !== "string" || !isRecord(candidate.upload.headers)) {
+      throw new Error(`recorder object upload ${index} does not match its checksum-bound file`);
+    }
+    return candidate as unknown as RecorderArchiveUpload;
+  });
+  return { materialization, uploads };
+}
+
 export async function listReviews(status: ReviewStatus, limit = 25): Promise<ReviewQueueItem[]> {
   const params = new URLSearchParams({ status, limit: String(limit) });
   const body = await requestJson<ReviewListResponse>(`/v1/reviews?${params}`);
@@ -769,6 +917,42 @@ export async function uploadObjectBlob(
     throw new Error(`blob upload failed: ${res.status} ${res.statusText}`);
   }
   return registered;
+}
+
+export async function stageRecorderArchive(
+  plan: RecorderUploadPlan,
+): Promise<{ materialization: RecorderArchiveMaterialization; uploads: RecorderArchiveUpload[] }> {
+  const response = await requestJson<unknown>("/v1/recorder-archives", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+  return parseRecorderStageResponse(response, plan);
+}
+
+export async function listRecorderArchives(limit = 20): Promise<RecorderArchiveMaterialization[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const response = await requestJson<unknown>(`/v1/recorder-archives?${params}`);
+  requireExactFields(response, ["materializations"], "recorder materialization list response");
+  if (!Array.isArray(response.materializations)) {
+    throw new Error("recorder materialization list must be an array");
+  }
+  return response.materializations.map((item) => parseRecorderMaterialization(item));
+}
+
+export async function completeRecorderArchive(
+  id: string,
+): Promise<RecorderArchiveMaterialization> {
+  if (!/^[A-Za-z0-9-]{1,128}$/.test(id)) throw new Error("recorder materialization ID is invalid");
+  const response = await requestJson<unknown>(`/v1/recorder-archives/${encodeURIComponent(id)}/complete`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  requireExactFields(response, ["materialization"], "recorder materialization completion response");
+  const materialization = parseRecorderMaterialization(response.materialization);
+  if (materialization.status !== "materialized" || !materialization.gatewayObjectIntegrityVerified) {
+    throw new Error("gateway did not verify recorder object materialization");
+  }
+  return materialization;
 }
 
 export function accessObjectBlob(

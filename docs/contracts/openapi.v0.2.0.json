@@ -483,7 +483,7 @@
         },
         "x-forge-versioned-response": {
           "surface": "userDataExport",
-          "current": "1.4.0"
+          "current": "1.5.0"
         },
         "security": [
           {
@@ -3176,6 +3176,499 @@
                     "type": "integer"
                   }
                 }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/v1/recorder-archives": {
+      "post": {
+        "operationId": "post-v1-recorder-archives",
+        "summary": "Stage five private checksum-bound recorder archive objects from a sanitized Desktop plan",
+        "tags": [
+          "recorder-archives"
+        ],
+        "x-forge-auth": "session",
+        "x-forge-capability-maturity": "fixture",
+        "responses": {
+          "201": {
+            "description": "Resource created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or bounded-input refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication or review authority required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required local service or configured adapter unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "plan"
+                ],
+                "properties": {
+                  "plan": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "schemaVersion",
+                      "archiveSchemaVersion",
+                      "inspectionSchemaVersion",
+                      "artifactId",
+                      "referenceRigId",
+                      "contractHash",
+                      "lockfileHash",
+                      "sourcePortSha256",
+                      "sampleRateHz",
+                      "startedAtUnixMs",
+                      "stoppedAtUnixMs",
+                      "frameCount",
+                      "durationS",
+                      "captureMaturity",
+                      "aggregateByteSize",
+                      "files",
+                      "localIntegrityVerified",
+                      "captureComplete",
+                      "captureConsentConfirmed",
+                      "userOwned",
+                      "sharingAuthorized",
+                      "trainingReuseAuthorized",
+                      "recordedDeviceAttested",
+                      "deviceIdentityVerified",
+                      "fieldSessionVerified",
+                      "noAutoArm"
+                    ],
+                    "properties": {
+                      "schemaVersion": {
+                        "const": "forge-recorder-upload-plan/1.0.0",
+                        "type": "string"
+                      },
+                      "archiveSchemaVersion": {
+                        "const": "forge-recorder-archive/1.0.0",
+                        "type": "string"
+                      },
+                      "inspectionSchemaVersion": {
+                        "const": "forge-recorder-inspection/1.0.0",
+                        "type": "string"
+                      },
+                      "artifactId": {
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$",
+                        "type": "string"
+                      },
+                      "referenceRigId": {
+                        "anyOf": [
+                          {
+                            "const": "ref_quad_kakute-h7-source-one-5in",
+                            "type": "string"
+                          },
+                          {
+                            "const": "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "contractHash": {
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": "string"
+                      },
+                      "lockfileHash": {
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": "string"
+                      },
+                      "sourcePortSha256": {
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": "string"
+                      },
+                      "sampleRateHz": {
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "type": "integer"
+                      },
+                      "startedAtUnixMs": {
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "stoppedAtUnixMs": {
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "integer"
+                      },
+                      "frameCount": {
+                        "minimum": 1,
+                        "maximum": 1000000,
+                        "type": "integer"
+                      },
+                      "durationS": {
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "type": "number"
+                      },
+                      "captureMaturity": {
+                        "const": "local-serial-integration",
+                        "type": "string"
+                      },
+                      "aggregateByteSize": {
+                        "minimum": 1,
+                        "maximum": 536870912,
+                        "type": "integer"
+                      },
+                      "files": {
+                        "minItems": 5,
+                        "maxItems": 5,
+                        "type": "array",
+                        "items": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "contentType",
+                            "byteSize",
+                            "sha256"
+                          ],
+                          "properties": {
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "const": "forge-recorder-manifest.json",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "telemetry.frames.jsonl",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "telemetry.index.jsonl",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "telemetry.replay.json",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "forge-recorder-receipt.json",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "contentType": {
+                              "anyOf": [
+                                {
+                                  "const": "application/json",
+                                  "type": "string"
+                                },
+                                {
+                                  "const": "application/x-ndjson",
+                                  "type": "string"
+                                }
+                              ]
+                            },
+                            "byteSize": {
+                              "minimum": 1,
+                              "maximum": 536870912,
+                              "type": "integer"
+                            },
+                            "sha256": {
+                              "pattern": "^[a-f0-9]{64}$",
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "localIntegrityVerified": {
+                        "const": true,
+                        "type": "boolean"
+                      },
+                      "captureComplete": {
+                        "const": true,
+                        "type": "boolean"
+                      },
+                      "captureConsentConfirmed": {
+                        "const": true,
+                        "type": "boolean"
+                      },
+                      "userOwned": {
+                        "const": true,
+                        "type": "boolean"
+                      },
+                      "sharingAuthorized": {
+                        "const": false,
+                        "type": "boolean"
+                      },
+                      "trainingReuseAuthorized": {
+                        "const": false,
+                        "type": "boolean"
+                      },
+                      "recordedDeviceAttested": {
+                        "const": false,
+                        "type": "boolean"
+                      },
+                      "deviceIdentityVerified": {
+                        "const": false,
+                        "type": "boolean"
+                      },
+                      "fieldSessionVerified": {
+                        "const": false,
+                        "type": "boolean"
+                      },
+                      "noAutoArm": {
+                        "const": true,
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "get-v1-recorder-archives",
+        "summary": "List owner recorder archive materializations and explicit nonclaims",
+        "tags": [
+          "recorder-archives"
+        ],
+        "x-forge-auth": "session",
+        "x-forge-capability-maturity": "fixture",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or bounded-input refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication or review authority required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required local service or configured adapter unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/v1/recorder-archives/{id}/complete": {
+      "post": {
+        "operationId": "post-v1-recorder-archives-by-id-complete",
+        "summary": "Verify recorder object length, type, checksum, and bounded manifest-receipt bindings",
+        "tags": [
+          "recorder-archives"
+        ],
+        "x-forge-auth": "session",
+        "x-forge-capability-maturity": "fixture",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or bounded-input refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication or review authority required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required local service or configured adapter unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {}
               }
             }
           }
@@ -8408,5 +8901,5 @@
   },
   "x-forge-documentation-version": "1.0.0",
   "x-forge-status": "pre-1.0-internal",
-  "x-forge-route-count": 77
+  "x-forge-route-count": 80
 }

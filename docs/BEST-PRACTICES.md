@@ -378,6 +378,13 @@ every user-facing capability claim.
   sharing, training, authenticity, or gateway-materialization authority. Require a
   new bounded absolute output path for every capture and keep native D30/D12,
   OS-enumerated-port, baud, and consent checks sovereign over the UI.
+- Materialize recorder archives as five private checksum-bound objects, never one
+  512-MiB JSON request or a database JSONB tape. Rerun native streaming verification,
+  emit a path-free exact plan, pin every presigned PUT to one configured origin,
+  disable redirects and implicit proxies, stream sized files, then require server
+  length/type/checksum inspection plus bounded manifest/receipt cross-binding. Keep
+  object-integrity, archive-semantics, device/field provenance, and sharing/training
+  authority as separate explicit states; D53 may set only the first.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

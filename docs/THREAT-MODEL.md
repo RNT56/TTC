@@ -48,16 +48,16 @@ In scope:
   citations, license/export manifests, and hardware bridge payloads;
 - prompt/retrieval injection and provider/tool output;
 - validator child processes and release archive verification;
-- D51 read-only local Desktop recorder-directory inspection and D52 versioned
-  status/start/stop control;
+- D51 read-only local Desktop recorder-directory inspection, D52 versioned
+  status/start/stop control, and D53 private five-object materialization;
 - error, log, secret-rotation, and incident boundaries.
 
 Not yet in scope as implemented public surfaces:
 
 - inbound provider callbacks or webhooks; none are currently accepted;
 - arbitrary user code or controllers; contracts contain data only;
-- general compressed or uploaded archive import; current object registration refuses
-  archive media/name classes and no object ingestion path extracts user archives;
+- general compressed or uploaded archive import; D53 uploads only the five already-
+  expanded recorder-v1 files and no object ingestion path extracts user archives;
 - public worker endpoints; workers are queue-driven;
 - general hardware beta; only the D30/D12 controlled-lab boundary exists.
 
@@ -100,6 +100,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Import/course/replay -> core | XML/JSON numbers, graph identities, pointers, timestamps | forge-contract/forge-sim boundary | byte cap, finite SI/time, valid graph/pointer/schema, strict order, no-panic corpus |
 | Local recorder directory -> Desktop/Studio | filenames, links, JSON/JSONL bytes, hashes, privacy/provenance claims, size | D51 native streaming verifier | exact five-file allowlist, non-symlink regular files, canonical strict v1 parsing, aggregate/frame/node/count bounds, index/replay/hash reconstruction, strict bounded nonclaim response, no upload |
 | Desktop Studio -> native recorder | admitted report hashes/seed, output path, D12 rig, serial-port selection, sample rate, capture consent, reload/retry intent | D52 shell-owned recorder runtime | strict control/request/port/receipt parsing; D30/D12 and OS-enumerated 115200-baud gates re-enforced natively; one exclusive recorder; exact inactive/recording/finished state; no raw frames, upload, provenance, sharing, or training promotion |
+| Desktop recorder -> object store/gateway | local five-file plan, presigned URLs/headers, mutable files, object metadata | D53 native uploader plus gateway completion | rerun D51; sanitized plan without paths/bytes; exact five names/types/sizes/hashes; one configured HTTPS or loopback origin; no credentials/redirects/system proxy; streamed sized bodies; owner-private rows; server HEAD plus bounded manifest/receipt readback; semantic/provenance/consent nonclaims remain false |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 
@@ -391,8 +392,10 @@ creating an ONNX session. Cross-owner IDs resolve as not found, and object-store
 credentials, URLs, and inline model bytes never enter persisted metadata or the user-
 data export.
 
-The current surface rejects archive MIME/name classes and does not extract uploaded
-archives. Future import must use a separate quarantine service with compressed and
+The current surface does not extract uploaded archives. D53 is a narrow exception to
+the old registration-only posture: it uploads the five expanded recorder-v1 files as
+separate private objects, never a compressed container, and does not interpret frame,
+index, or replay bytes server-side. Future general import must use a separate quarantine service with compressed and
 expanded quotas, exact allowed formats, entry-count/path/link/device checks, malware
 and parser isolation, content sniffing, admission validation, and promotion only after
 success. Filename or supplied MIME is not sufficient trust.
@@ -422,6 +425,20 @@ unsupported response fields/versions/states, and every device/field/sharing/trai
 promotion fail closed. These controls prevent UI reload/retry from inventing capture
 authority, but they do not authenticate the local operator, source device, field
 session, concurrent filesystem snapshot, or host-suspend behavior.
+
+D53 reruns D51 before preparing a sanitized upload plan containing no local paths or
+raw bytes. The plan fixes exactly five names, MIME types, safe sizes, SHA-256 values,
+artifact/contract/lockfile/source identities, and false authority flags. The gateway
+creates only owner-private, content-addressed staged objects and short-lived signed
+PUTs. Native Desktop accepts URLs only on the exact configured object origin, requires
+the complete signature query and exact content-type/checksum header allowlist,
+disables redirects and reqwest's default system-proxy behavior, and streams each
+regular file with an exact length. Gateway completion HEAD-checks all objects and
+reads only bounded manifest/receipt JSON to cross-bind identity and the frame/index/
+replay object hashes. A materialized row proves object length/type/checksum plus those
+bounded bindings only: `gatewayArchiveSemanticsVerified`, device/field identity,
+recorded-device attestation, sharing, and training reuse stay false. A later sovereign
+streaming verifier must admit archive semantics before telemetry processing.
 
 Release archives are a separate trusted-distribution path. Before extracting or
 installing, the verifier checks the archive byte ceiling, exact normalized entry
@@ -518,6 +535,7 @@ and tracing defaults separately; application tests cannot prove those external l
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
 | Malicious/partial upload or archive | checksum-bound PUT, staged-until-exact HEAD completion, staged download/consent refusal, MIME/name refusal, forced download, exact release archive allowlist/caps | provider IAM/checksum audit and quarantine scanner for any future importer |
 | Malicious/inconsistent local recorder directory | exact five-file/non-symlink allowlist, strict canonical v1 parser, streaming byte/node/frame/count caps, exact sparse-index/replay/hash checks, bounded no-frame response, authority-nonclaim tests | OS-level race-resistant handles and signed/device-attested evidence only if a future provenance design requires them |
+| Recorder upload URL/file substitution | rerun local verifier, sanitized exact plan, five checksum-bound private PUTs, pinned origin, no redirect/proxy, exact signed headers, server HEAD and bounded manifest/receipt readback, permanent semantic/provenance nonclaims | production object IAM/TLS/access-log proof, orphan reconciliation, race-resistant file handles, and sovereign server streaming archive admission |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |
 | MuJoCo parity scene/file abuse or evidence drift | 4 MiB/512 KiB bounds, exact source/schema/request-hash/engine identity, contract-marker/radian checks, external include/asset/plugin/file refusal, matched timestep/substeps, required real-engine CI artifact | non-root container/filesystem isolation and reviewed engine-upgrade evidence |
 | Provider replay/late result | lease-fenced expiry/reclaim, stale duplicate discard, one-time materialization, retry ceiling, and cancellation authority tests | multi-replica outage/partition drill, dead-letter reconciliation, or callback signature/replay suite |
@@ -557,6 +575,7 @@ Before any production/live-provider claim:
 | Uploaded bytes are integrity-checked, not semantically quarantined | exact length/type/checksum does not detect malicious valid-format content; import intentionally absent | security/compute before any archive or active-content importer |
 | D51 local recorder inspection is self-consistency, not authenticity | a local actor can coherently rewrite archive bytes and receipt; cross-file checks are unsigned and path inspection is not an OS snapshot | P8 reviewed adapter/device attestation plus signed/retained external evidence before recorded-device, lab, or field claims |
 | D52 local recorder control is shell state, not device or session proof | admitted hashes, exact consent, an enumerated path, and reload-stable status identify intended local capture mechanics but not the physical source, operator custody, host suspend, or field conditions | P8 reviewed adapter/device identity, signed/retained D12 evidence, suspend tests, and controlled lab/field acceptance |
+| D53 object materialization is not archive admission | object metadata plus bounded manifest/receipt bindings do not replay every frame/index byte and do not authenticate who or what produced a coherently rewritten archive | P8 sovereign server streaming verification, reviewed adapter/device attestation, production object operations, and lab/field evidence before telemetry/device claims |
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |

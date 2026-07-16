@@ -27,12 +27,13 @@ package to adopt that same number.
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
-| user-data export | 1.4.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy bytes are never part of the format | major 1 |
+| user-data export | 1.5.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy bytes are never part of the format | major 1 |
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
 | policy tensor | 2.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | majors 1 and 2; new producers emit 2, exact v1 execution remains a legacy read path |
 | Desktop recorder archive | 1.0.0 | `forge-recorder-archive` binds the exact five-file layout, manifest, serial-JSONL input authority, canonical replay frames, sparse byte-offset index, clean-stop replay/receipt hashes, streaming import refusal, privacy defaults, and explicit non-attestation semantics; changes to any of those meanings are major | major 1 |
+| Desktop recorder materialization | 1.0.0 | `forge-recorder-materialization` binds the sanitized upload plan, five private checksum-bound object roles, same-origin native streaming upload, gateway object-integrity transition, and explicit false archive-semantics/device/field/sharing/training authority; changing any role or authority meaning is major | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
@@ -43,7 +44,7 @@ reads; replay producers emit `1.0.0`, while readers temporarily accept the histo
 manifest that binds every assembly asset to its ledger class, disposition,
 attribution/link-out evidence, and the derived assembly policy.
 
-`GET /v1/account/export` emits user-data export 1.4.0. It includes explicit
+`GET /v1/account/export` emits user-data export 1.5.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but
 never OAuth access/refresh/ID tokens, session or verification tokens, or provider
 API keys. Version 1.1 added complete consent history; 1.2 added causal event sequences
@@ -58,6 +59,10 @@ provider identity, timing, cancellation/refund, and report-ID/time-bound reconci
 cost fields. It does
 not embed Modal tokens, provider payloads, function inputs/outputs, ONNX bytes, or
 unrelated billing/dashboard data.
+Version 1.5 adds owner-scoped recorder materialization rows, their five blob IDs,
+sanitized upload plan, object-integrity state, and explicit authority nonclaims. The
+archive payloads remain outside the export JSON and use the existing authenticated
+blob-access endpoints; local filesystem paths and presigned URLs are never exported.
 Consent ledger 1.0.0 binds every append-only grant/withdrawal to a purpose, owned
 subject, policy version, exact notice hash, prior event, and bounded evidence; only
 the latest event under the current policy/hash can be active. Consent and legal-hold
@@ -201,7 +206,7 @@ An importer that accepts alternate filenames/encodings/index semantics or promot
 those authorities is incompatible with archive v1 even if it still parses the JSON.
 
 D52 adds `forge-recorder-control/1.0.0` as a bounded ephemeral Desktop command
-response, not a seventeenth persisted/public compatibility surface. It exact-matches
+response, not an independently persisted/public compatibility surface. It exact-matches
 the field set and `inactive|recording|finished` state meanings; inactive carries no
 capture identity, and recording/finished carry the unchanged archive identity while
 device, field, sharing, and training authority remain false. Adding a state,
@@ -211,6 +216,19 @@ the persisted `forge-recorder-receipt/1.0.0`, and D52 changes no archive, frame,
 index, replay, inspection, or receipt byte. Older Studio builds may ignore the new
 commands but must not infer recorder state; after a control rollback, operators must
 stop/drain any active shell recorder and retain the archive for a v1-aware reader.
+
+D53 adds the seventeenth public/persisted surface,
+`forge-recorder-materialization/1.0.0`, with companion path-free upload plan
+`forge-recorder-upload-plan/1.0.0` and native transport receipt
+`forge-recorder-upload/1.0.0`. Its five object roles, lengths, MIME types, hashes,
+private owner scope, staged/materialized transition, and authority nonclaims are exact
+major semantics. `gatewayObjectIntegrityVerified=true` means all five stored objects
+matched their declarations and bounded manifest/receipt bindings; it never implies
+`gatewayArchiveSemanticsVerified`, telemetry admission, device/field provenance,
+sharing, or training. Changing object roles or upgrading those false meanings is a
+major change with new migration and admission evidence. Older applications may ignore
+migration 0025 rows but must retain them and roll forward; they may not transform
+them into legacy `telemetry_logs`.
 
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian

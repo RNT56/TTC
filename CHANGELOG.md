@@ -18,6 +18,47 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Materialize recorder archives as five private objects
+**Session:** Codex agent · branch `codex/p8003-recorder-materialization` · **Phase:** P8 ·
+**TODO items:** P8-003 [~]
+**Done:** Implemented D53's unprotected local candidate. Desktop reruns the sovereign
+local archive-v1 verifier, returns a path-free upload-plan v1, and streams the exact
+five regular files with sized bodies to checksum-bound PUTs on one configured origin.
+The gateway stages distinct owner-private content-addressed objects, migration 0025
+retains materialization state, and completion verifies object length/type/checksum
+plus bounded manifest/receipt identity and frame/index/replay hash bindings. Studio
+passes no paths or raw frames through gateway JSON and displays object integrity
+separately from archive semantics. Export 1.5 and deletion include the new rows.
+All required local proof passes under Python 3.12.7: 17/17 locked native tests,
+25/25 Studio tests, 70/70 gateway tests, the clean-install plus 24-populated-
+predecessor Postgres matrix, user export/deletion/lifecycle assertions, 11/11 browser
+E2E flows, all three supported browser engines, and the complete 40-step repository
+gate. `pnpm audit` reports no known vulnerability; the Desktop RustSec scan reports
+no vulnerability and only the 17 already allowed unmaintained/unsound warnings in
+Tauri's transitive Linux GTK/Unicode stack. Protected PR/post-merge evidence remains
+pending. The preceding D52 reconciliation is
+now fully protected through PR #92: exact head `23e875a` passed CI `29496799162` and
+security `29496799206`; reviewed tree `506f736` is byte-identical at `237e46b`, whose
+post-merge CI `29497768669` and security `29497768576` pass; its branch was deleted.
+**Changed:** Desktop upload commands/contracts/tests and locked Cargo dependencies;
+gateway recorder service/routes/tests, migration 0025, export/deletion; Studio client,
+strict parsers, UI, and tests; compatibility/API/golden sources; threat, lifecycle,
+migration, best-practice, system, state, roadmap, TODO, execution, decision, and agent
+guidance.
+**Decisions:** D53 separates private object integrity from sovereign archive semantics
+and all device/field/consent authority.
+**Next:** Protect the exact locally verified candidate, then add a separate server-
+side streaming archive-semantics verifier before any telemetry admission.
+**Blockers:** None for local verification/protection. Production object IAM/TLS/SLO/
+orphan proof, server streaming semantics, reviewed adapter/device identity, suspend,
+lab/field, sharing/training grants, and signed distribution remain separate gates.
+**Dependencies:** Adds exact `reqwest` 0.13.4 with `default-features=false` and only
+`blocking,rustls`, plus `base64` 0.22. Reqwest's official current docs were checked
+2026-07-16 for `blocking::Body::sized`, redirect policy, and feature/default-proxy
+behavior. The dependency avoids buffering a 512-MiB archive in Rust/React/JSON and
+explicitly removes implicit system-proxy routing; Cargo.lock pins the resolved rustls
+stack for supply-chain review.
+
 ## 2026-07-16 — Protect D52 Desktop recorder controls
 **Session:** Codex agent · branch `codex/p8003-recorder-controls-evidence` · **Phase:** P8 ·
 **TODO items:** P8-003 [~]

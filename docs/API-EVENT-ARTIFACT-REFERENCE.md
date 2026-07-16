@@ -63,6 +63,9 @@ of the OpenAPI request body, persistence, examples, or response schemas.
 | `GET /v1/blobs/:id` | Read owner-scoped object metadata | session | fixture | 200 |
 | `POST /v1/blobs/:id/complete` | Verify and complete a staged object upload | session | fixture | 200 |
 | `POST /v1/blobs/:id/access` | Issue bounded owner-scoped object access | session | fixture | 200 |
+| `POST /v1/recorder-archives` | Stage five private checksum-bound recorder archive objects from a sanitized Desktop plan | session | fixture | 201 |
+| `GET /v1/recorder-archives` | List owner recorder archive materializations and explicit nonclaims | session | fixture | 200 |
+| `POST /v1/recorder-archives/:id/complete` | Verify recorder object length, type, checksum, and bounded manifest-receipt bindings | session | fixture | 200 |
 | `GET /v1/jobs` | List owner compute jobs | session | fixture | 200 |
 | `GET /v1/jobs/capabilities` | List configured worker capabilities and live gates | session | fixture | 200 |
 | `GET /v1/jobs/:id` | Read an owner job and optional events | session | fixture | 200 |
@@ -128,12 +131,13 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `replay` | 1.0.0 | major 1 |
 | `envSpec` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
-| `userDataExport` | 1.4.0 | major 1 |
+| `userDataExport` | 1.5.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |
 | `accountDeletionReceipt` | 2.0.0 | major 2 |
 | `dataLifecycle` | 1.0.0 | major 1 |
 | `policyTensor` | 2.0.0 | major 1, 2 |
 | `desktopRecorderArchive` | 1.0.0 | major 1 |
+| `desktopRecorderMaterialization` | 1.0.0 | major 1 |
 | `workerArtifacts` | 0.2.0 | major 0 |
 
 These versions are independent. A package version, ModelSpec version, report version,

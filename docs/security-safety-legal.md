@@ -115,7 +115,7 @@ live provider artifact audit.
   inferred. Withdrawal removes the contributed retrieval row.
 
 Implementation evidence (2026-07-13, `SEC-003..005`, extended by P7-011):
-authenticated user-data export 1.4.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+authenticated user-data export 1.5.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
@@ -134,6 +134,12 @@ stale/substitution refusal, cancellation without database authority, exact retai
 readback, owner-scoped browser execution, and byte-free user-data export metadata at
 controlled S3-compatible sandbox maturity. Production bucket policy, durability,
 orphan inventory/deletion, and storage SLO evidence remain deployment/OPS-006 work.
+
+D53 additionally includes the owner's recorder materialization rows and five private
+blob references. The export retains only the sanitized plan and explicit authority
+nonclaims; recorder bytes remain authenticated object downloads, and local paths or
+presigned upload URLs never enter the export. Materialization does not grant telemetry
+sharing or training reuse.
 
 D41/D42 separately prevent task/tensor-semantic substitution. Current policies
 declare task-v3, tensor-v2, the Forge Y-up frame, ordered targets, canonical task

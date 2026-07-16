@@ -9,7 +9,7 @@ import {
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.4.0";
+export const USER_DATA_EXPORT_VERSION = "1.5.0";
 export const ACCOUNT_DELETION_RECEIPT_VERSION = "2.0.0";
 
 interface ExportDataset {
@@ -200,6 +200,25 @@ const exportDatasets: readonly ExportDataset[] = [
     sql: `SELECT id, model_id AS "modelId", source, captured_at AS "capturedAt", tape, privacy,
                  created_at AS "createdAt"
             FROM telemetry_logs WHERE owner_user_id = $1 ORDER BY created_at, id`,
+  },
+  {
+    key: "recorderArchiveMaterializations",
+    sql: `SELECT id, artifact_id AS "artifactId", schema_version AS "schemaVersion", status,
+                 manifest_blob_id AS "manifestBlobId", frame_blob_id AS "frameBlobId",
+                 index_blob_id AS "indexBlobId", replay_blob_id AS "replayBlobId",
+                 receipt_blob_id AS "receiptBlobId", upload_plan AS "uploadPlan",
+                 aggregate_byte_size AS "aggregateByteSize",
+                 gateway_object_integrity_verified AS "gatewayObjectIntegrityVerified",
+                 gateway_archive_semantics_verified AS "gatewayArchiveSemanticsVerified",
+                 recorded_device_attested AS "recordedDeviceAttested",
+                 device_identity_verified AS "deviceIdentityVerified",
+                 field_session_verified AS "fieldSessionVerified",
+                 sharing_authorized AS "sharingAuthorized",
+                 training_reuse_authorized AS "trainingReuseAuthorized",
+                 no_auto_arm AS "noAutoArm", verification_error_code AS "verificationErrorCode",
+                 created_at AS "createdAt", materialized_at AS "materializedAt"
+            FROM recorder_archive_materializations
+           WHERE owner_user_id = $1 ORDER BY created_at, id`,
   },
   {
     key: "maintenanceRecords",
@@ -415,6 +434,10 @@ const purgeSteps: readonly PurgeStep[] = [
   {
     key: "telemetryLogs",
     sql: `DELETE FROM telemetry_logs WHERE owner_user_id = $1`,
+  },
+  {
+    key: "recorderArchiveMaterializations",
+    sql: `DELETE FROM recorder_archive_materializations WHERE owner_user_id = $1`,
   },
   {
     key: "policyArtifacts",

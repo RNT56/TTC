@@ -4,6 +4,8 @@ export const RECORDER_INSPECTION_SCHEMA_VERSION = "forge-recorder-inspection/1.0
 export const RECORDER_ARCHIVE_SCHEMA_VERSION = "forge-recorder-archive/1.0.0";
 export const RECORDER_RECEIPT_SCHEMA_VERSION = "forge-recorder-receipt/1.0.0";
 export const RECORDER_CONTROL_SCHEMA_VERSION = "forge-recorder-control/1.0.0";
+export const RECORDER_UPLOAD_PLAN_SCHEMA_VERSION = "forge-recorder-upload-plan/1.0.0";
+export const RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION = "forge-recorder-upload/1.0.0";
 export const RECORDER_FRAME_SCHEMA_VERSION = "forge-telemetry-frame/1.0.0";
 export const REPLAY_SCHEMA_VERSION = "1.0.0";
 export const RECORDER_BAUD = 115_200;
@@ -124,6 +126,77 @@ export interface RecorderArchiveInspection {
   noAutoArm: true;
 }
 
+export const RECORDER_ARCHIVE_FILE_NAMES = [
+  "forge-recorder-manifest.json",
+  "telemetry.frames.jsonl",
+  "telemetry.index.jsonl",
+  "telemetry.replay.json",
+  "forge-recorder-receipt.json",
+] as const;
+
+export type RecorderArchiveFileName = (typeof RECORDER_ARCHIVE_FILE_NAMES)[number];
+
+export interface RecorderUploadFilePlan {
+  name: RecorderArchiveFileName;
+  contentType: "application/json" | "application/x-ndjson";
+  byteSize: number;
+  sha256: string;
+}
+
+export interface RecorderUploadPlan {
+  schemaVersion: typeof RECORDER_UPLOAD_PLAN_SCHEMA_VERSION;
+  archiveSchemaVersion: typeof RECORDER_ARCHIVE_SCHEMA_VERSION;
+  inspectionSchemaVersion: typeof RECORDER_INSPECTION_SCHEMA_VERSION;
+  artifactId: string;
+  referenceRigId: D12ReferenceRigId;
+  contractHash: string;
+  lockfileHash: string;
+  sourcePortSha256: string;
+  sampleRateHz: number;
+  startedAtUnixMs: number;
+  stoppedAtUnixMs: number;
+  frameCount: number;
+  durationS: number;
+  captureMaturity: "local-serial-integration";
+  aggregateByteSize: number;
+  files: RecorderUploadFilePlan[];
+  localIntegrityVerified: true;
+  captureComplete: true;
+  captureConsentConfirmed: true;
+  userOwned: true;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
+  recordedDeviceAttested: false;
+  deviceIdentityVerified: false;
+  fieldSessionVerified: false;
+  noAutoArm: true;
+}
+
+export interface RecorderObjectUploadContract {
+  name: RecorderArchiveFileName;
+  method: "PUT";
+  url: string;
+  headers: Record<string, string>;
+  byteSize: number;
+  sha256: string;
+}
+
+export interface RecorderUploadReceipt {
+  schemaVersion: typeof RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION;
+  uploadPlanSchemaVersion: typeof RECORDER_UPLOAD_PLAN_SCHEMA_VERSION;
+  artifactId: string;
+  uploadedFileCount: 5;
+  uploadedByteSize: number;
+  localIntegrityVerified: true;
+  gatewayObjectIntegrityVerified: false;
+  recordedDeviceAttested: false;
+  deviceIdentityVerified: false;
+  fieldSessionVerified: false;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
+  noAutoArm: true;
+}
+
 export interface DesktopCommandRuntime {
   available(): boolean;
   invoke<T>(command: string, args?: Record<string, unknown>): Promise<T>;
@@ -225,6 +298,24 @@ const STOP_RECEIPT_FIELDS = [
   "noAutoArm",
 ] as const;
 
+const UPLOAD_PLAN_FIELDS = [
+  "schemaVersion", "archiveSchemaVersion", "inspectionSchemaVersion", "artifactId",
+  "referenceRigId", "contractHash", "lockfileHash", "sourcePortSha256", "sampleRateHz",
+  "startedAtUnixMs", "stoppedAtUnixMs", "frameCount", "durationS", "captureMaturity",
+  "aggregateByteSize", "files", "localIntegrityVerified", "captureComplete",
+  "captureConsentConfirmed", "userOwned", "sharingAuthorized", "trainingReuseAuthorized",
+  "recordedDeviceAttested", "deviceIdentityVerified", "fieldSessionVerified", "noAutoArm",
+] as const;
+
+const UPLOAD_FILE_FIELDS = ["name", "contentType", "byteSize", "sha256"] as const;
+
+const UPLOAD_RECEIPT_FIELDS = [
+  "schemaVersion", "uploadPlanSchemaVersion", "artifactId", "uploadedFileCount",
+  "uploadedByteSize", "localIntegrityVerified", "gatewayObjectIntegrityVerified",
+  "recordedDeviceAttested", "deviceIdentityVerified", "fieldSessionVerified",
+  "sharingAuthorized", "trainingReuseAuthorized", "noAutoArm",
+] as const;
+
 export function desktopRecorderAvailable(runtime: DesktopCommandRuntime = tauriRuntime): boolean {
   return runtime.available();
 }
@@ -307,6 +398,135 @@ export async function inspectRecorderArchive(
     archivePath: normalizedPath,
   });
   return parseRecorderArchiveInspection(response);
+}
+
+export async function prepareRecorderArchiveUpload(
+  archivePath: string,
+  runtime: DesktopCommandRuntime = tauriRuntime,
+): Promise<RecorderUploadPlan> {
+  requireDesktop(runtime, "recorder archive materialization");
+  const normalizedPath = normalizeArchivePath(archivePath);
+  return parseRecorderUploadPlan(await runtime.invoke<unknown>("prepare_recorder_archive_upload", {
+    archivePath: normalizedPath,
+  }));
+}
+
+export async function uploadRecorderArchiveFiles(
+  archivePath: string,
+  plan: RecorderUploadPlan,
+  uploads: RecorderObjectUploadContract[],
+  runtime: DesktopCommandRuntime = tauriRuntime,
+): Promise<RecorderUploadReceipt> {
+  requireDesktop(runtime, "recorder archive materialization");
+  const normalizedPath = normalizeArchivePath(archivePath);
+  const normalizedPlan = parseRecorderUploadPlan(plan);
+  validateRecorderObjectUploads(normalizedPlan, uploads);
+  const receipt = parseRecorderUploadReceipt(await runtime.invoke<unknown>("upload_recorder_archive_files", {
+    archivePath: normalizedPath,
+    uploads,
+  }));
+  if (receipt.artifactId !== normalizedPlan.artifactId
+    || receipt.uploadedFileCount !== normalizedPlan.files.length
+    || receipt.uploadedByteSize !== normalizedPlan.aggregateByteSize) {
+    throw new Error("Desktop recorder upload receipt does not match the prepared upload plan");
+  }
+  return receipt;
+}
+
+export function parseRecorderUploadPlan(value: unknown): RecorderUploadPlan {
+  requireExactFields(value, UPLOAD_PLAN_FIELDS, "Desktop recorder upload plan");
+  if (value.schemaVersion !== RECORDER_UPLOAD_PLAN_SCHEMA_VERSION
+    || value.archiveSchemaVersion !== RECORDER_ARCHIVE_SCHEMA_VERSION
+    || value.inspectionSchemaVersion !== RECORDER_INSPECTION_SCHEMA_VERSION) {
+    throw new Error("Desktop recorder upload plan declares an unsupported format version");
+  }
+  if (typeof value.artifactId !== "string" || !/^[A-Za-z0-9._-]{1,128}$/.test(value.artifactId)
+    || !isD12Rig(value.referenceRigId)) {
+    throw new Error("Desktop recorder upload plan identity is invalid");
+  }
+  for (const field of ["contractHash", "lockfileHash", "sourcePortSha256"] as const) {
+    if (typeof value[field] !== "string" || !isSha256(value[field])) {
+      throw new Error(`Desktop recorder upload plan ${field} is not a lowercase SHA-256`);
+    }
+  }
+  if (!isBoundedSafeInteger(value.sampleRateHz, 1, 1_000)
+    || !isBoundedSafeInteger(value.startedAtUnixMs, 0)
+    || !isBoundedSafeInteger(value.stoppedAtUnixMs, Number(value.startedAtUnixMs))
+    || !isBoundedSafeInteger(value.frameCount, 1, 1_000_000)
+    || typeof value.durationS !== "number" || !Number.isFinite(value.durationS)
+    || value.durationS < 0 || value.durationS > Number.MAX_SAFE_INTEGER
+    || !isBoundedSafeInteger(value.aggregateByteSize, 1, 512 * 1024 * 1024)) {
+    throw new Error("Desktop recorder upload plan numeric bounds are invalid");
+  }
+  if (value.captureMaturity !== "local-serial-integration"
+    || value.localIntegrityVerified !== true || value.captureComplete !== true
+    || value.captureConsentConfirmed !== true || value.userOwned !== true
+    || value.sharingAuthorized !== false || value.trainingReuseAuthorized !== false
+    || value.recordedDeviceAttested !== false || value.deviceIdentityVerified !== false
+    || value.fieldSessionVerified !== false || value.noAutoArm !== true) {
+    throw new Error("Desktop recorder upload plan authority or privacy flags have drifted");
+  }
+  if (!Array.isArray(value.files) || value.files.length !== RECORDER_ARCHIVE_FILE_NAMES.length) {
+    throw new Error("Desktop recorder upload plan must declare exactly five files");
+  }
+  const files = value.files.map((file, index) => {
+    requireExactFields(file, UPLOAD_FILE_FIELDS, `Desktop recorder upload file ${index}`);
+    const expectedName = RECORDER_ARCHIVE_FILE_NAMES[index];
+    const expectedContentType = index === 1 || index === 2 ? "application/x-ndjson" : "application/json";
+    if (file.name !== expectedName || file.contentType !== expectedContentType
+      || !isBoundedSafeInteger(file.byteSize, 1, 512 * 1024 * 1024)
+      || typeof file.sha256 !== "string" || !isSha256(file.sha256)) {
+      throw new Error(`Desktop recorder upload file ${index} has drifted`);
+    }
+    return file as unknown as RecorderUploadFilePlan;
+  });
+  if (files.reduce((total, file) => total + file.byteSize, 0) !== value.aggregateByteSize) {
+    throw new Error("Desktop recorder upload plan aggregate byte size has drifted");
+  }
+  return value as unknown as RecorderUploadPlan;
+}
+
+export function parseRecorderUploadReceipt(value: unknown): RecorderUploadReceipt {
+  requireExactFields(value, UPLOAD_RECEIPT_FIELDS, "Desktop recorder upload receipt");
+  if (value.schemaVersion !== RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION
+    || value.uploadPlanSchemaVersion !== RECORDER_UPLOAD_PLAN_SCHEMA_VERSION) {
+    throw new Error("Desktop recorder upload receipt declares an unsupported format version");
+  }
+  if (typeof value.artifactId !== "string" || !/^[A-Za-z0-9._-]{1,128}$/.test(value.artifactId)
+    || value.uploadedFileCount !== 5
+    || !isBoundedSafeInteger(value.uploadedByteSize, 1, 512 * 1024 * 1024)
+    || value.localIntegrityVerified !== true || value.gatewayObjectIntegrityVerified !== false
+    || value.recordedDeviceAttested !== false || value.deviceIdentityVerified !== false
+    || value.fieldSessionVerified !== false || value.sharingAuthorized !== false
+    || value.trainingReuseAuthorized !== false || value.noAutoArm !== true) {
+    throw new Error("Desktop recorder upload receipt fields or authority have drifted");
+  }
+  return value as unknown as RecorderUploadReceipt;
+}
+
+function validateRecorderObjectUploads(
+  plan: RecorderUploadPlan,
+  uploads: RecorderObjectUploadContract[],
+): void {
+  if (!Array.isArray(uploads) || uploads.length !== plan.files.length) {
+    throw new Error("recorder materialization requires exactly five upload contracts");
+  }
+  uploads.forEach((upload, index) => {
+    const file = plan.files[index];
+    const headerNames = isRecord(upload) && isRecord(upload.headers)
+      ? Object.keys(upload.headers).map((name) => name.toLowerCase()).sort()
+      : [];
+    if (!isRecord(upload)
+      || upload.name !== file.name || upload.method !== "PUT"
+      || upload.byteSize !== file.byteSize || upload.sha256 !== file.sha256
+      || typeof upload.url !== "string" || upload.url.length === 0 || utf8Length(upload.url) > 8_192
+      || !isRecord(upload.headers)
+      || headerNames.join("\0") !== "content-type\0x-amz-checksum-sha256"
+      || upload.headers["content-type"] !== file.contentType
+      || typeof upload.headers["x-amz-checksum-sha256"] !== "string") {
+      throw new Error(`recorder upload contract ${index} does not match the prepared file plan`);
+    }
+  });
 }
 
 export function parseRecorderArchiveInspection(value: unknown): RecorderArchiveInspection {
@@ -580,6 +800,21 @@ function requireExactFields<const T extends readonly string[]>(
 
 function utf8Length(value: string): number {
   return new TextEncoder().encode(value).byteLength;
+}
+
+function normalizeArchivePath(value: string): string {
+  const normalized = value.trim();
+  if (!validAbsolutePath(normalized)) {
+    throw new Error("archive path must be absolute and contain 1 through 4096 UTF-8 bytes");
+  }
+  return normalized;
+}
+
+function isBoundedSafeInteger(value: unknown, minimum: number, maximum = Number.MAX_SAFE_INTEGER): value is number {
+  return typeof value === "number"
+    && Number.isSafeInteger(value)
+    && value >= minimum
+    && value <= maximum;
 }
 
 function validAbsolutePath(value: string): boolean {
