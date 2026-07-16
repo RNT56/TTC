@@ -88,9 +88,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-009 PR #77 at `2c7562d`, with
-  post-merge CI `29456064537` and security `29456064498` green. PR #77 owns the
-  source-bound controlled-synthetic offline-training evidence; PR #75 owns the
+  latest verified protected runtime descendant is P7-013 PR #79 at `ff39cd8`, with
+  post-merge CI `29463344103` and security `29463344085` green. PR #79 owns the
+  fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
+  controlled-synthetic offline-training evidence; PR #75 owns the
   contract-derived rover/quadruped trainer evidence, PR #70/`f220d25` owns the
   task-v2 waypoint history, PR #68/`9131289` owns object-backed one-click delivery,
   PR #66/`0614272` owns controlled
@@ -267,19 +268,23 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `d1fe7f7a…ac66`, and independent decoding validates exact 23,874-byte hover and
   22,520-byte rover opset-18 graphs. This closes P7-009, not recorder/device/field
   data, learning quality, deployment, passing-policy delivery, or external acceptance;
-- P7-013 now has an unprotected D46 contract/fixture candidate on branch
-  `codex/p7013-deployment-control`: exact Modal SDK 1.5.2 and one source-bound
+- P7-013's D46 contract/fixture boundary is protected through PR #79 at `ff39cd8`:
+  exact Modal SDK 1.5.2 and one source-bound
   `forge-workers.train_policy_gpu` L4 function, local sovereign bundle compilation,
   exact CUDA authority without fallback, durable provider-call attempt history,
   shared Postgres active/daily-credit quota authority, owner cancellation and exact
   pre-materialization credit reversal, migration 0024, a strict sandbox-evidence
   validator, and `docs/MODAL-OPERATIONS.md`. Arbitrary Modal fields fail before
   enqueue; the provider receives only reviewed training controls plus the sovereign
-  bundle, and an ambiguous persisted call is recovery-only. This is not protected or credentialed
-  evidence. P7-013 stays `[~]` until the final tree passes required CI/security and a
-  clean protected revision completes the real provider, billing, alert, cancellation,
+  bundle, and an ambiguous persisted call is recovery-only. Exact head `bc02324`
+  passed PR CI `29462960862`/security `29462960834`; protected squash `ff39cd8`
+  passed CI `29463344103`/security `29463344085`. Downloaded protected artifact
+  `8362121226` self-binds the 24-migration Postgres/browser fixture matrix to clean
+  `ff39cd8`. This is protected contract/fixture evidence, not a deployment or
+  credentialed provider result. P7-013 stays `[~]` until a clean protected revision
+  completes the real L4, billing/tag, alert/SLO, spend-stop, cancellation/late-result,
   application-artifact deletion, verified automatic provider-call expiry, and
-  recovery exercise;
+  persisted-call recovery exercise;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX

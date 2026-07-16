@@ -18,6 +18,46 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect fail-closed Modal training operations
+**Session:** Codex agent · branch `codex/p7013-protected-evidence` · **Phase:** P7 ·
+**TODO items:** P7-013 [~]
+**Done:** Protected the D46 Modal deployment-control implementation at contract/fixture
+maturity without promoting it to credentialed sandbox, live, production, device, or
+field evidence. PR #79 exact head `bc02324f735cdbb9492e76285878e43985917c4a`
+passed CI `29462960862` and security `29462960834`; protected squash
+`ff39cd8cd91812e3f41656b1b47c65fa98fc69dd` has the exact reviewed tree
+`2c9744e34e3e2c7100c6ad377d6b57d30ae6f019` and passed post-merge CI
+`29463344103` plus security `29463344085`. The protected database job
+`87511370686` applied migration 0024 on a clean database and all 23 populated
+predecessors, then passed the real browser/accessibility matrix, shared Modal quota,
+exact debit/refund, owner cancellation, provider-call persistence, stale-lease and
+late-result refusal, recovery-only reattachment, non-fabricated recovery exhaustion,
+and idempotent report-bound cost reconciliation. Downloaded artifact `8362121226`
+has GitHub digest `sha256:57996e2f46ec6280a7ee358756843e7b03c123e56462c755ea89924d6af227fe`;
+its clean-main `p7-modal-gateway-db.json` and `p7-modal-operation-db.json` hash as
+`ee01b3ffc75d8c0fda5a978b09dbd840b2a796a4e7f208378da0ea369ed25388`
+and `6155601858f3db337a06e7d0273e0364152ab3307911518c9828f545aa4e829f`.
+Post-merge dependency audits, both CodeQL languages, and the validated SPDX source
+SBOM also pass. P7-013 deliberately remains `[~]`: none of this deterministic
+evidence asserts a Modal deployment, credentialed L4 execution, provider billing,
+delivered alert, automatic provider-call expiry, or production recovery result. The
+stable ledger is 205 tasks: 147 done, 33 in progress, 24 open, and 1 blocked; this
+corrects the stale 32/25 summary after P7-013 moved from open to in progress.
+**Changed:** Canonical agent boundary; project state; roadmap and atomic TODO;
+execution sequencing; and this changelog. No runtime, schema, migration, generated
+contract, dependency, provider configuration, quota, or evidence threshold changed
+in this reconciliation.
+**Decisions:** none; D46 and R29 remain binding.
+**Next:** From clean protected `ff39cd8`, execute the exact credentialed seven-day
+sandbox procedure in `docs/MODAL-OPERATIONS.md`, retain and validate the redacted
+`forge-modal-training-sandbox-evidence/1.0.0` record, and protect the resulting
+evidence reconciliation before considering P7-013 complete.
+**Blockers:** Modal credentials and authorized provider spend; lagged billing/tag
+report availability; delivered alert/SLO proof; real L4 cancellation and late-result
+exercise; application-artifact deletion; automatic provider input/output expiry
+within seven days; and persisted-call recovery without duplicate output remain
+external prerequisites.
+
 ## 2026-07-15 — Implement fail-closed Modal training operations
 **Session:** Codex agent · branch `codex/p7013-deployment-control` · **Phase:** P7 ·
 **TODO items:** P7-013 [~]
