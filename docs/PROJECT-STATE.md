@@ -1,10 +1,10 @@
 # PROJECT STATE - evidence snapshot and readiness boundary
 
-Snapshot date: **2026-07-15**
+Snapshot date: **2026-07-16**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `2c7562d` (PR #77; P7-009 offline fine-tuning)
-Latest verified protected runtime descendant: `2c7562d` (PR #77; P7-009 offline fine-tuning)
+Latest verified protected descendant: `ff39cd8` (PR #79; P7-013 deployment control)
+Latest verified protected runtime descendant: `ff39cd8` (PR #79; P7-013 deployment control)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -13,6 +13,7 @@ P7-014 waypoint-training evidence anchor: `f220d25` (PR #70)
 P7-014 ground-training evidence anchor: `90b1691` (PR #75)
 P7-014 evidence-reconciliation anchor: `f0bb4e2` (PR #76)
 P7-009 offline-training evidence anchor: `2c7562d` (PR #77)
+P7-013 deployment-control evidence anchor: `ff39cd8` (PR #79)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -247,39 +248,41 @@ short scorecards remain correctly blocked. This closure does not claim recorder/
 device/field telemetry, learning quality, passing-policy delivery, transfer, deployed
 GPU operations, or external acceptance.
 
-P7-013 has an unprotected D46 contract/fixture candidate on branch
-`codex/p7013-deployment-control`, based on exact protected `28191bfe`. It narrows
-Modal training to exact SDK 1.5.2 and one source-bound Python 3.12/L4 function with
-no provider retries, function secrets, egress, or CPU fallback. The sovereign Rust
-bundle is compiled locally; every FunctionCall ID/attempt is persisted before wait;
-D38 cancellation terminates provider work and rejects late output. Migration 0024,
-the additive owner cancellation route, shared Postgres active/UTC-day-credit quota,
-debit/refund authority, user-data export 1.4.0, strict sandbox-evidence validator,
-and operator runbook are implemented with deterministic tests. No credentialed Modal
-call, deployment, billing, alert, verified automatic provider-call expiry, or recovery
-result is retained,
-and this branch has not yet passed protected PR/post-merge checks. P7-013 remains
-`[~]`; only the exact real-run procedure in `MODAL-OPERATIONS.md` can close it.
+P7-013's D46 deployment-control boundary is protected through PR #79 at `ff39cd8`.
+It narrows Modal training to exact SDK 1.5.2 and one source-bound Python 3.12/L4
+function with no provider retries, function secrets, egress, or CPU fallback. The
+sovereign Rust bundle is compiled locally; every FunctionCall ID/attempt is persisted
+before wait; D38 cancellation terminates provider work and rejects late output.
+Migration 0024, the additive owner cancellation route, shared Postgres active/UTC-day-
+credit quota, debit/refund authority, user-data export 1.4.0, strict sandbox-evidence
+validator, and operator runbook are implemented and protected. Exact head `bc02324`
+passed PR CI `29462960862`/security `29462960834`; protected `ff39cd8` passed CI
+`29463344103`/security `29463344085`. Downloaded artifact `8362121226` binds the
+24-migration Postgres/browser fixture matrix to the clean protected source. No
+credentialed Modal call, deployment, L4 result, provider billing, delivered alert,
+verified automatic provider-call expiry, or real recovery result is retained. P7-013
+remains `[~]`; only the exact seven-day procedure in `MODAL-OPERATIONS.md` can close
+it.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| P7-013 deployment-control candidate | unprotected branch `codex/p7013-deployment-control` passes the exact Python 3.12 40-step local gate: 218/218 workers, 65/65 gateway with the real validator, 15/15 compatibility surfaces, 77 generated routes, 17 worker families, 24 migration sources, and all native training/offline/MJX smokes | proves the D46 contract/fixture and fail-closed CUDA/deployment/call/quota/cancellation/refund/recovery boundaries on the local tree. Local Docker is unavailable, so the isolated Postgres acceptance remains a required PR check; no deployment, credentialed L4 call, billing, alert, automatic provider expiry, recovery drill, or production result is claimed |
-| Git state | latest verified protected runtime descendant is P7-009 anchor `2c7562d`. P7-014 reconciliation anchor `f0bb4e2`, ground-training anchor `90b1691`, P7-012 retained-evidence anchor `6bfa60f`, implementation anchor `8e094c0`, P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` published | PR #77 exact head `8cb70c4` and protected `2c7562d` passed CI/security; exact-main CI `29456064537` and security `29456064498` are green. Artifact `8359446894` owns the source-bound offline-training evidence at JSON SHA-256 `d1fe7f7a…ac66`; PR #75 artifact `8356753424` remains the owning four-task trainer evidence |
+| P7-013 protected deployment control | PR #79 exact head `bc02324` and protected `ff39cd8` pass the exact Python 3.12 40-step gate: 218/218 workers, 65/65 gateway with the real validator, 15/15 compatibility surfaces, 77 generated routes, 17 worker families, 24 migration sources, and all native training/offline/MJX smokes | proves D46's contract/fixture and fail-closed CUDA/deployment/call/quota/cancellation/refund/recovery boundaries. Exact PR CI `29462960862`/security `29462960834` and post-merge CI `29463344103`/security `29463344085` are green; no deployment, credentialed L4 call, provider billing, delivered alert, automatic provider expiry, real recovery drill, or production result is claimed |
+| Git state | latest verified protected runtime descendant is P7-013 anchor `ff39cd8`. P7-009 offline-training anchor `2c7562d`, P7-014 reconciliation anchor `f0bb4e2`, ground-training anchor `90b1691`, P7-012 retained-evidence anchor `6bfa60f`, implementation anchor `8e094c0`, P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` published | PR #79 exact head `bc02324` and protected `ff39cd8` passed CI/security; exact-main CI `29463344103` and security `29463344085` are green. Artifact `8362121226` owns the protected Modal database fixture evidence; artifact `8359446894` remains the owning source-bound offline-training evidence |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
-| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 40 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact PR and post-merge security for the additive P7-009 dependency/profile path are green |
-| `pnpm verify` | P7-009 exact head and protected `2c7562d` pass all 40 required gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 13 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 188 worker tests, four-task training, offline-training, engine/MJX smokes, and patch hygiene; the protected database job separately proves all 23 migrations plus MinIO/browser acceptance |
+| JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 40 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact PR and post-merge security for Modal 1.5.2 and the complete training runtime are green |
+| `pnpm verify` | P7-013 exact head and protected `ff39cd8` pass all 40 required gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 13 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 218 worker tests, four-task training, offline-training, engine/MJX smokes, and patch hygiene; the protected database job separately proves all 24 migrations plus MinIO/browser and Modal-operation fixture acceptance |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 2.0.0 is current with exact v1/v2 supported-major execution; gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor remain machine-checked |
-| DOC-005 contract documentation | closed through protected PR #53 at `22c263b`; current protected `2c7562d` verifies 76 runtime routes, 2 event families, 15 compatibility surfaces, and 17 worker families | P7-009's additive seventeenth family and migration 0023 are protected through exact PR/post-merge CI/security without changing public route or event counts |
+| DOC-005 contract documentation | closed through protected PR #53 at `22c263b`; current protected `ff39cd8` verifies 77 runtime routes, 2 event families, 15 compatibility surfaces, and 17 worker families | P7-013's additive cancellation route, artifact format, and migration 0024 are protected through exact PR/post-merge CI/security without changing event or worker-family counts |
 | DOC-006 contributor workflow | complete through implementation PR #58 at `3078dba` and evidence PR #59 at `484aefa`: canonical onboarding, maintainer-only curation, linked entry surfaces, sensitive-authority exclusions, assignment/reassignment rules, and three live seed issues | all 69 Markdown files resolve locally, issue-form YAML parses, #55-#57 remain correctly labeled and unassigned, all 36 local gates pass, and exact PR/post-merge CI/security are green; no external contribution outcome is claimed |
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
-| Gateway tests | protected P7-009 pass: 65/65 with the real validator | D45 adds strict local/Modal-only enqueue, one-log consent/ownership/model binding, gateway-owned tape/hash/snapshot injection, client-authority refusal, and withdrawal cancellation for singular/array log references without changing the route count |
-| Worker tests | protected P7-009 pass: 188/188 under Python 3.12 | D45 adds exact tape/dataset/warmstart validation, command/input bounds, job-kind spoof resistance, external dataset/curriculum substitution refusal, BC/PPO execution, repeated digest proof, `recorded-device` refusal, and controlled-synthetic nonclaims to the protected trainer matrix |
+| Gateway tests | protected P7-013 pass: 65/65 with the real validator | D46 adds strict Modal input projection, serializable shared active/daily-credit quotas, debit-after-new-row idempotency, owner-only cancellation, exact pre-materialization credit reversal without reopening daily launch authority, export 1.4.0, and additive job deletion |
+| Worker tests | protected P7-013 pass: 218/218 under Python 3.12 | D46 adds exact deployment/function/result validation, CUDA refusal with no fallback, persisted-call cancellation and recovery-only reattachment, late-result refusal, strict sandbox-evidence validation, and retained contract/fixture nonclaims while preserving every prior training/offline/MJX test |
 | P7-012 implementation tests | protected through PR #72/`8e094c0`; all 39 local gates and exact-head/post-merge CI/security pass | 163/163 workers, 12/12 Studio runtime tests, tensor-v2/task-v3/bundle-v2 authority, exact tensor-v1 execution, Y-up/velocity/action/reward regressions, CPU/MPS no-fallback authority, atomic interrupt/resume/tamper evidence, dual-task smoke, MJX parity, and patch hygiene are protected |
 | P7-003 controlled trainer | protected through PR #64/`d1c4c38`; exact-head and post-merge CI/security pass, and artifact `8334594354` is a clean source-bound 256-step CPU PPO/MuJoCo/ONNX smoke | proves the seeded PPO/SAC runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound valid ONNX artifact; short blocked-export smoke does not prove learning quality, overnight SLO, GPU economics, deployed operations, or field transfer |
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
@@ -288,7 +291,7 @@ and this branch has not yet passed protected PR/post-merge checks. P7-013 remain
 | P7-014 ground trainers | closed through PR #75/`90b1691`; exact-head and post-merge CI/security pass, and artifact `8356753424` is clean protected-source four-task evidence | D44 protects exact rover `[1,11] -> [1,2]` and current QD-Mini `[1,27] -> [1,8]` ground tensors, contract-only physics/control authority, estimator-only target progress, mass/torque/friction evaluation, mechanical-work energy, outer-worker/ONNX validation, four-task smoke, and Studio/unsupported-shape refusals. All short scorecards correctly remain blocked; browser, device, and field claims remain open |
 | P7-009 source-bound offline fine-tuning | closed through PR #77/protected `2c7562d`; exact-head and post-merge CI/security pass, and artifact `8359446894` is clean protected-source controlled-synthetic evidence | D45 proves exact consented source-log -> BC dataset -> warmstart parameters -> randomized PPO -> ONNX -> unchanged scorecard execution. Both same-seed chains and valid ONNX graphs independently verify; the worker rejects `recorded-device`, and controlled-synthetic tapes do not establish recorder/device/field provenance, deployed GPU operations, or learning quality |
 | P7-012 protected learning quality | implementation protected through PR #72/`8e094c0`; retained evidence protected through PR #73/`6bfa60f` | clean intentional interruption/resume retains exact JSON and ONNX under `docs/evidence/p7-012/`; hover and waypoint each pass 1.0 baseline and mass/Kv/wind on the declared M2 Pro host under frozen seeds/runtime/thresholds. Exact CPU authority, recovery, bytes, hardware, task/runtime/source lineage, unmeasured host-energy upper bounds, zero provider cost, and null electricity cost are retained; deployed GPU, external-user, device, and field proof remain open |
-| Postgres/pgvector gate | pass on protected P7-009 CI `29456064537` for 23 migrations | the clean plus 22 populated-predecessor matrix, migration 0023 invariants, QA-005 queue/upload fault artifacts, P7-011 policy-delivery scenarios, transactional commerce materialization, current 11-flow QA-002 browser loop, and QA-003 three-engine matrix share one isolated job/database boundary; the local Docker VM remained unavailable and was not modified |
+| Postgres/pgvector gate | pass on protected P7-013 CI `29463344103` for 24 migrations | job `87511370686` applies the clean plus 23 populated-predecessor matrix, proves migration 0024 and both P7-013 gateway/worker database fixtures, then passes QA-005 queue/upload faults, P7-011 policy delivery, transactional commerce, the current 11-flow QA-002 browser loop, and QA-003's three-engine matrix. Downloaded artifact `8362121226` self-binds to clean `ff39cd8`; no provider result is inferred from database fixtures |
 | S3-compatible deletion | pass against local MinIO | a unique payload uploads, the production batch-delete adapter removes it, and the subsequent head requires 404 |
 | Native/WASM golden parity | pass | all four canonical scenes and normalized validator reports are bit-identical |
 | Browser parity gallery | **pass on protected `6f8509b`; QA-012 closed** | scheduled run `29311327203` and exact-current-main rerun `29367911748` exposed missing isolation headers and stale semantic-wrapper chrome suppression. PR #50 restores the governed full-WebGL path and version-binds both JSON artifacts. Exact branch nightly `29370725355` and exact-main nightly `29372161650` pass. Downloaded artifact `8326520247` records one isolated full-Studio Chromium/high-WebGL preflight with no page errors and six low-WebGL captures at unchanged edge F1 0.957-0.995, 3 draws, and 2,208/4,662 triangles; source/checkout equal `6f8509b` and the worktree is clean |
@@ -634,6 +637,8 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim P7-012 protected overnight learning quality | **Go at controlled consumer-hardware simulation maturity** | PR #72/protected `8e094c0` owns the implementation and PR #73/protected `6bfa60f` owns the exact retained interrupt/resume evidence; do not restate this as deployed GPU, measured host energy, external-user, device, or field proof |
 | Claim P7-014 rover/quadruped trainer closure | **Go at controlled deterministic trainer maturity** | PR #75/protected `90b1691`, exact PR/post-merge CI/security, and independently checked artifact `8356753424` close executable contract-derived rover/quadruped training; passing learned policies, Studio ground playback, external users, devices, and field transfer are separately open |
 | Claim P7-009 source-bound offline-training closure | **Go at controlled-synthetic maturity** | PR #77/protected `2c7562d`, exact PR/post-merge CI/security, the 23-migration database/browser matrix, and independently checked artifact `8359446894` close the exact consented-log BC-to-PPO seam; recorder/device/field, deployed GPU, passing-policy, and external-user claims remain open |
+| Claim P7-013 deployment-control protection | **Go at contract/fixture maturity only** | PR #79/protected `ff39cd8`, exact PR/post-merge CI/security, the 24-migration database/browser matrix, and independently checked artifact `8362121226` protect fail-closed deployment identity, CUDA authority, call recovery, quota, cancellation/refund, and cost-reconciliation contracts. No Modal deployment, credentialed L4 execution, provider billing, delivered alert, automatic expiry, or live recovery is proven |
+| Claim P7-013 credentialed sandbox closure | **No-go** | execute and retain the exact clean-protected seven-day `MODAL-OPERATIONS.md` provider/billing/alert/spend-stop/cancel/delete/expiry/recovery evidence first |
 | Claim Text-to-CAD GA/product readiness | **No-go** | live provider, user-content privacy, external-user and operational proof incomplete |
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
 | Enable live provider billing | **No-go** | provider, recovery, cost, and privacy evidence incomplete |
@@ -643,7 +648,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **205 tasks: 147 done, 32 in progress, 25 open,
+The stable ledger currently contains **205 tasks: 147 done, 33 in progress, 24 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
 The 59 remaining tasks include the phase/live/field program, 2 governance, 2
 security, 2 quality, 10 operations, and 9 external-proof tasks; the documentation

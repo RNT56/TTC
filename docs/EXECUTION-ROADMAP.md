@@ -365,12 +365,13 @@ Work:
   binds valid ONNX and exact digests to clean protected source. Recorder/device/field
   capture remains P8 rather than an implied result. Continue exact D12 quad/
   rover/legged declared-accelerator, CPU overnight/tier-2 budget, and cost evidence
-  to finish the MJX decision (`P7-010`) and external acceptance. P7-013's unprotected
-  D46 candidate now defines one exact source-bound Modal 1.5.2/L4 function, CUDA
-  no-fallback authority, durable call history, shared Postgres quota/debit/refund
-  transactions, D38 cancellation/recovery, migration 0024, a strict evidence
-  validator, and the operator runbook. Protect that implementation first; then deploy
-  the clean protected revision and retain the real L4, billing/tag, hard-stop,
+  to finish the MJX decision (`P7-010`) and external acceptance. P7-013's D46
+  contract/fixture is protected through PR #79/`ff39cd8`: one exact source-bound Modal
+  1.5.2/L4 function, CUDA no-fallback authority, durable call history, shared Postgres
+  quota/debit/refund transactions, D38 cancellation/recovery, migration 0024, a strict
+  evidence validator, and the operator runbook pass exact PR/post-merge CI/security
+  plus the clean 24-migration database/browser matrix. Deploy only that clean protected
+  revision and retain the real L4, billing/tag, hard-stop,
   alert/SLO, cancellation, deletion, and no-duplicate recovery evidence before
   calling the sandbox complete. OPS-006 separately
   closes policy-object inventory/orphan cleanup and production storage operations;
@@ -567,7 +568,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P4 | P4-016 credentialed extraction and external R1 proof | P3 reviewed row, SEC refusal/privacy, QA-002/003 protected | Brief-25 >=20 remains green, deterministic browser E2E and the supported-browser/accessibility matrix are protected, and an external R1 flow succeeds without bypassing review |
 | P5 | P5-001, 002, 006 | OPS GPU, SEC photos | real photo-to-part under declared SLO |
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
-| P7 | finish P7-010; protect P7-013's D46 implementation and execute its exact credentialed sandbox evidence; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, and source-bound controlled-synthetic BC-to-PPO evidence; P7-013 contract/fixture controls are unprotected and still require the clean-protected L4/billing/alert/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
+| P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
 | P9 | P9-002, 003, conditional 005 | P6/P7 evidence | engine-backed admitted Pareto front |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
