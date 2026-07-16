@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is implemented at unprotected full-gate local protocol-fixture maturity; D30 accepted controlled D12 lab pilots; recorder-bound real-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54, D55
 
 ## 1. Purpose
 
@@ -223,13 +223,43 @@ Python 3.12.13. Exact head `81282f7`, reviewed tree `f71ee1a`, PR CI/security
 `29512245375`/`29512245387`, and post-merge CI/security
 `29512921138`/`29512920367` pass.
 
+D55 defines and implements the next prerequisite without changing recorder archive
+v1 or D54. `probe_recorder_adapter` is available only through Desktop after the
+hardware-enable, D30-signoff, lab-mode, exact props-off phrase, D12 reference-quad,
+OS-enumerated-port, 115200-baud, and atomically inactive-recorder gates pass. Adapter
+`forge-betaflight-msp-adapter/1.0.0` sends only six MSP-v1 read requests in the exact
+order `[1,2,3,4,5,160]`: API version, FC variant, FC version, board information,
+build information, and UID. Native parsing uses the tagged Betaflight MSP framing,
+one-byte payload bound, XOR checksum, matching reply command, and three-second
+deadline. It requires protocol 0/API 1.47, `BTFL`, stable 2025.12.x, `KAKUTEH7`,
+the exact board signature/status tail, a bounded build header plus complete 16-bit
+option IDs, and one non-placeholder 96-bit UID.
+
+The complete sequence runs twice on the same open port. Any byte, checksum, command,
+firmware, target, or UID drift returns no probe result. A successful
+`forge-recorder-adapter-probe/1.0.0` exposes bounded board labels and only
+domain-separated hashes of the source port, OS descriptor, UID, normalized identity, each exact
+six-response set, and the ordered twelve-response transcript. The raw UID and MSP
+responses remain native/private. Studio independently exact-parses the result and
+labels it `unattested-read-only-probe`: adapter protocol and stable observation are
+true, while device identity verification, cryptographic device attestation,
+recorded-device, field, sharing, and training authority remain false and no-auto-arm
+remains true. Nineteen locked native tests include a real pseudo-terminal two-pass
+exchange and refusal of checksum, firmware/API, target, placeholder-UID, command,
+gate, and pre/post identity drift; Studio adds strict request/response and authority
+substitution tests. The locked Desktop native gate, all 40 repository gates under
+Python 3.12.13, clean/25-predecessor database, 11-flow production-browser, and three-
+engine matrices pass. This is unprotected protocol-fixture evidence only. The probe is not yet
+bound to recorder start/end, archive bytes, a named physical FC, signed custody, or
+D54, so it cannot promote any existing archive or telemetry row.
+
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the
 protected local target-firmware handshake and post-write readback protocol through
 PR #85/`4647a10`, reviewed tree `dfa0007`, and exact PR/post-merge CI/security; the
 first real props-off D12 execution and retained acceptance pack remain required
 before any lab-applied-configuration claim. Browser WebSerial write/capture, live
-device adapter capture, build/signing, and updater delivery remain open; real
+recorder-bound device adapter capture, build/signing, and updater delivery remain open; real
 bench/field evidence is still P8-001/P8-009/P8-010/P8-014/EXT-004. A native-core
 fast path inside the shell (bypassing WASM) is available
 later if profiling asks — not v1 scope. Desktop exit proof: **a field log captured
@@ -375,8 +405,21 @@ contract/lockfile cross-binding; idempotent separate admission/reference writes;
 immutable D53 nonclaims; no frame bytes in JSON/JSONB; export/deletion proof; and
 legacy offline-training refusal even when an otherwise-valid consent grant exists.
 
+D55 adapter-probe changes additionally require exact hardware/D30/lab, props-off,
+D12-quad, OS-enumerated-port, 115200-baud, and inactive-recorder gates; exact MSP-v1 request and reply
+framing; the six-command read-only allowlist and order; bounded deadlines/payloads;
+reply-direction, command, and checksum enforcement; exact protocol/API/variant/
+firmware/target parsing; bounded board/build strings; rejection of zero/all-ones UID;
+two identical identity passes; domain-separated source-port/descriptor/UID/identity/response-set/
+transcript hashes; no raw UID or response bytes in Studio; strict response field and
+authority parsing; and permanent false device/cryptographic-attestation/recorded-
+device/field/sharing/training meanings. Pseudo-terminal success is protocol-fixture
+evidence only; real-device or archive-provenance claims additionally require a named
+FC run and a separately reviewed recorder-bound custody/attestation version.
+
 ## 12. Open questions
 
-Tauri updater/signing strategy per OS (decide at P8-011); real device-adapter codec
-and identity/attestation contract above D54's semantic-only admission seam; FORGE Link
+Tauri updater/signing strategy per OS (decide at P8-011); recorder-bound adapter
+codec plus trusted device/session custody above D55's self-reported identity probe
+and D54's semantic-only admission seam; FORGE Link
 build tooling (pi-gen assumed *(proposed)*).

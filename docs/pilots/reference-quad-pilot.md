@@ -68,12 +68,16 @@ Acceptance:
 
 ## Stage 2 - HITL
 
-D30 lab-gated. This stage connects the Holybro Kakute H7 v2 in bench mode over
+D30 lab-gated. This stage connects the Holybro Kakute H7 V1.5 in bench mode over
 serial with props removed only after the runtime gates pass.
 
 Evidence required before passing:
 
 - Config diff compiled from the contract and reviewed before write.
+- Before capture, D55's read-only MSP probe returns two byte-stable observations on
+  the same open port for protocol 0/API 1.47, `BTFL`, stable `2025.12.x`, target
+  `KAKUTEH7`, and one UID hash. This is a prerequisite observation only: it is not
+  cryptographic device attestation, recorder custody, or lab/field provenance.
 - Private raw pre/post `version`, set/save, and `get failsafe_delay` responses resolve
   byte-for-byte to the four response hashes in one
   `forge-bridge-serial-receipt/2.0.0`; the full patch version,

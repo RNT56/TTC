@@ -51,6 +51,8 @@ In scope:
 - D51 read-only local Desktop recorder-directory inspection, D52 versioned
   status/start/stop control, D53 private five-object materialization, and D54
   sovereign server verification plus bounded telemetry admission;
+- D55 read-only Desktop Betaflight MSP identity probing, strict two-pass stability,
+  hashed identity/transcript evidence, and its explicit non-attestation boundary;
 - error, log, secret-rotation, and incident boundaries.
 
 Not yet in scope as implemented public surfaces:
@@ -103,6 +105,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Desktop Studio -> native recorder | admitted report hashes/seed, output path, D12 rig, serial-port selection, sample rate, capture consent, reload/retry intent | D52 shell-owned recorder runtime | strict control/request/port/receipt parsing; D30/D12 and OS-enumerated 115200-baud gates re-enforced natively; one exclusive recorder; exact inactive/recording/finished state; no raw frames, upload, provenance, sharing, or training promotion |
 | Desktop recorder -> object store/gateway | local five-file plan, presigned URLs/headers, mutable files, object metadata | D53 native uploader plus gateway completion | rerun D51; sanitized plan without paths/bytes; exact five names/types/sizes/hashes; one configured HTTPS or loopback origin; no credentials/redirects/system proxy; streamed sized bodies; owner-private rows; server HEAD plus bounded manifest/receipt readback; semantic/provenance/consent nonclaims remain false |
 | Private recorder objects -> native validator/Postgres | substituted/partial objects, canonical-byte drift, oversized frames, temp-file disclosure, model/hash confusion, forged authority flags | D54 object stream plus `forge-validate recorder-verify` and migration 0026 | exact five complete owner objects; bounded 30-minute/default and one-hour/max read/process timeouts; size/SHA-256 enforcement while streaming; 0700 temporary root and 0600 exclusive files; exact native archive-v1 semantics/report; cleanup before persistence; admitted-model contract/lockfile binding; bounded reference only; D53/device/field/sharing/training nonclaims remain false |
+| Desktop/Studio -> self-reported MSP device | OS descriptor, serial bytes, command/direction/checksum, firmware/board/build strings, UID, timing, and reconnect intent | D55 native read-only probe | D30/D12/props-off/OS-enumerated 115200-baud authority; native recorder atomically held inactive; exact MSP-v1 six-command allowlist; one-byte payload cap; checksum/command/direction validation; three-second deadline; two byte-stable identity passes on one open port; domain-separated hashes only; raw UID/responses stay native; all device/recorded-device/field/sharing/training authority remains false |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 
@@ -458,6 +461,20 @@ cannot bypass the explicit D45 object-backed training refusal. This closes archi
 semantics admission but still does not authenticate the source device, operator,
 session custody, lab conditions, or field provenance.
 
+D55 adds one read-only observation seam before recorder/device provenance. The native
+Desktop atomically holds the recorder inactive, opens one D30/D12-authorized,
+props-off, OS-enumerated 115200-baud port, and
+issues only MSP-v1 API version, variant, FC version, board info, build info, and UID
+queries. It requires protocol 0/API 1.47, `BTFL`, stable `2025.12.x`, target
+`KAKUTEH7`, exact response framing/checksums, and two byte-identical identity passes
+on the same open port. Studio receives only domain-separated SHA-256 values for the
+source port, OS descriptor, UID, normalized identity, each response set, and the full transcript.
+Raw responses and UID never cross the native boundary. These checks detect drift and
+substitution within the observed session, but the replies are self-reported and can
+be emulated or replayed. D55 therefore cannot attest a unique physical controller,
+operator custody, recorder start/end binding, host suspend, lab conditions, or field
+provenance and cannot mutate D54 or any sharing/training authority.
+
 Release archives are a separate trusted-distribution path. Before extracting or
 installing, the verifier checks the archive byte ceiling, exact normalized entry
 allowlist, duplicate/traversal/absolute/drive/backslash rejection, and each member's
@@ -555,6 +572,7 @@ and tracing defaults separately; application tests cannot prove those external l
 | Recorder semantic/model/temp-file substitution | exact five-object streaming checks, private exclusive temp files, native canonical verifier, cleanup-before-persist, report/object/model cross-binding, authority constraints, D45 reference refusal | production object IAM/logging, process sandbox, concurrency/load exercise, and reviewed device attestation |
 | Malicious/inconsistent local recorder directory | exact five-file/non-symlink allowlist, strict canonical v1 parser, streaming byte/node/frame/count caps, exact sparse-index/replay/hash checks, bounded no-frame response, authority-nonclaim tests | OS-level race-resistant handles and signed/device-attested evidence only if a future provenance design requires them |
 | Recorder upload URL/file substitution | rerun local verifier, sanitized exact plan, five checksum-bound private PUTs, pinned origin, no redirect/proxy, exact signed headers, server HEAD and bounded manifest/receipt readback, then D54 five-object native semantic admission with immutable provenance nonclaims | production object IAM/TLS/access-log proof, orphan reconciliation, race-resistant file handles, process sandbox/load proof, and reviewed device attestation |
+| MSP adapter identity substitution or replay | exact read-only command allowlist, checksummed bounded parsing, one-open-port two-pass byte stability, normalized identity plus transcript hashes, raw-UID confinement, and permanently false authority flags | recorder-start/end binding, signed or otherwise reviewed trust root, named-controller custody evidence, host-suspend tests, and controlled D12 lab/field acceptance |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |
 | MuJoCo parity scene/file abuse or evidence drift | 4 MiB/512 KiB bounds, exact source/schema/request-hash/engine identity, contract-marker/radian checks, external include/asset/plugin/file refusal, matched timestep/substeps, required real-engine CI artifact | non-root container/filesystem isolation and reviewed engine-upgrade evidence |
 | Provider replay/late result | lease-fenced expiry/reclaim, stale duplicate discard, one-time materialization, retry ceiling, and cancellation authority tests | multi-replica outage/partition drill, dead-letter reconciliation, or callback signature/replay suite |
@@ -595,6 +613,7 @@ Before any production/live-provider claim:
 | D51 local recorder inspection is self-consistency, not authenticity | a local actor can coherently rewrite archive bytes and receipt; cross-file checks are unsigned and path inspection is not an OS snapshot | P8 reviewed adapter/device attestation plus signed/retained external evidence before recorded-device, lab, or field claims |
 | D52 local recorder control is shell state, not device or session proof | admitted hashes, exact consent, an enumerated path, and reload-stable status identify intended local capture mechanics but not the physical source, operator custody, host suspend, or field conditions | P8 reviewed adapter/device identity, signed/retained D12 evidence, suspend tests, and controlled lab/field acceptance |
 | D54 archive admission is self-consistency, not authenticity | native replay of every canonical frame/index byte proves retained archive semantics, but the unsigned source may still be a coherently rewritten local archive and no unique device/session identity exists | P8 reviewed adapter/device attestation, production object operations, suspend tests, and lab/field evidence before recorded-device or field claims |
+| D55 stable MSP identity is observation, not attestation | firmware, board, build, and UID are unauthenticated self-reported replies; an emulator or replaying device can present one stable transcript and the probe is not bound to recorder start/end | P8 recorder-bound trusted identity/custody design, named D12 controller evidence, host-suspend tests, and controlled lab/field acceptance before any recorded-device or field claim |
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |

@@ -346,6 +346,27 @@ rows but must not delete them, reinterpret D53 semantics, inline archive bytes, 
 feed object-backed references to legacy offline training. Roll forward to a D54-
 aware gateway/validator pair; no down-conversion exists.
 
+### Desktop recorder adapter probe 1.0
+
+D55 additively introduces the ephemeral native command
+`probe_recorder_adapter` and exact response
+`forge-recorder-adapter-probe/1.0.0`, naming adapter
+`forge-betaflight-msp-adapter/1.0.0`. It changes no archive, replay, upload,
+materialization, admission, telemetry-log, or database format. Current Studio
+clients must require the exact response field set; the ordered read-only MSP command
+IDs `[1,2,3,4,5,160]`; protocol 0/API 1.47, `BTFL`, stable Betaflight 2025.12.x,
+and `KAKUTEH7`; an atomically inactive native recorder; equal pre/post response-set
+hashes; bounded lowercase hashes; and
+all device/cryptographic-attestation/recorded-device/field/sharing/training flags
+false.
+
+Older Studio builds may ignore the command and continue using D50-D54 surfaces.
+Rollback removes only the probe UI/command after any active probe finishes; there is
+no persisted row or conversion. Never copy a probe result into archive v1, D54, a
+telemetry-log maturity field, or consent authority. A future recorder-bound adapter
+format must use a new reviewed major and independently bind start/end identity,
+capture bytes, custody, and the named real-device/lab evidence.
+
 ## Shipping a future compatibility change
 
 1. Classify the change as patch, minor, or major under `COMPATIBILITY.md`.

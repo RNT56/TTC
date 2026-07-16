@@ -368,6 +368,15 @@ every user-facing capability claim.
   separate ledger grants exist; capture consent grants neither. Keep
   `recordedDeviceAttested=false` until a reviewed adapter and real-device acceptance
   can prove it. An in-process background thread is not host-suspend/lid-closed proof.
+- Treat protocol identity as bounded observation unless a reviewed trust root proves
+  otherwise. For a read-only MSP probe, allowlist exact query commands, validate
+  framing/direction/command/checksum and deadlines, repeat the complete observation
+  on one open port while the recorder is atomically held inactive, keep raw UID/
+  responses native, and return domain-separated hashes.
+  Stable self-reported firmware/board/build/UID replies can still be emulated or
+  replayed: never call them cryptographic attestation, recorded-device provenance,
+  recorder custody, lab evidence, or field evidence, and never let them mutate an
+  archive/admission record.
 - Keep recorder lifecycle in the native shell, not React state. Expose one exact
   versioned `inactive|recording|finished` status so webview reloads cannot create a
   second capture or lose an ended thread; require explicit stop to collect either a

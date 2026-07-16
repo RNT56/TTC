@@ -6,10 +6,15 @@ export const RECORDER_RECEIPT_SCHEMA_VERSION = "forge-recorder-receipt/1.0.0";
 export const RECORDER_CONTROL_SCHEMA_VERSION = "forge-recorder-control/1.0.0";
 export const RECORDER_UPLOAD_PLAN_SCHEMA_VERSION = "forge-recorder-upload-plan/1.0.0";
 export const RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION = "forge-recorder-upload/1.0.0";
+export const RECORDER_ADAPTER_PROBE_SCHEMA_VERSION = "forge-recorder-adapter-probe/1.0.0";
+export const RECORDER_ADAPTER_SCHEMA_VERSION = "forge-betaflight-msp-adapter/1.0.0";
 export const RECORDER_FRAME_SCHEMA_VERSION = "forge-telemetry-frame/1.0.0";
 export const REPLAY_SCHEMA_VERSION = "1.0.0";
 export const RECORDER_BAUD = 115_200;
 export const RECORDER_PHYSICAL_CONFIRMATION = "I consent to record this telemetry log";
+export const RECORDER_ADAPTER_PROBE_CONFIRMATION =
+  "I confirm propellers are removed and authorize a read-only adapter identity probe";
+export const RECORDER_ADAPTER_READ_ONLY_COMMAND_IDS = [1, 2, 3, 4, 5, 160] as const;
 export const D12_REFERENCE_RIG_IDS = [
   "ref_quad_kakute-h7-source-one-5in",
   "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
@@ -29,6 +34,49 @@ export interface DesktopBridgeStatus {
 export interface DesktopSerialPort {
   name: string;
   kind: string;
+}
+
+export interface RecorderAdapterProbeRequest {
+  port: string;
+  baud: typeof RECORDER_BAUD;
+  referenceRigId: typeof D12_REFERENCE_RIG_IDS[0];
+  physicalConfirmation: typeof RECORDER_ADAPTER_PROBE_CONFIRMATION;
+}
+
+export interface RecorderAdapterProbe {
+  schemaVersion: typeof RECORDER_ADAPTER_PROBE_SCHEMA_VERSION;
+  adapterSchemaVersion: typeof RECORDER_ADAPTER_SCHEMA_VERSION;
+  probeMaturity: "unattested-read-only-probe";
+  referenceRigId: typeof D12_REFERENCE_RIG_IDS[0];
+  sourcePortSha256: string;
+  osDescriptorSha256: string;
+  baud: typeof RECORDER_BAUD;
+  observedAtUnixMs: number;
+  firmware: "betaflight";
+  firmwareVersion: string;
+  mspProtocolVersion: 0;
+  mspApiMajor: 1;
+  mspApiMinor: 47;
+  flightControllerVariant: "BTFL";
+  boardIdentifier: string;
+  targetName: "KAKUTEH7";
+  boardName: string;
+  manufacturerId: string;
+  deviceUidSha256: string;
+  identitySha256: string;
+  preIdentityResponseSha256: string;
+  postIdentityResponseSha256: string;
+  transcriptSha256: string;
+  readOnlyCommandIds: typeof RECORDER_ADAPTER_READ_ONLY_COMMAND_IDS;
+  adapterProtocolVerified: true;
+  stableIdentityObserved: true;
+  deviceIdentityVerified: false;
+  cryptographicDeviceAttestation: false;
+  recordedDeviceAttested: false;
+  fieldSessionVerified: false;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
+  noAutoArm: true;
 }
 
 export interface RecorderControlStatus {
@@ -247,6 +295,42 @@ const BRIDGE_STATUS_FIELDS = [
 
 const SERIAL_PORT_FIELDS = ["name", "kind"] as const;
 
+const ADAPTER_PROBE_FIELDS = [
+  "schemaVersion",
+  "adapterSchemaVersion",
+  "probeMaturity",
+  "referenceRigId",
+  "sourcePortSha256",
+  "osDescriptorSha256",
+  "baud",
+  "observedAtUnixMs",
+  "firmware",
+  "firmwareVersion",
+  "mspProtocolVersion",
+  "mspApiMajor",
+  "mspApiMinor",
+  "flightControllerVariant",
+  "boardIdentifier",
+  "targetName",
+  "boardName",
+  "manufacturerId",
+  "deviceUidSha256",
+  "identitySha256",
+  "preIdentityResponseSha256",
+  "postIdentityResponseSha256",
+  "transcriptSha256",
+  "readOnlyCommandIds",
+  "adapterProtocolVerified",
+  "stableIdentityObserved",
+  "deviceIdentityVerified",
+  "cryptographicDeviceAttestation",
+  "recordedDeviceAttested",
+  "fieldSessionVerified",
+  "sharingAuthorized",
+  "trainingReuseAuthorized",
+  "noAutoArm",
+] as const;
+
 const CONTROL_STATUS_FIELDS = [
   "schemaVersion",
   "state",
@@ -332,6 +416,84 @@ export async function listDesktopSerialPorts(
 ): Promise<DesktopSerialPort[]> {
   requireDesktop(runtime, "recorder controls");
   return parseDesktopSerialPorts(await runtime.invoke<unknown>("list_serial_ports"));
+}
+
+export async function probeDesktopRecorderAdapter(
+  request: RecorderAdapterProbeRequest,
+  runtime: DesktopCommandRuntime = tauriRuntime,
+): Promise<RecorderAdapterProbe> {
+  requireDesktop(runtime, "recorder adapter probing");
+  if (!isRecord(request)
+    || request.referenceRigId !== D12_REFERENCE_RIG_IDS[0]
+    || request.physicalConfirmation !== RECORDER_ADAPTER_PROBE_CONFIRMATION
+    || request.baud !== RECORDER_BAUD
+    || typeof request.port !== "string"
+    || request.port.trim() !== request.port
+    || request.port.length === 0
+    || utf8Length(request.port) > 4_096) {
+    throw new Error("Desktop adapter probe request is outside the props-off D12 quad contract");
+  }
+  return parseRecorderAdapterProbe(await runtime.invoke<unknown>("probe_recorder_adapter", {
+    request,
+  }));
+}
+
+export function parseRecorderAdapterProbe(value: unknown): RecorderAdapterProbe {
+  requireExactFields(value, ADAPTER_PROBE_FIELDS, "Desktop recorder adapter probe");
+  if (value.schemaVersion !== RECORDER_ADAPTER_PROBE_SCHEMA_VERSION
+    || value.adapterSchemaVersion !== RECORDER_ADAPTER_SCHEMA_VERSION
+    || value.probeMaturity !== "unattested-read-only-probe") {
+    throw new Error("Desktop recorder adapter probe declares an unsupported contract version");
+  }
+  if (value.referenceRigId !== D12_REFERENCE_RIG_IDS[0]
+    || value.baud !== RECORDER_BAUD
+    || !isBoundedSafeInteger(value.observedAtUnixMs, 0)
+    || value.firmware !== "betaflight"
+    || typeof value.firmwareVersion !== "string"
+    || !/^2025\.12\.(?:0|[1-9][0-9]{0,2})$/.test(value.firmwareVersion)
+    || Number(value.firmwareVersion.split(".")[2]) > 255
+    || value.mspProtocolVersion !== 0
+    || value.mspApiMajor !== 1
+    || value.mspApiMinor !== 47
+    || value.flightControllerVariant !== "BTFL"
+    || typeof value.boardIdentifier !== "string"
+    || !/^[A-Z0-9]{1,4}$/.test(value.boardIdentifier)
+    || value.targetName !== "KAKUTEH7"
+    || !isBoundedPrintableAscii(value.boardName, 1, 64)
+    || !isBoundedPrintableAscii(value.manufacturerId, 1, 32)) {
+    throw new Error("Desktop recorder adapter probe identity or numeric bounds are invalid");
+  }
+  for (const field of [
+    "sourcePortSha256",
+    "osDescriptorSha256",
+    "deviceUidSha256",
+    "identitySha256",
+    "preIdentityResponseSha256",
+    "postIdentityResponseSha256",
+    "transcriptSha256",
+  ] as const) {
+    if (typeof value[field] !== "string" || !isSha256(value[field])) {
+      throw new Error(`Desktop recorder adapter probe ${field} is not a lowercase SHA-256`);
+    }
+  }
+  if (!Array.isArray(value.readOnlyCommandIds)
+    || value.readOnlyCommandIds.length !== RECORDER_ADAPTER_READ_ONLY_COMMAND_IDS.length
+    || value.readOnlyCommandIds.some((command, index) => command !== RECORDER_ADAPTER_READ_ONLY_COMMAND_IDS[index])) {
+    throw new Error("Desktop recorder adapter probe command allowlist has drifted");
+  }
+  if (value.preIdentityResponseSha256 !== value.postIdentityResponseSha256
+    || value.adapterProtocolVerified !== true
+    || value.stableIdentityObserved !== true
+    || value.deviceIdentityVerified !== false
+    || value.cryptographicDeviceAttestation !== false
+    || value.recordedDeviceAttested !== false
+    || value.fieldSessionVerified !== false
+    || value.sharingAuthorized !== false
+    || value.trainingReuseAuthorized !== false
+    || value.noAutoArm !== true) {
+    throw new Error("Desktop recorder adapter probe stability or authority flags have drifted");
+  }
+  return value as unknown as RecorderAdapterProbe;
 }
 
 export async function getRecorderStatus(
@@ -800,6 +962,13 @@ function requireExactFields<const T extends readonly string[]>(
 
 function utf8Length(value: string): number {
   return new TextEncoder().encode(value).byteLength;
+}
+
+function isBoundedPrintableAscii(value: unknown, minimum: number, maximum: number): value is string {
+  return typeof value === "string"
+    && value.length >= minimum
+    && value.length <= maximum
+    && /^[\x20-\x7e]+$/.test(value);
 }
 
 function normalizeArchivePath(value: string): string {

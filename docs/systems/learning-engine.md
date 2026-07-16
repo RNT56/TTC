@@ -275,8 +275,10 @@ current replay format, task definition, exact flight/ground tensor, estimator-on
 observation source, reviewed-controller or supervisor-approved action source, and
 explicit `controlled-synthetic` maturity. The current 1.0 worker rejects
 `recorded-device`; D50's local P8 archive explicitly keeps device attestation and
-training reuse false, so a reviewed real adapter/device-attestation version plus the
-existing consented gateway binding must land before that maturity can be admitted.
+training reuse false. D55's self-reported, two-pass MSP identity probe is an explicit
+non-attestation prerequisite only; a reviewed recorder-bound trust/custody successor
+plus the existing consented gateway binding must land before recorded-device maturity
+can be admitted.
 The worker accepts
 64..100,000 exact finite strictly increasing `(observation, action)` pairs and never
 sorts, projects, fills, clips, or repairs them. It emits

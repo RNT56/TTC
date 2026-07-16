@@ -109,6 +109,7 @@ import { decodeShareFragment, encodeShareFragment } from "./share";
 import { BrowserPolicyController } from "./policyRuntime";
 import {
   D12_REFERENCE_RIG_IDS,
+  RECORDER_ADAPTER_PROBE_CONFIRMATION,
   RECORDER_BAUD,
   RECORDER_PHYSICAL_CONFIRMATION,
   desktopRecorderAvailable,
@@ -117,12 +118,14 @@ import {
   inspectRecorderArchive,
   listDesktopSerialPorts,
   prepareRecorderArchiveUpload,
+  probeDesktopRecorderAdapter,
   startDesktopRecorder,
   stopDesktopRecorder,
   uploadRecorderArchiveFiles,
   type DesktopBridgeStatus,
   type DesktopSerialPort,
   type RecorderArchiveInspection,
+  type RecorderAdapterProbe,
   type RecorderControlStatus,
   type RecorderStopReceipt,
   type RecorderUploadReceipt,
@@ -3011,6 +3014,10 @@ function RecorderArchiveImportPanel({
   );
   const [port, setPort] = useState("");
   const [captureConsent, setCaptureConsent] = useState(false);
+  const [adapterPropsOff, setAdapterPropsOff] = useState(false);
+  const [adapterProbe, setAdapterProbe] = useState<RecorderAdapterProbe | null>(null);
+  const [adapterProbeBusy, setAdapterProbeBusy] = useState(false);
+  const [adapterProbeError, setAdapterProbeError] = useState<string | null>(null);
   const [controlBusy, setControlBusy] = useState(false);
   const [controlError, setControlError] = useState<string | null>(null);
   const [controlMessage, setControlMessage] = useState<string | null>(null);
@@ -3059,6 +3066,43 @@ function RecorderArchiveImportPanel({
   useEffect(() => {
     void refreshControls();
   }, [refreshControls]);
+
+  useEffect(() => {
+    setAdapterProbe(null);
+    setAdapterProbeError(null);
+    setAdapterPropsOff(false);
+  }, [port, referenceRigId]);
+
+  useEffect(() => {
+    if (recorderStatus?.state !== "inactive" || bridgeStatus?.enabled !== true) {
+      setAdapterProbe(null);
+      setAdapterProbeError(null);
+      setAdapterPropsOff(false);
+    }
+  }, [bridgeStatus?.enabled, recorderStatus?.state]);
+
+  const probeAdapter = useCallback(async () => {
+    setAdapterProbeBusy(true);
+    setAdapterProbeError(null);
+    setAdapterProbe(null);
+    try {
+      if (referenceRigId !== D12_REFERENCE_RIG_IDS[0]) {
+        throw new Error("Betaflight MSP adapter v1 is limited to the D12 reference quad");
+      }
+      const probe = await probeDesktopRecorderAdapter({
+        port,
+        baud: RECORDER_BAUD,
+        referenceRigId,
+        physicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+      });
+      setAdapterProbe(probe);
+      setAdapterPropsOff(false);
+    } catch (cause) {
+      setAdapterProbeError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setAdapterProbeBusy(false);
+    }
+  }, [port, referenceRigId]);
 
   const startRecorder = useCallback(async () => {
     setControlBusy(true);
@@ -3204,12 +3248,21 @@ function RecorderArchiveImportPanel({
   const canStart = available
     && bridgeStatus?.enabled === true
     && recorderInactive
+    && !adapterProbeBusy
     && reportReady
     && serialPorts.some((candidate) => candidate.name === port)
     && artifactId.trim().length > 0
     && outputDir.trim().length > 0
     && captureConsent;
   const canStop = available && recorderStatus !== null && recorderStatus.state !== "inactive";
+  const canProbeAdapter = available
+    && bridgeStatus?.enabled === true
+    && recorderInactive
+    && referenceRigId === D12_REFERENCE_RIG_IDS[0]
+    && serialPorts.some((candidate) => candidate.name === port)
+    && adapterPropsOff
+    && !controlBusy
+    && !adapterProbeBusy;
   const canMaterialize = available && authenticated && inspection !== null
     && inspection.archivePath === archivePath.trim() && !inspectionBusy && !materializationBusy;
   const canAdmit = authenticated && activeModelId !== null && materialization?.status === "materialized"
@@ -3257,7 +3310,7 @@ function RecorderArchiveImportPanel({
           aria-label="Recorder artifact ID"
           value={artifactId}
           onChange={(event) => setArtifactId(event.currentTarget.value)}
-          disabled={!available || controlBusy || !recorderInactive}
+          disabled={!available || controlBusy || adapterProbeBusy || !recorderInactive}
           style={inputStyle}
         />
         <input
@@ -3277,7 +3330,7 @@ function RecorderArchiveImportPanel({
               setReferenceRigId(selected as (typeof D12_REFERENCE_RIG_IDS)[number]);
             }
           }}
-          disabled={!available || controlBusy || !recorderInactive}
+          disabled={!available || controlBusy || adapterProbeBusy || !recorderInactive}
           style={selectStyle}
         >
           {D12_REFERENCE_RIG_IDS.map((rigId) => <option key={rigId} value={rigId}>{rigId}</option>)}
@@ -3286,7 +3339,7 @@ function RecorderArchiveImportPanel({
           aria-label="Recorder serial port"
           value={port}
           onChange={(event) => setPort(event.currentTarget.value)}
-          disabled={!available || controlBusy || !recorderInactive || !bridgeStatus?.enabled}
+          disabled={!available || controlBusy || adapterProbeBusy || !recorderInactive || !bridgeStatus?.enabled}
           style={selectStyle}
         >
           <option value="">select OS-enumerated port</option>
@@ -3311,6 +3364,45 @@ function RecorderArchiveImportPanel({
             : "load an admitted contract with current lockfile evidence"}
         </div>
       </div>
+      <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 7 }}>
+        <input
+          type="checkbox"
+          checked={adapterPropsOff}
+          onChange={(event) => setAdapterPropsOff(event.currentTarget.checked)}
+          disabled={!available || controlBusy || adapterProbeBusy || !recorderInactive}
+        />
+        <span>
+          I confirm propellers are removed for a read-only Betaflight MSP identity probe. This observes a stable
+          protocol/board/hashed UID only; it is not cryptographic device attestation or archive provenance.
+        </span>
+      </label>
+      <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+        <button
+          data-testid="recorder-adapter-probe"
+          onClick={() => void probeAdapter()}
+          disabled={!canProbeAdapter}
+          style={btn}
+        >
+          {adapterProbeBusy ? "probing…" : "probe read-only adapter"}
+        </button>
+        <span style={{ color: referenceRigId === D12_REFERENCE_RIG_IDS[0] ? "#7d899b" : "#e6a23c" }}>
+          {referenceRigId === D12_REFERENCE_RIG_IDS[0]
+            ? "requires Betaflight 2025.12 / MSP API 1.47 / KAKUTEH7"
+            : "select the D12 reference quad for MSP adapter v1"}
+        </span>
+      </div>
+      {adapterProbeError ? (
+        <div data-testid="recorder-adapter-probe-error" style={{ color: "#e6a23c", marginTop: 5 }}>
+          {adapterProbeError}
+        </div>
+      ) : null}
+      {adapterProbe ? (
+        <div data-testid="recorder-adapter-probe-result" style={{ color: "#7d899b", marginTop: 5, wordBreak: "break-word" }}>
+          read-only protocol verified · {adapterProbe.firmwareVersion} · {adapterProbe.targetName}/
+          {adapterProbe.boardIdentifier} · stable hashed UID {adapterProbe.deviceUidSha256} · transcript
+          {" "}{adapterProbe.transcriptSha256} · cryptographic attestation off · recorded-device off · field off
+        </div>
+      ) : null}
       <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 7 }}>
         <input
           type="checkbox"

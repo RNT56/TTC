@@ -488,6 +488,18 @@ Work:
   head `81282f7`, reviewed tree `f71ee1a`, PR CI/security
   `29512245375`/`29512245387`, protected-tree equality, and post-merge CI/security
   `29512921138`/`29512920367` pass;
+- D55/P8-002/P8-003 is an unprotected local read-only adapter-identity candidate.
+  Native Desktop re-enforces D30/D12/props-off and an OS-enumerated 115200-baud
+  port, issues only MSP-v1 API/variant/version/board/build/UID queries, requires
+  protocol 0/API 1.47/`BTFL`/stable `2025.12.x`/`KAKUTEH7`, and compares two exact
+  observations on one open port. Raw UID/responses remain native; only domain-
+  separated hashes cross into strict Studio parsing. Nineteen native and twenty-
+  eight Studio focused tests pass. All device/recorded-device/field/sharing/training
+  authority remains false because a stable self-reported transcript is neither
+  cryptographic attestation nor recorder-bound custody. The locked Desktop native
+  gate, all 40 repository gates under Python 3.12.13, clean/25-predecessor database,
+  11-flow production-browser, and three-engine matrices pass. Review, PR/protected
+  evidence, and real named-controller evidence remain pending;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -496,18 +508,16 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: define the reviewed real telemetry-adapter identity
-and device-attestation contract above D54's protected semantic-only admission. D54
-may populate only a
-bounded object-backed telemetry reference; it may not promote authenticity, device/
-field provenance, sharing, or training authority. The reviewed adapter identity
-contract remains the prerequisite for recorded-device admission. In parallel,
-execute the protected D49 protocol on the named D12 quad FC
-under controlled-lab authority with propellers removed, retain bounded raw
-responses/hashes plus failure/reconnect/power-loss evidence, and then exercise that
-seam under P8-009's SITL -> HITL procedure. Browser WebSerial should consume the
-unchanged D48 artifact only after native real-target proof. No adapter or import path
-may promote a log to recorded-device or field maturity without separate attestation.
+Next dependency-complete step: finish and protect D55's exact read-only protocol
+boundary, then define a successor that binds a reviewed trust/custody result to both
+recorder start and clean stop without mutating D54 or promoting any consent. In
+parallel, execute D49 and D55 on the named D12 Kakute H7 V1.5 under controlled-lab
+authority with propellers removed, retain bounded raw responses/hashes plus failure/
+reconnect/power-loss evidence, and exercise the recorder seam under P8-009's SITL ->
+HITL procedure. Browser WebSerial should consume the unchanged D48 artifact only
+after native real-target proof. No stable self-reported MSP transcript, adapter, or
+import path may promote a log to recorded-device or field maturity without the
+separate trusted recorder-bound evidence contract and reviewed acceptance proof.
 
 Acceptance:
 

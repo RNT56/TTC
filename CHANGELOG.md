@@ -18,6 +18,42 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Add the fail-closed D55 read-only adapter identity probe
+**Session:** Codex agent · branch `codex/p8002-d55-adapter-identity` ·
+**Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
+**Done:** Implemented an unprotected local D55 candidate with exact
+`forge-recorder-adapter-probe/1.0.0` and
+`forge-betaflight-msp-adapter/1.0.0` semantics. Native Desktop re-enforces
+D30/D12/props-off and an OS-enumerated 115200-baud port, then issues only MSP-v1
+API-version, variant, FC-version, board-info, build-info, and UID queries while the
+native recorder is atomically held inactive. Exact
+framing, response direction, echoed command, XOR checksum, one-byte payload length,
+three-second deadline, protocol 0/API 1.47, `BTFL`, stable `2025.12.x`, and
+`KAKUTEH7` are mandatory. Two byte-identical observations must pass on one open port.
+Raw UID and responses remain native; Studio receives only domain-separated hashes
+and strictly parses permanently false device/recorded-device/field/sharing/training
+authority. Nineteen native tests, including real Unix pseudo-terminal success and
+direction/command/checksum/identity/target/stability refusal, and twenty-eight Studio
+tests pass with typecheck/build. The locked Desktop native gate, all 40 repository
+gates under Python 3.12.13, migration 0026 on a clean database and all 25 populated
+predecessors, every database assertion, 11/11 production-browser flows, and Chromium/
+Firefox/WebKit pass. The contract follows Betaflight's current MSP reference and tagged
+2025.12.5 protocol sources. Stable self-reported MSP identity is explicitly not
+cryptographic attestation, recorder custody, physical-device proof, host-suspend,
+lab, or field evidence.
+**Changed:** Desktop native command/parser/tests and package checks; strict Studio
+client, controls, UI, and tests; D55 decision/compatibility/API guidance; threat,
+best-practice, pilot, worker/learning, risk, system, project-state, roadmap, TODO,
+execution, and entry-agent documentation.
+**Decisions:** D55 records the exact read-only two-pass observation and non-attestation
+contract; D56 is the next available regular decision ID.
+**Next:** Protect the slice through reviewed PR evidence, then design recorder-start/
+end trust/custody binding and execute the named props-off D12 controller lane.
+**Blockers:** Full/protected evidence, trusted recorder-bound identity, named physical
+controller and operator custody, host suspend, lab/field execution, sharing/training
+authority, WebSerial/WebUSB, signed Desktop delivery, ghost, and system-ID remain
+separately gated.
+
 ## 2026-07-16 — Protect D54 sovereign recorder admission
 **Session:** Codex agent · branch `codex/p8003-recorder-admission-evidence` ·
 **Phase:** P8 · **TODO items:** P8-003 [~]

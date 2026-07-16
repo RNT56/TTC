@@ -301,8 +301,10 @@ bounded, exact, contiguous serial-JSONL frames, a sparse index, and a completed 
 1.0.0 only after clean stop, but labels the result local serial integration with
 device attestation, sharing, and training reuse false. `bridge.telemetry-ingest`
 does not upgrade that provenance, and P7-009 continues to reject recorded-device
-input until a reviewed real adapter/device-attestation version and consented gateway
-materialization are protected.
+input. D55 adds only a read-only, two-pass, self-reported MSP identity observation;
+because it is not bound to recorder start/end and is not cryptographic attestation,
+recorded-device input still requires a reviewed recorder-bound trust/custody successor
+plus consented gateway materialization.
 
 ### 3.6 `workers/maintenance` — lifecycle twin (P12)
 `maintenance.estimate-wear`, `maintenance.crash-forensics`,
