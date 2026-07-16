@@ -18,6 +18,44 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Control the Desktop recorder through versioned shell state
+**Session:** Codex agent · branch `codex/p8003-recorder-controls` · **Phase:** P8 ·
+**TODO items:** P8-003 [~]
+**Done:** Implemented D52's unprotected local status/start/stop candidate on exact
+protected parent `9e81ddd`. Native Desktop now exposes strict
+`forge-recorder-control/1.0.0` `inactive|recording|finished` state owned by the shell,
+so a webview reload cannot lose active capture identity or create a second recorder.
+Finished state remains collectable through explicit stop, which returns the unchanged
+persisted recorder receipt v1 on success or the fail-closed recorder error. The start
+request rejects unknown fields and independently enforces D30/D12, exact per-log
+consent, one OS-enumerated 115200-baud port, a new absolute path of at most 4096 UTF-8
+bytes, hashes, seed, sample rate, and bounded environment.
+
+Studio strictly parses bridge, port, control, and receipt field sets and versions.
+It starts only when the hardware bridge is enabled, the native recorder is inactive,
+one enumerated port and consent checkbox are selected, and the active validator report
+is admitted; contract hash, lockfile hash, and seed come only from that report. It
+restores native capture state after reload, can stop recording or finished state,
+receives no frame bytes, and exposes no device/field/sharing/training authority or
+gateway upload. Browser builds fail closed before invoke. Desktop fmt/Clippy/build
+and 14/14 tests pass; Studio typecheck/build and 20/20 tests pass; all three declared
+browser engines pass. The complete 40-step gate passes under Python 3.12.7 with 225
+workers, 66 gateway tests, Brief-25 25/25, native/WASM parity, packaging,
+training/offline/MJX smokes, and patch hygiene. Protected evidence remains pending.
+**Changed:** Native recorder request/control/runtime/commands/tests; strict Studio
+Desktop command boundary, responsive recorder controls, report mirror, and tests;
+D52; compatibility/migration/threat/best-practice guidance; AGENTS, current state,
+roadmap/TODO/execution, and hardware/Studio system docs.
+**Decisions:** D52 makes recorder control a strict ephemeral shell-state contract,
+separate from persisted archive/receipt v1 and incapable of promoting provenance or
+consent authority.
+**Next:** Protect and reconcile the exact candidate, then design a separately
+authorized object-backed gateway materialization path instead of using the
+512-MiB-incompatible JSONB request-body path.
+**Blockers:** None for local verification/protection. Real adapter/device identity,
+host suspend, controlled lab/field execution, object storage operations,
+sharing/training grants, and signed distribution remain separate P8 gates.
+
 ## 2026-07-16 — Protect D51 recorder archive inspection
 **Session:** Codex agent · branch `codex/p8003-recorder-import-evidence` · **Phase:** P8 ·
 **TODO items:** P8-003 [~]

@@ -368,6 +368,16 @@ every user-facing capability claim.
   separate ledger grants exist; capture consent grants neither. Keep
   `recordedDeviceAttested=false` until a reviewed adapter and real-device acceptance
   can prove it. An in-process background thread is not host-suspend/lid-closed proof.
+- Keep recorder lifecycle in the native shell, not React state. Expose one exact
+  versioned `inactive|recording|finished` status so webview reloads cannot create a
+  second capture or lose an ended thread; require explicit stop to collect either a
+  persisted receipt or the fail-closed recorder error before another start.
+- Derive recorder contract hash, lockfile hash, and seed only from the active admitted
+  validator report. Strictly parse bridge, port, control, and receipt responses; send
+  no raw frames through Studio; and never let status/start/stop promote device, field,
+  sharing, training, authenticity, or gateway-materialization authority. Require a
+  new bounded absolute output path for every capture and keep native D30/D12,
+  OS-enumerated-port, baud, and consent checks sovereign over the UI.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

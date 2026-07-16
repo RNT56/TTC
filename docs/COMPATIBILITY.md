@@ -200,6 +200,18 @@ training reuse, ghost, system ID, and gateway materialization remain false or ab
 An importer that accepts alternate filenames/encodings/index semantics or promotes
 those authorities is incompatible with archive v1 even if it still parses the JSON.
 
+D52 adds `forge-recorder-control/1.0.0` as a bounded ephemeral Desktop command
+response, not a seventeenth persisted/public compatibility surface. It exact-matches
+the field set and `inactive|recording|finished` state meanings; inactive carries no
+capture identity, and recording/finished carry the unchanged archive identity while
+device, field, sharing, and training authority remain false. Adding a state,
+changing a field's meaning, accepting caller-declared provenance, or treating start
+as completion requires a control-schema major. Successful stop continues to return
+the persisted `forge-recorder-receipt/1.0.0`, and D52 changes no archive, frame,
+index, replay, inspection, or receipt byte. Older Studio builds may ignore the new
+commands but must not infer recorder state; after a control rollback, operators must
+stop/drain any active shell recorder and retain the archive for a v1-aware reader.
+
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian
 compiler declaration and therefore allowed the engine's degree default to reinterpret

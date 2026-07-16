@@ -58,9 +58,13 @@ export interface Diagnostic {
 export interface Report {
   reportVersion: string;
   contractHash: string;
+  lockfileHash: string;
   schemaVersion: string;
   validatorVersion: string;
+  seed: number;
   target: string;
+  startedAt: number;
+  durationMs: number;
   verdict: "admitted" | "draft" | "rejected";
   results: Diagnostic[];
   counts: { parts: number; faces: number; vertices: number };

@@ -1,7 +1,7 @@
 # ForgedTTC threat model
 
 Owner: repository maintainers and deployment operators
-Last reviewed: **2026-07-15**
+Last reviewed: **2026-07-16**
 Applies to: gateway, Auth.js boundary, Postgres, object storage, generation providers,
 Python workers, live command adapters, release archives, Studio-facing APIs
 Implementation maturity: **contract and deterministic fixture**; production egress,
@@ -48,7 +48,8 @@ In scope:
   citations, license/export manifests, and hardware bridge payloads;
 - prompt/retrieval injection and provider/tool output;
 - validator child processes and release archive verification;
-- D51 read-only local Desktop recorder-directory inspection;
+- D51 read-only local Desktop recorder-directory inspection and D52 versioned
+  status/start/stop control;
 - error, log, secret-rotation, and incident boundaries.
 
 Not yet in scope as implemented public surfaces:
@@ -98,6 +99,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Provider/command -> validator | arbitrary contract/artifact/result | validator and license/admission gates | allowlisted result fields, provenance, bounded process, sovereign verdict |
 | Import/course/replay -> core | XML/JSON numbers, graph identities, pointers, timestamps | forge-contract/forge-sim boundary | byte cap, finite SI/time, valid graph/pointer/schema, strict order, no-panic corpus |
 | Local recorder directory -> Desktop/Studio | filenames, links, JSON/JSONL bytes, hashes, privacy/provenance claims, size | D51 native streaming verifier | exact five-file allowlist, non-symlink regular files, canonical strict v1 parsing, aggregate/frame/node/count bounds, index/replay/hash reconstruction, strict bounded nonclaim response, no upload |
+| Desktop Studio -> native recorder | admitted report hashes/seed, output path, D12 rig, serial-port selection, sample rate, capture consent, reload/retry intent | D52 shell-owned recorder runtime | strict control/request/port/receipt parsing; D30/D12 and OS-enumerated 115200-baud gates re-enforced natively; one exclusive recorder; exact inactive/recording/finished state; no raw frames, upload, provenance, sharing, or training promotion |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 
@@ -409,6 +411,18 @@ lab provenance, sharing consent, training authority, malware quarantine, or a sa
 general archive/upload importer. Concurrent local mutation remains outside the
 trustworthy-evidence claim; protected evidence must use separately retained hashes.
 
+D52 keeps recorder authority out of the webview lifecycle. Studio cannot supply a
+caller-authored contract identity or maturity: it forwards only the current admitted
+report's contract/lockfile hashes and seed plus bounded capture intent, and native
+validation independently applies D30/D12, consent, path, rate, and enumerated-port
+requirements. The shell owns one recorder and reports strict
+`inactive|recording|finished` state across reloads; finished state must be collected
+by stop before another capture. Browser invocation, unknown request fields,
+unsupported response fields/versions/states, and every device/field/sharing/training
+promotion fail closed. These controls prevent UI reload/retry from inventing capture
+authority, but they do not authenticate the local operator, source device, field
+session, concurrent filesystem snapshot, or host-suspend behavior.
+
 Release archives are a separate trusted-distribution path. Before extracting or
 installing, the verifier checks the archive byte ceiling, exact normalized entry
 allowlist, duplicate/traversal/absolute/drive/backslash rejection, and each member's
@@ -542,6 +556,7 @@ Before any production/live-provider claim:
 | Shared owner token | not named RBAC; coarse revocation and audit identity | platform/security before delegated operators |
 | Uploaded bytes are integrity-checked, not semantically quarantined | exact length/type/checksum does not detect malicious valid-format content; import intentionally absent | security/compute before any archive or active-content importer |
 | D51 local recorder inspection is self-consistency, not authenticity | a local actor can coherently rewrite archive bytes and receipt; cross-file checks are unsigned and path inspection is not an OS snapshot | P8 reviewed adapter/device attestation plus signed/retained external evidence before recorded-device, lab, or field claims |
+| D52 local recorder control is shell state, not device or session proof | admitted hashes, exact consent, an enumerated path, and reload-stable status identify intended local capture mechanics but not the physical source, operator custody, host suspend, or field conditions | P8 reviewed adapter/device identity, signed/retained D12 evidence, suspend tests, and controlled lab/field acceptance |
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |

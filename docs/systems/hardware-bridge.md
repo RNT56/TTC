@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is an unprotected local candidate; D30 accepted controlled D12 lab pilots; object-backed materialization, real-adapter/device capture, protection, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52
 
 ## 1. Purpose
 
@@ -119,10 +119,10 @@ or recorded-device training evidence.
 
 PR #87 protects that local boundary at `d8afe7f`: exact head `5e668a1` passed PR CI
 `29485412948`/security `29485412987`, reviewed tree `528a878` is byte-identical at
-the squash, and post-merge CI `29486146093`/security `29486147436` pass. The next
-local lane is recorder status/start/stop controls plus a reviewed adapter; D51 below
-protects read-only Studio archive inspection, while the named D12 device, suspend,
-lab, field, and recorded-device gates remain separate.
+the squash, and post-merge CI `29486146093`/security `29486147436` pass. D51 below
+protects read-only Studio archive inspection and D52 adds the candidate control seam;
+the reviewed adapter, named D12 device, suspend, lab, field, and recorded-device gates
+remain separate.
 
 D51 adds the first protected read side without changing archive v1. Desktop accepts
 one absolute directory containing exactly the five canonical real regular files;
@@ -146,6 +146,32 @@ and the complete 40-step local gate under Python 3.12.13 pass. PR #89 exact head
 `dcaed0f` passed CI `29490845998`/security `29490846046`; reviewed tree `2d57349` is
 byte-identical at protected `b5418ac`, whose post-merge CI `29491389298`/security
 `29491389270` pass. This protects inspection self-consistency only.
+
+D52 is the current unprotected control candidate and does not change any archive-v1
+byte. Native `recorder_status` returns exact
+`forge-recorder-control/1.0.0` state: inactive has no capture identity; recording and
+finished retain the shell-owned artifact, path, D12 rig, admitted contract/lockfile
+hashes, hashed source port, rate, start time, local-integration maturity, and explicit
+private/no-training/no-device/no-field/no-auto-arm semantics. The recorder thread and
+status survive webview reloads. A finished thread remains collectable through explicit
+stop, which returns the unchanged persisted receipt v1 on success or the bounded
+recorder error on failure; stop does not re-check the hardware-enable environment, so
+an already-running capture can still be safely drained after configuration changes.
+
+Studio strictly parses bridge status, at most 256 bounded OS-enumerated ports, control
+status, and receipt fields. Its start button is available only in Desktop when the
+bridge is enabled, the shell is inactive, a port is selected, per-log consent is
+checked, and the current validator report is admitted with lowercase contract and
+lockfile SHA-256 plus a non-negative seed. The request is independently bounded in
+TypeScript and Rust: safe artifact ID, new absolute path of at most 4096 UTF-8 bytes,
+one D12 rig, exact 115200 baud, 1..1000 Hz rate, exact confirmation, finite bounded
+environment, hashes, and seed. Browser builds fail before invoke. Studio receives no
+frames and creates no gateway row. Focused candidate evidence is fourteen native
+tests and twenty Studio tests plus typecheck/build; the three-engine browser matrix
+and all 40 local gates pass under Python 3.12.7. Exact PR/protected/post-merge evidence
+is still required before D52 may be called protected. Object-backed gateway
+materialization must be designed separately because the current JSONB request-body
+telemetry path cannot honestly carry the archive's 512-MiB maximum.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the
