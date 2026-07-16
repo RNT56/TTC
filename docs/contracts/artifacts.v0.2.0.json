@@ -119,7 +119,7 @@
       ],
       "schema": "forge-recorder-archive",
       "versionField": "schemaVersion",
-      "versionRule": "archive manifest, ordered frame codec and aggregate bounds, sparse-index offsets, replay finalization, capture/privacy/non-attestation flags, and receipt hash semantics are major-version authority"
+      "versionRule": "archive manifest, exact five-file layout, canonical ordered frame codec and aggregate bounds, sparse-index offsets, replay finalization/reconstruction, capture/privacy/non-attestation flags, and receipt hash/import-refusal semantics are major-version authority"
     },
     "workerArtifacts": {
       "current": "0.2.0",

@@ -18,6 +18,45 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Verify Desktop recorder archives before import
+**Session:** Codex agent · branch `codex/p8003-recorder-import` · **Phase:** P8 ·
+**TODO items:** P8-003 [~]
+**Done:** Implemented D51's read-only archive-v1 verification candidate on exact
+protected parent `225933a`. Desktop accepts one absolute archive directory containing
+exactly the five canonical real regular files and refuses symlinks, special/missing/
+extra entries, aggregate oversize, unsupported/unknown/non-canonical metadata,
+filename/source/privacy/device-authority drift, malformed/non-canonical frames or
+index entries, sparse stride/final sequence/time/offset drift, count/duration drift,
+and any frame/index/reconstructed-or-retained replay hash mismatch. Verification is
+streaming and does not load a 512-MiB tape or replay into memory. The versioned
+`forge-recorder-inspection/1.0.0` result exposes only bounded path, identity, hash,
+count, duration, and explicit false device/field/sharing/training authority.
+
+Studio now has a Desktop-only recorder-archive import panel. It sends only the
+trimmed path to `inspect_recorder_archive`, strictly validates the complete response
+field set and numeric/hash/nonclaim bounds, uploads no frames, and tells users that a
+passing result is local self-consistency rather than authenticity or device/field
+proof. Exact `@tauri-apps/api` 2.11.1 is the only new runtime dependency; it is the
+official Tauri 2 bundler API for invoking registered Rust commands and avoids enabling
+the broader global API configuration. Desktop native tests pass 14/14; Studio
+typecheck, 16/16 tests, and production build pass. Full repository and browser gates
+also pass: all three declared engines and all 40 required local checks
+under Python 3.12.13, including 225 workers, 66 gateway tests, native/WASM parity,
+packaging, training/offline/MJX smokes, and patch hygiene. Protected PR/post-merge
+evidence remains pending.
+**Changed:** Desktop recorder reader/command/strict parsers/tests; Studio Tauri command
+wrapper, response validator, panel/tests, exact dependency and lockfile; D51;
+compatibility/archive-read guidance; AGENTS/current-state/roadmap/TODO/execution and
+hardware/Studio system docs; threat model; generated artifact docs and golden review
+record.
+**Decisions:** D51 makes archive import a streaming native self-consistency verifier;
+inspection cannot promote authenticity, provenance, consent, or maturity.
+**Next:** Protect the exact reviewed candidate, reconcile evidence, then add explicit recorder start/stop
+controls and a separately authorized gateway materialization lane.
+**Blockers:** None for local protection. Real adapter/device identity, host suspend,
+controlled lab/field execution, sharing/training grants, and signed distribution
+remain external P8 gates.
+
 ## 2026-07-16 — Protect the D50 indexed Desktop recorder
 **Session:** Codex agent · branch `codex/p8013-recorder-evidence` · **Phase:** P8 ·
 **TODO items:** P8-013 [x]

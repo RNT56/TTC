@@ -102,6 +102,11 @@ import {
 } from "./jobOutputs";
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { BrowserPolicyController } from "./policyRuntime";
+import {
+  desktopRecorderAvailable,
+  inspectRecorderArchive,
+  type RecorderArchiveInspection,
+} from "./desktopRecorder";
 import { CoreBake, CoreSession, corePatch, coreValidate } from "./wasm";
 import type { Slot } from "./contract.gen";
 
@@ -2350,6 +2355,7 @@ export default function App() {
             onAlignPhotoscan={(artifactId, input) => void alignPhotoscanArtifact(artifactId, input)}
             onPlayPolicy={startPolicyPlayback}
           />
+          <RecorderArchiveImportPanel />
           <PlatformPanel
             credits={credits}
             courses={courses}
@@ -2957,6 +2963,77 @@ function ArtifactRegistry({
         <MaintenanceRecordRow key={record.id} record={record} />
       ))}
     </div>
+  );
+}
+
+function RecorderArchiveImportPanel() {
+  const available = desktopRecorderAvailable();
+  const [archivePath, setArchivePath] = useState("");
+  const [inspection, setInspection] = useState<RecorderArchiveInspection | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const inspectArchive = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    setInspection(null);
+    try {
+      setInspection(await inspectRecorderArchive(archivePath));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }, [archivePath]);
+
+  return (
+    <details style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+      <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>Desktop recorder archive import</summary>
+      <div style={{ color: "#7d899b", marginTop: 5 }}>
+        Verifies one complete local archive without uploading frames. Integrity is local
+        self-consistency, not device identity, field-session proof, sharing consent, or training authority.
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+        <input
+          aria-label="Recorder archive path"
+          value={archivePath}
+          onChange={(event) => setArchivePath(event.currentTarget.value)}
+          placeholder="/absolute/path/to/recorder-archive"
+          disabled={!available || busy}
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button
+          data-testid="recorder-archive-inspect"
+          onClick={() => void inspectArchive()}
+          disabled={!available || busy || archivePath.trim().length === 0}
+          style={btn}
+        >
+          {busy ? "verifying…" : "verify"}
+        </button>
+      </div>
+      {!available ? (
+        <div style={{ color: "#7d899b", marginTop: 5 }}>
+          Open this workspace in FORGE Desktop to inspect a filesystem archive.
+        </div>
+      ) : null}
+      {error ? <div style={{ color: "#e6a23c", marginTop: 5 }}>{error}</div> : null}
+      {inspection ? (
+        <div data-testid="recorder-archive-inspection" style={{ marginTop: 6 }}>
+          <div style={{ color: "#74c69d" }}>
+            verified · {inspection.artifactId} · {inspection.frameCount} frames · {inspection.durationS.toFixed(3)} s
+          </div>
+          <div style={{ color: "#7d899b", wordBreak: "break-word" }}>
+            {inspection.referenceRigId} · {inspection.captureMaturity} · replay {inspection.replayPath}
+          </div>
+          <div style={{ color: "#7d899b", wordBreak: "break-word" }}>
+            contract {inspection.contractHash} · source port hash {inspection.sourcePortSha256}
+          </div>
+          <div style={{ color: "#7d899b" }}>
+            private · training reuse off · device attestation off · field verification off · no auto-arm
+          </div>
+        </div>
+      ) : null}
+    </details>
   );
 }
 

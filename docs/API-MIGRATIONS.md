@@ -242,9 +242,15 @@ success evidence or synthesize a receipt for it. A completed v1 archive requires
 manifest, append-only frame stream, sparse byte-offset index, finalized replay, and
 success receipt with exact hashes for all three replay-bearing files.
 
-Readers must require the supported archive major and independently verify the receipt,
-file hashes, frame sequence/time invariants, and index offsets before treating the
-archive as complete. A directory without both a finalized replay and success receipt
+Readers must require exactly the five canonical real regular files, refuse symlinks
+and alternate/extra/missing names, enforce the actual aggregate cap, and require the
+supported archive major plus canonical strict metadata/frame/index bytes. They must
+independently verify every sparse stride/final sequence/time/byte offset, frame
+count/duration, frame and index hashes, and an exact reconstructed replay digest
+against both the retained replay and receipt before treating the archive as complete.
+D51 implements that streaming v1 read path; its inspection response means local
+self-consistency only and supplies no signature, device/session identity, field/lab,
+sharing, or training authority. A directory without both a finalized replay and success receipt
 is interrupted raw capture only: preserve it for explicit recovery or deletion, but do
 not import, share, train from, or relabel it as a completed archive. Version 1 records
 local-serial-integration maturity, user ownership, sharing and training reuse disabled,

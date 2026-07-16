@@ -20,7 +20,13 @@ const BRIDGE_SERIAL_RECEIPT_SCHEMA_VERSION: &str = "forge-bridge-serial-receipt/
 const RECORDER_ARCHIVE_SCHEMA_VERSION: &str = "forge-recorder-archive/1.0.0";
 const RECORDER_FRAME_SCHEMA_VERSION: &str = "forge-telemetry-frame/1.0.0";
 const RECORDER_RECEIPT_SCHEMA_VERSION: &str = "forge-recorder-receipt/1.0.0";
+const RECORDER_INSPECTION_SCHEMA_VERSION: &str = "forge-recorder-inspection/1.0.0";
 const REPLAY_SCHEMA_VERSION: &str = "1.0.0";
+const RECORDER_MANIFEST_FILE: &str = "forge-recorder-manifest.json";
+const RECORDER_FRAME_FILE: &str = "telemetry.frames.jsonl";
+const RECORDER_INDEX_FILE: &str = "telemetry.index.jsonl";
+const RECORDER_REPLAY_FILE: &str = "telemetry.replay.json";
+const RECORDER_RECEIPT_FILE: &str = "forge-recorder-receipt.json";
 const BETAFLIGHT_CLI_VERSION: &str = "2025.12";
 const SERIAL_PHYSICAL_CONFIRMATION: &str =
     "I confirm propellers are removed and understand this will write hardware configuration";
@@ -192,14 +198,15 @@ struct RecorderTelemetryFrame {
     state: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ReplayFrame {
     t: f64,
     state: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RecorderIndexEntry {
     sequence: u64,
     t: f64,
@@ -246,6 +253,98 @@ struct RecorderStopReceipt {
     user_owned: bool,
     sharing_authorized: bool,
     training_reuse_authorized: bool,
+    no_auto_arm: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecorderArchiveManifestInput {
+    schema_version: String,
+    replay_schema_version: String,
+    frame_schema_version: String,
+    receipt_schema_version: String,
+    artifact_id: String,
+    reference_rig_id: String,
+    sample_rate_hz: u32,
+    started_at_unix_ms: u128,
+    contract_hash: String,
+    lockfile_hash: String,
+    environment: serde_json::Value,
+    seed: u64,
+    source_kind: String,
+    source_port_sha256: String,
+    source_baud: u32,
+    capture_maturity: String,
+    recorded_device_attested: bool,
+    frame_file: String,
+    index_file: String,
+    replay_file: String,
+    receipt_file: String,
+    capture_consent_confirmed: bool,
+    user_owned: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
+    no_auto_arm: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecorderStopReceiptInput {
+    schema_version: String,
+    archive_schema_version: String,
+    replay_schema_version: String,
+    frame_schema_version: String,
+    artifact_id: String,
+    reference_rig_id: String,
+    contract_hash: String,
+    lockfile_hash: String,
+    started_at_unix_ms: u128,
+    stopped_at_unix_ms: u128,
+    frame_count: u64,
+    duration_s: f64,
+    frame_file_sha256: String,
+    index_file_sha256: String,
+    replay_file_sha256: String,
+    source_port_sha256: String,
+    capture_complete: bool,
+    capture_maturity: String,
+    capture_consent_confirmed: bool,
+    recorded_device_attested: bool,
+    user_owned: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
+    no_auto_arm: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RecorderArchiveInspection {
+    schema_version: &'static str,
+    archive_schema_version: &'static str,
+    replay_schema_version: &'static str,
+    receipt_schema_version: &'static str,
+    artifact_id: String,
+    archive_path: String,
+    replay_path: String,
+    reference_rig_id: String,
+    contract_hash: String,
+    lockfile_hash: String,
+    source_port_sha256: String,
+    sample_rate_hz: u32,
+    started_at_unix_ms: u128,
+    stopped_at_unix_ms: u128,
+    frame_count: u64,
+    duration_s: f64,
+    capture_maturity: String,
+    integrity_verified: bool,
+    capture_complete: bool,
+    capture_consent_confirmed: bool,
+    user_owned: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
+    recorded_device_attested: bool,
+    device_identity_verified: bool,
+    field_session_verified: bool,
     no_auto_arm: bool,
 }
 
@@ -798,17 +897,17 @@ fn create_recorder_archive(
             source_baud: request.baud,
             capture_maturity: "local-serial-integration",
             recorded_device_attested: false,
-            frame_file: "telemetry.frames.jsonl",
-            index_file: "telemetry.index.jsonl",
-            replay_file: "telemetry.replay.json".to_string(),
-            receipt_file: "forge-recorder-receipt.json",
+            frame_file: RECORDER_FRAME_FILE,
+            index_file: RECORDER_INDEX_FILE,
+            replay_file: RECORDER_REPLAY_FILE.to_string(),
+            receipt_file: RECORDER_RECEIPT_FILE,
             capture_consent_confirmed: true,
             user_owned: true,
             sharing_authorized: false,
             training_reuse_authorized: false,
             no_auto_arm: true,
         };
-        create_new_json(&output_dir.join("forge-recorder-manifest.json"), &manifest)?;
+        create_new_json(&output_dir.join(RECORDER_MANIFEST_FILE), &manifest)?;
         let frames = OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -975,6 +1074,46 @@ fn append_recorder_frame(
     Ok(())
 }
 
+struct RecorderReplayBinding<'a> {
+    contract_hash: &'a str,
+    lockfile_hash: &'a str,
+    seed: u64,
+    environment: &'a serde_json::Value,
+    artifact_id: &'a str,
+    reference_rig_id: &'a str,
+    source_kind: &'a str,
+    source_port_sha256: &'a str,
+    capture_maturity: &'a str,
+}
+
+fn recorder_replay_prefix(binding: RecorderReplayBinding<'_>) -> Result<Vec<u8>, String> {
+    let header = serde_json::json!({
+        "contractHash": binding.contract_hash,
+        "lockfileHash": binding.lockfile_hash,
+        "seed": binding.seed,
+        "env": binding.environment,
+        "recorder": {
+            "archiveSchemaVersion": RECORDER_ARCHIVE_SCHEMA_VERSION,
+            "artifactId": binding.artifact_id,
+            "referenceRigId": binding.reference_rig_id,
+            "sourceKind": binding.source_kind,
+            "sourcePortSha256": binding.source_port_sha256,
+            "captureMaturity": binding.capture_maturity,
+            "captureConsentConfirmed": true,
+            "recordedDeviceAttested": false,
+            "noAutoArm": true
+        }
+    });
+    let mut prefix = b"{\"schemaVersion\":".to_vec();
+    serde_json::to_writer(&mut prefix, REPLAY_SCHEMA_VERSION)
+        .map_err(|err| format!("serialize replay schema version: {err}"))?;
+    prefix.extend_from_slice(b",\"header\":");
+    serde_json::to_writer(&mut prefix, &header)
+        .map_err(|err| format!("serialize replay header: {err}"))?;
+    prefix.extend_from_slice(b",\"frames\":[");
+    Ok(prefix)
+}
+
 fn finalize_replay_file(
     request: &RecorderRequest,
     manifest: &RecorderArchiveManifest,
@@ -992,36 +1131,19 @@ fn finalize_replay_file(
         .open(&replay_path)
         .map_err(|err| format!("create completed replay file: {err}"))?;
     let mut replay = BufWriter::new(replay_file);
-    let header = serde_json::json!({
-        "contractHash": request.contract_hash,
-        "lockfileHash": request.lockfile_hash,
-        "seed": request.seed,
-        "env": request.environment,
-        "recorder": {
-            "archiveSchemaVersion": RECORDER_ARCHIVE_SCHEMA_VERSION,
-            "artifactId": request.artifact_id,
-            "referenceRigId": manifest.reference_rig_id,
-            "sourceKind": manifest.source_kind,
-            "sourcePortSha256": manifest.source_port_sha256,
-            "captureMaturity": manifest.capture_maturity,
-            "captureConsentConfirmed": true,
-            "recordedDeviceAttested": false,
-            "noAutoArm": true
-        }
-    });
     replay
-        .write_all(b"{\"schemaVersion\":")
-        .map_err(|err| format!("write replay schema prefix: {err}"))?;
-    serde_json::to_writer(&mut replay, REPLAY_SCHEMA_VERSION)
-        .map_err(|err| format!("write replay schema version: {err}"))?;
-    replay
-        .write_all(b",\"header\":")
-        .map_err(|err| format!("write replay header prefix: {err}"))?;
-    serde_json::to_writer(&mut replay, &header)
-        .map_err(|err| format!("write replay header: {err}"))?;
-    replay
-        .write_all(b",\"frames\":[")
-        .map_err(|err| format!("write replay frame prefix: {err}"))?;
+        .write_all(&recorder_replay_prefix(RecorderReplayBinding {
+            contract_hash: &request.contract_hash,
+            lockfile_hash: &request.lockfile_hash,
+            seed: request.seed,
+            environment: &request.environment,
+            artifact_id: &request.artifact_id,
+            reference_rig_id: &manifest.reference_rig_id,
+            source_kind: manifest.source_kind,
+            source_port_sha256: &manifest.source_port_sha256,
+            capture_maturity: manifest.capture_maturity,
+        })?)
+        .map_err(|err| format!("write replay prefix: {err}"))?;
     for (index, line) in frames.lines().enumerate() {
         let line = line.map_err(|err| format!("read recorder frame file: {err}"))?;
         if index > 0 {
@@ -1044,6 +1166,425 @@ fn finalize_replay_file(
         .sync_all()
         .map_err(|err| format!("sync completed replay: {err}"))?;
     file_sha256(&replay_path)
+}
+
+fn recorder_archive_file_lengths(output_dir: &Path) -> Result<u64, String> {
+    let archive_metadata = fs::symlink_metadata(output_dir)
+        .map_err(|err| format!("inspect recorder archive '{}': {err}", output_dir.display()))?;
+    if archive_metadata.file_type().is_symlink() || !archive_metadata.is_dir() {
+        return Err("recorder archive path must be a real directory, not a symlink".to_string());
+    }
+    let expected = [
+        RECORDER_MANIFEST_FILE,
+        RECORDER_FRAME_FILE,
+        RECORDER_INDEX_FILE,
+        RECORDER_REPLAY_FILE,
+        RECORDER_RECEIPT_FILE,
+    ];
+    let mut observed = Vec::new();
+    let mut aggregate_size = 0_u64;
+    for entry in fs::read_dir(output_dir)
+        .map_err(|err| format!("list recorder archive '{}': {err}", output_dir.display()))?
+    {
+        let entry = entry.map_err(|err| format!("read recorder archive entry: {err}"))?;
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| "recorder archive contains a non-UTF-8 filename".to_string())?;
+        if !expected.contains(&name.as_str()) {
+            return Err(format!(
+                "recorder archive contains unexpected entry '{name}'"
+            ));
+        }
+        let metadata = fs::symlink_metadata(entry.path())
+            .map_err(|err| format!("inspect recorder archive entry '{name}': {err}"))?;
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(format!(
+                "recorder archive entry '{name}' must be a real regular file, not a symlink"
+            ));
+        }
+        aggregate_size = aggregate_size
+            .checked_add(metadata.len())
+            .ok_or_else(|| "recorder archive aggregate size overflow".to_string())?;
+        observed.push(name);
+    }
+    observed.sort();
+    let mut expected_sorted = expected.map(str::to_string);
+    expected_sorted.sort();
+    if observed != expected_sorted {
+        return Err("recorder archive must contain exactly the five canonical files".to_string());
+    }
+    if aggregate_size > MAX_RECORDER_ARCHIVE_BYTES {
+        return Err(format!(
+            "recorder archive exceeds the {MAX_RECORDER_ARCHIVE_BYTES}-byte safety cap"
+        ));
+    }
+    Ok(aggregate_size)
+}
+
+fn read_canonical_pretty_json<T>(path: &Path, label: &str) -> Result<T, String>
+where
+    T: serde::de::DeserializeOwned + Serialize,
+{
+    let file = File::open(path).map_err(|err| format!("open recorder {label}: {err}"))?;
+    let mut bytes = Vec::new();
+    file.take(RECORDER_ARCHIVE_METADATA_RESERVE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|err| format!("read recorder {label}: {err}"))?;
+    if bytes.len() as u64 > RECORDER_ARCHIVE_METADATA_RESERVE_BYTES {
+        return Err(format!(
+            "recorder {label} exceeds the {RECORDER_ARCHIVE_METADATA_RESERVE_BYTES}-byte metadata cap"
+        ));
+    }
+    let value: T =
+        serde_json::from_slice(&bytes).map_err(|err| format!("parse recorder {label}: {err}"))?;
+    let mut canonical = serde_json::to_vec_pretty(&value)
+        .map_err(|err| format!("canonicalize recorder {label}: {err}"))?;
+    canonical.push(b'\n');
+    if bytes != canonical {
+        return Err(format!("recorder {label} is not canonical pretty JSON"));
+    }
+    Ok(value)
+}
+
+fn read_canonical_jsonl<T>(
+    reader: &mut BufReader<File>,
+    line: &mut Vec<u8>,
+    label: &str,
+    max_bytes: usize,
+) -> Result<Option<T>, String>
+where
+    T: serde::de::DeserializeOwned + Serialize,
+{
+    line.clear();
+    let count = reader
+        .take(max_bytes as u64 + 1)
+        .read_until(b'\n', line)
+        .map_err(|err| format!("read recorder {label}: {err}"))?;
+    if count == 0 {
+        return Ok(None);
+    }
+    if count > max_bytes {
+        return Err(format!("recorder {label} exceeds {max_bytes} bytes"));
+    }
+    if line.last() != Some(&b'\n') {
+        return Err(format!("recorder {label} is not newline terminated"));
+    }
+    let value: T = serde_json::from_slice(&line[..line.len() - 1])
+        .map_err(|err| format!("parse recorder {label}: {err}"))?;
+    let mut canonical = serde_json::to_vec(&value)
+        .map_err(|err| format!("canonicalize recorder {label}: {err}"))?;
+    canonical.push(b'\n');
+    if *line != canonical {
+        return Err(format!("recorder {label} is not canonical JSONL"));
+    }
+    Ok(Some(value))
+}
+
+fn validate_recorder_archive_manifest(
+    manifest: &RecorderArchiveManifestInput,
+) -> Result<(), String> {
+    if manifest.schema_version != RECORDER_ARCHIVE_SCHEMA_VERSION
+        || manifest.replay_schema_version != REPLAY_SCHEMA_VERSION
+        || manifest.frame_schema_version != RECORDER_FRAME_SCHEMA_VERSION
+        || manifest.receipt_schema_version != RECORDER_RECEIPT_SCHEMA_VERSION
+    {
+        return Err("recorder manifest declares an unsupported format version".to_string());
+    }
+    if manifest.artifact_id.is_empty()
+        || manifest.artifact_id.len() > 128
+        || !manifest
+            .artifact_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+    {
+        return Err(
+            "recorder manifest artifactId is outside the v1 identifier grammar".to_string(),
+        );
+    }
+    if !D12_RIGS.contains(&manifest.reference_rig_id.as_str()) {
+        return Err("recorder manifest referenceRigId is not a frozen D12 rig".to_string());
+    }
+    if !(1..=1_000).contains(&manifest.sample_rate_hz) {
+        return Err("recorder manifest sampleRateHz is outside 1 through 1000".to_string());
+    }
+    if !is_sha256_hex(&manifest.contract_hash)
+        || !is_sha256_hex(&manifest.lockfile_hash)
+        || !is_sha256_hex(&manifest.source_port_sha256)
+    {
+        return Err("recorder manifest hashes must be lowercase SHA-256 values".to_string());
+    }
+    if !manifest.environment.is_object() {
+        return Err("recorder manifest environment must be an object".to_string());
+    }
+    let environment_bytes = serde_json::to_vec(&manifest.environment)
+        .map_err(|err| format!("serialize recorder manifest environment: {err}"))?;
+    if environment_bytes.len() > MAX_RECORDER_FRAME_BYTES {
+        return Err(format!(
+            "recorder manifest environment exceeds {MAX_RECORDER_FRAME_BYTES} bytes"
+        ));
+    }
+    let mut nodes = 0;
+    bounded_json_nodes(&manifest.environment, 0, &mut nodes)?;
+    if manifest.source_kind != "serial-jsonl"
+        || manifest.source_baud != BETAFLIGHT_SERIAL_BAUD
+        || manifest.capture_maturity != "local-serial-integration"
+    {
+        return Err("recorder manifest source or maturity authority has drifted".to_string());
+    }
+    if manifest.frame_file != RECORDER_FRAME_FILE
+        || manifest.index_file != RECORDER_INDEX_FILE
+        || manifest.replay_file != RECORDER_REPLAY_FILE
+        || manifest.receipt_file != RECORDER_RECEIPT_FILE
+    {
+        return Err("recorder manifest filenames do not match archive v1".to_string());
+    }
+    if !manifest.capture_consent_confirmed
+        || !manifest.user_owned
+        || manifest.sharing_authorized
+        || manifest.training_reuse_authorized
+        || manifest.recorded_device_attested
+        || !manifest.no_auto_arm
+    {
+        return Err(
+            "recorder manifest privacy, consent, or authority flags have drifted".to_string(),
+        );
+    }
+    Ok(())
+}
+
+fn validate_recorder_stop_receipt(
+    receipt: &RecorderStopReceiptInput,
+    manifest: &RecorderArchiveManifestInput,
+) -> Result<(), String> {
+    if receipt.schema_version != RECORDER_RECEIPT_SCHEMA_VERSION
+        || receipt.archive_schema_version != RECORDER_ARCHIVE_SCHEMA_VERSION
+        || receipt.replay_schema_version != REPLAY_SCHEMA_VERSION
+        || receipt.frame_schema_version != RECORDER_FRAME_SCHEMA_VERSION
+    {
+        return Err("recorder receipt declares an unsupported format version".to_string());
+    }
+    if receipt.artifact_id != manifest.artifact_id
+        || receipt.reference_rig_id != manifest.reference_rig_id
+        || receipt.contract_hash != manifest.contract_hash
+        || receipt.lockfile_hash != manifest.lockfile_hash
+        || receipt.started_at_unix_ms != manifest.started_at_unix_ms
+        || receipt.source_port_sha256 != manifest.source_port_sha256
+    {
+        return Err("recorder receipt does not match the archive manifest authority".to_string());
+    }
+    if receipt.stopped_at_unix_ms < receipt.started_at_unix_ms
+        || !(1..=MAX_RECORDER_FRAMES).contains(&receipt.frame_count)
+        || !receipt.duration_s.is_finite()
+        || receipt.duration_s < 0.0
+    {
+        return Err("recorder receipt time, duration, or frame count is invalid".to_string());
+    }
+    if !is_sha256_hex(&receipt.frame_file_sha256)
+        || !is_sha256_hex(&receipt.index_file_sha256)
+        || !is_sha256_hex(&receipt.replay_file_sha256)
+    {
+        return Err("recorder receipt file hashes must be lowercase SHA-256 values".to_string());
+    }
+    if !receipt.capture_complete
+        || receipt.capture_maturity != "local-serial-integration"
+        || !receipt.capture_consent_confirmed
+        || !receipt.user_owned
+        || receipt.sharing_authorized
+        || receipt.training_reuse_authorized
+        || receipt.recorded_device_attested
+        || !receipt.no_auto_arm
+    {
+        return Err(
+            "recorder receipt completion, privacy, or authority flags have drifted".to_string(),
+        );
+    }
+    Ok(())
+}
+
+fn verify_next_recorder_index_entry(
+    reader: &mut BufReader<File>,
+    line: &mut Vec<u8>,
+    hasher: &mut Sha256,
+    expected_sequence: u64,
+    expected_t: f64,
+    expected_offset: u64,
+) -> Result<(), String> {
+    let entry = read_canonical_jsonl::<RecorderIndexEntry>(reader, line, "index entry", 256)?
+        .ok_or_else(|| "recorder index ended before its required entry".to_string())?;
+    if entry.sequence != expected_sequence
+        || entry.t.to_bits() != expected_t.to_bits()
+        || entry.byte_offset != expected_offset
+    {
+        return Err(format!(
+            "recorder index entry does not match frame {expected_sequence} at byte offset {expected_offset}"
+        ));
+    }
+    hasher.update(line);
+    Ok(())
+}
+
+fn inspect_recorder_archive_path(output_dir: &Path) -> Result<RecorderArchiveInspection, String> {
+    let initial_archive_bytes = recorder_archive_file_lengths(output_dir)?;
+    let manifest: RecorderArchiveManifestInput =
+        read_canonical_pretty_json(&output_dir.join(RECORDER_MANIFEST_FILE), "manifest")?;
+    validate_recorder_archive_manifest(&manifest)?;
+    let receipt: RecorderStopReceiptInput =
+        read_canonical_pretty_json(&output_dir.join(RECORDER_RECEIPT_FILE), "receipt")?;
+    validate_recorder_stop_receipt(&receipt, &manifest)?;
+
+    let mut frames = BufReader::new(
+        File::open(output_dir.join(RECORDER_FRAME_FILE))
+            .map_err(|err| format!("open recorder frame file: {err}"))?,
+    );
+    let mut index = BufReader::new(
+        File::open(output_dir.join(RECORDER_INDEX_FILE))
+            .map_err(|err| format!("open recorder index file: {err}"))?,
+    );
+    let mut frame_line = Vec::new();
+    let mut index_line = Vec::new();
+    let mut frame_hasher = Sha256::new();
+    let mut index_hasher = Sha256::new();
+    let mut expected_replay_hasher = Sha256::new();
+    expected_replay_hasher.update(recorder_replay_prefix(RecorderReplayBinding {
+        contract_hash: &manifest.contract_hash,
+        lockfile_hash: &manifest.lockfile_hash,
+        seed: manifest.seed,
+        environment: &manifest.environment,
+        artifact_id: &manifest.artifact_id,
+        reference_rig_id: &manifest.reference_rig_id,
+        source_kind: &manifest.source_kind,
+        source_port_sha256: &manifest.source_port_sha256,
+        capture_maturity: &manifest.capture_maturity,
+    })?);
+    let index_stride = u64::from((manifest.sample_rate_hz / 4).max(1));
+    let mut frame_count = 0_u64;
+    let mut frame_offset = 0_u64;
+    let mut last_frame_offset = 0_u64;
+    let mut first_t: Option<f64> = None;
+    let mut last_t: Option<f64> = None;
+    while let Some(frame) = read_canonical_jsonl::<ReplayFrame>(
+        &mut frames,
+        &mut frame_line,
+        "frame",
+        MAX_RECORDER_FRAME_BYTES + 1,
+    )? {
+        if frame_count >= MAX_RECORDER_FRAMES {
+            return Err(format!(
+                "recorder archive exceeds the {MAX_RECORDER_FRAMES}-frame safety cap"
+            ));
+        }
+        if !frame.t.is_finite() || last_t.is_some_and(|last: f64| frame.t <= last) {
+            return Err(
+                "recorder archive frame time must be finite and strictly increasing".to_string(),
+            );
+        }
+        if !frame.state.is_object() {
+            return Err("recorder archive frame state must be an object".to_string());
+        }
+        let mut nodes = 0;
+        bounded_json_nodes(&frame.state, 0, &mut nodes)?;
+        if frame_count.is_multiple_of(index_stride) {
+            verify_next_recorder_index_entry(
+                &mut index,
+                &mut index_line,
+                &mut index_hasher,
+                frame_count,
+                frame.t,
+                frame_offset,
+            )?;
+        }
+        frame_hasher.update(&frame_line);
+        if frame_count > 0 {
+            expected_replay_hasher.update(b",");
+        }
+        expected_replay_hasher.update(&frame_line[..frame_line.len() - 1]);
+        last_frame_offset = frame_offset;
+        frame_offset = frame_offset
+            .checked_add(frame_line.len() as u64)
+            .ok_or_else(|| "recorder frame byte offset overflow".to_string())?;
+        first_t.get_or_insert(frame.t);
+        last_t = Some(frame.t);
+        frame_count += 1;
+    }
+    if frame_count == 0 {
+        return Err("recorder archive contains no frames".to_string());
+    }
+    let last_sequence = frame_count - 1;
+    if !last_sequence.is_multiple_of(index_stride) {
+        verify_next_recorder_index_entry(
+            &mut index,
+            &mut index_line,
+            &mut index_hasher,
+            last_sequence,
+            last_t.expect("non-empty recorder archive"),
+            last_frame_offset,
+        )?;
+    }
+    if read_canonical_jsonl::<RecorderIndexEntry>(&mut index, &mut index_line, "index entry", 256)?
+        .is_some()
+    {
+        return Err("recorder index contains an unexpected extra entry".to_string());
+    }
+    if frame_count != receipt.frame_count {
+        return Err("recorder receipt frameCount does not match the frame file".to_string());
+    }
+    let duration_s =
+        last_t.expect("non-empty recorder archive") - first_t.expect("non-empty recorder archive");
+    if duration_s.to_bits() != receipt.duration_s.to_bits() {
+        return Err("recorder receipt duration does not match the frame file".to_string());
+    }
+    expected_replay_hasher.update(b"]}\n");
+    let frame_file_sha256 = format!("{:x}", frame_hasher.finalize());
+    let index_file_sha256 = format!("{:x}", index_hasher.finalize());
+    let expected_replay_sha256 = format!("{:x}", expected_replay_hasher.finalize());
+    let actual_replay_sha256 = file_sha256(&output_dir.join(RECORDER_REPLAY_FILE))?;
+    if frame_file_sha256 != receipt.frame_file_sha256
+        || index_file_sha256 != receipt.index_file_sha256
+        || expected_replay_sha256 != receipt.replay_file_sha256
+        || actual_replay_sha256 != receipt.replay_file_sha256
+    {
+        return Err(
+            "recorder archive hash or reconstructed replay verification failed".to_string(),
+        );
+    }
+    if recorder_archive_file_lengths(output_dir)? != initial_archive_bytes {
+        return Err("recorder archive changed size during inspection".to_string());
+    }
+    let canonical_archive = fs::canonicalize(output_dir)
+        .map_err(|err| format!("canonicalize recorder archive path: {err}"))?;
+    Ok(RecorderArchiveInspection {
+        schema_version: RECORDER_INSPECTION_SCHEMA_VERSION,
+        archive_schema_version: RECORDER_ARCHIVE_SCHEMA_VERSION,
+        replay_schema_version: REPLAY_SCHEMA_VERSION,
+        receipt_schema_version: RECORDER_RECEIPT_SCHEMA_VERSION,
+        artifact_id: manifest.artifact_id,
+        archive_path: canonical_archive.to_string_lossy().into_owned(),
+        replay_path: canonical_archive
+            .join(RECORDER_REPLAY_FILE)
+            .to_string_lossy()
+            .into_owned(),
+        reference_rig_id: manifest.reference_rig_id,
+        contract_hash: manifest.contract_hash,
+        lockfile_hash: manifest.lockfile_hash,
+        source_port_sha256: manifest.source_port_sha256,
+        sample_rate_hz: manifest.sample_rate_hz,
+        started_at_unix_ms: receipt.started_at_unix_ms,
+        stopped_at_unix_ms: receipt.stopped_at_unix_ms,
+        frame_count,
+        duration_s,
+        capture_maturity: receipt.capture_maturity,
+        integrity_verified: true,
+        capture_complete: true,
+        capture_consent_confirmed: true,
+        user_owned: true,
+        sharing_authorized: false,
+        training_reuse_authorized: false,
+        recorded_device_attested: false,
+        device_identity_verified: false,
+        field_session_verified: false,
+        no_auto_arm: true,
+    })
 }
 
 fn record_serial_stream(
@@ -1200,7 +1741,7 @@ fn start_recorder_with_port(
         artifact_id: request.artifact_id.clone(),
         archive_path: request.output_dir.clone(),
         manifest_path: Path::new(&request.output_dir)
-            .join("forge-recorder-manifest.json")
+            .join(RECORDER_MANIFEST_FILE)
             .to_string_lossy()
             .into_owned(),
         started_at_unix_ms: manifest.started_at_unix_ms,
@@ -1494,6 +2035,18 @@ fn stop_background_recording() -> Result<RecorderStopReceipt, String> {
     stop_recorder(recorder_runtime())
 }
 
+#[tauri::command]
+fn inspect_recorder_archive(archive_path: String) -> Result<RecorderArchiveInspection, String> {
+    if archive_path.trim().is_empty() || archive_path.len() > 4_096 {
+        return Err("archivePath must be a non-empty path of at most 4096 bytes".to_string());
+    }
+    let output_dir = Path::new(&archive_path);
+    if !output_dir.is_absolute() {
+        return Err("archivePath must be absolute".to_string());
+    }
+    inspect_recorder_archive_path(output_dir)
+}
+
 #[cfg(not(test))]
 fn main() {
     tauri::Builder::default()
@@ -1502,7 +2055,8 @@ fn main() {
             list_serial_ports,
             write_serial_config,
             start_background_recording,
-            stop_background_recording
+            stop_background_recording,
+            inspect_recorder_archive
         ])
         .run(tauri::generate_context!())
         .expect("FORGE Desktop failed to start");
@@ -1580,6 +2134,38 @@ mod tests {
         .expect("frame serializes");
         bytes.push(b'\n');
         bytes
+    }
+
+    #[cfg(unix)]
+    fn complete_test_recorder_archive(dir: &Path, artifact_id: &str) -> RecorderStopReceipt {
+        let runtime = RecorderRuntime::default();
+        let (mut master, slave) =
+            serialport::TTYPort::pair().expect("recorder pseudo terminal pair");
+        start_recorder_with_port(
+            &runtime,
+            recorder_request(dir, artifact_id),
+            Box::new(slave),
+            true,
+        )
+        .expect("test recorder starts");
+        for sequence in 0..3 {
+            master
+                .write_all(&recorder_frame(
+                    artifact_id,
+                    sequence,
+                    sequence as f64 * 0.25,
+                ))
+                .expect("write test telemetry frame");
+        }
+        master.flush().expect("flush test telemetry frames");
+        thread::sleep(Duration::from_millis(150));
+        stop_recorder(&runtime).expect("test recorder stops")
+    }
+
+    fn rewrite_pretty_json(path: &Path, value: &impl Serialize) {
+        let mut bytes = serde_json::to_vec_pretty(value).expect("pretty JSON serializes");
+        bytes.push(b'\n');
+        fs::write(path, bytes).expect("rewrite pretty JSON");
     }
 
     fn version_response(version: &str) -> Vec<u8> {
@@ -1961,8 +2547,8 @@ mod tests {
         assert_eq!(manifest["captureConsentConfirmed"], true);
         assert_eq!(manifest["sharingAuthorized"], false);
 
-        let frame_bytes = fs::read(dir.join("telemetry.frames.jsonl"))
-            .expect("frame file readable");
+        let frame_bytes =
+            fs::read(dir.join("telemetry.frames.jsonl")).expect("frame file readable");
         let frames = std::str::from_utf8(&frame_bytes)
             .expect("frame file is UTF-8")
             .lines()
@@ -2023,6 +2609,184 @@ mod tests {
         );
         assert!(dir.join("forge-recorder-receipt.json").exists());
         fs::remove_dir_all(dir).expect("cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recorder_archive_inspection_verifies_exact_local_integrity_and_nonclaims() {
+        let dir = test_dir("recorder-inspection");
+        let receipt = complete_test_recorder_archive(&dir, "art_replay_inspection");
+        let inspection = inspect_recorder_archive_path(&dir).expect("archive inspects");
+        assert_eq!(
+            inspection.schema_version,
+            RECORDER_INSPECTION_SCHEMA_VERSION
+        );
+        assert_eq!(inspection.artifact_id, "art_replay_inspection");
+        assert_eq!(inspection.frame_count, receipt.frame_count);
+        assert_eq!(inspection.duration_s, receipt.duration_s);
+        assert_eq!(inspection.sample_rate_hz, 120);
+        assert_eq!(inspection.reference_rig_id, D12_RIGS[1]);
+        assert!(inspection.integrity_verified);
+        assert!(inspection.capture_complete);
+        assert!(inspection.capture_consent_confirmed);
+        assert!(inspection.user_owned);
+        assert!(!inspection.sharing_authorized);
+        assert!(!inspection.training_reuse_authorized);
+        assert!(!inspection.recorded_device_attested);
+        assert!(!inspection.device_identity_verified);
+        assert!(!inspection.field_session_verified);
+        assert!(inspection.no_auto_arm);
+        assert_eq!(
+            inspection.archive_path,
+            fs::canonicalize(&dir)
+                .expect("canonical archive")
+                .to_string_lossy()
+        );
+        assert!(inspection.replay_path.ends_with(RECORDER_REPLAY_FILE));
+
+        let command_result = inspect_recorder_archive(dir.to_string_lossy().into_owned())
+            .expect("Tauri inspection command accepts absolute archive path");
+        assert_eq!(command_result.artifact_id, inspection.artifact_id);
+        assert!(inspect_recorder_archive("relative/archive".to_string())
+            .expect_err("relative archive path must fail")
+            .contains("must be absolute"));
+        fs::remove_dir_all(dir).expect("cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recorder_archive_inspection_refuses_frame_index_and_authority_tampering() {
+        let frame_dir = test_dir("recorder-inspection-frame-tamper");
+        complete_test_recorder_archive(&frame_dir, "art_frame_tamper");
+        let frame_path = frame_dir.join(RECORDER_FRAME_FILE);
+        let mut frames = fs::read_to_string(&frame_path)
+            .expect("frames readable")
+            .lines()
+            .map(|line| serde_json::from_str::<ReplayFrame>(line).expect("frame parses"))
+            .collect::<Vec<_>>();
+        frames[0].state["batteryV"] = serde_json::json!(15.0);
+        let frame_bytes = frames
+            .iter()
+            .map(|frame| serde_json::to_string(frame).expect("tampered frame serializes"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        fs::write(&frame_path, format!("{frame_bytes}\n")).expect("tamper frame file");
+        let frame_error = inspect_recorder_archive_path(&frame_dir)
+            .expect_err("frame hash substitution must fail");
+        assert!(
+            frame_error.contains("hash or reconstructed replay"),
+            "unexpected frame error: {frame_error}"
+        );
+        fs::remove_dir_all(frame_dir).expect("frame cleanup");
+
+        let replay_dir = test_dir("recorder-inspection-replay-tamper");
+        complete_test_recorder_archive(&replay_dir, "art_replay_tamper");
+        let replay_path = replay_dir.join(RECORDER_REPLAY_FILE);
+        let mut replay = fs::read(&replay_path).expect("replay readable");
+        replay.push(b' ');
+        fs::write(&replay_path, replay).expect("tamper retained replay");
+        assert!(inspect_recorder_archive_path(&replay_dir)
+            .expect_err("retained replay substitution must fail")
+            .contains("hash or reconstructed replay"));
+        fs::remove_dir_all(replay_dir).expect("replay cleanup");
+
+        let index_dir = test_dir("recorder-inspection-index-tamper");
+        complete_test_recorder_archive(&index_dir, "art_index_tamper");
+        let index_path = index_dir.join(RECORDER_INDEX_FILE);
+        let mut lines = fs::read_to_string(&index_path)
+            .expect("index readable")
+            .lines()
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        let mut first: RecorderIndexEntry =
+            serde_json::from_str(&lines[0]).expect("first index entry parses");
+        first.byte_offset = 1;
+        lines[0] = serde_json::to_string(&first).expect("tampered index serializes");
+        fs::write(&index_path, format!("{}\n", lines.join("\n"))).expect("tamper index file");
+        assert!(inspect_recorder_archive_path(&index_dir)
+            .expect_err("index offset substitution must fail")
+            .contains("does not match frame 0"));
+        fs::remove_dir_all(index_dir).expect("index cleanup");
+
+        let authority_dir = test_dir("recorder-inspection-authority-tamper");
+        complete_test_recorder_archive(&authority_dir, "art_authority_tamper");
+        let receipt_path = authority_dir.join(RECORDER_RECEIPT_FILE);
+        let mut receipt: RecorderStopReceiptInput =
+            serde_json::from_slice(&fs::read(&receipt_path).expect("receipt readable"))
+                .expect("receipt parses");
+        receipt.recorded_device_attested = true;
+        rewrite_pretty_json(&receipt_path, &receipt);
+        assert!(inspect_recorder_archive_path(&authority_dir)
+            .expect_err("device authority substitution must fail")
+            .contains("authority flags have drifted"));
+        fs::remove_dir_all(authority_dir).expect("authority cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recorder_archive_inspection_refuses_extra_symlink_and_schema_drift() {
+        use std::os::unix::fs::symlink;
+
+        let extra_dir = test_dir("recorder-inspection-extra");
+        complete_test_recorder_archive(&extra_dir, "art_extra_entry");
+        fs::write(extra_dir.join("notes.txt"), b"not part of archive v1")
+            .expect("write unexpected entry");
+        assert!(inspect_recorder_archive_path(&extra_dir)
+            .expect_err("unexpected file must fail")
+            .contains("unexpected entry"));
+        fs::remove_dir_all(extra_dir).expect("extra cleanup");
+
+        let symlink_dir = test_dir("recorder-inspection-symlink");
+        complete_test_recorder_archive(&symlink_dir, "art_symlink_entry");
+        let replay_path = symlink_dir.join(RECORDER_REPLAY_FILE);
+        let replay_copy = symlink_dir.with_extension("replay-copy");
+        fs::rename(&replay_path, &replay_copy).expect("move replay outside archive");
+        symlink(&replay_copy, &replay_path).expect("link replay into archive");
+        assert!(inspect_recorder_archive_path(&symlink_dir)
+            .expect_err("symlinked archive file must fail")
+            .contains("not a symlink"));
+        fs::remove_dir_all(symlink_dir).expect("symlink cleanup");
+        fs::remove_file(replay_copy).expect("replay copy cleanup");
+
+        let oversized_metadata_dir = test_dir("recorder-inspection-oversized-metadata");
+        complete_test_recorder_archive(&oversized_metadata_dir, "art_oversized_metadata");
+        fs::write(
+            oversized_metadata_dir.join(RECORDER_MANIFEST_FILE),
+            vec![b'x'; RECORDER_ARCHIVE_METADATA_RESERVE_BYTES as usize + 1],
+        )
+        .expect("write oversized manifest");
+        assert!(inspect_recorder_archive_path(&oversized_metadata_dir)
+            .expect_err("oversized metadata must fail before parsing")
+            .contains("metadata cap"));
+        fs::remove_dir_all(oversized_metadata_dir).expect("oversized metadata cleanup");
+
+        let oversized_frame_dir = test_dir("recorder-inspection-oversized-frame");
+        complete_test_recorder_archive(&oversized_frame_dir, "art_oversized_frame");
+        fs::write(
+            oversized_frame_dir.join(RECORDER_FRAME_FILE),
+            vec![b'x'; MAX_RECORDER_FRAME_BYTES + 2],
+        )
+        .expect("write oversized frame");
+        assert!(inspect_recorder_archive_path(&oversized_frame_dir)
+            .expect_err("oversized frame must fail before parsing")
+            .contains("exceeds"));
+        fs::remove_dir_all(oversized_frame_dir).expect("oversized frame cleanup");
+
+        let schema_dir = test_dir("recorder-inspection-schema");
+        complete_test_recorder_archive(&schema_dir, "art_schema_drift");
+        let manifest_path = schema_dir.join(RECORDER_MANIFEST_FILE);
+        let mut manifest: RecorderArchiveManifestInput =
+            serde_json::from_slice(&fs::read(&manifest_path).expect("manifest readable"))
+                .expect("manifest parses");
+        manifest.schema_version = "forge-recorder-archive/2.0.0".to_string();
+        rewrite_pretty_json(&manifest_path, &manifest);
+        let schema_error = inspect_recorder_archive_path(&schema_dir)
+            .expect_err("unsupported archive major must fail");
+        assert!(
+            schema_error.contains("unsupported format version"),
+            "unexpected schema error: {schema_error}"
+        );
+        fs::remove_dir_all(schema_dir).expect("schema cleanup");
     }
 
     #[cfg(unix)]
@@ -2178,9 +2942,7 @@ mod tests {
         .contains("frame safety cap"));
 
         let mut byte_capped = RecorderProgress {
-            frame_bytes: (MAX_RECORDER_ARCHIVE_BYTES
-                - RECORDER_ARCHIVE_METADATA_RESERVE_BYTES)
-                / 2,
+            frame_bytes: (MAX_RECORDER_ARCHIVE_BYTES - RECORDER_ARCHIVE_METADATA_RESERVE_BYTES) / 2,
             ..RecorderProgress::default()
         };
         let frame_over_archive_cap = recorder_frame("art_replay_bounds", 0, 0.0);

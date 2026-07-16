@@ -48,14 +48,15 @@ In scope:
   citations, license/export manifests, and hardware bridge payloads;
 - prompt/retrieval injection and provider/tool output;
 - validator child processes and release archive verification;
+- D51 read-only local Desktop recorder-directory inspection;
 - error, log, secret-rotation, and incident boundaries.
 
 Not yet in scope as implemented public surfaces:
 
 - inbound provider callbacks or webhooks; none are currently accepted;
 - arbitrary user code or controllers; contracts contain data only;
-- general archive import; current object registration refuses archive media/name
-  classes and no object ingestion path extracts user archives;
+- general compressed or uploaded archive import; current object registration refuses
+  archive media/name classes and no object ingestion path extracts user archives;
 - public worker endpoints; workers are queue-driven;
 - general hardware beta; only the D30/D12 controlled-lab boundary exists.
 
@@ -96,6 +97,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Worker -> Modal function | sovereign bundle plus deployment identity | D46 adapter and exact function | durable call ID before wait, exact SDK/source/function/L4, no fallback/retry/secret/egress, lease polling, bounded result evidence |
 | Provider/command -> validator | arbitrary contract/artifact/result | validator and license/admission gates | allowlisted result fields, provenance, bounded process, sovereign verdict |
 | Import/course/replay -> core | XML/JSON numbers, graph identities, pointers, timestamps | forge-contract/forge-sim boundary | byte cap, finite SI/time, valid graph/pointer/schema, strict order, no-panic corpus |
+| Local recorder directory -> Desktop/Studio | filenames, links, JSON/JSONL bytes, hashes, privacy/provenance claims, size | D51 native streaming verifier | exact five-file allowlist, non-symlink regular files, canonical strict v1 parsing, aggregate/frame/node/count bounds, index/replay/hash reconstruction, strict bounded nonclaim response, no upload |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 
@@ -393,6 +395,20 @@ expanded quotas, exact allowed formats, entry-count/path/link/device checks, mal
 and parser isolation, content sniffing, admission validation, and promotion only after
 success. Filename or supplied MIME is not sufficient trust.
 
+D51 is narrower and local: it reads one already-expanded Desktop recorder directory
+without extracting, executing, rendering, uploading, or gateway-materializing its
+contents. The final directory and every entry must be a real non-symlink regular
+filesystem object under an exact five-name allowlist, with actual aggregate bytes at
+or below the archive-v1 cap. Strict canonical manifest/receipt/frame/index parsing,
+depth/node/frame/count bounds, exact sparse offsets, replay reconstruction, and all
+retained hashes fail closed. The command returns no frame data and Studio revalidates
+its exact versioned bounded response. These controls expose corruption and v1
+self-inconsistency; because a local user can rewrite both data and receipt, they do
+not supply a signature, independent authenticity, device/session identity, field or
+lab provenance, sharing consent, training authority, malware quarantine, or a safe
+general archive/upload importer. Concurrent local mutation remains outside the
+trustworthy-evidence claim; protected evidence must use separately retained hashes.
+
 Release archives are a separate trusted-distribution path. Before extracting or
 installing, the verifier checks the archive byte ceiling, exact normalized entry
 allowlist, duplicate/traversal/absolute/drive/backslash rejection, and each member's
@@ -487,6 +503,7 @@ and tracing defaults separately; application tests cannot prove those external l
 | Cross-boundary numeric/graph/command confusion | registered 89-case import/patch/EnvSpec/replay/provider/citation/export/hardware corpus plus Rust/Python behavior and random no-panic tests | diverse real external imports, credentialed provider corpus, controlled hardware, and load/fault exercises |
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
 | Malicious/partial upload or archive | checksum-bound PUT, staged-until-exact HEAD completion, staged download/consent refusal, MIME/name refusal, forced download, exact release archive allowlist/caps | provider IAM/checksum audit and quarantine scanner for any future importer |
+| Malicious/inconsistent local recorder directory | exact five-file/non-symlink allowlist, strict canonical v1 parser, streaming byte/node/frame/count caps, exact sparse-index/replay/hash checks, bounded no-frame response, authority-nonclaim tests | OS-level race-resistant handles and signed/device-attested evidence only if a future provenance design requires them |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |
 | MuJoCo parity scene/file abuse or evidence drift | 4 MiB/512 KiB bounds, exact source/schema/request-hash/engine identity, contract-marker/radian checks, external include/asset/plugin/file refusal, matched timestep/substeps, required real-engine CI artifact | non-root container/filesystem isolation and reviewed engine-upgrade evidence |
 | Provider replay/late result | lease-fenced expiry/reclaim, stale duplicate discard, one-time materialization, retry ceiling, and cancellation authority tests | multi-replica outage/partition drill, dead-letter reconciliation, or callback signature/replay suite |
@@ -524,6 +541,7 @@ Before any production/live-provider claim:
 | Single-process rate limiter | no cross-replica atomic state or durable quota | operations: shared rate/cost/concurrency control |
 | Shared owner token | not named RBAC; coarse revocation and audit identity | platform/security before delegated operators |
 | Uploaded bytes are integrity-checked, not semantically quarantined | exact length/type/checksum does not detect malicious valid-format content; import intentionally absent | security/compute before any archive or active-content importer |
+| D51 local recorder inspection is self-consistency, not authenticity | a local actor can coherently rewrite archive bytes and receipt; cross-file checks are unsigned and path inspection is not an OS snapshot | P8 reviewed adapter/device attestation plus signed/retained external evidence before recorded-device, lab, or field claims |
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |

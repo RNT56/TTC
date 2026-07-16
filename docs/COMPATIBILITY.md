@@ -32,7 +32,7 @@ package to adopt that same number.
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
 | policy tensor | 2.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | majors 1 and 2; new producers emit 2, exact v1 execution remains a legacy read path |
-| Desktop recorder archive | 1.0.0 | `forge-recorder-archive` binds the manifest, exact serial-JSONL input-frame authority, ordered canonical replay frames, sparse byte-offset index, clean-stop replay/receipt hashes, privacy defaults, and explicit non-attestation semantics; changes to any of those meanings are major | major 1 |
+| Desktop recorder archive | 1.0.0 | `forge-recorder-archive` binds the exact five-file layout, manifest, serial-JSONL input authority, canonical replay frames, sparse byte-offset index, clean-stop replay/receipt hashes, streaming import refusal, privacy defaults, and explicit non-attestation semantics; changes to any of those meanings are major | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
@@ -184,6 +184,21 @@ never a successful archive. Publishing a device-attested or training-admissible
 successor requires a reviewed adapter/device identity contract, consent-ledger
 bindings, fixtures for old/current/unsupported majors, migration/deprecation
 guidance, and a superseding decision.
+
+D51 defines the archive-v1 read contract without changing its version. A successful
+Desktop inspection requires exactly the five canonical real regular files and
+rejects symlinks, extra/missing entries, unsupported or non-canonical metadata,
+aggregate over-budget bytes, field/version/privacy drift, malformed or non-canonical
+frames/index entries, time/count/duration/offset drift, and any mismatch among the
+frame hash, index hash, reconstructed replay bytes, retained replay hash, and receipt.
+The reader streams the tape and index and reconstructs the replay digest without
+loading either large artifact into memory. `forge-recorder-inspection/1.0.0` is a
+bounded Desktop command response, not another persisted archive surface. Its
+`integrityVerified=true` means local v1 self-consistency only; device identity,
+recorded-device provenance, signatures/authenticity, field/lab status, sharing,
+training reuse, ghost, system ID, and gateway materialization remain false or absent.
+An importer that accepts alternate filenames/encodings/index semantics or promotes
+those authorities is incompatible with archive v1 even if it still parses the JSON.
 
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian
