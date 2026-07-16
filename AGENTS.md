@@ -90,11 +90,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime anchor is D56/P8-002/P8-003 PR #100 at
-  `1bf127d`. Exact implementation head `69c0dd7` passed PR CI
-  `29530839367` and security `29530839338`; reviewed tree `de12c5a` is byte-identical
-  at the protected squash, whose post-merge CI `29531470442` and security
-  `29531470118` pass. D55 evidence-reconciliation PR #98/`9e94c71` and runtime PR
+  latest verified protected runtime anchor is D57/P8-004 PR #102 at `d33fd57`.
+  Exact implementation head `50abc92` passed PR CI `29536927436` and security
+  `29536927492`; reviewed tree `cc1d483` is byte-identical at the protected squash,
+  whose post-merge CI `29537565069` and security `29537565062` pass. D56 evidence-
+  reconciliation PR #101/`9035d09` and runtime PR #100/`1bf127d`, D55 evidence-
+  reconciliation PR #98/`9e94c71` and runtime PR
   #97/`370d214`, D54 evidence
   PR #96/`b4b5ad9` and admission PR #95/`f8efb6f`, plus D53
   materialization PR #93/`08d892f`, D52 evidence
@@ -111,16 +112,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   PR #66/`0614272` owns controlled
   MJX-feasibility evidence, PR #64/`d1c4c38` remains the owning seeded-training
   anchor, and PR #62/`1de7974` remains the owning base browser-runtime anchor;
-- the current D57/P8-004 implementation lane adds only local controlled-synthetic/
-  unverified ghost-view mechanics: `forge-ghost-overlay/1.0.0`, a bounded ten-minute
+- D57/P8-004 is protected at local controlled-synthetic/unverified view maturity:
+  `forge-ghost-overlay/1.0.0`, a bounded ten-minute
   decimated/indexed SI trace, strict Studio parsing, explicit 60 Hz playback and
   device/recorded-device/field nonclaims. All 40 local gates under Python 3.12.13
   with 227 worker tests, a fresh clean/25-predecessor Postgres matrix, 12/12
-  production-browser flows, and all three browser engines pass. Until exact PR and
-  protected-main evidence are recorded, treat it as an unprotected candidate. Even
-  after protection, real
-  D54 replay/twin execution, named-mid-hardware performance, P8-014 and EXT-008 remain
-  separate gates; never put raw recorder frames into job JSON or maintenance JSONB;
+  production-browser flows, and all three browser engines pass. Exact PR/protected-
+  main evidence is recorded above. Real D54 replay/twin execution, named-mid-
+  hardware performance, P8-014 and EXT-008 remain separate gates; never put raw
+  recorder frames into job JSON or maintenance JSONB;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
