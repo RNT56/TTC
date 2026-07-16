@@ -90,11 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is docs-only P8-012 evidence reconciliation
-  PR #84 at `15c3be2`, with post-merge CI `29476868373`, security `29476868328`,
-  and exact-main nightly `29476991042` green. The latest verified protected runtime
-  descendant is P8-012 PR #83 at `fd26845`, with post-merge CI `29468966929` and
-  security `29468966748` green. PR #81 owns the
+  latest verified protected descendant and runtime descendant is D49 target/readback
+  PR #85 at `4647a10`. Exact head `f18185d` passed PR CI `29479621677` and security
+  `29479621689`; its reviewed tree `dfa0007` is byte-identical at the protected
+  squash, whose post-merge CI `29480132737` and security `29480131433` pass. PR #81
+  owns the
   decision-grade D47 MJX request/report contract while PR #79 owns the
   fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
   controlled-synthetic offline-training evidence; PR #75 owns the
@@ -212,12 +212,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   the complete 40-step gate, 225 worker tests, 66 gateway tests, and Desktop native
   compile pass. The receipt leaves target firmware/application unverified and
   requires readback. This protected proof is not a real FC, HITL, lab, tethered, or
-  field result. D49's current unprotected candidate keeps the D48 artifact unchanged
+  field result. Protected D49 keeps the D48 artifact unchanged
   but gates receipt 2.0.0 on props-off confirmation, bounded pre/post stable
   `2025.12.x` identity, exact set/save acknowledgement, reboot/reconnect, and exact
   `failsafe_delay` readback across two real pseudo-terminal sessions, with SHA-256
-  digests for the four authoritative response byte streams. That remains
-  local protocol evidence until protected and then executed on the named FC;
+  digests for the four authoritative response byte streams. That remains protected
+  local protocol integration only until executed on the named FC;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
