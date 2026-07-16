@@ -265,6 +265,29 @@ build must not claim v1 completion or delete evidence it cannot interpret. Valid
 runtime and generated catalog with Desktop native tests, `pnpm verify:compatibility`,
 `pnpm docs:contracts`, `pnpm verify:docs-contracts`, and `pnpm verify:goldens`.
 
+### Desktop recorder controls 1.0
+
+D52 adds `recorder_status` and changes the non-persisted
+`start_background_recording` result from an archive-version-labeled acknowledgement
+to exact `forge-recorder-control/1.0.0`; `stop_background_recording` still returns
+the unchanged persisted receipt 1.0.0. The old start acknowledgement was never
+completion evidence and is not migrated or retained. Current clients must require
+the exact control field set and `inactive|recording|finished` semantics, reject every
+device/field/sharing/training authority promotion, and collect a finished recorder
+through explicit stop before another start.
+
+Control v1 does not migrate archive bytes. Studio derives contract hash, lockfile
+hash, and seed only from its active admitted validator report and passes them with
+one D12 rig, one OS-enumerated 115200-baud port, a new absolute output directory,
+and exact per-log capture consent. Native code independently re-enforces the hardware
+gates and request bounds. Browser builds fail closed before invoking any command, and
+the response never includes frames or authorizes gateway materialization.
+
+For rollback, first query status and explicitly stop/drain or collect the recorder
+error while the D52-aware shell is still running. Preserve complete or interrupted
+archive directories, then roll forward to a v1-aware archive reader. Never replace
+the shell or relabel a start response as a receipt while capture is active.
+
 ## Shipping a future compatibility change
 
 1. Classify the change as patch, minor, or major under `COMPATIBILITY.md`.

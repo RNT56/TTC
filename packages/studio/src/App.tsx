@@ -103,9 +103,21 @@ import {
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { BrowserPolicyController } from "./policyRuntime";
 import {
+  D12_REFERENCE_RIG_IDS,
+  RECORDER_BAUD,
+  RECORDER_PHYSICAL_CONFIRMATION,
   desktopRecorderAvailable,
+  getDesktopBridgeStatus,
+  getRecorderStatus,
   inspectRecorderArchive,
+  listDesktopSerialPorts,
+  startDesktopRecorder,
+  stopDesktopRecorder,
+  type DesktopBridgeStatus,
+  type DesktopSerialPort,
   type RecorderArchiveInspection,
+  type RecorderControlStatus,
+  type RecorderStopReceipt,
 } from "./desktopRecorder";
 import { CoreBake, CoreSession, corePatch, coreValidate } from "./wasm";
 import type { Slot } from "./contract.gen";
@@ -2355,7 +2367,7 @@ export default function App() {
             onAlignPhotoscan={(artifactId, input) => void alignPhotoscanArtifact(artifactId, input)}
             onPlayPolicy={startPolicyPlayback}
           />
-          <RecorderArchiveImportPanel />
+          <RecorderArchiveImportPanel report={s.report} />
           <PlatformPanel
             credits={credits}
             courses={courses}
@@ -2966,32 +2978,269 @@ function ArtifactRegistry({
   );
 }
 
-function RecorderArchiveImportPanel() {
+function RecorderArchiveImportPanel({ report }: { report: Report | null }) {
   const available = desktopRecorderAvailable();
+  const [bridgeStatus, setBridgeStatus] = useState<DesktopBridgeStatus | null>(null);
+  const [serialPorts, setSerialPorts] = useState<DesktopSerialPort[]>([]);
+  const [recorderStatus, setRecorderStatus] = useState<RecorderControlStatus | null>(null);
+  const [artifactId, setArtifactId] = useState(() => `recorder-${Date.now()}`);
+  const [outputDir, setOutputDir] = useState("");
+  const [sampleRateHz, setSampleRateHz] = useState("120");
+  const [referenceRigId, setReferenceRigId] = useState<(typeof D12_REFERENCE_RIG_IDS)[number]>(
+    D12_REFERENCE_RIG_IDS[1],
+  );
+  const [port, setPort] = useState("");
+  const [captureConsent, setCaptureConsent] = useState(false);
+  const [controlBusy, setControlBusy] = useState(false);
+  const [controlError, setControlError] = useState<string | null>(null);
+  const [controlMessage, setControlMessage] = useState<string | null>(null);
+  const [stopReceipt, setStopReceipt] = useState<RecorderStopReceipt | null>(null);
   const [archivePath, setArchivePath] = useState("");
   const [inspection, setInspection] = useState<RecorderArchiveInspection | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [inspectionBusy, setInspectionBusy] = useState(false);
+  const [inspectionError, setInspectionError] = useState<string | null>(null);
+
+  const refreshControls = useCallback(async () => {
+    if (!available) return;
+    setControlBusy(true);
+    setControlError(null);
+    try {
+      const [bridge, status] = await Promise.all([
+        getDesktopBridgeStatus(),
+        getRecorderStatus(),
+      ]);
+      const ports = bridge.enabled ? await listDesktopSerialPorts() : [];
+      setBridgeStatus(bridge);
+      setRecorderStatus(status);
+      setSerialPorts(ports);
+      if (status.state !== "inactive") {
+        setArtifactId(status.artifactId ?? "");
+        setOutputDir(status.archivePath ?? "");
+        if (status.referenceRigId) setReferenceRigId(status.referenceRigId);
+        if (status.sampleRateHz !== null) setSampleRateHz(String(status.sampleRateHz));
+      }
+      setPort((current) => ports.some((candidate) => candidate.name === current)
+        ? current
+        : ports[0]?.name ?? "");
+    } catch (cause) {
+      setControlError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setControlBusy(false);
+    }
+  }, [available]);
+
+  useEffect(() => {
+    void refreshControls();
+  }, [refreshControls]);
+
+  const startRecorder = useCallback(async () => {
+    setControlBusy(true);
+    setControlError(null);
+    setControlMessage(null);
+    setStopReceipt(null);
+    try {
+      if (!report || report.verdict !== "admitted") {
+        throw new Error("an active admitted validator report is required before recording");
+      }
+      const status = await startDesktopRecorder({
+        artifactId,
+        outputDir,
+        sampleRateHz: Number(sampleRateHz),
+        referenceRigId,
+        physicalConfirmation: RECORDER_PHYSICAL_CONFIRMATION,
+        port,
+        baud: RECORDER_BAUD,
+        contractHash: report.contractHash,
+        lockfileHash: report.lockfileHash,
+        environment: {},
+        seed: report.seed,
+      });
+      setRecorderStatus(status);
+      setCaptureConsent(false);
+      setControlMessage(`recording ${status.artifactId ?? artifactId} into ${status.archivePath ?? outputDir}`);
+    } catch (cause) {
+      setControlError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setControlBusy(false);
+    }
+  }, [artifactId, outputDir, port, referenceRigId, report, sampleRateHz]);
+
+  const stopRecorder = useCallback(async () => {
+    setControlBusy(true);
+    setControlError(null);
+    setControlMessage(null);
+    try {
+      if (!recorderStatus || recorderStatus.state === "inactive") {
+        throw new Error("no active Desktop recorder is available to stop");
+      }
+      const receipt = await stopDesktopRecorder(recorderStatus);
+      setStopReceipt(receipt);
+      setRecorderStatus(await getRecorderStatus());
+      setArchivePath(outputDir);
+      setControlMessage(`capture complete: ${receipt.frameCount} frames over ${receipt.durationS.toFixed(3)} s`);
+    } catch (cause) {
+      setControlError(cause instanceof Error ? cause.message : String(cause));
+      try {
+        setRecorderStatus(await getRecorderStatus());
+      } catch {
+        setRecorderStatus(null);
+      }
+    } finally {
+      setControlBusy(false);
+    }
+  }, [outputDir, recorderStatus]);
 
   const inspectArchive = useCallback(async () => {
-    setBusy(true);
-    setError(null);
+    setInspectionBusy(true);
+    setInspectionError(null);
     setInspection(null);
     try {
       setInspection(await inspectRecorderArchive(archivePath));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setInspectionError(cause instanceof Error ? cause.message : String(cause));
     } finally {
-      setBusy(false);
+      setInspectionBusy(false);
     }
   }, [archivePath]);
 
+  const reportReady = report?.verdict === "admitted"
+    && /^[0-9a-f]{64}$/.test(report.contractHash)
+    && /^[0-9a-f]{64}$/.test(report.lockfileHash)
+    && Number.isSafeInteger(report.seed)
+    && report.seed >= 0;
+  const recorderInactive = recorderStatus?.state === "inactive";
+  const canStart = available
+    && bridgeStatus?.enabled === true
+    && recorderInactive
+    && reportReady
+    && serialPorts.some((candidate) => candidate.name === port)
+    && artifactId.trim().length > 0
+    && outputDir.trim().length > 0
+    && captureConsent;
+  const canStop = available && recorderStatus !== null && recorderStatus.state !== "inactive";
+
   return (
     <details style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
-      <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>Desktop recorder archive import</summary>
+      <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>Desktop recorder controls & archive import</summary>
       <div style={{ color: "#7d899b", marginTop: 5 }}>
-        Verifies one complete local archive without uploading frames. Integrity is local
-        self-consistency, not device identity, field-session proof, sharing consent, or training authority.
+        Shell-owned capture continues while the webview is inactive. It requires D12 lab gates,
+        one OS-enumerated 115200-baud port, an admitted contract, and per-log consent. No auto-arm,
+        device identity, field, sharing, or training authority is granted.
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+        <button
+          data-testid="recorder-control-refresh"
+          onClick={() => void refreshControls()}
+          disabled={!available || controlBusy}
+          style={btn}
+        >
+          {controlBusy ? "checking…" : "refresh status"}
+        </button>
+        <span data-testid="recorder-control-status" style={{ color: recorderStatus?.state === "recording" ? "#74c69d" : "#7d899b" }}>
+          {recorderStatus?.state ?? "unavailable"}
+        </span>
+      </div>
+      {bridgeStatus ? (
+        <div style={{ color: bridgeStatus.enabled ? "#74c69d" : "#e6a23c", marginTop: 5 }}>
+          hardware bridge {bridgeStatus.enabled ? "enabled" : "disabled"} · {bridgeStatus.reason} · no auto-arm
+        </div>
+      ) : null}
+      {recorderStatus?.state === "finished" ? (
+        <div style={{ color: "#e6a23c", marginTop: 5 }}>
+          The recorder thread ended. Stop to collect its receipt or fail-closed error before starting another capture.
+        </div>
+      ) : null}
+      {recorderStatus?.state !== "inactive" && recorderStatus ? (
+        <div style={{ color: "#7d899b", marginTop: 5, wordBreak: "break-word" }}>
+          {recorderStatus.artifactId} · {recorderStatus.referenceRigId} · {recorderStatus.sampleRateHz} Hz ·
+          contract {recorderStatus.contractHash} · private · training reuse off · device and field verification off
+        </div>
+      ) : null}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 6, marginTop: 6 }}>
+        <input
+          aria-label="Recorder artifact ID"
+          value={artifactId}
+          onChange={(event) => setArtifactId(event.currentTarget.value)}
+          disabled={!available || controlBusy || !recorderInactive}
+          style={inputStyle}
+        />
+        <input
+          aria-label="Recorder output directory"
+          value={outputDir}
+          onChange={(event) => setOutputDir(event.currentTarget.value)}
+          placeholder="/absolute/new/archive-path"
+          disabled={!available || controlBusy || !recorderInactive}
+          style={inputStyle}
+        />
+        <select
+          aria-label="Recorder reference rig"
+          value={referenceRigId}
+          onChange={(event) => {
+            const selected = event.currentTarget.value;
+            if ((D12_REFERENCE_RIG_IDS as readonly string[]).includes(selected)) {
+              setReferenceRigId(selected as (typeof D12_REFERENCE_RIG_IDS)[number]);
+            }
+          }}
+          disabled={!available || controlBusy || !recorderInactive}
+          style={selectStyle}
+        >
+          {D12_REFERENCE_RIG_IDS.map((rigId) => <option key={rigId} value={rigId}>{rigId}</option>)}
+        </select>
+        <select
+          aria-label="Recorder serial port"
+          value={port}
+          onChange={(event) => setPort(event.currentTarget.value)}
+          disabled={!available || controlBusy || !recorderInactive || !bridgeStatus?.enabled}
+          style={selectStyle}
+        >
+          <option value="">select OS-enumerated port</option>
+          {serialPorts.map((candidate) => (
+            <option key={candidate.name} value={candidate.name}>{candidate.name} · {candidate.kind}</option>
+          ))}
+        </select>
+        <input
+          aria-label="Recorder sample rate in hertz"
+          type="number"
+          min={1}
+          max={1_000}
+          step={1}
+          value={sampleRateHz}
+          onChange={(event) => setSampleRateHz(event.currentTarget.value)}
+          disabled={!available || controlBusy || !recorderInactive}
+          style={inputStyle}
+        />
+        <div style={{ color: reportReady ? "#74c69d" : "#e6a23c", alignSelf: "center", wordBreak: "break-word" }}>
+          {reportReady
+            ? `admitted contract ${report?.contractHash.slice(0, 12)}… · seed ${report?.seed}`
+            : "load an admitted contract with current lockfile evidence"}
+        </div>
+      </div>
+      <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 7 }}>
+        <input
+          type="checkbox"
+          checked={captureConsent}
+          onChange={(event) => setCaptureConsent(event.currentTarget.checked)}
+          disabled={!available || controlBusy || !recorderInactive}
+        />
+        <span>I consent to record this telemetry log. This grants local capture only, not sharing or training reuse.</span>
+      </label>
+      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+        <button
+          data-testid="recorder-control-start"
+          onClick={() => void startRecorder()}
+          disabled={!canStart || controlBusy}
+          style={btn}
+        >
+          start recording
+        </button>
+        <button
+          data-testid="recorder-control-stop"
+          onClick={() => void stopRecorder()}
+          disabled={!canStop || controlBusy}
+          style={btn}
+        >
+          stop & finalize
+        </button>
       </div>
       <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
         <input
@@ -2999,24 +3248,31 @@ function RecorderArchiveImportPanel() {
           value={archivePath}
           onChange={(event) => setArchivePath(event.currentTarget.value)}
           placeholder="/absolute/path/to/recorder-archive"
-          disabled={!available || busy}
+          disabled={!available || inspectionBusy}
           style={{ ...inputStyle, flex: 1 }}
         />
         <button
           data-testid="recorder-archive-inspect"
           onClick={() => void inspectArchive()}
-          disabled={!available || busy || archivePath.trim().length === 0}
+          disabled={!available || inspectionBusy || archivePath.trim().length === 0}
           style={btn}
         >
-          {busy ? "verifying…" : "verify"}
+          {inspectionBusy ? "verifying…" : "verify archive"}
         </button>
       </div>
       {!available ? (
         <div style={{ color: "#7d899b", marginTop: 5 }}>
-          Open this workspace in FORGE Desktop to inspect a filesystem archive.
+          Open this workspace in FORGE Desktop to control recording or inspect a filesystem archive.
         </div>
       ) : null}
-      {error ? <div style={{ color: "#e6a23c", marginTop: 5 }}>{error}</div> : null}
+      {controlError ? <div style={{ color: "#e6a23c", marginTop: 5 }}>{controlError}</div> : null}
+      {controlMessage ? <div style={{ color: "#74c69d", marginTop: 5, wordBreak: "break-word" }}>{controlMessage}</div> : null}
+      {stopReceipt ? (
+        <div data-testid="recorder-stop-receipt" style={{ color: "#7d899b", marginTop: 5, wordBreak: "break-word" }}>
+          receipt {stopReceipt.schemaVersion} · replay {stopReceipt.replayFileSha256} · private · training reuse off · device attestation off
+        </div>
+      ) : null}
+      {inspectionError ? <div style={{ color: "#e6a23c", marginTop: 5 }}>{inspectionError}</div> : null}
       {inspection ? (
         <div data-testid="recorder-archive-inspection" style={{ marginTop: 6 }}>
           <div style={{ color: "#74c69d" }}>

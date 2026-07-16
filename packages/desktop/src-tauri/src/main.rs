@@ -21,6 +21,7 @@ const RECORDER_ARCHIVE_SCHEMA_VERSION: &str = "forge-recorder-archive/1.0.0";
 const RECORDER_FRAME_SCHEMA_VERSION: &str = "forge-telemetry-frame/1.0.0";
 const RECORDER_RECEIPT_SCHEMA_VERSION: &str = "forge-recorder-receipt/1.0.0";
 const RECORDER_INSPECTION_SCHEMA_VERSION: &str = "forge-recorder-inspection/1.0.0";
+const RECORDER_CONTROL_SCHEMA_VERSION: &str = "forge-recorder-control/1.0.0";
 const REPLAY_SCHEMA_VERSION: &str = "1.0.0";
 const RECORDER_MANIFEST_FILE: &str = "forge-recorder-manifest.json";
 const RECORDER_FRAME_FILE: &str = "telemetry.frames.jsonl";
@@ -141,8 +142,8 @@ struct SerialPortInfo {
     kind: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RecorderRequest {
     artifact_id: String,
     output_dir: String,
@@ -215,15 +216,27 @@ struct RecorderIndexEntry {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct RecorderStartReceipt {
+struct RecorderControlStatus {
     schema_version: &'static str,
-    artifact_id: String,
-    archive_path: String,
-    manifest_path: String,
-    started_at_unix_ms: u128,
-    capture_maturity: &'static str,
+    state: &'static str,
+    artifact_id: Option<String>,
+    archive_path: Option<String>,
+    manifest_path: Option<String>,
+    reference_rig_id: Option<String>,
+    contract_hash: Option<String>,
+    lockfile_hash: Option<String>,
+    source_port_sha256: Option<String>,
+    source_baud: Option<u32>,
+    sample_rate_hz: Option<u32>,
+    started_at_unix_ms: Option<u128>,
+    capture_maturity: Option<&'static str>,
     capture_consent_confirmed: bool,
     recorded_device_attested: bool,
+    device_identity_verified: bool,
+    field_session_verified: bool,
+    user_owned: bool,
+    sharing_authorized: bool,
+    training_reuse_authorized: bool,
     no_auto_arm: bool,
 }
 
@@ -351,6 +364,7 @@ struct RecorderArchiveInspection {
 struct ActiveRecorder {
     stop_tx: mpsc::Sender<()>,
     join: JoinHandle<Result<RecorderStopReceipt, String>>,
+    status: RecorderControlStatus,
 }
 
 #[derive(Default)]
@@ -816,8 +830,13 @@ fn validate_recorder_request(
             "artifactId must be 1..128 ASCII letters, digits, '.', '_', or '-'".to_string(),
         );
     }
-    if request.output_dir.trim().is_empty() {
-        return Err("outputDir is required for a new recorder archive".to_string());
+    if request.output_dir.trim().is_empty() || request.output_dir.len() > 4_096 {
+        return Err(
+            "outputDir must be a non-empty absolute path of at most 4096 UTF-8 bytes".to_string(),
+        );
+    }
+    if !Path::new(&request.output_dir).is_absolute() {
+        return Err("outputDir must be absolute for a new recorder archive".to_string());
     }
     if !(1..=1_000).contains(&request.sample_rate_hz) {
         return Err("sampleRateHz must be an integer from 1 through 1000".to_string());
@@ -1719,12 +1738,55 @@ fn recorder_runtime() -> &'static RecorderRuntime {
     RECORDER_RUNTIME.get_or_init(RecorderRuntime::default)
 }
 
+fn inactive_recorder_status() -> RecorderControlStatus {
+    RecorderControlStatus {
+        schema_version: RECORDER_CONTROL_SCHEMA_VERSION,
+        state: "inactive",
+        artifact_id: None,
+        archive_path: None,
+        manifest_path: None,
+        reference_rig_id: None,
+        contract_hash: None,
+        lockfile_hash: None,
+        source_port_sha256: None,
+        source_baud: None,
+        sample_rate_hz: None,
+        started_at_unix_ms: None,
+        capture_maturity: None,
+        capture_consent_confirmed: false,
+        recorded_device_attested: false,
+        device_identity_verified: false,
+        field_session_verified: false,
+        user_owned: false,
+        sharing_authorized: false,
+        training_reuse_authorized: false,
+        no_auto_arm: true,
+    }
+}
+
+fn recorder_status_for(runtime: &RecorderRuntime) -> Result<RecorderControlStatus, String> {
+    let active = runtime
+        .active
+        .lock()
+        .map_err(|_| "recorder runtime lock is poisoned".to_string())?;
+    let Some(active) = active.as_ref() else {
+        return Ok(inactive_recorder_status());
+    };
+    let mut status = active.status.clone();
+    status.state = if active.join.is_finished() {
+        "finished"
+    } else {
+        "recording"
+    };
+    Ok(status)
+}
+
 fn start_recorder_with_port(
     runtime: &RecorderRuntime,
     request: RecorderRequest,
     mut port: Box<dyn serialport::SerialPort>,
     port_is_enumerated: bool,
-) -> Result<RecorderStartReceipt, String> {
+) -> Result<RecorderControlStatus, String> {
     let rig_id = validate_recorder_request(&request, port_is_enumerated)?;
     port.set_timeout(RECORDER_READ_TIMEOUT)
         .map_err(|err| format!("set recorder serial timeout: {err}"))?;
@@ -1736,18 +1798,32 @@ fn start_recorder_with_port(
         return Err("a Desktop background recorder is already active".to_string());
     }
     let (manifest, frame_file, index_file) = create_recorder_archive(&request, &rig_id)?;
-    let start_receipt = RecorderStartReceipt {
-        schema_version: RECORDER_ARCHIVE_SCHEMA_VERSION,
-        artifact_id: request.artifact_id.clone(),
-        archive_path: request.output_dir.clone(),
-        manifest_path: Path::new(&request.output_dir)
-            .join(RECORDER_MANIFEST_FILE)
-            .to_string_lossy()
-            .into_owned(),
-        started_at_unix_ms: manifest.started_at_unix_ms,
-        capture_maturity: "local-serial-integration",
+    let start_status = RecorderControlStatus {
+        schema_version: RECORDER_CONTROL_SCHEMA_VERSION,
+        state: "recording",
+        artifact_id: Some(request.artifact_id.clone()),
+        archive_path: Some(request.output_dir.clone()),
+        manifest_path: Some(
+            Path::new(&request.output_dir)
+                .join(RECORDER_MANIFEST_FILE)
+                .to_string_lossy()
+                .into_owned(),
+        ),
+        reference_rig_id: Some(manifest.reference_rig_id.clone()),
+        contract_hash: Some(manifest.contract_hash.clone()),
+        lockfile_hash: Some(manifest.lockfile_hash.clone()),
+        source_port_sha256: Some(manifest.source_port_sha256.clone()),
+        source_baud: Some(manifest.source_baud),
+        sample_rate_hz: Some(manifest.sample_rate_hz),
+        started_at_unix_ms: Some(manifest.started_at_unix_ms),
+        capture_maturity: Some("local-serial-integration"),
         capture_consent_confirmed: true,
         recorded_device_attested: false,
+        device_identity_verified: false,
+        field_session_verified: false,
+        user_owned: true,
+        sharing_authorized: false,
+        training_reuse_authorized: false,
         no_auto_arm: true,
     };
     let archive_path = PathBuf::from(&request.output_dir);
@@ -1761,8 +1837,12 @@ fn start_recorder_with_port(
             let _ = fs::remove_dir_all(&archive_path);
             format!("start Desktop background recorder: {err}")
         })?;
-    *active = Some(ActiveRecorder { stop_tx, join });
-    Ok(start_receipt)
+    *active = Some(ActiveRecorder {
+        stop_tx,
+        join,
+        status: start_status.clone(),
+    });
+    Ok(start_status)
 }
 
 fn stop_recorder(runtime: &RecorderRuntime) -> Result<RecorderStopReceipt, String> {
@@ -2012,7 +2092,12 @@ fn serial_write_receipt(
 }
 
 #[tauri::command]
-fn start_background_recording(request: RecorderRequest) -> Result<RecorderStartReceipt, String> {
+fn recorder_status() -> Result<RecorderControlStatus, String> {
+    recorder_status_for(recorder_runtime())
+}
+
+#[tauri::command]
+fn start_background_recording(request: RecorderRequest) -> Result<RecorderControlStatus, String> {
     if !hardware_enabled() {
         return Err(disabled_status().reason);
     }
@@ -2054,6 +2139,7 @@ fn main() {
             bridge_status,
             list_serial_ports,
             write_serial_config,
+            recorder_status,
             start_background_recording,
             stop_background_recording,
             inspect_recorder_archive
@@ -2500,13 +2586,40 @@ mod tests {
         let dir = test_dir("recorder");
         let request = recorder_request(&dir, "art_replay_1");
         let runtime = RecorderRuntime::default();
+        let inactive = recorder_status_for(&runtime).expect("inactive recorder status");
+        assert_eq!(inactive.schema_version, RECORDER_CONTROL_SCHEMA_VERSION);
+        assert_eq!(inactive.state, "inactive");
+        assert_eq!(inactive.artifact_id, None);
+        assert!(!inactive.capture_consent_confirmed);
+        assert!(!inactive.recorded_device_attested);
+        assert!(!inactive.user_owned);
+        assert!(inactive.no_auto_arm);
         let (mut master, slave) = serialport::TTYPort::pair().expect("recorder pseudo terminal");
         let start = start_recorder_with_port(&runtime, request, Box::new(slave), true)
             .expect("recorder starts");
-        assert_eq!(start.schema_version, RECORDER_ARCHIVE_SCHEMA_VERSION);
+        assert_eq!(start.schema_version, RECORDER_CONTROL_SCHEMA_VERSION);
+        assert_eq!(start.state, "recording");
+        assert_eq!(start.artifact_id.as_deref(), Some("art_replay_1"));
+        assert_eq!(start.reference_rig_id.as_deref(), Some(D12_RIGS[1]));
+        assert!(start.contract_hash.as_deref().is_some_and(is_sha256_hex));
+        assert!(start.lockfile_hash.as_deref().is_some_and(is_sha256_hex));
+        assert_eq!(start.source_baud, Some(BETAFLIGHT_SERIAL_BAUD));
+        assert_eq!(start.sample_rate_hz, Some(120));
+        assert_eq!(start.capture_maturity, Some("local-serial-integration"));
         assert!(start.capture_consent_confirmed);
         assert!(!start.recorded_device_attested);
+        assert!(!start.device_identity_verified);
+        assert!(!start.field_session_verified);
+        assert!(start.user_owned);
+        assert!(!start.sharing_authorized);
+        assert!(!start.training_reuse_authorized);
         assert!(start.no_auto_arm);
+        assert_eq!(
+            recorder_status_for(&runtime)
+                .expect("active recorder status")
+                .state,
+            "recording"
+        );
 
         for sequence in 0..3 {
             master
@@ -2530,6 +2643,12 @@ mod tests {
         assert!(!receipt.sharing_authorized);
         assert!(!receipt.training_reuse_authorized);
         assert!(receipt.no_auto_arm);
+        assert_eq!(
+            recorder_status_for(&runtime)
+                .expect("stopped recorder status")
+                .state,
+            "inactive"
+        );
 
         let manifest: serde_json::Value = serde_json::from_slice(
             &fs::read(dir.join("forge-recorder-manifest.json")).expect("manifest readable"),
@@ -2806,8 +2925,20 @@ mod tests {
             .expect("write drifted frame");
         master.flush().expect("flush drifted frames");
         thread::sleep(Duration::from_millis(150));
+        let failed_status = recorder_status_for(&runtime).expect("finished recorder status");
+        assert_eq!(failed_status.state, "finished");
+        assert_eq!(
+            failed_status.artifact_id.as_deref(),
+            Some("art_replay_drift")
+        );
         let error = stop_recorder(&runtime).expect_err("sequence drift must fail");
         assert!(error.contains("expected 1, observed 2"), "{error}");
+        assert_eq!(
+            recorder_status_for(&runtime)
+                .expect("cleared recorder status")
+                .state,
+            "inactive"
+        );
         assert!(!dir.join("forge-recorder-receipt.json").exists());
         assert!(!dir.join("telemetry.replay.json").exists());
         fs::remove_dir_all(dir).expect("cleanup");
@@ -2875,6 +3006,23 @@ mod tests {
         assert!(validate_recorder_request(&request, true)
             .expect_err("uppercase hash must fail")
             .contains("lowercase SHA-256"));
+        request.contract_hash = "11".repeat(32);
+        request.output_dir = "relative/recorder-archive".to_string();
+        assert!(validate_recorder_request(&request, true)
+            .expect_err("relative output path must fail")
+            .contains("must be absolute"));
+        request.output_dir = format!("/{}", "x".repeat(4_097));
+        assert!(validate_recorder_request(&request, true)
+            .expect_err("oversized output path must fail")
+            .contains("at most 4096 UTF-8 bytes"));
+
+        let mut encoded = serde_json::to_value(recorder_request(&dir, "art_replay_unknown_field"))
+            .expect("recorder request serializes");
+        encoded
+            .as_object_mut()
+            .expect("recorder request object")
+            .insert("sharingAuthorized".to_string(), serde_json::json!(true));
+        assert!(serde_json::from_value::<RecorderRequest>(encoded).is_err());
     }
 
     #[test]

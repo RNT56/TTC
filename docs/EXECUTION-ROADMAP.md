@@ -447,6 +447,16 @@ Work:
   PR/post-merge CI/security and reviewed-tree equality protect this local boundary.
   It is not gateway import/materialization, authenticity,
   adapter/device, lab/field, sharing/training, ghost, or system-ID evidence;
+- D52/P8-003 is the current unprotected local controls candidate. Native shell state
+  is exposed only as exact `forge-recorder-control/1.0.0`
+  `inactive|recording|finished`; Studio starts from the active admitted report's
+  contract/lockfile hashes and seed plus D30/D12, exact capture consent, a new
+  absolute path, one OS-enumerated 115200-baud port, and bounded rate/environment.
+  Webview reload cannot create a second recorder or erase finished identity, explicit
+  stop returns receipt v1 or collects the fail-closed recorder error, and raw frames
+  plus device/field/sharing/training authority never cross into Studio. Focused native
+  and Studio gates, the three-engine browser matrix, and all 40 local gates pass;
+  exact PR/protected/post-merge evidence is still required;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -455,7 +465,7 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete local slice: add versioned Desktop recorder status/start/stop
+Next dependency-complete step: protect and reconcile D52's versioned Desktop recorder
 controls, then design and implement a separately authorized object-backed gateway
 archive materialization path without changing D50 archive bytes or promoting
 self-consistency to authenticity, device provenance, sharing, or training authority.
