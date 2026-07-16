@@ -2,7 +2,7 @@
 
 Owner: Studio maintainers
 
-Last reviewed: **2026-07-14**
+Last reviewed: **2026-07-16**
 
 Task: `QA-003`
 
@@ -59,6 +59,10 @@ The production Studio bundle must preserve all of these behaviors:
   the viewport;
 - `prefers-reduced-motion: reduce` disables control damping and non-essential
   animation/transition behavior and prevents automatic camera following.
+- indexed ghost replay never auto-starts; its range, play/pause, and one-frame-step
+  controls have explicit accessible names, and motion begins only from the user's
+  play action. QA-002 owns the authenticated ten-minute interaction; this does not
+  add the hardware-only surface to viewer-grade acceptance.
 
 This is deterministic semantic and interaction coverage, not an accessibility
 certification. Before an external product promise, QA-010/EXT-001 must include a

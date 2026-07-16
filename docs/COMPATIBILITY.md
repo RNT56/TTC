@@ -36,7 +36,7 @@ package to adopt that same number.
 | Desktop recorder materialization | 1.0.0 | `forge-recorder-materialization` binds the sanitized upload plan, five private checksum-bound object roles, same-origin native streaming upload, gateway object-integrity transition, and explicit false archive-semantics/device/field/sharing/training authority; changing any role or authority meaning is major | major 1 |
 | recorder archive admission | 1.0.0 | `forge-recorder-admission` binds the sovereign native verification report, exact D53 materialization/admitted-model/replay reference, and explicit false device/field/sharing/training authority; verification or object-reference meaning changes are major | major 1 |
 | Desktop recorder custody | 1.0.0 | `forge-recorder-custody-trust-bundle`, `forge-recorder-custody-authorization`, and `forge-recorder-custody-proof` bind the deployment-pinned public trust root, exact short-lived signed capture authority, native two-port D55 continuity, canonical receipt hash, create-new proof, and permanent device/recorded-device/field/sharing/training nonclaims; changing any preimage, continuity, or authority meaning is major | major 1 |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task/ghost-overlay versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
@@ -288,6 +288,28 @@ or a training format is an independent compatibility surface and major migration
 Native Desktop and Studio source constants are machine-checked against all three
 format tokens. Older applications may ignore a separate custody proof but must not copy it into an
 archive-v1 directory or reinterpret the five existing files.
+
+D57 adds internal `forge-ghost-overlay/1.0.0` under the worker-artifact matrix
+without changing a queue kind, Gateway API version, maintenance table, replay tape,
+archive v1, D53, D54, or custody formats. V1 binds `forge-y-up-rh-m`, exact compact
+point order `[timeS, actualXM, actualYM, actualZM, predictedXM, predictedYM,
+predictedZM, divergenceM]`, finite strictly increasing seconds, meter-valued
+Euclidean separation, at most 600 seconds/100,000 source samples/6,001 render
+points, deterministic endpoint-preserving decimation, a monotonic at-most-one-second
+sparse seek index, and false device-identity/recorded-device/field verification.
+The worker, gateway fixture, and Studio independently machine-check version, frame,
+and point bound. Current source maturity is only `unverified` for caller input or
+`controlled-synthetic` for the keyless generated fixture.
+
+Changing point order/type/unit/frame, time or divergence meaning, decimation/index
+semantics, a bound, maturity authority, or a false provenance bit requires a new
+artifact major. Optional presentation-only fields are minor only when old consumers
+can ignore them safely. Raw recorder frames, an owned D54 replay/twin selection,
+field status, or a device claim may not be added under v1; that real execution path
+requires a separately reviewed streaming job/object authority and its own migration
+or surface decision. Older workers/Studio builds may ignore the overlay while
+retaining its parent maintenance row; they must not infer provenance from its
+existence or copy raw object data into JSONB.
 
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian

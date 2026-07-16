@@ -518,6 +518,18 @@ Work:
   Postgres plus 11-flow production-browser matrix pass. Exact head `69c0dd7`,
   reviewed tree `de12c5a`, PR CI/security `29530839367`/`29530839338`, protected-tree
   equality, and post-merge CI/security `29531470442`/`29531470118` pass;
+- D57/P8-004 is an implementation candidate at local controlled-synthetic view
+  maturity. `forge-ghost-overlay/1.0.0` caps one compact Y-up/SI trace at ten minutes
+  and 6,001 points, exact-matches Euclidean divergence and a sparse seek index, and
+  permanently keeps device/recorded-device/field authority false. Worker tests cover
+  a 36,001-sample 60 Hz source and refusal; Gateway produces the keyless equivalent;
+  Studio strictly reparses, precomputes observed/predicted X/Z paths, and provides
+  explicit 60 Hz play/pause/frame steps. Focused worker/Gateway/Studio/build and
+  compatibility gates pass, as do all 40 local gates under Python 3.12.13 with 227
+  worker tests, a fresh clean/25-predecessor Postgres matrix, all 12 production-
+  browser flows, and Chromium/Firefox/WebKit. Raw D53/D54 frames remain object-
+  backed; exact PR/protected-main, real-mid-hardware, real D54-to-twin, P8-014 and
+  EXT-008 evidence remain required;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -526,7 +538,7 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: execute D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
+Next dependency-complete external step: execute D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
 under controlled-lab authority with a real deployment trust bundle and retained
 semantic acceptance review; retain bounded response/signature/hash plus failure,
 reconnect, power-loss, revocation, and suspend evidence, and exercise the recorder
@@ -535,6 +547,13 @@ unchanged D48 artifact only after native real-target proof. No stable self-repor
 MSP transcript, fixture signature, adapter, import path, or acceptance-authority
 signature may promote a log to recorded-device or field maturity without a later
 reviewed format and acceptance proof.
+
+The current dependency-complete local step is to protect D57 with its now-green
+production-browser/full-repository/database evidence and reconcile exact protected
+hashes. After that,
+do not fabricate a D54 ghost source: either run the named-hardware gate above or move
+to the separately bounded P8-007 deployment-ladder UX slice while the adapter/field
+prerequisite remains external.
 
 Acceptance:
 

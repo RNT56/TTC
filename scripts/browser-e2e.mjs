@@ -434,11 +434,31 @@ try {
   assert.match((await page.locator('[data-testid="maintenance-dashboard"]').textContent()) ?? "", /wear/i);
   evidence.flows.push("render the job's Postgres-materialized maintenance record");
 
+  await page.locator('[data-testid="job-run-maintenance.crash-forensics"]').click();
+  const crashJob = page.locator('[data-testid="job-row-maintenance.crash-forensics"]').first();
+  await waitForText(crashJob, /maintenance\.crash-forensics · succeeded/i);
+  const ghostReplay = page.locator('[data-testid="ghost-replay"]');
+  await ghostReplay.waitFor({ state: "visible", timeout: browserTimeoutMs });
+  await page.locator('[data-testid="ghost-overlay-plot"]').waitFor({ state: "visible", timeout: browserTimeoutMs });
+  await waitForText(ghostReplay, /10\.00 min · 6001 points/i);
+  assert.match((await ghostReplay.textContent()) ?? "", /controlled-synthetic · 60 Hz/i);
+  assert.match((await ghostReplay.textContent()) ?? "", /not device · not field/i);
+  const ghostRange = page.locator('[data-testid="ghost-scrubber-range"]');
+  await ghostRange.fill("540.05");
+  await waitForText(ghostReplay, /540\.05 s · post-impact/i);
+  await waitForText(ghostReplay, /0\.500 m · diverged/i);
+  await page.locator('[data-testid="ghost-step-forward"]').click();
+  await waitForText(ghostReplay, /540\.07 s · post-impact/i);
+  await page.locator('[data-testid="ghost-play-toggle"]').click();
+  await waitForText(page.locator('[data-testid="ghost-play-toggle"]'), /pause/i);
+  await page.locator('[data-testid="ghost-play-toggle"]').click();
+  evidence.flows.push("scrub and play an indexed ten-minute controlled-synthetic ghost overlay with explicit device and field nonclaims");
+
   assert.deepEqual(pageErrors, [], `authenticated Studio page errors: ${pageErrors.join(" | ")}`);
-  assert.equal(evidence.flows.length, 11);
+  assert.equal(evidence.flows.length, 12);
   evidence.status = "passed";
   writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
-  console.log(`browser-e2e: 11/11 QA-002/P7-008 flows passed -> ${evidencePath}`);
+  console.log(`browser-e2e: 12/12 QA-002/P7-008/P8-004 flows passed -> ${evidencePath}`);
 } catch (error) {
   evidence.status = "failed";
   evidence.error = error instanceof Error ? error.stack ?? error.message : String(error);

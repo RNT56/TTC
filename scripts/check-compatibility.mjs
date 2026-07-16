@@ -33,6 +33,12 @@ function pythonConstant(path, name) {
   return match[1];
 }
 
+function numericConstant(path, name) {
+  const match = read(path).match(new RegExp(`^(?:export\\s+const\\s+)?${name}\\s*=\\s*([0-9_]+)`, "m"));
+  requireValue(match, `${path}: missing numeric ${name}`);
+  return Number(match[1].replaceAll("_", ""));
+}
+
 function typescriptStringArray(path, name) {
   const match = read(path).match(new RegExp(`export const ${name}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as const`));
   requireValue(match, `${path}: missing ${name}`);
@@ -246,6 +252,24 @@ requireValue(
     matrix.surfaces.workerArtifacts.bridgeConfigFirmwareVersion,
   "Desktop bridge-config firmware version does not match compatibility matrix",
 );
+for (const [path, helper, label] of [
+  ["workers/forge_workers/maintenance.py", pythonConstant, "worker"],
+  ["packages/gateway/src/platform.ts", typescriptConstant, "gateway"],
+  ["packages/studio/src/ghostReplay.ts", typescriptConstant, "Studio"],
+]) {
+  requireValue(
+    helper(path, "GHOST_OVERLAY_VERSION") === matrix.surfaces.workerArtifacts.internalSchemas.ghostOverlay,
+    `${label} ghost-overlay version does not match compatibility matrix`,
+  );
+  requireValue(
+    helper(path, "GHOST_OVERLAY_FRAME") === matrix.surfaces.workerArtifacts.ghostOverlayFrame,
+    `${label} ghost-overlay frame does not match compatibility matrix`,
+  );
+  requireValue(
+    numericConstant(path, "GHOST_MAX_RENDER_POINTS") === matrix.surfaces.workerArtifacts.ghostOverlayMaxRenderPoints,
+    `${label} ghost-overlay render-point bound does not match compatibility matrix`,
+  );
+}
 
 const workerContract = read("workers/forge_workers/contract.py");
 const trainingBundleContract = read("workers/forge_workers/training/bundle.py");
@@ -265,7 +289,7 @@ requireValue(
   "worker license export manifest version does not match compatibility matrix",
 );
 for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.internalSchemas).filter(
-  ([name]) => !["trainingTask", "groundTrainingTask", "sb3Runtime", "bridgeConfig"].includes(name),
+  ([name]) => !["trainingTask", "groundTrainingTask", "sb3Runtime", "bridgeConfig", "ghostOverlay"].includes(name),
 )) {
   requireValue(
     trainingBundleContract.includes(`${version}`),

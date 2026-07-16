@@ -359,6 +359,22 @@ decimated overlay geometry). Logs feed two pipelines: the system-ID fitter and t
 curriculum-from-reality path (BC/offline RL). **Telemetry logs are the user's**;
 sharing is per-log explicit.
 
+D57 defines the first executable visualization boundary without weakening the
+recorder/object boundary. Internal `forge-ghost-overlay/1.0.0` carries only a
+bounded decimated trace: exact Y-up/right-handed/SI point layout, at most 600 seconds
+and 6,001 render points, Euclidean meter divergence, and a sparse at-most-one-second
+seek index. Raw recorder frames remain in D53/D54 objects and never enter a job
+request or maintenance-record JSONB. The worker's caller-supplied trace is
+`unverified`; only the keyless gateway-generated ten-minute fixture is
+`controlled-synthetic`. Both permanently keep device identity, recorded-device, and
+field verification false. Studio strictly reparses the artifact, precomputes X/Z
+polylines, interpolates indexed samples for explicit 60 Hz play/frame-step, and
+surfaces the maturity/nonclaims beside the divergence. The focused budget proves
+seek computation, while the production-browser flow proves interaction; neither is
+real-mid-hardware or real-field performance evidence. A real path still requires a
+separately reviewed streaming job that selects one owned D54 replay and one exact
+admitted twin server-side, followed by P8-014/EXT-008 evidence.
+
 D45 narrows the training handoff. Offline training requires a separate active
 `training.reuse` grant for the exact owned log; sharing consent never implies reuse.
 The gateway selects the stored tape and admitted model revision, and withdrawal
