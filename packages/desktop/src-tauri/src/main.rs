@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 use std::{
     fs,
     path::{Path, PathBuf},
+    thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -13,13 +14,19 @@ const HARDWARE_ENV: &str = "FORGE_DESKTOP_ENABLE_HARDWARE";
 const D30_LAB_SIGNOFF_ENV: &str = "FORGE_DESKTOP_D30_LAB_SIGNOFF";
 const LAB_MODE_ENV: &str = "FORGE_HARDWARE_LAB_MODE";
 const BRIDGE_CONFIG_SCHEMA_VERSION: &str = "forge-bridge-config/1.0.0";
-const BRIDGE_SERIAL_RECEIPT_SCHEMA_VERSION: &str = "forge-bridge-serial-receipt/1.0.0";
+const BRIDGE_SERIAL_RECEIPT_SCHEMA_VERSION: &str = "forge-bridge-serial-receipt/2.0.0";
 const BETAFLIGHT_CLI_VERSION: &str = "2025.12";
-const SERIAL_PHYSICAL_CONFIRMATION: &str = "I understand this will write hardware configuration";
+const SERIAL_PHYSICAL_CONFIRMATION: &str =
+    "I confirm propellers are removed and understand this will write hardware configuration";
 const BETAFLIGHT_SERIAL_BAUD: u32 = 115_200;
 const BETAFLIGHT_FAILSAFE_DELAY_MIN_DS: u16 = 2;
 const BETAFLIGHT_FAILSAFE_DELAY_MAX_DS: u16 = 200;
 const MAX_CONFIG_BYTES: usize = 64 * 1024;
+const MAX_SERIAL_RESPONSE_BYTES: usize = 16 * 1024;
+const SERIAL_READ_TIMEOUT: Duration = Duration::from_millis(100);
+const SERIAL_RESPONSE_DEADLINE: Duration = Duration::from_secs(3);
+const SERIAL_REBOOT_SETTLE: Duration = Duration::from_secs(2);
+const SERIAL_RECONNECT_DEADLINE: Duration = Duration::from_secs(15);
 const D12_RIGS: &[&str] = &[
     "ref_quad_kakute-h7-source-one-5in",
     "ref_rover_waveshare-ugv-rover-pt-pi5-ros2",
@@ -70,10 +77,43 @@ struct SerialWriteReceipt {
     diff_hash: String,
     bytes_transmitted: usize,
     transmitted_at_unix_ms: u128,
+    target_firmware_version: String,
+    pre_write_reported_firmware_identity_sha256: String,
+    post_write_reported_firmware_identity_sha256: String,
+    pre_write_version_response_sha256: String,
+    application_response_sha256: String,
+    post_write_version_response_sha256: String,
+    readback_failsafe_delay_deciseconds: u16,
+    readback_line_sha256: String,
+    readback_response_sha256: String,
     no_auto_arm: bool,
     target_firmware_version_verified: bool,
     application_verified: bool,
     operator_readback_required: bool,
+    cli_left_arming_disabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct TargetFirmwareIdentity {
+    firmware_version: String,
+    identity_sha256: String,
+    response_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct VerifiedSerialEvidence {
+    readback_failsafe_delay_deciseconds: u16,
+    pre_write_identity: TargetFirmwareIdentity,
+    application_response_sha256: String,
+    post_write_identity: TargetFirmwareIdentity,
+    readback_line_sha256: String,
+    readback_response_sha256: String,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SerialResponseTerminator {
+    Prompt,
+    Saving,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -159,6 +199,30 @@ fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+fn artifact_failsafe_delay(artifact: &BridgeConfigArtifact) -> Result<u16, String> {
+    let failsafe_delay = artifact
+        .lines
+        .get(1)
+        .and_then(|line| line.strip_prefix("set failsafe_delay = "))
+        .ok_or_else(|| {
+            "bridge config v1 requires exactly the reviewed failsafe_delay setting".to_string()
+        })?
+        .parse::<u16>()
+        .map_err(|_| {
+            "bridge config failsafe_delay must be an integer from 2 through 200 deciseconds"
+                .to_string()
+        })?;
+    if !(BETAFLIGHT_FAILSAFE_DELAY_MIN_DS..=BETAFLIGHT_FAILSAFE_DELAY_MAX_DS)
+        .contains(&failsafe_delay)
+    {
+        return Err(
+            "bridge config failsafe_delay must be an integer from 2 through 200 deciseconds"
+                .to_string(),
+        );
+    }
+    Ok(failsafe_delay)
+}
+
 fn validate_config_artifact(artifact: &BridgeConfigArtifact) -> Result<Vec<u8>, String> {
     if artifact.schema_version != BRIDGE_CONFIG_SCHEMA_VERSION {
         return Err(format!(
@@ -202,24 +266,7 @@ fn validate_config_artifact(artifact: &BridgeConfigArtifact) -> Result<Vec<u8>, 
         return Err("bridge config must end with exactly one save command".to_string());
     }
 
-    let failsafe_delay = artifact.lines[1]
-        .strip_prefix("set failsafe_delay = ")
-        .ok_or_else(|| {
-            "bridge config v1 requires exactly the reviewed failsafe_delay setting".to_string()
-        })?
-        .parse::<u16>()
-        .map_err(|_| {
-            "bridge config failsafe_delay must be an integer from 2 through 200 deciseconds"
-                .to_string()
-        })?;
-    if !(BETAFLIGHT_FAILSAFE_DELAY_MIN_DS..=BETAFLIGHT_FAILSAFE_DELAY_MAX_DS)
-        .contains(&failsafe_delay)
-    {
-        return Err(
-            "bridge config failsafe_delay must be an integer from 2 through 200 deciseconds"
-                .to_string(),
-        );
-    }
+    artifact_failsafe_delay(artifact)?;
     let canonical_lines = serde_json::to_vec(&artifact.lines)
         .map_err(|err| format!("serialize bridge config lines: {err}"))?;
     let expected_hash = sha256_hex(&canonical_lines);
@@ -234,6 +281,264 @@ fn validate_config_artifact(artifact: &BridgeConfigArtifact) -> Result<Vec<u8>, 
         ));
     }
     Ok(payload)
+}
+
+fn response_has_terminator(bytes: &[u8], terminator: SerialResponseTerminator) -> bool {
+    match terminator {
+        SerialResponseTerminator::Prompt => bytes.ends_with(b"\r\n# ") || bytes.ends_with(b"\n# "),
+        SerialResponseTerminator::Saving => [b"\r\n# saving".as_slice(), b"\n# saving".as_slice()]
+            .iter()
+            .any(|marker| bytes.windows(marker.len()).any(|window| window == *marker)),
+    }
+}
+
+fn read_serial_response(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    terminator: SerialResponseTerminator,
+) -> Result<Vec<u8>, String> {
+    read_serial_response_with_limits(
+        port,
+        port_label,
+        terminator,
+        SERIAL_RESPONSE_DEADLINE,
+        MAX_SERIAL_RESPONSE_BYTES,
+    )
+}
+
+fn read_serial_response_with_limits(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    terminator: SerialResponseTerminator,
+    response_deadline: Duration,
+    max_response_bytes: usize,
+) -> Result<Vec<u8>, String> {
+    let deadline = std::time::Instant::now() + response_deadline;
+    let mut response = Vec::new();
+    while std::time::Instant::now() < deadline {
+        if response_has_terminator(&response, terminator) {
+            return Ok(response);
+        }
+        let mut chunk = [0_u8; 1024];
+        match port.read(&mut chunk) {
+            Ok(0) => thread::sleep(Duration::from_millis(5)),
+            Ok(count) => {
+                if response.len() + count > max_response_bytes {
+                    return Err(format!(
+                        "serial response from '{port_label}' exceeds {max_response_bytes} bytes"
+                    ));
+                }
+                response.extend_from_slice(&chunk[..count]);
+            }
+            Err(err)
+                if matches!(
+                    err.kind(),
+                    std::io::ErrorKind::TimedOut
+                        | std::io::ErrorKind::WouldBlock
+                        | std::io::ErrorKind::Interrupted
+                ) => {}
+            Err(err) => {
+                return Err(format!("read serial response from '{port_label}': {err}"));
+            }
+        }
+    }
+    Err(format!(
+        "timed out waiting for a bounded Betaflight CLI response from '{port_label}'"
+    ))
+}
+
+fn write_serial_command(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    command: &str,
+) -> Result<(), String> {
+    let mut bytes = command.as_bytes().to_vec();
+    bytes.extend_from_slice(b"\r\n");
+    port.write_all(&bytes)
+        .map_err(|err| format!("write Betaflight CLI command to '{port_label}': {err}"))?;
+    port.flush()
+        .map_err(|err| format!("flush Betaflight CLI command to '{port_label}': {err}"))
+}
+
+fn normalized_response_lines(response: &[u8]) -> Result<Vec<String>, String> {
+    let text = std::str::from_utf8(response)
+        .map_err(|_| "Betaflight CLI response must be valid UTF-8".to_string())?;
+    if text.chars().any(|character| {
+        character == '\0' || (character.is_control() && !matches!(character, '\r' | '\n' | '\t'))
+    }) {
+        return Err("Betaflight CLI response contains unsupported control bytes".to_string());
+    }
+    Ok(text
+        .replace("\r\n", "\n")
+        .replace('\r', "\n")
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_string)
+        .collect())
+}
+
+fn supported_betaflight_version(token: &str) -> Option<String> {
+    let parts = token.split('.').collect::<Vec<_>>();
+    if parts.len() != 3
+        || parts[0] != "2025"
+        || parts[1] != "12"
+        || parts[2].is_empty()
+        || !parts[2].bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    parts[2].parse::<u16>().ok()?;
+    Some(token.to_string())
+}
+
+fn parse_target_firmware_identity(response: &[u8]) -> Result<TargetFirmwareIdentity, String> {
+    let lines = normalized_response_lines(response)?;
+    let identity_lines = lines
+        .iter()
+        .filter(|line| line.starts_with("# Betaflight / "))
+        .collect::<Vec<_>>();
+    if identity_lines.len() != 1 {
+        return Err(
+            "target version handshake requires exactly one Betaflight identity line".to_string(),
+        );
+    }
+    let identity_line = identity_lines[0];
+    if !identity_line.contains(" MSP API: ") {
+        return Err("Betaflight identity line is missing its MSP API authority".to_string());
+    }
+    let after_firmware = identity_line
+        .strip_prefix("# Betaflight / ")
+        .expect("identity prefix was checked");
+    let board_end = after_firmware.find(") ").ok_or_else(|| {
+        "Betaflight identity line is missing its target/board boundary".to_string()
+    })?;
+    let version_token = after_firmware[(board_end + 2)..]
+        .split_whitespace()
+        .next()
+        .ok_or_else(|| "Betaflight identity line is missing its firmware version".to_string())?;
+    let firmware_version = supported_betaflight_version(version_token).ok_or_else(|| {
+        "target version handshake requires one stable Betaflight 2025.12 patch version".to_string()
+    })?;
+    Ok(TargetFirmwareIdentity {
+        firmware_version,
+        identity_sha256: sha256_hex(identity_line.as_bytes()),
+        response_sha256: sha256_hex(response),
+    })
+}
+
+fn parse_config_application_confirmation(
+    response: &[u8],
+    expected_failsafe_delay: u16,
+) -> Result<(), String> {
+    let lines = normalized_response_lines(response)?;
+    if lines
+        .iter()
+        .any(|line| line.contains("ERROR") || line.contains("INVALID"))
+    {
+        return Err("Betaflight rejected the reviewed configuration command".to_string());
+    }
+    let expected_set = format!("failsafe_delay set to {expected_failsafe_delay}");
+    if lines.iter().filter(|line| *line == &expected_set).count() != 1 {
+        return Err(
+            "Betaflight did not confirm exactly one expected failsafe_delay update".to_string(),
+        );
+    }
+    if lines
+        .iter()
+        .filter(|line| line.as_str() == "# saving")
+        .count()
+        != 1
+    {
+        return Err("Betaflight did not confirm exactly one persistent save".to_string());
+    }
+    Ok(())
+}
+
+fn parse_failsafe_readback(
+    response: &[u8],
+    expected_failsafe_delay: u16,
+) -> Result<String, String> {
+    let lines = normalized_response_lines(response)?;
+    if lines
+        .iter()
+        .any(|line| line.contains("ERROR") || line.contains("INVALID"))
+    {
+        return Err("Betaflight rejected the failsafe_delay readback query".to_string());
+    }
+    let prefix = "failsafe_delay = ";
+    let readbacks = lines
+        .iter()
+        .filter_map(|line| line.strip_prefix(prefix).map(|value| (line, value)))
+        .collect::<Vec<_>>();
+    if readbacks.len() != 1 {
+        return Err(
+            "post-write verification requires exactly one failsafe_delay readback".to_string(),
+        );
+    }
+    let observed = readbacks[0]
+        .1
+        .parse::<u16>()
+        .map_err(|_| "failsafe_delay readback is not an integer".to_string())?;
+    if observed != expected_failsafe_delay {
+        return Err(format!(
+            "failsafe_delay readback mismatch: expected {expected_failsafe_delay}, observed {observed}"
+        ));
+    }
+    Ok(sha256_hex(readbacks[0].0.as_bytes()))
+}
+
+fn enter_betaflight_cli(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+) -> Result<(), String> {
+    write_serial_command(port, port_label, "#")?;
+    read_serial_response(port, port_label, SerialResponseTerminator::Prompt)?;
+    Ok(())
+}
+
+fn verify_target_firmware_session(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+) -> Result<TargetFirmwareIdentity, String> {
+    enter_betaflight_cli(port, port_label)?;
+    write_serial_command(port, port_label, "version")?;
+    let response = read_serial_response(port, port_label, SerialResponseTerminator::Prompt)?;
+    parse_target_firmware_identity(&response)
+}
+
+fn apply_config_session(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    payload: &[u8],
+    expected_failsafe_delay: u16,
+) -> Result<String, String> {
+    write_serial_payload(port, port_label, payload)?;
+    let response = read_serial_response(port, port_label, SerialResponseTerminator::Saving)?;
+    parse_config_application_confirmation(&response, expected_failsafe_delay)?;
+    Ok(sha256_hex(&response))
+}
+
+fn verify_config_readback_session(
+    port: &mut dyn serialport::SerialPort,
+    port_label: &str,
+    expected_identity: &TargetFirmwareIdentity,
+    expected_failsafe_delay: u16,
+) -> Result<(TargetFirmwareIdentity, String, String), String> {
+    let identity = verify_target_firmware_session(port, port_label)?;
+    if identity.firmware_version != expected_identity.firmware_version
+        || identity.identity_sha256 != expected_identity.identity_sha256
+    {
+        return Err(
+            "post-write reported firmware identity does not match the pre-write Betaflight target"
+                .to_string(),
+        );
+    }
+    write_serial_command(port, port_label, "get failsafe_delay")?;
+    let response = read_serial_response(port, port_label, SerialResponseTerminator::Prompt)?;
+    let readback_line_sha256 = parse_failsafe_readback(&response, expected_failsafe_delay)?;
+    let readback_response_sha256 = sha256_hex(&response);
+    Ok((identity, readback_line_sha256, readback_response_sha256))
 }
 
 fn write_recorder_manifest(
@@ -293,7 +598,7 @@ fn transmit_serial_config(
     request: SerialWriteRequest,
     gate_enabled: bool,
 ) -> Result<SerialWriteReceipt, String> {
-    let (rig_id, payload) = prepare_serial_write(&request, gate_enabled)?;
+    let (rig_id, payload, expected_failsafe_delay) = prepare_serial_write(&request, gate_enabled)?;
     let available_port_names = serialport::available_ports()
         .map_err(|err| format!("list serial ports before write: {err}"))?
         .into_iter()
@@ -301,17 +606,60 @@ fn transmit_serial_config(
         .collect::<Vec<_>>();
     require_enumerated_serial_port(&request.port, &available_port_names)?;
     let mut port = serialport::new(&request.port, request.baud)
-        .timeout(Duration::from_secs(2))
+        .timeout(SERIAL_READ_TIMEOUT)
         .open()
         .map_err(|err| format!("open serial port '{}': {err}", request.port))?;
-    write_serial_payload(port.as_mut(), &request.port, &payload)?;
-    serial_write_receipt(request, rig_id, payload.len())
+    let pre_write_identity = verify_target_firmware_session(port.as_mut(), &request.port)
+        .map_err(|err| format!("target version handshake failed before any config write: {err}"))?;
+    let application_response_sha256 = apply_config_session(
+        port.as_mut(),
+        &request.port,
+        &payload,
+        expected_failsafe_delay,
+    )
+    .map_err(|err| {
+        format!(
+            "configuration bytes may have reached the target but persistent application was not proven; keep the rig disarmed and inspect it manually: {err}"
+        )
+    })?;
+    drop(port);
+
+    let mut port = reopen_serial_port_after_reboot(&request.port, request.baud).map_err(|err| {
+        format!(
+            "Betaflight confirmed the save but post-write reconnect failed; keep the rig disarmed and inspect it manually: {err}"
+        )
+    })?;
+    let (post_write_identity, readback_line_sha256, readback_response_sha256) =
+        verify_config_readback_session(
+            port.as_mut(),
+            &request.port,
+            &pre_write_identity,
+            expected_failsafe_delay,
+        )
+        .map_err(|err| {
+            format!(
+                "Betaflight confirmed the save but exact post-write readback failed; keep the rig disarmed and inspect it manually: {err}"
+            )
+        })?;
+    serial_write_receipt(
+        request,
+        rig_id,
+        payload.len(),
+        VerifiedSerialEvidence {
+            readback_failsafe_delay_deciseconds: expected_failsafe_delay,
+            pre_write_identity,
+            application_response_sha256,
+            post_write_identity,
+            readback_line_sha256,
+            readback_response_sha256,
+        },
+    )
 }
 
 fn prepare_serial_write(
     request: &SerialWriteRequest,
     gate_enabled: bool,
-) -> Result<(String, Vec<u8>), String> {
+) -> Result<(String, Vec<u8>, u16), String> {
     if !gate_enabled {
         return Err(disabled_status().reason);
     }
@@ -333,7 +681,8 @@ fn prepare_serial_write(
         );
     }
     let payload = validate_config_artifact(&request.config_artifact)?;
-    Ok((rig_id.to_string(), payload))
+    let failsafe_delay = artifact_failsafe_delay(&request.config_artifact)?;
+    Ok((rig_id.to_string(), payload, failsafe_delay))
 }
 
 fn require_enumerated_serial_port(
@@ -358,10 +707,63 @@ fn write_serial_payload(
         .map_err(|err| format!("flush serial config '{port_label}': {err}"))
 }
 
+fn reopen_serial_port_after_reboot(
+    requested_port: &str,
+    baud: u32,
+) -> Result<Box<dyn serialport::SerialPort>, String> {
+    thread::sleep(SERIAL_REBOOT_SETTLE);
+    let deadline = std::time::Instant::now() + SERIAL_RECONNECT_DEADLINE;
+    let mut last_open_error = None;
+    let mut last_enumeration_error = None;
+    let mut enumerated_successfully = false;
+    while std::time::Instant::now() < deadline {
+        let available = match serialport::available_ports() {
+            Ok(available) => {
+                enumerated_successfully = true;
+                available
+            }
+            Err(err) => {
+                last_enumeration_error = Some(err.to_string());
+                thread::sleep(Duration::from_millis(100));
+                continue;
+            }
+        };
+        if available
+            .iter()
+            .any(|candidate| candidate.port_name == requested_port)
+        {
+            match serialport::new(requested_port, baud)
+                .timeout(SERIAL_READ_TIMEOUT)
+                .open()
+            {
+                Ok(port) => return Ok(port),
+                Err(err) => last_open_error = Some(err.to_string()),
+            }
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+    match last_open_error {
+        Some(err) => Err(format!(
+            "serial port '{requested_port}' reappeared but could not be reopened within {} seconds: {err}",
+            SERIAL_RECONNECT_DEADLINE.as_secs()
+        )),
+        None if !enumerated_successfully => Err(format!(
+            "serial ports could not be enumerated within {} seconds after Betaflight reboot: {}",
+            SERIAL_RECONNECT_DEADLINE.as_secs(),
+            last_enumeration_error.as_deref().unwrap_or("unknown error")
+        )),
+        None => Err(format!(
+            "serial port '{requested_port}' did not reappear within {} seconds",
+            SERIAL_RECONNECT_DEADLINE.as_secs()
+        )),
+    }
+}
+
 fn serial_write_receipt(
     request: SerialWriteRequest,
     rig_id: String,
     bytes_transmitted: usize,
+    evidence: VerifiedSerialEvidence,
 ) -> Result<SerialWriteReceipt, String> {
     Ok(SerialWriteReceipt {
         schema_version: BRIDGE_SERIAL_RECEIPT_SCHEMA_VERSION,
@@ -376,10 +778,20 @@ fn serial_write_receipt(
             .duration_since(UNIX_EPOCH)
             .map_err(|err| format!("system clock before UNIX_EPOCH: {err}"))?
             .as_millis(),
+        target_firmware_version: evidence.pre_write_identity.firmware_version,
+        pre_write_reported_firmware_identity_sha256: evidence.pre_write_identity.identity_sha256,
+        post_write_reported_firmware_identity_sha256: evidence.post_write_identity.identity_sha256,
+        pre_write_version_response_sha256: evidence.pre_write_identity.response_sha256,
+        application_response_sha256: evidence.application_response_sha256,
+        post_write_version_response_sha256: evidence.post_write_identity.response_sha256,
+        readback_failsafe_delay_deciseconds: evidence.readback_failsafe_delay_deciseconds,
+        readback_line_sha256: evidence.readback_line_sha256,
+        readback_response_sha256: evidence.readback_response_sha256,
         no_auto_arm: true,
-        target_firmware_version_verified: false,
-        application_verified: false,
-        operator_readback_required: true,
+        target_firmware_version_verified: true,
+        application_verified: true,
+        operator_readback_required: false,
+        cli_left_arming_disabled: true,
     })
 }
 
@@ -433,7 +845,8 @@ fn main() {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Read;
+    use serialport::SerialPort;
+    use std::io::{Read, Write};
 
     fn test_dir(name: &str) -> PathBuf {
         let stamp = SystemTime::now()
@@ -466,6 +879,36 @@ mod tests {
             reference_rig_id: Some(D12_RIGS[0].to_string()),
             physical_confirmation: SERIAL_PHYSICAL_CONFIRMATION.to_string(),
         }
+    }
+
+    fn version_response(version: &str) -> Vec<u8> {
+        format!(
+            "version\r\n# Betaflight / KAKUTEH7 (KH7) {version} Jun 28 2026 / 12:00:00 (abcdef0) MSP API: 1.47\r\n# "
+        )
+        .into_bytes()
+    }
+
+    #[cfg(unix)]
+    fn spawn_fake_betaflight(
+        mut master: serialport::TTYPort,
+        steps: Vec<(Vec<u8>, Vec<u8>)>,
+    ) -> std::thread::JoinHandle<()> {
+        std::thread::spawn(move || {
+            master
+                .set_timeout(Duration::from_secs(2))
+                .expect("fake target timeout");
+            for (expected, response) in steps {
+                let mut actual = vec![0_u8; expected.len()];
+                master
+                    .read_exact(&mut actual)
+                    .expect("read exact CLI request from Desktop");
+                assert_eq!(actual, expected);
+                master
+                    .write_all(&response)
+                    .expect("write fake Betaflight response");
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        })
     }
 
     #[test]
@@ -524,6 +967,13 @@ mod tests {
         assert!(validate_config_artifact(&artifact)
             .expect_err("hash substitution must fail")
             .contains("diffHash"));
+
+        let mut request = serial_request("pseudo-terminal".to_string(), artifact);
+        request.physical_confirmation =
+            "I understand this will write hardware configuration".to_string();
+        assert!(prepare_serial_write(&request, true)
+            .expect_err("pre-D49 confirmation must fail")
+            .contains("confirmation phrase mismatch"));
     }
 
     #[test]
@@ -539,51 +989,222 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn native_serial_write_uses_a_real_pseudo_terminal_and_returns_honest_receipt() {
-        use std::os::fd::AsRawFd;
-        use std::time::Instant;
-
-        let (mut master, mut slave) = serialport::TTYPort::pair().expect("pseudo terminal pair");
-        let flags = unsafe { libc::fcntl(master.as_raw_fd(), libc::F_GETFL) };
-        assert!(flags >= 0, "read pseudo-terminal flags");
-        assert_eq!(
-            unsafe { libc::fcntl(master.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) },
-            0,
-            "make pseudo-terminal nonblocking"
-        );
+    fn native_serial_protocol_uses_two_real_pseudo_terminal_sessions_and_exact_readback() {
         let artifact = bridge_config(vec![
             "# FORGE generated betaflight 2025.12 config diff",
             "set failsafe_delay = 10",
             "save",
         ]);
         let request = serial_request("pseudo-terminal".to_string(), artifact);
-        let (rig_id, expected) = prepare_serial_write(&request, true).expect("prepared write");
-        let expected_len = expected.len();
-        let reader = std::thread::spawn(move || {
-            let deadline = Instant::now() + Duration::from_secs(2);
-            let mut actual = Vec::with_capacity(expected_len);
-            while actual.len() < expected_len && Instant::now() < deadline {
-                let mut chunk = [0_u8; 1024];
-                match master.read(&mut chunk) {
-                    Ok(0) => std::thread::sleep(Duration::from_millis(5)),
-                    Ok(count) => actual.extend_from_slice(&chunk[..count]),
-                    Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
-                        std::thread::sleep(Duration::from_millis(5));
-                    }
-                    Err(err) => panic!("read transmitted bytes: {err}"),
-                }
-            }
-            actual
-        });
-        write_serial_payload(&mut slave, "pseudo-terminal", &expected).expect("serial write");
-        let receipt = serial_write_receipt(request, rig_id, expected.len()).expect("receipt");
-        let actual = reader.join().expect("pseudo-terminal reader");
-        assert_eq!(actual, expected);
-        assert_eq!(receipt.bytes_transmitted, expected.len());
+        let (rig_id, payload, expected_failsafe_delay) =
+            prepare_serial_write(&request, true).expect("prepared write");
+        let expected_version_response = version_response("2025.12.5");
+        let expected_application_response = b"failsafe_delay set to 10\r\n# saving".to_vec();
+        let expected_readback_response =
+            b"get failsafe_delay\r\nfailsafe_delay = 10\r\nAllowed range: 1 - 200\r\n# ".to_vec();
+
+        let (pre_master, mut pre_slave) =
+            serialport::TTYPort::pair().expect("pre-write pseudo terminal pair");
+        pre_slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("pre-write timeout");
+        let pre_target = spawn_fake_betaflight(
+            pre_master,
+            vec![
+                (
+                    b"#\r\n".to_vec(),
+                    b"\r\nEntering CLI Mode, type 'exit' to reboot, or 'help'\r\n# ".to_vec(),
+                ),
+                (b"version\r\n".to_vec(), expected_version_response.clone()),
+                (payload.clone(), expected_application_response.clone()),
+            ],
+        );
+        let pre_write_identity = verify_target_firmware_session(&mut pre_slave, "pseudo-terminal")
+            .expect("pre-write identity");
+        let application_response_sha256 = apply_config_session(
+            &mut pre_slave,
+            "pseudo-terminal",
+            &payload,
+            expected_failsafe_delay,
+        )
+        .expect("target confirms set and save");
+        drop(pre_slave);
+        pre_target.join().expect("pre-write target completes");
+
+        let (post_master, mut post_slave) =
+            serialport::TTYPort::pair().expect("post-write pseudo terminal pair");
+        post_slave
+            .set_timeout(SERIAL_READ_TIMEOUT)
+            .expect("post-write timeout");
+        let post_target = spawn_fake_betaflight(
+            post_master,
+            vec![
+                (
+                    b"#\r\n".to_vec(),
+                    b"\r\nEntering CLI Mode, type 'exit' to reboot, or 'help'\r\n# ".to_vec(),
+                ),
+                (b"version\r\n".to_vec(), expected_version_response.clone()),
+                (
+                    b"get failsafe_delay\r\n".to_vec(),
+                    expected_readback_response.clone(),
+                ),
+            ],
+        );
+        let (post_write_identity, readback_line_sha256, readback_response_sha256) =
+            verify_config_readback_session(
+                &mut post_slave,
+                "pseudo-terminal",
+                &pre_write_identity,
+                expected_failsafe_delay,
+            )
+            .expect("post-write readback");
+        drop(post_slave);
+        post_target.join().expect("post-write target completes");
+
+        let receipt = serial_write_receipt(
+            request,
+            rig_id,
+            payload.len(),
+            VerifiedSerialEvidence {
+                readback_failsafe_delay_deciseconds: expected_failsafe_delay,
+                pre_write_identity,
+                application_response_sha256,
+                post_write_identity,
+                readback_line_sha256,
+                readback_response_sha256,
+            },
+        )
+        .expect("receipt");
+        assert_eq!(receipt.schema_version, "forge-bridge-serial-receipt/2.0.0");
+        assert_eq!(receipt.bytes_transmitted, payload.len());
+        assert_eq!(receipt.target_firmware_version, "2025.12.5");
+        assert_eq!(receipt.readback_failsafe_delay_deciseconds, 10);
+        assert_eq!(
+            receipt.pre_write_reported_firmware_identity_sha256,
+            receipt.post_write_reported_firmware_identity_sha256
+        );
+        assert_eq!(
+            receipt.pre_write_version_response_sha256,
+            sha256_hex(&expected_version_response)
+        );
+        assert_eq!(
+            receipt.application_response_sha256,
+            sha256_hex(&expected_application_response)
+        );
+        assert_eq!(
+            receipt.post_write_version_response_sha256,
+            sha256_hex(&expected_version_response)
+        );
+        assert_eq!(
+            receipt.readback_line_sha256,
+            sha256_hex(b"failsafe_delay = 10")
+        );
+        assert_eq!(
+            receipt.readback_response_sha256,
+            sha256_hex(&expected_readback_response)
+        );
+        for digest in [
+            &receipt.pre_write_version_response_sha256,
+            &receipt.application_response_sha256,
+            &receipt.post_write_version_response_sha256,
+            &receipt.readback_line_sha256,
+            &receipt.readback_response_sha256,
+        ] {
+            assert_eq!(digest.len(), 64);
+            assert!(digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
+        }
         assert!(receipt.no_auto_arm);
-        assert!(!receipt.target_firmware_version_verified);
-        assert!(!receipt.application_verified);
-        assert!(receipt.operator_readback_required);
+        assert!(receipt.target_firmware_version_verified);
+        assert!(receipt.application_verified);
+        assert!(!receipt.operator_readback_required);
+        assert!(receipt.cli_left_arming_disabled);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn serial_response_limits_refuse_timeout_and_oversize() {
+        let (_idle_master, mut idle_slave) =
+            serialport::TTYPort::pair().expect("idle pseudo terminal pair");
+        idle_slave
+            .set_timeout(Duration::from_millis(5))
+            .expect("idle timeout");
+        assert!(read_serial_response_with_limits(
+            &mut idle_slave,
+            "idle-target",
+            SerialResponseTerminator::Prompt,
+            Duration::from_millis(30),
+            MAX_SERIAL_RESPONSE_BYTES,
+        )
+        .expect_err("silent target must time out")
+        .contains("timed out"));
+
+        let (mut noisy_master, mut noisy_slave) =
+            serialport::TTYPort::pair().expect("noisy pseudo terminal pair");
+        noisy_slave
+            .set_timeout(Duration::from_millis(5))
+            .expect("noisy timeout");
+        let writer = std::thread::spawn(move || {
+            noisy_master
+                .write_all(b"1234\n")
+                .expect("write oversized response");
+            std::thread::sleep(Duration::from_millis(100));
+        });
+        let oversized_error = read_serial_response_with_limits(
+            &mut noisy_slave,
+            "noisy-target",
+            SerialResponseTerminator::Prompt,
+            Duration::from_millis(100),
+            4,
+        )
+        .expect_err("oversized response must fail");
+        assert!(
+            oversized_error.contains("exceeds 4 bytes"),
+            "unexpected oversize error: {oversized_error}"
+        );
+        writer.join().expect("noisy writer completes");
+    }
+
+    #[test]
+    fn target_identity_and_readback_parsers_refuse_drift_or_ambiguity() {
+        assert!(!response_has_terminator(
+            b"version\r\n# Betaflight / KAKUTEH7",
+            SerialResponseTerminator::Prompt,
+        ));
+        assert!(response_has_terminator(
+            b"version\r\n# Betaflight / KAKUTEH7 (KH7) 2025.12.5 x / y (abcdef0) MSP API: 1.47\r\n# ",
+            SerialResponseTerminator::Prompt,
+        ));
+        assert!(
+            parse_target_firmware_identity(&version_response("2026.6.0"))
+                .expect_err("wrong firmware family must fail")
+                .contains("stable Betaflight 2025.12")
+        );
+
+        let mut ambiguous = version_response("2025.12.5");
+        ambiguous.extend_from_slice(
+            b"\r\n# Betaflight / OTHER (OTHER) 2025.12.5 Jun 28 2026 / 12:00:00 (1234567) MSP API: 1.47\r\n# ",
+        );
+        assert!(parse_target_firmware_identity(&ambiguous)
+            .expect_err("duplicate identity must fail")
+            .contains("exactly one Betaflight identity"));
+
+        assert!(parse_failsafe_readback(b"failsafe_delay = 11\r\n# ", 10)
+            .expect_err("mismatch must fail")
+            .contains("expected 10, observed 11"));
+        assert!(
+            parse_failsafe_readback(b"failsafe_delay = 10\r\nfailsafe_delay = 10\r\n# ", 10,)
+                .expect_err("duplicate readback must fail")
+                .contains("exactly one failsafe_delay readback")
+        );
+        assert!(parse_config_application_confirmation(
+            b"failsafe_delay set to 10\r\n# ERROR: save failed\r\n# saving",
+            10,
+        )
+        .expect_err("target error must fail")
+        .contains("rejected"));
+        assert!(normalized_response_lines(b"version\0\r\n# ")
+            .expect_err("control bytes must fail")
+            .contains("control bytes"));
     }
 
     #[test]

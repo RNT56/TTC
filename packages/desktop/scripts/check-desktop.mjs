@@ -53,10 +53,20 @@ assert(main.includes("no_auto_arm: true"), "native bridge status must be no-auto
 assert(main.includes("serialport::available_ports"), "desktop must enumerate serial ports through serialport-rs");
 assert(main.includes("serialport::new"), "desktop serial writes must use serialport-rs behind gates");
 assert(main.includes("forge-bridge-config/1.0.0"), "desktop serial writes must require the versioned bridge config artifact");
+assert(main.includes("forge-bridge-serial-receipt/2.0.0"), "desktop serial success must require the readback-proven receipt major");
 assert(main.includes('BETAFLIGHT_CLI_VERSION: &str = "2025.12"'), "desktop serial writes must bind the reviewed Betaflight CLI version");
+assert(main.includes("I confirm propellers are removed"), "desktop serial writes must require props-off physical confirmation");
 assert(main.includes("diffHash does not match"), "desktop serial writes must verify the exact ordered config hash");
-assert(main.includes("target_firmware_version_verified: false"), "desktop must not claim it verified the connected firmware version");
-assert(main.includes("application_verified: false"), "desktop must not claim a transmitted config was applied");
+assert(main.includes('write_serial_command(port, port_label, "version")'), "desktop must query target firmware identity before and after writing");
+assert(main.includes('write_serial_command(port, port_label, "get failsafe_delay")'), "desktop must perform exact post-write readback");
+assert(main.includes("target_firmware_version_verified: true"), "successful desktop receipts must verify the connected firmware version");
+assert(main.includes("application_verified: true"), "successful desktop receipts must verify persistent application by readback");
+assert(main.includes("pre_write_version_response_sha256"), "desktop receipts must bind the exact pre-write version response");
+assert(main.includes("application_response_sha256"), "desktop receipts must bind the exact set/save response");
+assert(main.includes("post_write_version_response_sha256"), "desktop receipts must bind the exact post-write version response");
+assert(main.includes("readback_response_sha256"), "desktop receipts must bind the exact readback response");
+assert(main.includes("cli_left_arming_disabled: true"), "desktop must leave the verified target CLI-arming-disabled");
+assert(main.includes("keep the rig disarmed and inspect it manually"), "ambiguous post-write state must fail with disarmed operator guidance");
 assert(main.includes("forge-recorder-manifest.json"), "desktop recorder must initialize a filesystem archive manifest");
 
 console.log("desktop: scaffold, FORGE Link manifest, and deployment ladder checks passed");

@@ -141,10 +141,22 @@ header, `set failsafe_delay = N`, and final `save`; it never accepts arbitrary C
 tokens or a caller-authored raw diff. Adding firmware families or versions, commands,
 mixers, modes, automatic target-version inference, or a different hash preimage is a
 new artifact major unless a compatibility fixture proves an additive read. The
-serial receipt is separately `forge-bridge-serial-receipt/1.0.0`; its transmitted
-byte count is not application or target-firmware verification. Publishing either
-format requires surface registration, old/current/unsupported fixtures, migration
-and deprecation guidance, and release notes.
+serial receipt 1.0.0 is historical transport-only evidence; its transmitted byte
+count is not application or target-firmware verification. D49 advances current
+Desktop success output to `forge-bridge-serial-receipt/2.0.0` because the truth
+semantics changed. Version 2 is emitted only after one bounded pre-write stable
+`2025.12.x` identity, exact set/save acknowledgement, reboot/reconnect, the same
+reported firmware identity, and one matching `get failsafe_delay` readback. It adds
+the exact full patch version, pre/post reported-identity hashes, SHA-256 digests of
+the four authoritative response byte streams, normalized readback-line value/hash, and
+CLI-arming-disabled state; its verification booleans are true only on that complete
+path. Any post-transmission ambiguity returns an error rather than a v2
+receipt. Existing v1 receipts retain their original transport-only meaning and must
+never be migrated or displayed as v2 application proof. The config artifact remains
+1.0.0 unchanged. Publishing either format requires surface registration,
+old/current/unsupported fixtures, migration and deprecation guidance, and release
+notes. Neither receipt major identifies a physical device uniquely or establishes
+real-FC, lab, HITL, tethered, supervisor, or field evidence.
 
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian

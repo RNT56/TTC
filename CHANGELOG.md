@@ -18,6 +18,49 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Require target handshake and persistent readback
+**Session:** Codex agent · branch `codex/p8012-target-readback` · **Phase:** P8 ·
+**TODO items:** P8-001 [~]
+**Done:** Implemented D49's local target/readback candidate on protected base
+`15c3be2` without changing `forge-bridge-config/1.0.0`. Native Desktop now requires
+the props-removed confirmation, enters Betaflight CLI, bounds every response to
+three seconds/16 KiB/valid UTF-8 controls, and accepts exactly one stable numeric
+`2025.12.x` identity with MSP API authority before any config byte. After the exact
+D48 payload it requires one matching set acknowledgement and `# saving`, waits for
+the same OS path after reboot, rechecks the same reported firmware-identity hash, and
+requires exactly one matching `get failsafe_delay` value. Wrong/duplicate identity,
+wrong/duplicate readback, target errors, timeouts, reconnect failure, and response
+ambiguity return no success receipt; every post-transmission error says the state may
+be partial and the rig must remain disarmed. Only the complete path emits
+`forge-bridge-serial-receipt/2.0.0` with full target patch version, pre/post reported-
+identity hashes, SHA-256 digests for the exact pre-version, set/save, post-version,
+and readback response bytes, the normalized readback-line hash/value,
+target/application verification true, operator readback false, and CLI arming still
+disabled. Six locked Rust tests include
+two real Unix pseudo-terminal sessions for the exact wire protocol plus substitution
+and ambiguity refusals, exact digest assertions, and fast timeout/response-cap proof.
+Desktop Cargo fmt/Clippy/tests, root Rust fmt/Clippy/tests,
+`pnpm verify:desktop-native`, and the Desktop package contract pass. The complete
+40-step `pnpm verify` gate passes under Python 3.12.13, including 225 worker tests,
+66 gateway tests, 13 Studio policy-runtime tests, native/WASM parity, real seeded and
+offline training smokes, and controlled MJX feasibility.
+**Changed:** Desktop native serial protocol, focused package checker, locked Desktop
+manifest/lockfile (removing the no-longer-needed direct `libc` test dependency), D49,
+compatibility guidance, entry/current-state/roadmap/TODO/execution/system documents,
+and this changelog.
+**Decisions:** D49 major-bumps only the receipt because application truth changed;
+the D48 config artifact and writable command set remain unchanged. Official current
+Betaflight CLI/failsafe documentation, stable release 2025.12.5, and its tagged
+`version`/`get`/`save` source were rechecked on 2026-07-16.
+**Next:** Protect the candidate through exact-head and post-merge CI/security,
+reconcile its evidence, then execute the exact protocol on
+the named D12 quad FC with propellers removed and a private EXT-004/P8-009 acceptance
+pack covering raw responses/hashes, reconnect, failure, and power-loss behavior.
+**Blockers:** None for local protocol implementation/protection. A real-FC or lab
+claim requires the controlled D12 hardware, physical supervisor, private evidence
+storage, and signed acceptance; WebSerial, HITL, recorder/ghost, signed Desktop,
+Link, tethered, and field proof remain separate P8 work.
+
 ## 2026-07-16 — Protect D48 native serial transport
 **Session:** Codex agent · branch `codex/p8012-native-serial-evidence` · **Phase:** P8 ·
 **TODO items:** P8-012 [x]

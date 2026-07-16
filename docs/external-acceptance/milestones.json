@@ -311,12 +311,13 @@
         "D30 remains accepted only for controlled D12 lab pilots; external beta is disabled.",
         "The reference rover must complete the declared ladder before the reference quad attempt begins.",
         "Lab mode, local provider, D12 rig allowlist, physical confirmation, supervisor, kill switch, incident owner, and telemetry consent are all current.",
+        "The D49 native target-version, persistent-save, reconnect, and exact-readback protocol is protected on the exact product revision under test.",
         "Props are removed for quad HITL and physical restraint is installed before tethered hover."
       ],
       "stopConditions": [
         "Any path attempts to auto-arm, elevate policy authority, skip physical confirmation, or use a non-D12 rig.",
         "The supervisor, kill switch, telemetry, observer, physical boundary, or local authority path is unavailable.",
-        "A validator, config-diff, battery, geofence, speed, attitude, rate, replay-order, or hash gate fails.",
+        "A validator, config-diff, firmware identity, save acknowledgement, reconnect, readback, battery, geofence, speed, attitude, rate, replay-order, or hash gate fails.",
         "The incident owner calls stop; evidence capture never outranks physical safety."
       ],
       "steps": [
@@ -359,8 +360,8 @@
         {
           "id": "lab-quad-hitl",
           "title": "Complete props-removed quad HITL",
-          "instruction": "With props removed, review config diff, prove firmware authority, measure policy/supervisor rates, fallback, physical confirmation, and no-auto-arm.",
-          "requiredEvidenceKinds": ["config-diff", "timing-report", "no-auto-arm-proof", "deployment-log"]
+          "instruction": "With props removed, review the unchanged D48 config, resolve one D49 receipt 2.0.0 against private pre/post firmware, set/save, reconnect, and exact-readback evidence, then measure policy/supervisor rates, fallback, physical confirmation, and no-auto-arm.",
+          "requiredEvidenceKinds": ["config-diff", "serial-application-receipt", "firmware-readback", "raw-response-digests", "timing-report", "no-auto-arm-proof", "deployment-log"]
         },
         {
           "id": "lab-quad-tethered",

@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D30 accepted controlled D12 lab pilots; target handshake/readback, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is implemented as a local candidate; D30 accepted controlled D12 lab pilots; real-FC execution, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49
 
 ## 1. Purpose
 
@@ -75,16 +75,34 @@ substitution. It accepts only the D12 reference quad, the hardware-enable,
 D30-signoff, and lab-mode env gates, the exact physical-confirmation phrase, and
 115200 baud. A real Unix
 pseudo-terminal integration test proves the exact artifact bytes cross the native
-transport. The versioned receipt records bytes transmitted while explicitly setting
-`targetFirmwareVersionVerified=false`, `applicationVerified=false`, and
-`operatorReadbackRequired=true`; it is not flight-controller, HITL, or lab proof.
-The recorder command separately initializes a real filesystem archive manifest under
-the same fail-closed lab boundary.
+transport. Historical `forge-bridge-serial-receipt/1.0.0` records only that
+transport and never upgrades to application proof.
+
+D49's current implementation candidate keeps the D48 artifact unchanged and makes a
+success receipt conditional on two bounded serial sessions. Before any config byte,
+Desktop requires the props-removed confirmation, enters the CLI, queries `version`,
+and accepts one stable numeric Betaflight `2025.12.x` identity with MSP API authority.
+It then requires the exact `failsafe_delay set to N` and `# saving` acknowledgements,
+waits for the same OS path to return after reboot, repeats and hash-compares the
+reported firmware identity, and accepts exactly one matching `get failsafe_delay`
+value. UTF-8/control-byte checks, 16 KiB response caps, three-second response bounds,
+a two-second reboot settle, and a fifteen-second reconnect ceiling fail closed.
+Only the complete path emits `forge-bridge-serial-receipt/2.0.0` with the full patch
+version, pre/post identity hashes, digests of the four authoritative response byte streams,
+normalized readback-line value/hash, target/application verification true,
+operator-readback false, and the target still CLI-arming-disabled. Any ambiguity
+after transmission returns no receipt and tells the operator to keep the rig disarmed
+for manual inspection. A two-session real Unix pseudo-terminal fixture proves the
+wire protocol and refusals; it does not identify a physical FC uniquely or prove a
+real FC, lab, HITL, tethered, supervisor, or field run. The recorder command
+separately initializes a real filesystem archive manifest under the same fail-closed
+lab boundary.
 
 P8-012 is complete at protected deterministic/native transport integration
-maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. Target
-firmware handshake and post-write readback belong to the real D12 lab adapter and
-must precede any applied-configuration claim. Browser WebSerial write/capture, live
+maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 now owns
+the local target-firmware handshake and post-write readback protocol candidate; the
+first real props-off D12 execution and retained acceptance pack remain required
+before any lab-applied-configuration claim. Browser WebSerial write/capture, live
 sidecar telemetry capture, build/signing, and updater delivery remain open; real
 bench/field evidence is still P8-001/P8-009/P8-010/P8-014/EXT-004. A native-core
 fast path inside the shell (bypassing WASM) is available
@@ -198,12 +216,15 @@ plugin crates (serialport-rs).
 ## 11. Testing
 
 Native package checks plus Rust tests must cover D30/D12/no-auto-arm/confirmation,
-artifact schema/version/command/range/hash refusal, unenumerated port refusal, and
-exact serial bytes over a real pseudo-terminal. The minimum implementation gate is
+artifact schema/version/command/range/hash refusal, unenumerated port refusal,
+wrong/ambiguous firmware identity, bounded response/reconnect behavior, exact set/save
+acknowledgement, mismatched/duplicate readback, partial-state guidance, and the full
+two-session serial protocol over real pseudo-terminals. The minimum implementation gate is
 `pnpm --filter @forge/desktop test`, locked Desktop Cargo fmt/Clippy/tests, Python
 3.12 hardware-boundary tests, and `pnpm verify:desktop-native`; a real-device claim
-additionally requires target-version handshake, post-write readback, and signed lab
-evidence. HITL harness against the reference FC (timing/interface validation); recorder
+additionally requires the D49 protocol to pass against the named FC with retained raw
+responses/hashes and signed lab evidence. HITL harness against the reference FC
+(timing/interface validation); recorder
 round-trip (log → replay → ghost render — bit-exact under D17); sysid fit on
 synthetic telemetry with known ground truth (fit must recover injected constants);
 supervisor unit tests (envelope breach → fallback within deadline); pairing-auth

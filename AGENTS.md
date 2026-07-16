@@ -90,11 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is docs-only P7-010 evidence reconciliation
-  PR #82 at `f91c339`, with post-merge CI `29467326791` and security `29467326725`
-  green. The latest verified protected runtime descendant is P7-010 PR #81 at
-  `d19c911`, with
-  post-merge CI `29466150120` and security `29466150113` green. PR #81 owns the
+  latest verified protected descendant is docs-only P8-012 evidence reconciliation
+  PR #84 at `15c3be2`, with post-merge CI `29476868373`, security `29476868328`,
+  and exact-main nightly `29476991042` green. The latest verified protected runtime
+  descendant is P8-012 PR #83 at `fd26845`, with post-merge CI `29468966929` and
+  security `29468966748` green. PR #81 owns the
   decision-grade D47 MJX request/report contract while PR #79 owns the
   fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
   controlled-synthetic offline-training evidence; PR #75 owns the
@@ -212,7 +212,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   the complete 40-step gate, 225 worker tests, 66 gateway tests, and Desktop native
   compile pass. The receipt leaves target firmware/application unverified and
   requires readback. This protected proof is not a real FC, HITL, lab, tethered, or
-  field result;
+  field result. D49's current unprotected candidate keeps the D48 artifact unchanged
+  but gates receipt 2.0.0 on props-off confirmation, bounded pre/post stable
+  `2025.12.x` identity, exact set/save acknowledgement, reboot/reconnect, and exact
+  `failsafe_delay` readback across two real pseudo-terminal sessions, with SHA-256
+  digests for the four authoritative response byte streams. That remains
+  local protocol evidence until protected and then executed on the named FC;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
@@ -692,7 +697,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization; run `pnpm db:assert-modal-operations` for P7-013 provider-call/cancellation/refund and idempotent report-bound cost-reconciliation authority |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
-| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; locked Desktop Cargo fmt/Clippy/tests; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; for D48 config writes prove exact schema/firmware version/command/range/hash, 115200 baud, OS-enumerated-port refusal, real pseudo-terminal bytes, and receipt nonclaims; target handshake/readback and controlled lab evidence before device/application claims |
+| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; locked Desktop Cargo fmt/Clippy/tests; D30/D12 gate tests; no-auto-arm/props-off physical-confirmation/supervisor assertions; for D48 config writes prove exact schema/firmware version/command/range/hash, 115200 baud, OS-enumerated-port refusal, real pseudo-terminal bytes, and receipt-v1 nonclaims; for D49 prove bounded two-session stable-2025.12.x handshake, set/save acknowledgement, reconnect, repeated reported-identity hash, exact readback, SHA-256 binding of the four authoritative raw response streams, v2 receipt semantics, malformed/ambiguous/timeout/partial-state refusal, and CLI-arming-disabled state; execute the exact protocol on the named props-off FC with retained controlled-lab evidence before physical-device or lab claims |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
 | External acceptance/evidence | `pnpm verify:external-acceptance`; initialize packs outside Git; freeze exact revision/environment/roles/authority; execute the registered milestone script; preserve pass/fail/stop evidence; validate the completed manifest; semantically inspect retained hashes/signoffs; required protected checks; no maturity/task closure from a template or structural pass alone |

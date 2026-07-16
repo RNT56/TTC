@@ -16,11 +16,14 @@ the policy remains advisory, and the safety supervisor owns every transition.
 
 - Reference rig: `catalog/reference-rigs/ref_quad_kakute-h7-source-one-5in.json`.
 - D48 serial artifact: `forge-bridge-config/1.0.0`, reviewed against Betaflight
-  2025.12. Before any write, remove propellers, independently read the connected
-  target version, and stop unless it exactly matches 2025.12. After transmission,
-  read back `failsafe_delay` and retain the response; the Desktop receipt alone says
-  only that bytes were transmitted and deliberately leaves target version and
-  application unverified.
+  2025.12. D49 keeps this artifact unchanged. Before any write, remove propellers and
+  use the protected Desktop protocol to require one stable numeric `2025.12.x`
+  identity. Success additionally requires exact set/save acknowledgement,
+  reboot/reconnect to the same OS path, the same reported firmware-identity hash, and
+  one matching `get failsafe_delay` value. Historical receipt 1.0.0 proves bytes only;
+  current receipt 2.0.0 is acceptable protocol evidence only when every verification
+  field and hash resolves. Neither receipt is physical-device, lab, HITL, or field
+  proof by itself.
 - Admitted multirotor model with the D12 component refs pinned in the lockfile.
 - Passing `train.policy` scorecard for a hover or waypoint task.
 - Exportable ONNX header or deterministic fixture policy metadata.
@@ -40,7 +43,8 @@ pnpm db:seed-catalog
 pnpm db:assert-p3
 pnpm -r test
 node scripts/validate-all.mjs
-pnpm --dir packages/desktop check
+pnpm --filter @forge/desktop test
+pnpm verify:desktop-native
 pnpm pilot:check
 ```
 
@@ -70,6 +74,13 @@ serial with props removed only after the runtime gates pass.
 Evidence required before passing:
 
 - Config diff compiled from the contract and reviewed before write.
+- Private raw pre/post `version`, set/save, and `get failsafe_delay` responses resolve
+  byte-for-byte to the four response hashes in one
+  `forge-bridge-serial-receipt/2.0.0`; the full patch version,
+  expected readback value, same-path reconnect, and CLI-arming-disabled state match.
+- A deliberately interrupted/reconnect/power-loss rehearsal produces no success
+  receipt, keeps the rig disarmed, and retains its stopped/failed record rather than
+  being retried into a pass.
 - Timing report showing policy advice near 50 Hz and supervisor decisions at or
   above 200 Hz.
 - Firmware rate loop remains untouched.
@@ -95,6 +106,9 @@ Evidence required before passing:
 - Any validator error, unresolved component ref, or non-exportable scorecard.
 - Battery floor, geofence, attitude/rate, or kill-switch supervisor breach.
 - Lost telemetry, unordered replay tape, or hash mismatch.
+- Wrong/ambiguous firmware identity, missing/duplicate set/save acknowledgement,
+  reconnect failure, identity drift, readback mismatch, or any receipt-v1 attempt to
+  claim application verification.
 - Any software path attempts to auto-arm or skip physical confirmation.
 
 ## Evidence Package
@@ -103,4 +117,6 @@ Evidence required before passing:
 - BOM export with SKUs and review/license status.
 - Scorecard JSON and ONNX header.
 - Deployment ladder stage log.
+- D49 receipt 2.0.0 plus private content-addressed raw CLI responses and the retained
+  failure/reconnect/power-loss record; do not place raw device output in Git.
 - Telemetry tape, replay verification, ghost-divergence summary, and sysid patch.
