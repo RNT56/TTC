@@ -367,12 +367,12 @@ telemetry-log maturity field, or consent authority. A future recorder-bound adap
 format must use a new reviewed major and independently bind start/end identity,
 capture bytes, custody, and the named real-device/lab evidence.
 
-### Desktop recorder custody authorization/proof 1.0 (D56 design)
+### Desktop recorder custody authorization/proof 1.0 (D56)
 
-D56 plans three additive formats:
+D56 implements three additive formats:
 `forge-recorder-custody-trust-bundle/1.0.0`,
 `forge-recorder-custody-authorization/1.0.0`, and
-`forge-recorder-custody-proof/1.0.0`. None exists in runtime yet. The trust bundle is
+`forge-recorder-custody-proof/1.0.0`. The trust bundle is
 a deployment-owned, separately SHA-256-pinned public-key root. The authorization is
 a short-lived, purpose-limited Ed25519-signed canonical binding for one exact
 protected revision, evidence pack/signoff set, D12 artifact/model identity, two OS
@@ -380,7 +380,8 @@ serial descriptors, and expected D55 identity. The proof is a create-new local f
 outside the five-file archive and binds the verified authorization, pre/post D55
 observations, and canonical v1 receipt hash.
 
-Implementation must add new commands/responses rather than adding fields to
+Implementation adds `start_custodied_background_recording` and
+`stop_custodied_background_recording` rather than adding fields to
 `forge-recorder-control/1.0.0`, `forge-recorder-receipt/1.0.0`, or
 `forge-recorder-adapter-probe/1.0.0`. Existing archive v1, D51 inspection, D53 five-
 object materialization, migration 0026/D54 admission, telemetry references, and

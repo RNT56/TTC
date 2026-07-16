@@ -119,7 +119,9 @@ import {
   listDesktopSerialPorts,
   prepareRecorderArchiveUpload,
   probeDesktopRecorderAdapter,
+  startDesktopCustodiedRecorder,
   startDesktopRecorder,
+  stopDesktopCustodiedRecorder,
   stopDesktopRecorder,
   uploadRecorderArchiveFiles,
   type DesktopBridgeStatus,
@@ -127,6 +129,7 @@ import {
   type RecorderArchiveInspection,
   type RecorderAdapterProbe,
   type RecorderControlStatus,
+  type RecorderCustodyProof,
   type RecorderStopReceipt,
   type RecorderUploadReceipt,
 } from "./desktopRecorder";
@@ -3014,6 +3017,14 @@ function RecorderArchiveImportPanel({
   );
   const [port, setPort] = useState("");
   const [captureConsent, setCaptureConsent] = useState(false);
+  const [custodyEnabled, setCustodyEnabled] = useState(false);
+  const [custodyIdentityPort, setCustodyIdentityPort] = useState("");
+  const [custodyAuthorizationPath, setCustodyAuthorizationPath] = useState("");
+  const [custodyProofPath, setCustodyProofPath] = useState("");
+  const [custodyAuthorizationId, setCustodyAuthorizationId] = useState("");
+  const [custodyStartPropsOff, setCustodyStartPropsOff] = useState(false);
+  const [custodyStopPropsOff, setCustodyStopPropsOff] = useState(false);
+  const [custodyProof, setCustodyProof] = useState<RecorderCustodyProof | null>(null);
   const [adapterPropsOff, setAdapterPropsOff] = useState(false);
   const [adapterProbe, setAdapterProbe] = useState<RecorderAdapterProbe | null>(null);
   const [adapterProbeBusy, setAdapterProbeBusy] = useState(false);
@@ -3056,6 +3067,9 @@ function RecorderArchiveImportPanel({
       setPort((current) => ports.some((candidate) => candidate.name === current)
         ? current
         : ports[0]?.name ?? "");
+      setCustodyIdentityPort((current) => ports.some((candidate) => candidate.name === current)
+        ? current
+        : ports[1]?.name ?? ports[0]?.name ?? "");
     } catch (cause) {
       setControlError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -3072,6 +3086,13 @@ function RecorderArchiveImportPanel({
     setAdapterProbeError(null);
     setAdapterPropsOff(false);
   }, [port, referenceRigId]);
+
+  useEffect(() => {
+    if (custodyIdentityPort === port) {
+      setCustodyIdentityPort(serialPorts.find((candidate) => candidate.name !== port)?.name ?? "");
+    }
+    setCustodyStartPropsOff(false);
+  }, [custodyIdentityPort, port, serialPorts]);
 
   useEffect(() => {
     if (recorderStatus?.state !== "inactive" || bridgeStatus?.enabled !== true) {
@@ -3109,11 +3130,15 @@ function RecorderArchiveImportPanel({
     setControlError(null);
     setControlMessage(null);
     setStopReceipt(null);
+    setCustodyProof(null);
     try {
       if (!report || report.verdict !== "admitted") {
         throw new Error("an active admitted validator report is required before recording");
       }
-      const status = await startDesktopRecorder({
+      if (custodyEnabled && !custodyStartPropsOff) {
+        throw new Error("confirm props-off custody start before opening the identity port");
+      }
+      const recorderRequest = {
         artifactId,
         outputDir,
         sampleRateHz: Number(sampleRateHz),
@@ -3125,16 +3150,43 @@ function RecorderArchiveImportPanel({
         lockfileHash: report.lockfileHash,
         environment: {},
         seed: report.seed,
-      });
+      } as const;
+      const status = custodyEnabled
+        ? await startDesktopCustodiedRecorder({
+          recorder: recorderRequest,
+          modelId: activeModelId ?? "",
+          identityPort: custodyIdentityPort,
+          identityBaud: RECORDER_BAUD,
+          identityPhysicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+          authorizationPath: custodyAuthorizationPath,
+          custodyProofPath,
+        })
+        : await startDesktopRecorder(recorderRequest);
       setRecorderStatus(status);
       setCaptureConsent(false);
-      setControlMessage(`recording ${status.artifactId ?? artifactId} into ${status.archivePath ?? outputDir}`);
+      setCustodyStartPropsOff(false);
+      setControlMessage(
+        `${custodyEnabled ? "signed custody active for" : "recording"} ${status.artifactId ?? artifactId} into ${status.archivePath ?? outputDir}`,
+      );
     } catch (cause) {
       setControlError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setControlBusy(false);
     }
-  }, [artifactId, outputDir, port, referenceRigId, report, sampleRateHz]);
+  }, [
+    activeModelId,
+    artifactId,
+    custodyAuthorizationPath,
+    custodyEnabled,
+    custodyIdentityPort,
+    custodyProofPath,
+    custodyStartPropsOff,
+    outputDir,
+    port,
+    referenceRigId,
+    report,
+    sampleRateHz,
+  ]);
 
   const stopRecorder = useCallback(async () => {
     setControlBusy(true);
@@ -3144,11 +3196,31 @@ function RecorderArchiveImportPanel({
       if (!recorderStatus || recorderStatus.state === "inactive") {
         throw new Error("no active Desktop recorder is available to stop");
       }
-      const receipt = await stopDesktopRecorder(recorderStatus);
-      setStopReceipt(receipt);
+      if (custodyEnabled) {
+        if (!custodyStopPropsOff) {
+          throw new Error("confirm props-off custody stop before the post-capture identity probe");
+        }
+        if (!activeModelId) throw new Error("select the signed admitted model before custody stop");
+        const proof = await stopDesktopCustodiedRecorder(
+          recorderStatus,
+          activeModelId,
+          {
+            authorizationId: custodyAuthorizationId.trim(),
+            physicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+          },
+        );
+        setCustodyProof(proof);
+        setCustodyStopPropsOff(false);
+        setControlMessage(
+          `custody continuity verified for ${proof.artifactId}; acceptance-authority signature only, recorded-device authority remains off`,
+        );
+      } else {
+        const receipt = await stopDesktopRecorder(recorderStatus);
+        setStopReceipt(receipt);
+        setControlMessage(`capture complete: ${receipt.frameCount} frames over ${receipt.durationS.toFixed(3)} s`);
+      }
       setRecorderStatus(await getRecorderStatus());
       setArchivePath(outputDir);
-      setControlMessage(`capture complete: ${receipt.frameCount} frames over ${receipt.durationS.toFixed(3)} s`);
     } catch (cause) {
       setControlError(cause instanceof Error ? cause.message : String(cause));
       try {
@@ -3159,7 +3231,14 @@ function RecorderArchiveImportPanel({
     } finally {
       setControlBusy(false);
     }
-  }, [outputDir, recorderStatus]);
+  }, [
+    activeModelId,
+    custodyAuthorizationId,
+    custodyEnabled,
+    custodyStopPropsOff,
+    outputDir,
+    recorderStatus,
+  ]);
 
   const inspectArchive = useCallback(async () => {
     setInspectionBusy(true);
@@ -3245,6 +3324,16 @@ function RecorderArchiveImportPanel({
     && Number.isSafeInteger(report.seed)
     && report.seed >= 0;
   const recorderInactive = recorderStatus?.state === "inactive";
+  const custodyStartReady = !custodyEnabled || (
+    referenceRigId === D12_REFERENCE_RIG_IDS[0]
+    && activeModelId !== null
+    && serialPorts.some((candidate) => candidate.name === custodyIdentityPort)
+    && custodyIdentityPort !== port
+    && custodyAuthorizationPath.trim().length > 0
+    && custodyProofPath.trim().length > 0
+    && /^[A-Za-z0-9._-]{1,128}$/.test(custodyAuthorizationId.trim())
+    && custodyStartPropsOff
+  );
   const canStart = available
     && bridgeStatus?.enabled === true
     && recorderInactive
@@ -3253,8 +3342,14 @@ function RecorderArchiveImportPanel({
     && serialPorts.some((candidate) => candidate.name === port)
     && artifactId.trim().length > 0
     && outputDir.trim().length > 0
-    && captureConsent;
-  const canStop = available && recorderStatus !== null && recorderStatus.state !== "inactive";
+    && captureConsent
+    && custodyStartReady;
+  const canStop = available && recorderStatus !== null && recorderStatus.state !== "inactive"
+    && (!custodyEnabled || (
+      custodyStopPropsOff
+      && activeModelId !== null
+      && /^[A-Za-z0-9._-]{1,128}$/.test(custodyAuthorizationId.trim())
+    ));
   const canProbeAdapter = available
     && bridgeStatus?.enabled === true
     && recorderInactive
@@ -3403,6 +3498,93 @@ function RecorderArchiveImportPanel({
           {" "}{adapterProbe.transcriptSha256} · cryptographic attestation off · recorded-device off · field off
         </div>
       ) : null}
+      <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 8 }}>
+        <input
+          data-testid="recorder-custody-enabled"
+          type="checkbox"
+          checked={custodyEnabled}
+          onChange={(event) => {
+            setCustodyEnabled(event.currentTarget.checked);
+            setCustodyProof(null);
+            if (event.currentTarget.checked && recorderInactive) {
+              setReferenceRigId(D12_REFERENCE_RIG_IDS[0]);
+            }
+          }}
+          disabled={!available || controlBusy}
+        />
+        <span>
+          Signed controlled-lab custody. The deployment trust root and protected revision stay native;
+          Studio receives hashes and continuity only, never a signing key or raw signature.
+        </span>
+      </label>
+      {custodyEnabled ? (
+        <div data-testid="recorder-custody-controls" style={{ border: "1px solid #2a2f38", padding: 7, marginTop: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 6 }}>
+            <select
+              aria-label="Recorder custody identity port"
+              value={custodyIdentityPort}
+              onChange={(event) => setCustodyIdentityPort(event.currentTarget.value)}
+              disabled={!available || controlBusy || adapterProbeBusy || !bridgeStatus?.enabled}
+              style={selectStyle}
+            >
+              <option value="">select distinct identity port</option>
+              {serialPorts.map((candidate) => (
+                <option key={candidate.name} value={candidate.name}>{candidate.name} · {candidate.kind}</option>
+              ))}
+            </select>
+            <input
+              aria-label="Recorder custody authorization path"
+              value={custodyAuthorizationPath}
+              onChange={(event) => setCustodyAuthorizationPath(event.currentTarget.value)}
+              placeholder="/absolute/path/authorization.json"
+              disabled={!available || controlBusy}
+              style={inputStyle}
+            />
+            <input
+              aria-label="Recorder custody proof path"
+              value={custodyProofPath}
+              onChange={(event) => setCustodyProofPath(event.currentTarget.value)}
+              placeholder="/absolute/path/outside-archive/proof.json"
+              disabled={!available || controlBusy}
+              style={inputStyle}
+            />
+            <input
+              aria-label="Recorder custody authorization ID"
+              value={custodyAuthorizationId}
+              onChange={(event) => setCustodyAuthorizationId(event.currentTarget.value)}
+              placeholder="signed authorization ID"
+              disabled={!available || controlBusy}
+              style={inputStyle}
+            />
+          </div>
+          {recorderInactive ? (
+            <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 7 }}>
+              <input
+                type="checkbox"
+                checked={custodyStartPropsOff}
+                onChange={(event) => setCustodyStartPropsOff(event.currentTarget.checked)}
+                disabled={!available || controlBusy}
+              />
+              <span>Props are removed for the signed start identity observation before telemetry opens.</span>
+            </label>
+          ) : (
+            <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 7 }}>
+              <input
+                type="checkbox"
+                checked={custodyStopPropsOff}
+                onChange={(event) => setCustodyStopPropsOff(event.currentTarget.checked)}
+                disabled={!available || controlBusy}
+              />
+              <span>Props are removed for the post-clean-stop identity observation and create-new proof.</span>
+            </label>
+          )}
+          <div style={{ color: activeModelId ? "#7d899b" : "#e6a23c", marginTop: 5, wordBreak: "break-word" }}>
+            {activeModelId
+              ? `signed model binding ${activeModelId} · acceptance authority, not device signature`
+              : "select the exact admitted model required by the signed authorization"}
+          </div>
+        </div>
+      ) : null}
       <label style={{ display: "flex", gap: 6, alignItems: "flex-start", color: "#c5ccd6", marginTop: 7 }}>
         <input
           type="checkbox"
@@ -3419,7 +3601,7 @@ function RecorderArchiveImportPanel({
           disabled={!canStart || controlBusy}
           style={btn}
         >
-          start recording
+          {custodyEnabled ? "start signed custody capture" : "start recording"}
         </button>
         <button
           data-testid="recorder-control-stop"
@@ -3427,7 +3609,7 @@ function RecorderArchiveImportPanel({
           disabled={!canStop || controlBusy}
           style={btn}
         >
-          stop & finalize
+          {custodyEnabled ? "stop, verify & write custody proof" : "stop & finalize"}
         </button>
       </div>
       <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
@@ -3458,6 +3640,14 @@ function RecorderArchiveImportPanel({
       {stopReceipt ? (
         <div data-testid="recorder-stop-receipt" style={{ color: "#7d899b", marginTop: 5, wordBreak: "break-word" }}>
           receipt {stopReceipt.schemaVersion} · replay {stopReceipt.replayFileSha256} · private · training reuse off · device attestation off
+        </div>
+      ) : null}
+      {custodyProof ? (
+        <div data-testid="recorder-custody-proof" style={{ color: "#74c69d", marginTop: 5, wordBreak: "break-word" }}>
+          custody {custodyProof.schemaVersion} · authorization {custodyProof.authorizationId} · trust bundle
+          {" "}{custodyProof.trustBundleSha256} · authorization bytes {custodyProof.authorizationSha256} · identity continuity verified · receipt
+          {" "}{custodyProof.recorderReceiptSha256} · acceptance-authority signature verified · cryptographic
+          device attestation off · recorded-device/field/sharing/training authority off · no auto-arm
         </div>
       ) : null}
       {inspectionError ? <div style={{ color: "#e6a23c", marginTop: 5 }}>{inspectionError}</div> : null}

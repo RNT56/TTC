@@ -35,6 +35,7 @@ package to adopt that same number.
 | Desktop recorder archive | 1.0.0 | `forge-recorder-archive` binds the exact five-file layout, manifest, serial-JSONL input authority, canonical replay frames, sparse byte-offset index, clean-stop replay/receipt hashes, streaming import refusal, privacy defaults, and explicit non-attestation semantics; changes to any of those meanings are major | major 1 |
 | Desktop recorder materialization | 1.0.0 | `forge-recorder-materialization` binds the sanitized upload plan, five private checksum-bound object roles, same-origin native streaming upload, gateway object-integrity transition, and explicit false archive-semantics/device/field/sharing/training authority; changing any role or authority meaning is major | major 1 |
 | recorder archive admission | 1.0.0 | `forge-recorder-admission` binds the sovereign native verification report, exact D53 materialization/admitted-model/replay reference, and explicit false device/field/sharing/training authority; verification or object-reference meaning changes are major | major 1 |
+| Desktop recorder custody | 1.0.0 | `forge-recorder-custody-trust-bundle`, `forge-recorder-custody-authorization`, and `forge-recorder-custody-proof` bind the deployment-pinned public trust root, exact short-lived signed capture authority, native two-port D55 continuity, canonical receipt hash, create-new proof, and permanent device/recorded-device/field/sharing/training nonclaims; changing any preimage, continuity, or authority meaning is major | major 1 |
 | worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
@@ -265,11 +266,12 @@ builds may ignore the command. A successful probe cannot be migrated into D54 or
 recorded-device claim because MSP identity is self-reported and the probe is not
 bound to recorder start/end custody.
 
-D56 reserves three new independent 1.0.0 formats without changing a current
-compatibility-matrix surface:
+D56 adds one compatibility-matrix surface backed by three independent 1.0.0 formats
+without changing archive v1, D53, or D54:
 `forge-recorder-custody-trust-bundle/1.0.0`,
 `forge-recorder-custody-authorization/1.0.0`, and
-`forge-recorder-custody-proof/1.0.0`. Their frozen meanings are respectively a
+`forge-recorder-custody-proof/1.0.0`. The matrix surface is
+`desktopRecorderCustody` 1.0.0 and its frozen meanings are respectively a
 hash-pinned purpose-limited public Ed25519 trust root, one short-lived signature over
 the exact evidence/revision/artifact/model/two-port/D55 identity/nonclaim binding,
 and one create-new local proof that exact pre/post observations bracket the canonical
@@ -283,7 +285,8 @@ binding, proof hash preimages, or any false authority bit requires a new major a
 superseding decision. Adding gateway storage/materialization, D54 interpretation, an
 archive-v2 file, device-held cryptographic attestation, recorded-device provenance,
 or a training format is an independent compatibility surface and major migration.
-Older applications may ignore a separate custody proof but must not copy it into an
+Native Desktop and Studio source constants are machine-checked against all three
+format tokens. Older applications may ignore a separate custody proof but must not copy it into an
 archive-v1 directory or reinterpret the five existing files.
 
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have

@@ -276,10 +276,10 @@ observation source, reviewed-controller or supervisor-approved action source, an
 explicit `controlled-synthetic` maturity. The current 1.0 worker rejects
 `recorded-device`; D50's local P8 archive explicitly keeps device attestation and
 training reuse false. D55's self-reported, two-pass MSP identity probe is an explicit
-non-attestation prerequisite only. D56 now defines a separate signed acceptance-
+non-attestation prerequisite only. D56 now implements a separate signed acceptance-
 authority authorization and start/end continuity proof outside archive v1, but its
-implementation and a later gateway/recorded-device format are still required. Even a
-valid D56 proof will retain recorded-device and training authority false until a
+proof remains local/outside archive v1 and a later gateway/recorded-device format is
+still required. A valid D56 proof retains recorded-device and training authority false until a
 separate major plus the existing consented gateway binding is reviewed and lands.
 The worker accepts
 64..100,000 exact finite strictly increasing `(observation, action)` pairs and never

@@ -62,6 +62,7 @@ const required = [
   "desktopRecorderArchive",
   "desktopRecorderMaterialization",
   "recorderArchiveAdmission",
+  "desktopRecorderCustody",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -162,6 +163,27 @@ requireValue(
     "RECORDER_TELEMETRY_REFERENCE_SCHEMA_VERSION",
   ) === matrix.surfaces.recorderArchiveAdmission.telemetryReferenceSchema,
   "recorder telemetry-reference schema/version does not match compatibility matrix",
+);
+for (const [constant, field] of [
+  ["RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION", "trustBundleSchema"],
+  ["RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION", "authorizationSchema"],
+  ["RECORDER_CUSTODY_PROOF_SCHEMA_VERSION", "proofSchema"],
+]) {
+  requireValue(
+    sourceConstant("packages/desktop/src-tauri/src/main.rs", constant) ===
+      matrix.surfaces.desktopRecorderCustody[field],
+    `Desktop recorder custody ${field} does not match compatibility matrix`,
+  );
+  requireValue(
+    typescriptConstant("packages/studio/src/desktopRecorder.ts", constant) ===
+      matrix.surfaces.desktopRecorderCustody[field],
+    `Studio recorder custody ${field} does not match compatibility matrix`,
+  );
+}
+requireValue(
+  matrix.surfaces.desktopRecorderCustody.proofSchema ===
+    `${matrix.surfaces.desktopRecorderCustody.schema}/${matrix.surfaces.desktopRecorderCustody.current}`,
+  "recorder custody proof schema/version does not match its compatibility surface",
 );
 
 const gatewayJobKinds = typescriptStringArray("packages/gateway/src/platform.ts", "JOB_KINDS");

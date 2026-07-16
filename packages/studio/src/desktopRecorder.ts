@@ -8,6 +8,12 @@ export const RECORDER_UPLOAD_PLAN_SCHEMA_VERSION = "forge-recorder-upload-plan/1
 export const RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION = "forge-recorder-upload/1.0.0";
 export const RECORDER_ADAPTER_PROBE_SCHEMA_VERSION = "forge-recorder-adapter-probe/1.0.0";
 export const RECORDER_ADAPTER_SCHEMA_VERSION = "forge-betaflight-msp-adapter/1.0.0";
+export const RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION =
+  "forge-recorder-custody-trust-bundle/1.0.0";
+export const RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION =
+  "forge-recorder-custody-authorization/1.0.0";
+export const RECORDER_CUSTODY_PROOF_SCHEMA_VERSION = "forge-recorder-custody-proof/1.0.0";
+export const RECORDER_CUSTODY_PURPOSE = "controlled-lab-recorder-custody";
 export const RECORDER_FRAME_SCHEMA_VERSION = "forge-telemetry-frame/1.0.0";
 export const REPLAY_SCHEMA_VERSION = "1.0.0";
 export const RECORDER_BAUD = 115_200;
@@ -115,6 +121,78 @@ export interface RecorderStartRequest {
   lockfileHash: string;
   environment: Record<string, unknown>;
   seed: number;
+}
+
+export interface RecorderCustodyStartRequest {
+  recorder: RecorderStartRequest;
+  modelId: string;
+  identityPort: string;
+  identityBaud: typeof RECORDER_BAUD;
+  identityPhysicalConfirmation: typeof RECORDER_ADAPTER_PROBE_CONFIRMATION;
+  authorizationPath: string;
+  custodyProofPath: string;
+}
+
+export interface RecorderCustodyStopRequest {
+  authorizationId: string;
+  physicalConfirmation: typeof RECORDER_ADAPTER_PROBE_CONFIRMATION;
+}
+
+export interface RecorderCustodyProof {
+  schemaVersion: typeof RECORDER_CUSTODY_PROOF_SCHEMA_VERSION;
+  trustBundleSchemaVersion: typeof RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION;
+  authorizationSchemaVersion: typeof RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION;
+  recorderAdapterProbeSchemaVersion: typeof RECORDER_ADAPTER_PROBE_SCHEMA_VERSION;
+  recorderAdapterSchemaVersion: typeof RECORDER_ADAPTER_SCHEMA_VERSION;
+  authorizationId: string;
+  authorizationSha256: string;
+  trustBundleId: string;
+  trustBundleSha256: string;
+  acceptanceAuthorityKeyId: string;
+  protectedRevision: string;
+  purpose: typeof RECORDER_CUSTODY_PURPOSE;
+  evidencePackSchemaVersion: "forge.external-acceptance.v1";
+  evidencePackSha256: string;
+  requiredSignoffSetSha256: string;
+  referenceRigId: typeof D12_REFERENCE_RIG_IDS[0];
+  artifactId: string;
+  modelId: string;
+  contractHash: string;
+  lockfileHash: string;
+  telemetrySourcePortSha256: string;
+  telemetryStartOsDescriptorSha256: string;
+  telemetryStopOsDescriptorSha256: string;
+  identitySourcePortSha256: string;
+  identityStartOsDescriptorSha256: string;
+  identityStopOsDescriptorSha256: string;
+  expectedIdentitySha256: string;
+  preIdentitySha256: string;
+  postIdentitySha256: string;
+  expectedDeviceUidSha256: string;
+  preDeviceUidSha256: string;
+  postDeviceUidSha256: string;
+  preObservedAtUnixMs: number;
+  postObservedAtUnixMs: number;
+  startPreIdentityResponseSha256: string;
+  startPostIdentityResponseSha256: string;
+  startTranscriptSha256: string;
+  stopPreIdentityResponseSha256: string;
+  stopPostIdentityResponseSha256: string;
+  stopTranscriptSha256: string;
+  recorderReceiptSha256: string;
+  captureStartedAtUnixMs: number;
+  captureStoppedAtUnixMs: number;
+  proofCreatedAtUnixMs: number;
+  acceptanceAuthoritySignatureVerified: true;
+  identityContinuityVerified: true;
+  captureConsentConfirmed: true;
+  noAutoArm: true;
+  cryptographicDeviceAttestation: false;
+  recordedDeviceAttested: false;
+  deviceIdentityVerified: false;
+  fieldSessionVerified: false;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
 }
 
 export interface RecorderStopReceipt {
@@ -382,6 +460,63 @@ const STOP_RECEIPT_FIELDS = [
   "noAutoArm",
 ] as const;
 
+const CUSTODY_PROOF_FIELDS = [
+  "schemaVersion",
+  "trustBundleSchemaVersion",
+  "authorizationSchemaVersion",
+  "recorderAdapterProbeSchemaVersion",
+  "recorderAdapterSchemaVersion",
+  "authorizationId",
+  "authorizationSha256",
+  "trustBundleId",
+  "trustBundleSha256",
+  "acceptanceAuthorityKeyId",
+  "protectedRevision",
+  "purpose",
+  "evidencePackSchemaVersion",
+  "evidencePackSha256",
+  "requiredSignoffSetSha256",
+  "referenceRigId",
+  "artifactId",
+  "modelId",
+  "contractHash",
+  "lockfileHash",
+  "telemetrySourcePortSha256",
+  "telemetryStartOsDescriptorSha256",
+  "telemetryStopOsDescriptorSha256",
+  "identitySourcePortSha256",
+  "identityStartOsDescriptorSha256",
+  "identityStopOsDescriptorSha256",
+  "expectedIdentitySha256",
+  "preIdentitySha256",
+  "postIdentitySha256",
+  "expectedDeviceUidSha256",
+  "preDeviceUidSha256",
+  "postDeviceUidSha256",
+  "preObservedAtUnixMs",
+  "postObservedAtUnixMs",
+  "startPreIdentityResponseSha256",
+  "startPostIdentityResponseSha256",
+  "startTranscriptSha256",
+  "stopPreIdentityResponseSha256",
+  "stopPostIdentityResponseSha256",
+  "stopTranscriptSha256",
+  "recorderReceiptSha256",
+  "captureStartedAtUnixMs",
+  "captureStoppedAtUnixMs",
+  "proofCreatedAtUnixMs",
+  "acceptanceAuthoritySignatureVerified",
+  "identityContinuityVerified",
+  "captureConsentConfirmed",
+  "noAutoArm",
+  "cryptographicDeviceAttestation",
+  "recordedDeviceAttested",
+  "deviceIdentityVerified",
+  "fieldSessionVerified",
+  "sharingAuthorized",
+  "trainingReuseAuthorized",
+] as const;
+
 const UPLOAD_PLAN_FIELDS = [
   "schemaVersion", "archiveSchemaVersion", "inspectionSchemaVersion", "artifactId",
   "referenceRigId", "contractHash", "lockfileHash", "sourcePortSha256", "sampleRateHz",
@@ -525,6 +660,29 @@ export async function startDesktopRecorder(
   return status;
 }
 
+export async function startDesktopCustodiedRecorder(
+  request: RecorderCustodyStartRequest,
+  runtime: DesktopCommandRuntime = tauriRuntime,
+): Promise<RecorderControlStatus> {
+  requireDesktop(runtime, "signed recorder custody");
+  const normalized = validateRecorderCustodyStartRequest(request);
+  const status = parseRecorderControlStatus(await runtime.invoke<unknown>(
+    "start_custodied_background_recording",
+    { request: normalized },
+  ));
+  if (status.state !== "recording"
+    || status.artifactId !== normalized.recorder.artifactId
+    || status.archivePath !== normalized.recorder.outputDir
+    || status.referenceRigId !== D12_REFERENCE_RIG_IDS[0]
+    || status.contractHash !== normalized.recorder.contractHash
+    || status.lockfileHash !== normalized.recorder.lockfileHash
+    || status.sourceBaud !== normalized.recorder.baud
+    || status.sampleRateHz !== normalized.recorder.sampleRateHz) {
+    throw new Error("Desktop custodied recorder start status does not match the signed capture request");
+  }
+  return status;
+}
+
 export async function stopDesktopRecorder(
   expectedStatus: RecorderControlStatus,
   runtime: DesktopCommandRuntime = tauriRuntime,
@@ -543,6 +701,144 @@ export async function stopDesktopRecorder(
     throw new Error("Desktop recorder stop receipt does not match the active capture identity");
   }
   return receipt;
+}
+
+export async function stopDesktopCustodiedRecorder(
+  expectedStatus: RecorderControlStatus,
+  expectedModelId: string,
+  request: RecorderCustodyStopRequest,
+  runtime: DesktopCommandRuntime = tauriRuntime,
+): Promise<RecorderCustodyProof> {
+  requireDesktop(runtime, "signed recorder custody");
+  if (expectedStatus.state === "inactive") {
+    throw new Error("cannot stop an inactive Desktop recorder under custody");
+  }
+  if (!/^[A-Za-z0-9._-]{1,128}$/.test(expectedModelId)
+    || !/^[A-Za-z0-9._-]{1,128}$/.test(request.authorizationId)
+    || request.physicalConfirmation !== RECORDER_ADAPTER_PROBE_CONFIRMATION) {
+    throw new Error("Desktop custody stop request is outside the active signed capture contract");
+  }
+  const proof = parseRecorderCustodyProof(await runtime.invoke<unknown>(
+    "stop_custodied_background_recording",
+    { request },
+  ));
+  if (proof.authorizationId !== request.authorizationId
+    || proof.modelId !== expectedModelId
+    || proof.artifactId !== expectedStatus.artifactId
+    || proof.referenceRigId !== expectedStatus.referenceRigId
+    || proof.contractHash !== expectedStatus.contractHash
+    || proof.lockfileHash !== expectedStatus.lockfileHash
+    || proof.telemetrySourcePortSha256 !== expectedStatus.sourcePortSha256
+    || proof.captureStartedAtUnixMs !== expectedStatus.startedAtUnixMs) {
+    throw new Error("Desktop custody proof does not match the active capture identity");
+  }
+  return proof;
+}
+
+export function parseRecorderCustodyProof(value: unknown): RecorderCustodyProof {
+  requireExactFields(value, CUSTODY_PROOF_FIELDS, "Desktop recorder custody proof");
+  if (value.schemaVersion !== RECORDER_CUSTODY_PROOF_SCHEMA_VERSION
+    || value.trustBundleSchemaVersion !== RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION
+    || value.authorizationSchemaVersion !== RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION
+    || value.recorderAdapterProbeSchemaVersion !== RECORDER_ADAPTER_PROBE_SCHEMA_VERSION
+    || value.recorderAdapterSchemaVersion !== RECORDER_ADAPTER_SCHEMA_VERSION
+    || value.purpose !== RECORDER_CUSTODY_PURPOSE
+    || value.evidencePackSchemaVersion !== "forge.external-acceptance.v1") {
+    throw new Error("Desktop recorder custody proof declares an unsupported contract version");
+  }
+  for (const field of [
+    "authorizationId",
+    "trustBundleId",
+    "acceptanceAuthorityKeyId",
+    "artifactId",
+    "modelId",
+  ] as const) {
+    if (typeof value[field] !== "string" || !/^[A-Za-z0-9._-]{1,128}$/.test(value[field])) {
+      throw new Error(`Desktop recorder custody proof ${field} is invalid`);
+    }
+  }
+  if (typeof value.protectedRevision !== "string" || !/^[0-9a-f]{40}$/.test(value.protectedRevision)
+    || value.referenceRigId !== D12_REFERENCE_RIG_IDS[0]) {
+    throw new Error("Desktop recorder custody proof revision or D12 scope is invalid");
+  }
+  for (const field of [
+    "trustBundleSha256",
+    "authorizationSha256",
+    "evidencePackSha256",
+    "requiredSignoffSetSha256",
+    "contractHash",
+    "lockfileHash",
+    "telemetrySourcePortSha256",
+    "telemetryStartOsDescriptorSha256",
+    "telemetryStopOsDescriptorSha256",
+    "identitySourcePortSha256",
+    "identityStartOsDescriptorSha256",
+    "identityStopOsDescriptorSha256",
+    "expectedIdentitySha256",
+    "preIdentitySha256",
+    "postIdentitySha256",
+    "expectedDeviceUidSha256",
+    "preDeviceUidSha256",
+    "postDeviceUidSha256",
+    "startPreIdentityResponseSha256",
+    "startPostIdentityResponseSha256",
+    "startTranscriptSha256",
+    "stopPreIdentityResponseSha256",
+    "stopPostIdentityResponseSha256",
+    "stopTranscriptSha256",
+    "recorderReceiptSha256",
+  ] as const) {
+    if (typeof value[field] !== "string" || !isSha256(value[field])) {
+      throw new Error(`Desktop recorder custody proof ${field} is not a lowercase SHA-256`);
+    }
+  }
+  for (const field of [
+    "preObservedAtUnixMs",
+    "postObservedAtUnixMs",
+    "captureStartedAtUnixMs",
+    "captureStoppedAtUnixMs",
+    "proofCreatedAtUnixMs",
+  ] as const) {
+    if (!isBoundedSafeInteger(value[field], 0)) {
+      throw new Error(`Desktop recorder custody proof ${field} is outside the safe time range`);
+    }
+  }
+  const preObservedAtUnixMs = value.preObservedAtUnixMs as number;
+  const captureStartedAtUnixMs = value.captureStartedAtUnixMs as number;
+  const captureStoppedAtUnixMs = value.captureStoppedAtUnixMs as number;
+  const postObservedAtUnixMs = value.postObservedAtUnixMs as number;
+  const proofCreatedAtUnixMs = value.proofCreatedAtUnixMs as number;
+  if (preObservedAtUnixMs > captureStartedAtUnixMs
+    || captureStartedAtUnixMs > captureStoppedAtUnixMs
+    || captureStoppedAtUnixMs > postObservedAtUnixMs
+    || postObservedAtUnixMs > proofCreatedAtUnixMs
+    || value.telemetryStartOsDescriptorSha256 !== value.telemetryStopOsDescriptorSha256
+    || value.identityStartOsDescriptorSha256 !== value.identityStopOsDescriptorSha256
+    || value.telemetrySourcePortSha256 === value.identitySourcePortSha256
+    || value.telemetryStartOsDescriptorSha256 === value.identityStartOsDescriptorSha256
+    || value.expectedIdentitySha256 !== value.preIdentitySha256
+    || value.preIdentitySha256 !== value.postIdentitySha256
+    || value.expectedDeviceUidSha256 !== value.preDeviceUidSha256
+    || value.preDeviceUidSha256 !== value.postDeviceUidSha256
+    || value.startPreIdentityResponseSha256 !== value.startPostIdentityResponseSha256
+    || value.stopPreIdentityResponseSha256 !== value.stopPostIdentityResponseSha256
+    || value.startPreIdentityResponseSha256 !== value.stopPreIdentityResponseSha256
+    || value.startTranscriptSha256 !== value.stopTranscriptSha256) {
+    throw new Error("Desktop recorder custody proof continuity bindings have drifted");
+  }
+  if (value.acceptanceAuthoritySignatureVerified !== true
+    || value.identityContinuityVerified !== true
+    || value.captureConsentConfirmed !== true
+    || value.noAutoArm !== true
+    || value.cryptographicDeviceAttestation !== false
+    || value.recordedDeviceAttested !== false
+    || value.deviceIdentityVerified !== false
+    || value.fieldSessionVerified !== false
+    || value.sharingAuthorized !== false
+    || value.trainingReuseAuthorized !== false) {
+    throw new Error("Desktop recorder custody proof authority flags have drifted");
+  }
+  return value as unknown as RecorderCustodyProof;
 }
 
 export async function inspectRecorderArchive(
@@ -912,6 +1208,40 @@ function validateRecorderStartRequest(request: RecorderStartRequest): RecorderSt
     throw new Error("recorder seed must be a non-negative safe integer");
   }
   return { ...request, artifactId, outputDir, port };
+}
+
+function validateRecorderCustodyStartRequest(
+  request: RecorderCustodyStartRequest,
+): RecorderCustodyStartRequest {
+  if (!isRecord(request)) {
+    throw new Error("Desktop recorder custody start request must be an object");
+  }
+  const recorder = validateRecorderStartRequest(request.recorder);
+  const modelId = request.modelId?.trim();
+  const identityPort = request.identityPort?.trim();
+  const authorizationPath = request.authorizationPath?.trim();
+  const custodyProofPath = request.custodyProofPath?.trim();
+  if (recorder.referenceRigId !== D12_REFERENCE_RIG_IDS[0]
+    || typeof modelId !== "string" || !/^[A-Za-z0-9._-]{1,128}$/.test(modelId)
+    || typeof identityPort !== "string" || identityPort.length === 0
+    || utf8Length(identityPort) > 4_096 || identityPort === recorder.port
+    || request.identityBaud !== RECORDER_BAUD
+    || request.identityPhysicalConfirmation !== RECORDER_ADAPTER_PROBE_CONFIRMATION
+    || typeof authorizationPath !== "string" || !validAbsolutePath(authorizationPath)
+    || typeof custodyProofPath !== "string" || !validAbsolutePath(custodyProofPath)
+    || custodyProofPath === recorder.outputDir
+    || custodyProofPath.startsWith(`${recorder.outputDir}/`)
+    || custodyProofPath.startsWith(`${recorder.outputDir}\\`)) {
+    throw new Error("Desktop recorder custody start request is outside the signed D12 contract");
+  }
+  return {
+    ...request,
+    recorder,
+    modelId,
+    identityPort,
+    authorizationPath,
+    custodyProofPath,
+  };
 }
 
 function validateBoundedEnvironment(value: unknown): asserts value is Record<string, unknown> {

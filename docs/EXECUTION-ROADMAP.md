@@ -503,13 +503,19 @@ Work:
   gate, all 40 repository gates under Python 3.12.13, clean/25-predecessor database,
   11-flow production-browser, and three-engine matrices pass. Real named-controller,
   trusted recorder-bound custody, suspend, lab, and field evidence remain pending;
-- D56 is the current unprotected successor design. It preserves archive v1, D53, and
-  D54 and instead plans a separately hash-pinned purpose-limited Ed25519 public trust
-  bundle, an at-most-eight-hour signed exact revision/evidence/signoffs/artifact/model/
-  two-port/D55-identity/nonclaim authorization, shell-owned pre/post D55 continuity,
-  and a create-new proof outside the five-file archive. The acceptance authority—not
-  the FC—signs the mapping. No runtime, protected, device-cryptographic, recorded-
-  device, sharing, training, lab, or field claim exists yet;
+- D56 is implemented but unprotected at local custody-fixture maturity. It preserves
+  archive v1, D53, and D54 and strictly executes a separately hash-pinned purpose-
+  limited Ed25519 public trust bundle, an at-most-eight-hour exact signed revision/
+  evidence/signoffs/artifact/model/two-port/D55-identity/nonclaim authorization,
+  shell-owned pre-open/post-clean-stop D55 continuity, sovereign archive/receipt
+  revalidation, and a create-new proof outside the five-file archive. Twenty-four
+  native and thirty Studio tests cover strict crypto/time/revocation/binding,
+  independent identity pseudo-terminal sessions around live pseudo-terminal capture,
+  substitution/no-overwrite refusal, and valid-archive preservation. The acceptance
+  authority—not the FC—signs the mapping; device-cryptographic, recorded-device,
+  sharing, training, lab, and field authority remains false. All 40 repository
+  gates, the locked Desktop-native build, and a fresh clean/25-predecessor isolated
+  Postgres plus 11-flow production-browser matrix pass locally;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -518,11 +524,9 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: review and protect D56's separate signed-custody
-contract, then implement its bounded trust-bundle/authorization parsers, strict
-signature and binding refusal, atomic start/pre-observation state, post-clean-stop
-observation, create-new proof, and archive-v1/D53/D54 regressions. After fixture
-mechanics pass, execute D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
+Next dependency-complete step: review and protect D56's separately verified signed-
+custody implementation, then execute
+D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
 under controlled-lab authority with a real deployment trust bundle and retained
 semantic acceptance review; retain bounded response/signature/hash plus failure,
 reconnect, power-loss, revocation, and suspend evidence, and exercise the recorder

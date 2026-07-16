@@ -143,6 +143,18 @@
       "telemetryReferenceSchema": "forge-recorder-telemetry-reference/1.0.0",
       "versionRule": "sovereign native archive verification, exact materialization/model/replay bindings, object-backed telemetry reference semantics, and false device/field/sharing/training authority are major-version semantics"
     },
+    "desktopRecorderCustody": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-recorder-custody-proof",
+      "versionField": "schemaVersion",
+      "trustBundleSchema": "forge-recorder-custody-trust-bundle/1.0.0",
+      "authorizationSchema": "forge-recorder-custody-authorization/1.0.0",
+      "proofSchema": "forge-recorder-custody-proof/1.0.0",
+      "versionRule": "the hash-pinned purpose-limited Ed25519 public trust bundle, at-most-eight-hour exact acceptance authorization and authorization-byte digest, native two-port start/stop D55 identity/UID/descriptor/response-transcript continuity, canonical receipt binding, separate create-new proof, and permanent device/recorded-device/field/sharing/training nonclaims are major-version semantics"
+    },
     "workerArtifacts": {
       "current": "0.2.0",
       "supportedMajors": [

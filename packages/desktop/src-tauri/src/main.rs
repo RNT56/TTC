@@ -1,7 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![cfg_attr(test, allow(dead_code))]
 
+mod custody;
+
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
+use custody::{
+    load_and_verify_authorization, write_custody_proof, CustodyBindingInputs,
+    RecorderCustodyAuthorization, RecorderCustodyProof, RecorderCustodyProofInputs,
+    VerifiedCustodyAuthorization,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -29,6 +36,16 @@ const RECORDER_UPLOAD_PLAN_SCHEMA_VERSION: &str = "forge-recorder-upload-plan/1.
 const RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION: &str = "forge-recorder-upload/1.0.0";
 const RECORDER_ADAPTER_PROBE_SCHEMA_VERSION: &str = "forge-recorder-adapter-probe/1.0.0";
 const RECORDER_ADAPTER_SCHEMA_VERSION: &str = "forge-betaflight-msp-adapter/1.0.0";
+const RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION: &str =
+    "forge-recorder-custody-trust-bundle/1.0.0";
+const RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION: &str =
+    "forge-recorder-custody-authorization/1.0.0";
+const RECORDER_CUSTODY_PROOF_SCHEMA_VERSION: &str = "forge-recorder-custody-proof/1.0.0";
+const RECORDER_CUSTODY_PURPOSE: &str = "controlled-lab-recorder-custody";
+const RECORDER_CUSTODY_TRUST_BUNDLE_ENV: &str = "FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE";
+const RECORDER_CUSTODY_TRUST_BUNDLE_SHA256_ENV: &str =
+    "FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE_SHA256";
+const PROTECTED_REVISION_ENV: &str = "FORGE_DESKTOP_PROTECTED_REVISION";
 const RECORDER_UPLOAD_ORIGIN_ENV: &str = "FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN";
 const REPLAY_SCHEMA_VERSION: &str = "1.0.0";
 const RECORDER_MANIFEST_FILE: &str = "forge-recorder-manifest.json";
@@ -282,6 +299,25 @@ struct RecorderRequest {
     lockfile_hash: String,
     environment: serde_json::Value,
     seed: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecorderCustodyStartRequest {
+    recorder: RecorderRequest,
+    model_id: String,
+    identity_port: String,
+    identity_baud: u32,
+    identity_physical_confirmation: String,
+    authorization_path: String,
+    custody_proof_path: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecorderCustodyStopRequest {
+    authorization_id: String,
+    physical_confirmation: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -560,6 +596,29 @@ struct ActiveRecorder {
     stop_tx: mpsc::Sender<()>,
     join: JoinHandle<Result<RecorderStopReceipt, String>>,
     status: RecorderControlStatus,
+    custody: Option<ActiveRecorderCustody>,
+}
+
+struct ActiveRecorderCustody {
+    verified: VerifiedCustodyAuthorization,
+    authorization_path: PathBuf,
+    archive_path: PathBuf,
+    proof_path: PathBuf,
+    model_id: String,
+    telemetry_port: String,
+    identity_port: String,
+    identity_baud: u32,
+    telemetry_start_os_descriptor_sha256: String,
+    identity_start_os_descriptor_sha256: String,
+    pre_probe: RecorderAdapterProbe,
+}
+
+#[derive(Clone, Copy)]
+struct CustodyDeploymentAuthority<'a> {
+    trust_bundle_path: &'a Path,
+    trust_bundle_sha256: &'a str,
+    protected_revision: &'a str,
+    now_unix_ms: u64,
 }
 
 #[derive(Default)]
@@ -686,6 +745,24 @@ fn os_serial_descriptor_sha256(port: &serialport::SerialPortInfo) -> Result<Stri
     let bytes = serde_json::to_vec(&descriptor)
         .map_err(|err| format!("serialize OS serial descriptor: {err}"))?;
     Ok(domain_sha256(b"forge-os-serial-descriptor/1.0.0\0", &bytes))
+}
+
+fn recorder_source_port_sha256(port: &str) -> String {
+    domain_sha256(b"forge-recorder-source-port/1.0.0\0", port.as_bytes())
+}
+
+fn enumerated_port_descriptor_sha256(
+    ports: &[serialport::SerialPortInfo],
+    requested: &str,
+    role: &str,
+) -> Result<String, String> {
+    let descriptor = ports
+        .iter()
+        .find(|candidate| candidate.port_name == requested)
+        .ok_or_else(|| {
+            format!("recorder custody {role} port must be reported by the operating system")
+        })?;
+    os_serial_descriptor_sha256(descriptor)
 }
 
 fn validate_adapter_probe_request(
@@ -1467,6 +1544,81 @@ fn validate_recorder_request(
     })?;
     require_d12_rig(Some(rig_id))?;
     Ok(rig_id.to_string())
+}
+
+fn valid_custody_token(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+}
+
+fn validate_custody_start_request(request: &RecorderCustodyStartRequest) -> Result<(), String> {
+    validate_recorder_request(&request.recorder, true)?;
+    if request.recorder.reference_rig_id.as_deref() != Some(D12_RIGS[0]) {
+        return Err("recorder custody v1 is limited to the D12 reference quad".to_string());
+    }
+    if !valid_custody_token(&request.model_id) {
+        return Err("recorder custody modelId must be a bounded safe token".to_string());
+    }
+    if request.identity_physical_confirmation != RECORDER_ADAPTER_PROBE_CONFIRMATION {
+        return Err("recorder custody start requires the exact props-off confirmation".to_string());
+    }
+    if request.identity_port.trim().is_empty()
+        || request.identity_port.len() > 4_096
+        || request.identity_baud != BETAFLIGHT_SERIAL_BAUD
+    {
+        return Err(format!(
+            "recorder custody identity probing requires a bounded port at {BETAFLIGHT_SERIAL_BAUD} baud"
+        ));
+    }
+    if request.identity_port == request.recorder.port {
+        return Err("recorder custody requires distinct telemetry and identity ports".to_string());
+    }
+    for (label, path) in [
+        ("authorizationPath", request.authorization_path.as_str()),
+        ("custodyProofPath", request.custody_proof_path.as_str()),
+    ] {
+        if path.trim().is_empty() || path.len() > 4_096 || !Path::new(path).is_absolute() {
+            return Err(format!(
+                "recorder custody {label} must be an absolute path of at most 4096 bytes"
+            ));
+        }
+    }
+    if Path::new(&request.custody_proof_path).starts_with(&request.recorder.output_dir) {
+        return Err("recorder custody proof must remain outside the five-file archive".to_string());
+    }
+    Ok(())
+}
+
+fn custody_deployment_authority() -> Result<(PathBuf, String, String), String> {
+    let trust_bundle_path = env::var(RECORDER_CUSTODY_TRUST_BUNDLE_ENV).map_err(|_| {
+        format!("{RECORDER_CUSTODY_TRUST_BUNDLE_ENV} is required for recorder custody")
+    })?;
+    let trust_bundle_sha256 = env::var(RECORDER_CUSTODY_TRUST_BUNDLE_SHA256_ENV).map_err(|_| {
+        format!("{RECORDER_CUSTODY_TRUST_BUNDLE_SHA256_ENV} is required for recorder custody")
+    })?;
+    let protected_revision = env::var(PROTECTED_REVISION_ENV)
+        .map_err(|_| format!("{PROTECTED_REVISION_ENV} is required for recorder custody"))?;
+    if !Path::new(&trust_bundle_path).is_absolute() {
+        return Err("recorder custody deployment trust-bundle path must be absolute".to_string());
+    }
+    if !is_sha256_hex(&trust_bundle_sha256)
+        || protected_revision.len() != 40
+        || !protected_revision
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(
+            "recorder custody deployment pin or protected revision is malformed".to_string(),
+        );
+    }
+    Ok((
+        PathBuf::from(trust_bundle_path),
+        trust_bundle_sha256,
+        protected_revision,
+    ))
 }
 
 fn create_new_json(path: &Path, value: &impl Serialize) -> Result<(), String> {
@@ -2667,16 +2819,26 @@ fn recorder_status_for(runtime: &RecorderRuntime) -> Result<RecorderControlStatu
 fn start_recorder_with_port(
     runtime: &RecorderRuntime,
     request: RecorderRequest,
-    mut port: Box<dyn serialport::SerialPort>,
+    port: Box<dyn serialport::SerialPort>,
     port_is_enumerated: bool,
 ) -> Result<RecorderControlStatus, String> {
-    let rig_id = validate_recorder_request(&request, port_is_enumerated)?;
-    port.set_timeout(RECORDER_READ_TIMEOUT)
-        .map_err(|err| format!("set recorder serial timeout: {err}"))?;
     let mut active = runtime
         .active
         .lock()
         .map_err(|_| "recorder runtime lock is poisoned".to_string())?;
+    start_recorder_with_port_locked(&mut active, request, port, port_is_enumerated, None)
+}
+
+fn start_recorder_with_port_locked(
+    active: &mut Option<ActiveRecorder>,
+    request: RecorderRequest,
+    mut port: Box<dyn serialport::SerialPort>,
+    port_is_enumerated: bool,
+    custody: Option<ActiveRecorderCustody>,
+) -> Result<RecorderControlStatus, String> {
+    let rig_id = validate_recorder_request(&request, port_is_enumerated)?;
+    port.set_timeout(RECORDER_READ_TIMEOUT)
+        .map_err(|err| format!("set recorder serial timeout: {err}"))?;
     if active.is_some() {
         return Err("a Desktop background recorder is already active".to_string());
     }
@@ -2724,6 +2886,7 @@ fn start_recorder_with_port(
         stop_tx,
         join,
         status: start_status.clone(),
+        custody,
     });
     Ok(start_status)
 }
@@ -2734,8 +2897,15 @@ fn stop_recorder(runtime: &RecorderRuntime) -> Result<RecorderStopReceipt, Strin
         .lock()
         .map_err(|_| "recorder runtime lock is poisoned".to_string())?;
     let active = guard
-        .take()
+        .as_ref()
         .ok_or_else(|| "no Desktop background recorder is active".to_string())?;
+    if active.custody.is_some() {
+        return Err(
+            "a custodied capture must use the custody stop command so archive completion and proof refusal remain explicit"
+                .to_string(),
+        );
+    }
+    let active = guard.take().expect("active recorder checked above");
     let _ = active.stop_tx.send(());
     let result = active
         .join
@@ -2759,6 +2929,276 @@ fn lock_inactive_recorder(
         );
     }
     Ok(guard)
+}
+
+fn custody_probe_request(port: String, baud: u32) -> RecorderAdapterProbeRequest {
+    RecorderAdapterProbeRequest {
+        port,
+        baud,
+        reference_rig_id: Some(D12_RIGS[0].to_string()),
+        physical_confirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION.to_string(),
+    }
+}
+
+fn validate_custody_probe(
+    probe: &RecorderAdapterProbe,
+    authorization: &RecorderCustodyAuthorization,
+    phase: &str,
+) -> Result<(), String> {
+    let binding = &authorization.binding;
+    if probe.schema_version != binding.recorder_adapter_probe_schema_version
+        || probe.adapter_schema_version != binding.recorder_adapter_schema_version
+        || probe.reference_rig_id != binding.reference_rig_id
+        || probe.identity_sha256 != binding.expected_identity_sha256
+        || probe.device_uid_sha256 != binding.expected_device_uid_sha256
+        || probe.source_port_sha256 != binding.identity_source_port_sha256
+        || probe.os_descriptor_sha256 != binding.identity_os_descriptor_sha256
+    {
+        return Err(format!(
+            "recorder custody {phase} identity observation does not match the signed authorization"
+        ));
+    }
+    if probe.device_identity_verified
+        || probe.cryptographic_device_attestation
+        || probe.recorded_device_attested
+        || probe.field_session_verified
+        || probe.sharing_authorized
+        || probe.training_reuse_authorized
+        || !probe.no_auto_arm
+    {
+        return Err(format!(
+            "recorder custody {phase} identity observation fabricated authority"
+        ));
+    }
+    Ok(())
+}
+
+fn custody_start_with_ports(
+    active: &mut Option<ActiveRecorder>,
+    request: RecorderCustodyStartRequest,
+    available_ports: &[serialport::SerialPortInfo],
+    authority: CustodyDeploymentAuthority<'_>,
+    identity_port_opener: impl FnOnce() -> Result<Box<dyn serialport::SerialPort>, String>,
+    telemetry_port_opener: impl FnOnce() -> Result<Box<dyn serialport::SerialPort>, String>,
+) -> Result<RecorderControlStatus, String> {
+    validate_custody_start_request(&request)?;
+    let telemetry_descriptor_sha256 =
+        enumerated_port_descriptor_sha256(available_ports, &request.recorder.port, "telemetry")?;
+    let identity_descriptor_sha256 =
+        enumerated_port_descriptor_sha256(available_ports, &request.identity_port, "identity")?;
+    let telemetry_source_port_sha256 = recorder_source_port_sha256(&request.recorder.port);
+    let identity_source_port_sha256 = recorder_source_port_sha256(&request.identity_port);
+    let expected = CustodyBindingInputs {
+        protected_revision: authority.protected_revision,
+        reference_rig_id: D12_RIGS[0],
+        artifact_id: &request.recorder.artifact_id,
+        model_id: &request.model_id,
+        contract_hash: &request.recorder.contract_hash,
+        lockfile_hash: &request.recorder.lockfile_hash,
+        telemetry_source_port_sha256: &telemetry_source_port_sha256,
+        telemetry_os_descriptor_sha256: &telemetry_descriptor_sha256,
+        identity_source_port_sha256: &identity_source_port_sha256,
+        identity_os_descriptor_sha256: &identity_descriptor_sha256,
+        recorder_adapter_probe_schema_version: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION,
+        recorder_adapter_schema_version: RECORDER_ADAPTER_SCHEMA_VERSION,
+    };
+    let verified = load_and_verify_authorization(
+        authority.trust_bundle_path,
+        authority.trust_bundle_sha256,
+        Path::new(&request.authorization_path),
+        &expected,
+        authority.now_unix_ms,
+    )?;
+    let identity_port = identity_port_opener()?;
+    let pre_probe = probe_recorder_adapter_with_port(
+        custody_probe_request(request.identity_port.clone(), request.identity_baud),
+        true,
+        identity_descriptor_sha256.clone(),
+        identity_port,
+    )?;
+    validate_custody_probe(&pre_probe, &verified.authorization, "start")?;
+    let telemetry_port = telemetry_port_opener()?;
+
+    let custody = ActiveRecorderCustody {
+        verified,
+        authorization_path: PathBuf::from(&request.authorization_path),
+        archive_path: PathBuf::from(&request.recorder.output_dir),
+        proof_path: PathBuf::from(&request.custody_proof_path),
+        model_id: request.model_id,
+        telemetry_port: request.recorder.port.clone(),
+        identity_port: request.identity_port,
+        identity_baud: request.identity_baud,
+        telemetry_start_os_descriptor_sha256: telemetry_descriptor_sha256,
+        identity_start_os_descriptor_sha256: identity_descriptor_sha256,
+        pre_probe,
+    };
+    start_recorder_with_port_locked(
+        active,
+        request.recorder,
+        telemetry_port,
+        true,
+        Some(custody),
+    )
+}
+
+fn validate_custody_stop_request(
+    request: &RecorderCustodyStopRequest,
+    custody: &ActiveRecorderCustody,
+) -> Result<(), String> {
+    if request.physical_confirmation != RECORDER_ADAPTER_PROBE_CONFIRMATION {
+        return Err("recorder custody stop requires the exact props-off confirmation".to_string());
+    }
+    if !valid_custody_token(&request.authorization_id)
+        || request.authorization_id != custody.verified.authorization.binding.authorization_id
+    {
+        return Err(
+            "recorder custody stop authorizationId does not match the active capture".to_string(),
+        );
+    }
+    Ok(())
+}
+
+fn finish_custody_proof(
+    custody: ActiveRecorderCustody,
+    receipt: &RecorderStopReceipt,
+    available_ports: &[serialport::SerialPortInfo],
+    identity_port_opener: impl FnOnce() -> Result<Box<dyn serialport::SerialPort>, String>,
+    authority: CustodyDeploymentAuthority<'_>,
+) -> Result<RecorderCustodyProof, String> {
+    let telemetry_stop_descriptor_sha256 =
+        enumerated_port_descriptor_sha256(available_ports, &custody.telemetry_port, "telemetry")?;
+    let identity_stop_descriptor_sha256 =
+        enumerated_port_descriptor_sha256(available_ports, &custody.identity_port, "identity")?;
+    if telemetry_stop_descriptor_sha256 != custody.telemetry_start_os_descriptor_sha256
+        || identity_stop_descriptor_sha256 != custody.identity_start_os_descriptor_sha256
+    {
+        return Err("recorder custody OS descriptor changed between start and stop".to_string());
+    }
+    let binding = &custody.verified.authorization.binding;
+    let telemetry_source_port_sha256 = recorder_source_port_sha256(&custody.telemetry_port);
+    let identity_source_port_sha256 = recorder_source_port_sha256(&custody.identity_port);
+    let expected = CustodyBindingInputs {
+        protected_revision: authority.protected_revision,
+        reference_rig_id: D12_RIGS[0],
+        artifact_id: &receipt.artifact_id,
+        model_id: &custody.model_id,
+        contract_hash: &receipt.contract_hash,
+        lockfile_hash: &receipt.lockfile_hash,
+        telemetry_source_port_sha256: &telemetry_source_port_sha256,
+        telemetry_os_descriptor_sha256: &telemetry_stop_descriptor_sha256,
+        identity_source_port_sha256: &identity_source_port_sha256,
+        identity_os_descriptor_sha256: &identity_stop_descriptor_sha256,
+        recorder_adapter_probe_schema_version: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION,
+        recorder_adapter_schema_version: RECORDER_ADAPTER_SCHEMA_VERSION,
+    };
+    let stop_verified = load_and_verify_authorization(
+        authority.trust_bundle_path,
+        authority.trust_bundle_sha256,
+        &custody.authorization_path,
+        &expected,
+        authority.now_unix_ms,
+    )?;
+    if stop_verified.trust_bundle_sha256 != custody.verified.trust_bundle_sha256
+        || stop_verified.authorization_sha256 != custody.verified.authorization_sha256
+        || stop_verified.authorization != custody.verified.authorization
+    {
+        return Err("recorder custody authority changed during the active capture".to_string());
+    }
+    let identity_port = identity_port_opener()?;
+    let post_probe = probe_recorder_adapter_with_port(
+        custody_probe_request(custody.identity_port.clone(), custody.identity_baud),
+        true,
+        identity_stop_descriptor_sha256.clone(),
+        identity_port,
+    )?;
+    validate_custody_probe(&post_probe, &stop_verified.authorization, "stop")?;
+    if post_probe.identity_sha256 != custody.pre_probe.identity_sha256
+        || post_probe.device_uid_sha256 != custody.pre_probe.device_uid_sha256
+        || post_probe.pre_identity_response_sha256 != custody.pre_probe.pre_identity_response_sha256
+        || post_probe.post_identity_response_sha256
+            != custody.pre_probe.post_identity_response_sha256
+        || post_probe.transcript_sha256 != custody.pre_probe.transcript_sha256
+    {
+        return Err(
+            "recorder custody identity or exact response transcript changed between start and stop"
+                .to_string(),
+        );
+    }
+
+    let inspection = inspect_recorder_archive_path(&custody.archive_path)?;
+    if inspection.artifact_id != receipt.artifact_id
+        || inspection.reference_rig_id != receipt.reference_rig_id
+        || inspection.contract_hash != receipt.contract_hash
+        || inspection.lockfile_hash != receipt.lockfile_hash
+        || inspection.source_port_sha256 != receipt.source_port_sha256
+        || inspection.started_at_unix_ms != receipt.started_at_unix_ms
+        || inspection.stopped_at_unix_ms != receipt.stopped_at_unix_ms
+    {
+        return Err("canonical recorder archive does not match the completed receipt".to_string());
+    }
+    let recorder_receipt_sha256 = file_sha256(&custody.archive_path.join(RECORDER_RECEIPT_FILE))?;
+    let proof = RecorderCustodyProof {
+        schema_version: RECORDER_CUSTODY_PROOF_SCHEMA_VERSION,
+        trust_bundle_schema_version: RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION,
+        authorization_schema_version: RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION,
+        recorder_adapter_probe_schema_version: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION.to_string(),
+        recorder_adapter_schema_version: RECORDER_ADAPTER_SCHEMA_VERSION.to_string(),
+        authorization_id: binding.authorization_id.clone(),
+        authorization_sha256: custody.verified.authorization_sha256,
+        trust_bundle_id: custody.verified.trust_bundle.bundle_id.clone(),
+        trust_bundle_sha256: custody.verified.trust_bundle_sha256,
+        acceptance_authority_key_id: custody.verified.authorization.key_id,
+        protected_revision: binding.protected_revision.clone(),
+        purpose: RECORDER_CUSTODY_PURPOSE.to_string(),
+        evidence_pack_schema_version: binding.evidence_pack_schema_version.clone(),
+        evidence_pack_sha256: binding.evidence_pack_sha256.clone(),
+        required_signoff_set_sha256: binding.required_signoff_set_sha256.clone(),
+        reference_rig_id: receipt.reference_rig_id.clone(),
+        artifact_id: receipt.artifact_id.clone(),
+        model_id: custody.model_id,
+        contract_hash: receipt.contract_hash.clone(),
+        lockfile_hash: receipt.lockfile_hash.clone(),
+        telemetry_source_port_sha256,
+        telemetry_start_os_descriptor_sha256: custody.telemetry_start_os_descriptor_sha256,
+        telemetry_stop_os_descriptor_sha256: telemetry_stop_descriptor_sha256,
+        identity_source_port_sha256,
+        identity_start_os_descriptor_sha256: custody.identity_start_os_descriptor_sha256,
+        identity_stop_os_descriptor_sha256: identity_stop_descriptor_sha256,
+        expected_identity_sha256: binding.expected_identity_sha256.clone(),
+        pre_identity_sha256: custody.pre_probe.identity_sha256,
+        post_identity_sha256: post_probe.identity_sha256,
+        expected_device_uid_sha256: binding.expected_device_uid_sha256.clone(),
+        pre_device_uid_sha256: custody.pre_probe.device_uid_sha256,
+        post_device_uid_sha256: post_probe.device_uid_sha256,
+        pre_observed_at_unix_ms: custody.pre_probe.observed_at_unix_ms,
+        post_observed_at_unix_ms: post_probe.observed_at_unix_ms,
+        start_pre_identity_response_sha256: custody.pre_probe.pre_identity_response_sha256,
+        start_post_identity_response_sha256: custody.pre_probe.post_identity_response_sha256,
+        start_transcript_sha256: custody.pre_probe.transcript_sha256,
+        stop_pre_identity_response_sha256: post_probe.pre_identity_response_sha256,
+        stop_post_identity_response_sha256: post_probe.post_identity_response_sha256,
+        stop_transcript_sha256: post_probe.transcript_sha256,
+        recorder_receipt_sha256,
+        capture_started_at_unix_ms: receipt.started_at_unix_ms,
+        capture_stopped_at_unix_ms: receipt.stopped_at_unix_ms,
+        proof_created_at_unix_ms: unix_ms()?,
+        acceptance_authority_signature_verified: true,
+        identity_continuity_verified: true,
+        capture_consent_confirmed: true,
+        no_auto_arm: true,
+        cryptographic_device_attestation: false,
+        recorded_device_attested: false,
+        device_identity_verified: false,
+        field_session_verified: false,
+        sharing_authorized: false,
+        training_reuse_authorized: false,
+    };
+    write_custody_proof(RecorderCustodyProofInputs {
+        proof_path: custody.proof_path,
+        archive_path: custody.archive_path,
+        proof: proof.clone(),
+    })?;
+    Ok(proof)
 }
 
 #[tauri::command]
@@ -2787,10 +3227,9 @@ fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
 #[tauri::command]
 fn probe_recorder_adapter(
     request: RecorderAdapterProbeRequest,
-    runtime: tauri::State<'_, RecorderRuntime>,
 ) -> Result<RecorderAdapterProbe, String> {
     validate_adapter_probe_request(&request, hardware_enabled())?;
-    let recorder_guard = lock_inactive_recorder(&runtime)?;
+    let recorder_guard = lock_inactive_recorder(recorder_runtime())?;
     let available = serialport::available_ports()
         .map_err(|err| format!("list serial ports before adapter probe: {err}"))?;
     let descriptor = available
@@ -3041,8 +3480,116 @@ fn start_background_recording(request: RecorderRequest) -> Result<RecorderContro
 }
 
 #[tauri::command]
+fn start_custodied_background_recording(
+    request: RecorderCustodyStartRequest,
+) -> Result<RecorderControlStatus, String> {
+    if !hardware_enabled() {
+        return Err(disabled_status().reason);
+    }
+    validate_custody_start_request(&request)?;
+    let mut active = lock_inactive_recorder(recorder_runtime())?;
+    let available_ports = serialport::available_ports()
+        .map_err(|err| format!("list serial ports before custodied capture: {err}"))?;
+    let (trust_bundle_path, trust_bundle_sha256, protected_revision) =
+        custody_deployment_authority()?;
+    let now_unix_ms = u64::try_from(unix_ms()?)
+        .map_err(|_| "system time exceeds recorder custody u64 range".to_string())?;
+    let identity_path = request.identity_port.clone();
+    let identity_baud = request.identity_baud;
+    let telemetry_path = request.recorder.port.clone();
+    let telemetry_baud = request.recorder.baud;
+    custody_start_with_ports(
+        &mut active,
+        request,
+        &available_ports,
+        CustodyDeploymentAuthority {
+            trust_bundle_path: &trust_bundle_path,
+            trust_bundle_sha256: &trust_bundle_sha256,
+            protected_revision: &protected_revision,
+            now_unix_ms,
+        },
+        || {
+            serialport::new(&identity_path, identity_baud)
+                .timeout(SERIAL_READ_TIMEOUT)
+                .open()
+                .map_err(|err| format!("open custody identity port '{identity_path}': {err}"))
+        },
+        || {
+            serialport::new(&telemetry_path, telemetry_baud)
+                .timeout(RECORDER_READ_TIMEOUT)
+                .open()
+                .map_err(|err| format!("open custodied telemetry port '{telemetry_path}': {err}"))
+        },
+    )
+}
+
+#[tauri::command]
 fn stop_background_recording() -> Result<RecorderStopReceipt, String> {
     stop_recorder(recorder_runtime())
+}
+
+#[tauri::command]
+fn stop_custodied_background_recording(
+    request: RecorderCustodyStopRequest,
+) -> Result<RecorderCustodyProof, String> {
+    let runtime = recorder_runtime();
+    let mut guard = runtime
+        .active
+        .lock()
+        .map_err(|_| "recorder runtime lock is poisoned".to_string())?;
+    let active_ref = guard
+        .as_ref()
+        .ok_or_else(|| "no Desktop background recorder is active".to_string())?;
+    let custody_ref = active_ref
+        .custody
+        .as_ref()
+        .ok_or_else(|| "the active Desktop recorder was not started under custody".to_string())?;
+    validate_custody_stop_request(&request, custody_ref)?;
+    let active = guard.take().expect("active recorder checked above");
+    let _ = active.stop_tx.send(());
+    let receipt = active
+        .join
+        .join()
+        .map_err(|_| "Desktop background recorder thread panicked".to_string())?
+        .map_err(|err| format!("custodied recorder did not complete its v1 archive: {err}"))?;
+    let custody = active
+        .custody
+        .expect("custodied recorder checked before clean stop");
+    let result = (|| {
+        let available_ports = serialport::available_ports()
+            .map_err(|err| format!("list serial ports after custodied capture: {err}"))?;
+        let (trust_bundle_path, trust_bundle_sha256, protected_revision) =
+            custody_deployment_authority()?;
+        let now_unix_ms = u64::try_from(unix_ms()?)
+            .map_err(|_| "system time exceeds recorder custody u64 range".to_string())?;
+        let identity_path = custody.identity_port.clone();
+        let identity_baud = custody.identity_baud;
+        finish_custody_proof(
+            custody,
+            &receipt,
+            &available_ports,
+            || {
+                serialport::new(&identity_path, identity_baud)
+                    .timeout(SERIAL_READ_TIMEOUT)
+                    .open()
+                    .map_err(|err| {
+                        format!("open custody identity port '{identity_path}' at stop: {err}")
+                    })
+            },
+            CustodyDeploymentAuthority {
+                trust_bundle_path: &trust_bundle_path,
+                trust_bundle_sha256: &trust_bundle_sha256,
+                protected_revision: &protected_revision,
+                now_unix_ms,
+            },
+        )
+    })();
+    drop(guard);
+    result.map_err(|err| {
+        format!(
+            "recorder archive completed but custody proof was not created; the five-file archive remains valid and unpromoted: {err}"
+        )
+    })
 }
 
 fn strict_recorder_archive_path(archive_path: String) -> Result<PathBuf, String> {
@@ -3093,7 +3640,9 @@ fn main() {
             write_serial_config,
             recorder_status,
             start_background_recording,
+            start_custodied_background_recording,
             stop_background_recording,
+            stop_custodied_background_recording,
             inspect_recorder_archive,
             prepare_recorder_archive_upload,
             upload_recorder_archive_files
@@ -3108,6 +3657,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ed25519_dalek::{Signer, SigningKey};
     use serialport::SerialPort;
     use std::io::{Read, Write};
     #[cfg(unix)]
@@ -3367,6 +3917,265 @@ mod tests {
     }
 
     #[cfg(unix)]
+    fn custody_available_ports() -> Vec<serialport::SerialPortInfo> {
+        vec![
+            serialport::SerialPortInfo {
+                port_name: "custody-telemetry-port".to_string(),
+                port_type: serialport::SerialPortType::Unknown,
+            },
+            serialport::SerialPortInfo {
+                port_name: "custody-identity-port".to_string(),
+                port_type: serialport::SerialPortType::Unknown,
+            },
+        ]
+    }
+
+    #[cfg(unix)]
+    fn custody_expected_identity(uid: [u8; 12]) -> (String, String) {
+        let uid_sha256 = domain_sha256(b"forge-recorder-device-uid/1.0.0\0", &uid);
+        let binding = MspIdentityBinding {
+            schema_version: RECORDER_ADAPTER_SCHEMA_VERSION,
+            firmware_version: "2025.12.5",
+            msp_protocol_version: MSP_PROTOCOL_VERSION,
+            msp_api_major: MSP_API_MAJOR,
+            msp_api_minor: MSP_API_MINOR,
+            flight_controller_variant: "BTFL",
+            board_identifier: "KH7",
+            target_name: "KAKUTEH7",
+            board_name: "Kakute H7 V1.5",
+            manufacturer_id: "HBRO",
+            device_uid_sha256: &uid_sha256,
+        };
+        let identity_bytes = serde_json::to_vec(&binding).expect("identity binding serializes");
+        (
+            domain_sha256(b"forge-recorder-adapter-identity/1.0.0\0", &identity_bytes),
+            uid_sha256,
+        )
+    }
+
+    #[cfg(unix)]
+    fn lower_hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    #[cfg(unix)]
+    fn write_custody_authority(
+        root: &Path,
+        request: &RecorderCustodyStartRequest,
+        available_ports: &[serialport::SerialPortInfo],
+        uid: [u8; 12],
+        now: u64,
+    ) -> (PathBuf, String, String) {
+        let protected_revision = "c".repeat(40);
+        let signing_key = SigningKey::from_bytes(&[23_u8; 32]);
+        let trust = custody::RecorderCustodyTrustBundle {
+            schema_version: RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION.to_string(),
+            bundle_id: "controlled-lab-bundle-1".to_string(),
+            purpose: RECORDER_CUSTODY_PURPOSE.to_string(),
+            keys: vec![custody::RecorderCustodyTrustKey {
+                key_id: "controlled-lab-key-1".to_string(),
+                algorithm: "Ed25519".to_string(),
+                public_key_hex: lower_hex(signing_key.verifying_key().as_bytes()),
+                not_before_unix_ms: now - 10_000,
+                not_after_unix_ms: now + 3_600_000,
+                revoked_at_unix_ms: None,
+            }],
+        };
+        let trust_bytes = serde_json::to_vec_pretty(&trust).expect("trust bundle serializes");
+        let trust_path = root.join("custody-trust.json");
+        fs::write(&trust_path, &trust_bytes).expect("write custody trust bundle");
+        let telemetry_descriptor_sha256 =
+            enumerated_port_descriptor_sha256(available_ports, &request.recorder.port, "telemetry")
+                .expect("telemetry descriptor");
+        let identity_descriptor_sha256 =
+            enumerated_port_descriptor_sha256(available_ports, &request.identity_port, "identity")
+                .expect("identity descriptor");
+        let (expected_identity_sha256, expected_device_uid_sha256) = custody_expected_identity(uid);
+        let binding = custody::RecorderCustodyAuthorizationBinding {
+            authorization_id: "custody-authorization-1".to_string(),
+            purpose: RECORDER_CUSTODY_PURPOSE.to_string(),
+            protected_revision: protected_revision.clone(),
+            evidence_pack_schema_version: "forge.external-acceptance.v1".to_string(),
+            evidence_pack_sha256: "31".repeat(32),
+            required_signoff_set_sha256: "32".repeat(32),
+            reference_rig_id: D12_RIGS[0].to_string(),
+            artifact_id: request.recorder.artifact_id.clone(),
+            model_id: request.model_id.clone(),
+            contract_hash: request.recorder.contract_hash.clone(),
+            lockfile_hash: request.recorder.lockfile_hash.clone(),
+            telemetry_source_port_sha256: recorder_source_port_sha256(&request.recorder.port),
+            telemetry_os_descriptor_sha256: telemetry_descriptor_sha256,
+            identity_source_port_sha256: recorder_source_port_sha256(&request.identity_port),
+            identity_os_descriptor_sha256: identity_descriptor_sha256,
+            recorder_adapter_probe_schema_version: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION
+                .to_string(),
+            recorder_adapter_schema_version: RECORDER_ADAPTER_SCHEMA_VERSION.to_string(),
+            expected_identity_sha256,
+            expected_device_uid_sha256,
+            issued_at_unix_ms: now - 2_000,
+            not_before_unix_ms: now - 1_000,
+            expires_at_unix_ms: now + 60_000,
+            capture_consent_confirmed: true,
+            no_auto_arm: true,
+            cryptographic_device_attestation: false,
+            recorded_device_attested: false,
+            field_session_verified: false,
+            sharing_authorized: false,
+            training_reuse_authorized: false,
+        };
+        let mut signed_message = b"forge-recorder-custody-authorization/1.0.0\0".to_vec();
+        signed_message
+            .extend_from_slice(&serde_json::to_vec(&binding).expect("custody binding serializes"));
+        let authorization = custody::RecorderCustodyAuthorization {
+            schema_version: RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION.to_string(),
+            key_id: "controlled-lab-key-1".to_string(),
+            algorithm: "Ed25519".to_string(),
+            signature_hex: lower_hex(&signing_key.sign(&signed_message).to_bytes()),
+            binding,
+        };
+        fs::write(
+            &request.authorization_path,
+            serde_json::to_vec_pretty(&authorization).expect("authorization serializes"),
+        )
+        .expect("write custody authorization");
+        (trust_path, sha256_hex(&trust_bytes), protected_revision)
+    }
+
+    #[cfg(unix)]
+    fn custody_start_request(root: &Path, artifact_id: &str) -> RecorderCustodyStartRequest {
+        let archive = root.join("archive");
+        let mut recorder = recorder_request(&archive, artifact_id);
+        recorder.reference_rig_id = Some(D12_RIGS[0].to_string());
+        recorder.port = "custody-telemetry-port".to_string();
+        RecorderCustodyStartRequest {
+            recorder,
+            model_id: "admitted-model-1".to_string(),
+            identity_port: "custody-identity-port".to_string(),
+            identity_baud: BETAFLIGHT_SERIAL_BAUD,
+            identity_physical_confirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION.to_string(),
+            authorization_path: root
+                .join("custody-authorization.json")
+                .to_string_lossy()
+                .into_owned(),
+            custody_proof_path: root
+                .join("custody-proof.json")
+                .to_string_lossy()
+                .into_owned(),
+        }
+    }
+
+    #[cfg(unix)]
+    fn execute_custody_round_trip(
+        root: &Path,
+        start_uid: [u8; 12],
+        stop_uid: [u8; 12],
+        precreate_proof: bool,
+    ) -> (Result<RecorderCustodyProof, String>, PathBuf, PathBuf) {
+        fs::create_dir_all(root).expect("custody test root");
+        let request = custody_start_request(root, "custodied-artifact");
+        let archive_path = PathBuf::from(&request.recorder.output_dir);
+        let proof_path = PathBuf::from(&request.custody_proof_path);
+        if precreate_proof {
+            fs::write(&proof_path, b"existing proof must not be overwritten\n")
+                .expect("precreate custody proof");
+        }
+        let available_ports = custody_available_ports();
+        let now = u64::try_from(unix_ms().expect("current test time")).expect("u64 time");
+        let (trust_path, trust_pin, protected_revision) =
+            write_custody_authority(root, &request, &available_ports, start_uid, now);
+
+        let (identity_start_master, identity_start_slave) =
+            serialport::TTYPort::pair().expect("start identity pseudo terminal pair");
+        let identity_start_target = spawn_fake_msp(
+            identity_start_master,
+            vec![
+                msp_identity_payloads(start_uid),
+                msp_identity_payloads(start_uid),
+            ],
+        );
+        let (mut telemetry_master, telemetry_slave) =
+            serialport::TTYPort::pair().expect("telemetry pseudo terminal pair");
+        let runtime = RecorderRuntime::default();
+        let mut guard = lock_inactive_recorder(&runtime).expect("inactive recorder lock");
+        custody_start_with_ports(
+            &mut guard,
+            request,
+            &available_ports,
+            CustodyDeploymentAuthority {
+                trust_bundle_path: &trust_path,
+                trust_bundle_sha256: &trust_pin,
+                protected_revision: &protected_revision,
+                now_unix_ms: now,
+            },
+            move || Ok(Box::new(identity_start_slave)),
+            move || Ok(Box::new(telemetry_slave)),
+        )
+        .expect("custodied recorder starts after signed identity observation");
+        drop(guard);
+        identity_start_target
+            .join()
+            .expect("start identity target completes");
+        for sequence in 0..3 {
+            telemetry_master
+                .write_all(&recorder_frame(
+                    "custodied-artifact",
+                    sequence,
+                    sequence as f64 * 0.25,
+                ))
+                .expect("write custodied telemetry frame");
+        }
+        telemetry_master
+            .flush()
+            .expect("flush custodied telemetry frames");
+        thread::sleep(Duration::from_millis(150));
+
+        let mut guard = runtime.active.lock().expect("custody stop lock");
+        let active_ref = guard.as_ref().expect("custodied recorder active");
+        validate_custody_stop_request(
+            &RecorderCustodyStopRequest {
+                authorization_id: "custody-authorization-1".to_string(),
+                physical_confirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION.to_string(),
+            },
+            active_ref.custody.as_ref().expect("custody context"),
+        )
+        .expect("custody stop confirmation");
+        let active = guard.take().expect("take custodied recorder");
+        let _ = active.stop_tx.send(());
+        let receipt = active
+            .join
+            .join()
+            .expect("recorder thread joins")
+            .expect("recorder archive completes");
+        let custody = active.custody.expect("custody context survives capture");
+        let (identity_stop_master, identity_stop_slave) =
+            serialport::TTYPort::pair().expect("stop identity pseudo terminal pair");
+        let identity_stop_target = spawn_fake_msp(
+            identity_stop_master,
+            vec![
+                msp_identity_payloads(stop_uid),
+                msp_identity_payloads(stop_uid),
+            ],
+        );
+        let result = finish_custody_proof(
+            custody,
+            &receipt,
+            &available_ports,
+            move || Ok(Box::new(identity_stop_slave)),
+            CustodyDeploymentAuthority {
+                trust_bundle_path: &trust_path,
+                trust_bundle_sha256: &trust_pin,
+                protected_revision: &protected_revision,
+                now_unix_ms: now + 1_000,
+            },
+        );
+        drop(guard);
+        identity_stop_target
+            .join()
+            .expect("stop identity target completes");
+        (result, archive_path, proof_path)
+    }
+
+    #[cfg(unix)]
     fn spawn_fake_msp(
         mut master: serialport::TTYPort,
         passes: Vec<Vec<(u8, Vec<u8>)>>,
@@ -3590,6 +4399,83 @@ mod tests {
                 .expect_err("disabled gates must fail")
                 .contains("hardware-enable")
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn signed_custody_brackets_clean_archive_and_writes_separate_nonclaim_proof() {
+        let root = test_dir("custody-round-trip");
+        let uid = [1, 3, 5, 7, 9, 11, 2, 4, 6, 8, 10, 12];
+        let (result, archive_path, proof_path) = execute_custody_round_trip(&root, uid, uid, false);
+        let proof = result.expect("matching start/stop identity creates custody proof");
+        assert_eq!(proof.schema_version, RECORDER_CUSTODY_PROOF_SCHEMA_VERSION);
+        assert_eq!(proof.authorization_id, "custody-authorization-1");
+        assert!(is_sha256_hex(&proof.authorization_sha256));
+        assert!(proof.acceptance_authority_signature_verified);
+        assert!(proof.identity_continuity_verified);
+        assert!(proof.capture_consent_confirmed);
+        assert!(proof.no_auto_arm);
+        assert!(!proof.cryptographic_device_attestation);
+        assert!(!proof.recorded_device_attested);
+        assert!(!proof.device_identity_verified);
+        assert!(!proof.field_session_verified);
+        assert!(!proof.sharing_authorized);
+        assert!(!proof.training_reuse_authorized);
+        assert_eq!(proof.pre_identity_sha256, proof.post_identity_sha256);
+        assert_eq!(proof.pre_device_uid_sha256, proof.post_device_uid_sha256);
+        assert_eq!(
+            proof.start_pre_identity_response_sha256,
+            proof.stop_pre_identity_response_sha256
+        );
+        assert_eq!(proof.start_transcript_sha256, proof.stop_transcript_sha256);
+        assert!(proof.pre_observed_at_unix_ms <= proof.capture_started_at_unix_ms);
+        assert!(proof.capture_started_at_unix_ms <= proof.capture_stopped_at_unix_ms);
+        assert!(proof.capture_stopped_at_unix_ms <= proof.post_observed_at_unix_ms);
+        assert!(proof.post_observed_at_unix_ms <= proof.proof_created_at_unix_ms);
+        assert!(is_sha256_hex(&proof.recorder_receipt_sha256));
+        assert!(proof_path.is_file());
+        assert_eq!(
+            fs::read_dir(&archive_path)
+                .expect("list canonical archive")
+                .count(),
+            5
+        );
+        inspect_recorder_archive_path(&archive_path).expect("archive v1 remains canonical");
+        let proof_json = fs::read_to_string(&proof_path).expect("proof is readable");
+        assert!(!proof_json.contains("signatureHex"));
+        assert!(!proof_json.contains("privateKey"));
+        fs::remove_dir_all(root).expect("custody round-trip cleanup");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn custody_identity_substitution_or_existing_proof_preserves_valid_archive_without_proof() {
+        let substitution_root = test_dir("custody-substitution");
+        let start_uid = [1, 3, 5, 7, 9, 11, 2, 4, 6, 8, 10, 12];
+        let stop_uid = [12, 10, 8, 6, 4, 2, 11, 9, 7, 5, 3, 1];
+        let (substitution, archive_path, proof_path) =
+            execute_custody_round_trip(&substitution_root, start_uid, stop_uid, false);
+        assert!(substitution
+            .expect_err("identity substitution must refuse custody")
+            .contains("signed authorization"));
+        assert!(!proof_path.exists());
+        inspect_recorder_archive_path(&archive_path)
+            .expect("identity substitution does not erase the valid archive");
+        fs::remove_dir_all(substitution_root).expect("substitution cleanup");
+
+        let overwrite_root = test_dir("custody-overwrite");
+        let (overwrite, archive_path, proof_path) =
+            execute_custody_round_trip(&overwrite_root, start_uid, start_uid, true);
+        assert!(overwrite
+            .expect_err("existing proof must refuse overwrite")
+            .contains("create custody proof"));
+        assert_eq!(
+            fs::read_to_string(proof_path).expect("existing proof remains untouched"),
+            "existing proof must not be overwritten\n"
+        );
+        inspect_recorder_archive_path(&archive_path)
+            .expect("overwrite refusal does not erase the valid archive");
+        fs::remove_dir_all(overwrite_root).expect("overwrite cleanup");
     }
 
     #[test]
