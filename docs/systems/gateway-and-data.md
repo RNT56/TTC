@@ -94,6 +94,10 @@ sets `gateway_archive_semantics_verified` and does not create `telemetry_logs`, 
 admission, device/field provenance, sharing, or training authority. User-data export
 1.5 and account deletion cover the materialization row and reuse normal authenticated
 blob access/deletion for its payloads.
+PR #93/`08d892f`, reviewed tree `90d8cbf`, and exact PR/post-merge CI/security
+protect this local private-object-integrity boundary. They do not prove sovereign
+archive semantics, telemetry admission, device/field provenance, sharing, training,
+lab, or field maturity.
 Fixture job outputs currently materialize to `photoscan_artifacts`,
 `policy_artifacts`, `telemetry_logs`, `replay_artifacts`, and
 `maintenance_records`; `local` and `modal` jobs persist as queued rows for the
