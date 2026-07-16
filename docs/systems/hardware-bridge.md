@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is protected at local protocol-fixture maturity through PR #97/`370d214`; D30 accepted controlled D12 lab pilots; recorder-bound real-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is protected at local protocol-fixture maturity through PR #97/`370d214`; D56 defines the separate signed recorder-custody boundary but is not implemented or protected; D30 accepted controlled D12 lab pilots; recorder-bound real-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54, D55
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54, D55, D56
 
 ## 1. Purpose
 
@@ -256,6 +256,56 @@ PR #97/`370d214`; exact head `4321eaa`, reviewed tree `673a50c`, PR CI/security
 bound to recorder start/end, archive bytes, a named physical FC, signed custody, or
 D54, so it cannot promote any existing archive or telemetry row.
 
+D56 owns the successor design and keeps every protected byte/row above immutable.
+It introduces three independent formats rather than extending a v1 response:
+
+| Format | Persistence | Exact authority |
+|---|---|---|
+| `forge-recorder-custody-trust-bundle/1.0.0` | deployment-owned, hash-pinned local file | at most 32 bounded Ed25519 public keys with key ID, validity/revocation state, and only the `controlled-lab-recorder-custody` purpose |
+| `forge-recorder-custody-authorization/1.0.0` | private retained acceptance artifact/input | one domain-separated signature over the exact run/evidence/revision/artifact/model/two-port/D55 identity/time/nonclaim binding |
+| `forge-recorder-custody-proof/1.0.0` | create-new local file outside the five-file archive | native verification result binding the signed authorization, trust-bundle/evidence hashes, pre/post D55 observations, and canonical v1 receipt hash |
+
+The authorization lifetime is at most eight hours. It binds the full protected source
+revision, exact D12 quad, contract and lockfile hashes, artifact ID, the OS descriptor
+hash of both the telemetry stream and identity-probe ports, D55 probe/adapter
+versions, expected normalized identity and UID hashes, evidence-pack and required-
+signoff-set hashes, controlled-lab purpose, and all permanent nonclaims. The trust
+bundle contains no private key and must itself match one separately configured
+lowercase SHA-256. Verification uses strict RFC-8032 Ed25519 behavior and fails on an
+unknown, weak, malformed, expired, revoked, or wrong-purpose key; malformed or non-
+canonical binding/signature bytes; source-revision, clock, artifact/model, port,
+identity, or authority drift; or a bundle larger than its explicit byte/key bounds.
+The acceptance-owner signature vouches for the reviewed port-to-named-evidence
+mapping. It is not a device signature.
+
+Native start must atomically hold the recorder inactive, re-enumerate both ports,
+verify the signed authorization, rerun the exact D55 two-pass read-only observation
+on the identity port, compare it with every signed identity/descriptor field, and
+only then open the telemetry port. The verified authorization and pre-observation
+live in shell-owned recorder state so a webview reload cannot replace them. Clean
+stop preserves D50's existing drain/flush/sync/replay/receipt ordering first. A
+separate props-off confirmation then authorizes re-enumeration and a second complete
+D55 observation. Only exact signed/pre/post identity, UID, descriptor, and response-
+set continuity plus a canonical v1 receipt may create the custody proof.
+
+The proof file must be an absolute create-new regular path outside the exact archive
+directory, must bind the complete authorization and trust-bundle digests, evidence
+pack/signoff hashes, both observation times/transcripts/response sets, exact v1
+receipt digest, artifact/rig/contract/lockfile/times, and must retain
+`cryptographicDeviceAttestation=false`, `recordedDeviceAttested=false`,
+`fieldSessionVerified=false`, `sharingAuthorized=false`,
+`trainingReuseAuthorized=false`, and `noAutoArm=true`. A capture failure or failed
+post-observation emits no proof. A clean archive remains a valid v1 archive if
+custody completion fails; the error must identify that the archive completed but
+custody did not, and must never delete or relabel the five files.
+
+Fixture signatures and pseudo-terminals will close only D56 contract/integration
+mechanics. Sandbox or stronger maturity additionally needs a deployment-controlled
+real trust bundle, semantically reviewed retained acceptance evidence, and the named
+Kakute H7 V1.5. Host-suspend behavior, EXT-004, field provenance, device-held
+cryptographic keys, gateway materialization of the proof, any D54 promotion, and a
+recorded-device training format remain separate work.
+
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the
 protected local target-firmware handshake and post-write readback protocol through
@@ -421,9 +471,23 @@ device/field/sharing/training meanings. Pseudo-terminal success is protocol-fixt
 evidence only; real-device or archive-provenance claims additionally require a named
 FC run and a separately reviewed recorder-bound custody/attestation version.
 
+D56 custody changes additionally require bounded/hash-pinned trust-bundle parsing;
+strict Ed25519 key/signature/canonical-message verification; unknown, weak, revoked,
+expired, wrong-purpose, revision, evidence, artifact, model, port, time, signature,
+and authority refusal; exact two-port OS descriptor binding; D55 pre-observation
+before telemetry open and post-observation only after the existing clean receipt;
+shell-owned state across webview reload; exact identity/UID/response/transcript
+continuity; create-new proof outside the five-file directory; canonical receipt and
+authorization hashes; custody-failure preservation of a valid v1 archive; no raw
+UID/signature/private-key exposure to Studio; and permanent false device-crypto,
+recorded-device, field, sharing, and training claims. Tests must include deterministic
+fixture keys, invalid/malleated signatures, expired/revoked roots, two real pseudo-
+terminal ports, port/identity substitution, recorder failure, post-probe failure,
+proof overwrite refusal, and clean v1 inspection/admission regression. Those tests
+remain fixture proof until the named controller and retained signed lab evidence run.
+
 ## 12. Open questions
 
-Tauri updater/signing strategy per OS (decide at P8-011); recorder-bound adapter
-codec plus trusted device/session custody above D55's self-reported identity probe
-and D54's semantic-only admission seam; FORGE Link
-build tooling (pi-gen assumed *(proposed)*).
+Tauri updater/signing strategy per OS (decide at P8-011); D56 implementation and
+the later gateway/recorded-device promotion policy above its local custody proof;
+FORGE Link build tooling (pi-gen assumed *(proposed)*).

@@ -503,6 +503,13 @@ Work:
   gate, all 40 repository gates under Python 3.12.13, clean/25-predecessor database,
   11-flow production-browser, and three-engine matrices pass. Real named-controller,
   trusted recorder-bound custody, suspend, lab, and field evidence remain pending;
+- D56 is the current unprotected successor design. It preserves archive v1, D53, and
+  D54 and instead plans a separately hash-pinned purpose-limited Ed25519 public trust
+  bundle, an at-most-eight-hour signed exact revision/evidence/signoffs/artifact/model/
+  two-port/D55-identity/nonclaim authorization, shell-owned pre/post D55 continuity,
+  and a create-new proof outside the five-file archive. The acceptance authority—not
+  the FC—signs the mapping. No runtime, protected, device-cryptographic, recorded-
+  device, sharing, training, lab, or field claim exists yet;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -511,16 +518,19 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: define a successor to protected D55 that binds a
-reviewed trust/custody result to both recorder start and clean stop without mutating
-D54 or promoting any consent. In
-parallel, execute D49 and D55 on the named D12 Kakute H7 V1.5 under controlled-lab
-authority with propellers removed, retain bounded raw responses/hashes plus failure/
-reconnect/power-loss evidence, and exercise the recorder seam under P8-009's SITL ->
-HITL procedure. Browser WebSerial should consume the unchanged D48 artifact only
-after native real-target proof. No stable self-reported MSP transcript, adapter, or
-import path may promote a log to recorded-device or field maturity without the
-separate trusted recorder-bound evidence contract and reviewed acceptance proof.
+Next dependency-complete step: review and protect D56's separate signed-custody
+contract, then implement its bounded trust-bundle/authorization parsers, strict
+signature and binding refusal, atomic start/pre-observation state, post-clean-stop
+observation, create-new proof, and archive-v1/D53/D54 regressions. After fixture
+mechanics pass, execute D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
+under controlled-lab authority with a real deployment trust bundle and retained
+semantic acceptance review; retain bounded response/signature/hash plus failure,
+reconnect, power-loss, revocation, and suspend evidence, and exercise the recorder
+seam under P8-009's SITL -> HITL procedure. Browser WebSerial should consume the
+unchanged D48 artifact only after native real-target proof. No stable self-reported
+MSP transcript, fixture signature, adapter, import path, or acceptance-authority
+signature may promote a log to recorded-device or field maturity without a later
+reviewed format and acceptance proof.
 
 Acceptance:
 

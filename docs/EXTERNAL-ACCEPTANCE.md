@@ -258,6 +258,14 @@ telemetry, replay, ghost, system-ID review, every anomaly, and all required role
 signatures. The quad HITL step additionally resolves one D49 receipt 2.0.0 against
 private content-addressed pre/post firmware, set/save, reconnect, and exact-readback
 responses; receipt 1.0.0 or a local pseudo-terminal never proves lab application.
+D56 additionally requires the acceptance owner to resolve the private evidence pack,
+recompute its evidence and required-signoff-set hashes, confirm the exact protected
+revision, named controller, artifact/model, and two OS-enumerated port descriptors,
+and only then issue the short-lived purpose-limited recorder-custody authorization.
+A structurally valid manifest, fixture key, or stable D55 transcript is insufficient.
+The retained signature and public trust-bundle history remain private evidence; the
+result is an acceptance-authority mapping, never a cryptographic device signature or
+automatic recorded-device/field/sharing/training promotion.
 Stop immediately when safety requires it; incomplete evidence is the correct result.
 
 ### Print

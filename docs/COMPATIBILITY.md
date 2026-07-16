@@ -265,6 +265,27 @@ builds may ignore the command. A successful probe cannot be migrated into D54 or
 recorded-device claim because MSP identity is self-reported and the probe is not
 bound to recorder start/end custody.
 
+D56 reserves three new independent 1.0.0 formats without changing a current
+compatibility-matrix surface:
+`forge-recorder-custody-trust-bundle/1.0.0`,
+`forge-recorder-custody-authorization/1.0.0`, and
+`forge-recorder-custody-proof/1.0.0`. Their frozen meanings are respectively a
+hash-pinned purpose-limited public Ed25519 trust root, one short-lived signature over
+the exact evidence/revision/artifact/model/two-port/D55 identity/nonclaim binding,
+and one create-new local proof that exact pre/post observations bracket the canonical
+v1 receipt. The proof lives outside the exact archive-v1 directory. It is not a sixth
+D53 object, D54 admission update, telemetry row, device signature, field claim,
+sharing grant, or training grant.
+
+Changing the signed canonical field set or domain separator, key algorithm, trust-
+bundle purpose/revocation meaning, maximum authorization lifetime, exact pre/post
+binding, proof hash preimages, or any false authority bit requires a new major and a
+superseding decision. Adding gateway storage/materialization, D54 interpretation, an
+archive-v2 file, device-held cryptographic attestation, recorded-device provenance,
+or a training format is an independent compatibility surface and major migration.
+Older applications may ignore a separate custody proof but must not copy it into an
+archive-v1 directory or reinterpret the five existing files.
+
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian
 compiler declaration and therefore allowed the engine's degree default to reinterpret

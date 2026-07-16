@@ -18,6 +18,36 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Define the D56 signed recorder-custody boundary
+**Session:** Codex agent · branch `codex/p8003-d56-custody-design` ·
+**Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
+**Done:** Defined the unprotected D56 successor to D55 as three separate planned
+1.0.0 formats: a deployment-owned hash-pinned purpose-limited public Ed25519 trust
+bundle, an at-most-eight-hour acceptance authorization over the exact protected
+revision/evidence/signoffs/artifact/model/telemetry and identity ports/D55 identity/
+nonclaims, and a native create-new custody proof outside archive v1. The ordered flow
+requires a pre-open D55 observation in shell-owned state, the unchanged D50 clean
+receipt, a new props-off confirmation, and an exact post-stop observation. Failure
+creates no proof and never deletes or relabels a valid archive. The acceptance
+authority signature is explicitly not a device signature; device cryptography,
+recorded-device, field, sharing, and training authority remain false. All 40 required
+local repository gates pass under Python 3.12.13; the focused compatibility,
+external-acceptance, pilot, and generated-contract checks pass; all 86 tracked
+Markdown files resolve locally; and the 205-task/56-decision ledgers remain stable.
+**Changed:** Decision, hardware/Studio/learning/worker/pilot systems guidance,
+compatibility/API migration policy, threat/risk/best-practice boundaries, external
+lab acceptance, project-state/roadmap/TODO/execution ledgers, entry-agent guidance,
+and changelog only; no runtime, dependency, schema, migration, archive, D53, D54,
+telemetry, consent, or release semantics changed.
+**Decisions:** D56 records the signed-custody design; D57 is the next regular ID.
+**Next:** Review and protect D56, then implement strict trust-bundle/authorization
+verification, native pre/post continuity, proof/refusal semantics, and archive-v1/
+D53/D54 regression coverage before named-hardware execution.
+**Blockers:** Runtime/protected evidence, a real deployment trust root and rotation/
+revocation drill, named Kakute H7 V1.5/operator custody, host-suspend behavior,
+EXT-004, WebSerial/WebUSB, signed Desktop delivery, field/ghost/system-ID evidence,
+and every recorded-device/sharing/training promotion remain separate gates.
+
 ## 2026-07-16 — Protect the D55 read-only adapter identity boundary
 **Session:** Codex agent · branch `codex/p8002-d55-adapter-identity-evidence` ·
 **Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
