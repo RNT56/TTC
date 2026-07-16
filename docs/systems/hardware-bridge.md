@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is implemented as a local candidate; D30 accepted controlled D12 lab pilots; real-FC execution, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D30 accepted controlled D12 lab pilots; real-FC execution, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49
 
@@ -78,7 +78,7 @@ pseudo-terminal integration test proves the exact artifact bytes cross the nativ
 transport. Historical `forge-bridge-serial-receipt/1.0.0` records only that
 transport and never upgrades to application proof.
 
-D49's current implementation candidate keeps the D48 artifact unchanged and makes a
+D49's protected local implementation keeps the D48 artifact unchanged and makes a
 success receipt conditional on two bounded serial sessions. Before any config byte,
 Desktop requires the props-removed confirmation, enters the CLI, queries `version`,
 and accepts one stable numeric Betaflight `2025.12.x` identity with MSP API authority.
@@ -99,8 +99,9 @@ separately initializes a real filesystem archive manifest under the same fail-cl
 lab boundary.
 
 P8-012 is complete at protected deterministic/native transport integration
-maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 now owns
-the local target-firmware handshake and post-write readback protocol candidate; the
+maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the
+protected local target-firmware handshake and post-write readback protocol through
+PR #85/`4647a10`, reviewed tree `dfa0007`, and exact PR/post-merge CI/security; the
 first real props-off D12 execution and retained acceptance pack remain required
 before any lab-applied-configuration claim. Browser WebSerial write/capture, live
 sidecar telemetry capture, build/signing, and updater delivery remain open; real

@@ -18,6 +18,33 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect D49 target application verification
+**Session:** Codex agent · branch `codex/p8012-target-readback-evidence` · **Phase:** P8 ·
+**TODO items:** P8-001 [~]
+**Done:** Protected D49's bounded Betaflight target handshake, persistent-save
+acknowledgement, reboot/reconnect, exact readback, and receipt 2.0.0 semantics through
+PR #85. Exact implementation head `f18185d` passed PR CI `29479621677` and security
+`29479621689`; reviewed tree `dfa0007fbdd2527cd1e661ec33931252443c73ae` is
+byte-identical at protected squash `4647a105bf852f7a651ce52c80ac08d15de8d6cd`.
+Protected-main CI `29480132737` passed all Rust, Desktop native, TypeScript/gateway,
+225-worker, 24-migration Postgres, real-browser, and accessibility jobs; security
+`29480131433` passed source-SBOM, CodeQL JavaScript/Python, dependency-audit, and
+aggregate checks, with push-only dependency review skipped as designed. The complete
+40-step local gate remains green under Python 3.12.13. This closes only protected
+local protocol integration: the pseudo-terminal does not prove a physical FC,
+device-unique identity, applied lab configuration, HITL, tethered supervisor, or
+field behavior.
+**Changed:** Entry boundary, current-state evidence anchors/results/verdicts, P8
+roadmap/TODO/execution wording, hardware-bridge status, and this changelog.
+**Decisions:** none; D49 remains active and `forge-bridge-config/1.0.0` remains
+unchanged.
+**Next:** Execute the protected protocol on the named props-off D12 quad FC under
+controlled-lab authority with retained private acceptance evidence; P8-013 Desktop
+recorder work may proceed independently without widening configuration authority.
+**Blockers:** Physical FC/lab closure requires the D12 rig, physical supervisor,
+private evidence storage, and signed acceptance. WebSerial, HITL, recorder/ghost,
+signed Desktop, Link, tethered, and field proof remain separate P8 work.
+
 ## 2026-07-16 — Require target handshake and persistent readback
 **Session:** Codex agent · branch `codex/p8012-target-readback` · **Phase:** P8 ·
 **TODO items:** P8-001 [~]
