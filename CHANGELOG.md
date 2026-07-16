@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect D54 sovereign recorder admission
+**Session:** Codex agent · branch `codex/p8003-recorder-admission-evidence` ·
+**Phase:** P8 · **TODO items:** P8-003 [~]
+**Done:** Protected D54's exact semantic-only recorder admission boundary through PR
+#95. Exact implementation head `81282f7` passed PR CI `29512245375` and security
+`29512245387`; reviewed tree `f71ee1a` is byte-identical at protected squash
+`f8efb6f`, whose post-merge CI `29512921138` and security `29512920367` pass. The
+merged implementation branch was deleted. This protects native canonical archive-v1
+verification, exact D53/current-object/admitted-model binding, the separate admission
+row, bounded object-backed telemetry reference, export/deletion coverage, and D45
+training refusal. D53 remains immutable and every device/session/field/sharing/
+training nonclaim remains false.
+**Changed:** Living protected-evidence anchors, readiness verdicts, roadmap/TODO/
+execution sequencing, AGENTS guidance, and gateway/Desktop/Studio system status.
+**Decisions:** none; D54 remains the binding semantic-self-consistency-only boundary.
+**Next:** Define the reviewed real-adapter/device/session identity and attestation
+contract before any recorded-device admission, while the named D12 props-off lab
+execution remains a separate evidence lane.
+**Blockers:** Reviewed adapter/device identity, production object IAM/TLS/SLO/orphan
+recovery, host suspend, controlled lab/field execution, sharing/training authority,
+ghost/system-ID, and signed Desktop delivery remain separately gated.
+
 ## 2026-07-16 — Admit materialized recorder archives through the sovereign validator
 **Session:** Codex agent · branch `codex/p8003-recorder-archive-admission` ·
 **Phase:** P8 · **TODO items:** P8-003 [~]

@@ -474,8 +474,8 @@ Work:
   Studio, seventy gateway, clean/24-
   predecessor Postgres, 11-flow browser E2E, three-engine browser, and all 40 local
   repository gates pass;
-- D54/P8-003 is an unprotected local candidate for the next dependency-complete
-  sovereign boundary. The gateway exact-authorizes one owner materialization and
+- D54/P8-003 is protected at local sovereign archive-semantics admission maturity
+  through PR #95/`f8efb6f`. The gateway exact-authorizes one owner materialization and
   admitted model, streams the five complete D53 objects with length/SHA-256 checks
   into exclusive private temporary files, invokes native `forge-validate recorder-
   verify`, deletes the temporary root before persistence, and exact-binds the report
@@ -484,8 +484,10 @@ Work:
   export 1.6, deletion, and explicit D45 training refusal preserve all device/field/
   sharing/training nonclaims. Focused Rust, Gateway, Studio, and Postgres assertions
   pass; the clean/25-predecessor database, 11-flow browser E2E, and three-engine
-  browser gates and all 40 repository gates under Python 3.12.13 also pass;
-  protected PR/post-merge evidence remains due;
+  browser gates and all 40 repository gates under Python 3.12.13 also pass. Exact
+  head `81282f7`, reviewed tree `f71ee1a`, PR CI/security
+  `29512245375`/`29512245387`, protected-tree equality, and post-merge CI/security
+  `29512921138`/`29512920367` pass;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -494,9 +496,9 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: protect D54, then define the reviewed real telemetry-
-adapter identity and device-
-attestation contract above its semantic-only admission. D54 may populate only a
+Next dependency-complete step: define the reviewed real telemetry-adapter identity
+and device-attestation contract above D54's protected semantic-only admission. D54
+may populate only a
 bounded object-backed telemetry reference; it may not promote authenticity, device/
 field provenance, sharing, or training authority. The reviewed adapter identity
 contract remains the prerequisite for recorded-device admission. In parallel,

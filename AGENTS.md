@@ -90,10 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant and runtime anchor is D53/P8-003 PR #93 at
-  `08d892f`. Exact head `5d1af49` passed PR CI `29501475412` and security
-  `29501475414`; reviewed tree `90d8cbf` is byte-identical at the protected squash,
-  whose post-merge CI `29502180736` and security `29502180788` pass. D52 evidence
+  latest verified protected descendant and runtime anchor is D54/P8-003 PR #95 at
+  `f8efb6f`. Exact head `81282f7` passed PR CI `29512245375` and security
+  `29512245387`; reviewed tree `f71ee1a` is byte-identical at the protected squash,
+  whose post-merge CI `29512921138` and security `29512920367` pass. D53
+  materialization PR #93/`08d892f`, D52 evidence
   reconciliation PR #92/`237e46b` and controls PR #91/`a8120ab`, D51 evidence-
   reconciliation PR #90/`9e81ddd` and recorder-import PR #89/`b5418ac`, D50
   evidence reconciliation PR #88/`225933a` and recorder PR #87/`d8afe7f`, D49 evidence
@@ -280,8 +281,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   and post-merge CI/security `29502180736`/`29502180788` pass. Sovereign archive
   semantics, production object operations, adapter/device identity, suspend, and
   lab/field proof remain open;
-- D54/P8-003 is an unprotected local candidate for sovereign archive-semantics
-  verification and bounded telemetry admission. The gateway streams the exact five
+- D54/P8-003 is protected at local sovereign archive-semantics admission maturity
+  through PR #95/`f8efb6f`. The gateway streams the exact five
   D53 objects with size/SHA-256 enforcement into a private temporary directory,
   invokes native `forge-validate recorder-verify`, removes the temporary bytes before
   persistence, exact-binds the report to one owned admitted model, and stores a
@@ -292,8 +293,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   operations, suspend, lab, and field evidence remain false or open. Focused Rust,
   Gateway, Studio, the clean/25-predecessor Postgres matrix, 11-flow browser E2E,
   three-engine browser-support matrix, and all 40 repository gates pass locally
-  under Python 3.12.13; protected PR/post-merge evidence is still required before
-  this boundary can be called protected;
+  under Python 3.12.13. Exact head `81282f7`, reviewed tree `f71ee1a`, PR
+  CI/security `29512245375`/`29512245387`, protected-tree equality, and post-merge
+  CI/security `29512921138`/`29512920367` pass;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
