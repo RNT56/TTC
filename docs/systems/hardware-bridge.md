@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is implemented at local integration maturity; D30 accepted controlled D12 lab pilots; target handshake/readback, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D30 accepted controlled D12 lab pilots; target handshake/readback, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48
 
 ## 1. Purpose
 
@@ -81,7 +81,8 @@ transport. The versioned receipt records bytes transmitted while explicitly sett
 The recorder command separately initializes a real filesystem archive manifest under
 the same fail-closed lab boundary.
 
-P8-012 is complete at deterministic/native transport integration maturity. Target
+P8-012 is complete at protected deterministic/native transport integration
+maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. Target
 firmware handshake and post-write readback belong to the real D12 lab adapter and
 must precede any applied-configuration claim. Browser WebSerial write/capture, live
 sidecar telemetry capture, build/signing, and updater delivery remain open; real

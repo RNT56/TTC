@@ -200,16 +200,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   a real clean supported-accelerator v2 result is not. The current Darwin arm64 host
   exposes no Modal credential names, Modal CLI, NVIDIA device, or other declared
   GPU/TPU authority, and Apple Metal cannot satisfy the frozen float64 protocol;
-- the current P8-012/D48 candidate closes Desktop serialport-rs at deterministic/
-  native transport integration maturity on protected base `f91c339`. Worker and
+- P8-012/D48 is protected through PR #83 at `fd26845` and closes Desktop
+  serialport-rs at deterministic/native transport integration maturity. Exact head
+  `758fd9a` passed PR CI `29468611033` and security `29468611094`; the reviewed tree
+  is byte-identical at protected `main`, whose post-merge CI `29468966929` and
+  security `29468966748` pass. Worker and
   Desktop independently enforce `forge-bridge-config/1.0.0`, Betaflight 2025.12,
   the D12 quad, one 2–200 decisecond `failsafe_delay`, exact ordered-line SHA-256,
   no-auto-arm, physical confirmation, 115200 baud, and an OS-enumerated port. Four
   locked Rust tests include real Unix pseudo-terminal byte proof and path refusal;
   the complete 40-step gate, 225 worker tests, 66 gateway tests, and Desktop native
-  compile pass. The receipt leaves target firmware/application unverified and requires readback.
-  This branch is not protected evidence, and the proof is not a real FC, HITL, lab,
-  tethered, or field result;
+  compile pass. The receipt leaves target firmware/application unverified and
+  requires readback. This protected proof is not a real FC, HITL, lab, tethered, or
+  field result;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play

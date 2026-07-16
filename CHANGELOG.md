@@ -18,6 +18,39 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect D48 native serial transport
+**Session:** Codex agent · branch `codex/p8012-native-serial-evidence` · **Phase:** P8 ·
+**TODO items:** P8-012 [x]
+**Done:** Protected D48 and P8-012 deterministic/native serial transport through PR
+#83. Exact implementation head `758fd9a` passed PR CI `29468611033` and security
+`29468611094`; protected squash `fd26845` has the same reviewed tree
+`38a8e3f6d278ef822568183369655aa94b15f92a` and passed exact post-merge CI
+`29468966929` and security `29468966748`. The protected CI row passed Rust, macOS
+Desktop native compilation, TypeScript/gateway/Brief-25/native-WASM gates, all 225
+workers plus training/offline/parity/MJX smokes, and the 24-migration isolated
+Postgres/real-browser/accessibility/commerce matrix. Downloaded protected browser
+artifact `8364167167` has Actions digest
+`sha256:7ab0e8c3ceb5d9345e76537ead11ec0d46709b7f8e6592845bc5c6cef2c27de1`
+and binds source and checkout to `fd26845`. This protection proves the exact
+Betaflight 2025.12/D12-quad/failsafe-only artifact, independent worker/Desktop
+validation, OS-enumerated 115200-baud serialport-rs transport, pseudo-terminal byte
+proof, and honest transport-only receipt. It still does not prove target firmware,
+applied configuration, a real flight controller, HITL, lab, tethered, or field
+maturity.
+**Changed:** Protected-evidence anchors and maturity language in `AGENTS.md`, project
+state, roadmap, execution overlay, TODO ledger, and the hardware-bridge contract;
+this changelog.
+**Decisions:** none; D48 and R31 are now protected without widening the writable
+command set or receipt claims.
+**Next:** Add an exact Betaflight 2025.12 target-version handshake and bounded
+post-write `failsafe_delay` readback to the D12 quad adapter, prove substitution,
+timeout, malformed-response, and partial-write refusal over a pseudo-terminal, then
+run the first propeller-free supervised lab acceptance under P8-009/EXT-004.
+**Blockers:** No blocker for protected deterministic/native transport. Real FC/HITL/
+tethered/lab/field evidence requires controlled D12 hardware and supervision; signed
+Desktop delivery, recorder/capture, browser WebSerial, and Link image remain separate
+P8 tasks.
+
 ## 2026-07-16 — Bind native serial writes to one reviewed D48 artifact
 **Session:** Codex agent · branch `codex/p8012-native-serial` · **Phase:** P8 ·
 **TODO items:** P8-012 [x]
