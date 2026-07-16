@@ -140,6 +140,21 @@ import {
   type RecorderStopReceipt,
   type RecorderUploadReceipt,
 } from "./desktopRecorder";
+import {
+  DEPLOYMENT_LADDER_FALLBACK,
+  DEPLOYMENT_LADDER_POLICY_RATE_HZ,
+  DEPLOYMENT_LADDER_STAGES,
+  DEPLOYMENT_LADDER_START_CONFIRMATION,
+  DEPLOYMENT_LADDER_SUPERVISOR_RATE_HZ,
+  advanceDeploymentLadder,
+  confirmationForStage,
+  desktopDeploymentLadderAvailable,
+  getDeploymentLadderStatus,
+  isPassingSupervisorDecision,
+  resetDeploymentLadder,
+  startDeploymentLadder,
+  type DeploymentLadderStatus,
+} from "./deploymentLadder";
 import { CoreBake, CoreSession, corePatch, coreValidate } from "./wasm";
 import type { Slot } from "./contract.gen";
 
@@ -2393,6 +2408,12 @@ export default function App() {
             authenticated={me?.authenticated === true}
             activeModelId={activeModelId}
           />
+          <DeploymentLadderPanel
+            report={s.report}
+            activeModelId={activeModelId}
+            policyArtifacts={policyArtifacts}
+            jobs={jobs}
+          />
           <PlatformPanel
             credits={credits}
             courses={courses}
@@ -3000,6 +3021,260 @@ function ArtifactRegistry({
         <MaintenanceRecordRow key={record.id} record={record} />
       ))}
     </div>
+  );
+}
+
+function DeploymentLadderPanel({
+  report,
+  activeModelId,
+  policyArtifacts,
+  jobs,
+}: {
+  report: Report | null;
+  activeModelId: string | null;
+  policyArtifacts: PolicyArtifactRecord[];
+  jobs: JobRecord[];
+}) {
+  const available = desktopDeploymentLadderAvailable();
+  const [status, setStatus] = useState<DeploymentLadderStatus | null>(null);
+  const [referenceRigId, setReferenceRigId] = useState<(typeof D12_REFERENCE_RIG_IDS)[number]>(
+    D12_REFERENCE_RIG_IDS[1],
+  );
+  const [startConfirmed, setStartConfirmed] = useState(false);
+  const [transitionConfirmed, setTransitionConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const policy = policyArtifacts.find((candidate) =>
+    candidate.modelId === activeModelId && candidate.exportGate === "exportable",
+  ) ?? null;
+  const supervisorJob = jobs.find((candidate) =>
+    candidate.kind === "bridge.supervisor-check"
+    && candidate.status === "succeeded"
+    && isPassingSupervisorDecision(candidate.output),
+  ) ?? null;
+
+  const refresh = useCallback(async () => {
+    if (!available) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await getDeploymentLadderStatus();
+      setStatus(next);
+      if (next.referenceRigId === D12_REFERENCE_RIG_IDS[0]
+        || next.referenceRigId === D12_REFERENCE_RIG_IDS[1]) {
+        setReferenceRigId(next.referenceRigId);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }, [available]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const start = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (!report || report.verdict !== "admitted"
+        || !/^[0-9a-f]{64}$/.test(report.contractHash)
+        || !/^[0-9a-f]{64}$/.test(report.lockfileHash)) {
+        throw new Error("an active admitted report with exact contract and lockfile hashes is required");
+      }
+      if (!activeModelId) throw new Error("select the admitted model for this ladder rehearsal");
+      if (!policy) throw new Error("an exportable policy artifact bound to the selected model is required");
+      if (!supervisorJob) throw new Error("run one passing D9-bound supervisor check first");
+      if (!startConfirmed) throw new Error("acknowledge the exact rehearsal-only start statement");
+      const next = await startDeploymentLadder({
+        sessionId: `ladder-${Date.now()}`,
+        referenceRigId,
+        modelId: activeModelId,
+        contractHash: report.contractHash,
+        lockfileHash: report.lockfileHash,
+        policyArtifactId: policy.id,
+        policyExportGate: "exportable",
+        supervisorJobId: supervisorJob.id,
+        supervisorDecision: "policy-advisory",
+        supervisorAllowPolicy: true,
+        policyRateHz: DEPLOYMENT_LADDER_POLICY_RATE_HZ,
+        supervisorRateHz: DEPLOYMENT_LADDER_SUPERVISOR_RATE_HZ,
+        firmwareRateLoopUntouched: true,
+        missedInferenceFallback: DEPLOYMENT_LADDER_FALLBACK,
+        physicalConfirmation: DEPLOYMENT_LADDER_START_CONFIRMATION,
+      });
+      setStatus(next);
+      setStartConfirmed(false);
+      setMessage("SITL rehearsal acknowledged; hardware execution and deployment evidence remain locked");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }, [activeModelId, policy, referenceRigId, report, startConfirmed, supervisorJob]);
+
+  const advance = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (!status || status.state === "inactive" || status.sessionId === null
+        || status.currentStage === null || status.nextStage === null || status.nextStage === "sitl") {
+        throw new Error("no advanceable ladder rehearsal is active");
+      }
+      if (!transitionConfirmed) {
+        throw new Error(`complete the exact ${status.nextStage} physical-confirmation interaction`);
+      }
+      const next = await advanceDeploymentLadder(status, {
+        sessionId: status.sessionId,
+        fromStage: status.currentStage,
+        toStage: status.nextStage,
+        physicalConfirmation: confirmationForStage(status.nextStage),
+      });
+      setStatus(next);
+      setTransitionConfirmed(false);
+      setMessage(
+        `${next.currentStage ?? "next"} rehearsal acknowledged; this is not deployment or physical-evidence verification`,
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }, [status, transitionConfirmed]);
+
+  const reset = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (!status) throw new Error("no ladder rehearsal is available to end");
+      setStatus(await resetDeploymentLadder(status));
+      setTransitionConfirmed(false);
+      setMessage("ladder rehearsal ended; no hardware authority was granted");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  }, [status]);
+
+  const inactive = status?.state === "inactive";
+  const reportReady = report?.verdict === "admitted"
+    && /^[0-9a-f]{64}$/.test(report.contractHash)
+    && /^[0-9a-f]{64}$/.test(report.lockfileHash);
+  const canStart = available && inactive === true && reportReady && activeModelId !== null
+    && policy !== null && supervisorJob !== null && startConfirmed && !busy;
+  const canAdvance = available && status?.state === "rehearsing" && status.nextStage !== null
+    && status.nextStage !== "sitl" && transitionConfirmed && !busy;
+
+  return (
+    <details style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
+      <summary style={{ color: "#8fa3bf", cursor: "pointer" }}>Deployment ladder · rehearsal only</summary>
+      <div style={{ color: "#7d899b", marginTop: 5 }}>
+        SITL → HITL → constrained → free is shell-owned and cannot be skipped. This local UX
+        rehearsal issues no hardware command, verifies no physical evidence, never auto-arms, and
+        cannot authorize deployment or external beta.
+      </div>
+      <div data-testid="deployment-ladder-rates" style={{ color: "#7d899b", marginTop: 5 }}>
+        policy advisory {DEPLOYMENT_LADDER_POLICY_RATE_HZ} Hz · supervisor authority {DEPLOYMENT_LADDER_SUPERVISOR_RATE_HZ} Hz ·
+        FC rate loop untouched · missed inference → {DEPLOYMENT_LADDER_FALLBACK}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 5, marginTop: 7 }}>
+        {DEPLOYMENT_LADDER_STAGES.map((stage) => {
+          const acknowledged = status?.acknowledgedStages.includes(stage.id) === true;
+          const current = status?.currentStage === stage.id;
+          return (
+            <div
+              data-testid={`deployment-ladder-stage-${stage.id}`}
+              key={stage.id}
+              style={{ border: `1px solid ${current ? "#74c69d" : "#2a2f38"}`, padding: 6 }}
+            >
+              <div style={{ color: current ? "#74c69d" : acknowledged ? "#8fa3bf" : "#7d899b" }}>
+                {stage.label} · {current ? "current rehearsal" : acknowledged ? "acknowledged" : "locked"}
+              </div>
+              <div style={{ color: "#687789", marginTop: 3 }}>{stage.requires.join(" · ")}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div data-testid="deployment-ladder-authority" style={{ color: "#e6a23c", marginTop: 6 }}>
+        local UX rehearsal · deployment evidence off · physical-evidence verification off · hardware execution locked
+      </div>
+      {!available ? (
+        <div style={{ color: "#e6a23c", marginTop: 5 }}>
+          FORGE Desktop is required for shell-owned rehearsal state; browser hardware transitions remain locked.
+        </div>
+      ) : (
+        <div style={{ marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <button data-testid="deployment-ladder-refresh" onClick={() => void refresh()} disabled={busy} style={btn}>
+              {busy ? "checking…" : "refresh"}
+            </button>
+            <span data-testid="deployment-ladder-status" style={{ color: "#7d899b" }}>
+              {status?.state ?? "unavailable"}{status?.currentStage ? ` · ${status.currentStage}` : ""}
+            </span>
+          </div>
+          {inactive ? (
+            <>
+              <select
+                data-testid="deployment-ladder-rig"
+                aria-label="deployment ladder reference rig"
+                value={referenceRigId}
+                onChange={(event) => setReferenceRigId(event.currentTarget.value as (typeof D12_REFERENCE_RIG_IDS)[number])}
+                disabled={busy}
+                style={{ ...inputStyle, marginTop: 6 }}
+              >
+                {D12_REFERENCE_RIG_IDS.map((rig) => <option key={rig} value={rig}>{rig}</option>)}
+              </select>
+              <label style={{ display: "block", color: "#7d899b", marginTop: 6 }}>
+                <input
+                  data-testid="deployment-ladder-start-confirmation"
+                  type="checkbox"
+                  checked={startConfirmed}
+                  onChange={(event) => setStartConfirmed(event.currentTarget.checked)}
+                />{" "}{DEPLOYMENT_LADDER_START_CONFIRMATION}
+              </label>
+              <div style={{ color: policy && supervisorJob && reportReady ? "#7d899b" : "#e6a23c", marginTop: 5 }}>
+                {reportReady ? "admitted report" : "admitted report missing"} · {policy ? `exportable policy ${policy.id}` : "exportable policy missing"} ·
+                {supervisorJob ? ` passing supervisor ${supervisorJob.id}` : " passing supervisor missing"}
+              </div>
+              <button data-testid="deployment-ladder-start" onClick={() => void start()} disabled={!canStart} style={{ ...btn, marginTop: 6 }}>
+                acknowledge SITL rehearsal
+              </button>
+            </>
+          ) : status ? (
+            <>
+              {status.nextStage && status.nextStage !== "sitl" ? (
+                <label style={{ display: "block", color: "#7d899b", marginTop: 6 }}>
+                  <input
+                    data-testid="deployment-ladder-transition-confirmation"
+                    type="checkbox"
+                    checked={transitionConfirmed}
+                    onChange={(event) => setTransitionConfirmed(event.currentTarget.checked)}
+                  />{" "}{confirmationForStage(status.nextStage)}
+                </label>
+              ) : null}
+              {status.state === "rehearsing" ? (
+                <button data-testid="deployment-ladder-advance" onClick={() => void advance()} disabled={!canAdvance} style={{ ...btn, marginTop: 6 }}>
+                  rehearse transition to {status.nextStage}
+                </button>
+              ) : null}
+              <button data-testid="deployment-ladder-reset" onClick={() => void reset()} disabled={busy} style={{ ...btn, marginTop: 6, marginLeft: 6 }}>
+                end rehearsal
+              </button>
+            </>
+          ) : null}
+        </div>
+      )}
+      {error ? <div data-testid="deployment-ladder-error" style={{ color: "#e6a23c", marginTop: 5 }}>{error}</div> : null}
+      {message ? <div data-testid="deployment-ladder-message" style={{ color: "#7d899b", marginTop: 5 }}>{message}</div> : null}
+    </details>
   );
 }
 

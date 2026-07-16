@@ -7,6 +7,10 @@ ROS 2 deployment, serial/device writes, and constrained driving still require th
 lab adapter, lab-mode envs, D12 rig confirmation, physical confirmation, and
 evidence capture.
 
+D58's Desktop ladder may rehearse this order and prevent software skips, but its
+stage acknowledgments are not physical-confirmation, HITL, lab, deployment, or field
+evidence. Keep every real-stage acceptance artifact separate and reviewer-resolved.
+
 This playbook is the executable tutorial contract for the D12 Pi-class ROS 2
 rover. It follows the same deployment ladder as the quad, but the constrained
 reality step is wheels-off-ground or a physically bounded course instead of
@@ -19,7 +23,8 @@ tethered hover.
 - Passing `train.policy` scorecard for line-follow, velocity tracking, or obstacle
   course.
 - `ros2_control` export and bridge config-diff artifact.
-- `packages/desktop/deployment-ladder.json` with `noAutoArm: true`.
+- `packages/desktop/deployment-ladder.json` 1.0.0 with `mode: "rehearsal-only"`
+  and `noAutoArm: true`.
 - Supervisor config covering speed envelope, geofence, battery floor, fallback
   stop, and hardware kill switch.
 - Telemetry consent record before any real capture.
@@ -97,5 +102,6 @@ Evidence required before passing:
 - Contract id, revision, lockfile, and validator report.
 - BOM export with SKUs and review/license status.
 - Scorecard JSON and ONNX header.
-- Deployment ladder stage log.
+- Deployment ladder stage log, explicitly labeled rehearsal until the separate
+  named-hardware evidence and signoffs resolve every real transition.
 - Telemetry tape, replay verification, ghost-divergence summary, and sysid patch.

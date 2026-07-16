@@ -311,6 +311,24 @@ or surface decision. Older workers/Studio builds may ignore the overlay while
 retaining its parent maintenance row; they must not infer provenance from its
 existence or copy raw object data into JSONB.
 
+D58 adds internal `forge-deployment-ladder/1.0.0` plus ephemeral Tauri response
+`forge-deployment-ladder-control/1.0.0`. Neither is persisted, exported, uploaded,
+queued, added to archive v1, nor registered as a public compatibility-matrix surface.
+The checked JSON previously used an unconsumed integer scaffold version and had no
+emitted or persisted instances; replacing it with the explicit internal 1.0.0 token
+therefore creates the first executable consumer boundary rather than migrating user
+data. V1 freezes the four-stage order, exact D9 rates/fallback/FC-loop meanings,
+confirmation interactions, single-session progress semantics, and permanent false
+deployment/physical/hardware/device/field/external-beta authority.
+
+Changing stage order, transition semantics, a confirmation's meaning, D9 authority,
+state/progress fields, or an authority bit requires a new major and D58 successor.
+Adding persistence, gateway transport, evidence storage, hardware execution, or a
+public API is an independent reviewed compatibility surface. Older browser or Studio
+builds may ignore the Tauri commands; they may not infer a completed transition,
+physical confirmation, or deployment authority from the JSON contract or a v1
+acknowledgment.
+
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian
 compiler declaration and therefore allowed the engine's degree default to reinterpret

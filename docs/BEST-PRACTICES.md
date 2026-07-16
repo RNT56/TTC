@@ -311,6 +311,15 @@ every user-facing capability claim.
   record is rejected.
 - The deployment ladder is product-enforced; the bridge never auto-arms; supervisor
   authority is absolute (D9).
+- Keep rehearsal progress separate from deployment evidence. One shell-owned session
+  may prove exact stage order, reload continuity, skip refusal, and deliberate UI
+  interactions, but a checkbox or client-supplied report/policy/job ID does not prove
+  a controller, restraint, observer, kill switch, supervisor deadline, or field run.
+  A rehearsal state machine must perform no hardware I/O, reject parallel or skipped
+  transitions, display D9 rates/fallback, and return explicit false physical,
+  deployment, hardware, device, field, and external-beta authority at every stage.
+  Real transitions require a separate named-hardware evidence consumer; never promote
+  rehearsal acknowledgments in place.
 - Treat a hardware write as a versioned artifact, not a string. For D48 bridge-config
   v1, independently verify the Betaflight 2025.12/D12-quad authority, exact
   failsafe-only command list and 2–200 decisecond range, canonical hash, D30/D12/lab

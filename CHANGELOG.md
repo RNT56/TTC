@@ -18,6 +18,40 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Implement the fail-closed deployment-ladder rehearsal
+**Session:** Codex agent · branch `codex/p8007-d58-deployment-ladder` ·
+**Phase:** P8 · **TODO items:** P8-007 [~], P8-008 [~]
+**Done:** Implemented D58's bounded local UX-rehearsal candidate. A versioned native
+Desktop state machine owns exactly one `inactive|rehearsing|rehearsal-complete`
+session, accepts only a D12 rig plus safe IDs, client-bound contract/lockfile hashes,
+an exportable-policy-shaped input, and an exact passing D9 supervisor result, and enforces the
+contiguous SITL → HITL → constrained → free prefix. Every hardware-touching advance
+requires its exact physical-confirmation interaction, while reset requires a separate
+exact end statement. The shared Studio bundle strictly parses every native field,
+rebinds each response to the active session, shows all four stages and the 50 Hz/
+200 Hz/fallback contract, and fails closed to a visible locked viewer in browsers.
+The state machine performs no hardware I/O and permanently returns false deployment-
+evidence, physical-evidence, hardware-execution, device-identity, field-session, and
+external-beta authority with no-auto-arm true. Four ladder-specific tests pass inside
+28/28 native Desktop tests; 37/37 Studio, 74/74 Gateway, and 227/227 worker tests pass.
+All 40 required local gates pass under Python 3.12.13, as do the fresh migration 0026
+database from clean plus all 25 populated predecessors, every data-plane assertion,
+all 12 production-browser flows, and Chromium/Firefox/WebKit. This remains an
+unprotected local candidate; exact PR/protected-main evidence still follows.
+**Changed:** Desktop ladder contract/checks/native commands and state machine;
+Studio strict client, panel, and tests; pilot and browser-support checks; entry,
+compatibility, browser, best-practice, decision, system, roadmap, TODO, execution,
+and current-state docs. No hardware writer, recorder/archive, D53/D54, policy,
+replay, telemetry, public or persisted schema, migration, API, queue, consent,
+sharing, training, or release format changed.
+**Decisions:** D58 freezes the rehearsal-only ladder/control 1.0.0 meanings; D59 is
+the next regular decision ID.
+**Next:** Inspect the whole diff, then protect the exact tree through reviewed PR and
+post-merge CI/security before reconciling protected hashes separately.
+**Blockers:** Real HITL/constrained/free transitions, physical-confirmation evidence,
+named-hardware supervisor timing/kill-switch behavior, deployment authority, D12 lab
+acceptance, and field evidence require controlled external execution and remain open.
+
 ## 2026-07-16 — Reconcile protected D57 ghost-replay evidence
 **Session:** Codex agent · branch `codex/p8005-d57-ghost-evidence` ·
 **Phase:** P8/P12 · **TODO items:** P8-004 [~], P12-002 [~], XC-20 [~]
