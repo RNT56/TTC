@@ -111,7 +111,7 @@ uploads until the 0.2 gateway returns.
 
 ## User-data formats
 
-- user-data export is 1.5.0;
+- user-data export is 1.6.0;
 - consent ledger is 1.0.0;
 - account-deletion receipt is 2.0.0;
 - data lifecycle is 1.0.0.
@@ -129,6 +129,10 @@ Export 1.5 adds recorder materialization metadata: the sanitized upload plan, fi
 owner blob IDs, object-integrity state, and explicit archive/device/field/sharing/
 training nonclaims. Archive payloads remain separate authenticated blob downloads;
 filesystem paths, raw frames, and presigned URLs are excluded.
+Export 1.6 adds the separate recorder admission, exact bounded native-verification
+report, and object-backed telemetry-reference metadata. It still excludes frame and
+replay bytes, temporary paths, presigned URLs, device/session authenticity, field
+provenance, and sharing/training authority.
 Deletion receipt 2.0 adds restore-suppression evidence but does not claim physical
 backup deletion. Do not downgrade these meanings into an older success boolean.
 
@@ -316,6 +320,31 @@ deletes staged rows and their private objects under the normal orphan policy. Re
 migration 0025 and user-data export 1.5 metadata; an older application may ignore the
 additive table but must not relabel its objects as telemetry logs or completed archive
 semantics. Roll forward to a D53-aware gateway/Desktop pair.
+
+### Recorder archive admission 1.0
+
+D54 additively adds authenticated
+`POST /v1/recorder-archives/:id/admit` with exact request body `{ "modelId":
+"mdl-..." }`. The materialization must already be D53-complete. The gateway streams
+all five private objects into an exclusive temporary directory, invokes native
+`forge-validate recorder-verify`, removes the temporary bytes, and exact-binds the
+`forge-recorder-verification/1.0.0` report to the materialization, replay object, and
+selected owned admitted-model proof.
+
+Success returns `forge-recorder-admission/1.0.0` and creates one bounded
+`forge-recorder-telemetry-reference/1.0.0` log. No replay frames cross gateway JSON
+or enter JSONB. D53 object integrity remains an unchanged separate row whose archive-
+semantics field is still false. Device/field identity, recorded-device attestation,
+sharing, and training reuse remain false, and D45 rejects the object-backed reference
+even if training consent is later granted. User-data export 1.6 additively includes
+the admission/report metadata without object bytes or temporary paths.
+
+Rollback disables the admission route first and lets any in-flight verifier finish
+or fail closed. Retain migration 0026, its admission rows, linked telemetry
+references, and all five private objects. An older gateway may ignore these additive
+rows but must not delete them, reinterpret D53 semantics, inline archive bytes, or
+feed object-backed references to legacy offline training. Roll forward to a D54-
+aware gateway/validator pair; no down-conversion exists.
 
 ## Shipping a future compatibility change
 

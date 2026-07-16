@@ -18,6 +18,7 @@ export interface ObjectStorageConfig {
   accessKeyId: string;
   secretAccessKey: string;
   forcePathStyle: boolean;
+  readTimeoutMs: number;
   deleteTimeoutMs: number;
 }
 
@@ -77,6 +78,10 @@ export type ObjectReadAdapter = (
   config: ObjectStorageConfig,
   object: StoredObjectRead,
 ) => Promise<Uint8Array>;
+export type ObjectStreamAdapter = (
+  config: ObjectStorageConfig,
+  object: StoredObjectRead,
+) => AsyncIterable<Uint8Array>;
 
 function assertObjectKey(objectKey: string): void {
   if (!objectKey || objectKey.startsWith("/") || /(?:^|\/)\.\.(?:\/|$)|[\0\r\n]/.test(objectKey)) {
@@ -117,6 +122,10 @@ export function objectStorageConfigFromEnv(env: NodeJS.ProcessEnv = process.env)
     secretAccessKey:
       env.FORGE_OBJECT_SECRET_ACCESS_KEY ?? env.AWS_SECRET_ACCESS_KEY ?? env.MINIO_ROOT_PASSWORD ?? "forge-dev-only",
     forcePathStyle: (env.FORGE_OBJECT_FORCE_PATH_STYLE ?? "1") !== "0",
+    readTimeoutMs: Math.min(
+      60 * 60_000,
+      Math.max(30_000, Number(env.FORGE_OBJECT_READ_TIMEOUT_MS ?? 30 * 60_000) || 30 * 60_000),
+    ),
     deleteTimeoutMs: Math.min(120_000, Math.max(1000, Number(env.FORGE_OBJECT_DELETE_TIMEOUT_MS ?? 15_000) || 15_000)),
   };
   let endpoint: URL;
@@ -292,10 +301,10 @@ export async function putStoredObject(
   }
 }
 
-export async function readStoredObject(
+export async function* streamStoredObject(
   config: ObjectStorageConfig,
   object: StoredObjectRead,
-): Promise<Uint8Array> {
+): AsyncGenerator<Uint8Array> {
   if (object.bucket !== config.bucket) throw new Error("object bucket is outside the configured boundary");
   assertObjectKey(object.objectKey);
   if (
@@ -313,13 +322,13 @@ export async function readStoredObject(
   try {
     const result = await client.send(
       new GetObjectCommand({ Bucket: object.bucket, Key: object.objectKey }),
-      { abortSignal: AbortSignal.timeout(config.deleteTimeoutMs) },
+      { abortSignal: AbortSignal.timeout(config.readTimeoutMs) },
     );
     const body = result.Body as AsyncIterable<Uint8Array> | undefined;
     if (!body || typeof body[Symbol.asyncIterator] !== "function") {
       throw new Error("object storage returned a non-streaming body");
     }
-    const chunks: Buffer[] = [];
+    const hasher = createHash("sha256");
     let total = 0;
     for await (const chunk of body) {
       const bytes = Buffer.from(chunk);
@@ -327,16 +336,29 @@ export async function readStoredObject(
       if (total > object.maxBytes || total > object.byteSize) {
         throw new Error("object storage exceeded the declared download size");
       }
-      chunks.push(bytes);
+      hasher.update(bytes);
+      yield bytes;
     }
     if (total !== object.byteSize) throw new Error("object storage returned a partial download");
-    const bytes = Buffer.concat(chunks, total);
-    const actualSha256 = createHash("sha256").update(bytes).digest("hex");
+    const actualSha256 = hasher.digest("hex");
     if (actualSha256 !== declaredSha256) throw new Error("object storage returned a checksum mismatch");
-    return bytes;
   } finally {
     client.destroy();
   }
+}
+
+export async function readStoredObject(
+  config: ObjectStorageConfig,
+  object: StoredObjectRead,
+): Promise<Uint8Array> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const chunk of streamStoredObject(config, object)) {
+    const bytes = Buffer.from(chunk);
+    chunks.push(bytes);
+    total += bytes.byteLength;
+  }
+  return Buffer.concat(chunks, total);
 }
 
 export async function deleteStoredObjects(

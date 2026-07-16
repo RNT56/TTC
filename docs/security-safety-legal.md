@@ -115,7 +115,7 @@ live provider artifact audit.
   inferred. Withdrawal removes the contributed retrieval row.
 
 Implementation evidence (2026-07-13, `SEC-003..005`, extended by P7-011):
-authenticated user-data export 1.5.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+authenticated user-data export 1.6.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
@@ -140,6 +140,15 @@ blob references. The export retains only the sanitized plan and explicit authori
 nonclaims; recorder bytes remain authenticated object downloads, and local paths or
 presigned upload URLs never enter the export. Materialization does not grant telemetry
 sharing or training reuse.
+
+D54 additionally includes the separate recorder admission row, bounded sovereign
+verification report, and object-backed telemetry reference. Verification downloads
+stream into an exclusive private temporary root, are hash/size checked, and are
+removed before any admission row commits. Export includes no archive bytes or
+temporary paths. Runtime/database constraints keep device, field, sharing, and
+training authority false, and object-backed logs are refused by D45 even when a
+training-consent event exists. This is archive self-consistency, not device
+authenticity or field provenance.
 
 D41/D42 separately prevent task/tensor-semantic substitution. Current policies
 declare task-v3, tensor-v2, the Forge Y-up frame, ordered targets, canonical task

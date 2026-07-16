@@ -9,6 +9,7 @@
 //!   forge-validate sim-parity rapier-baseline [--out baseline.json]
 //!   forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json]
 //!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
+//!   forge-validate recorder-verify <archive-dir> [--out report.json]
 //!   forge-validate schema [--out schema.json]
 //!   forge-validate version [--json]
 //!
@@ -30,6 +31,7 @@ fn main() -> ExitCode {
         Some("env") => cmd_env(&args[1..]),
         Some("training-bundle") => cmd_training_bundle(&args[1..]),
         Some("sim-parity") => cmd_sim_parity(&args[1..]),
+        Some("recorder-verify") => cmd_recorder_verify(&args[1..]),
         Some("schema") => cmd_schema(&args[1..]),
         Some("version") => cmd_version(&args[1..]),
         Some("--version") | Some("-V") => {
@@ -40,9 +42,25 @@ fn main() -> ExitCode {
             eprintln!(
                 "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate training-bundle <contract.json> --contract-hash <sha256> [--out bundle.json]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
             );
+            eprintln!("       forge-validate recorder-verify <archive-dir> [--out report.json]");
             ExitCode::from(1)
         }
     }
+}
+
+fn cmd_recorder_verify(args: &[String]) -> ExitCode {
+    let Some(path) = args.first().filter(|arg| !arg.starts_with("--")) else {
+        eprintln!("recorder-verify: missing <archive-dir>");
+        return ExitCode::from(1);
+    };
+    let report = match forge_validate::recorder::verify_archive(std::path::Path::new(path)) {
+        Ok(report) => report,
+        Err(error) => {
+            eprintln!("recorder-verify: REC-001 archive_semantics_invalid: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    emit_json("recorder-verify", args, &report)
 }
 
 fn read_file(command: &str, path: &str) -> Result<String, ExitCode> {
@@ -545,6 +563,7 @@ struct VersionInfo {
     validator_report_version: &'static str,
     replay_format_version: &'static str,
     env_spec_schema_version: &'static str,
+    recorder_verification_format_version: &'static str,
 }
 
 fn cmd_version(args: &[String]) -> ExitCode {
@@ -554,6 +573,8 @@ fn cmd_version(args: &[String]) -> ExitCode {
         validator_report_version: forge_validate::REPORT_FORMAT_VERSION,
         replay_format_version: forge_sim::runtime::REPLAY_FORMAT_VERSION,
         env_spec_schema_version: forge_sim::runtime::ENVSPEC_SCHEMA_VERSION,
+        recorder_verification_format_version:
+            forge_validate::recorder::RECORDER_VERIFICATION_SCHEMA_VERSION,
     };
     if args.iter().any(|arg| arg == "--json") {
         println!(
@@ -566,6 +587,10 @@ fn cmd_version(args: &[String]) -> ExitCode {
         println!("validator report {}", versions.validator_report_version);
         println!("replay format {}", versions.replay_format_version);
         println!("EnvSpec schema {}", versions.env_spec_schema_version);
+        println!(
+            "recorder verification {}",
+            versions.recorder_verification_format_version
+        );
     }
     ExitCode::SUCCESS
 }

@@ -9,7 +9,7 @@ import {
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.5.0";
+export const USER_DATA_EXPORT_VERSION = "1.6.0";
 export const ACCOUNT_DELETION_RECEIPT_VERSION = "2.0.0";
 
 interface ExportDataset {
@@ -218,6 +218,23 @@ const exportDatasets: readonly ExportDataset[] = [
                  no_auto_arm AS "noAutoArm", verification_error_code AS "verificationErrorCode",
                  created_at AS "createdAt", materialized_at AS "materializedAt"
             FROM recorder_archive_materializations
+           WHERE owner_user_id = $1 ORDER BY created_at, id`,
+  },
+  {
+    key: "recorderArchiveAdmissions",
+    sql: `SELECT id, materialization_id AS "materializationId",
+                 telemetry_log_id AS "telemetryLogId", model_id AS "modelId",
+                 schema_version AS "schemaVersion", verification,
+                 replay_file_sha256 AS "replayFileSha256", frame_count AS "frameCount",
+                 duration_s AS "durationS",
+                 gateway_archive_semantics_verified AS "gatewayArchiveSemanticsVerified",
+                 recorded_device_attested AS "recordedDeviceAttested",
+                 device_identity_verified AS "deviceIdentityVerified",
+                 field_session_verified AS "fieldSessionVerified",
+                 sharing_authorized AS "sharingAuthorized",
+                 training_reuse_authorized AS "trainingReuseAuthorized",
+                 no_auto_arm AS "noAutoArm", created_at AS "createdAt"
+            FROM recorder_archive_admissions
            WHERE owner_user_id = $1 ORDER BY created_at, id`,
   },
   {
@@ -430,6 +447,10 @@ const purgeSteps: readonly PurgeStep[] = [
   {
     key: "maintenanceRecords",
     sql: `DELETE FROM maintenance_records WHERE owner_user_id = $1`,
+  },
+  {
+    key: "recorderArchiveAdmissions",
+    sql: `DELETE FROM recorder_archive_admissions WHERE owner_user_id = $1`,
   },
   {
     key: "telemetryLogs",

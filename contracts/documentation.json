@@ -40,6 +40,7 @@
       { "method": "POST", "path": "/v1/recorder-archives", "summary": "Stage five private checksum-bound recorder archive objects from a sanitized Desktop plan", "auth": "session", "success": [201], "maturity": "fixture" },
       { "method": "GET", "path": "/v1/recorder-archives", "summary": "List owner recorder archive materializations and explicit nonclaims", "auth": "session", "success": [200], "maturity": "fixture" },
       { "method": "POST", "path": "/v1/recorder-archives/:id/complete", "summary": "Verify recorder object length, type, checksum, and bounded manifest-receipt bindings", "auth": "session", "success": [200], "maturity": "fixture" },
+      { "method": "POST", "path": "/v1/recorder-archives/:id/admit", "summary": "Stream five private objects through sovereign archive-v1 verification and explicitly admit an object-backed telemetry reference", "auth": "session", "success": [201], "maturity": "fixture" },
       { "method": "GET", "path": "/v1/jobs", "summary": "List owner compute jobs", "auth": "session", "success": [200] },
       { "method": "GET", "path": "/v1/jobs/capabilities", "summary": "List configured worker capabilities and live gates", "auth": "session", "success": [200] },
       { "method": "GET", "path": "/v1/jobs/:id", "summary": "Read an owner job and optional events", "auth": "session", "success": [200] },

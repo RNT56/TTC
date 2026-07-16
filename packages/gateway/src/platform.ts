@@ -2750,6 +2750,15 @@ async function createJobUnchecked(
     if (!isRecord(telemetry.tape)) {
       throw Object.assign(new Error("train.offline-bc telemetry tape is malformed"), { statusCode: 409 });
     }
+    if (
+      telemetry.tape.schemaVersion === "forge-recorder-telemetry-reference/1.0.0"
+      || telemetry.tape.storage === "object-backed"
+    ) {
+      throw Object.assign(
+        new Error("object-backed recorder telemetry is not authorized for offline training"),
+        { statusCode: 409 },
+      );
+    }
     authoritativePayload = {
       ...payload,
       telemetryLogId,

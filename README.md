@@ -280,7 +280,7 @@ flowchart LR
 | Courses | EnvSpec validation, assignments, leaderboards | Server-side replay verification |
 | Marketplace | Listed models/skills, usage rollups, moderation | Admitted reports, policy gate, D29 usage beta |
 | Commerce | Vendor links and print quote handoff | Off-platform checkout only, no payout/payment ledger |
-| Desktop/bridge | Future serial and recorder surface | D30 lab-gated, fail-closed native commands |
+| Desktop/bridge | Protected native serial/recorder/object-materialization seams plus a local sovereign archive-admission candidate | D30 lab gates, native canonical verification, immutable nonclaims, and no auto-arm |
 | Maintenance | Wear estimates, impact windows, repair steps, fleet summaries | Field logs become records, not screenshots |
 
 ---
