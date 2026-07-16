@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are implemented on `codex/p8003-recorder-import` and await protected-main evidence; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51
 
@@ -120,10 +120,11 @@ or recorded-device training evidence.
 PR #87 protects that local boundary at `d8afe7f`: exact head `5e668a1` passed PR CI
 `29485412948`/security `29485412987`, reviewed tree `528a878` is byte-identical at
 the squash, and post-merge CI `29486146093`/security `29486147436` pass. The next
-local lane is a reviewed adapter plus verified Studio controls/archive import; the
-named D12 device, suspend, lab, field, and recorded-device gates remain separate.
+local lane is recorder status/start/stop controls plus a reviewed adapter; D51 below
+protects read-only Studio archive inspection, while the named D12 device, suspend,
+lab, field, and recorded-device gates remain separate.
 
-D51's candidate adds the first read side without changing archive v1. Desktop accepts
+D51 adds the first protected read side without changing archive v1. Desktop accepts
 one absolute directory containing exactly the five canonical real regular files;
 symlinks, special files, missing/extra names, aggregate oversize, unsupported majors,
 unknown/non-canonical metadata, filename or authority drift, and non-canonical frames
@@ -141,8 +142,10 @@ no frame. A passing result establishes local archive-v1 self-consistency only, n
 signature or independent authenticity proof, device identity, recorded-device or
 field maturity, sharing/training consent, lab evidence, ghost, or system-ID result.
 Fourteen native tests, sixteen Studio tests, the declared three-engine browser matrix,
-and the complete 40-step local gate under Python 3.12.13 pass on the candidate; exact
-PR and post-merge protection remain required before this boundary is called protected.
+and the complete 40-step local gate under Python 3.12.13 pass. PR #89 exact head
+`dcaed0f` passed CI `29490845998`/security `29490846046`; reviewed tree `2d57349` is
+byte-identical at protected `b5418ac`, whose post-merge CI `29491389298`/security
+`29491389270` pass. This protects inspection self-consistency only.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the

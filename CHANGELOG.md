@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect D51 recorder archive inspection
+**Session:** Codex agent · branch `codex/p8003-recorder-import-evidence` · **Phase:** P8 ·
+**TODO items:** P8-003 [~]
+**Done:** Protected D51's read-only recorder archive-v1 verifier and Desktop-only
+Studio inspection surface through PR #89. Exact implementation head `dcaed0f` passed
+PR CI `29490845998` and security `29490846046`; reviewed tree `2d57349` is
+byte-identical at protected squash `b5418ac`, whose exact post-merge CI
+`29491389298` and security `29491389270` pass. The feature branch was deleted after
+proof. The protected boundary streams pre-read-capped canonical metadata, frames, and
+index entries, verifies the exact five-file layout, sparse offsets, count/duration,
+frame/index hashes, and reconstructed/retained replay equality, and returns only a
+strict bounded local-self-consistency summary. It uploads no tape and promotes no
+device, field, sharing, training, lab, ghost, or system-ID authority. P8-003 remains
+`[~]` because controls, object-backed gateway materialization, real adapter/device,
+suspend, and lab/field execution are still open.
+**Changed:** Living evidence anchors, current-state/readiness table, roadmap/TODO,
+execution sequencing, AGENTS entry guidance, hardware/Studio system status, and the
+nine legacy named post-P3 TODO rows now carry stable `BATCH-001..009` IDs.
+**Decisions:** none; D51 remains the binding read-only self-consistency boundary.
+**Next:** Add versioned Desktop recorder status/start/stop controls, then separately
+design object-backed gateway materialization instead of sending a 512-MiB archive
+through the JSONB request-body path.
+**Blockers:** None for the next local controls slice. Real adapter/device identity,
+host suspend, controlled lab/field execution, sharing/training grants, and signed
+distribution remain external P8 gates.
+
 ## 2026-07-16 — Verify Desktop recorder archives before import
 **Session:** Codex agent · branch `codex/p8003-recorder-import` · **Phase:** P8 ·
 **TODO items:** P8-003 [~]

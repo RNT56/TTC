@@ -269,8 +269,8 @@ Work:
 - retain the protected accurate public surfaces plus ModelSpec 2.2 and SEC-001..005;
   `GOV-010` remains in progress only for qualified confusing-similarity/common-law/
   class review;
-- finish real-mid-hardware P1 budgets; XC-28 configurator truth is implemented and
-  awaits protected delivery with the v0.2 package boundary.
+- finish real-mid-hardware P1 budgets; retain XC-28 configurator truth at its
+  protected v0.2 package boundary.
 
 Acceptance:
 
@@ -437,15 +437,15 @@ Work:
   clean explicit stop. Privacy/training authorization and device attestation remain
   false; pseudo-terminal proof is not an adapter, device, lab, field, ghost,
   system-ID, host-suspend, or recorded-device result;
-- D51/P8-003 is implemented as a protection candidate on
-  `codex/p8003-recorder-import`: the read-only Desktop command requires exactly five
+- D51/P8-003 is protected through PR #89/`b5418ac`: the read-only Desktop command
+  requires exactly five
   canonical real archive-v1 files, streams and bounds frames/index entries, verifies
   stride/final offsets, counts/duration and frame/index hashes, reconstructs the
   replay-v1 digest, and returns only strict local-self-consistency/nonclaim metadata
   to the Desktop-only Studio panel. Fourteen native tests, sixteen Studio tests, the
-  three-engine browser matrix, and the complete 40-step local gate pass; exact
-  PR/post-merge CI/security and reviewed-tree equality remain required before this
-  lane is protected. It is not gateway import/materialization, authenticity,
+  three-engine browser matrix, and the complete 40-step local gate pass. Exact
+  PR/post-merge CI/security and reviewed-tree equality protect this local boundary.
+  It is not gateway import/materialization, authenticity,
   adapter/device, lab/field, sharing/training, ghost, or system-ID evidence;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
@@ -455,8 +455,8 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete local slice: protect and reconcile D51, then add explicit
-Desktop recorder start/stop controls plus a separately authorized gateway-owned
+Next dependency-complete local slice: add versioned Desktop recorder status/start/stop
+controls, then design and implement a separately authorized object-backed gateway
 archive materialization path without changing D50 archive bytes or promoting
 self-consistency to authenticity, device provenance, sharing, or training authority.
 The reviewed real telemetry-adapter identity contract remains the prerequisite for

@@ -90,12 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected documentation descendant is D50 evidence-reconciliation
-  PR #88 at `225933a`, whose exact post-merge CI `29487715718` and security
-  `29487715678` pass; the latest protected runtime anchor is D50/P8-013 PR #87 at
-  `d8afe7f`. Exact implementation head `5e668a1` passed PR CI `29485412948` and security
-  `29485412987`; reviewed tree `528a878` is byte-identical at the protected squash,
-  whose post-merge CI `29486146093` and security `29486147436` pass. D49 evidence
+  latest verified protected descendant and runtime anchor are D51/P8-003 PR #89 at
+  `b5418ac`. Exact implementation head `dcaed0f` passed PR CI `29490845998` and
+  security `29490846046`; reviewed tree `2d57349` is byte-identical at the protected
+  squash, whose post-merge CI `29491389298` and security `29491389270` pass. D50
+  evidence reconciliation PR #88/`225933a` and recorder PR #87/`d8afe7f`, D49 evidence
   reconciliation PR #86/`63e144c` and target/readback PR #85/`4647a10` remain green.
   PR #81 owns the
   decision-grade D47 MJX request/report contract while PR #79 owns the
@@ -236,8 +235,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   covers protected local mechanics only; adapter/device identity, OS suspend,
   WebSerial/WebUSB, lab/field, ghost/system-ID, and recorded-device training
   authority remain open;
-- D51/P8-003 is implemented on `codex/p8003-recorder-import` as a protection
-  candidate. The read-only native importer accepts exactly five real regular
+- D51/P8-003 is protected through PR #89/`b5418ac` at local archive-inspection
+  maturity. The read-only native importer accepts exactly five real regular
   archive-v1 files, rejects symlinks/extras/version/canonical/privacy drift, streams
   bounded frames and the sparse index, verifies exact offsets/count/duration and
   frame/index hashes, reconstructs the replay-v1 digest, and returns a strict bounded
@@ -246,8 +245,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   and states that device identity, authenticity, recorded-device/field maturity,
   sharing, training, lab, ghost, and system-ID authority remain absent. Fourteen
   native and sixteen Studio tests plus the complete 40-step local gate pass under
-  Python 3.12.13; exact PR/post-merge protection remains required before any
-  protected claim;
+  Python 3.12.13. Exact PR/post-merge CI/security and reviewed-tree equality pass;
+  recorder controls, object-backed gateway materialization, adapter/device identity,
+  suspend, lab/field, and every promoted provenance or consent claim remain open;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
