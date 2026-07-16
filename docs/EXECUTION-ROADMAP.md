@@ -413,8 +413,9 @@ Objective: close R3 without widening hardware authority.
 Work:
 
 - all `P8-001..014` tasks;
-- P8-012 is complete at deterministic/native transport integration maturity under
-  D48: exact Betaflight 2025.12/D12-quad/failsafe-only artifact, independent
+- P8-012 is complete at protected deterministic/native transport integration
+  maturity under D48 through PR #83/`fd26845` and exact PR/post-merge CI/security:
+  exact Betaflight 2025.12/D12-quad/failsafe-only artifact, independent
   producer/consumer validation, OS-enumerated 115200-baud serialport-rs write, honest
   receipt, and real pseudo-terminal byte proof. Do not count it as target firmware,
   application, FC, HITL, lab, or field evidence;
