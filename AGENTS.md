@@ -90,14 +90,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D55 evidence-reconciliation PR #98 at
-  `9e94c71`, while the latest runtime anchor remains D55/P8-002/P8-003 PR #97 at
-  `370d214`. PR #98 exact docs head `46d7928`, reviewed tree `badc1ac`, PR
-  CI/security `29522780487`/`29522780670`, protected-tree equality, and post-merge
-  CI/security `29523361960`/`29523361913` pass. PR #97 exact head `4321eaa` passed
-  PR CI `29519984713` and security
-  `29519984764`; reviewed tree `673a50c` is byte-identical at the protected squash,
-  whose post-merge CI `29520651520` and security `29520651581` pass. D54 evidence
+  latest verified protected runtime anchor is D56/P8-002/P8-003 PR #100 at
+  `1bf127d`. Exact implementation head `69c0dd7` passed PR CI
+  `29530839367` and security `29530839338`; reviewed tree `de12c5a` is byte-identical
+  at the protected squash, whose post-merge CI `29531470442` and security
+  `29531470118` pass. D55 evidence-reconciliation PR #98/`9e94c71` and runtime PR
+  #97/`370d214`, D54 evidence
   PR #96/`b4b5ad9` and admission PR #95/`f8efb6f`, plus D53
   materialization PR #93/`08d892f`, D52 evidence
   reconciliation PR #92/`237e46b` and controls PR #91/`a8120ab`, D51 evidence-
@@ -315,9 +313,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   recorder start/end custody, physical-device, suspend, lab, or field evidence. The
   locked Desktop native gate, all 40 repository gates under Python 3.12.13, the
   clean/25-predecessor database, 11-flow browser, and three-engine matrices pass.
-  Named hardware, trusted recorder start/end custody, suspend, lab, and field proof
-  remain separately gated;
-- D56 is implemented but unprotected at local custody-fixture maturity. It preserves
+  Named hardware, real-trust-root recorder start/end custody, suspend, lab, and field
+  proof remain separately gated;
+- D56 is protected at local custody-fixture maturity through PR #100/`1bf127d`. It
+  preserves
   archive v1/D53/D54 and adds three separate 1.0.0 formats: a deployment-owned,
   SHA-256-pinned, purpose/validity/revocation-bounded public Ed25519 trust bundle; an
   at-most-eight-hour strict signature over the exact protected revision/evidence/
@@ -327,12 +326,14 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   requires exact cross-session identity/UID/descriptor/response-transcript equality.
   Twenty-four native and thirty Studio tests cover strict crypto,
   substitution, two real identity pseudo-terminal sessions, real telemetry capture,
-  proof no-overwrite, and archive preservation. The acceptance authority signs the
-  reviewed mapping; the device does not. Protect the implementation before relying
-  on it; all 40 local gates, the locked Desktop-native build, and a fresh clean/25-
-  predecessor isolated Postgres plus 11-flow production-browser matrix pass. Then
-  require a real trust bundle, named Kakute H7 V1.5, rotation/revocation, suspend,
-  and EXT-004 evidence before any lab claim. Cryptographic-device,
+  proof no-overwrite, and archive preservation. Exact implementation head `69c0dd7`,
+  reviewed tree `de12c5a`, PR CI/security `29530839367`/`29530839338`, protected-tree
+  equality, and post-merge CI/security `29531470442`/`29531470118` pass. The
+  acceptance authority signs the reviewed mapping; the device does not. All 40 local
+  gates, the locked Desktop-native build, and a fresh clean/25-predecessor isolated
+  Postgres plus 11-flow production-browser matrix pass. Require a real trust bundle,
+  named Kakute H7 V1.5, rotation/revocation, suspend, and EXT-004 evidence before any
+  lab claim. Cryptographic-device,
   recorded-device, sharing, training, and field authority remain false;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,

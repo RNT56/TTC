@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Reconcile protected D56 recorder-custody evidence
+**Session:** Codex agent · branch `codex/p8004-d56-custody-evidence` ·
+**Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
+**Done:** Reconciled every living D56 execution, status, risk, threat, pilot, Studio,
+and hardware-bridge statement to the protected implementation. PR #100 exact head
+`69c0dd79a66ac5fac4078bfe770cbecdf67c4091` passed PR CI `29530839367` and
+security `29530839338`; reviewed tree
+`de12c5ac06e4f1d360eabf924f8f41bc15209dd5` is byte-identical at protected squash
+`1bf127d20a8d71b600c50159f18e49d7708f77ef`, whose post-merge CI `29531470442`
+and security `29531470118` pass. The remote implementation branch was deleted.
+This protects only local custody-fixture mechanics: the acceptance authority signs
+the reviewed mapping while device cryptography, recorded-device, field, sharing,
+and training authority remain false.
+**Changed:** `AGENTS.md`, changelog, project-state, roadmap, TODO, execution roadmap,
+risk register, threat model, hardware-bridge and Studio system docs, and reference-
+quad pilot guidance only; no runtime, dependency, schema, migration, archive,
+telemetry, consent, training, or release format changed.
+**Decisions:** none; D56 remains active unchanged and D57 remains the next regular ID.
+**Next:** Execute the protected D49/D55/D56 sequence on the named props-off Kakute
+H7 V1.5 under a deployment-controlled real trust bundle, retain semantically
+reviewed acceptance evidence, and run rotation, revocation, reconnect, power-loss,
+suspend, and EXT-004 acceptance drills.
+**Blockers:** Real trust-root authority, named hardware, lab supervision, host-
+suspend behavior, and external acceptance evidence are unavailable in this local
+repository lane. Fixture signatures and pseudo-terminals do not close those gates.
+
 ## 2026-07-16 — Implement fail-closed D56 signed recorder custody
 **Session:** Codex agent · branch `codex/p8004-d56-custody-implementation` ·
 **Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
