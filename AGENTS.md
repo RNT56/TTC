@@ -90,14 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D51 evidence-reconciliation PR #90 at
-  `9e81ddd`, while the latest protected runtime anchor remains D51/P8-003 PR #89 at
-  `b5418ac`. Exact reconciliation head `4153406` passed PR CI `29492398120` and
-  security `29492398122`; reviewed tree `5785262` is byte-identical at the protected
-  squash, whose post-merge CI `29492938423` and security `29492938419` pass. Exact
-  runtime head `dcaed0f` passed PR CI `29490845998` and security `29490846046`;
-  reviewed tree `2d57349` is byte-identical at the protected squash, whose post-merge
-  CI `29491389298` and security `29491389270` pass. D50
+  latest verified protected descendant and runtime anchor is D52/P8-003 PR #91 at
+  `a8120ab`. Exact runtime head `69db857` passed PR CI `29495505253` and security
+  `29495505262`; reviewed tree `25be1d3` is byte-identical at the protected squash,
+  whose post-merge CI `29496148793` and security `29496148796` pass. D51 evidence-
+  reconciliation PR #90/`9e81ddd` and recorder-import PR #89/`b5418ac`, D50
   evidence reconciliation PR #88/`225933a` and recorder PR #87/`d8afe7f`, D49 evidence
   reconciliation PR #86/`63e144c` and target/readback PR #85/`4647a10` remain green.
   PR #81 owns the
@@ -250,19 +247,21 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   sharing, training, lab, ghost, and system-ID authority remain absent. Fourteen
   native and sixteen Studio tests plus the complete 40-step local gate pass under
   Python 3.12.13. Exact PR/post-merge CI/security and reviewed-tree equality pass;
-  recorder controls, object-backed gateway materialization, adapter/device identity,
-  suspend, lab/field, and every promoted provenance or consent claim remain open;
-- D52/P8-003 is the current unprotected local candidate for versioned Desktop
-  recorder controls. `forge-recorder-control/1.0.0` reports exact
+  D52 now separately protects recorder controls; object-backed gateway
+  materialization, adapter/device identity, suspend, lab/field, and every promoted
+  provenance or consent claim remain open;
+- D52/P8-003 is protected through PR #91/`a8120ab` at local recorder-control
+  maturity. `forge-recorder-control/1.0.0` reports exact
   `inactive|recording|finished` shell-owned state across webview reloads; Studio may
   start only from an admitted report's contract/lockfile hashes and seed, one
   OS-enumerated port, one D12 rig, a new absolute archive path, and per-log capture
   consent. Stop returns the unchanged persisted receipt v1, and every status keeps
-  device/field/sharing/training authority false. Protection, object-backed gateway
-  materialization, reviewed adapter/device identity, suspend, lab/field, and all
-  promoted provenance or consent claims remain open. Fourteen native tests, twenty
-  Studio tests, the three-engine browser matrix, and all 40 local gates pass under
-  Python 3.12.7 on the candidate;
+  device/field/sharing/training authority false. Exact implementation head
+  `69db857`, reviewed tree `25be1d3`, PR CI/security, protected-tree equality, and
+  post-merge CI/security pass. Object-backed gateway materialization, reviewed
+  adapter/device identity, suspend, lab/field, and all promoted provenance or
+  consent claims remain open. Fourteen native tests, twenty Studio tests, the
+  three-engine browser matrix, and all 40 local gates pass under Python 3.12.7;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
