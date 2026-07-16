@@ -255,8 +255,10 @@ Follow [`pilots/reference-rover-pilot.md`](pilots/reference-rover-pilot.md) befo
 auto-arm or overrule the supervisor/flight controller. Record preflight authority,
 props-removed quad HITL, physical restraint, veto/kill, reconnect, power-loss,
 telemetry, replay, ghost, system-ID review, every anomaly, and all required role
-signatures. Stop immediately when safety requires it; incomplete evidence is the
-correct result.
+signatures. The quad HITL step additionally resolves one D49 receipt 2.0.0 against
+private content-addressed pre/post firmware, set/save, reconnect, and exact-readback
+responses; receipt 1.0.0 or a local pseudo-terminal never proves lab application.
+Stop immediately when safety requires it; incomplete evidence is the correct result.
 
 ### Print
 

@@ -419,6 +419,13 @@ Work:
   producer/consumer validation, OS-enumerated 115200-baud serialport-rs write, honest
   receipt, and real pseudo-terminal byte proof. Do not count it as target firmware,
   application, FC, HITL, lab, or field evidence;
+- D49's next-slice candidate keeps that artifact unchanged but requires one bounded
+  stable `2025.12.x` version handshake before writing, exact set/save acknowledgement,
+  reboot/reconnect to the same OS path, repeated reported-identity hash, and one exact
+  `get failsafe_delay` readback before emitting receipt 2.0.0; bind the four authoritative
+  response byte streams by SHA-256. Two real pseudo-terminal sessions prove the
+  protocol and refusals; this is still local
+  integration evidence, not a physical target or lab result;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -427,12 +434,13 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete slice: add a target-version handshake and exact post-write
-readback to the D12 quad lab adapter, then exercise that seam under P8-009's SITL ->
-HITL procedure with propellers removed and a signed failure/reconnect/power-loss
-record. Browser WebSerial should consume the same D48 artifact only after the native
-readback protocol is proven; P8-013 recorder capture can proceed in parallel without
-widening configuration authority.
+Next dependency-complete slice after D49 is protected: execute the exact protocol on
+the named D12 quad FC under the controlled-lab authority with propellers removed,
+retain the bounded raw responses/hashes and failure/reconnect/power-loss record, and
+then exercise that seam under P8-009's SITL -> HITL procedure. Browser WebSerial
+should consume the unchanged D48 artifact only after that native real-target proof;
+P8-013 recorder capture can proceed in parallel without widening configuration
+authority.
 
 Acceptance:
 
