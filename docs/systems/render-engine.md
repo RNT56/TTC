@@ -101,6 +101,13 @@ allocation assertions in the perf harness)*).
 P1: P1-008..017 studio tasks; XC-22 foundations. P8 adds the ghost overlay consumer
 ([`hardware-bridge.md`](hardware-bridge.md)).
 
+D57's ghost consumer is intentionally DOM/SVG presentation over a strictly parsed,
+decimated artifact rather than a new simulation truth path. It precomputes the two
+track polylines once and updates only the observed/predicted markers and separation
+line while scrubbing. Indexed interpolation has a focused 60 Hz computation budget;
+the existing ≤ 6 ms render budget and named-mid-hardware QA remain separately
+binding for an end-to-end performance claim.
+
 ## 9. Open questions
 
 N8AO vs alternative AO at low tier; WebGPU flag timing. *(Resolved at P1-015:

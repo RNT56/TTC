@@ -75,6 +75,11 @@ export const JOB_KINDS = [
 ] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
+export const GHOST_OVERLAY_SCHEMA = "forge-ghost-overlay";
+export const GHOST_OVERLAY_VERSION = "1.0.0";
+export const GHOST_OVERLAY_FRAME = "forge-y-up-rh-m";
+export const GHOST_MAX_RENDER_POINTS = 6_001;
+
 export interface JobRecord {
   id: string;
   ownerUserId: string | null;
@@ -3300,12 +3305,7 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
         warnings: [],
       };
     case "maintenance.crash-forensics":
-      return {
-        artifactKind: "crash-forensics",
-        crashDetected: true,
-        window: { startS: 8, impactS: 10, endS: 14 },
-        ghostOverlay: { enabled: true, divergenceMetric: "position-rmse" },
-      };
+      return fixtureGhostForensics();
     case "maintenance.repair-sheet":
       return {
         artifactKind: "repair-sheet",
@@ -3330,6 +3330,88 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
     case "occt.tessellate":
       return fixtureLicenseFilteredGeometry(payload, payloadHash);
   }
+}
+
+function fixtureGhostForensics(): unknown {
+  const durationS = 600;
+  const sourceSampleRateHz = 60;
+  const renderRateHz = 10;
+  const impactS = 540;
+  const window = { startS: 537, impactS, endS: 543 };
+  const points: number[][] = [];
+  for (let index = 0; index <= durationS * renderRateHz; index += 1) {
+    const timeS = index / renderRateHz;
+    const actualXM = timeS / 100;
+    const phase = (timeS % 60) / 60;
+    const actualZM = phase <= 0.5 ? phase * 2 : (1 - phase) * 2;
+    const divergenceM = 0.02 + Math.max(0, timeS - 480) * 0.008;
+    points.push([
+      roundedGhostNumber(timeS),
+      roundedGhostNumber(actualXM),
+      1,
+      roundedGhostNumber(actualZM),
+      roundedGhostNumber(actualXM - divergenceM),
+      1,
+      roundedGhostNumber(actualZM),
+      roundedGhostNumber(divergenceM),
+    ]);
+  }
+  const seekIndex = Array.from({ length: durationS + 1 }, (_, second) => [second, second * renderRateHz]);
+  const crashDivergences = Array.from(
+    { length: (window.endS - window.startS) * sourceSampleRateHz + 1 },
+    (_, index) => 0.02 + Math.max(0, window.startS + index / sourceSampleRateHz - 480) * 0.008,
+  );
+  const rmsM = Math.sqrt(
+    crashDivergences.reduce((sum, divergence) => sum + divergence * divergence, 0) / crashDivergences.length,
+  );
+  return {
+    artifactKind: "crash-forensics",
+    crashDetected: true,
+    window,
+    ghostOverlay: {
+      schemaVersion: `${GHOST_OVERLAY_SCHEMA}/${GHOST_OVERLAY_VERSION}`,
+      enabled: true,
+      disabledReason: null,
+      frame: GHOST_OVERLAY_FRAME,
+      pointLayout: [
+        "timeS",
+        "actualXM",
+        "actualYM",
+        "actualZM",
+        "predictedXM",
+        "predictedYM",
+        "predictedZM",
+        "divergenceM",
+      ],
+      divergenceMetric: "position-rmse",
+      sourceMaturity: "controlled-synthetic",
+      sourceSampleCount: durationS * sourceSampleRateHz + 1,
+      sourceSampleRateHz,
+      startS: 0,
+      endS: durationS,
+      durationS,
+      renderPointCount: points.length,
+      renderRateHz,
+      maxRenderPointCount: GHOST_MAX_RENDER_POINTS,
+      points,
+      seekIndex,
+      divergence: {
+        sampleCount: crashDivergences.length,
+        maxM: roundedGhostNumber(Math.max(...crashDivergences), 4),
+        rmsM: roundedGhostNumber(rmsM, 4),
+        warnM: 0.35,
+        status: "diverged",
+      },
+      deviceIdentityVerified: false,
+      recordedDeviceVerified: false,
+      fieldSessionVerified: false,
+    },
+    scrub: { frameCount: crashDivergences.length, preS: 3, postS: 3 },
+  };
+}
+
+function roundedGhostNumber(value: number, digits = 6): number {
+  return Number(value.toFixed(digits));
 }
 
 export function assertJobKind(value: string): asserts value is JobKind {

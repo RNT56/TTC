@@ -171,6 +171,15 @@ directly on repair-sheet steps when supplied. The
 remaining P12 work is real Desktop-captured field-log evidence and live reorder/
 print quote integrations.
 
+D57 replaces the summary-only fixture slider with a strict indexed ghost replay.
+The keyless fixture materializes one ten-minute, 60 Hz controlled-synthetic source as
+6,001 decimated Y-up/SI points plus a one-second sparse index; Studio renders
+observed and predicted X/Z tracks, measured separation, explicit play/pause and
+one-frame steps. The compact overlay may live in the maintenance payload, but raw
+recorder frames may not: D53/D54 objects remain the only large-log boundary. The
+fixture and generic worker output both retain false device/recorded-device/field
+authority, so P8-014, P12-002 and EXT-008 remain open for real evidence.
+
 ## 7. Accounts & tiers (P11-001; D3)
 
 Auth.js; anonymous-local stays first-class. Free forever: view, configure, validate,

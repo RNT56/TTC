@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SceneController } from "./sceneController";
 import { ViewerScene } from "./viewerScene";
 import { DEMO_MODELS, useStudio } from "./store";
@@ -105,6 +105,13 @@ import {
   type JsonPatchOp,
   type PolicyOutput,
 } from "./jobOutputs";
+import {
+  GHOST_PLAYBACK_HZ,
+  projectGhostPosition,
+  projectGhostReplay,
+  seekGhostReplay,
+  tryParseGhostReplay,
+} from "./ghostReplay";
 import { decodeShareFragment, encodeShareFragment } from "./share";
 import { BrowserPolicyController } from "./policyRuntime";
 import {
@@ -4144,8 +4151,12 @@ function CrashScrubber({ records }: { records: MaintenanceRecord[] }) {
   const [selectedId, setSelectedId] = useState(records[0]?.id ?? "");
   const active = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
   const window = crashWindow(active);
-  const impactS = window?.impactS ?? window?.startS ?? 0;
+  const payload = asRecord(active?.payload);
+  const replay = useMemo(() => tryParseGhostReplay(payload?.ghostOverlay), [payload?.ghostOverlay]);
+  const projection = useMemo(() => (replay ? projectGhostReplay(replay) : null), [replay]);
+  const impactS = window?.impactS ?? replay?.startS ?? 0;
   const [scrubS, setScrubS] = useState(impactS);
+  const [playing, setPlaying] = useState(false);
   useEffect(() => {
     if (!records.some((record) => record.id === selectedId)) {
       setSelectedId(records[0]?.id ?? "");
@@ -4153,16 +4164,48 @@ function CrashScrubber({ records }: { records: MaintenanceRecord[] }) {
   }, [records, selectedId]);
   useEffect(() => {
     const nextWindow = crashWindow(active);
-    setScrubS(nextWindow?.impactS ?? nextWindow?.startS ?? 0);
-  }, [active?.id]);
-  if (!active || !window) return null;
-  const payload = asRecord(active.payload);
-  const ghost = asRecord(payload?.ghostOverlay);
-  const phase = scrubS < window.impactS ? "pre-impact" : scrubS === window.impactS ? "impact" : "post-impact";
+    const nextPayload = asRecord(active?.payload);
+    const nextReplay = tryParseGhostReplay(nextPayload?.ghostOverlay);
+    setScrubS(nextWindow?.impactS ?? nextReplay?.startS ?? nextWindow?.startS ?? 0);
+    setPlaying(false);
+  }, [active?.id, active?.payload]);
+  useEffect(() => {
+    if (!playing || !replay) return undefined;
+    let animationFrame = 0;
+    let previousMs: number | null = null;
+    const tick = (nowMs: number) => {
+      if (previousMs !== null) {
+        const elapsedS = Math.min(0.1, Math.max(0, (nowMs - previousMs) / 1_000));
+        setScrubS((current) => {
+          const next = Math.min(replay.endS, current + elapsedS);
+          if (next >= replay.endS) setPlaying(false);
+          return next;
+        });
+      }
+      previousMs = nowMs;
+      animationFrame = requestAnimationFrame(tick);
+    };
+    animationFrame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [playing, replay]);
+  if (!active || (!window && !replay)) return null;
+  const rangeStartS = replay?.startS ?? window?.startS ?? 0;
+  const rangeEndS = replay?.endS ?? window?.endS ?? rangeStartS;
+  const frame = replay ? seekGhostReplay(replay, scrubS) : null;
+  const actualDot = frame && projection ? projectGhostPosition(projection, frame.actualPositionM) : null;
+  const predictedDot = frame && projection ? projectGhostPosition(projection, frame.predictedPositionM) : null;
+  const phase = window
+    ? Math.abs(scrubS - window.impactS) < 1 / GHOST_PLAYBACK_HZ
+      ? "impact"
+      : scrubS < window.impactS
+        ? "pre-impact"
+        : "post-impact"
+    : "no impact";
+  const divergenceStatus = replay?.divergence.status ?? "unavailable";
   return (
-    <div style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 5 }}>
+    <div data-testid="ghost-replay" style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 5 }}>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <span style={{ color: "#8fa3bf", flex: 1 }}>crash scrubber</span>
+        <span style={{ color: "#8fa3bf", flex: 1 }}>ghost replay</span>
         {records.length > 1 ? (
           <select value={active.id} onChange={(event) => setSelectedId(event.target.value)} style={selectStyle}>
             {records.map((record) => (
@@ -4173,21 +4216,93 @@ function CrashScrubber({ records }: { records: MaintenanceRecord[] }) {
           </select>
         ) : null}
       </div>
+      {replay && projection && frame && actualDot && predictedDot ? (
+        <svg
+          data-testid="ghost-overlay-plot"
+          role="img"
+          aria-label="Top-down X Z telemetry and twin prediction paths"
+          viewBox={`0 0 ${projection.width} ${projection.height}`}
+          style={{ width: "100%", height: 120, marginTop: 5, border: "1px solid #242a33", background: "#0d1015" }}
+        >
+          <polyline points={projection.actualPolyline} fill="none" stroke="#39c8ff" strokeWidth="1.5" opacity="0.8" />
+          <polyline points={projection.predictedPolyline} fill="none" stroke="#e6a23c" strokeWidth="1.2" opacity="0.75" />
+          <line
+            x1={actualDot[0]}
+            y1={actualDot[1]}
+            x2={predictedDot[0]}
+            y2={predictedDot[1]}
+            stroke={frame.divergenceM >= replay.divergence.warnM ? "#e66" : "#7dd87d"}
+            strokeWidth="1.2"
+          />
+          <circle cx={actualDot[0]} cy={actualDot[1]} r="3.5" fill="#39c8ff" />
+          <circle cx={predictedDot[0]} cy={predictedDot[1]} r="3.5" fill="#e6a23c" />
+          <text x="10" y="16" fill="#39c8ff" fontSize="9">observed</text>
+          <text x="66" y="16" fill="#e6a23c" fontSize="9">twin ghost</text>
+          <text x="260" y="112" fill="#7d899b" fontSize="8">X/Z · Y-up SI</text>
+        </svg>
+      ) : (
+        <div style={{ color: "#e6a23c", marginTop: 5 }}>indexed overlay unavailable · summary only</div>
+      )}
       <input
+        data-testid="ghost-scrubber-range"
+        aria-label="Ghost replay time"
         type="range"
-        min={window.startS}
-        max={window.endS}
-        step="0.01"
+        min={rangeStartS}
+        max={rangeEndS}
+        step={1 / GHOST_PLAYBACK_HZ}
         value={scrubS}
-        onChange={(event) => setScrubS(Number(event.target.value))}
+        onChange={(event) => {
+          setPlaying(false);
+          setScrubS(Number(event.target.value));
+        }}
         style={{ width: "100%", marginTop: 5 }}
       />
+      {replay ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5, marginTop: 3 }}>
+          <button
+            data-testid="ghost-step-back"
+            aria-label="Step ghost replay backward one frame"
+            style={{ ...btn, minHeight: 32 }}
+            onClick={() => {
+              setPlaying(false);
+              setScrubS((current) => Math.max(replay.startS, current - 1 / GHOST_PLAYBACK_HZ));
+            }}
+          >
+            −1 frame
+          </button>
+          <button
+            data-testid="ghost-play-toggle"
+            aria-label={playing ? "Pause ghost replay" : "Play ghost replay"}
+            style={{ ...btn, minHeight: 32 }}
+            onClick={() => {
+              if (!playing && scrubS >= replay.endS) setScrubS(replay.startS);
+              setPlaying((current) => !current);
+            }}
+          >
+            {playing ? "pause" : "play · 60 Hz"}
+          </button>
+          <button
+            data-testid="ghost-step-forward"
+            aria-label="Step ghost replay forward one frame"
+            style={{ ...btn, minHeight: 32 }}
+            onClick={() => {
+              setPlaying(false);
+              setScrubS((current) => Math.min(replay.endS, current + 1 / GHOST_PLAYBACK_HZ));
+            }}
+          >
+            +1 frame
+          </button>
+        </div>
+      ) : null}
       <MiniRows
         rows={[
           ["time", `${scrubS.toFixed(2)} s · ${phase}`],
-          ["window", `${window.startS.toFixed(2)}-${window.endS.toFixed(2)} s`],
-          ["impact", `${window.impactS.toFixed(2)} s`],
-          ["ghost", ghost?.enabled === true ? ghost.divergenceMetric ?? "enabled" : "off"],
+          ["trace", replay ? `${(replay.durationS / 60).toFixed(2)} min · ${replay.points.length} points` : undefined],
+          ["source", replay ? `${replay.sourceMaturity} · ${replay.sourceSampleRateHz.toFixed(0)} Hz` : undefined],
+          ["window", window ? `${window.startS.toFixed(2)}-${window.endS.toFixed(2)} s` : "none"],
+          ["impact", window ? `${window.impactS.toFixed(2)} s` : "none"],
+          ["divergence", frame ? `${frame.divergenceM.toFixed(3)} m · ${divergenceStatus}` : divergenceStatus],
+          ["authority", replay ? "not device · not field" : "unverified"],
           ["severity", active.severity],
         ]}
       />

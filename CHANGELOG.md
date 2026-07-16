@@ -18,6 +18,40 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Implement bounded indexed ghost replay mechanics
+**Session:** Codex agent · branch `codex/p8005-p8-004-ghost-scrubber` ·
+**Phase:** P8/P12 · **TODO items:** P8-004 [~], P12-002 [~], XC-20 [~]
+**Done:** Added D57's internal `forge-ghost-overlay/1.0.0` candidate. Worker crash
+forensics now validates finite strict ≤600-second traces, exact actual/predicted
+Y-up/SI position pairs and Euclidean meter divergence, refuses unsupported metrics
+and time drift, deterministically decimates to ≤6,001 compact points with exact
+endpoints, and emits a sparse seek index plus permanent device/recorded-device/field
+nonclaims. The keyless Gateway fixture produces the equivalent ten-minute,
+36,001-source-sample/60 Hz controlled-synthetic trace without storing raw frames.
+Studio independently parses/refuses every version/layout/value/index/authority
+boundary, precomputes observed/predicted X/Z paths, displays live separation and
+source/nonclaim state, and provides explicit play/pause and ±1/60-second steps. The
+production-browser acceptance now exercises the full indexed view. Focused worker
+tests pass 33/33, Gateway 74/74, Studio 33/33, Studio typecheck/build pass, and the
+19-surface compatibility check passes. The exact candidate also passes all 40 local
+repository gates under Python 3.12.13 with 227 worker tests, a fresh disposable
+Postgres database through migration 0026 from clean plus all 25 populated
+predecessors and every data-plane assertion, the 12/12 production-browser matrix,
+and Chromium/Firefox/WebKit. This is not yet protected evidence and does not claim
+full render performance, a real D54 twin, device provenance, or field use.
+**Changed:** Worker crash-forensics/tests; Gateway fixture/tests; Studio ghost parser,
+indexed seek/projection/UI/tests; production-browser acceptance; compatibility
+matrix/checker/policy; `AGENTS.md`, decision, roadmap, task, project-state, execution,
+best-practice, browser-adjacent and system documentation.
+**Decisions:** D57 records the compact view/object-boundary/nonclaim contract; D58 is
+the next regular decision ID.
+**Next:** Inspect the exact diff and protect the implementation through reviewed PR
+and post-merge CI/security, then reconcile the exact protected hashes in a separate
+evidence change.
+**Blockers:** Real D54 replay-to-admitted-twin execution requires a reviewed server-
+selected streaming adapter/job and actual telemetry semantics; named-mid-hardware,
+P8-014, and EXT-008 field evidence are external to this local lane.
+
 ## 2026-07-16 — Reconcile protected D56 recorder-custody evidence
 **Session:** Codex agent · branch `codex/p8004-d56-custody-evidence` ·
 **Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]

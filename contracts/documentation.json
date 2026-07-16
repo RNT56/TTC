@@ -134,7 +134,7 @@
     { "queueKind": "bridge.supervisor-check", "artifactKinds": ["supervisor-decision"], "maturity": "fixture" },
     { "queueKind": "commerce.vendor-refresh", "artifactKinds": ["vendor-offer-refresh"], "maturity": "fixture" },
     { "queueKind": "maintenance.estimate-wear", "artifactKinds": ["wear-estimate"], "maturity": "fixture" },
-    { "queueKind": "maintenance.crash-forensics", "artifactKinds": ["crash-forensics"], "maturity": "fixture" },
+    { "queueKind": "maintenance.crash-forensics", "artifactKinds": ["crash-forensics"], "maturity": "fixture", "notes": "D57 adds internal forge-ghost-overlay/1.0.0: a bounded ten-minute/6,001-point indexed Y-up/SI view with controlled-synthetic or unverified maturity and permanent device/recorded-device/field nonclaims. Raw recorder frames remain object-backed." },
     { "queueKind": "maintenance.repair-sheet", "artifactKinds": ["repair-sheet"], "maturity": "fixture" },
     { "queueKind": "maintenance.fleet-summary", "artifactKinds": ["fleet-summary"], "maturity": "fixture" }
   ],

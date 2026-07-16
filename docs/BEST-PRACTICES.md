@@ -418,6 +418,14 @@ every user-facing capability claim.
   field, recorded-device, sharing, training, and auto-arm authority false; explicitly
   refuse the reference from legacy training even if consent exists until a separately
   versioned recorded-device contract is reviewed.
+- Treat ghost geometry as a compact versioned view, not another telemetry store or a
+  provenance upgrade. Keep raw recorder frames object-backed; bind SI/Y-up point
+  order, finite increasing time, divergence math, decimation and sparse-index
+  semantics; cap the current view at ten minutes and 6,001 points. Strictly reparse
+  it in Studio, precompute static paths, and interpolate only through the index.
+  Caller-supplied inputs stay unverified and fixture inputs stay
+  controlled-synthetic; device, recorded-device and field flags remain false. A
+  seek-computation benchmark is not a full render, named-hardware or field claim.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

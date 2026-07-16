@@ -314,6 +314,13 @@ format plus consented materialization explicitly owns it; D56 intentionally does
 pack cycles, R_int estimates, crash windows, repair steps, reorder SKUs, and fleet
 service summaries from deterministic telemetry/build payloads. Vendor and print
 quote links are attached by the platform commerce APIs rather than direct carts.
+Under D57, crash forensics additionally emits `forge-ghost-overlay/1.0.0`: finite
+strictly ordered actual/predicted SI position pairs are deterministically decimated
+to at most 6,001 compact points across at most 600 seconds, with exact endpoints,
+Euclidean divergence and a sparse seek index. Missing pairs disable geometry;
+duplicate/non-finite/out-of-range time or an unsupported metric fails the job. This
+internal output is visualization evidence only and keeps device, recorded-device,
+and field verification false.
 
 ### 3.7 `workers/commerce` — provider handoffs (P11)
 `refresh_vendor_offers` normalizes provider rows into priced, provenanced,
