@@ -216,11 +216,19 @@ def test_hardware_payload_boundary_corpus_matches_fail_closed_outcomes():
         if "allowPolicy" in expected:
             assert result["allowPolicy"] is expected["allowPolicy"]
         if input_value["operation"] == "config-diff":
+            assert result["schemaVersion"] == "forge-bridge-config/1.0.0"
             assert result["requiresPhysicalConfirmation"] is True
+            assert result["noAutoArm"] is True
             assert result["lines"][-1] == "save"
     _assert_error(
-        {"id": "hardware-extreme-rate", "expect": {"contains": "finite number"}},
-        lambda: compile_config_diff({"rates": {"rate": 10**400}}),
+        {"id": "hardware-extreme-rate", "expect": {"contains": "2 through 200"}},
+        lambda: compile_config_diff(
+            {
+                "firmware": "betaflight",
+                "mixer": "quadx",
+                "rates": {"failsafe_delay": 10**400},
+            }
+        ),
     )
     _assert_error(
         {"id": "hardware-extreme-limit", "expect": {"contains": "must be finite"}},

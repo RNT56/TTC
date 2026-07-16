@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D30 accepted controlled D12 lab pilots; gateway/Desktop hardware write/capture still fail closed behind lab gates · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is implemented at local integration maturity; D30 accepted controlled D12 lab pilots; target handshake/readback, capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15
 
@@ -39,12 +39,22 @@ adapter plus the runtime gates. The gateway rejects non-fixture live bridge jobs
 unless D30's `d28.hardware` signoff is active, `FORGE_HARDWARE_LAB_MODE=1`, the
 provider is local, and the reference rig is one of the pinned D12 quad/rover IDs.
 
-QA-007 hardens the deterministic worker boundary before any adapter exists: config
-keys/values/mixers are single safe tokens; all JSON is byte/depth/node bounded;
+QA-007 hardens the deterministic worker boundary before any adapter exists: all JSON
+is byte/depth/node bounded;
 telemetry is finite, unique, and normalized by timestamp; supervisor vectors are
 exact finite 3-vectors and safety thresholds are finite and physically positive.
 Malformed input fails rather than defaulting to an apparently safe state. None of
 this bypasses physical confirmation or enables a hardware write.
+
+D48 replaces the old generic safe-token config compiler with
+`forge-bridge-config/1.0.0`. After the queue strips its framework-owned `timeoutS`,
+the v1 producer accepts exactly the `firmware`, `mixer`, and `rates` fields and
+scopes them to the D12 `quadx` reference quad,
+but the writable artifact contains only the reviewed Betaflight 2025.12
+`failsafe_delay` setting (integer 2–200 deciseconds) and final `save`. It carries the
+exact firmware/version, physical-confirmation and no-auto-arm flags, ordered lines,
+and SHA-256 of the canonical line array. ArduPilot, ROS 2, mixer/mode changes,
+arbitrary CLI settings, and raw caller-authored diffs are not accepted by v1.
 
 ## 3. FORGE Desktop (Tauri, ships P8 — D15)
 
@@ -57,15 +67,26 @@ Not a contingency: a scheduled product surface that arrives when it has a real j
 | filesystem | big log archives on a real filesystem instead of OPFS (P8-013) |
 | background recorder | field telemetry capture with the laptop lid closed (P8-013) |
 
-Live 2026-06-15: `@forge/desktop` carries the Tauri config that wraps the Studio
-bundle, native serial commands that enumerate ports and write config diffs through
-`serialport-rs`, and a recorder command that initializes a real filesystem archive
-manifest. Every native command remains gated by no-auto-arm policy, the D30 signoff
-env, hardware lab mode, D12 rig allowlist, and exact physical-confirmation or
-telemetry-consent phrases. Package and Rust unit checks cover those contracts.
-Browser WebSerial capture, live sidecar telemetry capture, build/signing, and
-updater delivery remain open; real bench/field evidence is still P8-009/P8-010/
-P8-014. A native-core fast path inside the shell (bypassing WASM) is available
+Live 2026-07-16: `@forge/desktop` wraps the Studio bundle and integrates
+`serialport-rs` for OS port enumeration, opening, exact writes, and flush. The native
+consumer independently rejects schema, artifact kind, firmware/version, command,
+range, order, hash, confirmation, no-auto-arm, rig, baud, and unenumerated-path
+substitution. It accepts only the D12 reference quad, the hardware-enable,
+D30-signoff, and lab-mode env gates, the exact physical-confirmation phrase, and
+115200 baud. A real Unix
+pseudo-terminal integration test proves the exact artifact bytes cross the native
+transport. The versioned receipt records bytes transmitted while explicitly setting
+`targetFirmwareVersionVerified=false`, `applicationVerified=false`, and
+`operatorReadbackRequired=true`; it is not flight-controller, HITL, or lab proof.
+The recorder command separately initializes a real filesystem archive manifest under
+the same fail-closed lab boundary.
+
+P8-012 is complete at deterministic/native transport integration maturity. Target
+firmware handshake and post-write readback belong to the real D12 lab adapter and
+must precede any applied-configuration claim. Browser WebSerial write/capture, live
+sidecar telemetry capture, build/signing, and updater delivery remain open; real
+bench/field evidence is still P8-001/P8-009/P8-010/P8-014/EXT-004. A native-core
+fast path inside the shell (bypassing WASM) is available
 later if profiling asks — not v1 scope. Desktop exit proof: **a field log captured
 by Desktop replays with visible ghost divergence** (P8-014). Studio can scrub
 fixture crash-window/ghost metadata; live Desktop field-log capture and replay
@@ -175,15 +196,22 @@ plugin crates (serialport-rs).
 
 ## 11. Testing
 
-HITL harness against the reference FC (timing/interface validation); recorder
+Native package checks plus Rust tests must cover D30/D12/no-auto-arm/confirmation,
+artifact schema/version/command/range/hash refusal, unenumerated port refusal, and
+exact serial bytes over a real pseudo-terminal. The minimum implementation gate is
+`pnpm --filter @forge/desktop test`, locked Desktop Cargo fmt/Clippy/tests, Python
+3.12 hardware-boundary tests, and `pnpm verify:desktop-native`; a real-device claim
+additionally requires target-version handshake, post-write readback, and signed lab
+evidence. HITL harness against the reference FC (timing/interface validation); recorder
 round-trip (log → replay → ghost render — bit-exact under D17); sysid fit on
 synthetic telemetry with known ground truth (fit must recover injected constants);
 supervisor unit tests (envelope breach → fallback within deadline); pairing-auth
 tests; Desktop plugin integration tests on all three OSes; gateway/Desktop gate tests
 for D30/D28 fail-closed behavior, D12 lab-only behavior, physical confirmation, and
 "never auto-arm". The registered QA-007 hardware corpus adds fourteen accepted and
-refused payloads for command newlines, finite/duplicate telemetry, vector arity,
-geofence bounds, kill-switch typing, and advisory/hold outcomes.
+refused payloads for unreviewed config authority, unsafe failsafe bounds,
+finite/duplicate telemetry, vector arity, geofence bounds, kill-switch typing, and
+advisory/hold outcomes.
 
 ## 12. Open questions
 

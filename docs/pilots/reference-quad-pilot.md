@@ -15,6 +15,12 @@ the policy remains advisory, and the safety supervisor owns every transition.
 ## Required Inputs
 
 - Reference rig: `catalog/reference-rigs/ref_quad_kakute-h7-source-one-5in.json`.
+- D48 serial artifact: `forge-bridge-config/1.0.0`, reviewed against Betaflight
+  2025.12. Before any write, remove propellers, independently read the connected
+  target version, and stop unless it exactly matches 2025.12. After transmission,
+  read back `failsafe_delay` and retain the response; the Desktop receipt alone says
+  only that bytes were transmitted and deliberately leaves target version and
+  application unverified.
 - Admitted multirotor model with the D12 component refs pinned in the lockfile.
 - Passing `train.policy` scorecard for a hover or waypoint task.
 - Exportable ONNX header or deterministic fixture policy metadata.

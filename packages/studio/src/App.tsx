@@ -4449,7 +4449,7 @@ function JobDetails({
     case "bridge-config":
       return (
         <div style={jobDetailStyle}>
-          <MiniRows rows={[["firmware", output.firmware], ["confirm", output.requiresPhysicalConfirmation ? "required" : "no"], ["hash", output.diffHash]]} />
+          <MiniRows rows={[["schema", output.schemaVersion], ["firmware", `${output.firmware} ${output.firmwareVersion ?? "unverified"}`], ["confirm", output.requiresPhysicalConfirmation ? "required" : "no"], ["auto-arm", output.noAutoArm ? "forbidden" : "unverified"], ["hash", output.diffHash]]} />
           {output.lines?.length ? <CodeLines lines={output.lines.slice(0, 4)} /> : null}
         </div>
       );

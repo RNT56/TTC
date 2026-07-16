@@ -115,10 +115,13 @@ export interface CodesignOutput {
 }
 
 export interface BridgeConfigOutput {
+  schemaVersion: "forge-bridge-config/1.0.0";
   artifactKind: "bridge-config";
   firmware?: string;
+  firmwareVersion: "2025.12";
   diffHash?: string;
   requiresPhysicalConfirmation?: boolean;
+  noAutoArm: boolean;
   lines?: string[];
 }
 

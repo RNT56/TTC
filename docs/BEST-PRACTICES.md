@@ -311,6 +311,12 @@ every user-facing capability claim.
   record is rejected.
 - The deployment ladder is product-enforced; the bridge never auto-arms; supervisor
   authority is absolute (D9).
+- Treat a hardware write as a versioned artifact, not a string. For D48 bridge-config
+  v1, independently verify the Betaflight 2025.12/D12-quad authority, exact
+  failsafe-only command list and 2–200 decisecond range, canonical hash, D30/D12/lab
+  gates, physical confirmation, 115200 baud, and OS-enumerated port. A successful
+  write/flush proves bytes transmitted only; never say the target firmware matched or
+  the setting applied until an independent device handshake/readback proves it.
 - Photos: processing rights only; deletion on request; never training data without
   explicit opt-in. Telemetry logs belong to the user; sharing is per-log explicit.
 - Treat consent as append-only authority, not UI state: bind purpose, owned subject,

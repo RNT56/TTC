@@ -678,8 +678,30 @@ def test_bridge_config_telemetry_and_supervisor_paths():
             idempotency_key="bridge-1",
         )
     )
+    assert config["schemaVersion"] == "forge-bridge-config/1.0.0"
     assert config["requiresPhysicalConfirmation"]
-    assert "save" in config["lines"]
+    assert config["noAutoArm"]
+    assert config["firmwareVersion"] == "2025.12"
+    assert config["diffHash"] == "0f8173a135515f3759993e7b495e12fbf2f903e667b752bdc226d9612e4736ba"
+    assert config["lines"] == [
+        "# FORGE generated betaflight 2025.12 config diff",
+        "set failsafe_delay = 10",
+        "save",
+    ]
+    with pytest.raises(ValueError, match="exactly firmware, mixer, and rates"):
+        registry.dispatch(
+            Job(
+                id="j8-extra",
+                task="bridge.config-diff",
+                payload={
+                    "firmware": "betaflight",
+                    "mixer": "quadx",
+                    "rates": {"failsafe_delay": 10},
+                    "command": "arm",
+                },
+                idempotency_key="bridge-extra",
+            )
+        )
     replay = registry.dispatch(
         Job(
             id="j9",
