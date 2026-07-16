@@ -41,7 +41,9 @@ for (const command of [
   "probe_recorder_adapter",
   "write_serial_config",
   "start_background_recording",
+  "start_custodied_background_recording",
   "stop_background_recording",
+  "stop_custodied_background_recording",
 ]) {
   assert(main.includes(`fn ${command}`), `missing Tauri command ${command}`);
 }
@@ -87,5 +89,22 @@ assert(main.includes("capture_consent_confirmed: true"), "completed local archiv
 assert(main.includes("sharing_authorized: false"), "local recorder archives must remain private by default");
 assert(main.includes("training_reuse_authorized: false"), "capture consent must not imply training reuse");
 assert(main.includes("create_new(true)"), "desktop recorder files must never overwrite an existing archive");
+
+const custody = await readFile(resolve(root, "src-tauri/src/custody.rs"), "utf8");
+const cargo = await readFile(resolve(root, "src-tauri/Cargo.toml"), "utf8");
+assert(cargo.includes('ed25519-dalek = { version = "=3.0.0"'), "recorder custody must pin the reviewed Ed25519 verifier");
+assert(main.includes("forge-recorder-custody-trust-bundle/1.0.0"), "desktop must version the custody trust bundle");
+assert(main.includes("forge-recorder-custody-authorization/1.0.0"), "desktop must version the custody authorization");
+assert(main.includes("forge-recorder-custody-proof/1.0.0"), "desktop must version the separate custody proof");
+assert(main.includes("FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE_SHA256"), "custody trust roots must be deployment hash-pinned");
+assert(main.includes("FORGE_DESKTOP_PROTECTED_REVISION"), "custody must bind the protected product revision");
+assert(main.includes("recorder archive completed but custody proof was not created"), "post-capture custody failure must preserve the valid archive explicitly");
+assert(main.includes("acceptance_authority_signature_verified: true"), "custody proof must identify acceptance-authority verification");
+assert(main.includes("cryptographic_device_attestation: false"), "custody must never fabricate a device signature");
+assert(custody.includes("verify_strict"), "custody signatures must use strict Ed25519 verification");
+assert(custody.includes("verifying_key.is_weak()"), "custody must reject weak Ed25519 public keys");
+assert(custody.includes("MAX_AUTHORIZATION_LIFETIME_MS"), "custody authorization lifetime must remain bounded");
+assert(custody.includes("create_new(true)"), "custody proofs must never overwrite existing evidence");
+assert(custody.includes("outside the exact five-file archive"), "custody proof must stay outside archive v1");
 
 console.log("desktop: scaffold, FORGE Link manifest, and deployment ladder checks passed");

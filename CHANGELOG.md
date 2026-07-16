@@ -18,6 +18,55 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Implement fail-closed D56 signed recorder custody
+**Session:** Codex agent · branch `codex/p8004-d56-custody-implementation` ·
+**Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]
+**Done:** Implemented all three D56 1.0.0 formats without changing archive v1,
+D53, or D54. Native Desktop now loads a bounded non-symlink public Ed25519 trust
+bundle from a deployment-only absolute path, checks its exact SHA-256 pin and
+purpose/validity/revocation metadata, strictly verifies an at-most-eight-hour
+authorization over the exact protected revision, acceptance pack/signoffs,
+artifact/model/contract/lockfile, distinct telemetry and identity port descriptors,
+D55 identity/UID hashes, and permanent nonclaims, then opens the identity port and
+runs D55 before the telemetry port. Clean custody stop preserves the existing D50
+receipt first, requires a fresh props-off confirmation, rechecks the current trust
+root/authorization and both OS descriptors, reruns D55, verifies exact start/stop
+identity, UID, and response-transcript continuity, sovereignly re-inspects the five-
+file archive, and writes a create-new proof outside it with the exact authorization-
+file and receipt digests. Any post-probe, authority, continuity, or
+proof-write failure leaves the valid archive unchanged and creates no new authority.
+Studio has strict start/stop/proof parsers and an optional UI that displays only
+bounded hashes and explicit acceptance-authority/device/recorded-device/field/
+sharing/training nonclaims. The compatibility matrix now governs 19 surfaces.
+Three crypto/refusal tests plus two real two-port pseudo-terminal custody tests bring
+Desktop to 24/24; Studio typecheck/build and 30/30 tests pass. All 40 required local
+repository gates pass under Python 3.12.7 with 225 worker tests, the generated
+81-route/2-event/17-worker-family reference, and 19 compatibility surfaces. The
+locked Desktop-native build passes. A fresh disposable Postgres/pgvector database
+passes migration 0026 from clean plus all 25 populated predecessors, every queue,
+upload, Modal-operation, policy-delivery, user-data, recorder-admission, consent, and
+lifecycle assertion, and all 11 production browser flows; the database was removed
+afterward. The D55 probe now locks the same shell-owned runtime as recorder commands.
+`ed25519-dalek` 3.0.0 is exact-pinned with default features disabled; its current
+official release/MSRV/strict-verification API were rechecked on 2026-07-16.
+Complete-diff review corrected proof time ordering so creation follows the post-stop
+observation and added byte-exact authorization plus cross-session response-transcript
+continuity; the focused, 40-step, and fresh database/browser gates all passed again
+after those corrections.
+**Changed:** Desktop native custody module/commands/runtime/tests and lockfile;
+Studio custody API/parser/controls/tests; compatibility matrix/checker; Desktop
+contract checker; living entry/status/roadmap/TODO/execution/system/security docs.
+No archive-v1 bytes, gateway schema/migration, D53 object set, D54 admission,
+telemetry row, consent grant, training path, or release format changed.
+**Decisions:** Implements active D56 unchanged; D57 remains the next regular ID.
+**Next:** Review the complete diff, protect the implementation through PR and
+post-merge evidence, then execute the named Kakute H7 V1.5 lane under a real
+deployment trust root and EXT-004 pack.
+**Blockers:** Protection and named-hardware/trust-root/rotation/revocation/suspend/
+EXT-004 evidence remain open. Fixture keys and pseudo-terminals prove mechanics only;
+device cryptography, recorded-device, field, sharing, and training authority remain
+false and require later reviewed formats and evidence.
+
 ## 2026-07-16 — Define the D56 signed recorder-custody boundary
 **Session:** Codex agent · branch `codex/p8003-d56-custody-design` ·
 **Phase:** P8 · **TODO items:** P8-002 [~], P8-003 [~]

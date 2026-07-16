@@ -157,13 +157,17 @@ Studio (TypeScript face):
 
 ### P8 — Bridge + Desktop
 
-**D56 execution note (2026-07-16):** D56 now specifies—but has not implemented or
-protected—the separate signed recorder-custody successor owned by P8-002/P8-003: a
+**D56 execution note (2026-07-16):** the separate signed recorder-custody successor
+owned by P8-002/P8-003 is implemented but unprotected at local fixture maturity:
 hash-pinned public trust bundle, short-lived exact acceptance authorization, native
 pre/post D55 continuity, and create-new proof outside archive v1, with all device/
-recorded-device/field/sharing/training authority false. Protect the design, implement
-and prove refusal/regression mechanics, then obtain named-hardware, real-trust-root,
-rotation/revocation, suspend, and EXT-004 evidence. No task state closes from design.
+recorded-device/field/sharing/training authority false. Twenty-four native and thirty
+Studio tests cover strict crypto/binding/time/revocation, two-role pseudo-terminal
+capture, substitution/no-overwrite refusal, and archive preservation. All 40 local
+gates, the locked Desktop-native build, and a fresh clean/25-predecessor isolated
+Postgres plus 11-flow production-browser matrix pass. Protected review is next;
+named hardware, real trust-root rotation/revocation,
+suspend, and EXT-004 remain open, so P8-002/P8-003 correctly stay in progress.
 
 - [x] P8-000 — **Entry gate:** ToS/liability legal review (ladder UX, supervisor disclaimers, telemetry consent) — see [`security-safety-legal.md`](security-safety-legal.md) *(2026-06-14: accepted for controlled D12 lab pilots by D30; `platform_gate_signoffs` records `d28.hardware=accepted`; external beta remains separately gated)*
 - [~] P8-001 — WebSerial FC configuration writer (Betaflight-configurator pattern; config diffs compiled from contract) *(2026-07-16: deterministic `bridge.config-diff` plus D48's protected native transport exist. D49 is protected at local integration maturity through PR #85/`4647a10`: props-off confirmation, one bounded pre-write stable Betaflight `2025.12.x` identity, exact set/save acknowledgement, reboot/reconnect to the same OS path, the same reported firmware identity, and one exact `get failsafe_delay` readback gate receipt 2.0.0 with four exact-response SHA-256 digests; a two-session pseudo-terminal proves the protocol and drift/ambiguity refusal. Real D12 FC execution and browser WebSerial remain open, so this task stays in progress.)*

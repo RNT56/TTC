@@ -115,14 +115,19 @@ are executable, but no external contribution outcome is claimed.
 | P11 Platform | ◑ *(local platform contracts, D10/D33-D35 authority, and one protected contract/fixture idempotent gateway-to-worker vendor-normalization path exist; credentialed vendor/print sandboxes, production backup/DR, external users, and policy process ownership remain gated)* | open |
 | P12 Maintenance twin | ◑ *(2026-06-15: wear models, crash windows, repair-sheet generation with vendor/print handoff links, fleet-summary worker, telemetry/maintenance records, Studio artifact rows, and quote-link surfacing; real field-log evidence remains open)* | 3 wk |
 
-**D56 design overlay (unprotected, 2026-07-16):** the next P8 dependency is now
-specified as three independent planned 1.0.0 formats: a deployment-owned hash-pinned
-public-key trust bundle, an at-most-eight-hour acceptance-authority authorization
-binding exact revision/evidence/signoffs/artifact/model/two-port/D55 identity and
-nonclaims, and a create-new native pre/post continuity proof outside archive v1.
-This design changes no current runtime or maturity. It must be reviewed and protected,
-implemented with strict refusal and archive-regression proof, then executed with a
-real trust root and the named D12 controller before any custody or lab claim.
+**D56 implementation overlay (unprotected, 2026-07-16):** all three independent
+1.0.0 formats now execute locally: deployment-pinned public trust bundle, strict
+at-most-eight-hour exact acceptance authorization, and create-new native pre/post
+continuity proof outside archive v1. Twenty-four native and thirty Studio tests cover
+strict crypto/binding/time/revocation, two independent identity pseudo-terminal
+sessions around live telemetry capture, proof overwrite/substitution refusal, and
+valid archive preservation. This leaves archive v1, D53, and D54 unchanged and all
+device/recorded-device/field/sharing/training authority false. All 40 repository
+gates, the locked Desktop-native build, and a fresh clean/25-predecessor isolated
+Postgres plus 11-flow production-browser matrix pass locally. Protected review is
+next; a real trust root, named D12 controller, rotation/
+revocation, suspend, and EXT-004 evidence remain required before custody or lab
+maturity beyond fixture mechanics.
 
 Sequencing rationale (D1–D4): verify-first means P3 (catalog truth) ships and gets
 attention before P4 (generation GA); sharing arrives at P4; the marketplace is
@@ -365,18 +370,22 @@ cryptographic attestation and is not yet bound to recorder start/end. Trusted
 custody, real-device, suspend, and lab/field execution proceed only under
 their separate P8 evidence lanes.
 
-D56 now defines that successor without changing any protected format or row. The
-planned native boundary verifies a separately hash-pinned purpose-limited Ed25519
+D56 now implements that successor without changing any protected format or row. The
+native boundary verifies a separately hash-pinned purpose-limited Ed25519
 public trust bundle and short-lived signed authorization, re-enumerates separate
 telemetry and identity ports, runs the exact D55 observation before telemetry open,
 retains the verified authorization/pre-observation in shell-owned state, preserves
 the existing clean D50 receipt ordering, and runs a second props-off D55 observation
 before creating a new proof outside the exact five-file archive. The signature is by
 the acceptance authority—not the device—and the proof keeps device cryptography,
-recorded-device, field, sharing, and training authority false. The design is not yet
-protected or implemented; fixture-key/pseudo-terminal tests, named-controller and
-real-trust-root execution, rotation/revocation, host suspend, EXT-004, and every later
-gateway/training promotion remain required.
+recorded-device, field, sharing, and training authority false. Strict fixture-key
+tests plus two independent identity pseudo-terminal sessions around real pseudo-
+terminal telemetry capture pass locally, including substitution, revocation/time,
+proof no-overwrite, and archive-preservation refusal. The implementation is not yet
+protected, although all 40 local gates, the locked Desktop-native build, and a fresh
+clean/25-predecessor isolated Postgres plus 11-flow production-browser matrix pass.
+Named-controller and real-trust-root execution, rotation/revocation, host suspend,
+EXT-004, and every later gateway/training promotion remain required.
 
 **Entry gate:** ToS/liability legal review complete for controlled D12 lab pilots
 by D30 ([`security-safety-legal.md`](security-safety-legal.md) §3). External beta

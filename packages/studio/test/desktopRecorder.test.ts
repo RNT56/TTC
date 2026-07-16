@@ -9,6 +9,10 @@ import {
   RECORDER_ARCHIVE_SCHEMA_VERSION,
   RECORDER_BAUD,
   RECORDER_CONTROL_SCHEMA_VERSION,
+  RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION,
+  RECORDER_CUSTODY_PROOF_SCHEMA_VERSION,
+  RECORDER_CUSTODY_PURPOSE,
+  RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION,
   RECORDER_FRAME_SCHEMA_VERSION,
   RECORDER_INSPECTION_SCHEMA_VERSION,
   RECORDER_PHYSICAL_CONFIRMATION,
@@ -25,15 +29,19 @@ import {
   parseRecorderAdapterProbe,
   parseRecorderArchiveInspection,
   parseRecorderControlStatus,
+  parseRecorderCustodyProof,
   parseRecorderStopReceipt,
   parseRecorderUploadPlan,
   parseRecorderUploadReceipt,
   prepareRecorderArchiveUpload,
   probeDesktopRecorderAdapter,
   startDesktopRecorder,
+  startDesktopCustodiedRecorder,
   stopDesktopRecorder,
+  stopDesktopCustodiedRecorder,
   uploadRecorderArchiveFiles,
   type DesktopCommandRuntime,
+  type RecorderCustodyStartRequest,
   type RecorderStartRequest,
 } from "../src/desktopRecorder.ts";
 
@@ -160,6 +168,72 @@ function stopFixture(): Record<string, unknown> {
     sharingAuthorized: false,
     trainingReuseAuthorized: false,
     noAutoArm: true,
+  };
+}
+
+function custodyControlFixture(): Record<string, unknown> {
+  return {
+    ...controlFixture("recording"),
+    referenceRigId: D12_REFERENCE_RIG_IDS[0],
+  };
+}
+
+function custodyProofFixture(): Record<string, unknown> {
+  return {
+    schemaVersion: RECORDER_CUSTODY_PROOF_SCHEMA_VERSION,
+    trustBundleSchemaVersion: RECORDER_CUSTODY_TRUST_BUNDLE_SCHEMA_VERSION,
+    authorizationSchemaVersion: RECORDER_CUSTODY_AUTHORIZATION_SCHEMA_VERSION,
+    recorderAdapterProbeSchemaVersion: RECORDER_ADAPTER_PROBE_SCHEMA_VERSION,
+    recorderAdapterSchemaVersion: RECORDER_ADAPTER_SCHEMA_VERSION,
+    authorizationId: "custody-authorization-1",
+    authorizationSha256: "0e".repeat(32),
+    trustBundleId: "controlled-lab-bundle-1",
+    trustBundleSha256: "01".repeat(32),
+    acceptanceAuthorityKeyId: "controlled-lab-key-1",
+    protectedRevision: "a".repeat(40),
+    purpose: RECORDER_CUSTODY_PURPOSE,
+    evidencePackSchemaVersion: "forge.external-acceptance.v1",
+    evidencePackSha256: "02".repeat(32),
+    requiredSignoffSetSha256: "03".repeat(32),
+    referenceRigId: D12_REFERENCE_RIG_IDS[0],
+    artifactId: "art_replay_1",
+    modelId: "admitted-model-1",
+    contractHash: "11".repeat(32),
+    lockfileHash: "22".repeat(32),
+    telemetrySourcePortSha256: "33".repeat(32),
+    telemetryStartOsDescriptorSha256: "04".repeat(32),
+    telemetryStopOsDescriptorSha256: "04".repeat(32),
+    identitySourcePortSha256: "05".repeat(32),
+    identityStartOsDescriptorSha256: "06".repeat(32),
+    identityStopOsDescriptorSha256: "06".repeat(32),
+    expectedIdentitySha256: "07".repeat(32),
+    preIdentitySha256: "07".repeat(32),
+    postIdentitySha256: "07".repeat(32),
+    expectedDeviceUidSha256: "08".repeat(32),
+    preDeviceUidSha256: "08".repeat(32),
+    postDeviceUidSha256: "08".repeat(32),
+    preObservedAtUnixMs: 1_749_999_999_900,
+    postObservedAtUnixMs: 1_750_000_000_600,
+    startPreIdentityResponseSha256: "09".repeat(32),
+    startPostIdentityResponseSha256: "09".repeat(32),
+    startTranscriptSha256: "0a".repeat(32),
+    stopPreIdentityResponseSha256: "09".repeat(32),
+    stopPostIdentityResponseSha256: "09".repeat(32),
+    stopTranscriptSha256: "0a".repeat(32),
+    recorderReceiptSha256: "0d".repeat(32),
+    captureStartedAtUnixMs: 1_750_000_000_000,
+    captureStoppedAtUnixMs: 1_750_000_000_500,
+    proofCreatedAtUnixMs: 1_750_000_000_700,
+    acceptanceAuthoritySignatureVerified: true,
+    identityContinuityVerified: true,
+    captureConsentConfirmed: true,
+    noAutoArm: true,
+    cryptographicDeviceAttestation: false,
+    recordedDeviceAttested: false,
+    deviceIdentityVerified: false,
+    fieldSessionVerified: false,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
   };
 }
 
@@ -402,6 +476,118 @@ test("invokes exact versioned recorder status, start, stop, bridge, and port com
     { command: "start_background_recording", args: { request } },
     { command: "stop_background_recording", args: undefined },
   ]);
+});
+
+test("invokes signed custody start and stop without exposing signature or device authority", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const runtime: DesktopCommandRuntime = {
+    available: () => true,
+    invoke: async <T>(command: string, args?: Record<string, unknown>) => {
+      calls.push({ command, args });
+      if (command === "start_custodied_background_recording") return custodyControlFixture() as T;
+      if (command === "stop_custodied_background_recording") return custodyProofFixture() as T;
+      throw new Error(`unexpected command ${command}`);
+    },
+  };
+  const request: RecorderCustodyStartRequest = {
+    recorder: {
+      artifactId: "art_replay_1",
+      outputDir: "/tmp/art_replay_1",
+      sampleRateHz: 120,
+      referenceRigId: D12_REFERENCE_RIG_IDS[0],
+      physicalConfirmation: RECORDER_PHYSICAL_CONFIRMATION,
+      port: "/dev/tty.telemetry",
+      baud: RECORDER_BAUD,
+      contractHash: "11".repeat(32),
+      lockfileHash: "22".repeat(32),
+      environment: {},
+      seed: 17,
+    },
+    modelId: "admitted-model-1",
+    identityPort: "/dev/tty.identity",
+    identityBaud: RECORDER_BAUD,
+    identityPhysicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+    authorizationPath: "/tmp/custody-authorization.json",
+    custodyProofPath: "/tmp/custody-proof.json",
+  };
+  const status = await startDesktopCustodiedRecorder(request, runtime);
+  const stopRequest = {
+    authorizationId: "custody-authorization-1",
+    physicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+  } as const;
+  const proof = await stopDesktopCustodiedRecorder(
+    status,
+    "admitted-model-1",
+    stopRequest,
+    runtime,
+  );
+  assert.equal(proof.identityContinuityVerified, true);
+  assert.equal(proof.acceptanceAuthoritySignatureVerified, true);
+  assert.equal(proof.cryptographicDeviceAttestation, false);
+  assert.equal(proof.recordedDeviceAttested, false);
+  assert.equal(proof.trainingReuseAuthorized, false);
+  assert.equal("signatureHex" in proof, false);
+  assert.deepEqual(calls, [
+    { command: "start_custodied_background_recording", args: { request } },
+    { command: "stop_custodied_background_recording", args: { request: stopRequest } },
+  ]);
+});
+
+test("signed custody refuses request, continuity, time, field, and authority drift", async () => {
+  let invoked = false;
+  const runtime: DesktopCommandRuntime = {
+    available: () => true,
+    invoke: async <T>() => {
+      invoked = true;
+      return custodyControlFixture() as T;
+    },
+  };
+  const request: RecorderCustodyStartRequest = {
+    recorder: {
+      artifactId: "art_replay_1",
+      outputDir: "/tmp/art_replay_1",
+      sampleRateHz: 120,
+      referenceRigId: D12_REFERENCE_RIG_IDS[0],
+      physicalConfirmation: RECORDER_PHYSICAL_CONFIRMATION,
+      port: "/dev/tty.same",
+      baud: RECORDER_BAUD,
+      contractHash: "11".repeat(32),
+      lockfileHash: "22".repeat(32),
+      environment: {},
+      seed: 17,
+    },
+    modelId: "admitted-model-1",
+    identityPort: "/dev/tty.same",
+    identityBaud: RECORDER_BAUD,
+    identityPhysicalConfirmation: RECORDER_ADAPTER_PROBE_CONFIRMATION,
+    authorizationPath: "/tmp/custody-authorization.json",
+    custodyProofPath: "/tmp/art_replay_1/custody-proof.json",
+  };
+  await assert.rejects(startDesktopCustodiedRecorder(request, runtime), /signed D12 contract/);
+  assert.equal(invoked, false);
+
+  const extra = custodyProofFixture();
+  extra.signatureHex = "ff".repeat(64);
+  assert.throws(() => parseRecorderCustodyProof(extra), /fields have drifted/);
+  const identityDrift = custodyProofFixture();
+  identityDrift.postIdentitySha256 = "ff".repeat(32);
+  assert.throws(() => parseRecorderCustodyProof(identityDrift), /continuity bindings/);
+  const descriptorDrift = custodyProofFixture();
+  descriptorDrift.identityStopOsDescriptorSha256 = "ff".repeat(32);
+  assert.throws(() => parseRecorderCustodyProof(descriptorDrift), /continuity bindings/);
+  const aliasedPorts = custodyProofFixture();
+  aliasedPorts.identitySourcePortSha256 = aliasedPorts.telemetrySourcePortSha256;
+  assert.throws(() => parseRecorderCustodyProof(aliasedPorts), /continuity bindings/);
+  const responseDrift = custodyProofFixture();
+  responseDrift.stopPreIdentityResponseSha256 = "ff".repeat(32);
+  responseDrift.stopPostIdentityResponseSha256 = "ff".repeat(32);
+  assert.throws(() => parseRecorderCustodyProof(responseDrift), /continuity bindings/);
+  const timeDrift = custodyProofFixture();
+  timeDrift.postObservedAtUnixMs = 1_749_000_000_000;
+  assert.throws(() => parseRecorderCustodyProof(timeDrift), /continuity bindings/);
+  const promoted = custodyProofFixture();
+  promoted.recordedDeviceAttested = true;
+  assert.throws(() => parseRecorderCustodyProof(promoted), /authority flags/);
 });
 
 test("recorder controls refuse browser use and untrusted start requests before invocation", async () => {

@@ -140,6 +140,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `desktopRecorderArchive` | 1.0.0 | major 1 |
 | `desktopRecorderMaterialization` | 1.0.0 | major 1 |
 | `recorderArchiveAdmission` | 1.0.0 | major 1 |
+| `desktopRecorderCustody` | 1.0.0 | major 1 |
 | `workerArtifacts` | 0.2.0 | major 0 |
 
 These versions are independent. A package version, ModelSpec version, report version,
