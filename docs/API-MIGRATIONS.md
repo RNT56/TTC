@@ -111,7 +111,7 @@ uploads until the 0.2 gateway returns.
 
 ## User-data formats
 
-- user-data export is 1.4.0;
+- user-data export is 1.5.0;
 - consent ledger is 1.0.0;
 - account-deletion receipt is 2.0.0;
 - data lifecycle is 1.0.0.
@@ -125,6 +125,10 @@ identity, timing, cancellation/refund, and reconciled-cost fields for the owner'
 jobs. Major-1 readers must ignore the new dataset/fields when unused. The export
 never contains Modal tokens, raw function input/output, retained ONNX bytes, or
 unrelated provider billing data.
+Export 1.5 adds recorder materialization metadata: the sanitized upload plan, five
+owner blob IDs, object-integrity state, and explicit archive/device/field/sharing/
+training nonclaims. Archive payloads remain separate authenticated blob downloads;
+filesystem paths, raw frames, and presigned URLs are excluded.
 Deletion receipt 2.0 adds restore-suppression evidence but does not claim physical
 backup deletion. Do not downgrade these meanings into an older success boolean.
 
@@ -287,6 +291,31 @@ For rollback, first query status and explicitly stop/drain or collect the record
 error while the D52-aware shell is still running. Preserve complete or interrupted
 archive directories, then roll forward to a v1-aware archive reader. Never replace
 the shell or relabel a start response as a receipt while capture is active.
+
+### Desktop recorder materialization 1.0
+
+D53 adds `forge-recorder-upload-plan/1.0.0`, native upload receipt
+`forge-recorder-upload/1.0.0`, and persisted
+`forge-recorder-materialization/1.0.0` without changing archive v1. Desktop reruns
+the D51 verifier and emits only identity/count/nonclaim metadata plus the exact five
+file names, sizes, MIME types, and SHA-256 values. It never sends local paths or frame
+bytes through gateway JSON. The authenticated gateway stages five private objects;
+Desktop streams each regular file directly to the exact checksum-bound presigned PUT
+on one configured object origin, with redirects and system proxy discovery disabled.
+
+Completion requires gateway inspection of all five object length/type/checksum
+declarations and bounded reads of manifest plus receipt to cross-bind artifact, rig,
+contract, lockfile, source-port hash, time/count, and frame/index/replay object hashes.
+Success sets only `gatewayObjectIntegrityVerified=true`.
+`gatewayArchiveSemanticsVerified`, device identity, field verification, sharing,
+training reuse, and recorded-device attestation remain false. D53 is object
+materialization, not telemetry admission or server-side streaming replay verification.
+
+Rollback first stops new staging, lets in-flight PUT URLs expire, and completes or
+deletes staged rows and their private objects under the normal orphan policy. Retain
+migration 0025 and user-data export 1.5 metadata; an older application may ignore the
+additive table but must not relabel its objects as telemetry logs or completed archive
+semantics. Roll forward to a D53-aware gateway/Desktop pair.
 
 ## Shipping a future compatibility change
 

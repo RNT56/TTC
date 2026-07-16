@@ -114,6 +114,11 @@ import {
   type ObjectWriteAdapter,
 } from "./objectStorage.js";
 import {
+  completeRecorderArchive,
+  listRecorderArchives,
+  stageRecorderArchive,
+} from "./recorderArchives.js";
+import {
   prohibitedBriefResponse,
   refuseProhibitedBrief,
   type ProhibitedBriefSurface,
@@ -227,6 +232,62 @@ const photoscanPortSchema = Type.Object(
 );
 const sha256Schema = Type.String({ pattern: "^[a-fA-F0-9]{64}$" });
 const blobPurposeSchema = Type.String({ minLength: 1, maxLength: 80, pattern: "^[A-Za-z0-9._:-]+$" });
+const recorderArchiveFileNames = [
+  "forge-recorder-manifest.json",
+  "telemetry.frames.jsonl",
+  "telemetry.index.jsonl",
+  "telemetry.replay.json",
+  "forge-recorder-receipt.json",
+] as const;
+const recorderUploadFileSchema = Type.Object(
+  {
+    name: Type.Union([
+      Type.Literal("forge-recorder-manifest.json"),
+      Type.Literal("telemetry.frames.jsonl"),
+      Type.Literal("telemetry.index.jsonl"),
+      Type.Literal("telemetry.replay.json"),
+      Type.Literal("forge-recorder-receipt.json"),
+    ]),
+    contentType: Type.Union([Type.Literal("application/json"), Type.Literal("application/x-ndjson")]),
+    byteSize: Type.Integer({ minimum: 1, maximum: 512 * 1024 * 1024 }),
+    sha256: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+  },
+  { additionalProperties: false },
+);
+const recorderUploadPlanSchema = Type.Object(
+  {
+    schemaVersion: Type.Literal("forge-recorder-upload-plan/1.0.0"),
+    archiveSchemaVersion: Type.Literal("forge-recorder-archive/1.0.0"),
+    inspectionSchemaVersion: Type.Literal("forge-recorder-inspection/1.0.0"),
+    artifactId: Type.String({ minLength: 1, maxLength: 128, pattern: "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$" }),
+    referenceRigId: Type.Union([
+      Type.Literal("ref_quad_kakute-h7-source-one-5in"),
+      Type.Literal("ref_rover_waveshare-ugv-rover-pt-pi5-ros2"),
+    ]),
+    contractHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    lockfileHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    sourcePortSha256: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    sampleRateHz: Type.Integer({ minimum: 1, maximum: 1_000 }),
+    startedAtUnixMs: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+    stoppedAtUnixMs: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+    frameCount: Type.Integer({ minimum: 1, maximum: 1_000_000 }),
+    durationS: Type.Number({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+    captureMaturity: Type.Literal("local-serial-integration"),
+    aggregateByteSize: Type.Integer({ minimum: 1, maximum: 512 * 1024 * 1024 }),
+    files: Type.Array(recorderUploadFileSchema, { minItems: 5, maxItems: 5 }),
+    localIntegrityVerified: Type.Literal(true),
+    captureComplete: Type.Literal(true),
+    captureConsentConfirmed: Type.Literal(true),
+    userOwned: Type.Literal(true),
+    sharingAuthorized: Type.Literal(false),
+    trainingReuseAuthorized: Type.Literal(false),
+    recordedDeviceAttested: Type.Literal(false),
+    deviceIdentityVerified: Type.Literal(false),
+    fieldSessionVerified: Type.Literal(false),
+    noAutoArm: Type.Literal(true),
+  },
+  { additionalProperties: false },
+);
 const moderationReasonSchema = Type.Union([
   Type.Literal("safety"),
   Type.Literal("ip"),
@@ -1448,6 +1509,92 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         });
         reply.header("cache-control", "no-store");
         return reply.send({ blob, access });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/recorder-archives",
+    {
+      schema: {
+        body: Type.Object({ plan: recorderUploadPlanSchema }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { plan } = request.body as { plan: unknown };
+        const config = objectStorageConfigFromEnv();
+        const staged = await stageRecorderArchive(db, user, plan, config.bucket);
+        const uploads = await Promise.all(staged.blobs.map(async (blob, index) => ({
+          name: recorderArchiveFileNames[index],
+          blob,
+          upload: await presignObjectAccess(config, {
+            action: "upload",
+            bucket: blob.bucket,
+            objectKey: blob.objectKey,
+            contentType: blob.contentType,
+            byteSize: blob.byteSize,
+            sha256: blob.sha256,
+            expiresInSeconds: 900,
+          }),
+        })));
+        reply.header("cache-control", "no-store");
+        return reply.status(201).send({ materialization: staged.materialization, uploads });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.get(
+    "/v1/recorder-archives",
+    {
+      schema: {
+        querystring: Type.Object(
+          { limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { limit = 20 } = request.query as { limit?: number };
+        return reply.send({ materializations: await listRecorderArchives(db, user, limit) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/recorder-archives/:id/complete",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1, maxLength: 128 }) }, { additionalProperties: false }),
+        body: Type.Object({}, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const materialization = await completeRecorderArchive(
+          db,
+          user,
+          id,
+          objectStorageConfigFromEnv(),
+          inspectObject,
+          readObject,
+        );
+        reply.header("cache-control", "no-store");
+        return reply.send({ materialization });
       } catch (error) {
         const mapped = routeError(error);
         return reply.status(mapped.statusCode).send(mapped.body);

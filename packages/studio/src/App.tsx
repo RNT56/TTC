@@ -6,6 +6,7 @@ import type { MaterialClass, Report } from "./types";
 import {
   accessObjectBlob,
   contributeModelPattern,
+  completeRecorderArchive,
   createClassroomAssignment,
   createModerationReport,
   createCourse,
@@ -47,6 +48,7 @@ import {
   recordConsentEvent,
   refreshVendorOffers,
   saveModel,
+  stageRecorderArchive,
   shareModel,
   shareTelemetryLog,
   submitLeaderboardRun,
@@ -76,6 +78,7 @@ import {
   type MeResponse,
   type ModelRecord,
   type ModerationReportRecord,
+  type RecorderArchiveMaterialization,
   type PlatformGateSignoff,
   type PhotoscanAlignmentInput,
   type PhotoscanPortInput,
@@ -111,13 +114,16 @@ import {
   getRecorderStatus,
   inspectRecorderArchive,
   listDesktopSerialPorts,
+  prepareRecorderArchiveUpload,
   startDesktopRecorder,
   stopDesktopRecorder,
+  uploadRecorderArchiveFiles,
   type DesktopBridgeStatus,
   type DesktopSerialPort,
   type RecorderArchiveInspection,
   type RecorderControlStatus,
   type RecorderStopReceipt,
+  type RecorderUploadReceipt,
 } from "./desktopRecorder";
 import { CoreBake, CoreSession, corePatch, coreValidate } from "./wasm";
 import type { Slot } from "./contract.gen";
@@ -2367,7 +2373,7 @@ export default function App() {
             onAlignPhotoscan={(artifactId, input) => void alignPhotoscanArtifact(artifactId, input)}
             onPlayPolicy={startPolicyPlayback}
           />
-          <RecorderArchiveImportPanel report={s.report} />
+          <RecorderArchiveImportPanel report={s.report} authenticated={me?.authenticated === true} />
           <PlatformPanel
             credits={credits}
             courses={courses}
@@ -2978,7 +2984,13 @@ function ArtifactRegistry({
   );
 }
 
-function RecorderArchiveImportPanel({ report }: { report: Report | null }) {
+function RecorderArchiveImportPanel({
+  report,
+  authenticated,
+}: {
+  report: Report | null;
+  authenticated: boolean;
+}) {
   const available = desktopRecorderAvailable();
   const [bridgeStatus, setBridgeStatus] = useState<DesktopBridgeStatus | null>(null);
   const [serialPorts, setSerialPorts] = useState<DesktopSerialPort[]>([]);
@@ -2999,6 +3011,10 @@ function RecorderArchiveImportPanel({ report }: { report: Report | null }) {
   const [inspection, setInspection] = useState<RecorderArchiveInspection | null>(null);
   const [inspectionBusy, setInspectionBusy] = useState(false);
   const [inspectionError, setInspectionError] = useState<string | null>(null);
+  const [materializationBusy, setMaterializationBusy] = useState(false);
+  const [materializationError, setMaterializationError] = useState<string | null>(null);
+  const [uploadReceipt, setUploadReceipt] = useState<RecorderUploadReceipt | null>(null);
+  const [materialization, setMaterialization] = useState<RecorderArchiveMaterialization | null>(null);
 
   const refreshControls = useCallback(async () => {
     if (!available) return;
@@ -3094,14 +3110,58 @@ function RecorderArchiveImportPanel({ report }: { report: Report | null }) {
     setInspectionBusy(true);
     setInspectionError(null);
     setInspection(null);
+    setMaterialization(null);
+    setUploadReceipt(null);
     try {
-      setInspection(await inspectRecorderArchive(archivePath));
+      const verified = await inspectRecorderArchive(archivePath);
+      setInspection(verified);
+      setArchivePath(verified.archivePath);
     } catch (cause) {
       setInspectionError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setInspectionBusy(false);
     }
   }, [archivePath]);
+
+  const materializeArchive = useCallback(async () => {
+    setMaterializationBusy(true);
+    setMaterializationError(null);
+    setMaterialization(null);
+    setUploadReceipt(null);
+    try {
+      if (!inspection || inspection.archivePath !== archivePath.trim()) {
+        throw new Error("verify the selected recorder archive before materialization");
+      }
+      if (!authenticated) throw new Error("sign in before materializing a private recorder archive");
+      const plan = await prepareRecorderArchiveUpload(archivePath);
+      if (plan.artifactId !== inspection.artifactId
+        || plan.contractHash !== inspection.contractHash
+        || plan.lockfileHash !== inspection.lockfileHash
+        || plan.sourcePortSha256 !== inspection.sourcePortSha256
+        || plan.frameCount !== inspection.frameCount) {
+        throw new Error("recorder upload plan changed after archive inspection");
+      }
+      const staged = await stageRecorderArchive(plan);
+      const receipt = await uploadRecorderArchiveFiles(
+        archivePath,
+        plan,
+        staged.uploads.map(({ name, blob, upload }) => ({
+          name,
+          method: upload.method as "PUT",
+          url: upload.url,
+          headers: upload.headers,
+          byteSize: blob.byteSize ?? 0,
+          sha256: blob.sha256 ?? "",
+        })),
+      );
+      setUploadReceipt(receipt);
+      setMaterialization(await completeRecorderArchive(staged.materialization.id));
+    } catch (cause) {
+      setMaterializationError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setMaterializationBusy(false);
+    }
+  }, [archivePath, authenticated, inspection]);
 
   const reportReady = report?.verdict === "admitted"
     && /^[0-9a-f]{64}$/.test(report.contractHash)
@@ -3118,6 +3178,8 @@ function RecorderArchiveImportPanel({ report }: { report: Report | null }) {
     && outputDir.trim().length > 0
     && captureConsent;
   const canStop = available && recorderStatus !== null && recorderStatus.state !== "inactive";
+  const canMaterialize = available && authenticated && inspection !== null
+    && inspection.archivePath === archivePath.trim() && !inspectionBusy && !materializationBusy;
 
   return (
     <details style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
@@ -3287,6 +3349,38 @@ function RecorderArchiveImportPanel({ report }: { report: Report | null }) {
           <div style={{ color: "#7d899b" }}>
             private · training reuse off · device attestation off · field verification off · no auto-arm
           </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+            <button
+              data-testid="recorder-archive-materialize"
+              onClick={() => void materializeArchive()}
+              disabled={!canMaterialize}
+              style={btn}
+            >
+              {materializationBusy ? "materializing…" : "materialize private archive"}
+            </button>
+            <span style={{ color: authenticated ? "#7d899b" : "#e6a23c" }}>
+              {authenticated
+                ? "five checksum-bound private objects; no sharing or training authority"
+                : "sign in to create private object materialization"}
+            </span>
+          </div>
+        </div>
+      ) : null}
+      {materializationError ? (
+        <div data-testid="recorder-materialization-error" style={{ color: "#e6a23c", marginTop: 5 }}>
+          {materializationError}
+        </div>
+      ) : null}
+      {uploadReceipt ? (
+        <div data-testid="recorder-upload-receipt" style={{ color: "#7d899b", marginTop: 5 }}>
+          Desktop streamed {uploadReceipt.uploadedFileCount} files / {uploadReceipt.uploadedByteSize} bytes ·
+          gateway integrity pending at upload receipt
+        </div>
+      ) : null}
+      {materialization ? (
+        <div data-testid="recorder-materialization" style={{ color: "#74c69d", marginTop: 5, wordBreak: "break-word" }}>
+          private objects verified · {materialization.id} · gateway object integrity on · archive semantics off ·
+          device/field verification off · sharing/training off · no auto-arm
         </div>
       ) : null}
     </details>

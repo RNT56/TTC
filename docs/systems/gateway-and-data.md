@@ -82,6 +82,18 @@ URLs expire within one hour and API responses are non-cacheable. Production requ
 explicit endpoint/bucket/access/secret configuration and HTTPS unless a reviewed
 internal-transport exception is set. Object-store IAM, encryption, prefix isolation,
 and actual received-byte policy remain deployment controls.
+
+D53 adds a purpose-built recorder materialization service rather than weakening the
+general object route or storing a 512-MiB tape in JSONB. `POST /v1/recorder-archives`
+accepts only `forge-recorder-upload-plan/1.0.0` with the exact five names/types/sizes/
+hashes and private authority nonclaims, stages five owner-private content-addressed
+objects, and returns short-lived checksum-bound PUTs. Completion verifies all five
+stored declarations and bounded manifest/receipt identity/hash bindings before
+migration 0025 advances `gateway_object_integrity_verified`. It deliberately never
+sets `gateway_archive_semantics_verified` and does not create `telemetry_logs`, replay
+admission, device/field provenance, sharing, or training authority. User-data export
+1.5 and account deletion cover the materialization row and reuse normal authenticated
+blob access/deletion for its payloads.
 Fixture job outputs currently materialize to `photoscan_artifacts`,
 `policy_artifacts`, `telemetry_logs`, `replay_artifacts`, and
 `maintenance_records`; `local` and `modal` jobs persist as queued rows for the
@@ -208,7 +220,7 @@ caller forwarding headers, its CSRF behavior remains enabled, and unsafe cookie-
 authenticated requests require the configured origin.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.4.0 across every explicit owner-scoped table,
+transaction and returns format 1.5.0 across every explicit owner-scoped table,
 including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
@@ -217,6 +229,10 @@ bytes stay behind the authenticated policy-model endpoint and are never embedded
 the export JSON. Version 1.4 additionally exports the owner's byte-free D46 provider-
 call attempts and job operation fields; provider tokens, raw call payloads/results,
 and unrelated billing data remain excluded.
+Version 1.5 adds `recorder_archive_materializations`: five owner-scoped blob IDs, the
+sanitized upload plan, object-integrity state, and explicit false archive-semantics,
+device, field, sharing, and training claims. Archive bytes remain outside JSON and
+local filesystem paths plus presigned URLs are never persisted or exported.
 `DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
 user in a serializable transaction, removes user/derived rows explicitly rather than
 trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the

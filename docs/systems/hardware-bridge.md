@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D30 accepted controlled D12 lab pilots; object-backed materialization, real-adapter/device capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is an unprotected local candidate; D30 accepted controlled D12 lab pilots; sovereign gateway archive admission, real-adapter/device capture, and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53
 
 ## 1. Purpose
 
@@ -173,6 +173,27 @@ and all 40 local gates pass under Python 3.12.7. Exact head `69db857`, reviewed 
 post-merge CI/security `29496148793`/`29496148796` pass. Object-backed gateway
 materialization must be designed separately because the current JSONB request-body
 telemetry path cannot honestly carry the archive's 512-MiB maximum.
+
+D53 implements that narrow materialization seam without changing archive v1. Native
+`prepare_recorder_archive_upload` reruns D51 and returns path-free
+`forge-recorder-upload-plan/1.0.0` identity plus exact five-file length/type/hash
+declarations. The authenticated gateway stages five distinct private object rows and
+presigned checksum-bound PUTs. Desktop requires one explicit
+`FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN`, HTTPS except loopback development, exact origin,
+complete signature query, exact content-type/checksum headers, no redirects, no
+system proxy, and streams each file with a sized blocking body off the async command
+thread. It returns `forge-recorder-upload/1.0.0` with gateway integrity still false.
+
+Gateway completion independently inspects all five stored objects, uses the existing
+staged-object compare-and-set, and reads only capped manifest/receipt bytes to bind the
+artifact, rig, hashes, times/count, and frame/index/replay object digests. Migration
+0025 advances the row only when status, object integrity, and materialized time agree.
+This sets `gatewayObjectIntegrityVerified=true` but permanently leaves
+`gatewayArchiveSemanticsVerified=false` alongside false device, field, recorded-
+device, sharing, and training authority. The gateway has not streamed and replayed
+the frame/index/replay semantics, so D53 is not telemetry admission or authenticity.
+Its implementation candidate requires full gates and protected PR evidence before it
+can be called protected maturity.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the

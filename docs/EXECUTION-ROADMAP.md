@@ -460,6 +460,16 @@ Work:
   exact head `69db857`, reviewed tree `25be1d3`, PR CI/security
   `29495505253`/`29495505262`, protected-tree equality, and post-merge CI/security
   `29496148793`/`29496148796` pass;
+- D53/P8-003 is the active unprotected object-materialization candidate. Desktop
+  reruns D51 and emits path-free upload-plan v1; the gateway stages exactly five
+  private checksum-bound objects; native Desktop pins one object origin, forbids
+  redirects/system proxy, and streams exact sized files; gateway completion HEADs all
+  objects and reads bounded manifest/receipt bindings before setting object integrity.
+  Migration 0025 and user-data export 1.5 retain the row. Archive semantics,
+  telemetry admission, recorded-device/device/field provenance, sharing, and training
+  remain false. Seventeen native, twenty-five Studio, seventy gateway, clean/24-
+  predecessor Postgres, 11-flow browser E2E, three-engine browser, and all 40 local
+  repository gates pass. Protection and exact PR/post-merge evidence are still required;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -468,10 +478,12 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: design and implement a separately authorized
-object-backed gateway archive materialization path without changing D50 archive
-bytes or promoting
-self-consistency to authenticity, device provenance, sharing, or training authority.
+Next dependency-complete step: protect D53's locally verified, separately authorized
+object-backed gateway archive materialization without changing D50 archive bytes or
+promoting self-consistency to authenticity, device provenance, sharing, or training
+authority. Then add sovereign server-side streaming archive semantics verification
+and explicit telemetry admission as a separate slice; D53 object integrity alone may
+not populate `telemetry_logs`.
 The reviewed real telemetry-adapter identity contract remains the prerequisite for
 recorded-device admission. In parallel, execute the protected D49 protocol on the named D12 quad FC
 under controlled-lab authority with propellers removed, retain bounded raw

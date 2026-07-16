@@ -9,6 +9,8 @@ import {
   RECORDER_INSPECTION_SCHEMA_VERSION,
   RECORDER_PHYSICAL_CONFIRMATION,
   RECORDER_RECEIPT_SCHEMA_VERSION,
+  RECORDER_UPLOAD_PLAN_SCHEMA_VERSION,
+  RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION,
   REPLAY_SCHEMA_VERSION,
   getDesktopBridgeStatus,
   getRecorderStatus,
@@ -19,8 +21,12 @@ import {
   parseRecorderArchiveInspection,
   parseRecorderControlStatus,
   parseRecorderStopReceipt,
+  parseRecorderUploadPlan,
+  parseRecorderUploadReceipt,
+  prepareRecorderArchiveUpload,
   startDesktopRecorder,
   stopDesktopRecorder,
+  uploadRecorderArchiveFiles,
   type DesktopCommandRuntime,
   type RecorderStartRequest,
 } from "../src/desktopRecorder.ts";
@@ -107,6 +113,62 @@ function stopFixture(): Record<string, unknown> {
     captureConsentConfirmed: true,
     recordedDeviceAttested: false,
     userOwned: true,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
+    noAutoArm: true,
+  };
+}
+
+function uploadPlanFixture(): Record<string, unknown> {
+  const files = [
+    ["forge-recorder-manifest.json", "application/json", 100, "10".repeat(32)],
+    ["telemetry.frames.jsonl", "application/x-ndjson", 200, "20".repeat(32)],
+    ["telemetry.index.jsonl", "application/x-ndjson", 80, "30".repeat(32)],
+    ["telemetry.replay.json", "application/json", 300, "40".repeat(32)],
+    ["forge-recorder-receipt.json", "application/json", 120, "50".repeat(32)],
+  ].map(([name, contentType, byteSize, sha256]) => ({ name, contentType, byteSize, sha256 }));
+  return {
+    schemaVersion: RECORDER_UPLOAD_PLAN_SCHEMA_VERSION,
+    archiveSchemaVersion: RECORDER_ARCHIVE_SCHEMA_VERSION,
+    inspectionSchemaVersion: RECORDER_INSPECTION_SCHEMA_VERSION,
+    artifactId: "art_replay_1",
+    referenceRigId: D12_REFERENCE_RIG_IDS[1],
+    contractHash: "11".repeat(32),
+    lockfileHash: "22".repeat(32),
+    sourcePortSha256: "33".repeat(32),
+    sampleRateHz: 120,
+    startedAtUnixMs: 1_750_000_000_000,
+    stoppedAtUnixMs: 1_750_000_000_500,
+    frameCount: 3,
+    durationS: 0.5,
+    captureMaturity: "local-serial-integration",
+    aggregateByteSize: 800,
+    files,
+    localIntegrityVerified: true,
+    captureComplete: true,
+    captureConsentConfirmed: true,
+    userOwned: true,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
+    recordedDeviceAttested: false,
+    deviceIdentityVerified: false,
+    fieldSessionVerified: false,
+    noAutoArm: true,
+  };
+}
+
+function uploadReceiptFixture(): Record<string, unknown> {
+  return {
+    schemaVersion: RECORDER_UPLOAD_RECEIPT_SCHEMA_VERSION,
+    uploadPlanSchemaVersion: RECORDER_UPLOAD_PLAN_SCHEMA_VERSION,
+    artifactId: "art_replay_1",
+    uploadedFileCount: 5,
+    uploadedByteSize: 800,
+    localIntegrityVerified: true,
+    gatewayObjectIntegrityVerified: false,
+    recordedDeviceAttested: false,
+    deviceIdentityVerified: false,
+    fieldSessionVerified: false,
     sharingAuthorized: false,
     trainingReuseAuthorized: false,
     noAutoArm: true,
@@ -341,4 +403,71 @@ test("recorder control parsers refuse field, state, authority, port, and receipt
   const receipt = stopFixture();
   receipt.trainingReuseAuthorized = true;
   assert.throws(() => parseRecorderStopReceipt(receipt), /authority or privacy flags/);
+});
+
+test("recorder materialization invokes only sanitized plan and exact streaming upload commands", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const runtime: DesktopCommandRuntime = {
+    available: () => true,
+    invoke: async <T>(command: string, args?: Record<string, unknown>) => {
+      calls.push({ command, args });
+      return (command === "prepare_recorder_archive_upload"
+        ? uploadPlanFixture()
+        : uploadReceiptFixture()) as T;
+    },
+  };
+  const plan = await prepareRecorderArchiveUpload("  /tmp/art_replay_1  ", runtime);
+  const uploads = plan.files.map((file) => ({
+    name: file.name,
+    method: "PUT" as const,
+    url: `http://127.0.0.1:9000/${file.name}?X-Amz-Algorithm=test&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=900&X-Amz-SignedHeaders=test&X-Amz-Signature=test`,
+    headers: {
+      "content-type": file.contentType,
+      "x-amz-checksum-sha256": "checksum",
+    },
+    byteSize: file.byteSize,
+    sha256: file.sha256,
+  }));
+  const receipt = await uploadRecorderArchiveFiles("/tmp/art_replay_1", plan, uploads, runtime);
+  assert.equal(receipt.gatewayObjectIntegrityVerified, false);
+  assert.equal(receipt.recordedDeviceAttested, false);
+  assert.deepEqual(calls, [
+    { command: "prepare_recorder_archive_upload", args: { archivePath: "/tmp/art_replay_1" } },
+    { command: "upload_recorder_archive_files", args: { archivePath: "/tmp/art_replay_1", uploads } },
+  ]);
+  assert.doesNotMatch(JSON.stringify(plan), /archivePath|replayPath|rawFrames/);
+});
+
+test("recorder materialization parsers refuse plan, upload, and authority substitution", async () => {
+  const wrongOrder = uploadPlanFixture();
+  (wrongOrder.files as unknown[]).reverse();
+  assert.throws(() => parseRecorderUploadPlan(wrongOrder), /file 0 has drifted/);
+
+  const promoted = uploadReceiptFixture();
+  promoted.gatewayObjectIntegrityVerified = true;
+  assert.throws(() => parseRecorderUploadReceipt(promoted), /authority have drifted/);
+
+  let invoked = false;
+  const runtime: DesktopCommandRuntime = {
+    available: () => true,
+    invoke: async <T>() => {
+      invoked = true;
+      return uploadReceiptFixture() as T;
+    },
+  };
+  const plan = parseRecorderUploadPlan(uploadPlanFixture());
+  const uploads = plan.files.map((file) => ({
+    name: file.name,
+    method: "PUT" as const,
+    url: "https://objects.example.test/upload?X-Amz-Signature=test",
+    headers: { "content-type": file.contentType, "x-amz-checksum-sha256": "checksum" },
+    byteSize: file.byteSize,
+    sha256: file.sha256,
+  }));
+  uploads[2] = { ...uploads[2], sha256: "ff".repeat(32) };
+  await assert.rejects(
+    uploadRecorderArchiveFiles("/tmp/art_replay_1", plan, uploads, runtime),
+    /does not match the prepared file plan/,
+  );
+  assert.equal(invoked, false);
 });

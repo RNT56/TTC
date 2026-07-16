@@ -195,7 +195,7 @@ try {
   assert.equal(exportedModalJob.providerCostUsd, "0.25");
   assert.equal(exportedModalJob.providerBillingReportId, `billing-user-data-${suffix}`);
   assert.ok(exportedModalJob.providerCostReconciledAt);
-  assert.equal(exported.formatVersion, "1.4.0");
+  assert.equal(exported.formatVersion, "1.5.0");
   assert.equal(exported.data.policyArtifacts[0].jobId, policyJobId);
   assert.equal(exported.data.policyArtifacts[0].policyMetadata.delivery.objectBacked, true);
   assert.equal(exported.data.lifecycleLegalHolds.length, 0);

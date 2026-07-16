@@ -61,6 +61,12 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
     if (text.includes("FROM telemetry_logs")) {
       return { rows: [{ id: "tel-1", tape: { samples: 2 } }], rowCount: 1 } as never;
     }
+    if (text.includes("FROM recorder_archive_materializations")) {
+      return {
+        rows: [{ id: "ram-export-1", artifactId: "art-recorder", gatewayObjectIntegrityVerified: true }],
+        rowCount: 1,
+      } as never;
+    }
     if (text.includes("FROM job_provider_calls")) {
       return {
         rows: [{ callId: "fc-export-1", jobId: "job-modal-1", status: "succeeded" }],
@@ -71,13 +77,16 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
   });
 
   const exported = await exportUserData(db, user);
-  assert.equal(exported.formatVersion, "1.4.0");
+  assert.equal(exported.formatVersion, "1.5.0");
   assert.equal(exported.subject.userId, user.id);
   assert.equal(exported.data.account.length, 1);
   assert.equal(exported.data.authenticationProviders.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
   assert.deepEqual(exported.data.jobProviderCalls, [
     { callId: "fc-export-1", jobId: "job-modal-1", status: "succeeded" },
+  ]);
+  assert.deepEqual(exported.data.recorderArchiveMaterializations, [
+    { id: "ram-export-1", artifactId: "art-recorder", gatewayObjectIntegrityVerified: true },
   ]);
   assert.deepEqual(exported.objectDownloads, [
     { blobId: "obj-1", accessEndpoint: "/v1/blobs/obj-1/access" },
@@ -125,6 +134,7 @@ test("account deletion purges every owner-scoped surface and hands all objects t
   assert.equal(receipt.counts.models, 1);
   assert.equal(receipt.counts.photoscanArtifacts, 1);
   assert.equal(receipt.counts.telemetryLogs, 1);
+  assert.equal(receipt.counts.recorderArchiveMaterializations, 1);
   assert.equal(receipt.counts.policyArtifacts, 1);
   assert.equal(receipt.counts.courses, 1);
   assert.equal(receipt.counts.objectBlobs, 1);
@@ -254,7 +264,7 @@ test("account routes require authentication and explicit destructive confirmatio
     });
     assert.equal(exported.statusCode, 200, exported.body);
     assert.match(exported.headers["content-disposition"] ?? "", /forgedttc-user-data-/);
-    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.4.0");
+    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.5.0");
 
     const lifecycle = await app.inject({
       method: "GET",
