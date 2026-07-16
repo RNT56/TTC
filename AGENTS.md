@@ -90,11 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D52 evidence reconciliation PR #92 at
-  `237e46b`; the latest protected runtime anchor is D52/P8-003 PR #91 at `a8120ab`.
-  Exact runtime head `69db857` passed PR CI `29495505253` and security
-  `29495505262`; reviewed tree `25be1d3` is byte-identical at the protected squash,
-  whose post-merge CI `29496148793` and security `29496148796` pass. D51 evidence-
+  latest verified protected descendant and runtime anchor is D53/P8-003 PR #93 at
+  `08d892f`. Exact head `5d1af49` passed PR CI `29501475412` and security
+  `29501475414`; reviewed tree `90d8cbf` is byte-identical at the protected squash,
+  whose post-merge CI `29502180736` and security `29502180788` pass. D52 evidence
+  reconciliation PR #92/`237e46b` and controls PR #91/`a8120ab`, D51 evidence-
   reconciliation PR #90/`9e81ddd` and recorder-import PR #89/`b5418ac`, D50
   evidence reconciliation PR #88/`225933a` and recorder PR #87/`d8afe7f`, D49 evidence
   reconciliation PR #86/`63e144c` and target/readback PR #85/`4647a10` remain green.
@@ -259,11 +259,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   consent. Stop returns the unchanged persisted receipt v1, and every status keeps
   device/field/sharing/training authority false. Exact implementation head
   `69db857`, reviewed tree `25be1d3`, PR CI/security, protected-tree equality, and
-  post-merge CI/security pass. Object-backed gateway materialization, reviewed
-  adapter/device identity, suspend, lab/field, and all promoted provenance or
-  consent claims remain open. Fourteen native tests, twenty Studio tests, the
-  three-engine browser matrix, and all 40 local gates pass under Python 3.12.7;
-- D53/P8-003 is an unprotected local object-materialization candidate. Desktop reruns
+  post-merge CI/security pass. Reviewed adapter/device identity, suspend,
+  lab/field, sovereign archive semantics, telemetry admission, and all promoted
+  provenance or consent claims remain open. Fourteen native tests, twenty Studio
+  tests, the three-engine browser matrix, and all 40 local gates pass under Python
+  3.12.7;
+- D53/P8-003 is protected at local private-object-integrity maturity through PR #93/
+  `08d892f`. Desktop reruns
   D51 and emits only a path-free exact five-file plan; the gateway stages distinct
   owner-private checksum-bound objects; native reqwest 0.13.4 streams exact sized
   files to one pinned HTTPS/loopback origin with redirects and system proxy disabled;
@@ -273,8 +275,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   device/field provenance, sharing, and training remain false. Seventeen native,
   twenty-five Studio, and seventy gateway tests pass; the clean/24-predecessor
   Postgres matrix, 11-flow browser E2E, three-engine browser support, and all 40
-  repository gates pass under Python 3.12.7. PR protection and post-merge evidence
-  remain pending;
+  repository gates pass under Python 3.12.7. Exact head `5d1af49`, reviewed tree
+  `90d8cbf`, PR CI/security `29501475412`/`29501475414`, protected-tree equality,
+  and post-merge CI/security `29502180736`/`29502180788` pass. Sovereign archive
+  semantics, production object operations, adapter/device identity, suspend, and
+  lab/field proof remain open;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play

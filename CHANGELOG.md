@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect D53 recorder object materialization
+**Session:** Codex agent · branch `codex/p8003-recorder-materialization-evidence` ·
+**Phase:** P8 · **TODO items:** P8-003 [~]
+**Done:** Protected D53's exact five-private-object recorder materialization boundary
+through PR #93. Exact implementation head `5d1af49` passed PR CI `29501475412` and
+security `29501475414`; reviewed tree `90d8cbf` is byte-identical at protected squash
+`08d892f`, whose post-merge CI `29502180736` and security `29502180788` pass. The
+merged implementation branch was deleted. This closes local object-integrity
+materialization only: archive v1 is unchanged, Studio and gateway receive no local
+paths, native Desktop streams exact sized files, and gateway completion retains
+archive semantics, telemetry admission, device/field provenance, sharing, and
+training authority as false.
+**Changed:** Living protected-evidence anchors, readiness verdicts, roadmap/TODO/
+execution sequencing, AGENTS guidance, and gateway/Desktop/Studio system status.
+**Decisions:** none; D53 remains the binding object-integrity-only boundary.
+**Next:** Implement a separate sovereign server-side streaming verifier for exact
+archive-v1 frame/index/replay semantics and explicit telemetry admission without
+promoting device authenticity or consent authority.
+**Blockers:** None for the next local server-verification slice. Production object
+IAM/TLS/SLO/orphan recovery, reviewed adapter/device identity, suspend, lab/field,
+sharing/training grants, and signed distribution remain separately gated.
+
 ## 2026-07-16 — Materialize recorder archives as five private objects
 **Session:** Codex agent · branch `codex/p8003-recorder-materialization` · **Phase:** P8 ·
 **TODO items:** P8-003 [~]
