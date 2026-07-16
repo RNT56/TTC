@@ -18,6 +18,36 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect the D50 indexed Desktop recorder
+**Session:** Codex agent · branch `codex/p8013-recorder-evidence` · **Phase:** P8 ·
+**TODO items:** P8-013 [x]
+**Done:** Protected D50's bounded Desktop background recorder and real-filesystem
+archive through PR #87. Exact implementation head `5e668a1` passed PR CI
+`29485412948` and security `29485412987`; reviewed tree
+`528a8783550363d712044e694c5ee4bb9c747ce9` is byte-identical at protected squash
+`d8afe7f9796e6eb8b651a5c55c56ed635a00948a`. Protected-main CI `29486146093`
+passed Rust, Desktop native, TypeScript/gateway, 225-worker, 24-migration Postgres,
+real-browser, accessibility, and supported-browser jobs; security `29486147436`
+passed source-SBOM, CodeQL JavaScript/Python, dependency-audit, and aggregate checks,
+with push-only dependency review skipped as designed. The complete 40-step local
+gate remains green under Python 3.12.13. P8-013 is therefore done at protected local
+recorder-integration maturity only: archive/frame/receipt v1, exact consent and
+authority gates, exclusive background capture, bounded append-only storage, sparse
+byte-offset indexing, clean-stop replay/hash finalization, refusal, and no-overwrite
+behavior are protected. No real adapter/device identity, host-suspend behavior,
+WebSerial/WebUSB, lab/field capture, ghost/system-ID, sharing/training grant, or
+recorded-device attestation is claimed.
+**Changed:** Canonical agent boundary, project state, roadmap, TODO ledger, execution
+roadmap, hardware/Studio system status, and this changelog.
+**Decisions:** none; D50's protected local maturity does not widen device,
+configuration, consent, training, or field authority.
+**Next:** Bind one reviewed real telemetry adapter to the unchanged recorder archive,
+add verified Studio recorder controls/archive import, then execute the named D12 lab
+and replay/ghost lanes under D30.
+**Blockers:** None for the protected local recorder. Real hardware, suspend, signed
+Desktop delivery, browser transport, lab/field, and recorded-device evidence retain
+their existing external or downstream gates.
+
 ## 2026-07-16 — Capture indexed Desktop replay archives in the background
 **Session:** Codex agent · branch `codex/p8013-recorder` · **Phase:** P8 ·
 **TODO items:** P8-013 [~]
