@@ -296,6 +296,14 @@ finite unique timestamps and rejects non-finite nested state before hashing;
 supervisor inputs require exact finite 3-vectors plus positive finite limits. Worker
 fixture checks do not authorize, arm, or prove a physical hardware write.
 
+D50's Desktop recorder is deliberately upstream of this worker boundary. It stores
+bounded, exact, contiguous serial-JSONL frames, a sparse index, and a completed replay
+1.0.0 only after clean stop, but labels the result local serial integration with
+device attestation, sharing, and training reuse false. `bridge.telemetry-ingest`
+does not upgrade that provenance, and P7-009 continues to reject recorded-device
+input until a reviewed real adapter/device-attestation version and consented gateway
+materialization are protected.
+
 ### 3.6 `workers/maintenance` — lifecycle twin (P12)
 `maintenance.estimate-wear`, `maintenance.crash-forensics`,
 `maintenance.repair-sheet`, and `maintenance.fleet-summary` compute motor hours,

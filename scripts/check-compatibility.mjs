@@ -59,6 +59,7 @@ const required = [
   "accountDeletionReceipt",
   "dataLifecycle",
   "policyTensor",
+  "desktopRecorderArchive",
   "workerArtifacts",
 ];
 for (const name of required) {
@@ -122,6 +123,11 @@ requireValue(
   matrix.surfaces.policyTensor.schema ===
     typescriptConstant("packages/studio/src/policyRuntime.ts", "POLICY_TENSOR_SCHEMA"),
   "policyTensor schema token must match the Studio runtime",
+);
+requireValue(
+  sourceConstant("packages/desktop/src-tauri/src/main.rs", "RECORDER_ARCHIVE_SCHEMA_VERSION") ===
+    `${matrix.surfaces.desktopRecorderArchive.schema}/${matrix.surfaces.desktopRecorderArchive.current}`,
+  "Desktop recorder archive schema/version does not match compatibility matrix",
 );
 
 const gatewayJobKinds = typescriptStringArray("packages/gateway/src/platform.ts", "JOB_KINDS");

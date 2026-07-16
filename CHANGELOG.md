@@ -18,6 +18,46 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Capture indexed Desktop replay archives in the background
+**Session:** Codex agent · branch `codex/p8013-recorder` · **Phase:** P8 ·
+**TODO items:** P8-013 [~]
+**Done:** Implemented D50's local P8-013 background-recorder candidate on exact
+protected base `63e144c`. Desktop now requires the D30 hardware envs, D12 rig,
+per-log telemetry-consent phrase, OS-enumerated port at 115200 baud, lowercase
+contract/lockfile hashes, bounded environment, and a new exclusive archive path. One
+in-shell thread accepts only exact contiguous, strictly time-increasing
+`forge-telemetry-frame/1.0.0` serial JSONL with object state under frame/depth/node,
+one-million-frame, and 512-MiB caps. It retains canonical append-only frames plus a
+sparse byte-offset index; explicit stop drains buffered input, rejects partial/empty
+state, flushes and syncs both files, finalizes replay 1.0.0, hashes frames/index/
+replay, and only then creates `forge-recorder-receipt/1.0.0`. Existing archives are
+never overwritten and only one recorder may run. Archive, replay, and receipt remain
+within the aggregate 512-MiB cap and persist exact capture-consent confirmation while
+remaining user-owned, private, not training-authorized, no-auto-arm,
+local-serial-integration, and explicitly `recordedDeviceAttested=false`. Capture
+consent grants neither sharing nor training reuse. Eleven locked Rust tests pass,
+including real pseudo-terminal background capture and exact replay/index/hash output,
+sequence/time drift, oversized/empty/partial input without a success receipt,
+exclusivity/no-overwrite, and authority refusal.
+The complete 40-step local gate passes under Python 3.12.13 with 225 worker, 66
+gateway, and 13 Studio tests; sixteen compatibility surfaces; generated 77-route/
+2-event/17-worker documentation; Rust/WASM parity; release packaging; the four-task,
+offline-training, and MJX smokes; and patch hygiene.
+**Changed:** Desktop native recorder/runtime/tests and package checker; compatibility
+matrix/reference and API migration guide; D50; AGENTS/current-state/roadmap/TODO/
+execution/best-practices/hardware/Studio/risk documents; generated artifact
+references and append-only golden review evidence; and this changelog.
+**Decisions:** D50 selects an in-shell thread over a sidecar for the first local
+background boundary and versions archive/frame/receipt independently. A future real
+adapter/device-attestation or training-admission meaning requires separate reviewed
+authority rather than relabeling v1.
+**Next:** Publish the exact candidate through protected PR CI/security, reconcile
+P8-013 as done at deterministic local-integration maturity, then implement the
+reviewed real telemetry adapter and Studio recorder/import seam.
+**Blockers:** None for local implementation/protection. Real adapter/device identity,
+OS suspend/lid behavior, WebSerial/WebUSB, lab/field capture, ghost/system-ID,
+sharing/training consent, and recorded-device admission require separate evidence.
+
 ## 2026-07-16 — Protect D49 target application verification
 **Session:** Codex agent · branch `codex/p8012-target-readback-evidence` · **Phase:** P8 ·
 **TODO items:** P8-001 [~]

@@ -233,6 +233,32 @@ kinds.
   `schemaVersion`, supported-read matrix, old/current/unsupported fixtures, migration
   guidance, and deprecation entry.
 
+## Desktop recorder archive 1.0
+
+P8-013 adds the local `forge-recorder-archive/1.0.0` family rather than upgrading a
+previous recorder archive. The old Desktop recorder command wrote only an unindexed
+manifest stub and never represented a completed replay. Do not migrate that stub into
+success evidence or synthesize a receipt for it. A completed v1 archive requires the
+manifest, append-only frame stream, sparse byte-offset index, finalized replay, and
+success receipt with exact hashes for all three replay-bearing files.
+
+Readers must require the supported archive major and independently verify the receipt,
+file hashes, frame sequence/time invariants, and index offsets before treating the
+archive as complete. A directory without both a finalized replay and success receipt
+is interrupted raw capture only: preserve it for explicit recovery or deletion, but do
+not import, share, train from, or relabel it as a completed archive. Version 1 records
+local-serial-integration maturity, user ownership, sharing and training reuse disabled,
+exact capture-consent confirmation, and `recordedDeviceAttested: false`. Capture
+consent does not grant sharing or training reuse; later device-attested,
+sharing-authorized, or training-authorized semantics require new authority and
+compatibility evidence rather than an in-place field edit.
+
+Rollback stops and drains the active recorder first. Retain every archive directory,
+including incomplete captures, and roll forward to a v1-aware reader; an older Desktop
+build must not claim v1 completion or delete evidence it cannot interpret. Validate the
+runtime and generated catalog with Desktop native tests, `pnpm verify:compatibility`,
+`pnpm docs:contracts`, `pnpm verify:docs-contracts`, and `pnpm verify:goldens`.
+
 ## Shipping a future compatibility change
 
 1. Classify the change as patch, minor, or major under `COMPATIBILITY.md`.
