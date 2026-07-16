@@ -108,9 +108,11 @@ import {
   presignObjectAccess,
   putStoredObject,
   readStoredObject,
+  streamStoredObject,
   type ObjectDeletionAdapter,
   type ObjectInspectionAdapter,
   type ObjectReadAdapter,
+  type ObjectStreamAdapter,
   type ObjectWriteAdapter,
 } from "./objectStorage.js";
 import {
@@ -118,6 +120,7 @@ import {
   listRecorderArchives,
   stageRecorderArchive,
 } from "./recorderArchives.js";
+import { admitRecorderArchive } from "./recorderAdmission.js";
 import {
   prohibitedBriefResponse,
   refuseProhibitedBrief,
@@ -137,7 +140,15 @@ import {
   type RateLimitClass,
   type RateLimitPolicy,
 } from "./security.js";
-import { runBake, runBom, runEnvSpec, runValidator, validatorBin } from "./validator.js";
+import {
+  runBake,
+  runBom,
+  runEnvSpec,
+  runRecorderArchiveVerifier,
+  runValidator,
+  validatorBin,
+  type ValidateResult,
+} from "./validator.js";
 
 export interface ServerOptions {
   db?: GatewayDb;
@@ -152,6 +163,8 @@ export interface ServerOptions {
   inspectObject?: ObjectInspectionAdapter;
   writeObject?: ObjectWriteAdapter;
   readObject?: ObjectReadAdapter;
+  streamObject?: ObjectStreamAdapter;
+  recorderVerifier?: (archiveDirectory: string) => Promise<ValidateResult>;
   rateLimitPolicy?: RateLimitPolicy | null;
   rateLimitNow?: () => number;
   observeRoute?: (route: GatewayRouteObservation) => void;
@@ -823,6 +836,8 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const inspectObject = options.inspectObject ?? inspectStoredObject;
   const writeObject = options.writeObject ?? putStoredObject;
   const readObject = options.readObject ?? readStoredObject;
+  const streamObject = options.streamObject ?? streamStoredObject;
+  const recorderVerifier = options.recorderVerifier ?? runRecorderArchiveVerifier;
   const writePolicyObject = (input: Parameters<typeof putStoredObject>[1]) =>
     writeObject(objectStorageConfigFromEnv(), input);
 
@@ -1595,6 +1610,40 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         );
         reply.header("cache-control", "no-store");
         return reply.send({ materialization });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.post(
+    "/v1/recorder-archives/:id/admit",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1, maxLength: 128 }) }, { additionalProperties: false }),
+        body: Type.Object(
+          { modelId: Type.String({ minLength: 1, maxLength: 128, pattern: "^mdl-[A-Za-z0-9-]+$" }) },
+          { additionalProperties: false },
+        ),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        const { modelId } = request.body as { modelId: string };
+        const admission = await admitRecorderArchive(
+          db,
+          user,
+          id,
+          modelId,
+          objectStorageConfigFromEnv(),
+          streamObject,
+          recorderVerifier,
+        );
+        reply.header("cache-control", "no-store");
+        return reply.status(201).send({ admission });
       } catch (error) {
         const mapped = routeError(error);
         return reply.status(mapped.statusCode).send(mapped.body);

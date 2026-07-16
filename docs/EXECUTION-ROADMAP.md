@@ -474,6 +474,18 @@ Work:
   Studio, seventy gateway, clean/24-
   predecessor Postgres, 11-flow browser E2E, three-engine browser, and all 40 local
   repository gates pass;
+- D54/P8-003 is an unprotected local candidate for the next dependency-complete
+  sovereign boundary. The gateway exact-authorizes one owner materialization and
+  admitted model, streams the five complete D53 objects with length/SHA-256 checks
+  into exclusive private temporary files, invokes native `forge-validate recorder-
+  verify`, deletes the temporary root before persistence, and exact-binds the report
+  to D53, object hashes, model, contract, and lockfile. Migration 0026 stores a
+  separate semantics admission plus one bounded object-backed telemetry reference;
+  export 1.6, deletion, and explicit D45 training refusal preserve all device/field/
+  sharing/training nonclaims. Focused Rust, Gateway, Studio, and Postgres assertions
+  pass; the clean/25-predecessor database, 11-flow browser E2E, and three-engine
+  browser gates and all 40 repository gates under Python 3.12.13 also pass;
+  protected PR/post-merge evidence remains due;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -482,13 +494,13 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: add sovereign server-side streaming archive semantics
-verification and explicit telemetry admission as a separate slice without changing
-D50 archive bytes or promoting self-consistency to authenticity, device provenance,
-sharing, or training authority. D53 object integrity alone may not populate
-`telemetry_logs`.
-The reviewed real telemetry-adapter identity contract remains the prerequisite for
-recorded-device admission. In parallel, execute the protected D49 protocol on the named D12 quad FC
+Next dependency-complete step: protect D54, then define the reviewed real telemetry-
+adapter identity and device-
+attestation contract above its semantic-only admission. D54 may populate only a
+bounded object-backed telemetry reference; it may not promote authenticity, device/
+field provenance, sharing, or training authority. The reviewed adapter identity
+contract remains the prerequisite for recorded-device admission. In parallel,
+execute the protected D49 protocol on the named D12 quad FC
 under controlled-lab authority with propellers removed, retain bounded raw
 responses/hashes plus failure/reconnect/power-loss evidence, and then exercise that
 seam under P8-009's SITL -> HITL procedure. Browser WebSerial should consume the

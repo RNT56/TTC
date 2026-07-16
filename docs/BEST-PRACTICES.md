@@ -385,6 +385,15 @@ every user-facing capability claim.
   length/type/checksum inspection plus bounded manifest/receipt cross-binding. Keep
   object-integrity, archive-semantics, device/field provenance, and sharing/training
   authority as separate explicit states; D53 may set only the first.
+- Admit materialized recorder archives only through a separate sovereign native
+  verifier. Stream all five owned objects with declared-size and SHA-256 enforcement
+  into private exclusive temporary files, bound both read and process time, delete the
+  temporary root before persistence, and require an exact report-to-plan/object/
+  admitted-model/contract/lockfile match. Store only a bounded object-backed
+  telemetry reference, never the tape in JSONB. Keep D53 immutable and keep device,
+  field, recorded-device, sharing, training, and auto-arm authority false; explicitly
+  refuse the reference from legacy training even if consent exists until a separately
+  versioned recorded-device contract is reviewed.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

@@ -135,6 +135,18 @@ the staged defaults, rejects semantic promotion and a partial state transition,
 proves the only allowed materialized transition, and verifies owner deletion removes
 the row before object cleanup.
 
+Migration `0026` additively creates `recorder_archive_admissions` for D54. One
+owner/materialization row links exactly one telemetry log and one admitted model to
+the retained sovereign verification report, replay hash, frame count, and duration.
+The D53 row is not rewritten and remains false for archive semantics. Database
+constraints require admission semantics true while recorded-device/device/field,
+sharing, and training authority remain false. The linked telemetry row stores only a
+bounded object-backed reference; no replay frames are backfilled or embedded.
+`pnpm db:assert-recorder-admission` proves D53 semantic promotion and D54 training
+promotion fail closed, object-backed D45 training is refused even with active
+consent, export 1.6 contains both rows without payload bytes, and account deletion
+removes admission, telemetry, materialization, and all five objects transactionally.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -220,6 +232,16 @@ matches `FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN`, then run migration, gateway, Studi
 Desktop, and object-storage assertions before enabling one staged archive. Older
 applications may ignore the additive table but must not resume writers that bypass
 its exact five-object and nonclaim rules.
+
+For `0026`, disable the D54 admission route while the migration and matching native
+validator/gateway are deployed. Let any verifier process finish or terminate it;
+temporary roots are failure-cleaned and never backfilled. Inventory D53 materialized
+rows and retain all five private objects, but do not fabricate admission rows from
+object metadata. Apply 0026, deploy the D54-aware validator and gateway together,
+run migration, recorder-admission, user-data, gateway, Studio, and object-streaming
+assertions, then enable one explicit admission. Older applications may ignore the
+additive table but must not resume writers that reinterpret D53, delete linked rows,
+inline replay bytes, or train from object-backed references.
 
 ### Apply and verify
 

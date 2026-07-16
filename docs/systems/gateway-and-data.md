@@ -98,6 +98,20 @@ PR #93/`08d892f`, reviewed tree `90d8cbf`, and exact PR/post-merge CI/security
 protect this local private-object-integrity boundary. They do not prove sovereign
 archive semantics, telemetry admission, device/field provenance, sharing, training,
 lab, or field maturity.
+
+D54 adds a separate admission service without changing D53. The gateway streams all
+five complete private objects through size/SHA-256 enforcement into an exclusive
+0700 temporary root with 0600 no-overwrite files, invokes native
+`forge-validate recorder-verify`, and removes the root before persistence. The exact
+verification report is cross-bound to the D53 plan/object hashes and one owner-
+selected admitted model's contract/lockfile proof. Migration 0026 then writes one
+`recorder_archive_admissions` row plus a bounded object-backed `telemetry_logs`
+reference; it never writes replay frames to JSONB. D53 remains false for archive
+semantics. D54 admission alone is true for archive semantics while device/field,
+sharing, and training remain false, and the D45 job path rejects the object-backed
+reference even under active training consent. `FORGE_OBJECT_READ_TIMEOUT_MS` and
+`FORGE_RECORDER_VERIFY_TIMEOUT_MS` are bounded from 30 seconds to one hour, default
+to 30 minutes, and timeout/unavailable verifier states fail closed.
 Fixture job outputs currently materialize to `photoscan_artifacts`,
 `policy_artifacts`, `telemetry_logs`, `replay_artifacts`, and
 `maintenance_records`; `local` and `modal` jobs persist as queued rows for the
@@ -224,7 +238,7 @@ caller forwarding headers, its CSRF behavior remains enabled, and unsafe cookie-
 authenticated requests require the configured origin.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.5.0 across every explicit owner-scoped table,
+transaction and returns format 1.6.0 across every explicit owner-scoped table,
 including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
@@ -237,6 +251,11 @@ Version 1.5 adds `recorder_archive_materializations`: five owner-scoped blob IDs
 sanitized upload plan, object-integrity state, and explicit false archive-semantics,
 device, field, sharing, and training claims. Archive bytes remain outside JSON and
 local filesystem paths plus presigned URLs are never persisted or exported.
+Version 1.6 adds `recorder_archive_admissions`, its bounded verification report and
+linked model/telemetry/materialization IDs. Archive payloads and temporary verifier
+paths remain excluded. Account deletion removes admission rows before telemetry and
+materialization rows, then reuses the normal object deletion/tombstone path for all
+five payloads.
 `DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
 user in a serializable transaction, removes user/derived rows explicitly rather than
 trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the

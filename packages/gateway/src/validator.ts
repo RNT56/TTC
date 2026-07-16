@@ -102,6 +102,36 @@ export async function runPatch(contractJson: string, patchJson: string): Promise
   }
 }
 
+function recorderVerifyTimeoutMs(): number {
+  const configured = Number(process.env.FORGE_RECORDER_VERIFY_TIMEOUT_MS ?? 30 * 60_000);
+  return Math.min(60 * 60_000, Math.max(30_000, Number.isFinite(configured) ? configured : 30 * 60_000));
+}
+
+/** D54 server-side archive verifier. The caller owns the private archive
+ * directory and must remove its parent after this process returns. */
+export async function runRecorderArchiveVerifier(archiveDirectory: string): Promise<ValidateResult> {
+  const reportPath = join(archiveDirectory, "..", "recorder-verification.json");
+  const { code, stderr } = await new Promise<{ code: number; stderr: string }>((resolve) => {
+    execFile(
+      validatorBin(),
+      ["recorder-verify", archiveDirectory, "--out", reportPath],
+      { timeout: recorderVerifyTimeoutMs(), maxBuffer: 1024 * 1024, killSignal: "SIGKILL" },
+      (error, _stdout, stderrBuf) => {
+        const rawCode = (error as { code?: unknown } | null)?.code;
+        const code = error === null ? 0 : typeof rawCode === "number" ? rawCode : -1;
+        resolve({ code, stderr: String(stderrBuf) });
+      },
+    );
+  });
+  let report: unknown | null = null;
+  try {
+    report = JSON.parse(await readFile(reportPath, "utf8"));
+  } catch {
+    report = null;
+  }
+  return { exitCode: code, report, stderr };
+}
+
 /** D14 draft semantics: `asDraft` turns a failing verdict into `draft` —
  * the document persists as editable WITH its diagnostics; drafts can never
  * train/export/share (enforced at those surfaces as they land, P4+/P7). */

@@ -18,6 +18,43 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Admit materialized recorder archives through the sovereign validator
+**Session:** Codex agent · branch `codex/p8003-recorder-archive-admission` ·
+**Phase:** P8 · **TODO items:** P8-003 [~]
+**Done:** Implemented D54's unprotected local sovereign archive-semantics candidate.
+The gateway streams the exact five complete D53 private objects with declared-size
+and SHA-256 enforcement into exclusive mode-0600 files under a mode-0700 temporary
+root, invokes native `forge-validate recorder-verify`, removes all temporary bytes
+before persistence, and exact-binds the full report to the D53 plan/objects plus one
+owner-selected admitted model's contract and lockfile. Migration 0026 stores a
+separate immutable admission and one bounded object-backed telemetry reference; D53
+is never promoted and replay frames never enter JSON or JSONB. User-data export 1.6
+and deletion include the new metadata. Legacy D45 training rejects the reference even
+when a training-reuse grant exists. Studio exposes one explicit post-materialization
+action and renders object integrity, archive semantics, and every authenticity/
+device/field/sharing/training nonclaim separately. Focused proof passes: 2/2 native
+recorder tests, 73/73 Gateway tests, 26/26 Studio tests, and the dedicated Postgres
+sovereignty/nonclaim/training-refusal/export/deletion assertion, migration 0026 on a
+clean database plus all 25 populated predecessors, 11/11 production-browser flows,
+all three declared browser engines, and the complete 40-step repository gate under
+Python 3.12.13 with 225 worker tests. `pnpm audit` and the root RustSec scan report
+no known vulnerabilities; the stricter Desktop warning scan reports only the 17
+time-bounded GOV-011 Tauri GTK/Unicode warnings already owned by the Linux-release
+blocker. Protected PR/post-merge evidence remains pending.
+**Changed:** Native validator CLI/report; gateway object streaming, admission service,
+route, object-store and process timeouts, account lifecycle, and training refusal;
+migration 0026 and Postgres assertion; Studio client/UI/tests; compatibility surface,
+81-route generated contract docs, API/migration/threat/lifecycle/system guidance,
+roadmap/TODO/execution/state/agent entry, and golden review record.
+**Decisions:** D54 separates sovereign archive self-consistency from D53 object
+integrity and from every physical provenance or consent authority.
+**Next:** Protect the exact reviewed candidate, reconcile evidence, then define the
+reviewed real-adapter/device identity contract before any recorded-device admission.
+**Blockers:** None for local verification or protection. Production object IAM/TLS/
+SLO/orphan recovery, reviewed adapter/device identity, host suspend, controlled lab/
+field execution, sharing/training authority, ghost/system-ID, and signed Desktop
+delivery remain separately gated.
+
 ## 2026-07-16 — Protect D53 recorder object materialization
 **Session:** Codex agent · branch `codex/p8003-recorder-materialization-evidence` ·
 **Phase:** P8 · **TODO items:** P8-003 [~]

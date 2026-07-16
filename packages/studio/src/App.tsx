@@ -5,6 +5,7 @@ import { DEMO_MODELS, useStudio } from "./store";
 import type { MaterialClass, Report } from "./types";
 import {
   accessObjectBlob,
+  admitRecorderArchive,
   contributeModelPattern,
   completeRecorderArchive,
   createClassroomAssignment,
@@ -79,6 +80,7 @@ import {
   type ModelRecord,
   type ModerationReportRecord,
   type RecorderArchiveMaterialization,
+  type RecorderArchiveAdmission,
   type PlatformGateSignoff,
   type PhotoscanAlignmentInput,
   type PhotoscanPortInput,
@@ -2373,7 +2375,11 @@ export default function App() {
             onAlignPhotoscan={(artifactId, input) => void alignPhotoscanArtifact(artifactId, input)}
             onPlayPolicy={startPolicyPlayback}
           />
-          <RecorderArchiveImportPanel report={s.report} authenticated={me?.authenticated === true} />
+          <RecorderArchiveImportPanel
+            report={s.report}
+            authenticated={me?.authenticated === true}
+            activeModelId={activeModelId}
+          />
           <PlatformPanel
             credits={credits}
             courses={courses}
@@ -2987,9 +2993,11 @@ function ArtifactRegistry({
 function RecorderArchiveImportPanel({
   report,
   authenticated,
+  activeModelId,
 }: {
   report: Report | null;
   authenticated: boolean;
+  activeModelId: string | null;
 }) {
   const available = desktopRecorderAvailable();
   const [bridgeStatus, setBridgeStatus] = useState<DesktopBridgeStatus | null>(null);
@@ -3015,6 +3023,9 @@ function RecorderArchiveImportPanel({
   const [materializationError, setMaterializationError] = useState<string | null>(null);
   const [uploadReceipt, setUploadReceipt] = useState<RecorderUploadReceipt | null>(null);
   const [materialization, setMaterialization] = useState<RecorderArchiveMaterialization | null>(null);
+  const [admissionBusy, setAdmissionBusy] = useState(false);
+  const [admissionError, setAdmissionError] = useState<string | null>(null);
+  const [admission, setAdmission] = useState<RecorderArchiveAdmission | null>(null);
 
   const refreshControls = useCallback(async () => {
     if (!available) return;
@@ -3111,6 +3122,8 @@ function RecorderArchiveImportPanel({
     setInspectionError(null);
     setInspection(null);
     setMaterialization(null);
+    setAdmission(null);
+    setAdmissionError(null);
     setUploadReceipt(null);
     try {
       const verified = await inspectRecorderArchive(archivePath);
@@ -3127,6 +3140,8 @@ function RecorderArchiveImportPanel({
     setMaterializationBusy(true);
     setMaterializationError(null);
     setMaterialization(null);
+    setAdmission(null);
+    setAdmissionError(null);
     setUploadReceipt(null);
     try {
       if (!inspection || inspection.archivePath !== archivePath.trim()) {
@@ -3163,6 +3178,23 @@ function RecorderArchiveImportPanel({
     }
   }, [archivePath, authenticated, inspection]);
 
+  const admitArchive = useCallback(async () => {
+    setAdmissionBusy(true);
+    setAdmissionError(null);
+    setAdmission(null);
+    try {
+      if (!materialization || materialization.status !== "materialized") {
+        throw new Error("materialize and verify the five private objects before telemetry admission");
+      }
+      if (!activeModelId) throw new Error("select the admitted model bound to this recorder archive");
+      setAdmission(await admitRecorderArchive(materialization, activeModelId));
+    } catch (cause) {
+      setAdmissionError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setAdmissionBusy(false);
+    }
+  }, [activeModelId, materialization]);
+
   const reportReady = report?.verdict === "admitted"
     && /^[0-9a-f]{64}$/.test(report.contractHash)
     && /^[0-9a-f]{64}$/.test(report.lockfileHash)
@@ -3180,6 +3212,8 @@ function RecorderArchiveImportPanel({
   const canStop = available && recorderStatus !== null && recorderStatus.state !== "inactive";
   const canMaterialize = available && authenticated && inspection !== null
     && inspection.archivePath === archivePath.trim() && !inspectionBusy && !materializationBusy;
+  const canAdmit = authenticated && activeModelId !== null && materialization?.status === "materialized"
+    && materialization.gatewayObjectIntegrityVerified && !admissionBusy && admission === null;
 
   return (
     <details style={{ borderTop: "1px solid #242a33", marginTop: 6, paddingTop: 6 }}>
@@ -3378,9 +3412,37 @@ function RecorderArchiveImportPanel({
         </div>
       ) : null}
       {materialization ? (
-        <div data-testid="recorder-materialization" style={{ color: "#74c69d", marginTop: 5, wordBreak: "break-word" }}>
-          private objects verified · {materialization.id} · gateway object integrity on · archive semantics off ·
-          device/field verification off · sharing/training off · no auto-arm
+        <div style={{ marginTop: 5 }}>
+          <div data-testid="recorder-materialization" style={{ color: "#74c69d", wordBreak: "break-word" }}>
+            private objects verified · {materialization.id} · gateway object integrity on · archive semantics off ·
+            device/field verification off · sharing/training off · no auto-arm
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+            <button
+              data-testid="recorder-archive-admit"
+              onClick={() => void admitArchive()}
+              disabled={!canAdmit}
+              style={btn}
+            >
+              {admissionBusy ? "verifying server archive…" : "verify archive & admit telemetry"}
+            </button>
+            <span style={{ color: activeModelId ? "#7d899b" : "#e6a23c" }}>
+              {activeModelId
+                ? `selected model ${activeModelId}; object-backed telemetry only`
+                : "select the exact admitted model before server verification"}
+            </span>
+          </div>
+        </div>
+      ) : null}
+      {admissionError ? (
+        <div data-testid="recorder-admission-error" style={{ color: "#e6a23c", marginTop: 5 }}>
+          {admissionError}
+        </div>
+      ) : null}
+      {admission ? (
+        <div data-testid="recorder-admission" style={{ color: "#74c69d", marginTop: 5, wordBreak: "break-word" }}>
+          archive semantics verified · telemetry {admission.telemetryLogId} · {admission.frameCount} frames ·
+          object-backed · device/field verification off · sharing/training off · no auto-arm
         </div>
       ) : null}
     </details>

@@ -18,7 +18,18 @@ import {
   validateRecorderUploadPlan,
   type RecorderUploadPlanInput,
 } from "../src/recorderArchives.js";
-import type { ObjectStorageConfig, StoredObjectInspection } from "../src/objectStorage.js";
+import {
+  admitRecorderArchive,
+  RECORDER_ADMISSION_SCHEMA_VERSION,
+  RECORDER_TELEMETRY_REFERENCE_SCHEMA_VERSION,
+  RECORDER_VERIFICATION_SCHEMA_VERSION,
+  type RecorderVerificationReport,
+} from "../src/recorderAdmission.js";
+import type {
+  ObjectStorageConfig,
+  ObjectStreamAdapter,
+  StoredObjectInspection,
+} from "../src/objectStorage.js";
 
 const user: CurrentUser = { id: "usr-recorder", name: "Recorder", email: "recorder@example.test", image: null };
 const config: ObjectStorageConfig = {
@@ -28,6 +39,7 @@ const config: ObjectStorageConfig = {
   accessKeyId: "forge",
   secretAccessKey: "forge-dev-only",
   forcePathStyle: true,
+  readTimeoutMs: 30_000,
   deleteTimeoutMs: 1_000,
 };
 
@@ -140,6 +152,8 @@ function queryResult<T extends object>(rows: T[], rowCount = rows.length): Query
 class RecorderDb implements GatewayDb {
   readonly blobs = new Map<string, Record<string, unknown>>();
   materialization: Record<string, unknown> | null = null;
+  admission: Record<string, unknown> | null = null;
+  telemetry: Record<string, unknown> | null = null;
   nextBlob = 1;
 
   transaction<T>(_options: GatewayTransactionOptions, operation: (transaction: GatewayDb) => Promise<T>): Promise<T> {
@@ -185,6 +199,9 @@ class RecorderDb implements GatewayDb {
     if (text.includes("FROM recorder_archive_materializations")) {
       return queryResult(this.materialization ? [this.materialization as T] : []);
     }
+    if (text.includes("FROM recorder_archive_admissions")) {
+      return queryResult(this.admission ? [this.admission as T] : []);
+    }
     if (text.includes("FROM object_blobs")) {
       const row = this.blobs.get(String(params[0]));
       return queryResult(row && row.owner_user_id === params[1] ? [row as T] : []);
@@ -212,8 +229,81 @@ class RecorderDb implements GatewayDb {
       if (this.materialization) this.materialization.verification_error_code = params[2];
       return queryResult<T>([], 1);
     }
+    if (text.includes("FROM model_registry")) {
+      return queryResult([{
+        id: params[0],
+        status: "admitted",
+        contract_hash: "11".repeat(32),
+        validator_report: {
+          verdict: "admitted",
+          contractHash: "11".repeat(32),
+          lockfileHash: "22".repeat(32),
+        },
+      } as T]);
+    }
+    if (text.includes("INSERT INTO telemetry_logs")) {
+      this.telemetry = {
+        id: "tel-recorder-admitted",
+        owner_user_id: params[0],
+        model_id: params[1],
+        source: "desktop",
+        captured_at: params[2],
+        tape: JSON.parse(String(params[3])),
+        privacy: JSON.parse(String(params[4])),
+      };
+      return queryResult([{ id: "tel-recorder-admitted" } as T]);
+    }
+    if (text.includes("INSERT INTO recorder_archive_admissions")) {
+      this.admission = {
+        id: params[0], owner_user_id: params[1], materialization_id: params[2],
+        telemetry_log_id: params[3], model_id: params[4],
+        schema_version: RECORDER_ADMISSION_SCHEMA_VERSION,
+        verification: JSON.parse(String(params[5])), replay_file_sha256: params[6],
+        frame_count: params[7], duration_s: params[8], gateway_archive_semantics_verified: true,
+        recorded_device_attested: false, device_identity_verified: false,
+        field_session_verified: false, sharing_authorized: false,
+        training_reuse_authorized: false, no_auto_arm: true,
+        created_at: new Date("2026-07-16T00:03:00.000Z"),
+      };
+      return queryResult([this.admission as T]);
+    }
     throw new Error(`unexpected query: ${text}`);
   }
+}
+
+function verificationReport(plan: RecorderUploadPlanInput): RecorderVerificationReport {
+  const byName = new Map(plan.files.map((file) => [file.name, file]));
+  return {
+    schemaVersion: RECORDER_VERIFICATION_SCHEMA_VERSION,
+    archiveSchemaVersion: RECORDER_ARCHIVE_SCHEMA_VERSION,
+    replaySchemaVersion: REPLAY_SCHEMA_VERSION,
+    receiptSchemaVersion: RECORDER_RECEIPT_SCHEMA_VERSION,
+    artifactId: plan.artifactId,
+    referenceRigId: plan.referenceRigId,
+    contractHash: plan.contractHash,
+    lockfileHash: plan.lockfileHash,
+    sourcePortSha256: plan.sourcePortSha256,
+    sampleRateHz: plan.sampleRateHz,
+    startedAtUnixMs: plan.startedAtUnixMs,
+    stoppedAtUnixMs: plan.stoppedAtUnixMs,
+    frameCount: plan.frameCount,
+    durationS: plan.durationS,
+    aggregateByteSize: plan.aggregateByteSize,
+    frameFileSha256: byName.get("telemetry.frames.jsonl")!.sha256,
+    indexFileSha256: byName.get("telemetry.index.jsonl")!.sha256,
+    replayFileSha256: byName.get("telemetry.replay.json")!.sha256,
+    captureMaturity: "local-serial-integration",
+    archiveSemanticsVerified: true,
+    captureComplete: true,
+    captureConsentConfirmed: true,
+    userOwned: true,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
+    recordedDeviceAttested: false,
+    deviceIdentityVerified: false,
+    fieldSessionVerified: false,
+    noAutoArm: true,
+  };
 }
 
 test("recorder upload plan accepts only the exact five-file private nonclaim shape", () => {
@@ -278,6 +368,185 @@ test("recorder materialization refuses object checksum substitution and remains 
   assert.equal(db.materialization?.verification_error_code, "object-declaration-changed");
 });
 
+test("recorder admission streams exact private objects, persists a bounded reference, and keeps nonclaims false", async () => {
+  const { plan, manifest, receipt } = fixture();
+  const db = new RecorderDb();
+  const staged = await stageRecorderArchive(db, user, plan, config.bucket);
+  const inspectObject = async (
+    _config: ObjectStorageConfig,
+    object: { objectKey: string },
+  ): Promise<StoredObjectInspection> => {
+    const blob = [...db.blobs.values()].find((candidate) => candidate.object_key === object.objectKey)!;
+    return {
+      byteSize: Number(blob.byte_size),
+      contentType: String(blob.content_type),
+      sha256: String(blob.sha256),
+    };
+  };
+  await completeRecorderArchive(
+    db,
+    user,
+    staged.materialization.id,
+    config,
+    inspectObject,
+    async (_config, object) => object.objectKey.includes("recorder-v1-manifest") ? manifest : receipt,
+  );
+
+  let streamedBytes = 0;
+  const streamObject: ObjectStreamAdapter = (_config, object) => (async function* () {
+    streamedBytes += object.byteSize;
+    yield Buffer.alloc(object.byteSize, 0x61);
+  })();
+  let verifierCalls = 0;
+  const admission = await admitRecorderArchive(
+    db,
+    user,
+    staged.materialization.id,
+    "mdl-recorder",
+    config,
+    streamObject,
+    async (archiveDirectory) => {
+      verifierCalls += 1;
+      const { readdir, stat } = await import("node:fs/promises");
+      const names = (await readdir(archiveDirectory)).sort();
+      assert.deepEqual(names, plan.files.map((file) => file.name).sort());
+      for (const file of plan.files) {
+        assert.equal((await stat(`${archiveDirectory}/${file.name}`)).size, file.byteSize);
+      }
+      return { exitCode: 0, report: verificationReport(plan), stderr: "" };
+    },
+  );
+  assert.equal(streamedBytes, plan.aggregateByteSize);
+  assert.equal(verifierCalls, 1);
+  assert.equal(admission.schemaVersion, RECORDER_ADMISSION_SCHEMA_VERSION);
+  assert.equal(admission.gatewayArchiveSemanticsVerified, true);
+  assert.equal(admission.recordedDeviceAttested, false);
+  assert.equal(admission.deviceIdentityVerified, false);
+  assert.equal(admission.fieldSessionVerified, false);
+  assert.equal(admission.sharingAuthorized, false);
+  assert.equal(admission.trainingReuseAuthorized, false);
+  assert.equal(admission.noAutoArm, true);
+  assert.equal(db.materialization?.gateway_archive_semantics_verified, false);
+  assert.equal(db.telemetry?.source, "desktop");
+  assert.deepEqual(db.telemetry?.tape, {
+    ...(db.telemetry?.tape as Record<string, unknown>),
+    schemaVersion: RECORDER_TELEMETRY_REFERENCE_SCHEMA_VERSION,
+    storage: "object-backed",
+    admissionId: admission.id,
+    materializationId: staged.materialization.id,
+    replayBlobId: staged.materialization.replayBlobId,
+    gatewayArchiveSemanticsVerified: true,
+    recordedDeviceAttested: false,
+    deviceIdentityVerified: false,
+    fieldSessionVerified: false,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
+    noAutoArm: true,
+  });
+  assert.equal("frames" in (db.telemetry?.tape as Record<string, unknown>), false);
+
+  const retry = await admitRecorderArchive(
+    db,
+    user,
+    staged.materialization.id,
+    "mdl-recorder",
+    config,
+    () => { throw new Error("retry must not redownload"); },
+  );
+  assert.equal(retry.id, admission.id);
+  await assert.rejects(
+    admitRecorderArchive(
+      db,
+      user,
+      staged.materialization.id,
+      "mdl-other",
+      config,
+      () => { throw new Error("wrong-model retry must not redownload"); },
+    ),
+    /different model/,
+  );
+});
+
+test("recorder admission fails closed on sovereign report substitution", async () => {
+  const { plan, manifest, receipt } = fixture();
+  const db = new RecorderDb();
+  const staged = await stageRecorderArchive(db, user, plan, config.bucket);
+  await completeRecorderArchive(
+    db,
+    user,
+    staged.materialization.id,
+    config,
+    async (_config, object) => {
+      const blob = [...db.blobs.values()].find((candidate) => candidate.object_key === object.objectKey)!;
+      return {
+        byteSize: Number(blob.byte_size),
+        contentType: String(blob.content_type),
+        sha256: String(blob.sha256),
+      };
+    },
+    async (_config, object) => object.objectKey.includes("recorder-v1-manifest") ? manifest : receipt,
+  );
+  await assert.rejects(
+    admitRecorderArchive(
+      db,
+      user,
+      staged.materialization.id,
+      "mdl-recorder",
+      config,
+      (_config, object) => (async function* () { yield Buffer.alloc(object.byteSize); })(),
+      async () => ({
+        exitCode: 0,
+        report: { ...verificationReport(plan), trainingReuseAuthorized: true },
+        stderr: "",
+      }),
+    ),
+    /does not match staged authority/,
+  );
+  assert.equal(db.telemetry, null);
+  assert.equal(db.admission, null);
+});
+
+test("recorder admission rebinds every private object declaration to the D53 plan", async () => {
+  const { plan, manifest, receipt } = fixture();
+  const db = new RecorderDb();
+  const staged = await stageRecorderArchive(db, user, plan, config.bucket);
+  await completeRecorderArchive(
+    db,
+    user,
+    staged.materialization.id,
+    config,
+    async (_config, object) => {
+      const blob = [...db.blobs.values()].find((candidate) => candidate.object_key === object.objectKey)!;
+      return {
+        byteSize: Number(blob.byte_size),
+        contentType: String(blob.content_type),
+        sha256: String(blob.sha256),
+      };
+    },
+    async (_config, object) => object.objectKey.includes("recorder-v1-manifest") ? manifest : receipt,
+  );
+  const manifestBlob = db.blobs.get(staged.materialization.manifestBlobId)!;
+  manifestBlob.sha256 = "99".repeat(32);
+  let streamCalls = 0;
+  await assert.rejects(
+    admitRecorderArchive(
+      db,
+      user,
+      staged.materialization.id,
+      "mdl-recorder",
+      config,
+      () => {
+        streamCalls += 1;
+        return (async function* () { yield new Uint8Array(); })();
+      },
+    ),
+    /object is not materialized/,
+  );
+  assert.equal(streamCalls, 0);
+  assert.equal(db.telemetry, null);
+  assert.equal(db.admission, null);
+});
+
 test("recorder archive routes require an owner and preserve object-only maturity", async () => {
   const previousDevAuth = process.env.FORGE_DEV_AUTH;
   process.env.FORGE_DEV_AUTH = "1";
@@ -298,7 +567,14 @@ test("recorder archive routes require an owner and preserve object-only maturity
     _config: ObjectStorageConfig,
     object: { objectKey: string },
   ): Promise<Uint8Array> => object.objectKey.includes("recorder-v1-manifest") ? manifest : receipt;
-  const app = buildServer({ db, inspectObject, readObject, rateLimitPolicy: null });
+  const app = buildServer({
+    db,
+    inspectObject,
+    readObject,
+    streamObject: (_config, object) => (async function* () { yield Buffer.alloc(object.byteSize); })(),
+    recorderVerifier: async () => ({ exitCode: 0, report: verificationReport(plan), stderr: "" }),
+    rateLimitPolicy: null,
+  });
   const headers = {
     "x-forge-user-id": user.id,
     "x-forge-user-name": user.name ?? "Recorder",
@@ -363,6 +639,38 @@ test("recorder archive routes require an owner and preserve object-only maturity
       status: "materialized",
       gatewayObjectIntegrityVerified: true,
       gatewayArchiveSemanticsVerified: false,
+      deviceIdentityVerified: false,
+      fieldSessionVerified: false,
+      sharingAuthorized: false,
+      trainingReuseAuthorized: false,
+      noAutoArm: true,
+    });
+
+    const admitted = await app.inject({
+      method: "POST",
+      url: `/v1/recorder-archives/${stagedBody.materialization.id}/admit`,
+      headers,
+      payload: { modelId: "mdl-recorder" },
+    });
+    assert.equal(admitted.statusCode, 201, admitted.body);
+    assert.equal(admitted.headers["cache-control"], "no-store");
+    const admittedBody = admitted.json() as {
+      admission: {
+        telemetryLogId: string;
+        gatewayArchiveSemanticsVerified: boolean;
+        recordedDeviceAttested: boolean;
+        deviceIdentityVerified: boolean;
+        fieldSessionVerified: boolean;
+        sharingAuthorized: boolean;
+        trainingReuseAuthorized: boolean;
+        noAutoArm: boolean;
+      };
+    };
+    assert.deepEqual(admittedBody.admission, {
+      ...admittedBody.admission,
+      telemetryLogId: "tel-recorder-admitted",
+      gatewayArchiveSemanticsVerified: true,
+      recordedDeviceAttested: false,
       deviceIdentityVerified: false,
       fieldSessionVerified: false,
       sharingAuthorized: false,

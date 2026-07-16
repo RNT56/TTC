@@ -43,4 +43,8 @@ fn json_version_reports_independent_data_contracts() {
         value["envSpecSchemaVersion"],
         forge_sim::runtime::ENVSPEC_SCHEMA_VERSION
     );
+    assert_eq!(
+        value["recorderVerificationFormatVersion"],
+        forge_validate::recorder::RECORDER_VERIFICATION_SCHEMA_VERSION
+    );
 }

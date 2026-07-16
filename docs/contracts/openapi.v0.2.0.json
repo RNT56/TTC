@@ -483,7 +483,7 @@
         },
         "x-forge-versioned-response": {
           "surface": "userDataExport",
-          "current": "1.5.0"
+          "current": "1.6.0"
         },
         "security": [
           {
@@ -3669,6 +3669,117 @@
                 "additionalProperties": false,
                 "type": "object",
                 "properties": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ]
+      }
+    },
+    "/v1/recorder-archives/{id}/admit": {
+      "post": {
+        "operationId": "post-v1-recorder-archives-by-id-admit",
+        "summary": "Stream five private objects through sovereign archive-v1 verification and explicitly admit an object-backed telemetry reference",
+        "tags": [
+          "recorder-archives"
+        ],
+        "x-forge-auth": "session",
+        "x-forge-capability-maturity": "fixture",
+        "responses": {
+          "201": {
+            "description": "Resource created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or bounded-input refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication or review authority required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required local service or configured adapter unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "modelId"
+                ],
+                "properties": {
+                  "modelId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^mdl-[A-Za-z0-9-]+$",
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -8901,5 +9012,5 @@
   },
   "x-forge-documentation-version": "1.0.0",
   "x-forge-status": "pre-1.0-internal",
-  "x-forge-route-count": 80
+  "x-forge-route-count": 81
 }

@@ -297,6 +297,59 @@ export interface RecorderArchiveMaterialization {
   materializedAt: string | null;
 }
 
+export interface RecorderVerificationReport {
+  schemaVersion: "forge-recorder-verification/1.0.0";
+  archiveSchemaVersion: "forge-recorder-archive/1.0.0";
+  replaySchemaVersion: "1.0.0";
+  receiptSchemaVersion: "forge-recorder-receipt/1.0.0";
+  artifactId: string;
+  referenceRigId: string;
+  contractHash: string;
+  lockfileHash: string;
+  sourcePortSha256: string;
+  sampleRateHz: number;
+  startedAtUnixMs: number;
+  stoppedAtUnixMs: number;
+  frameCount: number;
+  durationS: number;
+  aggregateByteSize: number;
+  frameFileSha256: string;
+  indexFileSha256: string;
+  replayFileSha256: string;
+  captureMaturity: "local-serial-integration";
+  archiveSemanticsVerified: true;
+  captureComplete: true;
+  captureConsentConfirmed: true;
+  userOwned: true;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
+  recordedDeviceAttested: false;
+  deviceIdentityVerified: false;
+  fieldSessionVerified: false;
+  noAutoArm: true;
+}
+
+export interface RecorderArchiveAdmission {
+  id: string;
+  ownerUserId: string;
+  materializationId: string;
+  telemetryLogId: string;
+  modelId: string;
+  schemaVersion: "forge-recorder-admission/1.0.0";
+  verification: RecorderVerificationReport;
+  replayFileSha256: string;
+  frameCount: number;
+  durationS: number;
+  gatewayArchiveSemanticsVerified: true;
+  recordedDeviceAttested: false;
+  deviceIdentityVerified: false;
+  fieldSessionVerified: false;
+  sharingAuthorized: false;
+  trainingReuseAuthorized: false;
+  noAutoArm: true;
+  createdAt: string;
+}
+
 export interface RecorderArchiveUpload {
   name: RecorderArchiveFileName;
   blob: ObjectBlobRecord;
@@ -603,6 +656,23 @@ const recorderMaterializationFields = [
   "createdAt", "materializedAt",
 ] as const;
 
+const recorderVerificationFields = [
+  "schemaVersion", "archiveSchemaVersion", "replaySchemaVersion", "receiptSchemaVersion",
+  "artifactId", "referenceRigId", "contractHash", "lockfileHash", "sourcePortSha256",
+  "sampleRateHz", "startedAtUnixMs", "stoppedAtUnixMs", "frameCount", "durationS",
+  "aggregateByteSize", "frameFileSha256", "indexFileSha256", "replayFileSha256",
+  "captureMaturity", "archiveSemanticsVerified", "captureComplete",
+  "captureConsentConfirmed", "userOwned", "sharingAuthorized", "trainingReuseAuthorized",
+  "recordedDeviceAttested", "deviceIdentityVerified", "fieldSessionVerified", "noAutoArm",
+] as const;
+
+const recorderAdmissionFields = [
+  "id", "ownerUserId", "materializationId", "telemetryLogId", "modelId", "schemaVersion",
+  "verification", "replayFileSha256", "frameCount", "durationS",
+  "gatewayArchiveSemanticsVerified", "recordedDeviceAttested", "deviceIdentityVerified",
+  "fieldSessionVerified", "sharingAuthorized", "trainingReuseAuthorized", "noAutoArm", "createdAt",
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -665,6 +735,57 @@ function parseRecorderMaterialization(
     throw new Error("recorder materialization upload plan does not match Desktop evidence");
   }
   return value as unknown as RecorderArchiveMaterialization;
+}
+
+function parseRecorderAdmission(
+  value: unknown,
+  materialization: RecorderArchiveMaterialization,
+  modelId: string,
+): RecorderArchiveAdmission {
+  requireExactFields(value, recorderAdmissionFields, "recorder archive admission");
+  requireExactFields(value.verification, recorderVerificationFields, "recorder verification report");
+  const verification = value.verification;
+  const plan = materialization.uploadPlan;
+  const hashes = new Map(plan.files.map((file) => [file.name, file.sha256]));
+  if (typeof value.id !== "string" || !/^raa-[0-9a-f]{20}$/.test(value.id)
+    || typeof value.ownerUserId !== "string" || value.ownerUserId.length === 0
+    || value.materializationId !== materialization.id || value.modelId !== modelId
+    || typeof value.telemetryLogId !== "string" || value.telemetryLogId.length === 0
+    || value.schemaVersion !== "forge-recorder-admission/1.0.0"
+    || verification.schemaVersion !== "forge-recorder-verification/1.0.0"
+    || verification.archiveSchemaVersion !== "forge-recorder-archive/1.0.0"
+    || verification.replaySchemaVersion !== "1.0.0"
+    || verification.receiptSchemaVersion !== "forge-recorder-receipt/1.0.0"
+    || verification.artifactId !== plan.artifactId
+    || verification.referenceRigId !== plan.referenceRigId
+    || verification.contractHash !== plan.contractHash
+    || verification.lockfileHash !== plan.lockfileHash
+    || verification.sourcePortSha256 !== plan.sourcePortSha256
+    || verification.sampleRateHz !== plan.sampleRateHz
+    || verification.startedAtUnixMs !== plan.startedAtUnixMs
+    || verification.stoppedAtUnixMs !== plan.stoppedAtUnixMs
+    || verification.frameCount !== plan.frameCount
+    || verification.durationS !== plan.durationS
+    || verification.aggregateByteSize !== plan.aggregateByteSize
+    || verification.frameFileSha256 !== hashes.get("telemetry.frames.jsonl")
+    || verification.indexFileSha256 !== hashes.get("telemetry.index.jsonl")
+    || verification.replayFileSha256 !== hashes.get("telemetry.replay.json")
+    || verification.captureMaturity !== "local-serial-integration"
+    || verification.archiveSemanticsVerified !== true
+    || verification.captureComplete !== true || verification.captureConsentConfirmed !== true
+    || verification.userOwned !== true || verification.sharingAuthorized !== false
+    || verification.trainingReuseAuthorized !== false || verification.recordedDeviceAttested !== false
+    || verification.deviceIdentityVerified !== false || verification.fieldSessionVerified !== false
+    || verification.noAutoArm !== true
+    || value.replayFileSha256 !== verification.replayFileSha256
+    || value.frameCount !== verification.frameCount || value.durationS !== verification.durationS
+    || value.gatewayArchiveSemanticsVerified !== true || value.recordedDeviceAttested !== false
+    || value.deviceIdentityVerified !== false || value.fieldSessionVerified !== false
+    || value.sharingAuthorized !== false || value.trainingReuseAuthorized !== false
+    || value.noAutoArm !== true || typeof value.createdAt !== "string") {
+    throw new Error("recorder archive admission identity, proof, or authority has drifted");
+  }
+  return value as unknown as RecorderArchiveAdmission;
 }
 
 function parseRecorderStageResponse(
@@ -953,6 +1074,22 @@ export async function completeRecorderArchive(
     throw new Error("gateway did not verify recorder object materialization");
   }
   return materialization;
+}
+
+export async function admitRecorderArchive(
+  materialization: RecorderArchiveMaterialization,
+  modelId: string,
+): Promise<RecorderArchiveAdmission> {
+  if (materialization.status !== "materialized" || !materialization.gatewayObjectIntegrityVerified) {
+    throw new Error("recorder object materialization must complete before telemetry admission");
+  }
+  if (!/^mdl-[A-Za-z0-9-]{1,124}$/.test(modelId)) throw new Error("recorder admission model ID is invalid");
+  const response = await requestJson<unknown>(
+    `/v1/recorder-archives/${encodeURIComponent(materialization.id)}/admit`,
+    { method: "POST", body: JSON.stringify({ modelId }) },
+  );
+  requireExactFields(response, ["admission"], "recorder admission response");
+  return parseRecorderAdmission(response.admission, materialization, modelId);
 }
 
 export function accessObjectBlob(

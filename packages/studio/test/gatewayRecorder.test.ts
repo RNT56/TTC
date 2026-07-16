@@ -7,6 +7,7 @@ import {
   parseRecorderUploadPlan,
 } from "../src/desktopRecorder.ts";
 import {
+  admitRecorderArchive,
   completeRecorderArchive,
   stageRecorderArchive,
 } from "../src/gateway.ts";
@@ -123,6 +124,66 @@ function stageFixture() {
   };
 }
 
+function admissionFixture() {
+  const materialization = materializationFixture("materialized");
+  const plan = materialization.uploadPlan;
+  const byName = new Map(plan.files.map((file) => [file.name, file]));
+  const verification = {
+    schemaVersion: "forge-recorder-verification/1.0.0",
+    archiveSchemaVersion: RECORDER_ARCHIVE_SCHEMA_VERSION,
+    replaySchemaVersion: "1.0.0",
+    receiptSchemaVersion: "forge-recorder-receipt/1.0.0",
+    artifactId: plan.artifactId,
+    referenceRigId: plan.referenceRigId,
+    contractHash: plan.contractHash,
+    lockfileHash: plan.lockfileHash,
+    sourcePortSha256: plan.sourcePortSha256,
+    sampleRateHz: plan.sampleRateHz,
+    startedAtUnixMs: plan.startedAtUnixMs,
+    stoppedAtUnixMs: plan.stoppedAtUnixMs,
+    frameCount: plan.frameCount,
+    durationS: plan.durationS,
+    aggregateByteSize: plan.aggregateByteSize,
+    frameFileSha256: byName.get("telemetry.frames.jsonl")!.sha256,
+    indexFileSha256: byName.get("telemetry.index.jsonl")!.sha256,
+    replayFileSha256: byName.get("telemetry.replay.json")!.sha256,
+    captureMaturity: "local-serial-integration",
+    archiveSemanticsVerified: true,
+    captureComplete: true,
+    captureConsentConfirmed: true,
+    userOwned: true,
+    sharingAuthorized: false,
+    trainingReuseAuthorized: false,
+    recordedDeviceAttested: false,
+    deviceIdentityVerified: false,
+    fieldSessionVerified: false,
+    noAutoArm: true,
+  };
+  return {
+    materialization,
+    admission: {
+      id: "raa-0123456789abcdef0123",
+      ownerUserId: "user-recorder",
+      materializationId: materialization.id,
+      telemetryLogId: "tel-recorder-1",
+      modelId: "mdl-recorder-1",
+      schemaVersion: "forge-recorder-admission/1.0.0",
+      verification,
+      replayFileSha256: verification.replayFileSha256,
+      frameCount: verification.frameCount,
+      durationS: verification.durationS,
+      gatewayArchiveSemanticsVerified: true,
+      recordedDeviceAttested: false,
+      deviceIdentityVerified: false,
+      fieldSessionVerified: false,
+      sharingAuthorized: false,
+      trainingReuseAuthorized: false,
+      noAutoArm: true,
+      createdAt: "2026-07-16T00:02:00.000Z",
+    },
+  };
+}
+
 test("gateway recorder client stages the sanitized plan and retains every nonclaim", async () => {
   const previousFetch = globalThis.fetch;
   let requestedBody: unknown;
@@ -178,6 +239,43 @@ test("gateway recorder client rejects checksum binding and semantic-authority dr
   globalThis.fetch = async () => Response.json({ materialization: promoted });
   try {
     await assert.rejects(completeRecorderArchive("ram-1234567890"), /state or authority has drifted/);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("gateway recorder client admits only the exact sovereign report and explicit nonclaims", async () => {
+  const previousFetch = globalThis.fetch;
+  const fixture = admissionFixture();
+  let requestedBody: unknown;
+  globalThis.fetch = async (input, init) => {
+    assert.equal(input, "/v1/recorder-archives/ram-1234567890/admit");
+    assert.equal(init?.method, "POST");
+    requestedBody = JSON.parse(String(init?.body));
+    return Response.json({ admission: fixture.admission }, { status: 201 });
+  };
+  try {
+    const admission = await admitRecorderArchive(fixture.materialization, "mdl-recorder-1");
+    assert.deepEqual(requestedBody, { modelId: "mdl-recorder-1" });
+    assert.equal(admission.gatewayArchiveSemanticsVerified, true);
+    assert.equal(admission.telemetryLogId, "tel-recorder-1");
+    assert.equal(admission.recordedDeviceAttested, false);
+    assert.equal(admission.deviceIdentityVerified, false);
+    assert.equal(admission.fieldSessionVerified, false);
+    assert.equal(admission.sharingAuthorized, false);
+    assert.equal(admission.trainingReuseAuthorized, false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+
+  const substituted = admissionFixture();
+  substituted.admission.verification.replayFileSha256 = "ff".repeat(32);
+  globalThis.fetch = async () => Response.json({ admission: substituted.admission }, { status: 201 });
+  try {
+    await assert.rejects(
+      admitRecorderArchive(substituted.materialization, "mdl-recorder-1"),
+      /identity, proof, or authority has drifted/,
+    );
   } finally {
     globalThis.fetch = previousFetch;
   }

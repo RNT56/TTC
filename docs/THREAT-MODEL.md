@@ -49,7 +49,8 @@ In scope:
 - prompt/retrieval injection and provider/tool output;
 - validator child processes and release archive verification;
 - D51 read-only local Desktop recorder-directory inspection, D52 versioned
-  status/start/stop control, and D53 private five-object materialization;
+  status/start/stop control, D53 private five-object materialization, and D54
+  sovereign server verification plus bounded telemetry admission;
 - error, log, secret-rotation, and incident boundaries.
 
 Not yet in scope as implemented public surfaces:
@@ -101,6 +102,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Local recorder directory -> Desktop/Studio | filenames, links, JSON/JSONL bytes, hashes, privacy/provenance claims, size | D51 native streaming verifier | exact five-file allowlist, non-symlink regular files, canonical strict v1 parsing, aggregate/frame/node/count bounds, index/replay/hash reconstruction, strict bounded nonclaim response, no upload |
 | Desktop Studio -> native recorder | admitted report hashes/seed, output path, D12 rig, serial-port selection, sample rate, capture consent, reload/retry intent | D52 shell-owned recorder runtime | strict control/request/port/receipt parsing; D30/D12 and OS-enumerated 115200-baud gates re-enforced natively; one exclusive recorder; exact inactive/recording/finished state; no raw frames, upload, provenance, sharing, or training promotion |
 | Desktop recorder -> object store/gateway | local five-file plan, presigned URLs/headers, mutable files, object metadata | D53 native uploader plus gateway completion | rerun D51; sanitized plan without paths/bytes; exact five names/types/sizes/hashes; one configured HTTPS or loopback origin; no credentials/redirects/system proxy; streamed sized bodies; owner-private rows; server HEAD plus bounded manifest/receipt readback; semantic/provenance/consent nonclaims remain false |
+| Private recorder objects -> native validator/Postgres | substituted/partial objects, canonical-byte drift, oversized frames, temp-file disclosure, model/hash confusion, forged authority flags | D54 object stream plus `forge-validate recorder-verify` and migration 0026 | exact five complete owner objects; bounded 30-minute/default and one-hour/max read/process timeouts; size/SHA-256 enforcement while streaming; 0700 temporary root and 0600 exclusive files; exact native archive-v1 semantics/report; cleanup before persistence; admitted-model contract/lockfile binding; bounded reference only; D53/device/field/sharing/training nonclaims remain false |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 
@@ -164,7 +166,11 @@ Direct service callers retain narrower controls:
 - object declared size: safe integer no larger than 2 GiB;
 - provider tool input: 512 KiB, depth 24, 50,000 nodes;
 - catalog/pattern summaries: 256 KiB and depth 12;
-- validator child process: 30-second timeout and 1 MiB output buffer.
+- ordinary validator child process: 30-second timeout and 1 MiB output buffer;
+- D54 recorder verification: five-object aggregate at most 512 MiB, 30-minute
+  default and one-hour maximum object-read/process timeout, 1 MiB process output,
+  and a private failure-cleaned temporary root outside the verified five-file
+  directory.
 
 Python command adapters accept at most 4 MiB JSON input, 8 MiB stdout, and 256 KiB
 stderr; run for 1 second to 8 hours; use temporary files instead of unbounded pipes;
@@ -440,6 +446,18 @@ bounded bindings only: `gatewayArchiveSemanticsVerified`, device/field identity,
 recorded-device attestation, sharing, and training reuse stay false. A later sovereign
 streaming verifier must admit archive semantics before telemetry processing.
 
+D54 supplies that separate semantics gate without mutating D53. The gateway accepts
+no archive bytes in HTTP JSON. It streams the five already-complete owner objects
+through declared length and SHA-256 checks into one private temporary root, writes
+only exclusive regular files, runs the native sovereign verifier with bounded output
+and time, and removes the root before opening the persistence transaction. Exact
+report fields are rebound to the immutable object plan and selected owned admitted
+model proof. Postgres retains one bounded object-backed reference, not frames, and
+constraints prevent device/field/sharing/training promotion. A later consent grant
+cannot bypass the explicit D45 object-backed training refusal. This closes archive-
+semantics admission but still does not authenticate the source device, operator,
+session custody, lab conditions, or field provenance.
+
 Release archives are a separate trusted-distribution path. Before extracting or
 installing, the verifier checks the archive byte ceiling, exact normalized entry
 allowlist, duplicate/traversal/absolute/drive/backslash rejection, and each member's
@@ -534,8 +552,9 @@ and tracing defaults separately; application tests cannot prove those external l
 | Cross-boundary numeric/graph/command confusion | registered 89-case import/patch/EnvSpec/replay/provider/citation/export/hardware corpus plus Rust/Python behavior and random no-panic tests | diverse real external imports, credentialed provider corpus, controlled hardware, and load/fault exercises |
 | Cross-tenant object/data access | owner-keyed routes and queries, scoped export/delete tests | production IAM and penetration test |
 | Malicious/partial upload or archive | checksum-bound PUT, staged-until-exact HEAD completion, staged download/consent refusal, MIME/name refusal, forced download, exact release archive allowlist/caps | provider IAM/checksum audit and quarantine scanner for any future importer |
+| Recorder semantic/model/temp-file substitution | exact five-object streaming checks, private exclusive temp files, native canonical verifier, cleanup-before-persist, report/object/model cross-binding, authority constraints, D45 reference refusal | production object IAM/logging, process sandbox, concurrency/load exercise, and reviewed device attestation |
 | Malicious/inconsistent local recorder directory | exact five-file/non-symlink allowlist, strict canonical v1 parser, streaming byte/node/frame/count caps, exact sparse-index/replay/hash checks, bounded no-frame response, authority-nonclaim tests | OS-level race-resistant handles and signed/device-attested evidence only if a future provenance design requires them |
-| Recorder upload URL/file substitution | rerun local verifier, sanitized exact plan, five checksum-bound private PUTs, pinned origin, no redirect/proxy, exact signed headers, server HEAD and bounded manifest/receipt readback, permanent semantic/provenance nonclaims | production object IAM/TLS/access-log proof, orphan reconciliation, race-resistant file handles, and sovereign server streaming archive admission |
+| Recorder upload URL/file substitution | rerun local verifier, sanitized exact plan, five checksum-bound private PUTs, pinned origin, no redirect/proxy, exact signed headers, server HEAD and bounded manifest/receipt readback, then D54 five-object native semantic admission with immutable provenance nonclaims | production object IAM/TLS/access-log proof, orphan reconciliation, race-resistant file handles, process sandbox/load proof, and reviewed device attestation |
 | Worker command exfiltration/DoS | bounded stdin/stdout/stderr/time/process-group tests; generic failures | container sandbox, egress and resource quota proof |
 | MuJoCo parity scene/file abuse or evidence drift | 4 MiB/512 KiB bounds, exact source/schema/request-hash/engine identity, contract-marker/radian checks, external include/asset/plugin/file refusal, matched timestep/substeps, required real-engine CI artifact | non-root container/filesystem isolation and reviewed engine-upgrade evidence |
 | Provider replay/late result | lease-fenced expiry/reclaim, stale duplicate discard, one-time materialization, retry ceiling, and cancellation authority tests | multi-replica outage/partition drill, dead-letter reconciliation, or callback signature/replay suite |
@@ -575,7 +594,7 @@ Before any production/live-provider claim:
 | Uploaded bytes are integrity-checked, not semantically quarantined | exact length/type/checksum does not detect malicious valid-format content; import intentionally absent | security/compute before any archive or active-content importer |
 | D51 local recorder inspection is self-consistency, not authenticity | a local actor can coherently rewrite archive bytes and receipt; cross-file checks are unsigned and path inspection is not an OS snapshot | P8 reviewed adapter/device attestation plus signed/retained external evidence before recorded-device, lab, or field claims |
 | D52 local recorder control is shell state, not device or session proof | admitted hashes, exact consent, an enumerated path, and reload-stable status identify intended local capture mechanics but not the physical source, operator custody, host suspend, or field conditions | P8 reviewed adapter/device identity, signed/retained D12 evidence, suspend tests, and controlled lab/field acceptance |
-| D53 object materialization is not archive admission | object metadata plus bounded manifest/receipt bindings do not replay every frame/index byte and do not authenticate who or what produced a coherently rewritten archive | P8 sovereign server streaming verification, reviewed adapter/device attestation, production object operations, and lab/field evidence before telemetry/device claims |
+| D54 archive admission is self-consistency, not authenticity | native replay of every canonical frame/index byte proves retained archive semantics, but the unsigned source may still be a coherently rewritten local archive and no unique device/session identity exists | P8 reviewed adapter/device attestation, production object operations, suspend tests, and lab/field evidence before recorded-device or field claims |
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |

@@ -183,7 +183,7 @@ Postgres adapter schema, GitHub OAuth provider wiring, `/v1/me`, user-owned
 can use the explicit development header path; production auth is cookie/session
 based.
 
-Live locally 2026-07-16: `/v1/account/export` emits versioned user-data format 1.5.0
+Live locally 2026-07-16: `/v1/account/export` emits versioned user-data format 1.6.0
 from a repeatable owner-scoped snapshot with authenticated blob download endpoints
 and no OAuth/session/verification/provider secrets. Exact-confirmation
 `DELETE /v1/account` explicitly purges account, photo/model/generated/blob,
@@ -202,8 +202,12 @@ gate. Hold mutation, backup registration/restore evaluation, and deletion share
 globally ordered transaction-scoped user/object authority locks. The real Postgres state machine
 is green; live encrypted backup/restore and DR remain `OPS-005`.
 Recorder archive materialization rows are exported and deleted before their five
-private object records. The export retains the sanitized plan/object metadata only;
-archive bytes, local paths, and presigned URLs are excluded.
+private object records. The export retains the sanitized plan/object metadata;
+recorder archive admission rows and their bounded object-backed telemetry references
+are also exported and deleted without replay frames. D53 object integrity remains
+separate from D54 semantic admission, and neither is device/field provenance or
+sharing/training authority. Archive bytes, local paths, and presigned URLs are
+excluded.
 
 ## 8. Dependencies
 

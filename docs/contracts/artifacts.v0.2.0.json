@@ -75,7 +75,7 @@
       "versionField": "schemaVersion"
     },
     "userDataExport": {
-      "current": "1.5.0",
+      "current": "1.6.0",
       "supportedMajors": [
         1
       ],
@@ -131,6 +131,17 @@
       "uploadPlanSchema": "forge-recorder-upload-plan/1.0.0",
       "uploadReceiptSchema": "forge-recorder-upload/1.0.0",
       "versionRule": "the sanitized five-file upload plan, private checksum-bound object roles, native same-origin streaming upload receipt, gateway object-integrity state, and false archive-semantics/device/field/sharing/training authority are major-version semantics"
+    },
+    "recorderArchiveAdmission": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-recorder-admission",
+      "versionField": "schemaVersion",
+      "verificationSchema": "forge-recorder-verification/1.0.0",
+      "telemetryReferenceSchema": "forge-recorder-telemetry-reference/1.0.0",
+      "versionRule": "sovereign native archive verification, exact materialization/model/replay bindings, object-backed telemetry reference semantics, and false device/field/sharing/training authority are major-version semantics"
     },
     "workerArtifacts": {
       "current": "0.2.0",
