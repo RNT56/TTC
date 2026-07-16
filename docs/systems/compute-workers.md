@@ -1,22 +1,24 @@
 # Compute Workers (Python plane) — implementation doc
 
 **Status:** Deterministic worker plane implemented across all families; native
-Anthropic ETL and queued vendor normalization at contract/fixture maturity; live
-GPU/provider stacks remain adapter-backed · **Phases:** P3/P4 (ETL), P5
+Anthropic ETL and queued vendor normalization at contract/fixture maturity; exact
+Modal training deployment controls exist as an unprotected contract/fixture candidate,
+while credentialed GPU/provider proof remains gated · **Phases:** P3/P4 (ETL), P5
 (photoscan), P6 (OCCT full), P7 (training), P11 (commerce) ·
 **Home:** `workers/` · **Plan refs:** §5.2, §6, §8.3
 (v3.0) · **Decisions:** D13 (refit acceptance), D16 (Python plane unmoved), D27
 (fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue), D41
 (task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
-trainer authority)
+trainer authority), D45 (offline source authority), D46 (Modal deployment authority)
 
 ## 1. Purpose
 
 The Python 3.12 plane where the ML/geometry ecosystem's gravity is: TRELLIS, COLMAP,
 trimesh, MuJoCo, OCCT bindings, SB3. Queue-driven processes with **no public network
 surface** — they consume graphile-worker jobs and write results transactionally to
-Postgres + object storage. GPU work bursts to Modal/RunPod and **results are cached
-forever** (a photoscan or training artifact is never recomputed for the same inputs).
+Postgres + object storage. GPU work may burst to a reviewed provider; successful
+artifacts are content-addressed and reused while their owning retention policy permits.
+No provider transport or cache key creates indefinite-retention authority.
 
 ## 2. Worker framework
 
@@ -249,10 +251,20 @@ pin drift, non-float64 JAX, request/source/hash drift, non-finite state, parity-
 failure, missing measurements, or accidental decision eligibility. The artifact is
 measured evidence, not a committed golden.
 
-The optional Modal app profiles `train.policy` for SB3/MuJoCo/ONNX dependencies and
-`codesign.evaluate` for MuJoCo/Optuna plus the live co-design/parity/MJX command
-hooks; deployments still need real images, credentials, and benchmark evidence
-before claiming live GPU SLOs.
+The optional Modal app retains planning profiles for other families, but D46 makes
+only `train.policy` deployable under this lane. With an explicit source revision it
+constructs exact SDK 1.5.2 app/function identity, Python 3.12 image dependencies, one
+L4, four CPUs, 16 GiB memory, 20 GiB ephemeral disk, `eu-west`, one single-use
+container, zero provider retries, eight-hour ceiling, blocked network, restricted
+Modal API access, and no function secrets. The submitting worker requires the exact
+environment/function-version/source/contract hash, compiles the Rust training bundle
+locally, projects only reviewed training controls plus the bundle across the provider
+boundary, records the FunctionCall before waiting, and rejects result/device drift.
+Arbitrary fields, model snapshots, and credential-shaped extras never enter provider
+transport; an ambiguous persisted call reattaches by ID instead of spawning a replacement.
+`codesign.evaluate`, photoscan, and offline-training profile presence does not inherit
+this maturity. Real provider, billing, SLO, cancellation, retention/deletion, and
+recovery evidence remain required by [`../MODAL-OPERATIONS.md`](../MODAL-OPERATIONS.md).
 
 ### 3.5 `workers/bridge` — config, recorder, supervisor (P8)
 `bridge.config-diff` compiles deployment config diffs with physical-confirmation
@@ -324,15 +336,27 @@ provider `mujoco-python-3.9.0`, matched timing, unchanged bands, and a passing r
 
 ## 4. GPU burst policy
 
-Burst-only (Modal by default): no idle deployed GPU. Job cost is metered to credits (D3) at
-transparent cost-plus. Permanent caching is the cost ceiling: cache key =
-content hash of inputs (photos / contract+lockfile+task+seed). The fixture adapter is
-the default; live Modal jobs require deployment configuration and are optional smoke
-tests, not CI prerequisites. D43 separately allows CPU PPO on a declared GPU-capable
+Burst-only: no idle deployed GPU. Job cost is metered to credits (D3), while provider
+billing is independently reconciled and never inferred from product credits. Shared
+active-job and UTC-day credit caps live in Postgres; an idempotent new job debits once,
+and owner cancellation reverses that debit only before artifact materialization.
+Cancellation releases active capacity but never subtracts the launch from the daily
+ceiling because provider billing can still arrive later.
+Lagged provider cost enters authority only through the operator reconciliation
+transaction's exact call/report/amount binding; same-input replay is idempotent and a
+conflicting report or amount fails closed.
+Recovery exhaustion retains the unresolved call as `submitted` with no fabricated
+provider-completion time, so operators can reattach or terminate that exact identity.
+Content-addressed reuse is a secondary cost control, subject to lifecycle policy. The
+fixture adapter is the default. D46 Modal execution requires the complete reviewed
+deployment identity and remains disabled otherwise; contract tests are required CI,
+while a credentialed run is explicit protected-revision acceptance evidence, never an
+optional smoke presented as live truth. D43 separately allows CPU PPO on a declared GPU-capable
 consumer host when a same-workload exact-host pilot shows the MLP policy is faster
 on CPU; the accelerator is inventoried but never claimed as the training backend.
-MPS diagnostics forbid CPU fallback. Modal runtime profiles are test-covered in CI, but
-performance and provider billing are proved only by explicit live suites.
+MPS and CUDA diagnostics forbid fallback. Modal contract/fixture controls are tested
+in CI, but performance, provider billing, alerts, deletion, cancellation, and recovery
+are proved only by the exact P7-013 sandbox suite.
 
 ## 5. Dependencies
 

@@ -25,6 +25,8 @@ const photoscanId = `db-scan-${suffix}`;
 const replayId = `db-replay-${suffix}`;
 const policyId = `db-policy-${suffix}`;
 const policyJobId = `db-policy-job-${suffix}`;
+const modalJobId = `db-modal-job-${suffix}`;
+const modalCallId = `fc-db-user-data-${suffix}`;
 const courseId = `db-course-${suffix}`;
 const telemetryId = `db-telemetry-${suffix}`;
 const listingId = `db-listing-${suffix}`;
@@ -109,6 +111,28 @@ try {
     [policyId, user.id, policyJobId, modelId, blobId],
   );
   await pool.query(
+    `INSERT INTO jobs (
+       id, owner_user_id, kind, status, provider, input, output, cost_credits,
+       provider_call_id, provider_function_version, provider_environment,
+       provider_deployment_contract_hash, provider_submitted_at,
+       provider_completed_at, provider_cost_usd, provider_billing_report_id,
+       provider_cost_reconciled_at, started_at, finished_at
+     ) VALUES ($1, $2, 'train.policy', 'succeeded', 'modal', '{}'::jsonb,
+               '{"artifactKind":"policy","delivery":{"objectBacked":true}}'::jsonb, 1,
+               $3, 17, 'db-user-data', $4, now() - interval '1 minute', now(), 0.25,
+               $5, now(), now() - interval '1 minute', now())`,
+    [modalJobId, user.id, modalCallId, "e".repeat(64), `billing-user-data-${suffix}`],
+  );
+  await pool.query(
+    `INSERT INTO job_provider_calls (
+       call_id, job_id, attempt, provider, function_version, environment,
+       deployment_contract_hash, status, submitted_at, completed_at, provider_cost_usd,
+       billing_report_id, cost_reconciled_at
+     ) VALUES ($1, $2, 1, 'modal', 17, 'db-user-data', $3, 'succeeded',
+               now() - interval '1 minute', now(), 0.25, $4, now())`,
+    [modalCallId, modalJobId, "e".repeat(64), `billing-user-data-${suffix}`],
+  );
+  await pool.query(
     `INSERT INTO courses (id, owner_user_id, name, env_spec)
      VALUES ($1, $2, 'DB user-data course', '{"formatVersion":"1.0.0"}'::jsonb)`,
     [courseId, user.id],
@@ -161,7 +185,17 @@ try {
   assert.equal(exported.data.courses.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
   assert.equal(exported.data.consentEvents.length, 1);
-  assert.equal(exported.formatVersion, "1.3.0");
+  assert.equal(exported.data.jobProviderCalls.length, 1);
+  assert.equal(exported.data.jobProviderCalls[0].callId, modalCallId);
+  assert.equal(exported.data.jobProviderCalls[0].jobId, modalJobId);
+  assert.equal(exported.data.jobProviderCalls[0].providerCostUsd, "0.25");
+  assert.equal(exported.data.jobProviderCalls[0].billingReportId, `billing-user-data-${suffix}`);
+  assert.ok(exported.data.jobProviderCalls[0].costReconciledAt);
+  const exportedModalJob = exported.data.jobs.find((job) => job.id === modalJobId);
+  assert.equal(exportedModalJob.providerCostUsd, "0.25");
+  assert.equal(exportedModalJob.providerBillingReportId, `billing-user-data-${suffix}`);
+  assert.ok(exportedModalJob.providerCostReconciledAt);
+  assert.equal(exported.formatVersion, "1.4.0");
   assert.equal(exported.data.policyArtifacts[0].jobId, policyJobId);
   assert.equal(exported.data.policyArtifacts[0].policyMetadata.delivery.objectBacked, true);
   assert.equal(exported.data.lifecycleLegalHolds.length, 0);
@@ -214,7 +248,8 @@ try {
        (SELECT count(*) FROM marketplace_usage_rollups WHERE listing_id = $11) AS marketplace_usage_rollups,
        (SELECT count(*) FROM print_quote_requests WHERE id = $12) AS print_quote_requests,
        (SELECT count(*) FROM print_quote_offers WHERE id = $13) AS print_quote_offers,
-       (SELECT count(*) FROM user_consent_events WHERE id = $14) AS user_consent_events`,
+       (SELECT count(*) FROM user_consent_events WHERE id = $14) AS user_consent_events,
+       (SELECT count(*) FROM job_provider_calls WHERE call_id = $15) AS job_provider_calls`,
     [
       user.id,
       user.email,
@@ -230,6 +265,7 @@ try {
       quoteRequestId,
       quoteOfferId,
       consentId,
+      modalCallId,
     ],
   );
   for (const [name, count] of Object.entries(residue.rows[0])) {

@@ -61,15 +61,24 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
     if (text.includes("FROM telemetry_logs")) {
       return { rows: [{ id: "tel-1", tape: { samples: 2 } }], rowCount: 1 } as never;
     }
+    if (text.includes("FROM job_provider_calls")) {
+      return {
+        rows: [{ callId: "fc-export-1", jobId: "job-modal-1", status: "succeeded" }],
+        rowCount: 1,
+      } as never;
+    }
     return { rows: [], rowCount: 0 } as never;
   });
 
   const exported = await exportUserData(db, user);
-  assert.equal(exported.formatVersion, "1.3.0");
+  assert.equal(exported.formatVersion, "1.4.0");
   assert.equal(exported.subject.userId, user.id);
   assert.equal(exported.data.account.length, 1);
   assert.equal(exported.data.authenticationProviders.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
+  assert.deepEqual(exported.data.jobProviderCalls, [
+    { callId: "fc-export-1", jobId: "job-modal-1", status: "succeeded" },
+  ]);
   assert.deepEqual(exported.objectDownloads, [
     { blobId: "obj-1", accessEndpoint: "/v1/blobs/obj-1/access" },
   ]);
@@ -245,7 +254,7 @@ test("account routes require authentication and explicit destructive confirmatio
     });
     assert.equal(exported.statusCode, 200, exported.body);
     assert.match(exported.headers["content-disposition"] ?? "", /forgedttc-user-data-/);
-    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.3.0");
+    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.4.0");
 
     const lifecycle = await app.inject({
       method: "GET",

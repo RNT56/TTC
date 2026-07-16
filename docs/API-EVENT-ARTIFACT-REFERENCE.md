@@ -67,6 +67,7 @@ of the OpenAPI request body, persistence, examples, or response schemas.
 | `GET /v1/jobs/capabilities` | List configured worker capabilities and live gates | session | fixture | 200 |
 | `GET /v1/jobs/:id` | Read an owner job and optional events | session | fixture | 200 |
 | `GET /v1/jobs/:id/events` | Read ordered persisted job lifecycle events | session | fixture | 200 |
+| `DELETE /v1/jobs/:id` | Cancel an owned queued or running job and reverse an eligible pre-materialization credit debit | session | fixture | 200, 404, 409 |
 | `POST /v1/jobs` | Create an idempotent fixture or gated worker job | session | fixture | 201 |
 | `GET /v1/photoscan/artifacts` | List owner photoscan artifacts | session | fixture | 200 |
 | `PATCH /v1/photoscan/artifacts/:id/alignment` | Record reviewed photoscan scale, axes, and ports | session | fixture | 200 |
@@ -127,7 +128,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `replay` | 1.0.0 | major 1 |
 | `envSpec` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
-| `userDataExport` | 1.3.0 | major 1 |
+| `userDataExport` | 1.4.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |
 | `accountDeletionReceipt` | 2.0.0 | major 2 |
 | `dataLifecycle` | 1.0.0 | major 1 |

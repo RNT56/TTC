@@ -206,6 +206,21 @@ through the bounded OPS-006 operator path rather than weakening the lease fence.
     the normal scorecard without special thresholds. Controlled synthetic pairs prove
     the path, not recorder/device provenance, learning quality, transfer, or field
     maturity (D45).
+    Deployed training must narrow provider choice into an exact reviewed contract:
+    immutable source/deployment/function/image identity, exact accelerator with no
+    fallback, zero provider-side retries, no function secrets or unreviewed egress,
+    an explicit remote-input allowlist, a durable provider-call ID before waiting,
+    and D38 lease polling. Reject arbitrary payload extras before enqueue and omit the
+    owner/model snapshot from provider transport. Once a call ID is persisted, treat
+    every ambiguous result as recovery-only rather than replacement authority.
+    Serialize shared active/spend limits in the database; debit only a newly inserted idempotent job;
+    release active capacity on cancellation without refunding the daily launch ceiling;
+    cancel product authority before provider work; reject late output; and keep a
+    product-credit reversal distinct from provider billing. Contract tests do not
+    establish deployment maturity. Close the sandbox only from a clean protected
+    revision with real run/device, billing/tag, hard-stop, alert/SLO, cancellation,
+    deletion, and no-duplicate recovery evidence validated by the owning schema
+    (D46/P7-013).
 15. **Accelerator benchmarks** — compare the same Rust-derived model, initial state,
     controls, solver, precision, timestep, and step count. Warm each path before
     timing, measure JAX lowering/compilation separately, synchronize every timed JAX

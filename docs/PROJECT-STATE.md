@@ -247,10 +247,25 @@ short scorecards remain correctly blocked. This closure does not claim recorder/
 device/field telemetry, learning quality, passing-policy delivery, transfer, deployed
 GPU operations, or external acceptance.
 
+P7-013 has an unprotected D46 contract/fixture candidate on branch
+`codex/p7013-deployment-control`, based on exact protected `28191bfe`. It narrows
+Modal training to exact SDK 1.5.2 and one source-bound Python 3.12/L4 function with
+no provider retries, function secrets, egress, or CPU fallback. The sovereign Rust
+bundle is compiled locally; every FunctionCall ID/attempt is persisted before wait;
+D38 cancellation terminates provider work and rejects late output. Migration 0024,
+the additive owner cancellation route, shared Postgres active/UTC-day-credit quota,
+debit/refund authority, user-data export 1.4.0, strict sandbox-evidence validator,
+and operator runbook are implemented with deterministic tests. No credentialed Modal
+call, deployment, billing, alert, verified automatic provider-call expiry, or recovery
+result is retained,
+and this branch has not yet passed protected PR/post-merge checks. P7-013 remains
+`[~]`; only the exact real-run procedure in `MODAL-OPERATIONS.md` can close it.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
+| P7-013 deployment-control candidate | unprotected branch `codex/p7013-deployment-control` passes the exact Python 3.12 40-step local gate: 218/218 workers, 65/65 gateway with the real validator, 15/15 compatibility surfaces, 77 generated routes, 17 worker families, 24 migration sources, and all native training/offline/MJX smokes | proves the D46 contract/fixture and fail-closed CUDA/deployment/call/quota/cancellation/refund/recovery boundaries on the local tree. Local Docker is unavailable, so the isolated Postgres acceptance remains a required PR check; no deployment, credentialed L4 call, billing, alert, automatic provider expiry, recovery drill, or production result is claimed |
 | Git state | latest verified protected runtime descendant is P7-009 anchor `2c7562d`. P7-014 reconciliation anchor `f0bb4e2`, ground-training anchor `90b1691`, P7-012 retained-evidence anchor `6bfa60f`, implementation anchor `8e094c0`, P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` published | PR #77 exact head `8cb70c4` and protected `2c7562d` passed CI/security; exact-main CI `29456064537` and security `29456064498` are green. Artifact `8359446894` owns the source-bound offline-training evidence at JSON SHA-256 `d1fe7f7a…ac66`; PR #75 artifact `8356753424` remains the owning four-task trainer evidence |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 40 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact PR and post-merge security for the additive P7-009 dependency/profile path are green |

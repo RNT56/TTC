@@ -18,6 +18,55 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-15 — Implement fail-closed Modal training operations
+**Session:** Codex agent · branch `codex/p7013-deployment-control` · **Phase:** P7 ·
+**TODO items:** P7-013 [~]
+**Done:** Implemented the unprotected D46 contract/fixture candidate on exact protected
+base `28191bfe12bd2e605767cc92a4943db33b3244ef` without claiming a deployment,
+credentialed GPU call, billing result, alert, provider expiry result, or production
+maturity. Modal training is narrowed to exact SDK 1.5.2 and one source-bound Python
+3.12/L4 function with exact dependencies, zero provider retries, no function secrets,
+blocked egress, restricted Modal access, a single-use container, and no CPU fallback.
+The gateway rejects arbitrary Modal input fields; the worker projects only reviewed
+training controls plus the sovereign Rust bundle, never the owner/model snapshot or
+credential-shaped extras. It persists the FunctionCall ID before waiting, reattaches
+every ambiguous persisted call by ID after transport/process ambiguity, cancels on
+revoked authority or timeout, and rejects deployment/result drift and late output.
+Exhausted recovery keeps the exact call submitted without fabricating provider
+completion, and function versions remain exact across JavaScript-safe and Postgres
+64-bit storage boundaries.
+Migration 0024, a serializable global active/UTC-day-credit quota, debit-after-new-row
+idempotency, owner-only cancellation, exact pre-materialization product-credit
+reversal without reopening the conservative daily launch ceiling, provider-attempt
+history, user-data export 1.4.0, and the additive job-delete
+route are implemented. An operator-only serializable command binds a lagged provider
+report ID, exact USD amount, and reconciliation time to both job and call, replays
+idempotently, refuses conflicting cost authority, and emits one audit event. The strict
+sandbox-evidence validator requires a clean
+protected source, exact deployment identity, successful CUDA/L4 evidence, billing/tag
+attribution, delivered alerts/SLO, spend stop, cancellation, application-artifact
+deletion, verified automatic provider-call expiry within seven days, and recovery
+without replacement output. The exact Python 3.12 local gate passes all 40 steps with
+218 worker tests, 65 gateway tests, 15 compatibility surfaces, 77 generated routes,
+17 worker families, 24 migration sources, and all native training/offline/MJX smokes.
+Focused Modal tests pass 31/31; the complete SB3/MuJoCo runtime file passes 27/27.
+The isolated deployment-extra audit reports no known Python vulnerabilities.
+**Changed:** Modal deployment contract, adapter, CUDA trainer and evidence validator;
+Postgres queue/migration/integration acceptance; gateway quota/cancellation/export
+surfaces; workflow dependency installation; generated API/artifact contracts;
+compatibility, roadmap, status, security, lifecycle, system, governance, risk,
+operator, agent, and golden-review documentation.
+**Decisions:** D46 makes the product database sovereign over provider identity,
+cancellation, retry, quota, credit, and recovery authority; R29 tracks deployed-
+training cost, retention, cancellation, and duplicate-output risk.
+**Next:** Protect this candidate through PR CI/security and the isolated database job,
+then deploy only that clean protected revision and execute the credentialed seven-day
+sandbox procedure in `docs/MODAL-OPERATIONS.md`.
+**Blockers:** The local Docker daemon is unavailable, so the real Postgres migration/
+quota/recovery scripts require the PR database job. Modal credentials, provider spend,
+lagged billing, alert delivery, and seven-day expiry evidence remain intentionally
+external and cannot be inferred from this candidate.
+
 ## 2026-07-15 — Protect source-bound offline fine-tuning
 **Session:** Codex agent · branch `codex/p7009-protected-evidence` · **Phase:** P7 ·
 **TODO items:** P7-009 [x]

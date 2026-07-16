@@ -9,7 +9,7 @@ import {
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.3.0";
+export const USER_DATA_EXPORT_VERSION = "1.4.0";
 export const ACCOUNT_DELETION_RECEIPT_VERSION = "2.0.0";
 
 interface ExportDataset {
@@ -83,6 +83,18 @@ const exportDatasets: readonly ExportDataset[] = [
     key: "jobs",
     sql: `SELECT id, kind, status, provider, idempotency_key AS "idempotencyKey", input, output, error,
                  cost_credits AS "costCredits", attempts,
+                 provider_call_id AS "providerCallId",
+                 provider_function_version AS "providerFunctionVersion",
+                 provider_environment AS "providerEnvironment",
+                 provider_deployment_contract_hash AS "providerDeploymentContractHash",
+                 provider_submitted_at AS "providerSubmittedAt",
+                 provider_completed_at AS "providerCompletedAt",
+                 provider_cancelled_at AS "providerCancelledAt",
+                 provider_cost_usd AS "providerCostUsd",
+                 provider_billing_report_id AS "providerBillingReportId",
+                 provider_cost_reconciled_at AS "providerCostReconciledAt",
+                 cancel_requested_at AS "cancelRequestedAt",
+                 credit_refunded_at AS "creditRefundedAt",
                  created_at AS "createdAt",
                  started_at AS "startedAt", finished_at AS "finishedAt"
             FROM jobs WHERE owner_user_id = $1 ORDER BY created_at, id`,
@@ -92,6 +104,18 @@ const exportDatasets: readonly ExportDataset[] = [
     sql: `SELECT e.id, e.job_id AS "jobId", e.event, e.payload, e.created_at AS "createdAt"
             FROM job_events e JOIN jobs j ON j.id = e.job_id
            WHERE j.owner_user_id = $1 ORDER BY e.id`,
+  },
+  {
+    key: "jobProviderCalls",
+    sql: `SELECT c.call_id AS "callId", c.job_id AS "jobId", c.attempt, c.provider,
+                 c.function_version AS "functionVersion", c.environment,
+                 c.deployment_contract_hash AS "deploymentContractHash", c.status,
+                 c.submitted_at AS "submittedAt", c.completed_at AS "completedAt",
+                 c.cancelled_at AS "cancelledAt", c.provider_cost_usd AS "providerCostUsd",
+                 c.billing_report_id AS "billingReportId",
+                 c.cost_reconciled_at AS "costReconciledAt"
+            FROM job_provider_calls c JOIN jobs j ON j.id = c.job_id
+           WHERE j.owner_user_id = $1 ORDER BY c.submitted_at, c.call_id`,
   },
   {
     key: "photoscanArtifacts",

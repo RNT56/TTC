@@ -452,6 +452,58 @@ def test_mps_device_refuses_non_apple_host(monkeypatch):
         _training_device("mps")
 
 
+def test_cuda_device_refuses_non_linux_host(monkeypatch):
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    with pytest.raises(RuntimeError, match="reviewed Linux deployment runtime"):
+        _training_device("cuda")
+
+
+def test_cuda_device_refuses_cpu_only_torch_build(monkeypatch):
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr("torch.version.cuda", None)
+    with pytest.raises(RuntimeError, match="does not include CUDA support"):
+        _training_device("cuda")
+
+
+def test_cuda_device_refuses_unavailable_container_gpu(monkeypatch):
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr("torch.version.cuda", "13.0")
+    monkeypatch.setattr("torch.cuda.is_available", lambda: False)
+    with pytest.raises(RuntimeError, match="not available in this container"):
+        _training_device("cuda")
+
+
+def test_cuda_device_authority_is_exact_and_forbids_cpu_fallback(monkeypatch):
+    class Properties:
+        total_memory = 24 * 1024**3
+
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr("torch.version.cuda", "13.0")
+    monkeypatch.setattr("torch.cuda.is_available", lambda: True)
+    monkeypatch.setattr("torch.cuda.device_count", lambda: 1)
+    monkeypatch.setattr("torch.cuda.current_device", lambda: 0)
+    monkeypatch.setattr("torch.cuda.get_device_name", lambda _index: "NVIDIA L4")
+    monkeypatch.setattr("torch.cuda.get_device_capability", lambda _index: (8, 9))
+    monkeypatch.setattr("torch.cuda.get_device_properties", lambda _index: Properties())
+    monkeypatch.setattr("torch.backends.cudnn.version", lambda: 91002)
+
+    assert _training_device("cuda") == "cuda"
+    assert _device_authority("cuda") == {
+        "requested": "cuda",
+        "resolved": "cuda",
+        "accelerator": True,
+        "backend": "cuda",
+        "name": "NVIDIA L4",
+        "deviceIndex": 0,
+        "deviceCount": 1,
+        "computeCapability": "8.9",
+        "totalMemoryBytes": 24 * 1024**3,
+        "cudaRuntime": "13.0",
+        "cudnnVersion": 91002,
+        "cpuFallbackAllowed": False,
+    }
+
+
 @pytest.mark.skipif(
     not __import__("torch").backends.mps.is_available(),
     reason="MPS consumer hardware is not available",

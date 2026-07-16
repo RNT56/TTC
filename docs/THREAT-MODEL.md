@@ -74,7 +74,7 @@ provider, or hardware authority is a threat-model change and cannot inherit a ge
 | Models, photos, telemetry, replays, policies | tenant isolation, consent, retention, export/delete authority |
 | Catalog/license/review rows | immutable revision/review evidence; no unreviewed generated use |
 | Validator reports and admitted contracts | deterministic integrity; no UI/provider override |
-| Jobs, credits, quotes, external offers | idempotency, bounded cost, authorization, provider evidence |
+| Jobs, provider-call identities, credits, quotes, external offers | idempotency, bounded cost, authorization, provider evidence |
 | Release artifacts | checksums, exact contents, bounded extraction, provenance, install proof |
 | Audit evidence | append-only or causal where specified; minimal content; redacted errors |
 
@@ -93,6 +93,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Gateway -> provider | URL, DNS, remote response | bounded transport adapter | exact HTTPS host, no credentials/fragments/redirects, resolution check, timeout, byte/type/JSON caps |
 | Gateway -> object store | owner key, MIME, declared size/checksum | presign/inspection/deletion adapter | explicit config, scoped key, declared length/type plus signed checksum, staged-until-inspected completion, short expiry, forced download, delete-before-commit |
 | Queue -> worker | job payload and deployment config | worker dispatcher/adapter | kind allowlist, consent/cancellation, bounded JSON/network/process/result, opaque expiring attempt fence |
+| Worker -> Modal function | sovereign bundle plus deployment identity | D46 adapter and exact function | durable call ID before wait, exact SDK/source/function/L4, no fallback/retry/secret/egress, lease polling, bounded result evidence |
 | Provider/command -> validator | arbitrary contract/artifact/result | validator and license/admission gates | allowlisted result fields, provenance, bounded process, sovereign verdict |
 | Import/course/replay -> core | XML/JSON numbers, graph identities, pointers, timestamps | forge-contract/forge-sim boundary | byte cap, finite SI/time, valid graph/pointer/schema, strict order, no-panic corpus |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
@@ -212,6 +213,23 @@ timeout. The strict tool envelope contains only `canonicalRowJson` and
 `sourceConflicts`; local parsing re-applies byte/depth/node/non-finite/prototype-key
 guards and catalog identity, mass, confidence, license, price, and citation checks.
 
+D46 narrows Modal training to one exact source-bound function. The gateway takes a
+shared Postgres advisory lock, enforces active and UTC-day credit ceilings, inserts
+the idempotent job, and debits only the new row. A product refund releases the active
+slot but never erases the launch from the daily ceiling, so cancellation cannot reopen
+unbounded provider authority while billing lags. The worker compiles the Rust bundle
+locally, projects only the reviewed training fields plus compiled bundle across the
+provider boundary, and persists the FunctionCall ID/attempt before waiting. Arbitrary
+payload fields are rejected at the gateway and function; an ambiguous persisted call
+must be recovered by ID and never authorizes replacement work. The function uses
+exact SDK 1.5.2, Python 3.12, one L4, one single-use container, zero provider retries,
+no function secrets, blocked network, restricted Modal access, and an eight-hour
+ceiling; CUDA must resolve exactly without CPU fallback. Owner cancellation revokes
+the D38 lease before provider termination and late-result discard. Product-credit
+reversal is not provider-billing truth. Recorded-device/personal input is forbidden,
+and credentialed sandbox maturity requires validated billing/tag, hard-stop,
+alert/SLO, cancellation, retention/deletion, and recovery evidence.
+
 These are admission ceilings, not capacity promises. Infrastructure must also cap
 concurrent requests, worker concurrency, CPU, memory, disk, queue depth, and job cost.
 
@@ -257,6 +275,13 @@ and error redaction only; no real provider/proxy/APM log has been inspected.
   and recording only time, operator, scope, and outcome.
 - Never paste secret values into an incident, changelog, test output, URL, or support
   ticket. The public redactor is defense in depth, not permission to log secrets.
+
+Modal tokens are submitting-worker deployment credentials only. They must not enter
+the function secret set, image, job input, FunctionCall result, gateway response,
+account export, tag, log, or retained evidence. Use a dedicated environment/service
+identity, rotate it independently, and keep the exact environment/function/source/
+contract identity as non-secret deployment evidence. Token presence alone never
+enables a maturity claim.
 
 Automated secret-manager reload and scheduled rotation evidence remain operational
 work. Startup validation proves configuration shape, not custody or rotation.

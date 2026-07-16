@@ -115,6 +115,32 @@ async function assertCurrentLedger(client) {
   );
   assert.equal(offline.rowCount, 1);
   await client.query("DELETE FROM jobs WHERE id = $1", [offline.rows[0].id]);
+  assert.ok((await client.query("SELECT to_regclass('job_provider_calls') AS name")).rows[0].name);
+  const modalJob = await client.query(
+    `INSERT INTO jobs (
+       kind, status, provider, input, provider_call_id, provider_function_version,
+       provider_environment, provider_deployment_contract_hash, provider_submitted_at
+     )
+     VALUES (
+       'train.policy', 'queued', 'modal', '{}'::jsonb, 'fc-qa004-current', 9007199254740991,
+       'qa004', $1, now()
+     )
+     RETURNING id`,
+    ["d".repeat(64)],
+  );
+  await client.query(
+    `INSERT INTO job_provider_calls (
+       call_id, job_id, attempt, provider, function_version, environment,
+       deployment_contract_hash, submitted_at
+     )
+     VALUES ('fc-qa004-current', $1, 1, 'modal', 9007199254740991, 'qa004', $2, now())`,
+    [modalJob.rows[0].id, "d".repeat(64)],
+  );
+  assert.equal(
+    Number((await client.query("SELECT count(*) AS n FROM job_provider_calls WHERE job_id = $1", [modalJob.rows[0].id])).rows[0].n),
+    1,
+  );
+  await client.query("DELETE FROM jobs WHERE id = $1", [modalJob.rows[0].id]);
   return rows;
 }
 
@@ -134,6 +160,7 @@ async function populatePredecessor(client, prefix) {
     ambiguousPolicyBlobB: `qa004-policy-blob-ambiguous-b-${prefix}`,
     ambiguousPolicyArtifactA: `qa004-policy-ambiguous-a-${prefix}`,
     ambiguousPolicyArtifactB: `qa004-policy-ambiguous-b-${prefix}`,
+    modalJob: `qa004-modal-job-${prefix}`,
     course: `qa004-course-${prefix}`,
     leaderboard: `qa004-leaderboard-${prefix}`,
     consentParent: `qa004-consent-parent-${prefix}`,
@@ -370,6 +397,15 @@ async function populatePredecessor(client, prefix) {
     );
   }
 
+  if (prefix >= 23) {
+    fixtureFamilies.push("modal-operation-predecessor");
+    await client.query(
+      `INSERT INTO jobs (id, owner_user_id, kind, status, provider, input, cost_credits)
+       VALUES ($1, $2, 'train.policy', 'queued', 'modal', '{"qa004":true}'::jsonb, 1)`,
+      [ids.modalJob, ids.user],
+    );
+  }
+
   return { ids, fixtureFamilies };
 }
 
@@ -490,6 +526,24 @@ async function assertFixturePreserved(client, prefix, fixture) {
     assert.ok(ambiguous.every((row) => row.job_id === null));
     assert.ok(ambiguous.every((row) => Object.keys(row.policy_metadata).length === 0));
     assert.ok((await client.query("SELECT to_regclass('policy_artifacts_job_id_idx') AS name")).rows[0].name);
+  }
+  if (prefix >= 23) {
+    const modal = (
+      await client.query(
+        `SELECT status, provider, cost_credits, provider_call_id, cancel_requested_at,
+                credit_refunded_at
+           FROM jobs WHERE id = $1`,
+        [ids.modalJob],
+      )
+    ).rows[0];
+    assert.deepEqual(modal, {
+      status: "queued",
+      provider: "modal",
+      cost_credits: "1",
+      provider_call_id: null,
+      cancel_requested_at: null,
+      credit_refunded_at: null,
+    });
   }
 }
 

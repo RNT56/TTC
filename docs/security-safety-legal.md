@@ -115,7 +115,7 @@ live provider artifact audit.
   inferred. Withdrawal removes the contributed retrieval row.
 
 Implementation evidence (2026-07-13, `SEC-003..005`, extended by P7-011):
-authenticated user-data export 1.3.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+authenticated user-data export 1.4.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,

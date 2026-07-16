@@ -46,19 +46,21 @@ Read in this order for every non-trivial session:
 12. `docs/THREAT-MODEL.md` before changing authentication, public routes, providers,
    outbound network access, secrets, uploads, workers, callbacks, rate limits, logs,
    or release archive handling.
-13. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
-    persisted-data compatibility, backup impact, or database recovery behavior.
-14. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
-    `docs/DEPRECATIONS.md` before changing gateway routes, authentication classes,
-    events, externally consumed artifacts, examples, or removal plans.
-15. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
-    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-16. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
-    dependencies, or releases.
-17. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
-    a validator release.
-18. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-19. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+13. `docs/MODAL-OPERATIONS.md` before deploying, configuring, invoking, cancelling,
+   recovering, measuring, or making a maturity claim about Modal training.
+14. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
+   persisted-data compatibility, backup impact, or database recovery behavior.
+15. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
+   `docs/DEPRECATIONS.md` before changing gateway routes, authentication classes,
+   events, externally consumed artifacts, examples, or removal plans.
+16. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+   EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
+17. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+   dependencies, or releases.
+18. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+   a validator release.
+19. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+20. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -265,6 +267,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `d1fe7f7a…ac66`, and independent decoding validates exact 23,874-byte hover and
   22,520-byte rover opset-18 graphs. This closes P7-009, not recorder/device/field
   data, learning quality, deployment, passing-policy delivery, or external acceptance;
+- P7-013 now has an unprotected D46 contract/fixture candidate on branch
+  `codex/p7013-deployment-control`: exact Modal SDK 1.5.2 and one source-bound
+  `forge-workers.train_policy_gpu` L4 function, local sovereign bundle compilation,
+  exact CUDA authority without fallback, durable provider-call attempt history,
+  shared Postgres active/daily-credit quota authority, owner cancellation and exact
+  pre-materialization credit reversal, migration 0024, a strict sandbox-evidence
+  validator, and `docs/MODAL-OPERATIONS.md`. Arbitrary Modal fields fail before
+  enqueue; the provider receives only reviewed training controls plus the sovereign
+  bundle, and an ambiguous persisted call is recovery-only. This is not protected or credentialed
+  evidence. P7-013 stays `[~]` until the final tree passes required CI/security and a
+  clean protected revision completes the real provider, billing, alert, cancellation,
+  application-artifact deletion, verified automatic provider-call expiry, and
+  recovery exercise;
 - QA-002 is protected through PR #38: the production Studio bundle, real built WASM,
   downloaded validator artifact, gateway, and isolated Postgres established its ten
   builder flows; PR #62 extends the current protected suite to eleven with real ONNX
@@ -634,9 +649,9 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Simulation engine/exporter | `cargo test -p forge-sim -p forge-validate`; `pnpm sim:parity:check`; for engine/exporter changes install `workers[dev,mujoco]` and run `pnpm sim:parity:live`; inspect source/provider/unit/timestep/substep-bound artifacts; append-only golden review for registered output; require the real-engine worker check before closure |
 | Studio | `pnpm --filter @forge/studio typecheck`; build; `FORGE_BROWSER_SUPPORT=1 pnpm verify:browser-support` for semantics/interaction/layout/support changes; `pnpm verify:browser-e2e` against an explicit migrated isolated DB for builder-loop changes; QA-006 evidence for performance claims |
 | Gateway | build/typecheck; full gateway tests with `forge-validate` built; Postgres-backed tests for persistence paths |
-| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-009 additionally run `pnpm training:offline-smoke`, require one gateway-owned consented source log and exact tape/dataset/warmstart hashes, reject task/tensor/truth/action/timestamp/sample/provider substitution, prove the frozen BC-to-randomized-PPO stages plus optimizer update and same-seed dataset/warmstart/ONNX digests, apply the unchanged scorecard, and state controlled-synthetic versus recorder/device/field maturity; for P7-012 additionally prove tensor-v1/v2 execution/refusal, exact device authority with no fallback, frozen recipes/thresholds/seeds, all baseline/mass/Kv/wind rows, atomic interruption/resume, request-hash and ONNX size/digest/export validation, safe hardware metadata, separate simulated-vehicle and host-energy fields, cost/nonclaims, exact retained policy bytes, clean protected source, and downloaded evidence; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes; for policy delivery prove lease checks before and after upload, one job/one policy, byte-free persistence, digest substitution refusal, cancellation-without-authority, and exact object readback |
+| Workers | Python 3.12 environment; `pnpm --dir workers test`; live-adapter contract tests when touched; for native training install exact `workers[dev,mujoco,training]`, run both PPO/SAC focused tests plus `pnpm training:smoke`, inspect runtime pins/source/lockfile/dependency-manifest/contract/config/model digests and honest nonclaims, and run the pinned local `pip-audit`; for P7-009 additionally run `pnpm training:offline-smoke`, require one gateway-owned consented source log and exact tape/dataset/warmstart hashes, reject task/tensor/truth/action/timestamp/sample/provider substitution, prove the frozen BC-to-randomized-PPO stages plus optimizer update and same-seed dataset/warmstart/ONNX digests, apply the unchanged scorecard, and state controlled-synthetic versus recorder/device/field maturity; for P7-012 additionally prove tensor-v1/v2 execution/refusal, exact device authority with no fallback, frozen recipes/thresholds/seeds, all baseline/mass/Kv/wind rows, atomic interruption/resume, request-hash and ONNX size/digest/export validation, safe hardware metadata, separate simulated-vehicle and host-energy fields, cost/nonclaims, exact retained policy bytes, clean protected source, and downloaded evidence; for P7-010 install `workers[dev,mujoco,training,mjx]`, run `pnpm sim:mjx:feasibility`, and inspect exact source/request/contract/MJCF/runtime/hardware, compile/sample timing, float64 parity, accelerator/budget/cost evidence, and blockers without treating CPU/reference feasibility as adoption; for P7-013 install exact `workers[dev,mujoco,training,deployment,queue]`, test the exact deployment contract/evidence validator, CUDA refusal and no-fallback authority, provider-call persistence/cancellation/recovery, shared quota/debit/refund transactions, and migration 0024; a real sandbox close additionally requires a clean protected revision, immutable deploy/function/image identity, successful L4 run, billing/tag reconciliation, alert/SLO delivery, cancellation and late-result refusal, application-artifact deletion, verified automatic provider-call expiry within seven days, recovery without duplicate output, and validation by `forge-modal-training-sandbox-evidence/1.0.0`; D38 lease/retry/cancellation/timeout/duplicate/crash matrix for queue changes; for policy delivery prove lease checks before and after upload, one job/one policy, byte-free persistence, digest substitution refusal, cancellation-without-authority, and exact object readback |
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
-| Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization |
+| Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization; run `pnpm db:assert-modal-operations` for P7-013 provider-call/cancellation/refund and idempotent report-bound cost-reconciliation authority |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
 | Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
@@ -696,6 +711,8 @@ Full release candidate gate is defined in `docs/EXECUTION-ROADMAP.md`.
 - `docs/ROADMAP.md` owns phase status and exit criteria.
 - `docs/TODO.md` owns stable atomic tasks.
 - `docs/EXECUTION-ROADMAP.md` owns sequencing, workstreams, gates, and handoffs.
+- `docs/MODAL-OPERATIONS.md` owns the exact P7-013 provider deployment, quota,
+  cancellation, evidence, retention, recovery, rollback, and incident runbook.
 - `docs/MIGRATIONS.md` owns the supported Postgres prefix, transactional runner,
   backup-impact, deployment, rollback/roll-forward, and failed-migration runbook.
 - `docs/CONTRIBUTOR-ONBOARDING.md` owns curated first-issue readiness, exclusions,

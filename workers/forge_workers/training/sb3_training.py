@@ -902,7 +902,7 @@ def _export_onnx(
 ) -> dict[str, Any]:
     module: torch.nn.Module = _PpoExport(model) if algorithm == "ppo" else _SacExport(model)
     # The browser contract is device-neutral. Export from CPU after all training
-    # and evaluation so a retained graph never depends on MPS availability.
+    # and evaluation so a retained graph never depends on accelerator availability.
     module = module.to("cpu")
     module.eval()
     input_shape = bundle["tensor"]["input"]["shape"]
@@ -977,8 +977,7 @@ def _runtime_versions() -> dict[str, str]:
         metadata_version = importlib.metadata.version(package).split("+")[0]
         if metadata_version != expected:
             raise RuntimeError(f"{package} installed metadata drifted: expected {expected}, got {metadata_version}")
-    if torch.version.cuda is not None:
-        raise RuntimeError("P7 SB3 runtime does not admit CUDA builds")
+    versions["cudaRuntime"] = torch.version.cuda or "unavailable"
     return versions
 
 
@@ -1103,8 +1102,18 @@ def _task_targets(task: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _training_device(value: Any) -> str:
-    device = _choice(value, {"cpu", "mps"}, "device")
+    device = _choice(value, {"cpu", "cuda", "mps"}, "device")
     if device == "cpu":
+        return device
+    if device == "cuda":
+        if platform.system() != "Linux":
+            raise RuntimeError("CUDA training requires the reviewed Linux deployment runtime")
+        if not isinstance(torch.version.cuda, str) or not torch.version.cuda:
+            raise RuntimeError("the reviewed PyTorch build does not include CUDA support")
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA was requested but is not available in this container")
+        if torch.cuda.device_count() <= 0:
+            raise RuntimeError("CUDA was requested but no visible device exists")
         return device
     fallback = os.getenv("PYTORCH_ENABLE_MPS_FALLBACK", "").strip().lower()
     if fallback in {"1", "true", "yes", "on"}:
@@ -1129,6 +1138,36 @@ def _device_authority(device: str) -> dict[str, Any]:
             "backend": "cpu",
             "cpuFallbackAllowed": False,
         }
+    if device == "cuda":
+        device_index = torch.cuda.current_device()
+        name = torch.cuda.get_device_name(device_index)
+        capability = torch.cuda.get_device_capability(device_index)
+        properties = torch.cuda.get_device_properties(device_index)
+        if not isinstance(name, str) or not name.strip():
+            raise RuntimeError("CUDA device name is unavailable")
+        if (
+            not isinstance(capability, tuple)
+            or len(capability) != 2
+            or any(isinstance(item, bool) or not isinstance(item, int) or item < 0 for item in capability)
+        ):
+            raise RuntimeError("CUDA compute capability is unavailable")
+        total_memory = getattr(properties, "total_memory", None)
+        if isinstance(total_memory, bool) or not isinstance(total_memory, int) or total_memory <= 0:
+            raise RuntimeError("CUDA device memory is unavailable")
+        return {
+            "requested": "cuda",
+            "resolved": "cuda",
+            "accelerator": True,
+            "backend": "cuda",
+            "name": name,
+            "deviceIndex": device_index,
+            "deviceCount": torch.cuda.device_count(),
+            "computeCapability": f"{capability[0]}.{capability[1]}",
+            "totalMemoryBytes": total_memory,
+            "cudaRuntime": torch.version.cuda,
+            "cudnnVersion": torch.backends.cudnn.version(),
+            "cpuFallbackAllowed": False,
+        }
     get_name = getattr(torch.backends.mps, "get_name", None)
     get_core_count = getattr(torch.backends.mps, "get_core_count", None)
     name = get_name() if callable(get_name) else "Apple Metal GPU"
@@ -1151,7 +1190,9 @@ def _device_authority(device: str) -> dict[str, Any]:
 
 
 def _synchronize_device(device: str) -> None:
-    if device == "mps":
+    if device == "cuda":
+        torch.cuda.synchronize()
+    elif device == "mps":
         torch.mps.synchronize()
 
 
@@ -1162,6 +1203,8 @@ def _seed_everything(seed: int, device: str) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
     if device == "mps":
         torch.mps.manual_seed(seed)
     torch.set_num_threads(1)

@@ -10,7 +10,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from typing import Any
+import os
+from typing import Any, Callable
 
 from forge_workers.external import run_json_command
 from forge_workers.modal_adapter import configured_gpu_adapter
@@ -27,6 +28,7 @@ from forge_workers.training.bundle import (
     POLICY_TENSOR_VERSION,
     OFFLINE_WARMSTART_SCHEMA,
     OFFLINE_WARMSTART_VERSION,
+    compile_training_bundle,
 )
 from forge_workers.training.offline_dataset import (
     offline_domain_randomization,
@@ -41,7 +43,35 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode("utf-8")).hexdigest()[:12]
 
 
-def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
+def _modal_training_payload(payload: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
+    allowed = (
+        "contractHash",
+        "task",
+        "recipe",
+        "algorithm",
+        "seed",
+        "timeoutS",
+        "totalTimesteps",
+        "episodeSteps",
+        "evalEpisodes",
+        "curriculumStage",
+    )
+    return {
+        **{key: payload[key] for key in allowed if key in payload},
+        "jobKind": "train.policy",
+        "trainingBundle": bundle,
+    }
+
+
+def train_policy(
+    payload: dict[str, Any],
+    *,
+    provider_call_sink: Callable[[str, dict[str, Any]], None] | None = None,
+    cancellation_requested: Callable[[], bool] | None = None,
+    provider_cancelled_sink: Callable[[str], None] | None = None,
+    provider_call_id: str | None = None,
+    provider_call_identity: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     contract_hash = str(payload.get("contractHash", "00" * 32))
     seed = str(payload.get("seed", "0"))
     task_meta = _task_meta(payload)
@@ -53,7 +83,28 @@ def train_policy(payload: dict[str, Any]) -> dict[str, Any]:
     )
     if external is not None:
         return _external_policy_result(external, payload, task_meta, resolved_task, contract_hash, seed)
-    gpu = configured_gpu_adapter().run("train.policy", payload)
+    gpu_adapter = configured_gpu_adapter(
+        call_sink=provider_call_sink,
+        cancellation_requested=cancellation_requested,
+        cancelled_sink=provider_cancelled_sink,
+        resume_call_id=provider_call_id,
+        resume_identity=provider_call_identity,
+    )
+    if os.getenv("FORGE_GPU_BACKEND") == "modal":
+        bundle = compile_training_bundle(payload)
+        modal_result = gpu_adapter.run(
+            "train.policy",
+            _modal_training_payload(payload, bundle),
+        )
+        return _external_policy_result(
+            modal_result,
+            payload,
+            task_meta,
+            resolved_task,
+            contract_hash,
+            seed,
+        )
+    gpu = gpu_adapter.run("train.policy", payload)
     card = Scorecard(
         task=resolved_task,
         task_version=str(task_meta["version"]),
@@ -249,6 +300,8 @@ def _external_policy_result(
         result["scorecard"]["energySemantics"] = raw_scorecard.get("energySemantics")
     if isinstance(external.get("training"), dict):
         result["training"] = external["training"]
+    if isinstance(external.get("providerEvidence"), dict):
+        result["providerEvidence"] = external["providerEvidence"]
     return result
 
 
@@ -906,7 +959,24 @@ def _external_sysid_result(external: dict[str, Any], payload: dict[str, Any]) ->
 
 @registry.register("train.policy")
 def handle_train_policy(job: Job) -> dict[str, Any]:
-    return train_policy(job.payload)
+    return train_policy(
+        job.payload,
+        provider_call_sink=job.provider_call_sink,
+        cancellation_requested=job.cancellation_requested,
+        provider_cancelled_sink=job.provider_cancelled_sink,
+        provider_call_id=job.provider_call_id,
+        provider_call_identity=(
+            {
+                "environment": job.provider_environment,
+                "functionVersion": job.provider_function_version,
+                "sourceRevision": os.getenv("FORGE_MODAL_SOURCE_REVISION", "").strip(),
+                "deploymentContractHash": job.provider_deployment_contract_hash,
+                "submittedAt": job.provider_submitted_at,
+            }
+            if job.provider_call_id is not None
+            else None
+        ),
+    )
 
 
 @registry.register("train.offline-bc")

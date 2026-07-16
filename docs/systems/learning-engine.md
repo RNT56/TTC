@@ -4,12 +4,14 @@
 multirotor runtime and consumer-hardware scorecard passage, protected contract-derived
 rover/quadruped trainer execution, lease-fenced exact object-backed delivery, real
 multirotor browser ONNX/WASM execution, and a controlled CPU MuJoCo/MJX feasibility
-harness; passing ground-policy quality, ground browser playback, decision-grade D12
-accelerator evidence, deployed GPU/storage operations, and field transfer remain gated ·
+harness; a D46 Modal deployment-control candidate exists at contract/fixture maturity;
+passing ground-policy quality, ground browser playback, decision-grade D12 accelerator
+evidence, credentialed deployed-GPU operations, storage operations, and field transfer
+remain gated ·
 **Phases:** P7 (service), P8+ (curricula from reality) ·
 **Home:** `workers/training`, `forge-sim::heavy` (+ ONNX playback in `packages/studio`) ·
 **Plan refs:** §7.5, §11, Appendix C (v3.0) · **Decisions:** D8, D17, D39, D40, D41,
-D42, D43, D44, D-evals (adjacent)
+D42, D43, D44, D45, D46, D-evals (adjacent)
 
 ## 1. Purpose
 
@@ -338,6 +340,21 @@ digest chains and ONNX graphs. P7-009 is therefore `[x]` at controlled-synthetic
 offline-training maturity. Real recorder/device telemetry belongs to P8, is rejected
 by the current worker, and cannot be inferred from a caller label or the controlled-
 synthetic smoke.
+
+P7-013's D46 candidate is deliberately one narrower deployment contract, not a generic
+GPU abstraction. The gateway requires a complete environment/function-version/source/
+contract-hash identity and serializes active-job plus UTC-day credit limits in
+Postgres. The worker still compiles the admitted snapshot through the sovereign Rust
+bundle locally, persists the Modal FunctionCall ID before waiting, and polls the D38
+lease at most every five seconds. The exact Modal 1.5.2 function runs Python 3.12 on
+one L4, accepts only CUDA, forbids CPU fallback/provider retries/function secrets/
+egress, uses a single-use container, and returns device plus output evidence for
+independent revalidation. Cancellation first revokes product authority, then
+terminates the provider container; late output cannot materialize. Migration 0024
+retains each attempt and exact pre-materialization product-credit reversal. See
+[`../MODAL-OPERATIONS.md`](../MODAL-OPERATIONS.md). None of this is a sandbox result:
+P7-013 remains `[~]` until a clean protected revision produces validated real-run,
+billing/tag, spend-stop, alert/SLO, cancellation, deletion, and recovery evidence.
 
 Separately, independent decoding and ONNX checking of P7-014 artifact `8356753424`
 verifies hover 23,874 bytes/

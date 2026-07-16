@@ -41,6 +41,18 @@ class Job:
     lease_expires_at: str | None = None
     max_attempts: int = 3
     timeout_seconds: int = 3600
+    provider_call_id: str | None = None
+    provider_function_version: int | None = None
+    provider_environment: str | None = None
+    provider_deployment_contract_hash: str | None = None
+    provider_submitted_at: str | None = None
+    provider_call_sink: Callable[[str, dict[str, Any]], None] | None = field(
+        default=None, repr=False, compare=False
+    )
+    cancellation_requested: Callable[[], bool] | None = field(default=None, repr=False, compare=False)
+    provider_cancelled_sink: Callable[[str], None] | None = field(
+        default=None, repr=False, compare=False
+    )
 
 
 @dataclass(frozen=True)
@@ -270,7 +282,11 @@ class PostgresQueueStore:
                 RETURNING target.id, target.kind, target.provider, target.input,
                           COALESCE(target.idempotency_key, target.id) AS idempotency_key,
                           target.attempts, target.lease_token, target.lease_expires_at,
-                          target.max_attempts, target.timeout_seconds
+                          target.max_attempts, target.timeout_seconds,
+                          target.provider_call_id, target.provider_function_version,
+                          target.provider_environment,
+                          target.provider_deployment_contract_hash,
+                          target.provider_submitted_at
                 """,
                 [list(tasks)],
             ).fetchone()
@@ -281,7 +297,7 @@ class PostgresQueueStore:
             payload = json.loads(payload)
         if not isinstance(payload, dict):
             payload = {}
-        return Job(
+        job = Job(
             id=str(row["id"]),
             task=str(row["kind"]),
             payload=payload,
@@ -292,7 +308,139 @@ class PostgresQueueStore:
             lease_expires_at=str(row["lease_expires_at"]),
             max_attempts=int(row["max_attempts"]),
             timeout_seconds=int(row["timeout_seconds"]),
+            provider_call_id=(
+                str(row["provider_call_id"]) if row["provider_call_id"] is not None else None
+            ),
+            provider_function_version=(
+                int(row["provider_function_version"])
+                if row["provider_function_version"] is not None
+                else None
+            ),
+            provider_environment=(
+                str(row["provider_environment"])
+                if row["provider_environment"] is not None
+                else None
+            ),
+            provider_deployment_contract_hash=(
+                str(row["provider_deployment_contract_hash"])
+                if row["provider_deployment_contract_hash"] is not None
+                else None
+            ),
+            provider_submitted_at=(
+                str(row["provider_submitted_at"])
+                if row["provider_submitted_at"] is not None
+                else None
+            ),
         )
+        job.provider_call_sink = lambda call_id, evidence: self._record_provider_call(
+            job,
+            call_id,
+            evidence,
+        )
+        job.cancellation_requested = lambda: self._job_cancellation_requested(job)
+        job.provider_cancelled_sink = lambda call_id: self._record_provider_cancelled(job.id, call_id)
+        return job
+
+    def _record_provider_call(
+        self,
+        job: Job,
+        call_id: str,
+        evidence: dict[str, Any],
+    ) -> None:
+        if not job.lease_token:
+            raise RuntimeError("provider call requires a current job lease")
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                UPDATE jobs
+                   SET provider_call_id = %s,
+                       provider_function_version = %s,
+                       provider_environment = %s,
+                       provider_deployment_contract_hash = %s,
+                       provider_submitted_at = %s,
+                       provider_completed_at = NULL,
+                       provider_cancelled_at = NULL,
+                       provider_cost_usd = NULL,
+                       provider_billing_report_id = NULL,
+                       provider_cost_reconciled_at = NULL
+                 WHERE id = %s
+                   AND provider = 'modal'
+                   AND status = 'running'
+                   AND lease_token = %s
+                   AND lease_expires_at > now()
+                   AND provider_call_id IS NULL
+                RETURNING id
+                """,
+                [
+                    call_id,
+                    evidence.get("functionVersion"),
+                    evidence.get("environment"),
+                    evidence.get("deploymentContractHash"),
+                    evidence.get("submittedAt"),
+                    job.id,
+                    job.lease_token,
+                ],
+            ).fetchone()
+            if row is not None:
+                self._conn.execute(
+                    """
+                    INSERT INTO job_provider_calls (
+                      call_id, job_id, attempt, provider, function_version,
+                      environment, deployment_contract_hash, submitted_at
+                    )
+                    VALUES (%s, %s, %s, 'modal', %s, %s, %s, %s)
+                    """,
+                    [
+                        call_id,
+                        job.id,
+                        job.attempts,
+                        evidence.get("functionVersion"),
+                        evidence.get("environment"),
+                        evidence.get("deploymentContractHash"),
+                        evidence.get("submittedAt"),
+                    ],
+                )
+        if row is None:
+            raise RuntimeError("provider call lost its current job lease authority")
+
+    def _job_cancellation_requested(self, job: Job) -> bool:
+        if not job.lease_token:
+            return True
+        with self._conn.transaction():
+            row = self._conn.execute(
+                """
+                SELECT 1
+                  FROM jobs
+                 WHERE id = %s
+                   AND status = 'running'
+                   AND lease_token = %s
+                   AND lease_expires_at > now()
+                """,
+                [job.id, job.lease_token],
+            ).fetchone()
+        return row is None
+
+    def _record_provider_cancelled(self, job_id: str, call_id: str) -> None:
+        with self._conn.transaction():
+            self._conn.execute(
+                """
+                UPDATE jobs
+                   SET provider_cancelled_at = COALESCE(provider_cancelled_at, now())
+                 WHERE id = %s
+                   AND provider = 'modal'
+                   AND provider_call_id = %s
+                """,
+                [job_id, call_id],
+            )
+            self._conn.execute(
+                """
+                UPDATE job_provider_calls
+                   SET status = 'cancelled',
+                       cancelled_at = COALESCE(cancelled_at, now())
+                 WHERE job_id = %s AND call_id = %s
+                """,
+                [job_id, call_id],
+            )
 
     def mark_succeeded(self, job: Job, output: dict[str, Any]) -> bool:
         if not job.lease_token:
@@ -326,6 +474,10 @@ class PostgresQueueStore:
                        error = NULL,
                        last_error_code = NULL,
                        finished_at = now(),
+                       provider_completed_at = CASE
+                         WHEN provider_call_id IS NOT NULL THEN now()
+                         ELSE provider_completed_at
+                       END,
                        lease_token = NULL,
                        lease_expires_at = NULL
                  WHERE id = %s
@@ -337,6 +489,14 @@ class PostgresQueueStore:
                 [self._jsonb(persisted_output), job.id, job.lease_token],
             ).fetchone()
             if row is not None:
+                self._conn.execute(
+                    """
+                    UPDATE job_provider_calls
+                       SET status = 'succeeded', completed_at = COALESCE(completed_at, now())
+                     WHERE job_id = %s AND call_id = %s
+                    """,
+                    [job.id, _provider_call_id(persisted_output)],
+                )
                 final_output = self._materialize_job_output(
                     job_id=job.id,
                     owner_user_id=row["owner_user_id"],
@@ -383,6 +543,10 @@ class PostgresQueueStore:
                        error = %s,
                        last_error_code = %s,
                        finished_at = now(),
+                       provider_completed_at = CASE
+                         WHEN provider_call_id IS NOT NULL THEN now()
+                         ELSE provider_completed_at
+                       END,
                        lease_token = NULL,
                        lease_expires_at = NULL
                  WHERE id = %s
@@ -393,6 +557,15 @@ class PostgresQueueStore:
                 """,
                 [error, code, job.id, job.lease_token],
             ).fetchone()
+            if row is not None:
+                self._conn.execute(
+                    """
+                    UPDATE job_provider_calls
+                       SET status = 'failed', completed_at = COALESCE(completed_at, now())
+                     WHERE job_id = %s AND status = 'submitted'
+                    """,
+                    [job.id],
+                )
         return row is not None
 
     def mark_retryable(
@@ -405,6 +578,7 @@ class PostgresQueueStore:
         if not job.lease_token:
             return None
         delay = retry_delay_seconds(job.attempts, retry_after_seconds)
+        preserve_provider_call = code == "provider-recovery-pending"
         with self._conn.transaction():
             row = self._conn.execute(
                 """
@@ -417,16 +591,77 @@ class PostgresQueueStore:
                        error = %s,
                        last_error_code = %s,
                        finished_at = CASE WHEN attempts < max_attempts THEN NULL ELSE now() END,
+                       provider_completed_at = CASE
+                         WHEN %s THEN provider_completed_at
+                         WHEN attempts < max_attempts THEN NULL
+                         WHEN provider_call_id IS NOT NULL THEN now()
+                         ELSE provider_completed_at
+                       END,
                        lease_token = NULL,
-                       lease_expires_at = NULL
+                       lease_expires_at = NULL,
+                       provider_call_id = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_call_id
+                       END,
+                       provider_function_version = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_function_version
+                       END,
+                       provider_environment = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_environment
+                       END,
+                       provider_deployment_contract_hash = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_deployment_contract_hash
+                       END,
+                       provider_submitted_at = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_submitted_at
+                       END,
+                       provider_cancelled_at = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_cancelled_at
+                       END,
+                       provider_cost_usd = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_cost_usd
+                       END,
+                       provider_billing_report_id = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_billing_report_id
+                       END,
+                       provider_cost_reconciled_at = CASE
+                         WHEN attempts < max_attempts AND NOT %s THEN NULL ELSE provider_cost_reconciled_at
+                       END
                  WHERE id = %s
                    AND status = 'running'
                    AND lease_token = %s
                    AND lease_expires_at > now()
                 RETURNING status
                 """,
-                [delay, error, code, job.id, job.lease_token],
+                [
+                    delay,
+                    error,
+                    code,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    preserve_provider_call,
+                    job.id,
+                    job.lease_token,
+                ],
             ).fetchone()
+            if row is not None:
+                self._conn.execute(
+                    """
+                    UPDATE job_provider_calls
+                       SET status = 'failed', completed_at = COALESCE(completed_at, now())
+                     WHERE job_id = %s
+                       AND status = 'submitted'
+                       AND (attempt = %s OR call_id = %s)
+                       AND NOT %s
+                    """,
+                    [job.id, job.attempts, job.provider_call_id, preserve_provider_call],
+                )
         return str(row["status"]) if row is not None else None
 
     def record_event(self, job_id: str, event: str, payload: dict[str, Any]) -> None:
@@ -929,6 +1164,12 @@ def _materializable_refresh_provenance(value: Any) -> dict[str, str | None]:
         64,
     )
     return {"sourceUrl": source_url, "retrievedAt": retrieved_at}
+
+
+def _provider_call_id(output: dict[str, Any]) -> str | None:
+    evidence = output.get("providerEvidence")
+    call_id = evidence.get("functionCallId") if isinstance(evidence, dict) else None
+    return call_id if isinstance(call_id, str) and 3 <= len(call_id) <= 200 else None
 
 
 def _required_bounded_string(value: Any, label: str, max_length: int) -> str:
