@@ -306,7 +306,7 @@ function platformMemoryDb(): GatewayDb {
         };
       }
       if (text.includes("INSERT INTO credit_ledger")) {
-        const idempotencyKey = String(params[4]);
+        const idempotencyKey = String(params.at(-1));
         if (creditLedgerKeys.has(idempotencyKey)) {
           return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
         }
@@ -315,7 +315,11 @@ function platformMemoryDb(): GatewayDb {
       }
       if (text.includes("UPDATE credit_accounts")) {
         const userId = String(params[0]);
-        creditAccounts.set(userId, (creditAccounts.get(userId) ?? 0) - Number(params[1]));
+        const delta = Number(params[1]);
+        creditAccounts.set(
+          userId,
+          (creditAccounts.get(userId) ?? 0) + (text.includes("balance_credits +") ? delta : -delta),
+        );
         return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
       }
       if (text.includes("FROM credit_ledger")) {
@@ -449,6 +453,21 @@ function platformMemoryDb(): GatewayDb {
         if (idempotencyKey) jobIdempotency.set(idempotencyKey, id);
         return { rows: [row as T], rowCount: 1 };
       }
+      if (text.includes("pg_advisory_xact_lock") && text.includes("forge-modal-job-quota")) {
+        return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
+      }
+      if (text.includes("AS active_jobs") && text.includes("daily_credits")) {
+        const active = [...jobs.values()].filter(
+          (row) => row.provider === "modal" && ["queued", "running"].includes(String(row.status)),
+        );
+        const dailyCredits = [...jobs.values()]
+          .filter((row) => row.provider === "modal")
+          .reduce((sum, row) => sum + Number(row.cost_credits), 0);
+        return {
+          rows: [{ active_jobs: active.length, daily_credits: dailyCredits } as T],
+          rowCount: 1,
+        };
+      }
       if (text.includes("INSERT INTO object_blobs")) {
         const cacheKey = params[1] ? String(params[1]) : null;
         const existingId = cacheKey ? objectBlobCache.get(cacheKey) : undefined;
@@ -513,8 +532,8 @@ function platformMemoryDb(): GatewayDb {
         const row = {
           id: jobEvents.length + 1,
           job_id: params[0],
-          event: params[1],
-          payload: parseJsonParam(params[2]),
+          event: params.length === 2 ? "cancelled" : params[1],
+          payload: parseJsonParam(params.length === 2 ? params[1] : params[2]),
           created_at: now,
         };
         jobEvents.push(row);
@@ -531,8 +550,19 @@ function platformMemoryDb(): GatewayDb {
         const rows = [...jobs.values()].filter((row) => row.owner_user_id === params[0]);
         return { rows: rows as T[], rowCount: rows.length };
       }
-      if (text.includes("UPDATE jobs SET status = 'cancelled'")) {
-        return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+      if (text.includes("UPDATE jobs") && text.includes("status = 'cancelled'")) {
+        const row = jobs.get(String(params[1]));
+        if (!row || row.owner_user_id !== params[0]) {
+          return { rows: [], rowCount: 0 } as { rows: T[]; rowCount: number };
+        }
+        row.status = "cancelled";
+        row.error = "cancelled by owner";
+        row.last_error_code = "owner-cancelled";
+        row.cancel_requested_at = now;
+        row.credit_refunded_at = params[2] ? now : null;
+        row.lease_token = null;
+        row.lease_expires_at = null;
+        return { rows: [row as T], rowCount: 1 };
       }
       if (text.includes("UPDATE jobs") && text.includes("SET output = $2::jsonb")) {
         const row = jobs.get(String(params[0]));
@@ -2044,7 +2074,21 @@ test(
   { skip: !haveBinary && "forge-validate binary not built" },
   async () => {
     const previousDevAuth = process.env.FORGE_DEV_AUTH;
+    const previousModal = {
+      tokenId: process.env.MODAL_TOKEN_ID,
+      tokenSecret: process.env.MODAL_TOKEN_SECRET,
+      environment: process.env.FORGE_MODAL_ENVIRONMENT,
+      functionVersion: process.env.FORGE_MODAL_FUNCTION_VERSION,
+      sourceRevision: process.env.FORGE_MODAL_SOURCE_REVISION,
+      contractHash: process.env.FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH,
+    };
     process.env.FORGE_DEV_AUTH = "1";
+    process.env.MODAL_TOKEN_ID = "test-modal-token-id";
+    process.env.MODAL_TOKEN_SECRET = "test-modal-token-secret";
+    process.env.FORGE_MODAL_ENVIRONMENT = "sandbox";
+    process.env.FORGE_MODAL_FUNCTION_VERSION = "17";
+    process.env.FORGE_MODAL_SOURCE_REVISION = "ab".repeat(20);
+    process.env.FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH = "cd".repeat(32);
     let firstUploadInspection = true;
     const policyModelBytes = Buffer.from(HOVER_POLICY_FIXTURE_V2.modelBase64, "base64");
     let retainedPolicyObject: { bucket: string; objectKey: string; sha256: string } | null = null;
@@ -2554,6 +2598,88 @@ test(
       trainingInput.contractHash,
     );
 
+    process.env.FORGE_MODAL_SOURCE_REVISION = "unprotected";
+    const modalTrainingWithInvalidIdentity = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "train.policy",
+        provider: "modal",
+        payload: { modelId: createdBody.model.id, task: "hover-hold", seed: 1201 },
+        idempotencyKey: "training-modal-invalid",
+      },
+    });
+    assert.equal(modalTrainingWithInvalidIdentity.statusCode, 409, modalTrainingWithInvalidIdentity.body);
+    process.env.FORGE_MODAL_SOURCE_REVISION = "ab".repeat(20);
+
+    const modalTrainingWithUnreviewedInput = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "train.policy",
+        provider: "modal",
+        payload: {
+          modelId: createdBody.model.id,
+          task: "hover-hold",
+          seed: 1201,
+          apiKey: "must-not-enter-provider-retention",
+        },
+        idempotencyKey: "training-modal-unreviewed-input",
+      },
+    });
+    assert.equal(modalTrainingWithUnreviewedInput.statusCode, 400, modalTrainingWithUnreviewedInput.body);
+    assert.match(modalTrainingWithUnreviewedInput.body, /unsupported fields/);
+
+    const modalTrainingJob = await app.inject({
+      method: "POST",
+      url: "/v1/jobs",
+      headers: authHeaders,
+      payload: {
+        kind: "train.policy",
+        provider: "modal",
+        payload: { modelId: createdBody.model.id, task: "hover-hold", seed: 1201 },
+        idempotencyKey: "training-modal-cancel",
+      },
+    });
+    assert.equal(modalTrainingJob.statusCode, 201, modalTrainingJob.body);
+    const modalJobBody = modalTrainingJob.json() as {
+      job: { id: string; provider: string; status: string; costCredits: number };
+    };
+    assert.equal(modalJobBody.job.provider, "modal");
+    assert.equal(modalJobBody.job.status, "queued");
+    assert.equal(modalJobBody.job.costCredits, 1);
+    const debitedCredits = await app.inject({ method: "GET", url: "/v1/credits", headers: authHeaders });
+    assert.equal((debitedCredits.json() as { balanceCredits: number }).balanceCredits, -1);
+
+    const cancelledModal = await app.inject({
+      method: "DELETE",
+      url: `/v1/jobs/${modalJobBody.job.id}`,
+      headers: authHeaders,
+    });
+    assert.equal(cancelledModal.statusCode, 200, cancelledModal.body);
+    const cancelledJob = (cancelledModal.json() as {
+      job: { status: string; cancelRequestedAt: string | null; creditRefundedAt: string | null };
+    }).job;
+    assert.equal(cancelledJob.status, "cancelled");
+    assert.ok(cancelledJob.cancelRequestedAt);
+    assert.ok(cancelledJob.creditRefundedAt);
+    const refundedCredits = await app.inject({ method: "GET", url: "/v1/credits", headers: authHeaders });
+    assert.equal((refundedCredits.json() as { balanceCredits: number }).balanceCredits, 0);
+    const repeatedCancel = await app.inject({
+      method: "DELETE",
+      url: `/v1/jobs/${modalJobBody.job.id}`,
+      headers: authHeaders,
+    });
+    assert.equal(repeatedCancel.statusCode, 200, repeatedCancel.body);
+    const crossOwnerCancel = await app.inject({
+      method: "DELETE",
+      url: `/v1/jobs/${modalJobBody.job.id}`,
+      headers: { ...authHeaders, "x-forge-user-id": "user-other" },
+    });
+    assert.equal(crossOwnerCancel.statusCode, 404, crossOwnerCancel.body);
+
     const localTrainingWithoutModel = await app.inject({
       method: "POST",
       url: "/v1/jobs",
@@ -3034,7 +3160,7 @@ test(
 
     const jobs = await app.inject({ method: "GET", url: "/v1/jobs", headers: authHeaders });
     assert.equal(jobs.statusCode, 200, jobs.body);
-    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 13);
+    assert.equal((jobs.json() as { jobs: unknown[] }).jobs.length, 14);
 
     const course = await app.inject({
       method: "POST",
@@ -3311,6 +3437,17 @@ test(
         delete process.env.FORGE_DEV_AUTH;
       } else {
         process.env.FORGE_DEV_AUTH = previousDevAuth;
+      }
+      for (const [name, value] of Object.entries({
+        MODAL_TOKEN_ID: previousModal.tokenId,
+        MODAL_TOKEN_SECRET: previousModal.tokenSecret,
+        FORGE_MODAL_ENVIRONMENT: previousModal.environment,
+        FORGE_MODAL_FUNCTION_VERSION: previousModal.functionVersion,
+        FORGE_MODAL_SOURCE_REVISION: previousModal.sourceRevision,
+        FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH: previousModal.contractHash,
+      })) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
       }
     }
   },

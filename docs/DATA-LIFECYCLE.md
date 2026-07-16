@@ -62,6 +62,18 @@ the legal posture changes—a decision record.
 `packages/gateway/src/dataLifecycle.ts` is the application copy. The compatibility
 gate and Postgres acceptance gate prevent silent drift.
 
+D46 `job_provider_calls` rows are terminal-job operational evidence, not a new
+indefinite class. They cascade with the owning job and share its hold and 30-day
+terminal retention boundary. The product database stores only byte-free call identity,
+deployment/lifecycle state, bounded errors, and reconciled cost. Modal input/output
+retrieval may persist provider-side for up to seven days; recorded-device or personal
+input is therefore prohibited until an independently reviewed provider-erasure
+contract exists. The current FunctionCall API exposes cancellation/lookup but no
+manual call input/output deletion method. P7-013 sandbox close therefore requires
+immediate application-artifact deletion plus verified provider automatic expiry after
+the maximum seven-day TTL; neither replaces provider billing or backup lifecycle
+controls.
+
 ## 3. Authority and state machines
 
 ### 3.1 Legal holds
@@ -192,9 +204,10 @@ User/API:
 - `GET /v1/data-lifecycle/policy` — public versioned defaults and maturity boundary;
 - `GET /v1/account/lifecycle` — authenticated account-plus-owned-object hold count
   and catalogued backup exposure, without authority/evidence details;
-- `GET /v1/account/export` — export 1.3.0 retains causal-sequence-ordered redacted
+- `GET /v1/account/export` — export 1.4.0 retains causal-sequence-ordered redacted
   account/owned-object hold history and backup-copy status and adds authoritative
-  policy job/byte-free delivery metadata without embedding retained ONNX bytes;
+  policy job/byte-free delivery metadata plus the owner's byte-free provider-call
+  attempt history without embedding retained ONNX bytes, tokens, or provider payloads;
 - `DELETE /v1/account` — exact confirmation, hold-aware receipt 2.0.0.
 
 Operator CLI (builds the gateway first):

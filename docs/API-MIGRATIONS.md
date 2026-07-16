@@ -111,7 +111,7 @@ uploads until the 0.2 gateway returns.
 
 ## User-data formats
 
-- user-data export is 1.3.0;
+- user-data export is 1.4.0;
 - consent ledger is 1.0.0;
 - account-deletion receipt is 2.0.0;
 - data lifecycle is 1.0.0.
@@ -120,6 +120,11 @@ Readers must check each format's own version field. Export 1.2 added exact decim
 causal sequences plus redacted legal-hold and backup status. Export 1.3 adds the
 policy artifact's authoritative `jobId` and byte-free `policyMetadata`; retained ONNX
 bytes are still downloaded separately through the authenticated policy-model route.
+Export 1.4 additively exposes provider-call attempt history plus byte-free provider
+identity, timing, cancellation/refund, and reconciled-cost fields for the owner's
+jobs. Major-1 readers must ignore the new dataset/fields when unused. The export
+never contains Modal tokens, raw function input/output, retained ONNX bytes, or
+unrelated provider billing data.
 Deletion receipt 2.0 adds restore-suppression evidence but does not claim physical
 backup deletion. Do not downgrade these meanings into an older success boolean.
 
@@ -209,6 +214,15 @@ kinds.
   snapshot/training authority. Before rollback, stop enqueueing, drain or cancel the
   new kind with a D45-capable worker, retain source/consent/lease evidence, and roll
   forward; never relabel the row as `train.policy` or fabricate fixture output.
+- D46 Modal operations are additive in migration 0024. Jobs gain byte-free provider
+  identity/lifecycle/refund fields plus report-ID/time-bound reconciled cost, and
+  export 1.4 adds the owner's attempt rows with the same cost authority.
+  `DELETE /v1/jobs/{jobId}` additively provides owner cancellation for queued/running
+  jobs. Older clients may ignore these fields and route; they must still treat
+  `cancelled` as terminal and `discarded` events as non-authority. Before rollback,
+  disable Modal enqueueing, cancel or reconcile every durable FunctionCall ID, retain
+  migration 0024/history, and roll forward with a D46 worker. Never clear call history,
+  call a product-credit reversal a provider refund, or let an older worker resume.
 - D38 attempt leases are additive persisted state. Stop all old workers before
   applying migration 0021. An older worker cannot resume after the lease constraint
   is active.

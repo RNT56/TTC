@@ -90,6 +90,18 @@ export interface JobRecord {
   timeoutSeconds: number;
   availableAt: string;
   leaseExpiresAt: string | null;
+  providerCallId: string | null;
+  providerFunctionVersion: number | null;
+  providerEnvironment: string | null;
+  providerDeploymentContractHash: string | null;
+  providerSubmittedAt: string | null;
+  providerCompletedAt: string | null;
+  providerCancelledAt: string | null;
+  providerCostUsd: number | null;
+  providerBillingReportId: string | null;
+  providerCostReconciledAt: string | null;
+  cancelRequestedAt: string | null;
+  creditRefundedAt: string | null;
   costCredits: number;
   createdAt: string;
 }
@@ -402,6 +414,18 @@ function mapJob(row: {
   timeout_seconds?: string | number;
   available_at?: Date | string;
   lease_expires_at?: Date | string | null;
+  provider_call_id?: string | null;
+  provider_function_version?: string | number | null;
+  provider_environment?: string | null;
+  provider_deployment_contract_hash?: string | null;
+  provider_submitted_at?: Date | string | null;
+  provider_completed_at?: Date | string | null;
+  provider_cancelled_at?: Date | string | null;
+  provider_cost_usd?: string | number | null;
+  provider_billing_report_id?: string | null;
+  provider_cost_reconciled_at?: Date | string | null;
+  cancel_requested_at?: Date | string | null;
+  credit_refunded_at?: Date | string | null;
   cost_credits: string | number;
   created_at: Date | string;
 }): JobRecord {
@@ -420,6 +444,22 @@ function mapJob(row: {
     timeoutSeconds: Number(row.timeout_seconds ?? 3600),
     availableAt: nowIso(row.available_at ?? row.created_at),
     leaseExpiresAt: row.lease_expires_at == null ? null : nowIso(row.lease_expires_at),
+    providerCallId: row.provider_call_id ?? null,
+    providerFunctionVersion: row.provider_function_version == null
+      ? null
+      : Number(row.provider_function_version),
+    providerEnvironment: row.provider_environment ?? null,
+    providerDeploymentContractHash: row.provider_deployment_contract_hash ?? null,
+    providerSubmittedAt: row.provider_submitted_at == null ? null : nowIso(row.provider_submitted_at),
+    providerCompletedAt: row.provider_completed_at == null ? null : nowIso(row.provider_completed_at),
+    providerCancelledAt: row.provider_cancelled_at == null ? null : nowIso(row.provider_cancelled_at),
+    providerCostUsd: row.provider_cost_usd == null ? null : Number(row.provider_cost_usd),
+    providerBillingReportId: row.provider_billing_report_id ?? null,
+    providerCostReconciledAt: row.provider_cost_reconciled_at == null
+      ? null
+      : nowIso(row.provider_cost_reconciled_at),
+    cancelRequestedAt: row.cancel_requested_at == null ? null : nowIso(row.cancel_requested_at),
+    creditRefundedAt: row.credit_refunded_at == null ? null : nowIso(row.credit_refunded_at),
     costCredits: Number(row.cost_credits),
     createdAt: nowIso(row.created_at),
   };
@@ -1632,6 +1672,12 @@ export async function jobCapabilities(db: GatewayDb): Promise<JobCapabilities> {
   const gates = await listPlatformGates(db);
   const modalConfigured = envConfigured("MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET");
   const modalEndpoint = Boolean(process.env.FORGE_MODAL_ENDPOINT?.trim());
+  const modalTrainingDeployment = envConfigured(
+    "FORGE_MODAL_ENVIRONMENT",
+    "FORGE_MODAL_FUNCTION_VERSION",
+    "FORGE_MODAL_SOURCE_REVISION",
+    "FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH",
+  );
   const hardwareGate = gates.find((gate) => gate.gateKey === "d28.hardware");
   const hardwareAccepted = hardwareGate?.status === "accepted" && hardwareGate.revokedAt === null;
   const labMode = envEnabled("FORGE_HARDWARE_LAB_MODE");
@@ -1641,9 +1687,9 @@ export async function jobCapabilities(db: GatewayDb): Promise<JobCapabilities> {
       local: capability(true, true, "postgres-queue", null),
       modal: capability(
         modalConfigured,
-        modalConfigured && modalEndpoint,
-        modalEndpoint ? "modal-endpoint" : "modal-submit",
-        "MODAL_TOKEN_ID and MODAL_TOKEN_SECRET are required",
+        modalConfigured && (modalEndpoint || modalTrainingDeployment),
+        modalTrainingDeployment ? "modal-versioned-function" : modalEndpoint ? "modal-endpoint" : "disabled",
+        "Modal tokens plus an endpoint or exact training deployment identity are required",
       ),
     },
     live: {
@@ -2290,6 +2336,147 @@ function jobTimeoutSeconds(input: CreateJobInput): number {
   return defaults[input.kind] ?? 3600;
 }
 
+function modalQuota(name: "FORGE_MODAL_MAX_ACTIVE_JOBS" | "FORGE_MODAL_DAILY_CREDIT_LIMIT", fallback: number): number {
+  const raw = process.env[name]?.trim();
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 10_000) {
+    throw Object.assign(new Error(`${name} must be an integer between 1 and 10000`), {
+      statusCode: 503,
+    });
+  }
+  return parsed;
+}
+
+async function assertModalJobQuota(
+  db: GatewayDb,
+  costCredits: number,
+  idempotencyKey: string | null,
+): Promise<void> {
+  const maxActive = modalQuota("FORGE_MODAL_MAX_ACTIVE_JOBS", 1);
+  const dailyCreditLimit = modalQuota("FORGE_MODAL_DAILY_CREDIT_LIMIT", 10);
+  await db.query("SELECT pg_advisory_xact_lock(hashtextextended('forge-modal-job-quota', 0))");
+  const result = await db.query<{ active_jobs: string | number; daily_credits: string | number }>(
+    `SELECT
+       count(*) FILTER (WHERE status IN ('queued', 'running')) AS active_jobs,
+       COALESCE(sum(cost_credits) FILTER (
+         WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+       ), 0) AS daily_credits
+      FROM jobs
+      WHERE provider = 'modal'
+        AND ($1::text IS NULL OR idempotency_key IS DISTINCT FROM $1)`,
+    [idempotencyKey],
+  );
+  const activeJobs = Number(result.rows[0]?.active_jobs ?? 0);
+  const dailyCredits = Number(result.rows[0]?.daily_credits ?? 0);
+  if (activeJobs >= maxActive) {
+    throw Object.assign(new Error("Modal active-job quota is exhausted"), { statusCode: 429 });
+  }
+  if (dailyCredits + costCredits > dailyCreditLimit) {
+    throw Object.assign(new Error("Modal daily credit quota is exhausted"), { statusCode: 429 });
+  }
+}
+
+function assertModalProviderConfigured(kind: JobKind): void {
+  if (!envConfigured("MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET")) {
+    throw Object.assign(new Error("Modal worker credentials are not configured"), { statusCode: 409 });
+  }
+  if (kind === "train.policy") {
+    if (!envConfigured(
+      "FORGE_MODAL_ENVIRONMENT",
+      "FORGE_MODAL_FUNCTION_VERSION",
+      "FORGE_MODAL_SOURCE_REVISION",
+      "FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH",
+    )) {
+      throw Object.assign(new Error("Modal training deployment identity is not configured"), {
+        statusCode: 409,
+      });
+    }
+    const environment = process.env.FORGE_MODAL_ENVIRONMENT?.trim() ?? "";
+    const functionVersion = process.env.FORGE_MODAL_FUNCTION_VERSION?.trim() ?? "";
+    const sourceRevision = process.env.FORGE_MODAL_SOURCE_REVISION?.trim() ?? "";
+    const contractHash = process.env.FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH?.trim() ?? "";
+    if (environment.length > 80 || !/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(environment)) {
+      throw Object.assign(new Error("Modal training environment is invalid"), { statusCode: 409 });
+    }
+    if (!/^[1-9][0-9]*$/.test(functionVersion) || Number(functionVersion) > Number.MAX_SAFE_INTEGER) {
+      throw Object.assign(new Error("Modal training function version is invalid"), { statusCode: 409 });
+    }
+    if (!/^[0-9a-f]{40}$/.test(sourceRevision) || !/^[0-9a-f]{64}$/.test(contractHash)) {
+      throw Object.assign(new Error("Modal training source or deployment contract identity is invalid"), {
+        statusCode: 409,
+      });
+    }
+    return;
+  }
+  if (!envConfigured("FORGE_MODAL_ENDPOINT")) {
+    throw Object.assign(new Error(`Modal ${kind} endpoint is not configured`), { statusCode: 409 });
+  }
+}
+
+function assertModalTrainingPayload(input: CreateJobInput): void {
+  if (input.provider !== "modal" || input.kind !== "train.policy") return;
+  if (!isRecord(input.payload)) {
+    throw Object.assign(new Error("Modal train.policy requires a bounded payload"), {
+      statusCode: 400,
+    });
+  }
+  const allowedKeys = new Set([
+    "modelId",
+    "contractHash",
+    "task",
+    "recipe",
+    "algorithm",
+    "seed",
+    "timeoutS",
+    "totalTimesteps",
+    "episodeSteps",
+    "evalEpisodes",
+    "curriculumStage",
+  ]);
+  if (Object.keys(input.payload).some((key) => !allowedKeys.has(key))) {
+    throw Object.assign(new Error("Modal train.policy payload contains unsupported fields"), {
+      statusCode: 400,
+    });
+  }
+  const payload = input.payload;
+  if (!["hover-hold", "waypoint-chain", "line-follow", "walk-to-target"].includes(String(payload.task))) {
+    throw Object.assign(new Error("Modal train.policy task is unsupported"), { statusCode: 400 });
+  }
+  if (payload.recipe !== undefined && !["direct-v1", "p7-overnight-v1"].includes(String(payload.recipe))) {
+    throw Object.assign(new Error("Modal train.policy recipe is unsupported"), { statusCode: 400 });
+  }
+  if (payload.algorithm !== undefined && !["ppo", "sac"].includes(String(payload.algorithm))) {
+    throw Object.assign(new Error("Modal train.policy algorithm is unsupported"), { statusCode: 400 });
+  }
+  const integerBounds: Record<string, readonly [number, number]> = {
+    seed: [0, 2_147_483_647],
+    totalTimesteps: [64, 20_000_000],
+    episodeSteps: [20, 100_000],
+    evalEpisodes: [1, 100],
+    curriculumStage: [1, 100],
+  };
+  for (const [key, [lower, upper]] of Object.entries(integerBounds)) {
+    const value = payload[key];
+    if (value !== undefined && (!Number.isInteger(value) || Number(value) < lower || Number(value) > upper)) {
+      throw Object.assign(new Error(`Modal train.policy ${key} is outside the supported range`), {
+        statusCode: 400,
+      });
+    }
+  }
+  if (
+    payload.timeoutS !== undefined
+    && (typeof payload.timeoutS !== "number"
+      || !Number.isFinite(payload.timeoutS)
+      || payload.timeoutS < 1
+      || payload.timeoutS > 28_800)
+  ) {
+    throw Object.assign(new Error("Modal train.policy timeoutS is outside the supported range"), {
+      statusCode: 400,
+    });
+  }
+}
+
 function assertCommerceVendorRefreshJob(input: CreateJobInput): void {
   if (input.provider !== "local") {
     throw Object.assign(new Error("commerce vendor refresh jobs must use the local worker provider"), {
@@ -2334,6 +2521,7 @@ function assertCommerceVendorRefreshJob(input: CreateJobInput): void {
 
 function assertOfflineTrainingJob(input: CreateJobInput): void {
   const provider = input.provider ?? "fixture";
+  if (provider === "modal") assertModalProviderConfigured(input.kind);
   if (provider === "fixture") {
     throw Object.assign(new Error("train.offline-bc requires the local or modal worker provider"), {
       statusCode: 400,
@@ -2421,6 +2609,10 @@ export async function createJob(
   )) {
     throw Object.assign(new Error("job idempotency key is outside the supported range"), { statusCode: 400 });
   }
+  if ((input.provider ?? "fixture") === "modal") {
+    assertModalProviderConfigured(input.kind);
+    assertModalTrainingPayload(input);
+  }
   if (input.kind === "commerce.vendor-refresh") {
     assertCommerceVendorRefreshJob(input);
   }
@@ -2459,6 +2651,13 @@ export async function createJob(
     );
   }
   if (input.kind === "train.policy" && (input.provider ?? "fixture") === "fixture") {
+    return withGatewayTransaction(
+      db,
+      { isolation: "serializable" },
+      (transaction) => createJobUnchecked(transaction, user, input, options),
+    );
+  }
+  if ((input.provider ?? "fixture") === "modal") {
     return withGatewayTransaction(
       db,
       { isolation: "serializable" },
@@ -2576,25 +2775,10 @@ async function createJobUnchecked(
   const costCredits = provider === "modal" ? 1 : 0;
   await assertHardwareGateForJob(db, input.kind, provider, authoritativePayload);
   await ensureCreditAccount(db, user);
-  if (costCredits > 0) {
-    const debitKey = databaseIdempotencyKey ? `${databaseIdempotencyKey}:credit` : randomUUID();
-    const debit = await db.query(
-      `INSERT INTO credit_ledger (user_id, delta_credits, reason, source_kind, source_id, idempotency_key)
-       VALUES ($1, $2, $3, 'job', $4, $5)
-       ON CONFLICT (idempotency_key) DO NOTHING`,
-      [user.id, -costCredits, `modal ${input.kind}`, input.kind, debitKey],
-    );
-    if ((debit.rowCount ?? 0) > 0) {
-      await db.query(
-        `UPDATE credit_accounts
-            SET balance_credits = balance_credits - $2,
-                updated_at = now()
-          WHERE user_id = $1`,
-        [user.id, costCredits],
-      );
-    }
-  }
   if (provider !== "fixture") {
+    if (provider === "modal") {
+      await assertModalJobQuota(db, costCredits, databaseIdempotencyKey);
+    }
     const proposedJobId = newJobId();
     const timeoutSeconds = jobTimeoutSeconds(resolvedInput);
     const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
@@ -2628,7 +2812,32 @@ async function createJobUnchecked(
         statusCode: 409,
       });
     }
-    return mapJob(result.rows[0]);
+    const job = mapJob(result.rows[0]);
+    if (result.rows[0].inserted && costCredits > 0) {
+      const debit = await db.query(
+        `INSERT INTO credit_ledger (user_id, delta_credits, reason, source_kind, source_id, idempotency_key)
+         VALUES ($1, $2, $3, 'job', $4, $5)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [user.id, -costCredits, `modal ${input.kind}`, job.id, `${job.id}:debit`],
+      );
+      if ((debit.rowCount ?? 0) > 0) {
+        await db.query(
+          `UPDATE credit_accounts
+              SET balance_credits = balance_credits - $2,
+                  updated_at = now()
+            WHERE user_id = $1`,
+          [user.id, costCredits],
+        );
+        await recordUsageEvent(db, user, {
+          eventKind: "job.credit-debit",
+          provider: "modal",
+          units: { jobId: job.id, kind: input.kind },
+          costCredits,
+          idempotencyKey: `${job.id}:usage-debit`,
+        });
+      }
+    }
+    return job;
   }
 
   const fixtureOutput = fixtureJobOutput(input.kind, authoritativePayload);
@@ -2676,7 +2885,12 @@ export async function listJobs(db: GatewayDb, user: CurrentUser, limit: number):
   const result = await db.query<Parameters<typeof mapJob>[0]>(
     `SELECT id, owner_user_id, kind, status, provider, input, output, error,
             last_error_code, attempts, max_attempts, timeout_seconds, available_at,
-            lease_expires_at, cost_credits, created_at
+            lease_expires_at, provider_call_id, provider_function_version,
+            provider_environment, provider_deployment_contract_hash,
+            provider_submitted_at, provider_completed_at, provider_cancelled_at,
+            provider_cost_usd, provider_billing_report_id, provider_cost_reconciled_at,
+            cancel_requested_at, credit_refunded_at,
+            cost_credits, created_at
        FROM jobs
       WHERE owner_user_id = $1
       ORDER BY created_at DESC
@@ -2690,7 +2904,12 @@ export async function getOwnedJob(db: GatewayDb, user: CurrentUser, jobId: strin
   const result = await db.query<Parameters<typeof mapJob>[0]>(
     `SELECT id, owner_user_id, kind, status, provider, input, output, error,
             last_error_code, attempts, max_attempts, timeout_seconds, available_at,
-            lease_expires_at, cost_credits, created_at
+            lease_expires_at, provider_call_id, provider_function_version,
+            provider_environment, provider_deployment_contract_hash,
+            provider_submitted_at, provider_completed_at, provider_cancelled_at,
+            provider_cost_usd, provider_billing_report_id, provider_cost_reconciled_at,
+            cancel_requested_at, credit_refunded_at,
+            cost_credits, created_at
        FROM jobs
       WHERE owner_user_id = $1
         AND id = $2
@@ -2698,6 +2917,106 @@ export async function getOwnedJob(db: GatewayDb, user: CurrentUser, jobId: strin
     [user.id, jobId],
   );
   return result.rows[0] ? mapJob(result.rows[0]) : null;
+}
+
+export async function cancelOwnedJob(
+  db: GatewayDb,
+  user: CurrentUser,
+  jobId: string,
+): Promise<JobRecord> {
+  return withGatewayTransaction(db, { isolation: "serializable" }, async (transaction) => {
+    const current = await transaction.query<Parameters<typeof mapJob>[0]>(
+      `SELECT id, owner_user_id, kind, status, provider, input, output, error,
+              last_error_code, attempts, max_attempts, timeout_seconds, available_at,
+              lease_expires_at, provider_call_id, provider_function_version,
+              provider_environment, provider_deployment_contract_hash,
+              provider_submitted_at, provider_completed_at, provider_cancelled_at,
+              provider_cost_usd, provider_billing_report_id, provider_cost_reconciled_at,
+              cancel_requested_at, credit_refunded_at,
+              cost_credits, created_at
+         FROM jobs
+        WHERE owner_user_id = $1 AND id = $2
+        FOR UPDATE`,
+      [user.id, jobId],
+    );
+    const row = current.rows[0];
+    if (!row) throw Object.assign(new Error("job not found"), { statusCode: 404 });
+    if (row.status === "cancelled") return mapJob(row);
+    if (row.status !== "queued" && row.status !== "running") {
+      throw Object.assign(new Error("only queued or running jobs can be cancelled"), {
+        statusCode: 409,
+      });
+    }
+    const costCredits = Number(row.cost_credits);
+    const refund = row.provider === "modal"
+      && costCredits > 0
+      && row.output == null
+      && row.credit_refunded_at == null;
+    if (refund) {
+      const ledger = await transaction.query(
+        `INSERT INTO credit_ledger (
+           user_id, delta_credits, reason, source_kind, source_id, idempotency_key
+         )
+         VALUES ($1, $2, 'provider-cancelled-before-materialization', 'job', $3, $4)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [user.id, costCredits, jobId, `${jobId}:refund`],
+      );
+      if ((ledger.rowCount ?? 0) > 0) {
+        await transaction.query(
+          `UPDATE credit_accounts
+              SET balance_credits = balance_credits + $2,
+                  updated_at = now()
+            WHERE user_id = $1`,
+          [user.id, costCredits],
+        );
+        await recordUsageEvent(transaction, user, {
+          eventKind: "job.credit-refund",
+          provider: "modal",
+          units: { jobId, reason: "provider-cancelled-before-materialization" },
+          costCredits: -costCredits,
+          idempotencyKey: `${jobId}:usage-refund`,
+        });
+      }
+    }
+    const updated = await transaction.query<Parameters<typeof mapJob>[0]>(
+      `UPDATE jobs
+          SET status = 'cancelled',
+              error = 'cancelled by owner',
+              last_error_code = 'owner-cancelled',
+              cancel_requested_at = COALESCE(cancel_requested_at, now()),
+              credit_refunded_at = CASE
+                WHEN $3::boolean THEN COALESCE(credit_refunded_at, now())
+                ELSE credit_refunded_at
+              END,
+              finished_at = now(),
+              lease_token = NULL,
+              lease_expires_at = NULL
+        WHERE owner_user_id = $1 AND id = $2
+        RETURNING id, owner_user_id, kind, status, provider, input, output, error,
+                  last_error_code, attempts, max_attempts, timeout_seconds, available_at,
+                  lease_expires_at, provider_call_id, provider_function_version,
+                  provider_environment, provider_deployment_contract_hash,
+                  provider_submitted_at, provider_completed_at, provider_cancelled_at,
+                  provider_cost_usd, provider_billing_report_id, provider_cost_reconciled_at,
+                  cancel_requested_at, credit_refunded_at,
+                  cost_credits, created_at`,
+      [user.id, jobId, refund],
+    );
+    if (row.provider_call_id) {
+      await transaction.query(
+        `UPDATE job_provider_calls
+            SET status = 'cancellation-requested'
+          WHERE job_id = $1 AND call_id = $2 AND status = 'submitted'`,
+        [jobId, row.provider_call_id],
+      );
+    }
+    await transaction.query(
+      `INSERT INTO job_events (job_id, event, payload)
+       VALUES ($1, 'cancelled', $2::jsonb)`,
+      [jobId, json({ reason: "owner-cancelled", creditRefunded: refund })],
+    );
+    return mapJob(updated.rows[0]);
+  });
 }
 
 export async function listJobEvents(

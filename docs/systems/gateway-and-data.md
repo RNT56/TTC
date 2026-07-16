@@ -2,7 +2,7 @@
 
 **Status:** validation/BOM/review/generation/auth/model/share/job/platform and local user-data/consent lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34, D38, D39
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34, D38, D39, D46
 
 ## 1. Purpose
 
@@ -37,11 +37,11 @@ their TypeBox request schemas:
 - [`../API-EVENT-ARTIFACT-REFERENCE.md`](../API-EVENT-ARTIFACT-REFERENCE.md) — human
   route/auth/maturity table plus event and artifact guidance;
 - [`../contracts/openapi.v0.2.0.json`](../contracts/openapi.v0.2.0.json) — OpenAPI
-  3.1 request contract for all 76 registered routes;
+  3.1 request contract for all 77 registered routes;
 - [`../contracts/events.v0.2.0.json`](../contracts/events.v0.2.0.json) — generation
   SSE and persisted job-event ordering/terminal semantics;
 - [`../contracts/artifacts.v0.2.0.json`](../contracts/artifacts.v0.2.0.json) — all
-  compatibility domains and the exact 16-kind worker envelope catalog.
+  compatibility domains and the exact 17-kind worker envelope catalog.
 
 `contracts/documentation.json` supplies reviewed purpose, authentication, maturity,
 response-status, event, and artifact metadata. `pnpm docs:contracts` combines it with
@@ -111,6 +111,17 @@ for exact task/tensor/sample validation and the unchanged scorecard export gate.
 This boundary is protected through PR #77/`2c7562d`: exact PR/post-merge CI/security,
 the clean plus every-predecessor 23-migration matrix, and artifact `8359446894` prove
 the controlled-synthetic path. They do not attest a recorder or device source.
+Migration 0024 adds D46 provider-operation fields to `jobs` and an attempt-preserving
+`job_provider_calls` table. A Modal `train.policy` insert requires tokens plus exact
+environment, function version, source revision, and deployment-contract hash. One
+serializable advisory-locked transaction enforces the shared active-job and UTC-day
+credit ceilings, inserts the new idempotent job, and then debits it exactly once.
+`DELETE /v1/jobs/{jobId}` is owner-scoped and idempotently cancels queued/running
+work: it clears the current D38 lease, requests provider termination, appends the job
+event, and reverses one positive Modal debit only when no artifact exists. Every
+provider call retains attempt, identity, submit/complete/cancel state, and later cost
+reconciliation fields; a retry starts a new attempt rather than overwriting history.
+These are contract/fixture controls pending protected and credentialed P7-013 proof.
 The local-only `commerce.vendor-refresh` kind is command-gated at enqueue and worker
 execution. Successful normalized rows materialize to `vendor_offers` in the same
 worker transaction as job success; a corrupt accepted row rolls back both state
@@ -197,13 +208,15 @@ caller forwarding headers, its CSRF behavior remains enabled, and unsafe cookie-
 authenticated requests require the configured origin.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.3.0 across every explicit owner-scoped table,
+transaction and returns format 1.4.0 across every explicit owner-scoped table,
 including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
 Policy rows add authoritative `jobId` and byte-free `policyMetadata`; retained ONNX
 bytes stay behind the authenticated policy-model endpoint and are never embedded in
-the export JSON.
+the export JSON. Version 1.4 additionally exports the owner's byte-free D46 provider-
+call attempts and job operation fields; provider tokens, raw call payloads/results,
+and unrelated billing data remain excluded.
 `DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
 user in a serializable transaction, removes user/derived rows explicitly rather than
 trusting `SET NULL`, batches S3-compatible object deletes, and commits only after the
@@ -311,7 +324,9 @@ decision records. Run `pnpm lifecycle:ops -- help` for the operator surface and
 `maintenance.repair-sheet` · `maintenance.fleet-summary`. The local
 runner registers handlers for all names; commerce is local-command-only rather than
 fixture-backed, and Modal/GPU work sits behind
-adapters. Fixture jobs complete synchronously for deterministic CI; non-fixture
+the exact D46 adapter. Owners cancel queued/running jobs through
+`DELETE /v1/jobs/{jobId}`; cross-owner lookups remain 404. Fixture jobs complete
+synchronously for deterministic CI; non-fixture
 jobs remain queued until claimed by the Python worker. Every job carries
 `{userId, provider, payload, idempotencyKey}` plus persisted availability, attempt
 count/ceiling, timeout, and the current lease expiry. The opaque lease token is
@@ -322,7 +337,14 @@ worker-internal and is never returned by the gateway.
 Auth.js + GitHub OAuth are live. BYO Anthropic key is client-held, per-request, and
 never persisted server-side. `credit_accounts`, `credit_ledger`, and `usage_events`
 are live; template generation records zero-cost authenticated usage and Modal jobs
-debit the scaffold ledger.
+debit the scaffold ledger only after a new job row exists. Product-credit reversal is
+not provider-cost evidence and does not reopen the conservative UTC-day launch
+ceiling; billing reports, tags, lag, credits/reservations, and USD
+cost are reconciled separately under the Modal runbook. The operator-only
+`modal-reconcile-cost.mjs` transaction binds one exact FunctionCall to the same report
+ID, USD amount, and reconciliation time in both the job and attempt row, appends one
+audit event, replays idempotently, and refuses conflicting authority; it exposes no
+public admin route.
 
 ## 7. Determinism duties (D17)
 

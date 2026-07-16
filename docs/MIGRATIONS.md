@@ -111,6 +111,20 @@ cannot enqueue the new kind through the fixture provider, without active per-log
 `training.reuse` consent, against a different model, or with client-supplied
 tape/hash/snapshot authority.
 
+Migration `0024` additively extends D38/D46 operations. Nullable `jobs` columns retain
+the current provider-call identity, deployment version/environment/contract hash,
+submit/complete/cancel times, cancellation request, product-credit reversal, and
+report-ID/time-bound reconciled provider cost. `job_provider_calls` retains one row
+per job attempt with a unique call ID and bounded lifecycle/cost-reconciliation
+status. Existing jobs remain valid and are not
+fabricated into provider calls. The populated `0023` predecessor must preserve the
+offline-training row, admit an exact Modal call attempt, enforce the new constraints,
+and cascade its attempt rows when the owning job is deleted. Application acceptance
+must additionally prove call persistence before wait, stale-lease refusal,
+cancellation request/provider cancellation, idempotent exact credit reversal,
+idempotent same-report cost reconciliation plus conflict refusal, and no late
+materialization through `pnpm db:assert-modal-operations`.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -178,6 +192,15 @@ binary can claim the new kind, apply the constraint expansion, then run the comp
 migration, consent, queue-fault, gateway, and offline-training acceptance. Resume
 only after the configured local/Modal worker advertises `FORGE_OFFLINE_RL_CMD`; an
 unconfigured worker must leave the row unclaimed rather than improvise a fixture.
+
+For `0024`, disable new Modal enqueueing and stop old training workers. Inventory all
+queued/running Modal jobs and external calls; cancel or reconcile any call that lacks
+a durable current job/attempt identity. Apply migration 0024, then deploy the D46
+gateway and worker together. Configure the exact environment/function version/source/
+deployment-contract hash only after the protected function deployment is reviewed.
+Run the full migration/queue assertions plus `pnpm db:assert-modal-operations` before
+resuming one job at a time. Older applications may ignore the additive columns, but
+older workers must not resume because they cannot fence or cancel provider calls.
 
 ### Apply and verify
 

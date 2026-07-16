@@ -41,6 +41,13 @@ class ProviderUnavailableError(RetryableJobError):
         super().__init__("provider-unavailable", message)
 
 
+class ProviderRecoveryPendingError(RetryableJobError):
+    """A persisted provider call is unresolved and must be recovered, never replaced."""
+
+    def __init__(self, message: str = "provider call recovery remains unresolved") -> None:
+        super().__init__("provider-recovery-pending", message)
+
+
 class PartialObjectUploadError(RetryableJobError):
     def __init__(self, message: str = "object upload is incomplete") -> None:
         super().__init__("partial-object-upload", message)

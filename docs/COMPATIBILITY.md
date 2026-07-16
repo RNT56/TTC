@@ -27,12 +27,12 @@ package to adopt that same number.
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
-| user-data export | 1.3.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy bytes are never part of the format | major 1 |
+| user-data export | 1.4.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy bytes are never part of the format | major 1 |
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
 | policy tensor | 2.0.0 | `forge-policy-tensor` binds scalar input/output order, names, fixed shapes, Y-up/right-handed/SI frame, normalized action meaning, and advisory rate; any semantic/layout change is major | majors 1 and 2; new producers emit 2, exact v1 execution remains a legacy read path |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 16 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
@@ -42,7 +42,7 @@ reads; replay producers emit `1.0.0`, while readers temporarily accept the histo
 manifest that binds every assembly asset to its ledger class, disposition,
 attribution/link-out evidence, and the derived assembly policy.
 
-`GET /v1/account/export` emits user-data export 1.3.0. It includes explicit
+`GET /v1/account/export` emits user-data export 1.4.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but
 never OAuth access/refresh/ID tokens, session or verification tokens, or provider
 API keys. Version 1.1 added complete consent history; 1.2 added causal event sequences
@@ -52,6 +52,11 @@ backup-copy status without authority/evidence references. Version 1.3 adds each
 policy artifact's authoritative job binding and byte-free delivery/model/scorecard/
 tensor metadata. Policy ONNX bytes remain outside the export document and require
 the authenticated owner-scoped policy-model endpoint.
+Version 1.4 adds D46 job provider-call attempt history and the job's byte-free
+provider identity, timing, cancellation/refund, and report-ID/time-bound reconciled
+cost fields. It does
+not embed Modal tokens, provider payloads, function inputs/outputs, ONNX bytes, or
+unrelated billing/dashboard data.
 Consent ledger 1.0.0 binds every append-only grant/withdrawal to a purpose, owned
 subject, policy version, exact notice hash, prior event, and bounded evidence; only
 the latest event under the current policy/hash can be active. Consent and legal-hold

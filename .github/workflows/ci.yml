@@ -223,7 +223,7 @@ jobs:
       - name: install exact CPU training runtime
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.13.0
-          pip install -e "workers[dev,mujoco,training,mjx]"
+          pip install -e "workers[dev,mujoco,training,mjx,deployment]"
       - run: python -m pytest workers -q
       - name: P7-003/P7-014 real seeded multirotor + ground MuJoCo-SB3-ONNX smoke
         env:

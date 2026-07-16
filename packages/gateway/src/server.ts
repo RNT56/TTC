@@ -59,6 +59,7 @@ import {
 } from "./reviewQueue.js";
 import {
   assertJobKind,
+  cancelOwnedJob,
   completeObjectBlobUpload,
   createJob,
   createModel,
@@ -1536,6 +1537,25 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           return reply.status(404).send({ error: "job not found" });
         }
         return reply.send({ job, events: await listJobEvents(db, user, id, query.limit ?? 100) });
+      } catch (error) {
+        const mapped = routeError(error);
+        return reply.status(mapped.statusCode).send(mapped.body);
+      }
+    },
+  );
+
+  app.delete(
+    "/v1/jobs/:id",
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = await requireUser(request, db);
+        const { id } = request.params as { id: string };
+        return reply.send({ job: await cancelOwnedJob(db, user, id) });
       } catch (error) {
         const mapped = routeError(error);
         return reply.status(mapped.statusCode).send(mapped.body);

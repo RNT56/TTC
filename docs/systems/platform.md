@@ -4,7 +4,7 @@
 queued vendor-normalization contract, and quote/link commerce scaffolds exist behind
 local routes · **Phases:** P4 (sharing), P11 (platform), P12 (maintenance
 twin) · **Home:** gateway + studio · **Plan refs:** §2, §14.2, §16
-(v3.0) · **Decisions:** D2, D3, D4, D10, D15, D29, D12-adjacent
+(v3.0) · **Decisions:** D2, D3, D4, D10, D15, D29, D46, D12-adjacent
 
 ## 1. Purpose
 
@@ -68,6 +68,14 @@ rejected. This prevents a queue request from substituting an unadmitted training
 contract. P7-011 later completes one-click Studio orchestration and durable exact
 object-backed delivery through protected PR #68/`9131289`; it does not add passing
 learning quality, deployed GPU/storage operations, or external transfer evidence.
+
+D46 adds owner-visible cancellation and shared-credit authority for Modal training:
+the gateway accepts only complete source/deployment identity, debits one newly created
+job, and exposes owner-scoped `DELETE /v1/jobs/{jobId}`. Cancellation revokes the
+worker lease, requests provider termination, discards late results, and reverses a
+positive product credit only before materialization. This contract/fixture candidate
+does not claim that provider billing was refunded or that the training service is
+deployed; those claims require the P7-013 runbook evidence.
 
 The saved-model `contractHash` is the SHA-256 of the gateway's exact stable-JSON
 snapshot bytes. It is intentionally distinct from the validator report's canonical
@@ -175,7 +183,7 @@ Postgres adapter schema, GitHub OAuth provider wiring, `/v1/me`, user-owned
 can use the explicit development header path; production auth is cookie/session
 based.
 
-Live locally 2026-07-15: `/v1/account/export` emits versioned user-data format 1.3.0
+Live locally 2026-07-15: `/v1/account/export` emits versioned user-data format 1.4.0
 from a repeatable owner-scoped snapshot with authenticated blob download endpoints
 and no OAuth/session/verification/provider secrets. Exact-confirmation
 `DELETE /v1/account` explicitly purges account, photo/model/generated/blob,
