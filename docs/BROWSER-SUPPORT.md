@@ -63,6 +63,10 @@ The production Studio bundle must preserve all of these behaviors:
   controls have explicit accessible names, and motion begins only from the user's
   play action. QA-002 owns the authenticated ten-minute interaction; this does not
   add the hardware-only surface to viewer-grade acceptance.
+- the deployment ladder remains readable in every tier, including its stage order,
+  D9 rates, and authority nonclaims. Browser runtimes expose no transition control
+  and state that FORGE Desktop is required; only the Tauri shell may own a rehearsal
+  session. A browser-visible stage card is not hardware or physical-evidence support.
 
 This is deterministic semantic and interaction coverage, not an accessibility
 certification. Before an external product promise, QA-010/EXT-001 must include a

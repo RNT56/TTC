@@ -27,12 +27,24 @@ assert(link.security?.noAutoArm === true, "FORGE Link must never auto-arm");
 assert(link.runtimeContract?.supervisorRateHz >= 200, "supervisor loop rate too low");
 
 const ladder = await json("deployment-ladder.json");
+assert(ladder.schemaVersion === "forge-deployment-ladder/1.0.0", "deployment ladder schema version mismatch");
+assert(ladder.controlSchemaVersion === "forge-deployment-ladder-control/1.0.0", "deployment ladder control schema version mismatch");
+assert(ladder.mode === "rehearsal-only", "deployment ladder must remain rehearsal-only");
+assert(ladder.maturity === "local-ux-rehearsal", "deployment ladder maturity mismatch");
 assert(ladder.noAutoArm === true, "deployment ladder must never auto-arm");
 assert(ladder.stages?.map((stage) => stage.id).join(">") === "sitl>hitl>constrained>free", "deployment ladder stage order mismatch");
 assert(ladder.stages.slice(1).every((stage) => stage.physicalConfirmation === true), "hardware stages require physical confirmation");
+assert(ladder.stages.slice(1).every((stage) => stage.transitionConfirmation?.startsWith("I physically confirm")), "hardware stages require exact physical-confirmation interactions");
 assert(ladder.liveHardwareGate?.decision === "D30", "deployment ladder must carry the D30 lab signoff decision");
 assert(ladder.liveHardwareGate?.scope === "controlled D12 lab pilots only", "deployment ladder must stay scoped to D12 lab pilots");
 assert(ladder.liveHardwareGate?.externalBetaEnabled === false, "deployment ladder must not enable external hardware beta");
+assert(ladder.authority?.policyAdvisory === true, "deployment ladder policy must remain advisory");
+assert(ladder.authority?.supervisorAuthority === true, "deployment ladder must retain supervisor authority");
+assert(ladder.authority?.hardwareExecutionAuthorized === false, "deployment ladder must not authorize hardware execution");
+assert(ladder.authority?.deploymentEvidenceVerified === false, "deployment ladder must not fabricate deployment evidence");
+assert(ladder.authority?.physicalConfirmationEvidenceVerified === false, "deployment ladder must not fabricate physical-confirmation evidence");
+assert(ladder.authority?.deviceIdentityVerified === false, "deployment ladder must not fabricate device identity");
+assert(ladder.authority?.fieldSessionVerified === false, "deployment ladder must not fabricate a field session");
 
 const main = await readFile(resolve(root, "src-tauri/src/main.rs"), "utf8");
 for (const command of [
@@ -44,6 +56,10 @@ for (const command of [
   "start_custodied_background_recording",
   "stop_background_recording",
   "stop_custodied_background_recording",
+  "deployment_ladder_status",
+  "start_deployment_ladder",
+  "advance_deployment_ladder",
+  "reset_deployment_ladder",
 ]) {
   assert(main.includes(`fn ${command}`), `missing Tauri command ${command}`);
 }
@@ -106,5 +122,23 @@ assert(custody.includes("verifying_key.is_weak()"), "custody must reject weak Ed
 assert(custody.includes("MAX_AUTHORIZATION_LIFETIME_MS"), "custody authorization lifetime must remain bounded");
 assert(custody.includes("create_new(true)"), "custody proofs must never overwrite existing evidence");
 assert(custody.includes("outside the exact five-file archive"), "custody proof must stay outside archive v1");
+
+const ladderSource = await readFile(resolve(root, "src-tauri/src/ladder.rs"), "utf8");
+assert(ladderSource.includes("forge-deployment-ladder/1.0.0"), "deployment ladder runtime must bind the versioned ladder contract");
+assert(ladderSource.includes("forge-deployment-ladder-control/1.0.0"), "deployment ladder runtime must bind the versioned control contract");
+assert(ladderSource.includes("transitions cannot be skipped"), "deployment ladder runtime must reject stage skipping");
+assert(ladderSource.includes("hardware_execution_authorized: false"), "deployment ladder runtime must deny hardware authority");
+assert(ladderSource.includes("deployment_evidence_verified: false"), "deployment ladder runtime must deny deployment-evidence claims");
+assert(ladderSource.includes("physical_confirmation_evidence_verified: false"), "deployment ladder runtime must deny physical-evidence claims");
+assert(ladderSource.includes("no_auto_arm: true"), "deployment ladder runtime must stay no-auto-arm");
+
+const ladderStudio = await readFile(resolve(root, "../studio/src/deploymentLadder.ts"), "utf8");
+assert(ladderStudio.includes("forge-deployment-ladder/1.0.0"), "Studio must bind the exact ladder contract version");
+assert(ladderStudio.includes("forge-deployment-ladder-control/1.0.0"), "Studio must bind the exact ladder control version");
+for (const stage of ladder.stages.slice(1)) {
+  assert(ladderStudio.includes(stage.transitionConfirmation), `Studio physical confirmation drifted for ${stage.id}`);
+}
+assert(ladderStudio.includes("value.hardwareExecutionAuthorized !== false"), "Studio must reject ladder hardware-authority promotion");
+assert(ladderStudio.includes("value.physicalConfirmationEvidenceVerified !== false"), "Studio must reject ladder physical-evidence promotion");
 
 console.log("desktop: scaffold, FORGE Link manifest, and deployment ladder checks passed");

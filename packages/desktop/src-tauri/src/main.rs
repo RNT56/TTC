@@ -2,12 +2,17 @@
 #![cfg_attr(test, allow(dead_code))]
 
 mod custody;
+mod ladder;
 
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use custody::{
     load_and_verify_authorization, write_custody_proof, CustodyBindingInputs,
     RecorderCustodyAuthorization, RecorderCustodyProof, RecorderCustodyProofInputs,
     VerifiedCustodyAuthorization,
+};
+use ladder::{
+    deployment_ladder_runtime, DeploymentLadderAdvanceRequest, DeploymentLadderResetRequest,
+    DeploymentLadderStartRequest, DeploymentLadderStatus,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -3207,6 +3212,32 @@ fn bridge_status() -> BridgeStatus {
 }
 
 #[tauri::command]
+fn deployment_ladder_status() -> Result<DeploymentLadderStatus, String> {
+    deployment_ladder_runtime().status()
+}
+
+#[tauri::command]
+fn start_deployment_ladder(
+    request: DeploymentLadderStartRequest,
+) -> Result<DeploymentLadderStatus, String> {
+    deployment_ladder_runtime().start(request)
+}
+
+#[tauri::command]
+fn advance_deployment_ladder(
+    request: DeploymentLadderAdvanceRequest,
+) -> Result<DeploymentLadderStatus, String> {
+    deployment_ladder_runtime().advance(request)
+}
+
+#[tauri::command]
+fn reset_deployment_ladder(
+    request: DeploymentLadderResetRequest,
+) -> Result<DeploymentLadderStatus, String> {
+    deployment_ladder_runtime().reset(request)
+}
+
+#[tauri::command]
 fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
     if !hardware_enabled() {
         return Ok(Vec::new());
@@ -3635,6 +3666,10 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             bridge_status,
+            deployment_ladder_status,
+            start_deployment_ladder,
+            advance_deployment_ladder,
+            reset_deployment_ladder,
             list_serial_ports,
             probe_recorder_adapter,
             write_serial_config,

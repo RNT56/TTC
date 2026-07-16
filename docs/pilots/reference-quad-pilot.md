@@ -7,6 +7,10 @@ HITL, tethered hover, serial writes, and free operation still require the lab
 adapter, lab-mode envs, D12 rig confirmation, physical confirmation, and evidence
 capture.
 
+D58's Desktop ladder may rehearse this order and prevent software skips, but its
+stage acknowledgments are not physical-confirmation, HITL, lab, deployment, or field
+evidence. Keep every real-stage acceptance artifact separate and reviewer-resolved.
+
 This playbook is the executable tutorial contract for the D12 reference quad. It is
 intended to keep the SITL -> HITL -> tethered path repeatable before hardware is
 enabled. It does not grant hardware authority: the product must stay no-auto-arm,
@@ -27,7 +31,8 @@ the policy remains advisory, and the safety supervisor owns every transition.
 - Admitted multirotor model with the D12 component refs pinned in the lockfile.
 - Passing `train.policy` scorecard for a hover or waypoint task.
 - Exportable ONNX header or deterministic fixture policy metadata.
-- `packages/desktop/deployment-ladder.json` with `noAutoArm: true`.
+- `packages/desktop/deployment-ladder.json` 1.0.0 with `mode: "rehearsal-only"`
+  and `noAutoArm: true`.
 - Supervisor config covering geofence, attitude/rate limits, battery floor,
   fallback controller, and hardware kill switch.
 - Telemetry consent record before any real capture.
@@ -132,7 +137,8 @@ Evidence required before passing:
 - Contract id, revision, lockfile, and validator report.
 - BOM export with SKUs and review/license status.
 - Scorecard JSON and ONNX header.
-- Deployment ladder stage log.
+- Deployment ladder stage log, explicitly labeled rehearsal until the separate
+  named-hardware evidence and signoffs resolve every real transition.
 - D49 receipt 2.0.0 plus private content-addressed raw CLI responses and the retained
   failure/reconnect/power-loss record; do not place raw device output in Git.
 - Telemetry tape, replay verification, ghost-divergence summary, and sysid patch.

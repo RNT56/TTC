@@ -292,6 +292,22 @@ async function inspectPage(page, engine, origin) {
   await waitForText(page.locator('[data-testid="validator-report"]'), /ADMITTED/);
   assert.equal(await alternative.getAttribute("aria-pressed"), "true");
 
+  const ladderSummary = page.getByText("Deployment ladder · rehearsal only", { exact: true });
+  await ladderSummary.focus();
+  await ladderSummary.press("Enter");
+  const deploymentLadder = {
+    rates: (await page.locator('[data-testid="deployment-ladder-rates"]').textContent())?.trim() ?? "",
+    authority: (await page.locator('[data-testid="deployment-ladder-authority"]').textContent())?.trim() ?? "",
+    stageCount: await page.locator('[data-testid^="deployment-ladder-stage-"]').count(),
+    desktopLock: await page.getByText(/FORGE Desktop is required for shell-owned rehearsal state/).isVisible(),
+    transitionControls: await page.locator('[data-testid^="deployment-ladder-start-confirmation"], [data-testid^="deployment-ladder-transition-confirmation"]').count(),
+  };
+  assert.match(deploymentLadder.rates, /policy advisory 50 Hz · supervisor authority 200 Hz/);
+  assert.match(deploymentLadder.authority, /deployment evidence off · physical-evidence verification off · hardware execution locked/);
+  assert.equal(deploymentLadder.stageCount, 4);
+  assert.equal(deploymentLadder.desktopLock, true);
+  assert.equal(deploymentLadder.transitionControls, 0);
+
   const criticalTargets = await page.evaluate(() => {
     const selectors = [
       '[data-testid="demo-model"]',
@@ -343,6 +359,7 @@ async function inspectPage(page, engine, origin) {
       explode: 0.1,
       blueprint: true,
     },
+    deploymentLadder,
     criticalTargets,
     contrast: {
       muted: Number(secondaryContrast.toFixed(2)),

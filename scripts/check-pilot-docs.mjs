@@ -32,6 +32,7 @@ const requiredDocs = [
       "replay verification",
       "ghost",
       "sysid",
+      "rehearsal",
     ],
   },
   {
@@ -50,6 +51,7 @@ const requiredDocs = [
       "replay verification",
       "ghost",
       "sysid",
+      "rehearsal",
     ],
   },
 ];
@@ -62,6 +64,9 @@ for (const doc of requiredDocs) {
 }
 
 const ladder = JSON.parse(read("packages/desktop/deployment-ladder.json"));
+assert(ladder.schemaVersion === "forge-deployment-ladder/1.0.0", "deployment ladder schema version mismatch");
+assert(ladder.controlSchemaVersion === "forge-deployment-ladder-control/1.0.0", "deployment ladder control schema version mismatch");
+assert(ladder.mode === "rehearsal-only", "deployment ladder must remain rehearsal-only");
 assert(ladder.noAutoArm === true, "deployment ladder must stay no-auto-arm");
 assert(ladder.liveHardwareGate?.decision === "D30", "deployment ladder must name D30");
 assert(ladder.liveHardwareGate?.scope === "controlled D12 lab pilots only", "deployment ladder must stay scoped to D12 lab pilots");
@@ -74,6 +79,16 @@ assert(
   ladder.stages?.filter((stage) => stage.id !== "sitl").every((stage) => stage.physicalConfirmation === true),
   "all hardware-touching ladder stages must require physical confirmation",
 );
+assert(
+  ladder.stages?.filter((stage) => stage.id !== "sitl").every((stage) => stage.transitionConfirmation?.startsWith("I physically confirm")),
+  "all hardware-touching ladder stages must define exact physical-confirmation interactions",
+);
+assert(ladder.authority?.policyAdvisory === true, "deployment policy must stay advisory");
+assert(ladder.authority?.supervisorAuthority === true, "deployment ladder must retain supervisor authority");
+assert(ladder.authority?.noAutoArm === true, "deployment ladder authority must stay no-auto-arm");
+assert(ladder.authority?.hardwareExecutionAuthorized === false, "deployment ladder must not authorize hardware execution");
+assert(ladder.authority?.deploymentEvidenceVerified === false, "deployment ladder must not fabricate deployment evidence");
+assert(ladder.authority?.physicalConfirmationEvidenceVerified === false, "deployment ladder must not fabricate physical-confirmation evidence");
 
 const quadRig = JSON.parse(read("catalog/reference-rigs/ref_quad_kakute-h7-source-one-5in.json"));
 const roverRig = JSON.parse(read("catalog/reference-rigs/ref_rover_waveshare-ugv-rover-pt-pi5-ros2.json"));

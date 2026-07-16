@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is protected at local protocol-fixture maturity through PR #97/`370d214`; D56 signed recorder custody is protected at local fixture maturity through PR #100/`1bf127d` with archive v1/D53/D54 unchanged; D30 accepted controlled D12 lab pilots; real trust-root/named-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is protected at local protocol-fixture maturity through PR #97/`370d214`; D56 signed recorder custody is protected at local fixture maturity through PR #100/`1bf127d` with archive v1/D53/D54 unchanged; D58's shell-owned rehearsal-only ladder is implemented locally but not yet protected; D30 accepted controlled D12 lab pilots; real trust-root/named-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54, D55, D56
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54, D55, D56, D58
 
 ## 1. Purpose
 
@@ -420,9 +420,24 @@ actual image build remains open.
 Every transition is a **deliberate physical-confirmation interaction**. The bridge
 never auto-arms anything.
 
-Live 2026-06-14: `packages/desktop/deployment-ladder.json` is the executable ladder
-contract used by package checks. It freezes the SITL → HITL → constrained → free
-stage order and requires physical confirmation for all hardware-touching stages.
+D58 replaces the unchecked stepper idea with two internal 1.0.0 contracts. Desktop
+owns one in-memory rehearsal session across webview reloads and exposes exact status,
+start, advance, and reset commands. Start accepts only one D12 rig, safe session/
+model/policy/supervisor IDs, lowercase contract and lockfile SHA-256 values, an
+exportable-policy-shaped input, an exact passing advisory supervisor result, D9's
+rates/fallback, and the exact rehearsal-only statement. Each advance must name the
+current and immediate next stage plus that stage's exact physical-confirmation
+interaction; parallel sessions, skipped stages, substituted session IDs, and reset
+without the exact end statement fail closed.
+
+This is deliberately `local-ux-rehearsal` maturity. Native code performs no serial,
+network, device, arm, supervisor-loop, or other hardware action. Every response keeps
+`deploymentEvidenceVerified`, `physicalConfirmationEvidenceVerified`,
+`hardwareExecutionAuthorized`, `deviceIdentityVerified`, `fieldSessionVerified`,
+and `externalBetaEnabled` false; the UI labels each stage acknowledgment as rehearsal
+only. These values cannot close HITL, constrained, free, P8-009/P8-010, or EXT-004.
+A future real transition must separately consume named D12 hardware, D30/lab
+authority, live supervisor/kill-switch timing, and retained acceptance evidence.
 
 **Control-rate contract (D9), stated in the UX:** policy advises at ~50 Hz; the
 supervisor runs at ≥ 200 Hz; the FC rate loop is never touched; a missed inference
@@ -529,6 +544,16 @@ fixture keys, invalid/malleated signatures, expired/revoked roots, two real pseu
 terminal ports, port/identity substitution, recorder failure, post-probe failure,
 proof overwrite refusal, and clean v1 inspection/admission regression. Those tests
 remain fixture proof until the named controller and retained signed lab evidence run.
+
+D58 ladder changes additionally require exact ladder/control version and field sets;
+one shell-owned session; a contiguous four-stage prefix; D12 rig, safe-ID, hash,
+exportable-policy, passing-supervisor, 50 Hz/200 Hz/FC-loop/fallback, and exact phrase
+refusal; parallel/skip/session/reset refusal; webview-reload continuity; browser
+fail-close; strict Studio response rebinding; and permanent false physical,
+deployment, hardware, device, field, and external-beta authority. Unit tests may
+prove only local rehearsal mechanics. Real transition evidence additionally requires
+the named rig, physical setup, measured supervisor and kill-switch behavior, retained
+D30 acceptance, failure drills, and the owning external-acceptance procedure.
 
 ## 12. Open questions
 
