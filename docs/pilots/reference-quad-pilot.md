@@ -78,6 +78,17 @@ Evidence required before passing:
   the same open port for protocol 0/API 1.47, `BTFL`, stable `2025.12.x`, target
   `KAKUTEH7`, and one UID hash. This is a prerequisite observation only: it is not
   cryptographic device attestation, recorder custody, or lab/field provenance.
+- Before any recorder-bound custody run, the acceptance owner issues one short-lived
+  D56 authorization from the private retained lab pack. It must bind the exact
+  protected revision, evidence/signoff hashes, artifact/contract/lockfile, expected
+  D55 identity/UID, and both OS serial descriptor hashes under the configured
+  purpose-limited public trust bundle. Fixture keys or an unsigned manifest do not
+  satisfy this step. D56 is not yet implemented, so no current run may claim it.
+- After a clean recorder stop and with props removed again, repeat the complete D55
+  observation. Only exact signed/pre/post continuity plus the canonical v1 receipt
+  may create the separate custody proof outside the five-file archive. A failure
+  preserves the valid archive and records custody as failed; it never promotes D54,
+  recorded-device, field, sharing, or training authority.
 - Private raw pre/post `version`, set/save, and `get failsafe_delay` responses resolve
   byte-for-byte to the four response hashes in one
   `forge-bridge-serial-receipt/2.0.0`; the full patch version,

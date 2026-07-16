@@ -377,6 +377,21 @@ every user-facing capability claim.
   replayed: never call them cryptographic attestation, recorded-device provenance,
   recorder custody, lab evidence, or field evidence, and never let them mutate an
   archive/admission record.
+- Make recorder custody a separate signed authority and proof, never a caller label
+  or archive-v1 field. Load only a bounded, hash-pinned, purpose-limited public-key
+  bundle; keep signing keys outside Desktop; strictly verify a domain-separated
+  canonical authorization; bind its evidence pack, exact protected revision,
+  artifact/model hashes, short validity window, both OS serial descriptors, and D55
+  identity/UID hashes. Re-enumerate and observe identity before telemetry opens and
+  after a clean stop. Write a create-new proof outside the five-file archive only
+  when signed/pre/post/receipt bindings all agree.
+- Distinguish acceptance-authority signatures from device signatures. A reviewed
+  operator/lab mapping can establish bounded session custody without making an
+  unauthenticated MSP UID cryptographic device attestation. Fixture keys establish
+  only contract mechanics. Expired/revoked/wrong-purpose roots, signature/clock/
+  revision/port drift, recorder failure, or post-observation failure produce no
+  custody proof; they never erase or relabel an otherwise valid v1 archive, promote
+  D54, grant sharing/training, or establish lab/field maturity.
 - Keep recorder lifecycle in the native shell, not React state. Expose one exact
   versioned `inactive|recording|finished` status so webview reloads cannot create a
   second capture or lose an ended thread; require explicit stop to collect either a

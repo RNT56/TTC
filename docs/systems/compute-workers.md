@@ -302,9 +302,11 @@ bounded, exact, contiguous serial-JSONL frames, a sparse index, and a completed 
 device attestation, sharing, and training reuse false. `bridge.telemetry-ingest`
 does not upgrade that provenance, and P7-009 continues to reject recorded-device
 input. D55 adds only a read-only, two-pass, self-reported MSP identity observation;
-because it is not bound to recorder start/end and is not cryptographic attestation,
-recorded-device input still requires a reviewed recorder-bound trust/custody successor
-plus consented gateway materialization.
+because it is not bound to recorder start/end and is not cryptographic attestation.
+D56 specifies a signed acceptance-authority authorization and native bracketing proof
+outside archive v1, but that proof deliberately keeps recorded-device/training false.
+Workers must continue rejecting recorded-device input until D56 is implemented and a
+later reviewed gateway format plus consented materialization explicitly owns it.
 
 ### 3.6 `workers/maintenance` — lifecycle twin (P12)
 `maintenance.estimate-wear`, `maintenance.crash-forensics`,

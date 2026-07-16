@@ -90,8 +90,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant and runtime anchor is D55/P8-002/P8-003 PR
-  #97 at `370d214`. Exact head `4321eaa` passed PR CI `29519984713` and security
+  latest verified protected descendant is D55 evidence-reconciliation PR #98 at
+  `9e94c71`, while the latest runtime anchor remains D55/P8-002/P8-003 PR #97 at
+  `370d214`. PR #98 exact docs head `46d7928`, reviewed tree `badc1ac`, PR
+  CI/security `29522780487`/`29522780670`, protected-tree equality, and post-merge
+  CI/security `29523361960`/`29523361913` pass. PR #97 exact head `4321eaa` passed
+  PR CI `29519984713` and security
   `29519984764`; reviewed tree `673a50c` is byte-identical at the protected squash,
   whose post-merge CI `29520651520` and security `29520651581` pass. D54 evidence
   PR #96/`b4b5ad9` and admission PR #95/`f8efb6f`, plus D53
@@ -313,6 +317,17 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   clean/25-predecessor database, 11-flow browser, and three-engine matrices pass.
   Named hardware, trusted recorder start/end custody, suspend, lab, and field proof
   remain separately gated;
+- D56 is the current unprotected recorder-custody design candidate. It preserves the
+  exact archive-v1/D53/D54 boundaries and plans three separate 1.0.0 formats: a
+  deployment-owned hash-pinned public Ed25519 trust bundle, a short-lived signed
+  authorization binding exact protected revision/evidence/signoffs/artifact/model/
+  telemetry-and-identity ports/D55 identity/nonclaims, and a native create-new proof
+  outside the archive after pre-open and post-clean-receipt D55 continuity. The
+  acceptance authority signs the reviewed mapping; the device does not. No runtime,
+  protected, cryptographic-device, recorded-device, sharing, training, suspend, lab,
+  or field claim follows from this design. Protect the decision before implementation,
+  then require fixture refusal/regression proof plus a real trust bundle, named Kakute
+  H7 V1.5, rotation/revocation, suspend, and EXT-004 evidence;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
