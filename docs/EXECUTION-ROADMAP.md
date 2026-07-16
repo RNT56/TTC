@@ -447,7 +447,8 @@ Work:
   PR/post-merge CI/security and reviewed-tree equality protect this local boundary.
   It is not gateway import/materialization, authenticity,
   adapter/device, lab/field, sharing/training, ghost, or system-ID evidence;
-- D52/P8-003 is the current unprotected local controls candidate. Native shell state
+- D52/P8-003 is protected at local recorder-control maturity through PR
+  #91/`a8120ab`. Native shell state
   is exposed only as exact `forge-recorder-control/1.0.0`
   `inactive|recording|finished`; Studio starts from the active admitted report's
   contract/lockfile hashes and seed plus D30/D12, exact capture consent, a new
@@ -456,7 +457,9 @@ Work:
   stop returns receipt v1 or collects the fail-closed recorder error, and raw frames
   plus device/field/sharing/training authority never cross into Studio. Focused native
   and Studio gates, the three-engine browser matrix, and all 40 local gates pass;
-  exact PR/protected/post-merge evidence is still required;
+  exact head `69db857`, reviewed tree `25be1d3`, PR CI/security
+  `29495505253`/`29495505262`, protected-tree equality, and post-merge CI/security
+  `29496148793`/`29496148796` pass;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -465,9 +468,9 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: protect and reconcile D52's versioned Desktop recorder
-controls, then design and implement a separately authorized object-backed gateway
-archive materialization path without changing D50 archive bytes or promoting
+Next dependency-complete step: design and implement a separately authorized
+object-backed gateway archive materialization path without changing D50 archive
+bytes or promoting
 self-consistency to authenticity, device provenance, sharing, or training authority.
 The reviewed real telemetry-adapter identity contract remains the prerequisite for
 recorded-device admission. In parallel, execute the protected D49 protocol on the named D12 quad FC

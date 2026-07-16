@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Protect D52 Desktop recorder controls
+**Session:** Codex agent · branch `codex/p8003-recorder-controls-evidence` · **Phase:** P8 ·
+**TODO items:** P8-003 [~]
+**Done:** Protected D52's versioned Desktop recorder status/start/stop boundary
+through PR #91. Exact implementation head `69db857` passed PR CI `29495505253`
+and security `29495505262`; reviewed tree `25be1d3` is byte-identical at protected
+squash `a8120ab`, whose exact post-merge CI `29496148793` and security
+`29496148796` pass. The implementation branch was deleted after proof. This closes
+the local shell-control dependency: one shell-owned
+`forge-recorder-control/1.0.0` state machine survives webview reloads, accepts
+capture identity only from an admitted report plus D30/D12/consent/new-path/
+OS-enumerated-115200-port authority, and returns the unchanged persisted receipt v1
+only through explicit stop. Studio receives no frames and cannot promote device,
+field, sharing, training, lab, ghost, system-ID, or authenticity authority. P8-003
+remains `[~]` because the five-file archive still needs a separately authorized,
+object-backed gateway materialization/verification path plus reviewed adapter,
+device, suspend, lab, and field evidence.
+**Changed:** Living protected-evidence anchors, current-state/readiness verdicts,
+roadmap/TODO/execution sequencing, AGENTS entry guidance, and hardware/Studio system
+status.
+**Decisions:** none; D52 remains the binding ephemeral shell-state boundary.
+**Next:** Design and implement the smallest fail-closed object-backed gateway
+materialization seam for the exact five archive-v1 files, without routing 512 MiB
+through JSONB or upgrading local self-consistency to authenticity.
+**Blockers:** None for the next local materialization slice. Real adapter/device
+identity, host-suspend behavior, controlled lab/field execution, object-store
+operations, sharing/training grants, and signed distribution remain separate gates.
+
 ## 2026-07-16 — Control the Desktop recorder through versioned shell state
 **Session:** Codex agent · branch `codex/p8003-recorder-controls` · **Phase:** P8 ·
 **TODO items:** P8-003 [~]
