@@ -413,6 +413,11 @@ Objective: close R3 without widening hardware authority.
 Work:
 
 - all `P8-001..014` tasks;
+- P8-012 is complete at deterministic/native transport integration maturity under
+  D48: exact Betaflight 2025.12/D12-quad/failsafe-only artifact, independent
+  producer/consumer validation, OS-enumerated 115200-baud serialport-rs write, honest
+  receipt, and real pseudo-terminal byte proof. Do not count it as target firmware,
+  application, FC, HITL, lab, or field evidence;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -420,6 +425,13 @@ Work:
 - reference rover before reference quad; SITL -> HITL -> constrained evidence;
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
+
+Next dependency-complete slice: add a target-version handshake and exact post-write
+readback to the D12 quad lab adapter, then exercise that seam under P8-009's SITL ->
+HITL procedure with propellers removed and a signed failure/reconnect/power-loss
+record. Browser WebSerial should consume the same D48 artifact only after the native
+readback protocol is proven; P8-013 recorder capture can proceed in parallel without
+widening configuration authority.
 
 Acceptance:
 

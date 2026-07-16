@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 from typing import Any
 
 from forge_workers.contract import REPLAY_FORMAT_VERSION
@@ -19,7 +18,11 @@ from forge_workers.net_security import assert_bounded_json
 from forge_workers.queue import Job, registry
 
 
-_COMMAND_TOKEN = re.compile(r"^[A-Za-z0-9_.:+/-]{1,128}$")
+BRIDGE_CONFIG_VERSION = "1.0.0"
+BRIDGE_CONFIG_SCHEMA_VERSION = f"forge-bridge-config/{BRIDGE_CONFIG_VERSION}"
+BETAFLIGHT_CLI_VERSION = "2025.12"
+BETAFLIGHT_FAILSAFE_DELAY_MIN_DS = 2
+BETAFLIGHT_FAILSAFE_DELAY_MAX_DS = 200
 
 
 def _stable_hash(value: Any) -> str:
@@ -39,28 +42,6 @@ def _bounded_payload(payload: Any, label: str, *, max_bytes: int, max_nodes: int
         max_depth=24,
         max_nodes=max_nodes,
     )
-
-
-def _command_token(value: Any, label: str) -> str:
-    if not isinstance(value, str) or not _COMMAND_TOKEN.fullmatch(value):
-        raise ValueError(f"{label} must be a single safe command token")
-    return value
-
-
-def _command_value(value: Any, label: str) -> str:
-    if isinstance(value, bool):
-        raise ValueError(f"{label} must be a finite number or safe command token")
-    if isinstance(value, (int, float)):
-        try:
-            number = float(value)
-        except OverflowError as exc:
-            raise ValueError(
-                f"{label} must be a finite number or safe command token"
-            ) from exc
-        if not math.isfinite(number):
-            raise ValueError(f"{label} must be a finite number or safe command token")
-        return str(value)
-    return _command_token(value, label)
 
 
 def _finite_number(
@@ -88,28 +69,47 @@ def _finite_vector(value: Any, label: str) -> list[float]:
 
 def compile_config_diff(payload: dict[str, Any]) -> dict[str, Any]:
     _bounded_payload(payload, "bridge.config-diff", max_bytes=64 * 1024, max_nodes=2_000)
-    firmware = str(payload.get("firmware", "betaflight")).lower()
-    if firmware not in {"betaflight", "ardupilot", "ros2"}:
-        raise ValueError("bridge.config-diff firmware must be betaflight, ardupilot, or ros2")
-    rates = payload.get("rates", {})
-    mixer = _command_token(payload.get("mixer", "quadx"), "bridge.config-diff mixer")
+    if set(payload) != {"firmware", "mixer", "rates"}:
+        raise ValueError(
+            "bridge.config-diff v1 requires exactly firmware, mixer, and rates fields"
+        )
+    firmware = payload["firmware"]
+    if firmware != "betaflight":
+        raise ValueError(
+            "bridge.config-diff v1 supports only reviewed Betaflight configuration"
+        )
+    rates = payload["rates"]
+    mixer = payload["mixer"]
+    if mixer != "quadx":
+        raise ValueError("bridge.config-diff v1 supports only the D12 quadx mixer")
     if not isinstance(rates, dict):
         raise ValueError("bridge.config-diff rates must be an object")
-    if len(rates) > 256:
-        raise ValueError("bridge.config-diff rates exceeds the entry limit")
-    if any(not isinstance(key, str) for key in rates):
-        raise ValueError("bridge.config-diff rate keys must be strings")
-    lines = [f"# FORGE generated {firmware} config diff", f"mixer {mixer}"]
-    for key in sorted(rates):
-        safe_key = _command_token(key, "bridge.config-diff rate key")
-        safe_value = _command_value(rates[key], f"bridge.config-diff rate {safe_key}")
-        lines.append(f"set {safe_key} = {safe_value}")
+    if set(rates) != {"failsafe_delay"}:
+        raise ValueError(
+            "bridge.config-diff v1 requires exactly the reviewed failsafe_delay setting"
+        )
+    failsafe_delay = rates["failsafe_delay"]
+    if (
+        isinstance(failsafe_delay, bool)
+        or not isinstance(failsafe_delay, int)
+        or not BETAFLIGHT_FAILSAFE_DELAY_MIN_DS
+        <= failsafe_delay
+        <= BETAFLIGHT_FAILSAFE_DELAY_MAX_DS
+    ):
+        raise ValueError(
+            "bridge.config-diff failsafe_delay must be an integer from 2 through 200 deciseconds"
+        )
+    lines = [f"# FORGE generated {firmware} {BETAFLIGHT_CLI_VERSION} config diff"]
+    lines.append(f"set failsafe_delay = {failsafe_delay}")
     lines.append("save")
     return {
+        "schemaVersion": BRIDGE_CONFIG_SCHEMA_VERSION,
         "artifactKind": "bridge-config",
         "firmware": firmware,
+        "firmwareVersion": BETAFLIGHT_CLI_VERSION,
         "diffHash": _stable_hash(lines),
         "requiresPhysicalConfirmation": True,
+        "noAutoArm": True,
         "lines": lines,
     }
 
@@ -206,7 +206,9 @@ def supervisor_check(payload: dict[str, Any]) -> dict[str, Any]:
 
 @registry.register("bridge.config-diff")
 def handle_config_diff(job: Job) -> dict[str, Any]:
-    return compile_config_diff(job.payload)
+    payload = dict(job.payload)
+    payload.pop("timeoutS", None)
+    return compile_config_diff(payload)
 
 
 @registry.register("bridge.telemetry-ingest")

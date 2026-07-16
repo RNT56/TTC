@@ -3232,13 +3232,23 @@ export function fixtureJobOutput(kind: JobKind, payload: unknown): unknown {
           },
         ],
       };
-    case "bridge.config-diff":
+    case "bridge.config-diff": {
+      const lines = [
+        "# FORGE generated betaflight 2025.12 config diff",
+        "set failsafe_delay = 10",
+        "save",
+      ];
       return {
+        schemaVersion: "forge-bridge-config/1.0.0",
         artifactKind: "bridge-config",
         firmware: "betaflight",
+        firmwareVersion: "2025.12",
+        diffHash: sha256(stableJson(lines)),
         requiresPhysicalConfirmation: true,
-        lines: ["# FORGE generated betaflight config diff", "mixer quadx", "save"],
+        noAutoArm: true,
+        lines,
       };
+    }
     case "bridge.telemetry-ingest":
       {
         const samples = isRecord(payload) && Array.isArray(payload.samples) ? payload.samples : [];

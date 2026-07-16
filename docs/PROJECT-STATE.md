@@ -3,7 +3,7 @@
 Snapshot date: **2026-07-16**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `d19c911` (PR #81; P7-010 decision contract)
+Latest verified protected descendant: `f91c339` (PR #82; P7-010 evidence reconciliation)
 Latest verified protected runtime descendant: `d19c911` (PR #81; P7-010 decision contract)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
@@ -162,6 +162,12 @@ this host exposes no Modal credential names, Modal CLI, NVIDIA device, or other
 declared GPU/TPU authority. Apple's documented lack of JAX Metal float64 support
 means the local M2 Pro is not an admissible substitute.
 
+P7-010's evidence reconciliation is protected through PR #82 at `f91c339`. Exact
+head `24f2e22` passed PR CI `29466626678` and security `29466626703`; the protected
+docs-only descendant passed post-merge CI `29467326791` and security `29467326725`.
+This verifies the D47 evidence ledger and does not replace `d19c911` as the owning
+runtime/decision-contract anchor or supply the missing v2 accelerator result.
+
 P7-011 is complete through protected PR #68. Exact head `433ff3b` passed CI
 `29408733457` and security `29408733461`; protected squash `9131289` passed
 post-merge CI `29409341830` and security `29409342305`. Downloaded artifact
@@ -282,15 +288,29 @@ verified automatic provider-call expiry, or real recovery result is retained. P7
 remains `[~]`; only the exact seven-day procedure in `MODAL-OPERATIONS.md` can close
 it.
 
+The current P8-012 candidate closes D48 at deterministic/native serial-transport
+integration maturity on protected base `f91c339`. Worker and Desktop independently
+accept only `forge-bridge-config/1.0.0` for Betaflight 2025.12, the D12 quad, and one
+`failsafe_delay` integer from 2 through 200 deciseconds; exact ordered lines are
+SHA-256 bound and no-auto-arm/physical-confirmation flags are mandatory. The native
+path additionally requires the hardware-enable, D30-signoff, and lab-mode env gates,
+the exact D12 quad ID,
+115200 baud, and an OS-enumerated port before serialport-rs opens, writes, and
+flushes. A real Unix pseudo-terminal test proves exact bytes. The versioned receipt
+honestly marks target firmware and application unverified and requires operator
+readback. This is an unprotected local candidate until PR checks and post-merge
+evidence pass; it is not a real FC, HITL, tethered, lab, or field result.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
+| P8-012 native serial candidate | complete local checks pass: all 40 required gates under exact Python 3.12, 225/225 workers, 66/66 gateway with the real validator, 15/15 compatibility surfaces, the governed 14-case hardware corpus, generated 77-route/2-event/17-worker docs, Desktop native Cargo check, locked Desktop fmt/Clippy, and 4/4 Rust tests including exact bytes over a real Unix pseudo-terminal plus OS-enumerated-path refusal | proves the unprotected D48 producer/consumer/native transport candidate and honest receipt. PR checks, post-merge checks, target-version handshake, post-write readback, real FC, HITL, lab, and field evidence are not yet claimed |
 | P7-013 protected deployment control | PR #79 exact head `bc02324` and protected `ff39cd8` pass the exact Python 3.12 40-step gate: 218/218 workers, 65/65 gateway with the real validator, 15/15 compatibility surfaces, 77 generated routes, 17 worker families, 24 migration sources, and all native training/offline/MJX smokes | proves D46's contract/fixture and fail-closed CUDA/deployment/call/quota/cancellation/refund/recovery boundaries. Exact PR CI `29462960862`/security `29462960834` and post-merge CI `29463344103`/security `29463344085` are green; no deployment, credentialed L4 call, provider billing, delivered alert, automatic provider expiry, real recovery drill, or production result is claimed |
-| Git state | latest verified protected runtime descendant is P7-013 anchor `ff39cd8`. P7-009 offline-training anchor `2c7562d`, P7-014 reconciliation anchor `f0bb4e2`, ground-training anchor `90b1691`, P7-012 retained-evidence anchor `6bfa60f`, implementation anchor `8e094c0`, P7-014 waypoint anchor `f220d25`, P7-011 delivery anchor `9131289`, P7-010 MJX anchor `0614272`, P7-003 training anchor `d1c4c38`, P7-008 browser anchor `1de7974`, SEC-006 runtime/security anchor `d952f60`, P6 engine anchor `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` published | PR #79 exact head `bc02324` and protected `ff39cd8` passed CI/security; exact-main CI `29463344103` and security `29463344085` are green. Artifact `8362121226` owns the protected Modal database fixture evidence; artifact `8359446894` remains the owning source-bound offline-training evidence |
+| Git state | latest verified protected descendant is docs-only P7-010 reconciliation `f91c339`; latest verified runtime descendant is P7-010 decision-contract anchor `d19c911`. P7-013 deployment-control `ff39cd8`, P7-009 offline-training `2c7562d`, P7-014 reconciliation `f0bb4e2`, ground training `90b1691`, P7-012 evidence `6bfa60f`, waypoint `f220d25`, P7-011 delivery `9131289`, P7-010 feasibility `0614272`, P7-003 training `d1c4c38`, P7-008 browser `1de7974`, SEC-006 `d952f60`, P6 engine `c0f5172`, and prior QA/DOC anchors remain green; annotated `v0.1.0` is published | PR #82 exact head `24f2e22` passed CI `29466626678`/security `29466626703`; protected `f91c339` passed post-merge CI `29467326791`/security `29467326725`. PR #81/`d19c911` remains the owning D47 runtime contract. The P8-012 worktree is an unprotected descendant and cannot be cited as protected evidence yet |
 | Rust toolchain | pinned 1.96.0 locally and in workflows | local/CI compiler contract is explicit |
 | JS supply-chain client | pnpm 11.13.0 protected through PR #54; frozen install and `pnpm audit --audit-level low` remain binding, and all 40 gates pass without lockfile drift | replaces npm's retired legacy audit protocol with bulk advisories and fails closed on all dependency build scripts except the version-exact reviewed entries; exact PR and post-merge security for Modal 1.5.2 and the complete training runtime are green |
-| `pnpm verify` | P7-013 exact head and protected `ff39cd8` pass all 40 required gates under Python 3.12 | generated contract-doc drift joins migration source/history/checksum policy, external acceptance, browser support, golden/parity policy, Action pins, 15-surface compatibility, fmt, Clippy, full tests, WASM, schema, TS, 13 Studio tests, 65 gateway tests, Brief-25 25/25, oracles, budgets, boundary fuzz, sim, packaging, pilots, 218 worker tests, four-task training, offline-training, engine/MJX smokes, and patch hygiene; the protected database job separately proves all 24 migrations plus MinIO/browser and Modal-operation fixture acceptance |
+| `pnpm verify` | current unprotected P8-012 candidate passes all 40 required gates under Python 3.12 | generated contract-doc drift, migration policy, external acceptance, registered golden updates, Action pins, 15-surface compatibility, Rust fmt/Clippy/tests, WASM/schema/TS, 13 Studio tests, 66 gateway tests, Brief-25 25/25, oracles, budgets, the governed 89-case boundary family, sim, packaging, pilots, 225 worker tests, four-task/offline/MJX smokes, and patch hygiene all pass; protected CI remains the merge authority |
 | Golden artifact and parity-harness review | protected through PR #53 with 16 governed artifact families and 19 focused policy tests | the DOC-005 schema family joins the protected registry; nine parity tests pin source identity/clean checkout, isolation, full-Studio WebGL readiness, non-retryable configuration failure, one bounded renderer retry, viewer-fallback refusal, and low-tier WebGL capture. No existing registered artifact, golden, camera, metric threshold, or draw-call budget changed |
 | External acceptance policy | QA-010 complete through protected PR #40: 8 milestone contracts/templates and 9/9 focused tests pass locally and in required CI | versioned builder/photoscan/training/course/lab/print/marketplace/maintenance scripts require exact revision/environment, role separation, authority, evidence kinds, measurements, findings review, signoffs, and honest pass/fail/stop outcomes; this is evidence governance, not an `EXT-*` result |
 | `pnpm verify:compatibility` | protected pass: 15/15 surfaces match policy 1.0.0 | policy tensor 2.0.0 is current with exact v1/v2 supported-major execution; gateway API/events, source constants, manifests, legacy aliases, license/user-data/consent/delete-receipt/lifecycle boundaries, and the deprecation floor remain machine-checked |
@@ -299,8 +319,8 @@ it.
 | `cargo test --workspace` | pass | includes quadruped slider-grid and pinned golden coverage |
 | Declared first-party verdicts | pass: 5/5 | qd-mini is admitted again without changing the expected verdict |
 | Brief-25 real-validator gate | pass: 25 admitted, 0 draft/rejected/blocked | exceeds the binding 20/25 threshold with 0 repair iterations |
-| Gateway tests | protected P7-013 pass: 65/65 with the real validator | D46 adds strict Modal input projection, serializable shared active/daily-credit quotas, debit-after-new-row idempotency, owner-only cancellation, exact pre-materialization credit reversal without reopening daily launch authority, export 1.4.0, and additive job deletion |
-| Worker tests | protected P7-013 pass: 218/218 under Python 3.12 | D46 adds exact deployment/function/result validation, CUDA refusal with no fallback, persisted-call cancellation and recovery-only reattachment, late-result refusal, strict sandbox-evidence validation, and retained contract/fixture nonclaims while preserving every prior training/offline/MJX test |
+| Gateway tests | current P8-012 candidate passes 66/66 with the real validator | the D48 fixture adds one exact cross-language schema/firmware/line/hash oracle while preserving every D46 deployment/quota/cancellation and prior gateway boundary |
+| Worker tests | current P8-012 candidate passes 225/225 under Python 3.12 | D48 adds exact field/firmware/mixer/setting/range/hash authority and representative refusal coverage while preserving every prior training/offline/MJX/deployment test |
 | P7-012 implementation tests | protected through PR #72/`8e094c0`; all 39 local gates and exact-head/post-merge CI/security pass | 163/163 workers, 12/12 Studio runtime tests, tensor-v2/task-v3/bundle-v2 authority, exact tensor-v1 execution, Y-up/velocity/action/reward regressions, CPU/MPS no-fallback authority, atomic interrupt/resume/tamper evidence, dual-task smoke, MJX parity, and patch hygiene are protected |
 | P7-003 controlled trainer | protected through PR #64/`d1c4c38`; exact-head and post-merge CI/security pass, and artifact `8334594354` is a clean source-bound 256-step CPU PPO/MuJoCo/ONNX smoke | proves the seeded PPO/SAC runtime executes with exact dependencies and produces a source/lockfile/dependency-manifest/contract/config-bound valid ONNX artifact; short blocked-export smoke does not prove learning quality, overnight SLO, GPU economics, deployed operations, or field transfer |
 | P7-010 controlled MJX feasibility | protected through PR #66/`0614272`; exact-head and post-merge CI/security pass, and artifact `8337556569` is clean source/request/contract/MJCF/runtime/hardware-bound evidence | GitHub's 4-CPU x86_64 row measured 268,902 native MuJoCo versus 54,698 CPU-MJX steps/s with passing float64 parity. It validates the harness and fail-closed report on the admitted hover reference; it does not supply D12 morphology, accelerator, PPO/SAC wall-time, overnight/tier-2 budget, cost, or adoption evidence |
@@ -597,7 +617,7 @@ decision; none is a hidden release claim.
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
 | Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
-| Desktop/hardware | fail-closed scaffold and pilot documents | signed apps, serial/capture, Link image, lab pilots, field logs |
+| Desktop/hardware | fail-closed scaffold plus D48 versioned native serial transport at local candidate maturity: exact Betaflight 2025.12/D12-quad/failsafe-only artifact, digest verification, OS-enumerated 115200-baud serialport-rs write, pseudo-terminal byte proof, and honest unverified-application receipt | protect the candidate; target firmware handshake and post-write readback; browser WebSerial/WebUSB; signed apps; recorder/capture; Link image; lab pilots; field logs |
 | Maintenance | deterministic wear/crash/repair/fleet contracts | Desktop-captured field evidence and operating fleet data |
 | External acceptance governance | versioned QA-010 registry/CLI/templates are protected through PR #40 at `8708de7` | separately execute and review `EXT-001..008` runs with intended people/providers/hardware; structural validation alone never closes them |
 
@@ -663,14 +683,15 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Invite external builders under a product promise | **No-go** | R1 has not been independently proven |
 | Enable live provider billing | **No-go** | provider, recovery, cost, and privacy evidence incomplete |
 | Execute controlled D12 lab work | **Conditional go** | only under D30 gates and documented physical supervision |
+| Claim P8-012 native serial transport closure | **No-go until protected** | the local D48 candidate has exact pseudo-terminal/native evidence, but required PR and post-merge CI/security are not yet retained; even after protection it proves only deterministic/native transport, not target-version match, applied config, FC, HITL, lab, or field maturity |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **205 tasks: 147 done, 33 in progress, 24 open,
+The stable ledger currently contains **205 tasks: 148 done, 32 in progress, 24 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
-The 59 remaining tasks include the phase/live/field program, 2 governance, 2
+The 57 remaining tasks include the phase/live/field program, 2 governance, 2
 security, 2 quality, 10 operations, and 9 external-proof tasks; the documentation
 completion lane is closed. Dependency
 order is owned by

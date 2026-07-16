@@ -90,7 +90,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime descendant is P7-010 PR #81 at `d19c911`, with
+  latest verified protected descendant is docs-only P7-010 evidence reconciliation
+  PR #82 at `f91c339`, with post-merge CI `29467326791` and security `29467326725`
+  green. The latest verified protected runtime descendant is P7-010 PR #81 at
+  `d19c911`, with
   post-merge CI `29466150120` and security `29466150113` green. PR #81 owns the
   decision-grade D47 MJX request/report contract while PR #79 owns the
   fail-closed Modal deployment-control contract/fixture; PR #77 owns the source-bound
@@ -197,6 +200,16 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   a real clean supported-accelerator v2 result is not. The current Darwin arm64 host
   exposes no Modal credential names, Modal CLI, NVIDIA device, or other declared
   GPU/TPU authority, and Apple Metal cannot satisfy the frozen float64 protocol;
+- the current P8-012/D48 candidate closes Desktop serialport-rs at deterministic/
+  native transport integration maturity on protected base `f91c339`. Worker and
+  Desktop independently enforce `forge-bridge-config/1.0.0`, Betaflight 2025.12,
+  the D12 quad, one 2–200 decisecond `failsafe_delay`, exact ordered-line SHA-256,
+  no-auto-arm, physical confirmation, 115200 baud, and an OS-enumerated port. Four
+  locked Rust tests include real Unix pseudo-terminal byte proof and path refusal;
+  the complete 40-step gate, 225 worker tests, 66 gateway tests, and Desktop native
+  compile pass. The receipt leaves target firmware/application unverified and requires readback.
+  This branch is not protected evidence, and the proof is not a real FC, HITL, lab,
+  tethered, or field result;
 - P7-011 is protected through PR #68 at `9131289`: migration 0022, the D38/D39
   lease-fenced content-addressed writer, byte-free job/policy authority,
   authenticated retained-model delivery, and Studio one-click queue/poll/fetch/play
@@ -587,7 +600,11 @@ External acceptance boundary (QA-010/EXT-001..008):
   reconcile the owning `EXT-*`, phase, gate, maturity, risks, and changelog;
 - controlled hardware evidence remains D30/D12-only: rover before quad, local
   provider, physical confirmation, no-auto-arm, supervisor and kill authority,
-  telemetry consent, signed lab record, and external beta disabled.
+  telemetry consent, signed lab record, and external beta disabled. D48 bridge-config
+  v1 is additionally Betaflight 2025.12/D12-quad/failsafe-only, canonical-hash bound,
+  115200 baud, and OS-enumerated-port only. A serial receipt proves bytes transmitted,
+  never target-version match or applied configuration; retain handshake/readback
+  before any device claim;
 
 ## 5. Session protocol
 
@@ -672,7 +689,7 @@ Use the narrowest sufficient set, then run the full release gate before phase cl
 | Auth/network/secrets/uploads | threat-model negative tests; production-config failure tests; origin/CSRF/authorization tests; secret persistence/reflection scan; SSRF/redirect/DNS/body/timeout tests; rate/cost boundary; worker and archive bomb tests |
 | Data/migrations | `pnpm db:migrations:test`; forward migration on clean DB and every supported populated predecessor; exact ledger/checksum/idempotency evidence; injected failure and concurrency proof; rollback/roll-forward plan; backup impact review; `pnpm verify:db` including browser acceptance; run `python workers/integration/assert_commerce_postgres.py` when commerce queue/materialization changes; retain `db:assert-upload-faults` and `db:assert-queue-faults` for D38 queue/object changes; run `pnpm db:assert-policy-delivery` against isolated Postgres/S3-compatible storage for D39 policy materialization; run `pnpm db:assert-modal-operations` for P7-013 provider-call/cancellation/refund and idempotent report-bound cost-reconciliation authority |
 | User data/privacy | authenticated export/delete tests; populated Postgres lifecycle; secret-exclusion assertions; object-store failure rollback; S3-compatible upload/delete/404 smoke; explicit backup-scope statement |
-| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; controlled lab evidence |
+| Desktop/hardware | scaffold tests plus `pnpm verify:desktop-native`; locked Desktop Cargo fmt/Clippy/tests; D30/D12 gate tests; no-auto-arm/physical-confirmation/supervisor assertions; for D48 config writes prove exact schema/firmware version/command/range/hash, 115200 baud, OS-enumerated-port refusal, real pseudo-terminal bytes, and receipt nonclaims; target handshake/readback and controlled lab evidence before device/application claims |
 | Generation | Brief-25 corpus check and real-validator gate; provenance; refusal/logging; draft fallback |
 | Export/manufacturing | license matrix, restricted-geometry fallback, DfM, artifact integrity, provider handoff tests |
 | External acceptance/evidence | `pnpm verify:external-acceptance`; initialize packs outside Git; freeze exact revision/environment/roles/authority; execute the registered milestone script; preserve pass/fail/stop evidence; validate the completed manifest; semantically inspect retained hashes/signoffs; required protected checks; no maturity/task closure from a template or structural pass alone |

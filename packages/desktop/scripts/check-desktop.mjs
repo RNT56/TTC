@@ -52,6 +52,11 @@ assert(main.includes("ref_rover_waveshare-ugv-rover-pt-pi5-ros2"), "native hardw
 assert(main.includes("no_auto_arm: true"), "native bridge status must be no-auto-arm");
 assert(main.includes("serialport::available_ports"), "desktop must enumerate serial ports through serialport-rs");
 assert(main.includes("serialport::new"), "desktop serial writes must use serialport-rs behind gates");
+assert(main.includes("forge-bridge-config/1.0.0"), "desktop serial writes must require the versioned bridge config artifact");
+assert(main.includes('BETAFLIGHT_CLI_VERSION: &str = "2025.12"'), "desktop serial writes must bind the reviewed Betaflight CLI version");
+assert(main.includes("diffHash does not match"), "desktop serial writes must verify the exact ordered config hash");
+assert(main.includes("target_firmware_version_verified: false"), "desktop must not claim it verified the connected firmware version");
+assert(main.includes("application_verified: false"), "desktop must not claim a transmitted config was applied");
 assert(main.includes("forge-recorder-manifest.json"), "desktop recorder must initialize a filesystem archive manifest");
 
 console.log("desktop: scaffold, FORGE Link manifest, and deployment ladder checks passed");

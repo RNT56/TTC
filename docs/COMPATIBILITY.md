@@ -127,6 +127,25 @@ contradictory license authority were never valid supported evidence and now refu
 deterministically. The registered corpora pin both compatible reads and these
 refusals; no migration or deprecation clock is introduced.
 
+D48 introduces internal `forge-bridge-config/1.0.0` as a worker-to-Desktop hardware
+artifact and registers its version under `workerArtifacts.internalSchemas` without
+promoting it to a public compatibility surface. The adjacent
+`workerArtifacts.bridgeConfigFirmwareVersion` machine-checks the Python producer and
+Rust Desktop consumer against the same reviewed command reference. Version 1 requires Betaflight
+2025.12, exactly the `firmware`/`mixer`/`rates` producer fields after the queue strips
+its framework-owned `timeoutS`, the D12 `quadx`
+scope, exactly one `failsafe_delay` integer from 2
+through 200 deciseconds, physical confirmation, `noAutoArm=true`, canonical ordered
+lines, and their exact SHA-256. The native consumer accepts only the corresponding
+header, `set failsafe_delay = N`, and final `save`; it never accepts arbitrary CLI
+tokens or a caller-authored raw diff. Adding firmware families or versions, commands,
+mixers, modes, automatic target-version inference, or a different hash preimage is a
+new artifact major unless a compatibility fixture proves an additive read. The
+serial receipt is separately `forge-bridge-serial-receipt/1.0.0`; its transmitted
+byte count is not application or target-firmware verification. Publishing either
+format requires surface registration, old/current/unsupported fixtures, migration
+and deprecation guidance, and release notes.
+
 P6-010's MJCF correction is also patch-level. ModelSpec joint angles and limits have
 always been radians, but the exporter previously omitted MuJoCo's explicit radian
 compiler declaration and therefore allowed the engine's degree default to reinterpret

@@ -18,6 +18,50 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Bind native serial writes to one reviewed D48 artifact
+**Session:** Codex agent · branch `codex/p8012-native-serial` · **Phase:** P8 ·
+**TODO items:** P8-012 [x]
+**Done:** Implemented the P8-012 candidate at deterministic/native serial-transport
+integration maturity on exact protected base `f91c339`. D48 replaces the raw config
+string with `forge-bridge-config/1.0.0`: the queue strips only framework-owned
+`timeoutS`, then accepts exactly `firmware`/`mixer`/`rates` input,
+Betaflight 2025.12, D12 `quadx` scope, one integer `failsafe_delay` from 2 through
+200 deciseconds, exact ordered-line SHA-256, physical confirmation, and no auto-arm.
+The current official Betaflight CLI permits 1–200 deciseconds, while its failsafe
+guidance identifies 200 ms as the minimum safe guard time; v1 therefore refuses 1.
+The Rust Desktop independently verifies schema, firmware/version, command/range,
+hash, D12 quad, every hardware/lab env gate, confirmation, exact 115200 baud, and an
+OS-enumerated port before serialport-rs open/write/flush. Its versioned receipt says
+only how many bytes were transmitted and deliberately sets target-firmware and
+application verification false with operator readback required. Four locked Rust
+tests include an actual Unix pseudo-terminal exact-byte exchange and arbitrary-path
+refusal. The worker/gateway/Studio surfaces share the exact fixture and hash; the
+hardware corpus pins reviewed-setting, mixer, and safety-floor outcomes.
+The complete 40-step gate passes under exact Python 3.12 with 225 worker tests, 66
+gateway tests using the real validator, 13 Studio tests, 15 compatibility surfaces,
+77 generated routes, two event families, 17 worker families, all 89 governed
+boundary cases, native/WASM parity, training/offline/MJX smokes, packaging, pilots,
+and hygiene. `pnpm verify:desktop-native`, locked Desktop fmt/Clippy/tests, 239 local
+Markdown targets, the append-only golden review, and exact ledger audit also pass.
+The stable ledger is 205 tasks: 148 done, 32 in progress, 24 open, and 1 blocked.
+**Changed:** Worker bridge compiler and tests; governed hardware corpus and review
+record; gateway fixture/oracle; Studio artifact details; Desktop serialport-rs
+consumer, receipt, dependency declarations, and native tests; compatibility matrix
+and generated artifact reference; D48/R31; quad pilot and complete agent/state/
+roadmap/TODO/execution/system/best-practice guidance; this changelog. `sha2` becomes
+an explicit Desktop runtime dependency for independent digest verification and
+`libc` a Unix test-only dependency for the nonblocking pseudo-terminal reader; both
+were already present in the resolved dependency graph.
+**Decisions:** D48 fixes the first writable hardware artifact and receipt meaning.
+R31 tracks false target-version/application/safety claims from transport success.
+**Next:** Protect this exact tree through PR and post-merge CI/security, then add an
+exact Betaflight 2025.12 target-version handshake plus post-write `failsafe_delay`
+readback before the first propeller-free D12 quad HITL evidence run. Reuse the same
+artifact in WebSerial only after that native protocol is proven.
+**Blockers:** None for the deterministic/native P8-012 scope. Real FC/HITL/tethered/
+lab/field proof requires controlled D12 hardware and remains P8-001/P8-009/P8-014/
+EXT-004; signed Desktop delivery and recorder work remain P8-011/P8-013.
+
 ## 2026-07-16 — Protect the decision-grade three-morphology MJX gate
 **Session:** Codex agent · branch `codex/p7010-decision-protected-evidence` ·
 **Phase:** P7 · **TODO items:** P7-010 [~]

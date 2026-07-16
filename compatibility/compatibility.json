@@ -92,8 +92,10 @@
         "offlineTrainingTape": "1.0.0",
         "offlineTrainingDataset": "1.0.0",
         "offlinePolicyWarmstart": "1.0.0",
-        "sb3Runtime": "3.0.0"
+        "sb3Runtime": "3.0.0",
+        "bridgeConfig": "1.0.0"
       },
+      "bridgeConfigFirmwareVersion": "2025.12",
       "queueKinds": [
         "etl.ingest-component",
         "occt.tessellate",

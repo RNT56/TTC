@@ -288,10 +288,13 @@ metadata; `bridge.telemetry-ingest` turns captured samples into sorted replay ta
 checks with explicit 50 Hz advisory / 200 Hz supervisor rates. Live hardware write
 and capture are D30 lab-gated: accepted `d28.hardware` signoff, lab-mode env, local
 provider, D12 rig ID, physical confirmation, and lab adapter are all required.
-QA-007 bounds all three JSON inputs, allows only single safe config command tokens,
-requires finite unique telemetry timestamps, rejects non-finite nested telemetry
-before hashing, and requires exact finite 3-vectors plus positive finite supervisor
-limits. These fixture checks do not authorize, arm, or write physical hardware.
+QA-007 bounds all three JSON inputs. D48 narrows bridge-config v1 to Betaflight
+2025.12 on the D12 quad, exactly one integer `failsafe_delay` from 2 through 200
+deciseconds, canonical ordered-line SHA-256, physical confirmation, and no auto-arm;
+the Desktop independently revalidates it before native transport. Telemetry requires
+finite unique timestamps and rejects non-finite nested state before hashing;
+supervisor inputs require exact finite 3-vectors plus positive finite limits. Worker
+fixture checks do not authorize, arm, or prove a physical hardware write.
 
 ### 3.6 `workers/maintenance` — lifecycle twin (P12)
 `maintenance.estimate-wear`, `maintenance.crash-forensics`,
