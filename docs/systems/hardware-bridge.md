@@ -1,8 +1,8 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are implemented on `codex/p8003-recorder-import` and await protected-main evidence; D30 accepted controlled D12 lab pilots; real-adapter/device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
-**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50
+**Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51
 
 ## 1. Purpose
 
@@ -122,6 +122,27 @@ PR #87 protects that local boundary at `d8afe7f`: exact head `5e668a1` passed PR
 the squash, and post-merge CI `29486146093`/security `29486147436` pass. The next
 local lane is a reviewed adapter plus verified Studio controls/archive import; the
 named D12 device, suspend, lab, field, and recorded-device gates remain separate.
+
+D51's candidate adds the first read side without changing archive v1. Desktop accepts
+one absolute directory containing exactly the five canonical real regular files;
+symlinks, special files, missing/extra names, aggregate oversize, unsupported majors,
+unknown/non-canonical metadata, filename or authority drift, and non-canonical frames
+or index entries fail closed. The verifier streams the tape and sparse index, rechecks
+frame/state/time/count/duration bounds and every expected stride/final byte offset,
+hashes the retained frame and index bytes, reconstructs the exact replay-v1 digest,
+and compares it with both the retained replay and clean-stop receipt. It never loads
+the 512-MiB tape or replay into the webview and never requires hardware-enable
+authority because inspection is read-only.
+
+Studio invokes only `inspect_recorder_archive` through exact Tauri API 2.11.1,
+strictly validates `forge-recorder-inspection/1.0.0`, and renders bounded identity,
+path, hash, count, duration, and nonclaim fields. It uploads or gateway-materializes
+no frame. A passing result establishes local archive-v1 self-consistency only, not a
+signature or independent authenticity proof, device identity, recorded-device or
+field maturity, sharing/training consent, lab evidence, ghost, or system-ID result.
+Fourteen native tests, sixteen Studio tests, the declared three-engine browser matrix,
+and the complete 40-step local gate under Python 3.12.13 pass on the candidate; exact
+PR and post-merge protection remain required before this boundary is called protected.
 
 P8-012 is complete at protected deterministic/native transport integration
 maturity through PR #83/`fd26845` and exact PR/post-merge CI/security. D49 owns the

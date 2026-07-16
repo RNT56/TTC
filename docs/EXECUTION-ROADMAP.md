@@ -437,6 +437,16 @@ Work:
   clean explicit stop. Privacy/training authorization and device attestation remain
   false; pseudo-terminal proof is not an adapter, device, lab, field, ghost,
   system-ID, host-suspend, or recorded-device result;
+- D51/P8-003 is implemented as a protection candidate on
+  `codex/p8003-recorder-import`: the read-only Desktop command requires exactly five
+  canonical real archive-v1 files, streams and bounds frames/index entries, verifies
+  stride/final offsets, counts/duration and frame/index hashes, reconstructs the
+  replay-v1 digest, and returns only strict local-self-consistency/nonclaim metadata
+  to the Desktop-only Studio panel. Fourteen native tests, sixteen Studio tests, the
+  three-engine browser matrix, and the complete 40-step local gate pass; exact
+  PR/post-merge CI/security and reviewed-tree equality remain required before this
+  lane is protected. It is not gateway import/materialization, authenticity,
+  adapter/device, lab/field, sharing/training, ghost, or system-ID evidence;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -445,10 +455,12 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete local slice: bind one reviewed real telemetry-adapter
-contract to the unchanged protected D50 archive and add verified Studio recorder
-controls/archive import without widening configuration, consent, or device-provenance
-authority. In parallel, execute the protected D49 protocol on the named D12 quad FC
+Next dependency-complete local slice: protect and reconcile D51, then add explicit
+Desktop recorder start/stop controls plus a separately authorized gateway-owned
+archive materialization path without changing D50 archive bytes or promoting
+self-consistency to authenticity, device provenance, sharing, or training authority.
+The reviewed real telemetry-adapter identity contract remains the prerequisite for
+recorded-device admission. In parallel, execute the protected D49 protocol on the named D12 quad FC
 under controlled-lab authority with propellers removed, retain bounded raw
 responses/hashes plus failure/reconnect/power-loss evidence, and then exercise that
 seam under P8-009's SITL -> HITL procedure. Browser WebSerial should consume the
