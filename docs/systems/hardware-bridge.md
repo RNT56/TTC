@@ -1,6 +1,6 @@
 # Hardware Bridge, Recorder, FORGE Desktop & the Deployment Ladder — implementation doc
 
-**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is protected at local protocol-fixture maturity through PR #97/`370d214`; D56 signed recorder custody is implemented but unprotected at local fixture maturity with archive v1/D53/D54 unchanged; D30 accepted controlled D12 lab pilots; real trust-root/named-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
+**Status:** deterministic bridge jobs live; D48 native serial transport is protected at deterministic integration maturity through PR #83/`fd26845`; D49 target handshake/save/readback is protected at local integration maturity through PR #85/`4647a10`; D50/P8-013 background recorder/archive is protected at local recorder-integration maturity through PR #87/`d8afe7f`; D51 streaming archive inspection and its Studio read-only import panel are protected at local archive-inspection maturity through PR #89/`b5418ac`; D52 versioned recorder status/start/stop is protected at local recorder-control maturity through PR #91/`a8120ab`; D53 private five-object materialization is protected at local private-object-integrity maturity through PR #93/`08d892f`; D54 sovereign archive-semantics admission is protected at local semantic-admission maturity through PR #95/`f8efb6f`; D55's read-only Betaflight MSP identity probe is protected at local protocol-fixture maturity through PR #97/`370d214`; D56 signed recorder custody is protected at local fixture maturity through PR #100/`1bf127d` with archive v1/D53/D54 unchanged; D30 accepted controlled D12 lab pilots; real trust-root/named-device capture and lab/field evidence remain gated · **Phases:** P8 · **Home:**
 studio bridge logic (TS) + worker jobs + `packages/desktop` (Tauri scaffold) + FORGE Link image plan ·
 **Plan refs:** §11, §15, §5.6 (v3.0) · **Decisions:** D9, D12, D15, D30, D48, D49, D50, D51, D52, D53, D54, D55, D56
 
@@ -252,9 +252,9 @@ Python 3.12.13, clean/25-predecessor database, 11-flow production-browser, and t
 engine matrices pass. This is protected local protocol-fixture evidence only through
 PR #97/`370d214`; exact head `4321eaa`, reviewed tree `673a50c`, PR CI/security
 `29519984713`/`29519984764`, protected-tree equality, and post-merge CI/security
-`29520651520`/`29520651581` pass. The probe is not yet
-bound to recorder start/end, archive bytes, a named physical FC, signed custody, or
-D54, so it cannot promote any existing archive or telemetry row.
+`29520651520`/`29520651581` pass. The D55-only command is intentionally not bound to
+recorder start/end, archive bytes, a named physical FC, signed custody, or D54. D56
+may bracket the observation, but neither path can promote an archive or telemetry row.
 
 D56 owns the implemented successor and keeps every protected byte/row above immutable.
 It introduces three independent formats rather than extending a v1 response:
@@ -326,8 +326,8 @@ post-observation emits no proof. A clean archive remains a valid v1 archive if
 custody completion fails; the error must identify that the archive completed but
 custody did not, and must never delete or relabel the five files.
 
-Fixture signatures and two-role pseudo-terminal tests close only unprotected D56
-contract/integration mechanics. Sandbox or stronger maturity additionally needs a deployment-controlled
+Fixture signatures and two-role pseudo-terminal tests close only protected D56
+contract/integration mechanics at local fixture maturity. Sandbox or stronger maturity additionally needs a deployment-controlled
 real trust bundle, semantically reviewed retained acceptance evidence, and the named
 Kakute H7 V1.5. Host-suspend behavior, EXT-004, field provenance, device-held
 cryptographic keys, gateway materialization of the proof, any D54 promotion, and a
@@ -495,8 +495,9 @@ two identical identity passes; domain-separated source-port/descriptor/UID/ident
 transcript hashes; no raw UID or response bytes in Studio; strict response field and
 authority parsing; and permanent false device/cryptographic-attestation/recorded-
 device/field/sharing/training meanings. Pseudo-terminal success is protocol-fixture
-evidence only; real-device or archive-provenance claims additionally require a named
-FC run and a separately reviewed recorder-bound custody/attestation version.
+evidence only; a real-device custody claim additionally requires a named FC run
+through protected D56 under a real trust root, while device-attestation or archive-
+provenance promotion requires a separately reviewed later version.
 
 D56 custody changes additionally require bounded/hash-pinned trust-bundle parsing;
 strict Ed25519 key/signature/canonical-message verification; unknown, weak, revoked,
@@ -515,6 +516,6 @@ remain fixture proof until the named controller and retained signed lab evidence
 
 ## 12. Open questions
 
-Tauri updater/signing strategy per OS (decide at P8-011); D56 protected and real-
-trust-root/named-device evidence plus the later gateway/recorded-device promotion policy above its local custody proof;
+Tauri updater/signing strategy per OS (decide at P8-011); D56 real-trust-root/named-
+device evidence plus the later gateway/recorded-device promotion policy above its local custody proof;
 FORGE Link build tooling (pi-gen assumed *(proposed)*).

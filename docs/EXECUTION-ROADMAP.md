@@ -502,8 +502,8 @@ Work:
   cryptographic attestation nor recorder-bound custody. The locked Desktop native
   gate, all 40 repository gates under Python 3.12.13, clean/25-predecessor database,
   11-flow production-browser, and three-engine matrices pass. Real named-controller,
-  trusted recorder-bound custody, suspend, lab, and field evidence remain pending;
-- D56 is implemented but unprotected at local custody-fixture maturity. It preserves
+  real-trust-root recorder-bound custody, suspend, lab, and field evidence remain pending;
+- D56 is protected at local custody-fixture maturity through PR #100/`1bf127d`. It preserves
   archive v1, D53, and D54 and strictly executes a separately hash-pinned purpose-
   limited Ed25519 public trust bundle, an at-most-eight-hour exact signed revision/
   evidence/signoffs/artifact/model/two-port/D55-identity/nonclaim authorization,
@@ -515,7 +515,9 @@ Work:
   authority—not the FC—signs the mapping; device-cryptographic, recorded-device,
   sharing, training, lab, and field authority remains false. All 40 repository
   gates, the locked Desktop-native build, and a fresh clean/25-predecessor isolated
-  Postgres plus 11-flow production-browser matrix pass locally;
+  Postgres plus 11-flow production-browser matrix pass. Exact head `69c0dd7`,
+  reviewed tree `de12c5a`, PR CI/security `29530839367`/`29530839338`, protected-tree
+  equality, and post-merge CI/security `29531470442`/`29531470118` pass;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -524,9 +526,7 @@ Work:
 - Desktop field log, replay/ghost, system-ID patch, and policy re-evaluation;
 - `EXT-004` controlled lab acceptance.
 
-Next dependency-complete step: review and protect D56's separately verified signed-
-custody implementation, then execute
-D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
+Next dependency-complete step: execute D49, D55, and D56 on the named props-off D12 Kakute H7 V1.5
 under controlled-lab authority with a real deployment trust bundle and retained
 semantic acceptance review; retain bounded response/signature/hash plus failure,
 reconnect, power-loss, revocation, and suspend evidence, and exercise the recorder

@@ -83,8 +83,8 @@ Evidence required before passing:
   protected revision, evidence/signoff hashes, artifact/contract/lockfile, expected
   D55 identity/UID, and both OS serial descriptor hashes under the configured
   purpose-limited public trust bundle. Fixture keys or an unsigned manifest do not
-  satisfy this step. D56 now implements the mechanism, but no current run may claim
-  custody until that implementation is protected and this real-authority step passes.
+  satisfy this step. Protected D56 implements the mechanism through PR #100/`1bf127d`,
+  but no current run may claim custody until this real-authority step passes.
 - After a clean recorder stop and with props removed again, repeat the complete D55
   observation. Only exact signed/pre/post continuity plus the canonical v1 receipt
   may create the separate custody proof outside the five-file archive. A failure
