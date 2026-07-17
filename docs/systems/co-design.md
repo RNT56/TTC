@@ -1,12 +1,13 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59-D66 engine/search/recovery/catalog/catalog-physics/format authority; applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D66 engine/search/recovery/catalog/catalog-physics/format authority; local D67 exact-grid/readback consumer; sourced applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
 exact-hash engine batch), D62 (cross-platform plan identity), D63 (exact-runtime v2),
 D64 (catalog-backed categorical v3), D65 (catalog-bound tier-2 physics v4),
 D66 (file-catalog performance-grid v2),
+D67 (exact-grid/curve-readback batch v5),
 validator-as-oracle
 
 ## 1. Purpose
@@ -145,12 +146,33 @@ unique, monotonic grid with exact throttle endpoints plus stable table ID, prop,
 positive confidence, and HTTPS source. Migration 0027 preserves historical points
 as `legacy-unattributed` v1 and expands persistence identity by table ID without
 fabricating missing authority. The checked-in EMAX row remains v1 and D65-rejected.
-This is representation/persistence only: before a reviewed v2 grid drives tier 2 or
-tier 3, a new bundle/catalog-physics major must retain the exact grid and Python must
-independently reconstruct the curve. PR #119 exact head `7306a6e`, reviewed
+This is representation/persistence only. D67 separately adds the required bundle/
+catalog-physics major, exact-grid retention, and independent Python curve readback;
+the grid itself must still be separately sourced and owner-reviewed before physical
+use. PR #119 exact head `7306a6e`, reviewed
 merge/tree `0050bcb`/`f5a9a323`, protected squash `5a162b0`, exact PR/post-merge
 CI/security, all 44 gates, and clean every-predecessor/browser artifact `8405061774`
 pass. That evidence protects representation/persistence only.
+
+Local implementation 2026-07-17 (D67): catalog multirotor bundle 4.0.0 and
+`forge-training-catalog-physics/2.0.0` retain every exact SI point from every equipped
+motor table together with row major, identity, prop, ranges, source, confidence, and
+applicability. Child `forge-training-catalog-curve-readback/1.0.0` freezes the selected
+table plus the complete 101-point/fixed-point recipe. Python independently validates
+the complete rectangular unique monotonic grid and reconstructs all 101 total-thrust,
+normalized-voltage, and normalized-current values before accepting
+`catalog-motor-battery-exact-grid-readback-v2`; curve or retained-grid tampering fails.
+`forge-codesign-training-authority/2.0.0` and engine-batch/evidence 5.0.0 carry this
+result through exact cache/checkpoint/resume authority. The proof grid is generated
+only inside a controlled-synthetic test copy at 10.0/16.8 V × 0/0.5/1; it also
+proves that fixed-point sag outside the measured axis refuses instead of edge-
+clamping. No catalog row changes. The real EMAX row remains v1/review-gated/
+inapplicable, so current batch
+physics remains analytic fallback with `tableDriven=false`. This is local consumer-
+path evidence. All 44 local gates pass under Python 3.12.13 with 248 worker tests and
+the local v5 batch repeats 200/97/two-point/two-held after exact recovery. It is not
+protected D67, sourced thrust, owner review, tier 3, provider, build, hardware, field,
+or external proof.
 
 ## 3. Algorithms (P9-002)
 
@@ -252,7 +274,7 @@ Rapier, MuJoCo, physical-constraint, admission, Pareto, overnight-result, traine
 finalist, marketplace-review/live-catalog, provider, build, hardware, and field
 claim false. Runtime speed is not an overnight claim.
 
-The D65 v4 checkpoint/recovery smoke (D64 v3 remains historical evidence) is:
+The D67 v5 checkpoint/recovery smoke (D64 v3 and D65 v4 remain historical evidence) is:
 
 ```bash
 FORGE_PYTHON=python3 \
@@ -267,21 +289,26 @@ It first evaluates seven exact hashes and retains the checkpoint, then records a
 zero-dispatch cancellation at ordinal seven, resumes the remaining 193, and requires
 one contiguous complete 200-row result. Every row runs native validation; only
 native/Rapier-passing rows run the short pinned MuJoCo rollout through catalog-bound
-bundle v3, physics authority v1, and exact compiled-mass closure. The complete result
+bundle v4, physics authority v2, exact-grid/readback v1, and exact compiled-mass
+closure. The complete result
 derives admission and Pareto itself and selects up to three engine-admitted Pareto
 candidates as tier-3-held finalists. The exact D65 fixture has two real battery
 revisions; driver-only variations share mass/endurance within each revision, so its
 expected physical front is exactly two points and two held finalists. That is a
 catalog-binding/recovery proof, not P9's separate `>=3` phase-exit evidence. Each row
-must retain the D12 table as rejected/inapplicable and bind all named analytic
-fallbacks; it may not claim applicable catalog thrust. The run records measured
+must retain the D12 table's exact two SI points as rejected/inapplicable, bind
+`tableDriven=false`, and bind all named analytic fallbacks; it may not claim
+independent curve reconstruction or applicable catalog thrust. A future sourced and
+reviewed applicable table must retain its complete grid and pass independent 101-point
+readback before it may set table-driven authority. The run records measured
 local engine/attempt wall runtime only. Catalog-choice evaluation is true and exact,
 while marketplace review, live catalog persistence,
 `overnight200Candidate`, trained-finalist, provider sandbox/billing, energy, build,
 hardware, and field authority remain false. Protected artifact `8402573520` at
-`ad54ab3` is the current canonical retained v4 execution: 200/200 evaluated, 97
+`ad54ab3` remains the canonical retained v4 execution: 200/200 evaluated, 97
 admitted, two physical front points, and two held finalists after 7 + zero-dispatch
-cancel + 193 resume.
+cancel + 193 resume. D67 v5 remains local until its exact implementation tree and
+evidence are protected.
 
 ## 5. Output
 

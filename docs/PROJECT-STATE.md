@@ -4,6 +4,7 @@ Snapshot date: **2026-07-17**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
 Latest verified protected descendant: `5a162b0` (PR #119; D66 catalog performance-grid format)
+Current local unprotected boundary: D67 exact-grid/curve-readback consumer
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -737,10 +738,31 @@ pgvector 0.8.5, 27 migrations, clean idempotent install, every populated predece
 0001–0026, atomic recovery, checksum/gap refusal, and serialized apply-once
 concurrency.
 
+D67 is implemented locally at `exact-grid-readback-platform-local-engine-200-batch`
+maturity. Catalog bundle 4.0.0/physics 2.0.0 retain exact row/table authority and
+every SI voltage/throttle/thrust/current point. Child curve-readback 1.0.0 freezes
+the 101-point throttle/fixed-point recipe; Python independently validates the grid
+and reconstructs every total-thrust/normalized-voltage/normalized-current sample
+before accepting table-driven model v2. Training-authority 2.0.0 and batch/evidence
+5.0.0 bind exact-grid/readback truth through cache, checkpoint, resume, and every
+tier-2 row. All 44 required local gates pass under Python 3.12.13, including 56
+`forge-sim`, 39 Studio, 74 Gateway, and 248 worker tests, native/WASM parity,
+Brief-25 25/25, packaging, training/offline/MJX, generated/golden review, the D67
+batch, and patch hygiene. Focused Rust CLI 3/3 and Python bundle/batch 14/14 pass.
+The local dirty-
+tree smoke retains 7 + zero-dispatch cancel + 193 resume, evaluates 200/200, admits
+97, and returns two Pareto points/two held finalists; evidence/result hashes are
+`9dfc41e1…9efe`/`d747d8fd…c0c66`. A controlled-synthetic test copy alone supplies an
+applicable v2 grid and proves point/curve tamper refusal. The catalog is unchanged;
+the real EMAX row remains v1, review-gated, rejected, and analytic-fallback driven.
+No protected D67, sourced/reviewed thrust, tier 3, overnight/provider, marketplace/
+live-catalog, build, hardware, field, or external claim exists.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
+| D67 local exact-grid/curve-readback consumer | Catalog bundle v4/physics v2/readback v1 plus training-authority v2 and batch/evidence v5 exact-match in Rust/Python/compatibility. All 44 local gates pass under Python 3.12.13 with 56 `forge-sim`, 39 Studio, 74 Gateway, and 248 worker tests plus native/WASM, Brief-25 25/25, package/training/offline/MJX/golden/patch gates. Focused Rust CLI passes 3/3 and Python bundle/batch passes 14/14. A controlled-synthetic 10.0/16.8 V × 0/0.5/1 grid is retained point-for-point and independently reconstructed across all 101 curve samples; point/curve tampering and any fixed-point lookup outside the measured voltage axis refuse. Local dirty-tree evidence `9dfc41e1…9efe`/result `d747d8fd…c0c66` retains 7 + cancel + 193 resume, evaluates 200/200, admits 97, and returns two Pareto points/two tier-3-held finalists | proves the local consumer/readback and recovery path only. The exact implementation tree is not protected, the test grid is not catalog data, and the real v1 row remains rejected/analytic-fallback driven. It grants no sourced/applicable thrust, owner review, tier 3, overnight/provider, marketplace/live-catalog, build, hardware, field, or external maturity |
 | D66 protected catalog performance-grid format | All 44 local gates and all 11 PR checks pass under Python 3.12.13, including Rust fmt/Clippy/workspace tests, native/WASM/golden/generated docs, 39 Studio, 74 Gateway, 247 workers, Brief-25 25/25, packaging, training/offline/MJX, and unchanged D65 200/97/two-point/two-held behavior. The registered corpus reports nine surfaces/99 cases and compatibility 20/20. PR #119 exact-head/reviewed/protected-tree proof and exact PR/post-merge CI/security pass. Protected artifact `8405061774` binds clean `5a162b0`; migration evidence `d6764fec…313a` proves a clean idempotent 27-migration install and exact populated-data preservation/idempotency across predecessors 0001–0026 plus recovery/concurrency invariants | proves protected row-v2/read-v1/parser/grid/persistence compatibility only. It creates no sourced grid, applicable thrust, downstream training authority, marketplace review, hardware, field, or external maturity |
 | D65 protected catalog-bound tier-2 physics | All 44 local/PR/protected gates pass under Python 3.12.13 with 246 worker, 74 Gateway, and 39 Studio tests. `forge-sim` passes 55 unit plus 5 boundary-corpus tests; focused Rust CLI 3/3 and Python bundle/batch 13/13 pass; manual MuJoCo body-mass sum equals bundle mass at 0.769 kg. PR #117 exact head/reviewed/protected-tree proof and exact PR/post-merge CI/security pass. Protected artifact `8402573520` binds clean `ad54ab3`, retains 7 + zero-dispatch cancel + 193 resume, evaluates 200/200 native/Rapier/MuJoCo rows, admits 97, and returns two held battery points at 0.769/0.756 kg. Both catalog-physics variants retain `catalogBenchTableUsed=false` with exact fallback lists | proves the protected bundle-v3/physics-v1/batch-v4 local-engine boundary and the fail-closed historical 6S-table/4S-design mismatch. It grants no applicable catalog-thrust, tier-3, overnight/provider, marketplace/live-catalog, build, hardware, field, or external maturity |
 | D64 protected catalog-backed categorical v3 | All 44 local/PR/protected gates pass under Python 3.12.13 with 246 workers, 74 Gateway, and 39 Studio tests; focused search/batch tests pass 12/12; PR #115 exact head `b13a817`, reviewed/protected tree `9934442`, protected `609a70d`, and exact PR/post-merge CI/security pass. Artifact `8399829664` binds clean source plus catalog/runtime authorities, evaluates 200/200 native/Rapier/MuJoCo rows, admits 197, retains 7 + cancel + 193 recovery, and returns two Pareto points/two held finalists | proves protected exact catalog-choice, admission, engine, and same-authority recovery semantics. The two-choice fixture does not satisfy P9's separate `>=3` exit. Marketplace review/live persistence, catalog-native MuJoCo physics, tier 3, overnight/provider billing, build, hardware, field, and external maturity remain open |
@@ -1066,7 +1088,7 @@ decision; none is a hidden release claim.
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
 | Training/policy | protected exact-pinned CPU SB3/MuJoCo flight/ground trainers, clean scorecard-passing consumer-hardware evidence, authoritative object delivery, browser playback, controlled MJX feasibility, and D45 exact source-bound controlled-synthetic BC-to-PPO evidence | recorded-device capture; deployed Modal/GPU operations; exact passing-policy delivery integration; ground browser playback; final D12 accelerator/budget/cost MJX decision; production storage operations; external acceptance; and field transfer |
-| Co-design | deterministic fixture/Pareto contracts; protected D59 exact-snapshot engine smoke, D60 real-CMA-ES/TPE 200-proposal plan, D61 exact-hash recovery, D63 numeric-runtime scheduling/refusal, D64 exact catalog battery search, D65 catalog-bound mass/inertia/MuJoCo/table applicability, and D66 row-v2/read-v1/persistence compatibility. Protected artifacts `8402573520` and `8405061774` bind the respective 200/97/two-point/two-held engine and clean every-predecessor migration/browser evidence | source and review voltage/prop-applicable bench data or retain the analytic fallback; add a new exact-grid/curve-readback training authority before use; add a course-conditioned manifold meeting the `>=3` exit; run actual finalist training/scorecards; retain overnight/provider billing and external acceptance; portable cache and heterogeneous resume remain deliberately unsupported |
+| Co-design | deterministic fixture/Pareto contracts; protected D59 exact-snapshot engine smoke, D60 real-CMA-ES/TPE 200-proposal plan, D61 exact-hash recovery, D63 numeric-runtime scheduling/refusal, D64 exact catalog battery search, D65 catalog-bound mass/inertia/MuJoCo/table applicability, and D66 row-v2/read-v1/persistence compatibility; local D67 exact-grid retention and independent 101-point curve readback. Protected artifacts `8402573520` and `8405061774` bind the engine and migration/browser boundaries; local dirty-tree D67 repeats 200/97/two-point/two-held under analytic fallback | protect D67; source and owner-review voltage/prop-applicable bench data or retain the analytic fallback, then pass that real row through D67; add a course-conditioned manifold meeting the `>=3` exit; run actual finalist training/scorecards; retain overnight/provider billing and external acceptance; portable cache and heterogeneous resume remain deliberately unsupported |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
 | Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
@@ -1154,6 +1176,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D64 catalog-backed categorical search | **Go only for exact-runtime-scoped `local-catalog-engine-200-batch` at protected `609a70d`** | PR #115 exact-head/reviewed-tree/protected-tree proof, exact PR/post-merge CI/security, all 44 gates, and clean artifact `8399829664` prove exact equipped catalog-choice lineage, catalog-aware admission, 200/200 engine evaluations, same-authority recovery, 197 admissions, two Pareto points, and two held finalists. The two-choice front does not close the `>=3` phase exit, and D64 grants no marketplace review/live persistence, catalog-native MuJoCo mass/inertia/thrust tables, tier 3, overnight/provider billing, build, hardware, field, or external maturity |
 | Claim D65 catalog-bound tier-2 physics | **Go only for exact-runtime-scoped `catalog-bound-physics-platform-local-engine-200-batch` at protected `ad54ab3`** | PR #117 exact-head/reviewed-tree/protected-tree proof, exact PR/post-merge CI/security, all 44 gates, and clean artifact `8402573520` prove catalog-native mass/inertia, exact MuJoCo mass closure, fail-closed table applicability, 200/200 engine evaluations, 97 admissions, two Pareto points, and two held finalists. The current table remains inapplicable and D65 cannot be cited as catalog-thrust, tier-3 training, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | Claim D66 per-point-voltage format | **Go only for protected row-v2/read-v1/grid/persistence compatibility at `5a162b0`; no-go for propulsion maturity** | exact PR/reviewed/protected-tree proof, all 44 local gates, all 11 PR checks, post-merge CI/security, and protected artifact `8405061774` prove the format and every-predecessor migration boundary. It cannot be cited as sourced/applicable catalog thrust, a new D65 curve, training, review/marketplace, hardware, field, or external evidence |
+| Claim D67 exact-grid/curve-readback consumer | **Go only for local controlled-synthetic consumer-path mechanics; no-go for protected or physical maturity** | focused Rust/Python/compatibility checks and dirty-tree 200-row smoke prove exact point retention, independent all-101 curve reconstruction, tamper refusal, authority/recovery binding, and unchanged 97/two/two analytic-fallback behavior. No exact PR/protected-main evidence exists; the only applicable grid is test-generated, and the catalog row remains v1/rejected. D67 cannot be cited as sourced/applicable thrust, owner review, tier 3, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 
@@ -1167,11 +1190,12 @@ completion lane is closed. Dependency
 order is owned by
 `EXECUTION-ROADMAP.md`.
 
-Immediate refresh trigger: source and owner-review a voltage-covered, prop-matched
-grid or retain the analytic fallback. Before use, create a new immutable component
-revision and a new exact-grid/curve-readback bundle/physics
-authority major. After that, run actual tier-3 finalist training and scorecards under
-the exact protected lineage. The separate `>=3` course-
+Immediate refresh trigger: first protect D67's exact implementation and clean local
+evidence. Then source and owner-review a voltage-covered, prop-matched grid or retain
+the analytic fallback. Before physical use, create a new immutable component revision
+and run that exact row through D67's bundle/physics/readback authority. After that,
+run actual tier-3 finalist training and scorecards under the exact protected lineage.
+The separate `>=3` course-
 conditioned physical front and retained provider/overnight
 billing remain independent completion gates.
 

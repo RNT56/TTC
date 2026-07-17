@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -73,6 +74,31 @@ def catalog_request() -> dict:
     }
 
 
+def applicable_v2_catalog(
+    tmp_path: Path, *, voltages: tuple[float, float] = (10.0, 16.8)
+) -> Path:
+    catalog = tmp_path / "catalog"
+    shutil.copytree(CATALOG, catalog)
+    motor_path = catalog / "components" / "cmp_motor_emax-eco2-2207-1900kv.json"
+    motor = json.loads(motor_path.read_text(encoding="utf-8"))
+    motor["schemaVersion"] = "2.0.0"
+    table = motor["thrustTables"][0]
+    table.pop("voltage")
+    table["id"] = "controlled-synthetic-4s-5x43-grid"
+    table["prop"] = "5x4.3"
+    table["sourceUrl"] = "https://bench.example.test/controlled-synthetic-grid"
+    table["points"] = [
+        {"voltage": voltage, "throttle": throttle, "thrustG": thrust, "currentA": current}
+        for voltage, sweep in (
+            (voltages[0], ((0.0, 0.0, 0.0), (0.5, 450.0, 7.5), (1.0, 900.0, 15.0))),
+            (voltages[1], ((0.0, 0.0, 0.0), (0.5, 700.0, 11.0), (1.0, 1400.0, 22.0))),
+        )
+        for throttle, thrust, current in sweep
+    ]
+    motor_path.write_text(json.dumps(motor, indent=2) + "\n", encoding="utf-8")
+    return catalog
+
+
 def test_gateway_snapshot_compiles_through_rust_training_authority(monkeypatch):
     if not VALIDATOR.is_file():
         pytest.skip("forge-validate binary is not built")
@@ -100,10 +126,10 @@ def test_catalog_snapshot_binds_mass_inertia_and_rejects_inapplicable_bench_tabl
         compile_training_bundle(catalog_request())
 
     bundle = compile_training_bundle(catalog_request(), catalog_path=CATALOG)
-    assert bundle["schemaVersion"] == "3.0.0"
+    assert bundle["schemaVersion"] == "4.0.0"
     assert bundle["massKg"] == 0.769
     physics = bundle["catalogPhysics"]
-    assert physics["schemaVersion"] == "forge-training-catalog-physics/1.0.0"
+    assert physics["schemaVersion"] == "forge-training-catalog-physics/2.0.0"
     assert physics["baseContractMassKg"] == 0.479
     assert physics["equippedCatalogMassKg"] == pytest.approx(0.29)
     assert physics["totalMassKg"] == bundle["massKg"]
@@ -124,6 +150,8 @@ def test_catalog_snapshot_binds_mass_inertia_and_rejects_inapplicable_bench_tabl
     assert motor["quantity"] == 4
     assert motor["geometry"]["model"] == "uniform-cylinder-y"
     assert motor["thrustTables"][0]["pointCount"] == 2
+    assert motor["thrustTables"][0]["rowSchemaVersion"] == "1.0.0"
+    assert len(motor["thrustTables"][0]["points"]) == 2
     assert motor["thrustTables"][0]["voltageRangeV"] == [25.2, 25.2]
     assert motor["thrustTables"][0]["usedForCurve"] is False
     assert len(motor["thrustTables"][0]["inapplicabilityReasons"]) == 2
@@ -131,11 +159,83 @@ def test_catalog_snapshot_binds_mass_inertia_and_rejects_inapplicable_bench_tabl
         "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
     )
     assert "forge-sim.DEFAULT_CT" in physics["inlineFallbacks"]
+    assert physics["curveReadback"] == {
+        "schemaVersion": "forge-training-catalog-curve-readback/1.0.0",
+        "selectedTableId": None,
+        "tableDriven": False,
+        "curvePointCount": 101,
+        "motorCount": 4,
+        "maxTotalCurrentA": 120.0,
+        "batteryNominalVoltageV": 14.8,
+        "batteryResistanceOhm": 0.018,
+        "motorResistanceOhm": 0.06,
+        "fixedPointIterations": 12,
+        "convergenceToleranceV": 1e-6,
+        "minimumVoltageFraction": 0.5,
+    }
     assert bundle["powertrain"]["maxTotalCurrentA"] == 120.0
     assert bundle["powertrain"]["curve"][-1]["totalThrustN"] > (
         bundle["massKg"] * bundle["gravityMS2"]
     )
     assert any("exact equipped catalog masses" in assumption for assumption in bundle["assumptions"])
+
+
+def test_applicable_v2_grid_is_retained_and_independently_reconstructed(
+    monkeypatch, tmp_path
+):
+    if not VALIDATOR.is_file():
+        pytest.skip("forge-validate binary is not built")
+    monkeypatch.setenv("FORGE_VALIDATE_BIN", str(VALIDATOR))
+    catalog = applicable_v2_catalog(tmp_path)
+    bundle = compile_training_bundle(catalog_request(), catalog_path=catalog)
+    physics = bundle["catalogPhysics"]
+    motor = next(
+        component for component in physics["components"] if component["category"] == "motor"
+    )
+    table = motor["thrustTables"][0]
+
+    assert bundle["schemaVersion"] == "4.0.0"
+    assert physics["schemaVersion"] == "forge-training-catalog-physics/2.0.0"
+    assert physics["powertrainModel"] == (
+        "catalog-motor-battery-exact-grid-readback-v2"
+    )
+    assert physics["inlineFallbacks"] == [
+        "sim.battery.rIntMohm",
+        "sim.motors[].rIntMohm",
+    ]
+    assert table["rowSchemaVersion"] == "2.0.0"
+    assert table["pointCount"] == 6
+    assert table["voltageRangeV"] == [10.0, 16.8]
+    assert table["usedForCurve"] is True
+    assert table["inapplicabilityReasons"] == []
+    assert physics["curveReadback"]["tableDriven"] is True
+    assert physics["curveReadback"]["selectedTableId"] == table["id"]
+
+    drifted_curve = copy.deepcopy(bundle)
+    drifted_curve["powertrain"]["curve"][50]["totalThrustN"] += 0.01
+    with pytest.raises(ValueError, match="independent curve readback drifted at point 50"):
+        validate_training_bundle(drifted_curve, catalog_request()["contractHash"])
+
+    drifted_grid = copy.deepcopy(bundle)
+    motor = next(
+        component
+        for component in drifted_grid["catalogPhysics"]["components"]
+        if component["category"] == "motor"
+    )
+    motor["thrustTables"][0]["points"][2]["thrustN"] += 0.01
+    with pytest.raises(ValueError, match="independent curve readback drifted"):
+        validate_training_bundle(drifted_grid, catalog_request()["contractHash"])
+
+    drifted_recipe = copy.deepcopy(bundle)
+    drifted_recipe["catalogPhysics"]["curveReadback"]["maxTotalCurrentA"] += 1.0
+    with pytest.raises(ValueError, match="curve-readback inputs drifted"):
+        validate_training_bundle(drifted_recipe, catalog_request()["contractHash"])
+
+    edge_clamped_catalog = applicable_v2_catalog(
+        tmp_path / "edge-clamped", voltages=(14.8, 16.8)
+    )
+    with pytest.raises(ValueError, match="left the retained voltage grid"):
+        compile_training_bundle(catalog_request(), catalog_path=edge_clamped_catalog)
 
 
 def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):
@@ -188,7 +288,7 @@ def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):
         if component["category"] == "motor"
     )
     motor["thrustTables"][0]["usedForCurve"] = True
-    with pytest.raises(ValueError, match="thrust-table authority"):
+    with pytest.raises(ValueError, match="thrust-table authority is outside bounds"):
         validate_training_bundle(catalog_applicability, catalog_request()["contractHash"])
 
     catalog_coverage = copy.deepcopy(catalog_bundle)
@@ -200,7 +300,7 @@ def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):
     motor["thrustTables"][0]["voltageRangeV"] = [14.8, 16.8]
     motor["thrustTables"][0]["voltageV"] = 14.8
     motor["thrustTables"][0]["prop"] = "5x4.3"
-    with pytest.raises(ValueError, match="applicability is false"):
+    with pytest.raises(ValueError, match="voltage authority drifted"):
         validate_training_bundle(catalog_coverage, catalog_request()["contractHash"])
 
     catalog_multiple_rejected = copy.deepcopy(catalog_bundle)
@@ -226,13 +326,21 @@ def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):
         if component["category"] == "motor"
     )
     for table in motor["thrustTables"]:
+        table["rowSchemaVersion"] = "2.0.0"
         table["voltageV"] = 14.8
         table["voltageRangeV"] = [14.8, 16.8]
         table["prop"] = "5x4.3"
+        original_points = table["points"]
+        table["points"] = [
+            {**point, "voltageV": voltage}
+            for voltage in (14.8, 16.8)
+            for point in original_points
+        ]
+        table["pointCount"] = len(table["points"])
         table["usedForCurve"] = True
         table["inapplicabilityReasons"] = []
     catalog_ambiguous["catalogPhysics"]["powertrainModel"] = (
-        "catalog-motor-battery-applicability-checked-thrust-table-v1"
+        "catalog-motor-battery-exact-grid-readback-v2"
     )
     catalog_ambiguous["catalogPhysics"]["inlineFallbacks"] = [
         "sim.battery.rIntMohm",

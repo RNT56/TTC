@@ -127,7 +127,7 @@ try {
     env,
   );
   if (
-    paused.schemaVersion !== "forge-codesign-engine-batch/4.0.0"
+    paused.schemaVersion !== "forge-codesign-engine-batch/5.0.0"
     || paused.scheduler?.state !== "paused"
     || paused.scheduler?.nextOrdinal !== 7
     || paused.candidates?.length !== 7
@@ -161,7 +161,7 @@ try {
 }
 
 if (
-  result.schemaVersion !== "forge-codesign-engine-batch/4.0.0"
+  result.schemaVersion !== "forge-codesign-engine-batch/5.0.0"
   || result.artifactKind !== "codesignEngineBatch"
   || result.provider !== "forge-local-engine-batch"
   || result.source?.baseContractHash !== contractHash
@@ -170,24 +170,29 @@ if (
     !== plan.source?.proposalRuntimeAuthority?.authoritySha256
   || result.source?.catalogChoiceAuthority?.authoritySha256
     !== plan.source?.catalogChoiceAuthority?.authoritySha256
-  || result.source?.trainingPhysics?.trainingBundleSchema !== "3.0.0"
+  || result.source?.trainingPhysics?.trainingBundleSchema !== "4.0.0"
   || result.source?.trainingPhysics?.catalogPhysicsSchema
-    !== "forge-training-catalog-physics/1.0.0"
+    !== "forge-training-catalog-physics/2.0.0"
   || result.source?.trainingPhysics?.catalogNativeMassInertia !== true
   || result.source?.trainingPhysics?.catalogBenchTableApplicability
     !== "bound-and-fail-closed"
+  || result.source?.trainingPhysics?.catalogExactGridRetained !== true
+  || result.source?.trainingPhysics?.curveReadbackSchema
+    !== "forge-training-catalog-curve-readback/1.0.0"
+  || result.source?.trainingPhysics?.independentCurveReadback
+    !== "required-when-grid-selected"
   || result.source?.trainingPhysics?.analyticFallbackAllowed !== true
   || result.source?.sourceRevision !== sourceRevision
   || result.source?.sourceRevisionRecorded !== true
   || result.source?.dependencyManifestSha256 !== dependencyManifestSha256
-  || result.source?.maturity !== "catalog-bound-physics-platform-local-engine-200-batch"
+  || result.source?.maturity !== "catalog-grid-readback-platform-local-engine-200-batch"
   || result.scheduler?.state !== "complete"
   || result.scheduler?.nextOrdinal !== 200
   || result.scheduler?.completedCandidates !== 200
   || result.scheduler?.resumeObserved !== true
   || result.scheduler?.cancellationObserved !== true
   || result.scheduler?.checkpointEveryCandidate !== true
-  || result.scheduler?.resumePolicy !== "exact-proposal-and-catalog-authority"
+  || result.scheduler?.resumePolicy !== "exact-proposal-catalog-and-training-authority"
   || result.scheduler?.requiredRuntimeAuthoritySha256
     !== plan.source?.proposalRuntimeAuthority?.authoritySha256
   || result.scheduler?.requiredCatalogAuthoritySha256
@@ -248,18 +253,24 @@ for (const [ordinal, candidate] of result.candidates.entries()) {
     || candidate.evaluations?.tier3?.evaluated !== false
     || candidate.evaluations?.tier3?.held !== true
     || candidate.lineage?.mujocoRuntime !== "3.9.0"
-    || candidate.lineage?.trainingBundleSchema !== "3.0.0"
+    || candidate.lineage?.trainingBundleSchema !== "4.0.0"
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.schemaVersion
-      !== "forge-codesign-training-authority/1.0.0"
+      !== "forge-codesign-training-authority/2.0.0"
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogPhysicsSchema
-      !== "forge-training-catalog-physics/1.0.0"
+      !== "forge-training-catalog-physics/2.0.0"
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogAuthoritySha256
       !== plan.source?.catalogChoiceAuthority?.catalogAuthoritySha256
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogNativeMassInertia
       !== true
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogBenchTableAuthority
       !== true
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogBenchGridRetained
+      !== true
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogBenchTableUsed
+      !== false
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogCurveReadbackSchema
+      !== "forge-training-catalog-curve-readback/1.0.0"
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogCurveReadbackVerified
       !== false
     || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.powertrainModel
       !== "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
@@ -298,7 +309,7 @@ if (Object.values(result.nonclaims || {}).some((claim) => claim !== false)) {
 }
 const resultHash = sha256(stableJson(result));
 const evidence = {
-  evidenceSchemaVersion: "p9-engine-batch-evidence/4.0.0",
+  evidenceSchemaVersion: "p9-engine-batch-evidence/5.0.0",
   sourceRevision,
   worktreeClean,
   validator,

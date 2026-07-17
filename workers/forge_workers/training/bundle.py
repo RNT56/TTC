@@ -14,9 +14,11 @@ from typing import Any
 
 SNAPSHOT_SCHEMA = "forge-admitted-model-snapshot/1.0.0"
 TRAINING_BUNDLE_VERSION = "2.0.0"
-CATALOG_TRAINING_BUNDLE_VERSION = "3.0.0"
+CATALOG_TRAINING_BUNDLE_VERSION = "4.0.0"
 CATALOG_TRAINING_PHYSICS_SCHEMA = "forge-training-catalog-physics"
-CATALOG_TRAINING_PHYSICS_VERSION = "1.0.0"
+CATALOG_TRAINING_PHYSICS_VERSION = "2.0.0"
+CATALOG_TRAINING_CURVE_READBACK_SCHEMA = "forge-training-catalog-curve-readback"
+CATALOG_TRAINING_CURVE_READBACK_VERSION = "1.0.0"
 POLICY_TENSOR_SCHEMA = "forge-policy-tensor"
 POLICY_TENSOR_VERSION = "2.0.0"
 LEGACY_POLICY_TENSOR_VERSION = "1.0.0"
@@ -206,17 +208,250 @@ def validate_training_bundle(value: Any, contract_hash: str) -> dict[str, Any]:
         raise ValueError("training bundle hover throttle is outside (0, 1]")
     _tensor(value.get("tensor"))
     _estimator(value.get("estimator"))
-    _powertrain(value.get("powertrain"), mass_kg=mass_kg, gravity_m_s2=gravity_m_s2)
+    powertrain = value.get("powertrain")
+    _powertrain(powertrain, mass_kg=mass_kg, gravity_m_s2=gravity_m_s2)
     _control(value.get("control"))
     if version == CATALOG_TRAINING_BUNDLE_VERSION:
-        _catalog_physics(value.get("catalogPhysics"), mass_kg)
+        _catalog_physics(value.get("catalogPhysics"), mass_kg, powertrain)
     assumptions = value.get("assumptions")
     if not isinstance(assumptions, list) or not assumptions or not all(_bounded_string(item, 1, 500) for item in assumptions):
         raise ValueError("training bundle assumptions are required and bounded")
     return value
 
 
-def _catalog_physics(value: Any, mass_kg: float) -> None:
+def _catalog_grid(
+    table: dict[str, Any], point_count: int
+) -> tuple[list[float], list[float], dict[tuple[float, float], tuple[float, float]]]:
+    points = table.get("points")
+    if not isinstance(points, list) or len(points) != point_count:
+        raise ValueError("catalog training thrust-table point count drifted")
+    cells: dict[tuple[float, float], tuple[float, float]] = {}
+    for point in points:
+        if not isinstance(point, dict):
+            raise ValueError("catalog training thrust-table point is not an object")
+        _exact(
+            point,
+            {"voltageV", "throttle", "thrustN", "currentA"},
+            "catalog training thrust-table point",
+        )
+        voltage = _finite(point, "voltageV", positive=True)
+        throttle = _finite(point, "throttle")
+        thrust = _finite(point, "thrustN")
+        current = _finite(point, "currentA")
+        if (
+            voltage > 1_000
+            or not 0 <= throttle <= 1
+            or not 0 <= thrust <= 1_000_000
+            or not 0 <= current <= 1_000_000
+        ):
+            raise ValueError("catalog training thrust-table point is outside bounds")
+        coordinate = (voltage, throttle)
+        if coordinate in cells:
+            raise ValueError("catalog training thrust-table coordinate is duplicated")
+        cells[coordinate] = (thrust, current)
+    voltages = sorted({coordinate[0] for coordinate in cells})
+    throttles = sorted({coordinate[1] for coordinate in cells})
+    if (
+        not voltages
+        or not throttles
+        or throttles[0] != 0
+        or throttles[-1] != 1
+        or len(voltages) * len(throttles) != len(cells)
+    ):
+        raise ValueError("catalog training thrust table is not a complete rectangular grid")
+    for voltage in voltages:
+        previous_thrust = -1.0
+        previous_current = -1.0
+        for throttle in throttles:
+            values = cells.get((voltage, throttle))
+            if values is None:
+                raise ValueError("catalog training thrust table is not a complete rectangular grid")
+            thrust, current = values
+            if thrust < previous_thrust or current < previous_current:
+                raise ValueError("catalog training thrust table is not monotonic")
+            previous_thrust = thrust
+            previous_current = current
+    return voltages, throttles, cells
+
+
+def _grid_bracket(axis: list[float], value: float) -> tuple[int, float]:
+    if value <= axis[0]:
+        return 0, 0.0
+    if value >= axis[-1]:
+        return len(axis) - 1, 0.0
+    for index in range(len(axis) - 1):
+        if value < axis[index + 1]:
+            return index, (value - axis[index]) / (axis[index + 1] - axis[index])
+    return len(axis) - 1, 0.0
+
+
+def _grid_lookup(
+    grid: tuple[
+        list[float],
+        list[float],
+        dict[tuple[float, float], tuple[float, float]],
+    ],
+    voltage: float,
+    throttle: float,
+) -> tuple[float, float]:
+    voltages, throttles, cells = grid
+    voltage_index, voltage_fraction = _grid_bracket(voltages, voltage)
+    throttle_index, throttle_fraction = _grid_bracket(throttles, throttle)
+    next_voltage_index = min(voltage_index + 1, len(voltages) - 1)
+    next_throttle_index = min(throttle_index + 1, len(throttles) - 1)
+
+    def interpolate(field: int) -> float:
+        low_voltage = (
+            cells[(voltages[voltage_index], throttles[throttle_index])][field]
+            * (1.0 - throttle_fraction)
+            + cells[(voltages[voltage_index], throttles[next_throttle_index])][field]
+            * throttle_fraction
+        )
+        high_voltage = (
+            cells[(voltages[next_voltage_index], throttles[throttle_index])][field]
+            * (1.0 - throttle_fraction)
+            + cells[(voltages[next_voltage_index], throttles[next_throttle_index])][field]
+            * throttle_fraction
+        )
+        return low_voltage * (1.0 - voltage_fraction) + high_voltage * voltage_fraction
+
+    return interpolate(0), interpolate(1)
+
+
+def _catalog_curve_readback(
+    authority: Any,
+    powertrain: Any,
+    tables: dict[
+        str,
+        tuple[
+            dict[str, Any],
+            tuple[
+                list[float],
+                list[float],
+                dict[tuple[float, float], tuple[float, float]],
+            ],
+        ],
+    ],
+    used_table_ids: list[str],
+    motor_count: int,
+) -> None:
+    if not isinstance(authority, dict):
+        raise ValueError("catalog training curve-readback authority is missing")
+    _exact(
+        authority,
+        {
+            "schemaVersion",
+            "selectedTableId",
+            "tableDriven",
+            "curvePointCount",
+            "motorCount",
+            "maxTotalCurrentA",
+            "batteryNominalVoltageV",
+            "batteryResistanceOhm",
+            "motorResistanceOhm",
+            "fixedPointIterations",
+            "convergenceToleranceV",
+            "minimumVoltageFraction",
+        },
+        "catalog training curve readback",
+    )
+    if authority.get("schemaVersion") != (
+        f"{CATALOG_TRAINING_CURVE_READBACK_SCHEMA}/"
+        f"{CATALOG_TRAINING_CURVE_READBACK_VERSION}"
+    ):
+        raise ValueError("catalog training curve-readback version drifted")
+    table_driven = authority.get("tableDriven")
+    selected_table_id = authority.get("selectedTableId")
+    if (
+        not isinstance(table_driven, bool)
+        or authority.get("curvePointCount") != 101
+        or authority.get("motorCount") != motor_count
+        or authority.get("fixedPointIterations") != 12
+    ):
+        raise ValueError("catalog training curve-readback protocol drifted")
+    nominal_voltage = _finite(authority, "batteryNominalVoltageV", positive=True)
+    max_total_current = _finite(authority, "maxTotalCurrentA", positive=True)
+    battery_resistance = _finite(authority, "batteryResistanceOhm")
+    motor_resistance = _finite(authority, "motorResistanceOhm")
+    tolerance = _finite(authority, "convergenceToleranceV", positive=True)
+    minimum_fraction = _finite(authority, "minimumVoltageFraction", positive=True)
+    if (
+        not isinstance(powertrain, dict)
+        or nominal_voltage != _finite(powertrain, "nominalVoltageV", positive=True)
+        or max_total_current
+        != _finite(powertrain, "maxTotalCurrentA", positive=True)
+        or battery_resistance < 0
+        or motor_resistance < 0
+        or battery_resistance > 1_000
+        or motor_resistance > 1_000
+        or tolerance != 1e-6
+        or minimum_fraction != 0.5
+    ):
+        raise ValueError("catalog training curve-readback inputs drifted")
+    if table_driven:
+        if (
+            not _bounded_string(selected_table_id, 1, 500)
+            or used_table_ids != [selected_table_id]
+            or selected_table_id not in tables
+            or tables[selected_table_id][0].get("rowSchemaVersion") != "2.0.0"
+        ):
+            raise ValueError("catalog training selected-grid authority drifted")
+    elif selected_table_id is not None or used_table_ids:
+        raise ValueError("catalog training fallback has selected-grid authority")
+    if not table_driven:
+        return
+
+    curve = powertrain.get("curve")
+    if not isinstance(curve, list) or len(curve) != 101:
+        raise ValueError("catalog training curve readback requires 101 power points")
+    grid = tables[selected_table_id][1]
+    for index, observed in enumerate(curve):
+        throttle = index / 100.0
+        effective_voltage = nominal_voltage
+        thrust = 0.0
+        current = 0.0
+        next_voltage = effective_voltage
+        for _ in range(12):
+            if (
+                effective_voltage < grid[0][0] - 1e-9
+                or effective_voltage > grid[0][-1] + 1e-9
+            ):
+                raise ValueError(
+                    "catalog training curve readback left the retained voltage grid "
+                    f"at point {index}"
+                )
+            thrust, current = _grid_lookup(grid, effective_voltage, throttle)
+            next_voltage = max(
+                nominal_voltage
+                - current * motor_count * battery_resistance
+                - current * motor_resistance,
+                minimum_fraction * nominal_voltage,
+            )
+            if abs(next_voltage - effective_voltage) < tolerance:
+                break
+            effective_voltage = next_voltage
+        expected = {
+            "totalThrustN": thrust * motor_count,
+            "normalizedVoltage": max(0.0, min(1.0, next_voltage / nominal_voltage)),
+            "normalizedCurrent": max(
+                0.0, min(1.0, current * motor_count / max_total_current)
+            ),
+        }
+        if not isinstance(observed, dict) or any(
+            not math.isclose(
+                float(observed.get(field, float("nan"))),
+                expected_value,
+                rel_tol=1e-12,
+                abs_tol=1e-12,
+            )
+            for field, expected_value in expected.items()
+        ):
+            raise ValueError(
+                f"catalog training independent curve readback drifted at point {index}"
+            )
+
+
+def _catalog_physics(value: Any, mass_kg: float, powertrain: Any) -> None:
     if not isinstance(value, dict):
         raise ValueError("catalog training physics authority is missing")
     _exact(
@@ -232,6 +467,7 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
             "inlineFallbacks",
             "batteryOperatingVoltageV",
             "equippedProp",
+            "curveReadback",
             "components",
         },
         "catalog training physics",
@@ -250,7 +486,7 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
         raise ValueError("catalog training inertia model drifted")
     powertrain_model = value.get("powertrainModel")
     if powertrain_model not in {
-        "catalog-motor-battery-applicability-checked-thrust-table-v1",
+        "catalog-motor-battery-exact-grid-readback-v2",
         "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1",
     }:
         raise ValueError("catalog training powertrain model drifted")
@@ -316,6 +552,18 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
     observed_slots: set[str] = set()
     thrust_tables = 0
     used_thrust_tables = 0
+    used_table_ids: list[str] = []
+    table_authorities: dict[
+        str,
+        tuple[
+            dict[str, Any],
+            tuple[
+                list[float],
+                list[float],
+                dict[tuple[float, float], tuple[float, float]],
+            ],
+        ],
+    ] = {}
     motor_quantities: list[int] = []
     battery_quantities: list[int] = []
     for component in components:
@@ -446,12 +694,14 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
                     table,
                     {
                         "id",
+                        "rowSchemaVersion",
                         "prop",
                         "voltageV",
                         "voltageRangeV",
                         "confidence",
                         "sourceUrl",
                         "pointCount",
+                        "points",
                         "usedForCurve",
                         "inapplicabilityReasons",
                     },
@@ -460,6 +710,11 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
                 for field in ("id", "prop", "sourceUrl"):
                     if not _bounded_string(table.get(field), 1, 1_000):
                         raise ValueError("catalog training thrust-table text is invalid")
+                row_schema_version = table.get("rowSchemaVersion")
+                if row_schema_version not in {"1.0.0", "2.0.0"}:
+                    raise ValueError("catalog training thrust-table row version is unsupported")
+                if not table["sourceUrl"].startswith("https://"):
+                    raise ValueError("catalog training thrust-table source is not HTTPS")
                 declared_voltage = _finite(table, "voltageV", positive=True)
                 if declared_voltage > 1_000:
                     raise ValueError("catalog training thrust-table voltage is outside bounds")
@@ -489,6 +744,16 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
                     or (not used and not reasons)
                 ):
                     raise ValueError("catalog training thrust-table authority is outside bounds")
+                grid = _catalog_grid(table, point_count)
+                voltages = grid[0]
+                if voltage_range != [voltages[0], voltages[-1]] or declared_voltage != voltages[0]:
+                    raise ValueError("catalog training thrust-table voltage authority drifted")
+                if row_schema_version == "1.0.0" and len(voltages) != 1:
+                    raise ValueError("catalog training v1 thrust table is not a single-voltage sweep")
+                table_id = table["id"]
+                if table_id in table_authorities:
+                    raise ValueError("catalog training thrust-table identity is duplicated")
+                table_authorities[table_id] = (table, grid)
                 try:
                     table_diameter_text, table_pitch_text = table["prop"].lower().replace(
                         " ", ""
@@ -522,6 +787,8 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
                     raise ValueError("catalog training prop rejection reason is absent")
                 thrust_tables += 1
                 used_thrust_tables += int(used)
+                if used:
+                    used_table_ids.append(table_id)
     if abs(observed_mass - equipped_mass) > 1e-12:
         raise ValueError("catalog training equipped mass does not match component authority")
     if motor_quantities != [4] or battery_quantities != [1]:
@@ -530,10 +797,17 @@ def _catalog_physics(value: Any, mass_kg: float) -> None:
         raise ValueError("catalog training requires equipped motor thrust-table authority")
     expected_used = int(
         powertrain_model
-        == "catalog-motor-battery-applicability-checked-thrust-table-v1"
+        == "catalog-motor-battery-exact-grid-readback-v2"
     )
     if used_thrust_tables != expected_used:
         raise ValueError("catalog training thrust-table applicability drifted")
+    _catalog_curve_readback(
+        value.get("curveReadback"),
+        powertrain,
+        table_authorities,
+        used_table_ids,
+        motor_quantities[0],
+    )
 
 
 def _validate_ground_training_bundle(value: dict[str, Any], contract_hash: str) -> dict[str, Any]:
@@ -882,6 +1156,8 @@ def _bounded_string(value: Any, minimum: int, maximum: int) -> bool:
 
 __all__ = [
     "CATALOG_TRAINING_BUNDLE_VERSION",
+    "CATALOG_TRAINING_CURVE_READBACK_SCHEMA",
+    "CATALOG_TRAINING_CURVE_READBACK_VERSION",
     "CATALOG_TRAINING_PHYSICS_SCHEMA",
     "CATALOG_TRAINING_PHYSICS_VERSION",
     "GROUND_POLICY_INPUT_LAYOUT",

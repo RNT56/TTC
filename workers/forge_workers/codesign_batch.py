@@ -1,4 +1,4 @@
-"""Checkpointed D65 consumer for the exact D64 catalog-backed co-design plan.
+"""Checkpointed D67 consumer for the exact D64 catalog-backed co-design plan.
 
 The batch owns no proposal generation semantics. It replays and validates the exact
 D64 catalog-backed plan, evaluates its contiguous proposal hashes through the
@@ -6,9 +6,9 @@ sovereign catalog/native/Rapier/MuJoCo ladder, and writes a hash-bound checkpoin
 after every candidate. Pareto and finalist selection are withheld until all 200
 candidates have engine evidence. Tier 3, provider billing, catalog marketplace
 publication, live catalog persistence, build, hardware, field, and the separate
-overnight claim remain held. Version 4 adds catalog-bound training mass, inertia,
-bench-table applicability, and exact bundle authority while retaining catalog/runtime
-recovery fences.
+overnight claim remain held. Version 5 retains exact bench grids and binds the
+independently reconstructed curve-readback authority while preserving D65 mass,
+inertia, catalog, and numeric-runtime recovery fences.
 """
 
 from __future__ import annotations
@@ -51,6 +51,8 @@ from forge_workers.codesign_search import (
 from forge_workers.net_security import assert_bounded_json
 from forge_workers.training.bundle import (
     CATALOG_TRAINING_BUNDLE_VERSION,
+    CATALOG_TRAINING_CURVE_READBACK_SCHEMA,
+    CATALOG_TRAINING_CURVE_READBACK_VERSION,
     CATALOG_TRAINING_PHYSICS_SCHEMA,
     CATALOG_TRAINING_PHYSICS_VERSION,
     PINNED_MUJOCO_VERSION,
@@ -60,12 +62,12 @@ from forge_workers.training.bundle import (
 from forge_workers.training.tasks import task_definition
 
 ENGINE_BATCH_SCHEMA = "forge-codesign-engine-batch"
-ENGINE_BATCH_VERSION = "4.0.0"
-ENGINE_BATCH_EVIDENCE_VERSION = "4.0.0"
-ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/4.0.0"
-ENGINE_BATCH_MATURITY = "catalog-bound-physics-platform-local-engine-200-batch"
+ENGINE_BATCH_VERSION = "5.0.0"
+ENGINE_BATCH_EVIDENCE_VERSION = "5.0.0"
+ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/5.0.0"
+ENGINE_BATCH_MATURITY = "catalog-grid-readback-platform-local-engine-200-batch"
 TRAINING_AUTHORITY_SCHEMA = "forge-codesign-training-authority"
-TRAINING_AUTHORITY_VERSION = "1.0.0"
+TRAINING_AUTHORITY_VERSION = "2.0.0"
 MAX_INPUT_BYTES = 8 * 1024 * 1024
 MAX_CHECKPOINT_BYTES = 32 * 1024 * 1024
 TIER3_REASON = "tier 3 is held until a separately evidenced selected-finalist training run"
@@ -113,7 +115,7 @@ def _search_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if payload.get("task") != "codesign.engine-batch":
         raise ValueError("co-design engine batch requires task=codesign.engine-batch")
     if payload.get("candidateBudget") != TOTAL_PROPOSALS:
-        raise ValueError("co-design engine batch v4 requires exactly 200 candidates")
+        raise ValueError("co-design engine batch v5 requires exactly 200 candidates")
     return {
         "task": "codesign.search-plan",
         "contractHash": payload.get("contractHash"),
@@ -284,14 +286,21 @@ def _training_authority(
     ]
     if not tables:
         raise ValueError("co-design batch training thrust-table authority is absent")
+    if any(not isinstance(table.get("points"), list) or not table["points"] for table in tables):
+        raise ValueError("co-design batch training exact-grid authority is absent")
     used_tables = sum(table.get("usedForCurve") is True for table in tables)
     powertrain_model = physics.get("powertrainModel")
     inline_fallbacks = physics.get("inlineFallbacks")
+    curve_readback = physics.get("curveReadback")
     if (
         used_tables not in {0, 1}
         or not isinstance(powertrain_model, str)
         or not isinstance(inline_fallbacks, list)
         or not inline_fallbacks
+        or not isinstance(curve_readback, dict)
+        or curve_readback.get("schemaVersion")
+        != f"{CATALOG_TRAINING_CURVE_READBACK_SCHEMA}/{CATALOG_TRAINING_CURVE_READBACK_VERSION}"
+        or curve_readback.get("tableDriven") is not (used_tables == 1)
     ):
         raise ValueError("co-design batch training applicability authority drifted")
     return {
@@ -306,7 +315,10 @@ def _training_authority(
         "massKg": float(bundle["massKg"]),
         "catalogNativeMassInertia": True,
         "catalogBenchTableAuthority": True,
+        "catalogBenchGridRetained": True,
         "catalogBenchTableUsed": used_tables == 1,
+        "catalogCurveReadbackSchema": curve_readback["schemaVersion"],
+        "catalogCurveReadbackVerified": used_tables == 1,
         "powertrainModel": powertrain_model,
         "inlineFallbacks": copy.deepcopy(inline_fallbacks),
     }
@@ -394,7 +406,10 @@ def _validate_rollout(
             "massKg",
             "catalogNativeMassInertia",
             "catalogBenchTableAuthority",
+            "catalogBenchGridRetained",
             "catalogBenchTableUsed",
+            "catalogCurveReadbackSchema",
+            "catalogCurveReadbackVerified",
             "powertrainModel",
             "inlineFallbacks",
         },
@@ -409,10 +424,15 @@ def _validate_rollout(
         or authority.get("catalogAuthoritySha256") != catalog_authority_sha256
         or authority.get("catalogNativeMassInertia") is not True
         or authority.get("catalogBenchTableAuthority") is not True
+        or authority.get("catalogBenchGridRetained") is not True
         or not isinstance(authority.get("catalogBenchTableUsed"), bool)
+        or authority.get("catalogCurveReadbackSchema")
+        != f"{CATALOG_TRAINING_CURVE_READBACK_SCHEMA}/{CATALOG_TRAINING_CURVE_READBACK_VERSION}"
+        or authority.get("catalogCurveReadbackVerified")
+        is not authority.get("catalogBenchTableUsed")
         or authority.get("powertrainModel")
         not in {
-            "catalog-motor-battery-applicability-checked-thrust-table-v1",
+            "catalog-motor-battery-exact-grid-readback-v2",
             "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1",
         }
         or authority.get("inlineFallbacks")
@@ -431,7 +451,7 @@ def _validate_rollout(
         or authority.get("catalogBenchTableUsed")
         != (
             authority.get("powertrainModel")
-            == "catalog-motor-battery-applicability-checked-thrust-table-v1"
+            == "catalog-motor-battery-exact-grid-readback-v2"
         )
     ):
         raise ValueError("co-design engine-batch training authority drifted")
@@ -451,7 +471,7 @@ def evaluate_proposal(
     plan: dict[str, Any],
     proposal: dict[str, Any],
 ) -> dict[str, Any]:
-    """Run one exact D64 proposal through the D65 catalog-physics engine ladder."""
+    """Run one exact D64 proposal through the D67 catalog-grid engine ladder."""
 
     ordinal = proposal["ordinal"]
     candidate_contract = apply_search_patch(contract, proposal["patch"])
@@ -642,7 +662,7 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
         "artifactKind": "codesignEngineBatch",
         "provider": "forge-local-engine-batch",
         "cacheKey": (
-            f"codesign.batch:v4:{snapshot['contractHash'][:16]}:"
+            f"codesign.batch:v5:{snapshot['contractHash'][:16]}:"
             f"{plan['source']['catalogChoiceAuthority']['authoritySha256'][:16]}:"
             f"{plan['source']['proposalRuntimeAuthority']['authoritySha256'][:16]}:"
             f"{plan['planSha256'][:16]}"
@@ -668,6 +688,12 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
                 ),
                 "catalogNativeMassInertia": True,
                 "catalogBenchTableApplicability": "bound-and-fail-closed",
+                "catalogExactGridRetained": True,
+                "curveReadbackSchema": (
+                    f"{CATALOG_TRAINING_CURVE_READBACK_SCHEMA}/"
+                    f"{CATALOG_TRAINING_CURVE_READBACK_VERSION}"
+                ),
+                "independentCurveReadback": "required-when-grid-selected",
                 "analyticFallbackAllowed": True,
             },
             "runtime": ENGINE_BATCH_RUNTIME,
@@ -682,7 +708,7 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
             "completedCandidates": 0,
             "checkpointEveryCandidate": True,
             "serialExecution": True,
-            "resumePolicy": "exact-proposal-and-catalog-authority",
+            "resumePolicy": "exact-proposal-catalog-and-training-authority",
             "requiredRuntimeAuthoritySha256": plan["source"]["proposalRuntimeAuthority"][
                 "authoritySha256"
             ],
@@ -863,7 +889,8 @@ def validate_checkpoint(checkpoint: Any, payload: dict[str, Any]) -> dict[str, A
     if (
         scheduler.get("checkpointEveryCandidate") is not True
         or scheduler.get("serialExecution") is not True
-        or scheduler.get("resumePolicy") != "exact-proposal-and-catalog-authority"
+        or scheduler.get("resumePolicy")
+        != "exact-proposal-catalog-and-training-authority"
         or scheduler.get("requiredRuntimeAuthoritySha256") != authority_sha
         or scheduler.get("requiredCatalogAuthoritySha256") != catalog_sha
         or scheduler.get("heterogeneousResumeAllowed") is not False
