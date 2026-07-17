@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59-D64 engine/search/recovery/catalog authority; D65 catalog-bound mass/inertia/table-applicability implemented locally; protection, applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D65 engine/search/recovery/catalog/catalog-physics authority; per-point-voltage format support, applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
@@ -114,7 +114,7 @@ the expected two-choice/two-point front with two held finalists after 7 + zero-
 dispatch cancel + 193 resume. This is protected catalog/recovery proof, not a
 `>=3` front, overnight/provider run, or tier-3 scorecard.
 
-Local implementation 2026-07-17 (D65): catalog-supplied multirotors now compile as
+Protected implementation 2026-07-17 (D65): catalog-supplied multirotors now compile as
 `trainingMuJoCoBundle` 3.0.0 plus
 `forge-training-catalog-physics/1.0.0`. The artifact binds the complete catalog,
 exact equipped rows, review/license state, catalog mass, sourced-dimension
@@ -126,10 +126,15 @@ equipped battery range, diameter×pitch must match, and the applicable table mus
 unique. Python independently recomputes each declared uniform-solid tensor before
 MuJoCo mass readback. The D12 proof's 25.2 V/5×4.6
 row is bound but rejected for 14.8–16.8 V/5×4.3; the resulting curve names its
-inline current/resistance/prop/`DEFAULT_CT` fallbacks. This is catalog-bound
-mass/inertia and rejected-table lineage, not an applicable catalog-thrust,
-protected-tree, tier-3, overnight/provider, marketplace, build, hardware, or field
-claim.
+inline current/resistance/prop/`DEFAULT_CT` fallbacks. PR #117 exact head
+`d8d18ad`, reviewed merge/tree `2589e399`/`8051c127`, protected squash `ad54ab3`,
+exact PR/post-merge CI/security, and all 44 gates pass. Protected artifact
+`8402573520` binds clean source, file/result hashes `f9af2002…ce25`/
+`cf1504ba…5e84`, evaluates 200/200, admits 97, and returns two held finalists at
+0.769/0.756 kg after exact recovery. This is protected catalog-bound mass/inertia
+and rejected-table lineage, not applicable catalog-thrust, tier-3,
+overnight/provider, marketplace/live-catalog, build, hardware, field, or external
+proof.
 
 ## 3. Algorithms (P9-002)
 
@@ -248,7 +253,7 @@ one contiguous complete 200-row result. Every row runs native validation; only
 native/Rapier-passing rows run the short pinned MuJoCo rollout through catalog-bound
 bundle v3, physics authority v1, and exact compiled-mass closure. The complete result
 derives admission and Pareto itself and selects up to three engine-admitted Pareto
-candidates as tier-3-held finalists. The exact D64 fixture has two real battery
+candidates as tier-3-held finalists. The exact D65 fixture has two real battery
 revisions; driver-only variations share mass/endurance within each revision, so its
 expected physical front is exactly two points and two held finalists. That is a
 catalog-binding/recovery proof, not P9's separate `>=3` phase-exit evidence. Each row
@@ -257,7 +262,10 @@ fallbacks; it may not claim applicable catalog thrust. The run records measured
 local engine/attempt wall runtime only. Catalog-choice evaluation is true and exact,
 while marketplace review, live catalog persistence,
 `overnight200Candidate`, trained-finalist, provider sandbox/billing, energy, build,
-hardware, and field authority remain false.
+hardware, and field authority remain false. Protected artifact `8402573520` at
+`ad54ab3` is the current canonical retained v4 execution: 200/200 evaluated, 97
+admitted, two physical front points, and two held finalists after 7 + zero-dispatch
+cancel + 193 resume.
 
 ## 5. Output
 
