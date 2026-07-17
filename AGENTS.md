@@ -90,10 +90,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D64 implementation PR #115 at `609a70d`.
-  Exact head `b13a817`, reviewed/protected tree `9934442`, PR CI/security
-  `29561709484`/`29561709504`, and post-merge CI/security
-  `29562278744`/`29562278736` pass. The owning D61 implementation remains PR #111
+  latest verified protected descendant is D65 implementation PR #117 at `ad54ab3`.
+  Exact head `d8d18ad`, reviewed merge/tree `2589e399`/`8051c127`, PR CI/security
+  `29568639154`/`29568639106`, protected-tree equality, and post-merge CI/security
+  `29569424726`/`29569424612` pass. Protected artifact `8402573520` binds clean
+  source `ad54ab3` and the D65 200/97/two-point/two-held evidence boundary. The
+  owning D61 implementation remains PR #111
   at `1c37567`, and its evidence reconciliation remains PR #112 at `4ad8c8b`.
   Exact head `6c446a5` passed PR CI/security `29552818736`/`29552818716`; reviewed
   tree `c6520fd` is byte-identical at the protected squash, whose post-merge CI/
@@ -233,8 +235,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Studio tests. This does not satisfy P9's separate `>=3` phase exit. Tier-3
   training, overnight/provider billing, build, hardware, field, and external
   acceptance remain separate gates;
-- D65/P9-003 is implemented locally on `codex/p9003-catalog-training-physics` and is
-  not yet protected evidence. Catalog-supplied multirotors emit
+- D65/P9-003 is protected at exact-runtime-scoped
+  `catalog-bound-physics-platform-local-engine-200-batch` maturity through PR #117.
+  Catalog-supplied multirotors emit
   `trainingMuJoCoBundle` 3.0.0 plus
   `forge-training-catalog-physics/1.0.0`; exact equipped catalog mass and
   sourced-dimension uniform-solid inertia are added at declared mounts and compile
@@ -244,13 +247,17 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   equipped battery range and their diameter×pitch matches the equipped prop. The
   D12 fixture's 25.2 V/5×4.6 table is retained but rejected for its 14.8–16.8 V/
   5×4.3 configuration; the artifact names inline resistance/current/prop/
-  `DEFAULT_CT` fallbacks instead of edge-clamping 6S thrust. A dirty-tree local
-  7 + zero-dispatch cancel + 193 resume smoke evaluates 200/200 native/Rapier/
-  MuJoCo rows, admits 97, and returns the expected two battery points and two held
-  finalists. All 44 required local gates pass under Python 3.12.13 with 246 worker,
-  74 Gateway, and 39 Studio tests. This proves implementation behavior only, not a
-  clean source,
-  protected tree, applicable catalog thrust table, tier-3 training, overnight/
+  `DEFAULT_CT` fallbacks instead of edge-clamping 6S thrust. Exact head `d8d18ad`,
+  reviewed merge/tree `2589e399`/`8051c127`, PR CI/security
+  `29568639154`/`29568639106`, protected squash `ad54ab3`, and post-merge
+  CI/security `29569424726`/`29569424612` pass. Protected artifact `8402573520`
+  binds clean source `ad54ab3`, file/result hashes `f9af2002…ce25`/
+  `cf1504ba…5e84`, and the exact 7 + zero-dispatch cancel + 193 resume sequence. It
+  evaluates 200/200 native/Rapier/MuJoCo rows, admits 97, and returns two battery
+  points and two held finalists with masses 0.769/0.756 kg. All 44 local, PR, and
+  protected gates pass under Python 3.12.13 with 246 worker, 74 Gateway, and 39
+  Studio tests. This proves the protected local engine/catalog-physics boundary,
+  not an applicable catalog thrust table, tier-3 training, overnight/
   provider billing, marketplace/live catalog, build, hardware, field, or external
   acceptance;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact

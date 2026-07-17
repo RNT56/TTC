@@ -18,6 +18,45 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D65 catalog-physics evidence
+**Session:** Codex agent · branch `codex/p9003-catalog-physics-evidence` · **Phase:**
+P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Protected the D65 bundle-v3/catalog-physics-v1/batch-v4 implementation
+through PR #117. Exact head `d8d18ad`, GitHub reviewed merge `2589e399`, reviewed
+tree `8051c127`, protected squash `ad54ab3`, and the protected tree are exact. PR
+CI/security `29568639154`/`29568639106` and post-merge CI/security
+`29569424726`/`29569424612` pass. Downloaded protected artifact `8402573520`
+self-binds to clean protected source `ad54ab3`; the retained batch file/result
+SHA-256 values are `f9af2002…ce25`/`cf1504ba…5e84` and its search-plan hash is
+`52ea77a6…5212`.
+**Evidence:** The protected run retains 7 + zero-dispatch cancel + 193 resume,
+evaluates 200/200 exact candidates through native/Rapier/MuJoCo, admits 97, and
+returns two Pareto points/two tier-3-held finalists. The 1,500 mAh and 1,300 mAh
+finalists close exact catalog-native masses at 0.769 kg and 0.756 kg and bind their
+bundle/catalog-physics hashes. Both retain `catalogBenchTableUsed=false`, the exact
+25.2 V/5×4.6 rejection lineage, and named resistance/current/prop/`DEFAULT_CT`
+fallbacks. All 44 local, PR, and protected gates pass under Python 3.12.13 with 246
+worker, 74 Gateway, and 39 Studio tests. The retained artifact keeps applicable-
+catalog-thrust, trained-finalist, overnight/provider billing, marketplace/live-
+catalog, build, hardware, field, and external claims false.
+**Changed:** Reconciled the current-state snapshot, roadmap, stable TODO ledger,
+execution order, co-design system contract, canonical `AGENTS.md` entry guidance,
+and changelog against exact protected evidence. No code, catalog row, format,
+schema, generated contract, API, event, database, queue, provider, build, hardware,
+or field surface changed.
+**Decisions:** none; D65 and R36 remain active without reinterpretation.
+**Next:** Version the file-catalog bench row/loader for sourced per-point voltages
+with compatibility, old-row migration/read semantics, corpus, and golden proof;
+then source/review a voltage-covered prop-matched grid or retain the analytic
+fallback. After that, run actual tier-3 training/scorecards for the exact protected
+finalists, expand the course-conditioned physical front to `>=3`, and retain the
+reviewed provider/overnight billing proof.
+**Blockers:** The current one-voltage-per-table format cannot represent a
+non-degenerate range-spanning grid. Applicable reviewed bench data, tier-3
+training, the `>=3` phase exit, retained overnight/provider billing, marketplace/
+live-catalog maturity, external acceptance, build, hardware, and field proof remain
+separate open gates.
+
 ## 2026-07-17 — Bind catalog mass and fail-close bench-table applicability
 **Session:** Codex agent · branch `codex/p9003-catalog-training-physics` · **Phase:**
 P9 · **TODO items:** P9-002 [~], P9-003 [~]

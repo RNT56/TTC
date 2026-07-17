@@ -670,34 +670,36 @@ MuJoCo rows, 197 admissions, and the expected two-choice/two-point front. That p
 inside all 44 local/PR/protected gates with 246 worker, 74 Gateway, and 39 Studio
 tests, but does not satisfy the separate P9 `>=3` phase exit.
 
-D65 is now implemented locally as the next compatibility-complete tier-2 slice:
+D65 is now protected as the next compatibility-complete tier-2 slice:
 catalog-supplied multirotors emit bundle v3/physics v1, compile exact equipped
 catalog mass and sourced-dimension uniform-solid inertia into MJCF, and bind exact
 MuJoCo mass closure plus per-table applicability into batch/evidence v4. The D12
 fixture retains but rejects its 25.2 V/5×4.6 bench row for the 14.8–16.8 V/5×4.3
 configuration; named resistance/current/prop/`DEFAULT_CT` fallbacks drive the curve.
-A dirty-tree 200-row local smoke retains 7 + zero-dispatch cancel + 193 resume,
-evaluates every row through native/Rapier/MuJoCo, admits 97, and returns two held
-battery points. All 44 required local gates pass under Python 3.12.13 with 246
-worker, 74 Gateway, and 39 Studio tests. It creates no protected or applicable-
-catalog-thrust claim.
+PR #117 exact head `d8d18ad`, reviewed merge/tree `2589e399`/`8051c127`, PR
+CI/security `29568639154`/`29568639106`, protected squash `ad54ab3`, and post-merge
+CI/security `29569424726`/`29569424612` pass. Protected artifact `8402573520`
+binds clean source, retains 7 + zero-dispatch cancel + 193 resume, evaluates every
+row through native/Rapier/MuJoCo, admits 97, and returns two held battery points at
+0.769/0.756 kg. All 44 local/PR/protected gates pass under Python 3.12.13 with 246
+worker, 74 Gateway, and 39 Studio tests. It creates no applicable-catalog-thrust,
+tier-3, overnight/provider, marketplace/live-catalog, build, hardware, field, or
+external claim.
 
 Next dependency order for P9 is exact and must not be collapsed:
 
-1. protect the fully locally verified D65 reviewed tree, retain a clean exact-source
-   200-row artifact, and reconcile exact PR/post-merge evidence;
-2. version the file-catalog bench-grid row/loader so one table can carry sourced per-
+1. version the file-catalog bench-grid row/loader so one table can carry sourced per-
    point voltage coverage; add compatibility, migration, corpus, and golden proof;
    then source and review an actually voltage-covered, prop-matched grid (or keep the
    analytic fallback explicit). Never merge, infer, or rescale separate 6S points;
-3. run tier-3 training only for the exact admitted D65 finalists, retain policy bytes,
+2. run tier-3 training only for the exact admitted D65 finalists, retain policy bytes,
    scorecards, bundle/physics/catalog/runtime lineage, failure/cancellation/recovery,
    and keep build/hardware/field authority false;
-4. expand the course-conditioned physical manifold to produce at least three
+3. expand the course-conditioned physical manifold to produce at least three
    independently admitted Pareto points rather than duplicate driver variants;
-5. execute the 200-candidate schedule through the reviewed provider path, reconcile
+4. execute the 200-candidate schedule through the reviewed provider path, reconcile
    wall time, energy, amount/currency/tags, cancellation, spend stop, and billing;
-6. close P9 only after protected clean evidence and the relevant external acceptance
+5. close P9 only after protected clean evidence and the relevant external acceptance
    record prove every exit criterion.
 
 Fast local completion is not an overnight run, a held finalist is not a trained
@@ -863,7 +865,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64; D65 catalog-bound tier-2 physics local/unprotected | P6/P7 evidence; reviewed applicable bench data or explicit fallback; accelerator/provider budget for overnight/tier-3 work | protect/reconcile D65; preserve exact-authority recovery; add a `>=3` course-conditioned physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
+| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64; catalog-bound tier-2 physics protected at D65 | P6/P7 evidence; versioned per-point-voltage rows plus reviewed applicable bench data or explicit fallback; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; add a `>=3` course-conditioned physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |
