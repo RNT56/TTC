@@ -1,9 +1,9 @@
 # PROJECT STATE - evidence snapshot and readiness boundary
 
-Snapshot date: **2026-07-16**
+Snapshot date: **2026-07-17**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected runtime descendant: `fae00c5` (PR #106; D59 controlled co-design engine smoke)
+Latest verified protected runtime descendant: `71e7217` (PR #109; D60 co-design proposal plan)
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -34,8 +34,7 @@ D57 ghost-view evidence anchor: `d33fd57` (PR #102)
 D57 evidence-reconciliation anchor: `dd29789` (PR #103)
 D58 deployment-ladder evidence anchor: `f7e7f57` (PR #104)
 D59 controlled co-design engine evidence anchor: `fae00c5` (PR #106)
-Current unprotected runtime candidate: D60 co-design proposal plan on
-`codex/p9002-d60-search-plan` (no protected-evidence claim)
+D60 co-design proposal-plan evidence anchor: `71e7217` (PR #109)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -582,7 +581,7 @@ passed PR CI `29545327465` and security `29545327485`; reviewed tree
 `08e8a129e9f10634e0ac766456b7e737135e98a0` is byte-identical at the protected
 squash, whose post-merge CI `29545811003` and security `29545810996` pass.
 
-D60/P9-002 now has an unprotected local `local-algorithm-proposal-plan` candidate.
+D60/P9-002 is protected at `local-algorithm-proposal-plan` maturity.
 Internal `forge-codesign-search-plan/1.0.0` and
 `p9-search-plan-evidence/1.0.0` bind the exact gateway-owned admitted snapshot,
 source/dependency-manifest lineage, frozen seed/constraints/mixed electrical
@@ -594,17 +593,21 @@ authority. The acquisition is only bounded diversity and carries no
 physical or engine feedback. Validator, Rapier, MuJoCo, physical constraints,
 candidate admission, Pareto, overnight-200-candidate, trained-finalist, catalog-
 choice, provider, build, hardware, and field claims are false. Focused tests and the
-local smoke pass. All 42 required local gates pass under Python 3.12.7 with 238
+clean exact-source smoke pass. All 42 required local gates pass under Python 3.12.7 with 238
 worker, 74 Gateway, and 39 Studio tests, 19 compatibility surfaces, generated 81-
-route/2-event/17-worker docs, and a clean pinned Python dependency audit. PR and
-protected-main evidence is still pending, so this is not a verified protected anchor
-and neither P9 task closes.
+route/2-event/17-worker docs, and a clean pinned Python dependency audit. Exact
+implementation head `340c88d22b865ef436e7634716149ea7be43ebae` passed PR #109
+CI `29549718149` and security `29549718173`; reviewed tree
+`7139ad56a129dd941e222259688909cf10117a17` is byte-identical at protected squash
+`71e721730b2c060aa759d83b018c1dfaf27d8670`, whose post-merge CI
+`29550088422` and security `29550088452` pass. The protected plan still supplies no
+physical authority and neither P9 task closes.
 
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
-| D60 local co-design proposal-plan candidate | All 42 required local gates pass under Python 3.12.7: 238/238 workers, 74/74 Gateway, 39/39 Studio, 19-surface compatibility, generated 81-route/2-event/17-worker docs, native/WASM parity, packaging, training/offline/MJX/D59/D60 smokes, golden review, and patch hygiene. The source-bound D60 smoke emits exactly 100 CMA-ES plus 100 Optuna TPE proposals with 200 unique candidate hashes and every nonclaim false; pinned Python audit reports no known vulnerabilities | proves the working-tree algorithm/replay shape and complete local integration only. It does not yet prove protected-source reproducibility and never proves physical constraints, validator/engine execution, admission, Pareto, overnight completion, trained finalists, catalog search, provider operations, build readiness, hardware authority, or field evidence |
+| D60 protected co-design proposal plan | All 42 required local gates pass under Python 3.12.7: 238/238 workers, 74/74 Gateway, 39/39 Studio, 19-surface compatibility, generated 81-route/2-event/17-worker docs, native/WASM parity, packaging, training/offline/MJX/D59/D60 smokes, golden review, and patch hygiene. The source-bound D60 smoke emits exactly 100 CMA-ES plus 100 Optuna TPE proposals with 200 unique candidate hashes and every nonclaim false; pinned Python audit reports no known vulnerabilities | proves protected algorithm execution, deterministic hash lineage, and replay through PR #109 exact head `340c88d`, reviewed tree `7139ad5`, protected `71e7217`, PR CI/security `29549718149`/`29549718173`, and post-merge CI/security `29550088422`/`29550088452`. It never proves physical constraints, validator/engine execution, admission, Pareto, overnight completion, trained finalists, catalog search, provider operations, build readiness, hardware authority, or field evidence |
 | D59 protected controlled co-design engine smoke | All 41 required local gates pass under Python 3.12.7: Rust workspace fmt/Clippy/tests and WASM parity, 233/233 workers, 74/74 Gateway, 39/39 Studio, 19-surface compatibility, generated 81-route/2-event/17-worker docs, packaging, training/offline/MJX/co-design smokes, golden review, and patch hygiene; Chromium, Firefox, and WebKit pass the supported-browser matrix. Repeated release-binary smokes report 2/3 admitted, one Pareto point, a passing 50 ms native tier-0 SLO, Rapier 0.33.0, and MuJoCo 3.9.0 | proves the protected exact-snapshot/native/Rapier/MuJoCo/readback shape through PR #106 exact head `e64c601`, reviewed tree `08e8a12`, protected `fae00c5`, PR CI/security `29545327465`/`29545327485`, and post-merge CI/security `29545811003`/`29545810996`. The run is three candidates, not CMA-ES/Optuna, not a 200-candidate overnight result, not tier-3 training, and not provider/build/hardware/field evidence. P9-002/P9-003 remain in progress |
 | D58 protected local deployment-ladder rehearsal | Four native ladder tests prove one shell-owned session, exact D12/report-hash/exportable-policy/passing-supervisor/D9 start bounds, the contiguous stage prefix, exact transition/end interactions, and parallel/skip/substitution refusal. They pass inside 28/28 native Desktop tests; Studio typecheck/build and 37/37 tests, Gateway 74/74, workers 227/227, all 40 local gates under Python 3.12.13, a fresh clean/25-predecessor database with every data-plane assertion, all 12 production-browser flows, and Chromium/Firefox/WebKit pass | proves protected local rehearsal mechanics through PR #104 exact head `3f3c4ec`, reviewed tree `4b36fac`, protected `f7e7f57`, PR CI/security `29541145577`/`29541145559`, and post-merge CI/security `29541456427`/`29541456430`. It performs no hardware I/O and verifies no physical confirmation or deployment. Named hardware, measured supervisor/kill-switch behavior, D30 acceptance, and field evidence remain open |
 | D57 protected local ghost view | Focused worker 33/33, Gateway 74/74, Studio 33/33, Studio typecheck/build, and 19-surface compatibility pass. The ten-minute fixture has 36,001 source samples, 6,001 render points, 601 seek entries, exact controlled-synthetic/nonclaim fields, strict Studio parser/refusal coverage, and indexed seek computation below the per-frame 60 Hz budget. All 40 local repository gates pass under Python 3.12.13 with 227 worker tests; a fresh clean/25-predecessor Postgres matrix, all 12 production-browser flows, and Chromium/Firefox/WebKit pass | proves protected local compact-artifact and interaction mechanics through PR #102 exact head `50abc92`, reviewed tree `cc1d483`, protected `d33fd57`, PR CI/security `29536927436`/`29536927492`, and post-merge CI/security `29537565069`/`29537565062`. Full render performance on named mid hardware, server-selected D54 replay/twin execution, device/recorded-device/field provenance, and real field evidence are not proven |
@@ -924,7 +927,7 @@ decision; none is a hidden release claim.
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
 | Training/policy | protected exact-pinned CPU SB3/MuJoCo flight/ground trainers, clean scorecard-passing consumer-hardware evidence, authoritative object delivery, browser playback, controlled MJX feasibility, and D45 exact source-bound controlled-synthetic BC-to-PPO evidence | recorded-device capture; deployed Modal/GPU operations; exact passing-policy delivery integration; ground browser playback; final D12 accelerator/budget/cost MJX decision; production storage operations; external acceptance; and field transfer |
-| Co-design | deterministic 200-candidate fixture/Pareto contracts; protected D59 controlled exact-snapshot engine smoke using sovereign native validation, real Rapier 0.33.0, and pinned MuJoCo 3.9.0; plus an unprotected D60 real-CMA-ES/TPE 200-proposal plan with no physical/engine feedback | protect D60; then consume its exact hashes through catalog-choice search and 200 sovereign engine candidates, retain scheduled/overnight recovery and cost, derive ≥3 admitted Pareto points, train finalists, and complete provider/external acceptance |
+| Co-design | deterministic 200-candidate fixture/Pareto contracts; protected D59 controlled exact-snapshot engine smoke using sovereign native validation, real Rapier 0.33.0, and pinned MuJoCo 3.9.0; plus protected D60 real-CMA-ES/TPE 200-proposal planning with no physical/engine feedback | consume D60's exact hashes through real catalog-choice search and 200 sovereign engine candidates, retain scheduled/overnight recovery and cost, derive ≥3 admitted Pareto points, train finalists, and complete provider/external acceptance |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
 | Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
@@ -1006,7 +1009,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D57 ghost-view protection | **Go at protected local view maturity only** | PR #102/`d33fd57`, exact PR/post-merge CI/security, reviewed-tree equality, focused worker/Gateway/Studio/refusal checks, all 40 local gates, clean/25-predecessor Postgres, 12/12 production-browser flows, and all three browser engines protect controlled-synthetic/unverified compact-view mechanics. Real D54 twin replay, device/recorded-device/field provenance, full named-hardware render performance, P8-014 and EXT-008 remain separate no-go gates |
 | Claim D58 deployment-ladder protection | **Go at protected local UX-rehearsal maturity only** | PR #104/`f7e7f57`, exact PR/post-merge CI/security, reviewed-tree equality, strict native/Studio refusal checks, all 40 local gates, clean/25-predecessor Postgres, 12/12 production-browser flows, and all three browser engines protect shell-owned rehearsal and skip-prevention mechanics. V1 acknowledgments cannot prove hardware connection, physical setup, supervisor/kill-switch deadlines, deployment, lab, or field evidence |
 | Claim D59 controlled co-design engine protection | **Go only for `local-engine-controlled-smoke` at protected `fae00c5`** | exact PR/protected-main evidence now proves the bounded three-candidate shape. D59 still cannot be cited as CMA-ES, Optuna, a 200-candidate overnight, ≥3 admitted Pareto points, trained finalist, provider sandbox, build readiness, hardware authority, or field evidence |
-| Claim D60 co-design proposal-plan protection | **No-go pending PR/protected-main evidence; permanently no-go for physical optimizer claims** | focused local evidence proves actual proposal-library execution and deterministic hash lineage only. Even after protection, plan v1 cannot be cited as validator, Rapier, MuJoCo, physical-constraint, admission, Pareto, overnight-200-candidate, trained-finalist, catalog-choice, provider, build, hardware, or field evidence |
+| Claim D60 co-design proposal-plan protection | **Go only for `local-algorithm-proposal-plan` at protected `71e7217`; permanently no-go for physical optimizer claims** | exact PR/protected-main evidence proves actual proposal-library execution, deterministic hash lineage, and replay. Plan v1 cannot be cited as validator, Rapier, MuJoCo, physical-constraint, admission, Pareto, overnight-200-candidate, trained-finalist, catalog-choice, provider, build, hardware, or field evidence |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 

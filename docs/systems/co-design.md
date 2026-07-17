@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator, D59 protected controlled native/Rapier/MuJoCo smoke, and D60 local 200-proposal CMA-ES/TPE plan; 200-candidate engine evaluation and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator plus protected D59 controlled native/Rapier/MuJoCo smoke and D60 200-proposal CMA-ES/TPE plan; 200-candidate engine evaluation and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), validator-as-oracle
@@ -41,7 +41,7 @@ snapshot and recomputes candidate/patch/native-evidence hashes before accepting 
 external result. This is controlled smoke coverage of the transport and engines,
 not completion of the catalog-backed categorical manifold or optimizer.
 
-Local 2026-07-16 (D60): `python -m forge_workers.codesign_search` starts from the
+Protected 2026-07-17 (D60): `python -m forge_workers.codesign_search` starts from the
 same exact admitted-snapshot authority and emits a separately versioned plan of
 exactly 200 unique candidate snapshots. The frozen proposal manifold uses bounded
 inline motor-Kv, prop-diameter, and battery-capacity scales. Optuna TPE additionally
@@ -179,7 +179,8 @@ Pareto points, and trained-finalist scorecards. D60 adds exact dependency-pin,
 100/100 allocation, mixed-manifold, replace-only patch reapplication, unique
 candidate-hash, same-seed replay, changed-seed, caller-manifold/budget, tamper, and
 nonclaim refusal tests plus an exact-source smoke. It does not reduce any D59 or P9
-closure gate.
+closure gate. PR #109 protects exact head `340c88d`, reviewed tree `7139ad5`, and
+protected squash `71e7217` with passing PR/post-merge CI/security.
 
 ## 8. Phase mapping & backlog
 
