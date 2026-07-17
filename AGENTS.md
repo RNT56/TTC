@@ -90,12 +90,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D65 evidence-reconciliation PR #118 at
-  `7d63512`. Exact head `9add00b`, protected/reviewed tree `cc58b7b`, PR CI/security
-  `29570643224`/`29570643100`, and post-merge CI/security
-  `29571176449`/`29571176349` pass. The D65 implementation remains PR #117 at
-  `ad54ab3`; protected artifact `8402573520` binds that clean source and the D65
-  200/97/two-point/two-held evidence boundary. The
+  latest verified protected descendant is D66 implementation PR #119 at `5a162b0`.
+  Exact head `7306a6e`, reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
+  `29575066749`/`29575066748`, protected-tree equality, and post-merge CI/security
+  `29575647835`/`29575647768` pass. Protected browser/database artifact
+  `8405061774` binds clean source `5a162b0`; its migration acceptance file
+  `d6764fec…313a` proves migration 0027 on a clean database and every populated
+  predecessor. The D65 implementation remains PR #117 at `ad54ab3`; protected
+  artifact `8402573520` binds that clean source and the D65 200/97/two-point/two-held
+  evidence boundary. The
   owning D61 implementation remains PR #111
   at `1c37567`, and its evidence reconciliation remains PR #112 at `4ad8c8b`.
   Exact head `6c446a5` passed PR CI/security `29552818736`/`29552818716`; reviewed
@@ -261,8 +264,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   not an applicable catalog thrust table, tier-3 training, overnight/
   provider billing, marketplace/live catalog, build, hardware, field, or external
   acceptance;
-- D66 is implemented locally at unprotected
-  `catalog-performance-grid-format-candidate` maturity. File-catalog row 2.0.0
+- D66 is protected at `catalog-performance-grid-format` maturity through PR #119.
+  File-catalog row 2.0.0
   moves voltage onto every point and requires a finite bounded complete rectangular,
   unique, monotonic grid with exact throttle endpoints; missing or explicit v1
   remains one table-voltage sweep. Rust admission, Python ETL, the registered nine-
@@ -270,11 +273,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   docs, and migration 0027 agree. Persisted predecessor points become
   `legacy-unattributed` v1 without invented prop/confidence/source; table identity is
   part of the primary key. The checked-in EMAX row stays v1, review-gated, and
-  D65-inapplicable. All 44 local non-database gates pass; the migration passes on a
-  fresh PostgreSQL 16 cluster with populated-row/RPM preservation, table identity,
-  and incomplete-v2 refusal. Clean every-predecessor database CI and protection
-  remain pending;
-  even after protection, D66 alone grants no sourced grid, applicable thrust,
+  D65-inapplicable. Exact head `7306a6e`, reviewed merge/tree `0050bcb`/`f5a9a323`,
+  protected squash `5a162b0`, exact PR/post-merge CI/security, all 44 local gates,
+  and clean artifact `8405061774` pass. The artifact binds PostgreSQL 16.14,
+  migration count 27, clean install/idempotency, every populated predecessor 0001–
+  0026, atomic recovery, concurrency serialization, and exact source/checkout.
+  D66 alone grants no sourced grid, applicable thrust,
   downstream training authority, marketplace review, build, hardware, field, or
   external evidence;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact

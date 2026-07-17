@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59-D65 engine/search/recovery/catalog/catalog-physics authority; D66 per-point-voltage format candidate local pending protection; applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D66 engine/search/recovery/catalog/catalog-physics/format authority; applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
@@ -137,7 +137,7 @@ and rejected-table lineage, not applicable catalog-thrust, tier-3,
 overnight/provider, marketplace/live-catalog, build, hardware, field, or external
 proof.
 
-Local candidate 2026-07-17 (D66): file-catalog row 2.0.0 now represents a single
+Protected 2026-07-17 (D66): file-catalog row 2.0.0 represents a single
 bench table as explicit per-point voltage×throttle measurements. Missing/explicit v1
 retains exactly one table-voltage sweep; v2 forbids the scalar and requires finite
 positive voltage on every point. Rust and Python require a complete rectangular,
@@ -147,8 +147,10 @@ as `legacy-unattributed` v1 and expands persistence identity by table ID without
 fabricating missing authority. The checked-in EMAX row remains v1 and D65-rejected.
 This is representation/persistence only: before a reviewed v2 grid drives tier 2 or
 tier 3, a new bundle/catalog-physics major must retain the exact grid and Python must
-independently reconstruct the curve. All 44 local non-database gates pass; full
-clean/every-populated-predecessor database CI and protected evidence remain open.
+independently reconstruct the curve. PR #119 exact head `7306a6e`, reviewed
+merge/tree `0050bcb`/`f5a9a323`, protected squash `5a162b0`, exact PR/post-merge
+CI/security, all 44 gates, and clean every-predecessor/browser artifact `8405061774`
+pass. That evidence protects representation/persistence only.
 
 ## 3. Algorithms (P9-002)
 
