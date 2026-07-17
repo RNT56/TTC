@@ -25,7 +25,7 @@ from forge_workers.codesign_search import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "examples" / "vx2-mini.forge.json"
+CONTRACT = ROOT / "examples" / "vx2-proof.forge.json"
 
 
 def _payload(seed: int = 60) -> dict:
@@ -37,7 +37,7 @@ def _payload(seed: int = 60) -> dict:
         "contractHash": contract_hash,
         "modelSnapshot": {
             "schemaVersion": "forge-admitted-model-snapshot/1.0.0",
-            "modelId": "vx2-mini",
+            "modelId": "vx2-proof",
             "contractHash": contract_hash,
             "contractJson": contract_json,
         },
@@ -65,8 +65,8 @@ def _stable_json(value: object) -> str:
 def test_real_pinned_algorithms_produce_exact_mixed_200_proposal_plan(search_plan):
     _payload_value, result = search_plan
 
-    assert result["schemaVersion"] == "forge-codesign-search-plan/2.0.0"
-    assert result["source"]["maturity"] == "platform-bound-algorithm-proposal-plan"
+    assert result["schemaVersion"] == "forge-codesign-search-plan/3.0.0"
+    assert result["source"]["maturity"] == "catalog-bound-platform-algorithm-proposal-plan"
     assert result["source"]["dependencyManifestSha256"] == hashlib.sha256(
         (ROOT / "workers" / "pyproject.toml").read_bytes()
     ).hexdigest()
@@ -78,7 +78,8 @@ def test_real_pinned_algorithms_produce_exact_mixed_200_proposal_plan(search_pla
         f"{PROPOSAL_RUNTIME_AUTHORITY_SCHEMA}/{PROPOSAL_RUNTIME_AUTHORITY_VERSION}"
     )
     assert result["cacheKey"] == (
-        f"codesign.search:v2:{result['source']['baseContractHash'][:16]}:"
+        f"codesign.search:v3:{result['source']['baseContractHash'][:16]}:"
+        f"{result['source']['catalogChoiceAuthority']['authoritySha256'][:16]}:"
         f"{authority['authoritySha256'][:16]}:{result['planSha256'][:16]}"
     )
     assert result["algorithms"]["candidateBudget"] == 200
@@ -90,6 +91,7 @@ def test_real_pinned_algorithms_produce_exact_mixed_200_proposal_plan(search_pla
         "generations": 10,
         "feedback": "bounded-diversity-acquisition-v1",
         "engineFeedback": False,
+        "categoricalSearch": False,
     }
     assert result["algorithms"]["optunaTpe"] == {
         "library": "optuna",
@@ -99,17 +101,18 @@ def test_real_pinned_algorithms_produce_exact_mixed_200_proposal_plan(search_pla
         "multivariate": False,
         "feedback": "bounded-diversity-acquisition-v1",
         "engineFeedback": False,
+        "categoricalSearch": True,
     }
     assert len(result["proposals"]) == 200
     assert [proposal["algorithm"] for proposal in result["proposals"]].count("cma-es") == 100
     assert [proposal["algorithm"] for proposal in result["proposals"]].count("optuna-tpe") == 100
-    assert {proposal["profile"] for proposal in result["proposals"][100:]} <= {
-        "balanced",
-        "endurance-prior",
-        "agility-prior",
-        "lightweight-prior",
-    }
-    assert result["manifold"]["catalogChoiceSearch"] is False
+    choice_ids = {choice["choiceId"] for choice in result["source"]["catalogChoiceAuthority"]["choices"]}
+    assert choice_ids == {"cnhl-4s-1500", "cnhl-v2-4s-1300"}
+    assert {proposal["catalogChoice"]["choiceId"] for proposal in result["proposals"]} == choice_ids
+    assert result["manifold"]["catalogChoiceSearch"] is True
+    assert result["manifold"]["equippedVariantSemantics"] == "exactly-one-equipped-d32"
+    assert all(choice["reviewRequired"] is True for choice in result["manifold"]["categorical"][0]["choices"])
+    assert result["source"]["catalogChoiceAuthority"]["marketplaceExposable"] is False
     assert result["nonclaims"] == NONCLAIMS
 
 
@@ -118,18 +121,32 @@ def test_every_proposal_reapplies_to_the_exact_snapshot_and_recomputes_lineage(s
     contract = json.loads(payload["modelSnapshot"]["contractJson"])
     candidate_hashes: set[str] = set()
     parameter_rows: set[str] = set()
+    catalog_authority = result["source"]["catalogChoiceAuthority"]
     for ordinal, proposal in enumerate(result["proposals"]):
         assert proposal["ordinal"] == ordinal
         assert proposal["acquisition"]["physicalObjective"] is False
         assert proposal["acquisition"]["engineFeedback"] is False
-        assert all(operation["path"].startswith("/sim/") for operation in proposal["patch"])
+        assert [operation["path"] for operation in proposal["patch"]] == [
+            "/slots/1/equippedVariantId",
+            "/sim/battery/capacity_mAh",
+            "/sim/battery/cRating",
+            "/driver/params/tiltMaxRad",
+            "/driver/params/yawRate",
+        ]
         patch_hash = hashlib.sha256(_stable_json(proposal["patch"]).encode("utf-8")).hexdigest()
         candidate = apply_search_patch(contract, proposal["patch"])
         candidate_hash = hashlib.sha256(_stable_json(candidate).encode("utf-8")).hexdigest()
         assert proposal["lineage"] == {
             "patchSha256": patch_hash,
             "candidateSnapshotSha256": candidate_hash,
+            "catalogAuthoritySha256": catalog_authority["catalogAuthoritySha256"],
+            "catalogChoiceAuthoritySha256": catalog_authority["authoritySha256"],
+            "selectedRowSha256": proposal["catalogChoice"]["rowSha256"],
+            "selectedExactRevision": proposal["catalogChoice"]["exactRevision"],
         }
+        battery_slot = candidate["slots"][1]
+        assert battery_slot["equippedVariantId"] == proposal["catalogChoice"]["choiceId"]
+        assert candidate["sim"]["battery"]["capacity_mAh"] == proposal["catalogChoice"]["capacityMah"]
         candidate_hashes.add(candidate_hash)
         parameter_rows.add(_stable_json(proposal["parameters"]))
     assert len(candidate_hashes) == 200
@@ -141,7 +158,7 @@ def test_plan_exactly_replays_instead_of_trusting_external_bytes(search_plan):
     assert validate_search_plan(result, payload) == result
 
     tampered = copy.deepcopy(result)
-    tampered["proposals"][0]["parameters"]["motorKvScale"] = 1.0
+    tampered["proposals"][0]["parameters"]["tiltMaxRad"] = 0.4
     with pytest.raises(ValueError, match="plan hash drifted"):
         validate_search_plan(tampered, payload)
 
@@ -161,6 +178,11 @@ def test_plan_exactly_replays_instead_of_trusting_external_bytes(search_plan):
     ] = "not-a-digest"
     with pytest.raises(ValueError, match="NumPy configuration must be"):
         validate_search_plan(malformed_authority, payload)
+
+    tampered_catalog = copy.deepcopy(result)
+    tampered_catalog["source"]["catalogChoiceAuthority"]["choices"][0]["license"]["class"] = "restricted"
+    with pytest.raises(ValueError, match="plan hash drifted"):
+        validate_search_plan(tampered_catalog, payload)
 
 
 def test_plan_binds_exact_numeric_runtime_and_refuses_foreign_resume(monkeypatch):

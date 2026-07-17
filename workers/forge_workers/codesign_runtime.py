@@ -38,6 +38,9 @@ CODESIGN_EVALUATION_SCHEMA = "forge-codesign-evaluation"
 CODESIGN_EVALUATION_VERSION = "1.0.0"
 CODESIGN_NATIVE_EVALUATION_SCHEMA = "forge-codesign-native-evaluation"
 CODESIGN_NATIVE_EVALUATION_VERSION = "1.0.0"
+CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION = "2.0.0"
+CODESIGN_CATALOG_PROOF_SCHEMA = "forge-codesign-catalog-proof"
+CODESIGN_CATALOG_PROOF_VERSION = "1.0.0"
 CODESIGN_ENGINE_SMOKE_EVIDENCE_VERSION = "1.0.0"
 CODESIGN_MATURITY = "local-engine-controlled-smoke"
 CODESIGN_RUNTIME = "forge-codesign-engine-smoke/1.0.0"
@@ -76,6 +79,14 @@ def _sha(value: str | bytes) -> str:
 def _exact(value: dict[str, Any], fields: set[str], label: str) -> None:
     if set(value) != fields:
         raise ValueError(f"{label} fields are not exact")
+
+
+def _sha256_string(value: Any, label: str) -> str:
+    if not isinstance(value, str) or len(value) != 64 or any(
+        character not in "0123456789abcdef" for character in value
+    ):
+        raise ValueError(f"{label} must be a lower-case SHA-256 digest")
+    return value
 
 
 def _snapshot(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -288,7 +299,17 @@ def _validator_binary() -> str:
     raise RuntimeError("forge-validate binary is not built; set FORGE_VALIDATE_BIN")
 
 
-def _native_evaluation(contract_json: str, contract_hash: str) -> tuple[dict[str, Any], float]:
+def _native_evaluation(
+    contract_json: str,
+    contract_hash: str,
+    *,
+    catalog_path: Path | None = None,
+    catalog_authority_sha256: str | None = None,
+) -> tuple[dict[str, Any], float]:
+    if (catalog_path is None) != (catalog_authority_sha256 is None):
+        raise ValueError("native co-design catalog path and authority must be supplied together")
+    if catalog_path is not None and not (catalog_path / "components").is_dir():
+        raise ValueError("native co-design catalog components directory is absent")
     path: str | None = None
     started = time.perf_counter()
     try:
@@ -297,8 +318,11 @@ def _native_evaluation(contract_json: str, contract_hash: str) -> tuple[dict[str
         ) as handle:
             handle.write(contract_json)
             path = handle.name
+        command = [_validator_binary(), "codesign-evaluate", path, "--snapshot-hash", contract_hash]
+        if catalog_path is not None:
+            command.extend(["--catalog", str(catalog_path)])
         completed = subprocess.run(
-            [_validator_binary(), "codesign-evaluate", path, "--snapshot-hash", contract_hash],
+            command,
             capture_output=True,
             timeout=90,
             check=False,
@@ -316,23 +340,33 @@ def _native_evaluation(contract_json: str, contract_hash: str) -> tuple[dict[str
         value = json.loads(completed.stdout)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise RuntimeError("forge-validate codesign evaluation was not JSON") from error
-    _validate_native_evaluation(value, contract_hash)
+    _validate_native_evaluation(value, contract_hash, catalog_authority_sha256)
     if (completed.returncode == 0) != bool(value["passed"]):
         raise RuntimeError("forge-validate codesign exit status disagrees with its artifact")
     return value, runtime_ms
 
 
-def _validate_native_evaluation(value: Any, contract_hash: str) -> None:
+def _validate_native_evaluation(
+    value: Any, contract_hash: str, catalog_authority_sha256: str | None = None
+) -> None:
     if not isinstance(value, dict):
         raise ValueError("native co-design evaluation must be an object")
-    _exact(
-        value,
-        {"schemaVersion", "artifactKind", "candidateSnapshotSha256", "passed", "tier0", "tier1", "nonclaims"}
-        if "tier1" in value
-        else {"schemaVersion", "artifactKind", "candidateSnapshotSha256", "passed", "tier0", "nonclaims"},
-        "native co-design evaluation",
-    )
-    if value.get("schemaVersion") != f"{CODESIGN_NATIVE_EVALUATION_SCHEMA}/{CODESIGN_NATIVE_EVALUATION_VERSION}":
+    expected_fields = {
+        "schemaVersion",
+        "artifactKind",
+        "candidateSnapshotSha256",
+        "passed",
+        "tier0",
+        "nonclaims",
+    }
+    if "tier1" in value:
+        expected_fields.add("tier1")
+    expected_version = CODESIGN_NATIVE_EVALUATION_VERSION
+    if catalog_authority_sha256 is not None:
+        expected_fields.add("catalogProof")
+        expected_version = CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION
+    _exact(value, expected_fields, "native co-design evaluation")
+    if value.get("schemaVersion") != f"{CODESIGN_NATIVE_EVALUATION_SCHEMA}/{expected_version}":
         raise ValueError("unsupported native co-design evaluation version")
     if value.get("artifactKind") != "codesignNativeEvaluation" or value.get("candidateSnapshotSha256") != contract_hash:
         raise ValueError("native co-design evaluation identity drifted")
@@ -354,6 +388,101 @@ def _validate_native_evaluation(value: Any, contract_hash: str) -> None:
     nonclaims = value.get("nonclaims")
     if not isinstance(nonclaims, dict) or any(nonclaims.get(key) is not False for key in nonclaims):
         raise ValueError("native co-design nonclaims drifted")
+    if catalog_authority_sha256 is not None:
+        proof = value.get("catalogProof")
+        if not isinstance(proof, dict):
+            raise ValueError("native co-design catalog proof is absent")
+        _exact(
+            proof,
+            {
+                "schemaVersion",
+                "catalogAuthoritySha256",
+                "resolutionComplete",
+                "equippedComponents",
+                "marketplacePublicationReviewed",
+                "marketplaceExposable",
+            },
+            "native co-design catalog proof",
+        )
+        if (
+            proof.get("schemaVersion")
+            != f"{CODESIGN_CATALOG_PROOF_SCHEMA}/{CODESIGN_CATALOG_PROOF_VERSION}"
+            or proof.get("catalogAuthoritySha256") != catalog_authority_sha256
+            or proof.get("resolutionComplete") is not True
+            or proof.get("marketplacePublicationReviewed") is not False
+            or proof.get("marketplaceExposable") is not False
+        ):
+            raise ValueError("native co-design catalog authority drifted")
+        components = proof.get("equippedComponents")
+        if not isinstance(components, list) or not components:
+            raise ValueError("native co-design equipped catalog proof is empty")
+        for component in components:
+            if not isinstance(component, dict):
+                raise ValueError("native co-design equipped catalog row proof is invalid")
+            required_fields = {
+                "slotId",
+                "variantId",
+                "componentRef",
+                "exactRevision",
+                "componentId",
+                "category",
+                "rowSha256",
+                "massG",
+                "confidence",
+                "reviewRequired",
+                "license",
+            }
+            allowed_fields = required_fields | {
+                "capacityMah",
+                "maxDischargeA",
+                "kv",
+                "propDiameterIn",
+                "review",
+            }
+            if not required_fields <= set(component) <= allowed_fields:
+                raise ValueError("native co-design equipped catalog row proof fields are not exact")
+            for field in (
+                "slotId",
+                "variantId",
+                "componentRef",
+                "exactRevision",
+                "componentId",
+                "category",
+            ):
+                if not isinstance(component.get(field), str) or not component[field]:
+                    raise ValueError("native co-design equipped catalog identity is invalid")
+            _sha256_string(component.get("rowSha256"), "native co-design catalog row")
+            if _finite_number(component.get("massG"), "native co-design catalog mass") <= 0:
+                raise ValueError("native co-design catalog mass is outside bounds")
+            confidence = _finite_number(
+                component.get("confidence"), "native co-design catalog confidence"
+            )
+            if not 0 < confidence <= 1:
+                raise ValueError("native co-design catalog confidence is outside bounds")
+            for field in ("capacityMah", "maxDischargeA", "kv", "propDiameterIn"):
+                if field in component and _finite_number(
+                    component[field], f"native co-design catalog {field}"
+                ) <= 0:
+                    raise ValueError("native co-design catalog physical value is outside bounds")
+            if not isinstance(component.get("reviewRequired"), bool):
+                raise ValueError("native co-design catalog review state is invalid")
+            if "review" in component and (
+                not isinstance(component["review"], str) or not component["review"]
+            ):
+                raise ValueError("native co-design catalog review evidence is invalid")
+            license_proof = component.get("license")
+            if not isinstance(license_proof, dict) or set(license_proof) != {
+                "id",
+                "class",
+                "sourceUrl",
+                "exportPolicy",
+            }:
+                raise ValueError("native co-design catalog license proof fields are not exact")
+            if any(
+                not isinstance(license_proof.get(field), str) or not license_proof[field]
+                for field in license_proof
+            ) or not license_proof["sourceUrl"].startswith("https://"):
+                raise ValueError("native co-design catalog license proof is invalid")
 
 
 def _candidate_snapshot(candidate: dict[str, Any], model_id: str) -> tuple[str, str, dict[str, Any]]:

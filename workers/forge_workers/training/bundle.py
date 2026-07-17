@@ -73,7 +73,9 @@ MAX_CONTRACT_BYTES = 512 * 1024
 MAX_BUNDLE_BYTES = 2 * 1024 * 1024
 
 
-def compile_training_bundle(payload: dict[str, Any]) -> dict[str, Any]:
+def compile_training_bundle(
+    payload: dict[str, Any], *, catalog_path: Path | None = None
+) -> dict[str, Any]:
     """Verify the immutable gateway snapshot and compile it through Rust truth."""
 
     snapshot = _snapshot(payload)
@@ -97,8 +99,13 @@ def compile_training_bundle(payload: dict[str, Any]) -> dict[str, Any]:
         ) as handle:
             handle.write(contract_json)
             contract_path = handle.name
+        command = [validator, "training-bundle", contract_path, "--contract-hash", contract_hash]
+        if catalog_path is not None:
+            if not (catalog_path / "components").is_dir():
+                raise ValueError("training bundle catalog components directory is absent")
+            command.extend(["--catalog", str(catalog_path)])
         completed = subprocess.run(
-            [validator, "training-bundle", contract_path, "--contract-hash", contract_hash],
+            command,
             capture_output=True,
             text=True,
             timeout=60,

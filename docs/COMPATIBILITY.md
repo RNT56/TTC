@@ -506,6 +506,22 @@ same-revision artifacts without granting portable cache or tier-3 authority. PR
 close P9-006 through exact-runtime refusal after confirming 80 CMA-ES lineage
 differences. V1 remains historical evidence; v2 does not silently read or relabel it.
 
+D64 adds coordinated search-plan/search-evidence and engine-batch/batch-evidence
+`3.0.0` majors because the categorical field, patch manifold, lineage, cache, and
+checkpoint meanings change. V3 binds
+`forge-codesign-catalog-choice-authority/1.0.0`, exact equipped slot variants and
+lockfile revisions, raw catalog-row hashes, review state, and license/export source.
+It retains the D63 proposal-runtime authority and refuses either foreign runtime or
+foreign catalog authority before evaluation/resume. The catalog-aware native path
+is the separate `forge-codesign-native-evaluation/2.0.0` plus
+`forge-codesign-catalog-proof/1.0.0`; the no-catalog v1 command output remains
+unchanged. Adding optional `--catalog` to `codesign-evaluate` and
+`training-bundle` is an unreleased CLI 0.2.0 minor addition. Training-bundle 2.0.0
+uses the catalog only for sovereign admission and keeps its documented inline-
+mirror powertrain meaning; a catalog-native MuJoCo mass/inertia/thrust-table bundle
+would require a separately versioned compatibility change. V2 plan/batch artifacts
+remain historical and are never interpreted as exact catalog choices.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

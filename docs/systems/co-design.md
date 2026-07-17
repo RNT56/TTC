@@ -1,10 +1,11 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59 controlled native/Rapier/MuJoCo smoke, D60 v1 proposal plan, platform-scoped D61 v1 engine batch, and D62/D63 exact-runtime v2 plan/recovery authority with same-source Linux/Apple comparison; overnight/provider scheduling, catalog choices, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D63 engine/search/recovery authority plus D64 catalog-backed v3 implementation; retained overnight/provider scheduling and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
 exact-hash engine batch), D62 (cross-platform plan identity), D63 (exact-runtime v2),
+D64 (catalog-backed categorical v3),
 validator-as-oracle
 
 ## 1. Purpose
@@ -84,6 +85,27 @@ Linux-x86-64 and Apple-arm64 plans from that exact source bind authorities
 checks all 200 rows and finds 120 matches plus 80 CMA-ES patch/candidate differences
 at ordinals 20–99. This closes P9-006 for exact-authority recovery integrity only.
 
+D64 keeps D60-D63 v1/v2 immutable and introduces a coordinated v3 plan/batch lane.
+The admitted `vx2-proof` battery slot now carries two lockfile-pinned alternatives:
+CNHL 1500 mAh and 1300 mAh revision 1.0.0. A self-hashed catalog-choice authority
+binds the complete sorted file-catalog byte authority and, for each choice, its slot,
+variant, ranged ref, exact pin, row hash, mass, capacity, discharge, confidence,
+review requirement, and license/export source. CMA-ES varies contract driver tilt
+and yaw limits on the base equipped battery; Optuna TPE searches both exact battery
+revisions plus those continuous bounds. Every proposal changes exactly the sole
+`equippedVariantId`, matching inline battery capacity/discharge mirror, and driver
+parameters. No motor, prop, battery, mass, price, license, or review fact is scaled
+or invented.
+
+Catalog-aware native evaluation v2 admits through `FileCatalog`, binds the same
+catalog authority, and emits only equipped component proofs; unequipped alternatives
+do not enter HUD, validation, BOM, or lineage. Batch v3 binds catalog plus D63
+runtime authority in cache/checkpoint/resume/candidate records and rejects foreign
+catalog bytes before work. The rows remain review-required and explicitly not
+marketplace-exposable. Tier 2 uses training-bundle 2.0.0 after catalog-backed
+admission, but that bundle deliberately consumes the exact inline powertrain mirror;
+it is not evidence of catalog-native MuJoCo mass/inertia/thrust-table dynamics.
+
 ## 3. Algorithms (P9-002)
 
 Gradient-free, because the landscape is a constraint oracle:
@@ -105,23 +127,24 @@ proposals to each. CMA-ES uses ten generations of population ten on the continuo
 electrical scales. TPE uses twenty startup trials on the mixed profile/continuous
 space. Both receive only the deterministic `bounded-diversity-acquisition-v1`
 loss; it declares `physicalObjective=false` and `engineFeedback=false`. This closes
-algorithm invocation and reproducible proposal breadth only. P9-002 remains in
-progress until the exact proposals are consumed by sovereign physical evaluation,
-catalog choices are searched, and a retained scheduled run proves recovery and
-cost.
+algorithm invocation and reproducible proposal breadth only. D64's v3 successor
+preserves the 100/100 allocation while replacing its historical profile categorical
+with exact catalog revisions.
 
 D61 consumes all 200 real-algorithm proposals but does not feed physical scores back
 into CMA-ES or TPE; proposal order and algorithm identity remain D60 authority. Its
 complete batch independently recomputes physical admission and Pareto from the
-sovereign engine rows. P9-002 remains in progress because the current electrical
-profiles are not catalog choices and no retained overnight/provider scheduler or
-cost reconciliation exists.
+sovereign engine rows. D64 now supplies exact catalog-choice search and sovereign
+catalog admission, but neither algorithm receives engine feedback. P9-002 remains
+in progress because no retained overnight/provider scheduler, course-conditioned
+objective run, cost reconciliation, or trained-finalist loop exists.
 
 D62/P9-006 is closed by D63 exact-runtime authority instead of modified floating-
 point CMA-ES arithmetic. No checkpoint or cache entry may move between authority
 hashes; cross-runtime tier-3 authority remains false. The protected comparison does
-not authorize training by itself: finalists still require real catalog-choice
-lineage, retained training scorecards, and the overnight/provider gates. Stable
+not authorize training by itself: D64 now supplies catalog-choice lineage, but
+finalists still require retained training scorecards and the overnight/provider
+gates. Stable
 final selections do not erase the 80 changed CMA-ES candidate preimages.
 
 ## 4. Multi-fidelity evaluation ladder (P9-003 — what makes cost sane)
@@ -167,27 +190,28 @@ pnpm codesign:engine-smoke -- --require-tier0-budget \
 The normal full gate also runs this smoke with the available validator binary; only
 the explicit release-binary evidence command may close the tier-0 latency SLO.
 
-D60's separate proposal-plan smoke is:
+The D64 v3 proposal-plan smoke (D60 v1 and D63 v2 remain historical) is:
 
 ```bash
 FORGE_PYTHON=python3 \
+FORGE_CATALOG_DIR=catalog \
 FORGE_SOURCE_REVISION="$(git rev-parse HEAD)" \
 FORGE_REQUIRE_CLEAN_EVIDENCE=1 \
 pnpm codesign:search-plan -- --out /tmp/p9-search-plan.json
 ```
 
-It must produce 100 CMA-ES plus 100 Optuna TPE proposals and keep every validator,
+It must produce 100 CMA-ES plus 100 Optuna TPE proposals, bind both exact battery
+revisions and the full catalog/runtime authorities, and keep every validator,
 Rapier, MuJoCo, physical-constraint, admission, Pareto, overnight-result, trained-
-finalist, catalog, provider, build, hardware, and field claim false. Runtime speed
-is not an overnight claim. Any engine consumer needs its own format and must attach
-D59-equivalent sovereign evidence to the exact proposal hashes. D61 is that
-separate local consumer; it does not reinterpret or promote plan v1.
+finalist, marketplace-review/live-catalog, provider, build, hardware, and field
+claim false. Runtime speed is not an overnight claim.
 
-D61's checkpoint/recovery smoke is:
+The D64 v3 checkpoint/recovery smoke is:
 
 ```bash
 FORGE_PYTHON=python3 \
 FORGE_VALIDATE_BIN=target/debug/forge-validate \
+FORGE_CATALOG_DIR=catalog \
 FORGE_SOURCE_REVISION="$(git rev-parse HEAD)" \
 FORGE_REQUIRE_CLEAN_EVIDENCE=1 \
 pnpm codesign:engine-batch -- --out /tmp/p9-engine-batch.json
@@ -197,10 +221,15 @@ It first evaluates seven exact hashes and retains the checkpoint, then records a
 zero-dispatch cancellation at ordinal seven, resumes the remaining 193, and requires
 one contiguous complete 200-row result. Every row runs native validation; only
 native/Rapier-passing rows run the short pinned MuJoCo rollout. The complete result
-derives admission and Pareto itself and selects three engine-admitted Pareto
-candidates as tier-3-held finalists. It records measured local engine/attempt wall
-runtime only. `overnight200Candidate`, trained-finalist, catalog-choice, provider
-sandbox/billing, energy, build, hardware, and field authority remain false.
+derives admission and Pareto itself and selects up to three engine-admitted Pareto
+candidates as tier-3-held finalists. The exact D64 fixture has two real battery
+revisions; driver-only variations share mass/endurance within each revision, so its
+expected physical front is exactly two points and two held finalists. That is a
+catalog-binding/recovery proof, not P9's separate `>=3` phase-exit evidence. The run
+records measured local engine/attempt wall runtime only. Catalog-choice evaluation is
+true and exact, while marketplace review, live catalog persistence,
+`overnight200Candidate`, trained-finalist, provider sandbox/billing, energy, build,
+hardware, and field authority remain false.
 
 ## 5. Output
 
@@ -228,6 +257,8 @@ scoped evidence maturity. Its complete batch has real metrics and a Pareto front
 but publication to
 the product surface requires a reviewed orchestration/materialization boundary; a
 partial or cancelled checkpoint must never be shown or saved as a completed front.
+D64 v3 retains that boundary: catalog-backed local evidence is not a new queue kind,
+marketplace publication approval, saved Studio front, or provider operation.
 
 ## 6. Dependencies
 
@@ -269,6 +300,14 @@ search/batch coverage. Eleven focused tests and all 44 local/PR/protected gates 
 with 244 worker, 74 Gateway, and 39 Studio tests. PR #113, artifact `8397860593`,
 and comparison `d255c441…6562` supply the clean protected Linux/Apple evidence and
 close P9-006 without granting portability, heterogeneous resume, or tier 3.
+
+D64 adds cross-language file-catalog authority hashing, exact two-revision choice
+coverage, equipped-only HUD/proof semantics, capacity/discharge mirror checks,
+license/export/review binding, catalog-aware native v2, plan/checkpoint/candidate
+tamper refusal, and real one-candidate native/Rapier/MuJoCo integration. The v3
+search smoke independently recomputes catalog row and aggregate hashes. The full
+200-row batch smoke remains the retained CI proof path; it still cannot be called an
+overnight/provider or trained-finalist result.
 
 ## 8. Phase mapping & backlog
 

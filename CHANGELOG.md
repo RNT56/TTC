@@ -18,6 +18,42 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Bind co-design to exact equipped catalog revisions
+**Session:** Codex agent · branch `codex/p9002-catalog-categorical` · **Phase:** P9 ·
+**TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Implemented D64's coordinated catalog-backed co-design majors without
+reinterpreting D60-D63 v1/v2. Search-plan/evidence and engine-batch/evidence v3 now
+search the two exact lockfile-pinned CNHL battery variants, bind sorted raw catalog
+and per-row SHA-256 authority, retain review/license/export lineage, synchronize the
+D32 equipped variant with exact inline capacity/discharge mirrors, and bind both
+catalog and numeric-runtime authority through cache/checkpoint/resume/candidates.
+Native evaluation v2 re-runs the sovereign validator with `FileCatalog` and emits
+equipped-only catalog proof; optional `--catalog` also lets training-bundle v2 admit
+the same contract while preserving its documented inline-mirror physics.
+**Evidence:** Focused worker search/batch tests pass 12/12. Rust catalog tests prove
+both equipped revisions, unequipped exclusion, HUD mass response, and deterministic
+catalog binding. The independent v3 search smoke recomputes the file/row/choice/plan
+hashes and emits 100 CMA-ES plus 100 TPE proposals spanning both exact revisions. A
+complete dirty-tree local smoke retains 7 + zero-dispatch cancel + 193 resume,
+evaluates 200/200 through catalog-aware native v2, Rapier 0.33.0, and MuJoCo 3.9.0,
+admits 197, and returns the expected one non-dominated point per real battery choice
+with two tier-3-held finalists. Its two-point front is catalog/recovery proof, not the
+separate P9 `>=3` phase exit. All 44 required local gates pass under Python 3.12.13
+with 246 worker, 74 Gateway, and 39 Studio tests; the registered contract change has
+an append-only golden review record. Protected evidence is recorded separately once
+it exists; no protected claim is made by this implementation entry.
+**Changed:** Rust file-catalog/native/CLI boundaries; proof contract battery variants;
+Python search/runtime/batch/training admission; focused tests; source-bound smokes;
+compatibility matrices/checks; CI labels; AGENTS entry guidance; project state,
+roadmap/TODO/execution, co-design/catalog/best-practice/governance/risk documents.
+**Decisions:** D64; R35.
+**Next:** Publish a draft PR, protect the exact reviewed tree, retain the complete v3
+200-row artifact, and reconcile post-merge evidence before starting catalog-native
+bundle physics or tier-3 finalist training.
+**Blockers:** Marketplace review/live catalog persistence, catalog-native MuJoCo
+mass/inertia/thrust-table authority, tier-3 training, retained overnight/provider
+scheduling/billing, and external acceptance remain explicit downstream gates.
+
 ## 2026-07-17 — Reconcile protected D62/D63 runtime-authority evidence
 **Session:** Codex agent · branch `codex/p9006-d62-evidence-reconciliation` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-006 [x]

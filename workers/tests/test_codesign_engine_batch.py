@@ -26,7 +26,7 @@ from forge_workers.codesign_search import _proposal_runtime_authority, build_sea
 from forge_workers.training.tasks import task_definition
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "examples" / "vx2-mini.forge.json"
+CONTRACT = ROOT / "examples" / "vx2-proof.forge.json"
 
 
 def _payload() -> dict:
@@ -38,7 +38,7 @@ def _payload() -> dict:
         "contractHash": contract_hash,
         "modelSnapshot": {
             "schemaVersion": "forge-admitted-model-snapshot/1.0.0",
-            "modelId": "vx2-mini",
+            "modelId": "vx2-proof",
             "contractHash": contract_hash,
             "contractJson": contract_json,
         },
@@ -62,8 +62,10 @@ def batch_payload() -> dict:
 def _fake_evaluator(snapshot: dict, contract: dict, plan: dict, proposal: dict) -> dict:
     ordinal = proposal["ordinal"]
     candidate_hash = proposal["lineage"]["candidateSnapshotSha256"]
+    choice = proposal["catalogChoice"]
+    catalog_authority = plan["source"]["catalogChoiceAuthority"]
     native = {
-        "schemaVersion": "forge-codesign-native-evaluation/1.0.0",
+        "schemaVersion": "forge-codesign-native-evaluation/2.0.0",
         "artifactKind": "codesignNativeEvaluation",
         "candidateSnapshotSha256": candidate_hash,
         "passed": True,
@@ -85,6 +87,31 @@ def _fake_evaluator(snapshot: dict, contract: dict, plan: dict, proposal: dict) 
             "substeps": 2,
             "simulatedDurationS": 1.0,
             "trajectorySha256": hashlib.sha256(f"rapier:{ordinal}".encode()).hexdigest(),
+        },
+        "catalogProof": {
+            "schemaVersion": "forge-codesign-catalog-proof/1.0.0",
+            "catalogAuthoritySha256": catalog_authority["catalogAuthoritySha256"],
+            "resolutionComplete": True,
+            "equippedComponents": [
+                {
+                    "slotId": choice["slotId"],
+                    "variantId": choice["choiceId"],
+                    "componentRef": choice["componentRef"],
+                    "exactRevision": choice["exactRevision"],
+                    "componentId": choice["componentId"],
+                    "category": choice["category"],
+                    "rowSha256": choice["rowSha256"],
+                    "massG": choice["massG"],
+                    "capacityMah": choice["capacityMah"],
+                    "maxDischargeA": choice["maxDischargeA"],
+                    "confidence": choice["confidence"],
+                    "reviewRequired": choice["reviewRequired"],
+                    "review": choice["review"],
+                    "license": choice["license"],
+                }
+            ],
+            "marketplacePublicationReviewed": False,
+            "marketplaceExposable": False,
         },
         "nonclaims": {
             "mujocoEvaluated": False,
@@ -146,17 +173,20 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
 
     completed = advance_batch(batch_payload, cancelled, evaluator=_fake_evaluator)
     assert validate_checkpoint(completed, batch_payload) == completed
-    assert completed["schemaVersion"] == "forge-codesign-engine-batch/2.0.0"
+    assert completed["schemaVersion"] == "forge-codesign-engine-batch/3.0.0"
     assert completed["artifactKind"] == "codesignEngineBatch"
-    assert completed["source"]["maturity"] == "platform-bound-local-engine-200-batch"
+    assert completed["source"]["maturity"] == "catalog-bound-platform-local-engine-200-batch"
     assert completed["scheduler"]["state"] == "complete"
     assert completed["scheduler"]["completedCandidates"] == 200
     assert completed["scheduler"]["resumeObserved"] is True
     assert completed["scheduler"]["cancellationObserved"] is True
-    assert completed["scheduler"]["resumePolicy"] == "exact-proposal-runtime-authority"
+    assert completed["scheduler"]["resumePolicy"] == "exact-proposal-and-catalog-authority"
     assert completed["scheduler"]["heterogeneousResumeAllowed"] is False
     assert completed["scheduler"]["requiredRuntimeAuthoritySha256"] == (
         completed["source"]["proposalRuntimeAuthority"]["authoritySha256"]
+    )
+    assert completed["scheduler"]["requiredCatalogAuthoritySha256"] == (
+        completed["source"]["catalogChoiceAuthority"]["catalogAuthoritySha256"]
     )
     assert [candidate["ordinal"] for candidate in completed["candidates"]] == list(range(200))
     assert completed["benchmark"]["exactCandidateHashesEvaluated"] == 200
@@ -171,6 +201,14 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
     assert all(
         candidate["lineage"]["proposalRuntimeAuthoritySha256"]
         == completed["source"]["proposalRuntimeAuthority"]["authoritySha256"]
+        for candidate in completed["candidates"]
+    )
+    assert {
+        candidate["catalogChoice"]["choiceId"] for candidate in completed["candidates"]
+    } == {"cnhl-4s-1500", "cnhl-v2-4s-1300"}
+    assert all(
+        candidate["lineage"]["catalogAuthoritySha256"]
+        == completed["source"]["catalogChoiceAuthority"]["catalogAuthoritySha256"]
         for candidate in completed["candidates"]
     )
     assert completed["cost"]["providerBillingVerified"] is False
@@ -207,6 +245,18 @@ def test_checkpoint_refuses_plan_candidate_verdict_and_hash_substitution(batch_p
     candidate_tamper["checkpointSha256"] = _sha(_stable_json(_checkpoint_payload(candidate_tamper)))
     with pytest.raises(ValueError, match="candidate evidence drifted"):
         validate_checkpoint(candidate_tamper, batch_payload)
+
+    catalog_tamper = copy.deepcopy(checkpoint)
+    native = catalog_tamper["candidates"][0]["nativeEvaluation"]
+    native["catalogProof"]["equippedComponents"][0]["marketplaceApproved"] = True
+    catalog_tamper["candidates"][0]["lineage"]["nativeEvaluationSha256"] = _sha(
+        _stable_json(native)
+    )
+    catalog_tamper["checkpointSha256"] = _sha(
+        _stable_json(_checkpoint_payload(catalog_tamper))
+    )
+    with pytest.raises(ValueError, match="row proof fields are not exact"):
+        validate_checkpoint(catalog_tamper, batch_payload)
 
     verdict_tamper = copy.deepcopy(checkpoint)
     verdict_tamper["candidates"][0]["admitted"] = False
@@ -268,4 +318,16 @@ def test_engine_batch_refuses_foreign_runtime_before_resume(batch_payload, monke
     )
     monkeypatch.setattr(codesign_search, "_proposal_runtime_authority", lambda: foreign)
     with pytest.raises(ValueError, match="runtime authority does not match this worker"):
+        advance_batch(batch_payload, max_candidates=0, evaluator=_fake_evaluator)
+
+
+def test_engine_batch_refuses_foreign_catalog_before_resume(batch_payload, monkeypatch):
+    real_catalog_rows = codesign_search._catalog_rows
+
+    def foreign_catalog(root: Path):
+        _authority, rows = real_catalog_rows(root)
+        return "0" * 64, rows
+
+    monkeypatch.setattr(codesign_search, "_catalog_rows", foreign_catalog)
+    with pytest.raises(ValueError, match="deterministic replay drifted"):
         advance_batch(batch_payload, max_candidates=0, evaluator=_fake_evaluator)

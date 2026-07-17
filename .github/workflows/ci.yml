@@ -256,12 +256,12 @@ jobs:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/codesign-engine-smoke.mjs --out artifacts/codesign/p9-engine-smoke.json
-      - name: D60 pinned CMA-ES and Optuna TPE co-design search plan
+      - name: D64 catalog-backed CMA-ES and Optuna TPE co-design search plan
         env:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/codesign-search-plan-smoke.mjs --out artifacts/codesign/p9-search-plan.json
-      - name: D61 checkpointed exact-hash 200-candidate co-design engine batch
+      - name: D64 catalog-bound checkpointed 200-candidate co-design engine batch
         env:
           FORGE_VALIDATE_BIN: target/debug/forge-validate
           FORGE_SOURCE_REVISION: ${{ github.sha }}

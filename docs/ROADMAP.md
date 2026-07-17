@@ -425,9 +425,9 @@ needed.
 **Owning docs:** [`systems/co-design.md`](systems/co-design.md).
 
 Exit criteria:
-- [~] "Lightest quad for this course under constraints" returns ≥ 3 admitted Pareto points overnight *(protected D61 returns four independently derived engine-admitted Pareto points, and protected D63 closes exact-runtime recovery integrity. The search is still neither course-conditioned/catalog-backed nor retained overnight/provider evidence.)*
+- [~] "Lightest quad for this course under constraints" returns ≥ 3 admitted Pareto points overnight *(protected D61 returns four independently derived engine-admitted Pareto points, protected D63 closes exact-runtime recovery integrity, and D64 implements exact catalog-backed battery choices. The search is still neither course-conditioned nor retained overnight/provider evidence.)*
 - [~] Tier-0 candidate evaluation < 50 ms native; 200-candidate CMA-ES generation overnight at tier 2 *(D59's protected release-binary runs pass the separate sovereign native 50 ms SLO. D60 produces 200 real-algorithm proposals. Protected D61 consumes all 200 through native and 123 eligible Rapier/MuJoCo rows with durable recovery. D63 enforces exact-authority resume; retained overnight/provider schedule and billing remain open.)*
-- [~] Every returned point is a fully admitted contract (validator as constraint oracle) *(D59 protects the small exact-snapshot constraint-oracle seam. Protected D61 derives its complete front only from admitted sovereign rows and keeps partial fronts empty. D63 protects exact numeric-runtime authority; catalog choices and actual trained finalists remain open.)*
+- [~] Every returned point is a fully admitted contract (validator as constraint oracle) *(D59 protects the small exact-snapshot constraint-oracle seam. Protected D61 derives its complete front only from admitted sovereign rows and keeps partial fronts empty. D63 protects exact numeric-runtime authority; D64 adds catalog-aware native admission and equipped-revision lineage. Actual trained finalists remain open.)*
 
 D59 is the bounded bridge from the long-lived fixture contract to executable engine
 truth. It versions the internal evaluation/native-evaluation/smoke-evidence envelopes,
@@ -477,6 +477,23 @@ protected tree `727f6f5`, protected `54385c2`, exact PR/post-merge CI/security, 
 source `54385c2` bind distinct authorities; independent comparison `d255c441…6562`
 finds 120 matches and 80 CMA-ES patch/candidate differences at ordinals 20–99.
 P9-006 is closed for exact-authority recovery integrity only.
+
+D64 is the coordinated catalog-backed successor and leaves every v1/v2 meaning
+historical. Search-plan/evidence and engine-batch/evidence 3.0.0 replace synthetic
+electrical-profile categories with the two exact CNHL battery revisions in the
+admitted proof contract. Catalog-choice authority binds sorted raw catalog bytes,
+row/revision/slot/variant lineage, physical fields, confidence/review state, and
+license/export source. Native evaluation 2.0.0 admits through `FileCatalog` and
+emits equipped-only catalog proof; plan, cache, checkpoint, resume, and every
+candidate bind both catalog and D63 runtime authority. The inline capacity/discharge
+mirror lets the existing training-bundle 2.0.0 tier-2 path run after catalog-backed
+admission, but does not claim catalog-native MuJoCo mass/inertia/thrust-table
+physics. The dirty-tree local D64 smoke evaluates all 200 candidates, admits 197,
+and returns exactly one non-dominated point for each of the two real battery choices.
+Those two held finalists prove the catalog/recovery shape but do not satisfy the
+separate `>=3` phase exit. Marketplace review/live persistence, tier-3 training,
+retained overnight/provider scheduling and billing, course-conditioned objectives,
+and external acceptance remain open, so P9-002/P9-003 and the phase stay in progress.
 
 ## P10 — Environments & courses
 
