@@ -449,6 +449,23 @@ command belongs to the unreleased CLI 0.2.0 minor line. External publication sti
 requires compatibility-surface promotion, supported/unsupported fixtures,
 migration/deprecation guidance, and release notes.
 
+D60 adds two more internal co-design authorities without changing the public worker
+envelope or queue-kind list: `forge-codesign-search-plan` 1.0.0 and
+`p9-search-plan-evidence` 1.0.0. Search-plan v1 binds an exact Gateway-owned admitted
+inline-multirotor snapshot, source revision, dependency-manifest hash, seed,
+constraints, frozen mixed manifold, exact 100/100 CMA-ES/TPE allocation, replace-only
+patches, candidate/patch hashes, deterministic replay, and permanent nonclaims. The
+evidence wrapper binds the exact checkout and clean-state marker. Its acquisition
+loss is proposal diversity only: it is not a physical objective, constraint result,
+validator verdict, engine rollout, admission, Pareto point, or overnight completion.
+Changing the snapshot/seed/manifold/patch/hash preimages, proposal allocation,
+algorithm/dependency/acquisition semantics, replay rule, or a held nonclaim requires
+a new internal major. A future engine consumer must define a separate versioned
+artifact that consumes the exact proposal hashes and attaches sovereign evaluation;
+it may not reinterpret plan v1. External publication still requires compatibility-
+surface promotion, supported/unsupported fixtures, migration/deprecation guidance,
+and release notes.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

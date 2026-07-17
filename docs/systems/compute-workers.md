@@ -184,6 +184,21 @@ Optuna, catalog-choice search, 200 candidates, or tier-3 training. Use
 `pnpm codesign:engine-smoke`; add `--require-tier0-budget` only with the release
 validator binary when recording the <50 ms latency proof.
 
+Under D60, `python -m forge_workers.codesign_search` is a separate proposal-only
+planner, not a `codesign.evaluate` result and not a new queue kind. It requires one
+exact Gateway-owned admitted inline-multirotor snapshot and exactly 200 proposals,
+refuses extra request fields, and applies the shared byte/depth/node JSON boundary
+before algorithm execution. It then runs pinned `cmaes==0.13.0` for 100 continuous
+proposals and `optuna==4.9.0` TPE for 100 mixed profile/continuous proposals. It
+freezes source revision, worker-manifest digest, seed, constraints, manifold,
+replace-only patches, candidate/patch hashes, and deterministic replay in
+`forge-codesign-search-plan/1.0.0`; `p9-search-plan-evidence/1.0.0` adds the exact
+checkout and clean marker. The acquisition is bounded diversity only. No validator,
+Rapier, MuJoCo, physical constraint, admission, Pareto, overnight engine result,
+trained finalist, catalog choice, provider, build, hardware, or field authority is
+created. Run `pnpm codesign:search-plan`; a future consumer must take exact proposal
+hashes into a separately versioned D59-equivalent engine boundary.
+
 The repository also owns a native controlled command,
 `python -m forge_workers.mjx_benchmark`, and the required
 `pnpm sim:mjx:feasibility` wrapper. It reuses the admitted-model/Rust training-bundle
@@ -370,12 +385,13 @@ version, and measured baseline metadata; the Node orchestrator verifies them bef
 the Rust comparator applies the unchanged parity bands.
 
 The existing required `compute workers (Python)` job downloads the exact validator
-from the Rust job, installs `workers[dev,mujoco]`, runs the full Python suite, executes
+from the Rust job, installs the full reviewed extras including `codesign`, runs the full Python suite, executes
 real Rapier and MuJoCo for drop, pendulum, hover, and gait, and always uploads the
 request, both baselines, and comparison. The keyless local full gate retains the
 reviewed baseline fixture; `pnpm sim:parity:live` is the reproducible maintainer path.
-This proves a local/CI CPU engine pair, not SB3 training, GPU performance, provider
-operations, or field transfer.
+It also runs the exact-source D60 200-proposal smoke. This proves a local/CI CPU
+engine pair and deterministic proposal planning, not 200 engine candidates, SB3
+training, GPU performance, provider operations, or field transfer.
 
 Protected acceptance is complete through PR #60. Exact head `aa5b133` passed
 CI `29383163191`/security `29383163204`; protected `c0f5172` passed post-merge CI

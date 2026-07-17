@@ -223,7 +223,7 @@ jobs:
       - name: install exact CPU training runtime
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.13.0
-          pip install -e "workers[dev,mujoco,training,mjx,deployment]"
+          pip install -e "workers[dev,mujoco,training,mjx,deployment,codesign]"
       - run: python -m pytest workers -q
       - name: P7-003/P7-014 real seeded multirotor + ground MuJoCo-SB3-ONNX smoke
         env:
@@ -254,6 +254,11 @@ jobs:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/codesign-engine-smoke.mjs --out artifacts/codesign/p9-engine-smoke.json
+      - name: D60 pinned CMA-ES and Optuna TPE co-design search plan
+        env:
+          FORGE_SOURCE_REVISION: ${{ github.sha }}
+          FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
+        run: node scripts/codesign-search-plan-smoke.mjs --out artifacts/codesign/p9-search-plan.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:

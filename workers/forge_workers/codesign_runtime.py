@@ -636,7 +636,7 @@ def evaluate(payload: dict[str, Any]) -> dict[str, Any]:
         )
         tier0_runtime.append(float(evaluations["tier0"]["runtimeMs"]))
         if rollout is not None:
-            tier2_runtime.append(rollout_runtime_ms)
+            tier2_runtime.append(float(evaluations["tier2"]["runtimeMs"]))
     pareto = _pareto(candidates)
     manifold = {
         "source": "exact-admitted-inline-multirotor-contract",

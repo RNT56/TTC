@@ -47,7 +47,11 @@ def test_modal_training_and_codesign_profiles_pin_live_dependencies():
     assert offline["aptPackages"] == train["aptPackages"]
     assert offline["commandEnv"] == ["FORGE_OFFLINE_RL_CMD"]
     assert codesign["commandEnv"] == ["FORGE_CODESIGN_CMD", "FORGE_MUJOCO_PARITY_CMD", "FORGE_MJX_BENCH_CMD"]
-    assert "optuna>=3.6" in codesign["pipPackages"]
+    assert "numpy==2.5.1" in codesign["pipPackages"]
+    assert "mujoco==3.9.0" in codesign["pipPackages"]
+    assert "optuna==4.9.0" in codesign["pipPackages"]
+    assert "cmaes==0.13.0" in codesign["pipPackages"]
+    assert all("==" in package for package in codesign["pipPackages"])
 
 
 def test_modal_cpu_profiles_and_fallback_are_explicit():
