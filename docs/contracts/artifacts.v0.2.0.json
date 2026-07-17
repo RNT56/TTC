@@ -175,7 +175,9 @@
         "ghostOverlay": "1.0.0",
         "codesignEvaluation": "1.0.0",
         "codesignNativeEvaluation": "1.0.0",
-        "codesignEngineSmokeEvidence": "1.0.0"
+        "codesignEngineSmokeEvidence": "1.0.0",
+        "codesignSearchPlan": "1.0.0",
+        "codesignSearchPlanEvidence": "1.0.0"
       },
       "bridgeConfigFirmwareVersion": "2025.12",
       "ghostOverlayFrame": "forge-y-up-rh-m",
@@ -270,7 +272,7 @@
           "codesign"
         ],
         "maturity": "fixture + controlled-local-engine-smoke",
-        "notes": "D59 adds internal forge-codesign-evaluation/1.0.0 and forge-codesign-native-evaluation/1.0.0: exact Gateway snapshot plus recomputed replace-only patch/hash lineage, sovereign validator, real Rapier 0.33.0, and two estimator-only MuJoCo 3.9.0 rollouts. Tier 3, CMA-ES/Optuna, 200-candidate overnight, trained finalist, catalog-choice, provider sandbox, build, hardware, and field claims remain false."
+        "notes": "D59 adds internal forge-codesign-evaluation/1.0.0 and forge-codesign-native-evaluation/1.0.0: exact Gateway snapshot plus recomputed replace-only patch/hash lineage, sovereign validator, real Rapier 0.33.0, and two estimator-only MuJoCo 3.9.0 rollouts. D60 separately adds forge-codesign-search-plan/1.0.0 and p9-search-plan-evidence/1.0.0: real pinned cmaes 0.13.0 and Optuna TPE 4.9.0 emit 100 proposals each from the exact snapshot, but the bounded-diversity acquisition has no physical or engine feedback. The plan does not enter the queue, evaluate constraints, admit candidates, compute Pareto, prove an overnight engine run, train finalists, search catalog choices, call a provider, or authorize build, hardware, or field claims."
       },
       {
         "queueKind": "bridge.config-diff",

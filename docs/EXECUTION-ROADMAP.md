@@ -390,8 +390,12 @@ Work:
   multi-fidelity ladder (`P9-002`, `P9-003`, conditional `P9-005`). D59 now proves
   the exact admitted-snapshot/native-validator/Rapier/MuJoCo shape at protected
   local maturity through PR #106/`fae00c5` for three
-  candidates; it does not supply CMA-ES/Optuna, 200 engine candidates, overnight
-  scheduling, trained finalists, or provider evidence;
+  candidates. D60 now has a local, unprotected exact-snapshot proposal candidate
+  that executes 100 pinned CMA-ES plus 100 pinned Optuna TPE proposals with no
+  physical/engine feedback. Protect that plan, then consume its exact hashes through
+  a separately versioned 200-candidate engine/scheduling artifact; neither lane
+  supplies overnight completion, trained finalists, catalog-choice, or provider
+  evidence;
 - provider reliability, cost, data-retention, and artifact-integrity work from
   `OPS-*`, `QA-*`, and `SEC-*`.
 
@@ -569,6 +573,19 @@ Work:
   protected-tree equality, and post-merge CI/security `29545811003`/`29545810996`
   pass. Next implement a separately versioned optimizer/overnight evidence lane
   without reusing the controlled-smoke claim;
+- D60/P9-002 is implemented locally at `local-algorithm-proposal-plan` maturity.
+  `forge-codesign-search-plan/1.0.0` and `p9-search-plan-evidence/1.0.0` bind the
+  exact admitted snapshot, source/manifest, frozen seed/constraints/manifold,
+  100 `cmaes==0.13.0` proposals, 100 `optuna==4.9.0` TPE proposals, replace-only
+  patch hashes, 200 unique candidate hashes, and deterministic replay. The
+  bounded-diversity acquisition has no physical objective or engine feedback and
+  every validator/Rapier/MuJoCo/constraint/admission/Pareto/overnight/training/
+  catalog/provider/build/hardware/field claim is false. Focused tests and smoke pass;
+  all 42 local gates pass under Python 3.12.7 with 238 worker, 74 Gateway, and 39
+  Studio tests, and the pinned dependency audit is clean. PR, protected-main, and
+  evidence-reconciliation proof is pending.
+  The next local dependency after protection is a new engine-consumption artifact,
+  not promotion of this plan;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -592,6 +609,12 @@ controlled-lab seam above, followed only after retained semantic review by a new
 real-transition boundary. No further local acknowledgment or fixture can satisfy
 that evidence requirement. Do not fabricate a D54 ghost source: the real D57
 successor must wait for the named-hardware/D54-to-twin gate above.
+
+The current dependency-complete local P9 step is to protect D60's exact proposal
+plan, then define a separately versioned consumer that schedules and evaluates the
+same 200 candidate hashes through the D59 sovereign ladder. That consumer must retain
+resume/cancellation/cost evidence, derive admission and Pareto independently, and
+hold tier 3 to actual finalists. Fast proposal generation is not an overnight run.
 
 Acceptance:
 
@@ -752,7 +775,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, conditional 005 after protected D59 | P6/P7 evidence; accelerator/provider budget for overnight work | protected exact-snapshot engine seam, then ≥3 admitted Pareto points from a separately evidenced CMA-ES/Optuna 200-candidate overnight run with tier-3 finalists only |
+| P9 | P9-002, 003, conditional 005 after protected D59; protect D60 proposal plan first | P6/P7 evidence; accelerator/provider budget for engine/overnight work | protected exact-snapshot engine seam and deterministic 100/100 CMA-ES/TPE plan, then exact-hash 200-candidate sovereign evaluation with retained recovery/cost, ≥3 admitted Pareto points, and tier-3 finalists only |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |

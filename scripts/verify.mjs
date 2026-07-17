@@ -171,6 +171,11 @@ try {
     "--out",
     join(temp, "p9-engine-smoke.json"),
   ]);
+  run("Pinned CMA-ES/TPE 200-proposal co-design search plan", "node", [
+    "scripts/codesign-search-plan-smoke.mjs",
+    "--out",
+    join(temp, "p9-search-plan.json"),
+  ]);
   run("Whitespace and patch hygiene", "node", ["scripts/check-patch-hygiene.mjs"]);
 
   console.log(`\nverify: ${step} required local gates passed`);

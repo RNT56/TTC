@@ -29,6 +29,11 @@ mjx = [
   "jax==0.10.2",
   "jaxlib==0.10.2",
 ]
+codesign = [
+  "numpy==2.5.1",
+  "optuna==4.9.0",
+  "cmaes==0.13.0",
+]
 # Heavy runtime stacks stay out of the default worker install. The parity extra
 # and P7 training/MJX extras pin reviewed direct runtimes exactly; geometry and
 # other GPU stacks remain per-family image dependencies with their own reviewed

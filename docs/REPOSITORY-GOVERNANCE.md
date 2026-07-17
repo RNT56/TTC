@@ -91,7 +91,7 @@ for an actual external run; the protocol is owned by
 [`EXTERNAL-ACCEPTANCE.md`](EXTERNAL-ACCEPTANCE.md).
 
 The required `compute workers (Python)` job depends on the exact validator artifact
-from `forge-core`. It installs exact `workers[dev,mujoco,training,mjx,deployment]` so
+from `forge-core`. It installs exact `workers[dev,mujoco,training,mjx,deployment,codesign]` so
 the Modal 1.5.2 deployment contract/evidence validator and CUDA authority cannot skip
 for a missing optional dependency. In addition to the complete Python 3.12 suite, it installs the
 reviewed MuJoCo 3.9.0 parity extra, generates source-revision/request-hash-bound MJCF
@@ -100,7 +100,10 @@ drop/pendulum/hover/gait scenes, and uploads the request, both baselines, and
 comparison even on failure. A provider/version/source/timestep/substep mismatch or a
 tolerance failure blocks the same existing check; the job name and default-branch
 ruleset do not change. The keyless local full gate still compares against the
-registered engine-backed fixture.
+registered engine-backed fixture. The same job executes D60's exact-source
+`forge-codesign-search-plan/1.0.0` smoke under pinned `cmaes==0.13.0` and
+`optuna==4.9.0`; this checks deterministic 100/100 proposal breadth and every held
+nonclaim, not physical evaluation or an overnight result.
 The worker check validates D46 structure only. P7-013 closure separately deploys from
 a clean protected revision and retains the real L4/device, billing/tag, spend-stop,
 alert/SLO, cancellation, deletion, and no-duplicate recovery evidence described in

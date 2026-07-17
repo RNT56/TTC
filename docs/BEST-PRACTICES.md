@@ -446,6 +446,14 @@ every user-facing capability claim.
   overnight completion, trained finalists, catalog search, provider maturity, build
   readiness, hardware authority, or field evidence; those require separately
   versioned retained proof.
+- Separate proposal generation from physical optimization evidence. A real CMA-ES or
+  TPE library may generate a deterministic, hash-bound plan against a synthetic
+  acquisition function, but those rows are proposals only. Freeze algorithm pins,
+  seed, exact snapshot, manifold, budget split, replace-only patch semantics,
+  candidate hashes, replay, and nonclaims. Do not evaluate constraints, assign
+  validator/engine verdicts, compute Pareto, or call a fast 200-proposal command an
+  overnight run. The next lane must consume exact proposal hashes and add sovereign
+  native/Rapier/MuJoCo evidence before any candidate can be admitted.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

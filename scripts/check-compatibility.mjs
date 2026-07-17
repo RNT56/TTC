@@ -296,6 +296,22 @@ requireValue(
   ),
   "co-design engine-smoke script does not emit the matrix version",
 );
+requireValue(
+  pythonConstant("workers/forge_workers/codesign_search.py", "SEARCH_PLAN_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignSearchPlan,
+  "co-design search-plan version does not match compatibility matrix",
+);
+requireValue(
+  pythonConstant("workers/forge_workers/codesign_search.py", "SEARCH_PLAN_EVIDENCE_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignSearchPlanEvidence,
+  "co-design search-plan evidence version does not match compatibility matrix",
+);
+requireValue(
+  read("scripts/codesign-search-plan-smoke.mjs").includes(
+    `p9-search-plan-evidence/${matrix.surfaces.workerArtifacts.internalSchemas.codesignSearchPlanEvidence}`,
+  ),
+  "co-design search-plan script does not emit the matrix version",
+);
 
 const workerContract = read("workers/forge_workers/contract.py");
 const trainingBundleContract = read("workers/forge_workers/training/bundle.py");
@@ -324,6 +340,8 @@ for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.int
     "codesignEvaluation",
     "codesignNativeEvaluation",
     "codesignEngineSmokeEvidence",
+    "codesignSearchPlan",
+    "codesignSearchPlanEvidence",
   ].includes(name),
 )) {
   requireValue(

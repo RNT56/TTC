@@ -18,6 +18,43 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Execute the D60 co-design proposal plan
+**Session:** Codex agent · branch `codex/p9002-d60-search-plan` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Implemented D60 at local `local-algorithm-proposal-plan` maturity without
+claiming physical optimizer closure. One exact gateway-owned admitted inline-
+multirotor snapshot now deterministically produces 200 unique proposal snapshots:
+100 from real pinned `cmaes==0.13.0` and 100 from real pinned `optuna==4.9.0` TPE.
+The plan freezes the seed, constraints, electrical mixed manifold, exact dependency
+manifest, replace-only patches, patch/candidate SHA-256 values, and replay. The
+request is exact and byte/depth/node bounded; the Node smoke independently reapplies
+every patch and recomputes manifest, parameter, candidate, plan, and cache authority.
+The acquisition is bounded diversity only and explicitly has no physical objective
+or engine feedback. All 42 required local gates pass under Python 3.12.7 with 238
+worker, 74 Gateway, and 39 Studio tests; 19 compatibility surfaces, generated 81-
+route/2-event/17-worker documentation, native/WASM parity, packaging, training/
+offline/MJX/D59/D60 smokes, golden review, and patch hygiene pass. The pinned local
+Python audit reports no known vulnerabilities. Remote evidence remains pending
+protected publication. The adjacent D59 runtime now derives its aggregate tier-2
+hours from the rounded per-candidate values actually serialized into the envelope,
+eliminating a timing-boundary readback flake without changing its schema or meaning.
+**Changed:** Proposal planner/tests/smoke, exact worker/Modal dependency pins, CI and
+security installs, root verification, compatibility matrix/checker, generated
+artifact references, append-only golden review, decision/governance/best-practice/
+system contracts, and all living execution documents. No public API, database,
+queue kind, ModelSpec, validator report, CLI/WASM version, Studio result, physical
+engine, provider, catalog, hardware, or field format changed.
+**Decisions:** D60 freezes the separately versioned proposal-only boundary and
+requires a future engine consumer to attach sovereign evidence to exact proposal
+hashes.
+**Next:** Protect this exact implementation and then define the separately versioned
+200-candidate engine-consumption/scheduling artifact with admission, Pareto, recovery,
+cost, and finalist evidence.
+**Blockers:** P9 closure still requires catalog choices, sovereign evaluation of the
+200 exact proposals, a retained scheduled/overnight run, at least three admitted
+Pareto points, tier-3 finalists, provider operations, and external acceptance. A
+D60 plan cannot satisfy any of those gates.
+
 ## 2026-07-16 — Reconcile protected D59 controlled-engine evidence
 **Session:** Codex agent · branch `codex/p9003-d59-protected-evidence` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
