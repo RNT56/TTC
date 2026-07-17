@@ -30,11 +30,13 @@ BLAS/LAPACK identity, and pinned CMA-ES/Optuna distribution records. Foreign rep
 evaluation, or resume fails before work; heterogeneous resume and portable cache are
 false. Focused search/batch tests pass 11/11, comparison-policy tests pass 2/2,
 compatibility passes 19 top-level surfaces, and all 44 local gates pass under Python
-3.12.13 with 244 worker, 74 Gateway, and 39 Studio tests. A dirty Apple-arm64 real-engine
-diagnostic executes 7 + zero-dispatch cancel + 193 resume, evaluates 200 native and
-125 eligible Rapier/MuJoCo rows, admits 89, returns four Pareto points, and retains
-the same three tier-3-held finalists. Search plan SHA-256 is `7b77693d…603f`, batch
-result SHA-256 is `39b9bea7…dc2e`, and runtime authority is `a99337a8…b312`.
+3.12.13 with 244 worker, 74 Gateway, and 39 Studio tests. Clean exact-source Apple-
+arm64 evidence at implementation SHA `092af38` executes 7 + zero-dispatch cancel +
+193 resume, evaluates 200 native and 125 eligible Rapier/MuJoCo rows, admits 89,
+returns four Pareto points, and retains the same three tier-3-held finalists. Search
+evidence file/plan hashes are `0fca560f…8f64`/`45b5e7a7…8c3f`; batch evidence file/
+result hashes are `cb869c7f…7938`/`a3e082b7…61b2`; runtime authority is
+`a99337a8…b312`.
 **Changed:** Exact authority capture/validation, coordinated plan/batch majors,
 runtime-partitioned caches, checkpoint/candidate binding, focused/refusal tests,
 independent all-200 comparison command/tests, CI/root verification policy, internal
@@ -50,10 +52,9 @@ post-merge CI/security `29555056417`/`29555056481` pass.
 custom floating-point arithmetic or ad hoc rounding. V1 stays historical; changing
 authority fields/hash preimages, cache partitioning, or foreign-runtime refusal
 requires coordinated new majors and a superseding decision.
-**Next:** Commit/rebase the reviewed tree onto protected `main`, produce clean exact-
-source plan/batch evidence, then protect the tree and compare Linux/Apple artifacts
-from that exact protected revision before reconciling P9-006.
-**Blockers:** P9-006 still lacks clean/protected same-source cross-platform evidence.
+**Next:** Protect the reviewed tree, then compare Linux/Apple artifacts from that
+exact protected revision before reconciling P9-006.
+**Blockers:** P9-006 still lacks protected same-source cross-platform evidence.
 P9 closure separately lacks real catalog choices, actual tier-3 trained-finalist
 scorecards, retained overnight/provider scheduling and billing, and external
 acceptance.

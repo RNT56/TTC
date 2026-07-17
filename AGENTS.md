@@ -198,11 +198,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   evaluation, or resume, heterogeneous resume is false, and an independent
   all-200 comparison command may describe platform drift but grants no portable
   cache or tier-3 authority. Focused tests pass 11/11; all 44 local gates pass under
-  Python 3.12.13 with 244 worker, 74 Gateway, and 39 Studio tests. A dirty diagnostic Apple-
-  arm64 batch evaluates 200 native and 125 eligible Rapier/MuJoCo rows, admits 89,
-  returns the unchanged four-point front, and retains the same three held finalists;
-  clean exact-source, protected Linux, same-protected-source cross-platform
-  comparison, and evidence reconciliation remain required before P9-006 can close;
+  Python 3.12.13 with 244 worker, 74 Gateway, and 39 Studio tests. Clean exact-source
+  Apple-arm64 implementation evidence at `092af38` evaluates 200 native and 125
+  eligible Rapier/MuJoCo rows, admits 89, returns the unchanged four-point front,
+  and retains the same three held finalists. Search/batch evidence files hash to
+  `0fca560f…8f64`/`cb869c7f…7938`; protected Linux, same-protected-source
+  cross-platform comparison, and evidence reconciliation remain required before
+  P9-006 can close;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;

@@ -402,9 +402,9 @@ Work:
   relative to repeated Linux-x86-64 hashes. D63's local coordinated v2 candidate
   binds exact platform/Python/NumPy/BLAS/LAPACK/algorithm-distribution identity into
   every plan, cache, checkpoint, and candidate and refuses foreign replay/evaluation/
-  resume; 11/11 focused tests and all 44 local gates with 244 workers pass. It is not
-  yet clean, protected, or compared from
-  one exact protected source. None of these lanes supplies portable/heterogeneous
+  resume; 11/11 focused tests, all 44 local gates with 244 workers, and clean Apple-
+  arm64 implementation evidence at `092af38` pass. It is not yet protected or
+  compared from one exact protected source. None of these lanes supplies portable/heterogeneous
   recovery, overnight/provider billing, actual trained finalists, catalog-choice,
   or external evidence;
 - provider reliability, cost, data-retention, and artifact-integrity work from
@@ -621,10 +621,10 @@ Work:
   distribution/configuration/CPU/BLAS/LAPACK identity, and pinned CMA-ES/Optuna
   distributions. Foreign replay, evaluation, and resume fail before work;
   heterogeneous resume and portable cache remain false. Focused tests pass 11/11;
-  a dirty Apple-arm64 diagnostic evaluates 200 native/125 eligible Rapier-MuJoCo
-  rows, admits 89, and preserves the four-point front and three held finalists. It
-  passes all 44 local gates with 244 worker, 74 Gateway, and 39 Studio tests, but is
-  not acceptance evidence. Finish a clean exact-source run, protect the v2 tree,
+  clean Apple-arm64 evidence at `092af38` evaluates 200 native/125 eligible Rapier-
+  MuJoCo rows, admits 89, and preserves the four-point front and three held finalists.
+  All 44 local gates pass with 244 worker, 74 Gateway, and 39 Studio tests, but this
+  remains local evidence. Protect the v2 tree,
   retain Linux and Apple artifacts from that same protected source, run the
   independent all-200 comparison, and reconcile the result before closing P9-006;
 - signed Desktop installers/update path;
@@ -651,10 +651,11 @@ real-transition boundary. No further local acknowledgment or fixture can satisfy
 that evidence requirement. Do not fabricate a D54 ghost source: the real D57
 successor must wait for the named-hardware/D54-to-twin gate above.
 
-The current dependency-complete local P9 step is to finish and protect P9-006/D62's
-D63 v2 exact-runtime authority. Commit the reviewed implementation, pass all 44
-local gates from a clean source, retain its clean plan/batch evidence, merge only
-after exact PR checks, and verify protected tree equality plus post-merge CI/security.
+The current dependency-complete local P9 step is to protect P9-006/D62's D63 v2
+exact-runtime authority. The reviewed implementation is committed at `092af38`, all
+44 local gates pass, and clean plan/batch evidence is recorded by exact hashes. Merge
+only after exact PR checks, then verify protected tree equality plus post-merge CI/
+security.
 Then run clean Apple and Linux plan evidence from that exact protected revision and
 compare all 200 patch/candidate hashes independently. Reconcile the protected result
 and only then close P9-006. Exact-platform authority permits same-authority scheduling

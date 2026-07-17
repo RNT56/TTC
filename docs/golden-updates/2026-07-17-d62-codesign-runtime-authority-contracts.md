@@ -56,9 +56,9 @@ BLAS/LAPACK identity, and pinned CMA-ES/Optuna distribution records. Plan and ba
 caches, scheduler/checkpoint state, and every candidate bind that hash; foreign
 runtime replay/evaluation/resume fails before work. Eleven focused tests, two
 comparison-policy tests, and all 44 local gates with 244 worker, 74 Gateway, and 39
-Studio tests pass. A dirty Apple-arm64 diagnostic completes all 200
-candidates and preserves the prior front/finalists, but it is not acceptance
-evidence. Clean exact-source, protected Linux, same-protected-source Apple,
+Studio tests pass. Clean exact-source Apple-arm64 evidence at `092af38` completes all
+200 candidates and preserves the prior front/finalists, but it is not protected
+acceptance evidence. Protected Linux, same-protected-source Apple,
 independent comparison, and reconciliation evidence remain required.
 
 ## Reviewer focus

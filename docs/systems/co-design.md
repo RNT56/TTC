@@ -77,10 +77,10 @@ plan and batch caches; records exact-runtime-only resume; and binds the authorit
 hash into every engine candidate. Validation refuses a foreign authority before
 evaluation or checkpoint resume. The all-200 comparison tool requires two clean
 same-revision artifacts and permanently keeps cross-runtime cache and tier-3
-authority false. A dirty-worktree Apple-arm64 diagnostic v2 batch still executes
-7 + cancel + 193, evaluates 200 native/125 eligible Rapier-MuJoCo rows, admits 89,
-returns four Pareto points, and selects three held finalists. Clean/protected Linux
-and same-revision cross-runtime evidence remain required.
+authority false. Clean exact-source Apple-arm64 evidence at `092af38` executes 7 +
+cancel + 193, evaluates 200 native/125 eligible Rapier-MuJoCo rows, admits 89,
+returns four Pareto points, and selects three held finalists. Protected Linux and
+same-protected-revision cross-runtime evidence remain required.
 
 ## 3. Algorithms (P9-002)
 
@@ -262,9 +262,9 @@ D62 adds a required cross-architecture all-200 hash comparison; the observed
 Apple-arm64/Linux-x86-64 divergence is tracked under P9-006/R34 before tier 3. D63's
 local v2 adds exact runtime-authority/hash/cache/scheduler/candidate validation,
 foreign-runtime refusal, two cross-platform comparison-policy tests, and focused
-search/batch coverage. Eleven focused tests and the diagnostic real Apple-arm64
-200-candidate batch pass; all 44 local gates pass with 244 worker, 74 Gateway, and
-39 Studio tests. Clean exact-source, protected Linux, downloaded artifact,
+search/batch coverage. Eleven focused tests and the clean exact-source Apple-arm64
+200-candidate batch at `092af38` pass; all 44 local gates pass with 244 worker, 74
+Gateway, and 39 Studio tests. Protected Linux, downloaded artifact,
 same-revision comparison, and evidence reconciliation remain required.
 
 ## 8. Phase mapping & backlog
