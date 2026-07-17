@@ -18,6 +18,39 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D67 exact-grid readback evidence
+**Session:** Codex agent · branch `codex/p9006-d67-protected-evidence` ·
+**Phase:** P9/QA · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Protected D67's exact-grid retention, independent full-curve readback, and
+v5 recovery boundary through PR #121. Exact head `3bd22bc`, GitHub reviewed merge
+`e4c836c`, reviewed/protected tree `1d8f50f`, protected squash `08e880b`, PR CI/
+security `29580572145`/`29580572132`, and post-merge CI/security
+`29581121537`/`29581121450` pass. Head, reviewed merge, and protected squash all
+carry the same tree.
+**Evidence:** All 44 local gates and all 11 PR checks pass under Python 3.12.13 with
+56 `forge-sim`, 39 Studio, 74 Gateway, and 248 worker tests plus native/WASM,
+generated/golden, database/browser, Brief-25 25/25, package, training/offline/MJX,
+co-design, and security gates. Downloaded protected artifact `8407177912` binds a
+clean source/checkout to `08e880b`. Its `p9-engine-batch.json` SHA-256 is
+`ab956b4a…de06`, result SHA-256 is `137a066f…16645`, and exact recovery retains
+7 + zero-dispatch cancel + 193 resume before evaluating 200/200, admitting 97, and
+returning two Pareto points/two held finalists. The artifact binds bundle v4,
+catalog-physics v2, curve-readback v1, training-authority v2, and batch/evidence v5.
+**Changed:** Canonical `AGENTS.md`; project state, roadmap, TODO, execution order,
+co-design system contract, generated artifact maturity source/output, golden-review
+record, and changelog.
+**Decisions:** No new decision. D67 and R36 remain authoritative; this change records
+protected evidence without broadening their physical claims.
+**Next:** Source and owner-review a voltage-covered, 5×4.3-prop-matched bench grid as
+a new immutable component revision, or retain the named analytic fallback. Any real
+row must pass protected D67 before tier 3. Separately produce a course-conditioned
+`>=3` physical front and retained overnight/provider billing proof.
+**Blockers:** The only applicable grid remains controlled-synthetic test data. The
+checked-in EMAX row remains v1, review-gated, 25.2 V/5×4.6, and rejected for the
+14.8–16.8 V/5×4.3 fixture. Sourced/applicable thrust, owner review, tier 3,
+marketplace/live catalog, provider billing, build, hardware, field, and external
+evidence remain open.
+
 ## 2026-07-17 — Bind exact catalog grids to independent curve readback
 **Session:** Codex agent · branch `codex/p9006-exact-grid-readback` · **Phase:** P9 ·
 **TODO items:** P9-002 [~], P9-003 [~]
