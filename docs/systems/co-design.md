@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator plus D59 controlled native/Rapier/MuJoCo smoke live; overnight CMA-ES/Optuna and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator plus D59 protected controlled native/Rapier/MuJoCo smoke live; overnight CMA-ES/Optuna and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), validator-as-oracle
@@ -133,7 +133,9 @@ tracked, must not dominate budget); determinism per seed; budget assertions per 
 D59 adds native CLI hash-drift/rejection tests, exact external-field/patch/lineage
 recomputation, provider-tamper rejection, seed-stable candidate/Rapier/MuJoCo
 digests, explicit >9 budget refusal, focused Studio type/build checks, and a source-
-bound release-binary smoke. Full P9 closure still requires a retained clean
+bound release-binary smoke. PR #106/`fae00c5` protects exact head `e64c601`,
+reviewed tree `08e8a12`, and passing PR/post-merge CI/security. Full P9 closure still
+requires a retained clean
 overnight artifact over 200 candidates, real algorithm evidence, >=3 admitted
 Pareto points, and trained-finalist scorecards.
 
