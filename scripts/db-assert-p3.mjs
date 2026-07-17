@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import assert from "node:assert/strict";
 import pg from "pg";
 
 const { Client } = pg;
@@ -14,6 +15,7 @@ const checks = [
   ["component_revisions", await one("SELECT count(*) AS n FROM component_revisions"), 8],
   ["licenses", await one("SELECT count(*) AS n FROM licenses"), 8],
   ["prices", await one("SELECT count(*) AS n FROM prices WHERE purchasable"), 8],
+  ["thrust_tables", await one("SELECT count(*) AS n FROM thrust_tables"), 2],
   ["review_queue", await one("SELECT count(*) AS n FROM review_queue WHERE status = 'needs_review'"), 1],
   ["generated_artifacts", await one("SELECT count(*) AS n FROM generated_artifacts"), 0],
   ["reference_rigs", await one("SELECT count(*) AS n FROM reference_rigs"), 2],
@@ -164,6 +166,65 @@ const missing = await client.query(`
 if (missing.rowCount > 0) {
   console.error(`FAIL missing license or purchasable price: ${missing.rows.map((r) => r.id).join(", ")}`);
   failures++;
+}
+
+const seededGrid = await client.query(`
+  SELECT table_id, row_schema_version, prop, confidence, source_url,
+         min(voltage) AS min_voltage, max(voltage) AS max_voltage, count(*)::int AS point_count
+    FROM thrust_tables
+   WHERE component_id = 'cmp_motor_emax-eco2-2207-1900kv'
+   GROUP BY table_id, row_schema_version, prop, confidence, source_url
+`);
+if (
+  seededGrid.rowCount !== 1
+  || seededGrid.rows[0].table_id !== "tt_emax_eco2_2207_1900kv_5x46_6s_sparse"
+  || seededGrid.rows[0].row_schema_version !== "1.0.0"
+  || seededGrid.rows[0].prop !== "5x4.6"
+  || seededGrid.rows[0].source_url !== "https://www.aliexpress.com/s/wiki-ssr/article/emax-eco-ii-2207-1900kv_1005001609557497"
+  || seededGrid.rows[0].min_voltage !== "25.2"
+  || seededGrid.rows[0].max_voltage !== "25.2"
+  || seededGrid.rows[0].point_count !== 2
+) {
+  console.error(`FAIL seeded thrust-table authority drifted: ${JSON.stringify(seededGrid.rows)}`);
+  failures++;
+} else {
+  console.log("ok thrust_tables: source table identity and v1 single-voltage meaning preserved");
+}
+
+await client.query("BEGIN");
+try {
+  const componentId = "cmp_motor_emax-eco2-2207-1900kv";
+  for (const tableId of ["qa-p3-grid-a", "qa-p3-grid-b"]) {
+    await client.query(
+      `INSERT INTO thrust_tables (
+         component_id, table_id, row_schema_version, prop, confidence, source_url,
+         voltage, throttle, thrust_g, current_a
+       ) VALUES
+         ($1, $2, '2.0.0', '5x4.3', 1, 'https://example.test/grid', 16.8, 0, 0, 0),
+         ($1, $2, '2.0.0', '5x4.3', 1, 'https://example.test/grid', 16.8, 1, 1000, 20)`,
+      [componentId, tableId],
+    );
+  }
+  const distinct = await one(
+    "SELECT count(DISTINCT table_id) AS n FROM thrust_tables WHERE component_id = 'cmp_motor_emax-eco2-2207-1900kv' AND table_id LIKE 'qa-p3-grid-%'",
+  );
+  if (distinct !== 2) {
+    console.error(`FAIL thrust table identity collapsed distinct benches: ${distinct}`);
+    failures++;
+  } else {
+    console.log("ok thrust_tables: distinct table identities may share one voltage/throttle coordinate");
+  }
+  await assert.rejects(
+    client.query(
+      `INSERT INTO thrust_tables (
+         component_id, table_id, row_schema_version, voltage, throttle, thrust_g, current_a
+       ) VALUES ($1, 'qa-p3-incomplete', '2.0.0', 16.8, 1, 1000, 20)`,
+      [componentId],
+    ),
+    /check constraint/,
+  );
+} finally {
+  await client.query("ROLLBACK");
 }
 
 await client.end();

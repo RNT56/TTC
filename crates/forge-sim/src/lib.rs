@@ -379,7 +379,8 @@ fn derive_hud_inner(
     let mut applicable_tables = Vec::new();
     if let Some(motor) = catalog_motor.as_ref() {
         for candidate in &motor.thrust_tables {
-            let reasons = thrust_table_inapplicability(candidate, &battery, &prop);
+            let reasons =
+                thrust_table_inapplicability(candidate, &motor.row_schema_version, &battery, &prop);
             if !reasons.is_empty() {
                 table_rejections.push(format!(
                     "catalog bench table {} not used: {}",
@@ -656,10 +657,17 @@ fn parsed_table_prop(value: &str) -> Option<(f64, f64)> {
 
 fn thrust_table_inapplicability(
     table: &forge_contract::CatalogThrustTable,
+    row_schema_version: &str,
     battery: &ResolvedBattery,
     prop: &ResolvedProp,
 ) -> Vec<String> {
     let mut reasons = Vec::new();
+    if row_schema_version == "2.0.0" {
+        reasons.push(
+            "catalog row 2.0.0 grid requires a newer exact-grid/curve-readback training authority"
+                .to_string(),
+        );
+    }
     let min_table_voltage = table
         .points
         .iter()
@@ -783,7 +791,9 @@ pub(crate) fn catalog_training_powertrain(
     let assessments = motor
         .thrust_tables
         .iter()
-        .map(|table| thrust_table_inapplicability(table, &resolved_battery, &prop))
+        .map(|table| {
+            thrust_table_inapplicability(table, &motor.row_schema_version, &resolved_battery, &prop)
+        })
         .collect::<Vec<_>>();
     let applicable_indexes = assessments
         .iter()
@@ -951,17 +961,25 @@ mod tests {
                 })
                 .collect(),
         };
-        assert!(
-            thrust_table_inapplicability(&table("5x4.3", &[14.8, 16.8]), &battery, &prop)
-                .is_empty()
-        );
-        let wrong_voltage = thrust_table_inapplicability(&table("5x4.3", &[25.2]), &battery, &prop);
+        assert!(thrust_table_inapplicability(
+            &table("5x4.3", &[14.8, 16.8]),
+            "1.0.0",
+            &battery,
+            &prop
+        )
+        .is_empty());
+        let wrong_voltage =
+            thrust_table_inapplicability(&table("5x4.3", &[25.2]), "1.0.0", &battery, &prop);
         assert_eq!(wrong_voltage.len(), 1);
         assert!(wrong_voltage[0].contains("does not cover"));
         let wrong_prop =
-            thrust_table_inapplicability(&table("5x4.6", &[14.8, 16.8]), &battery, &prop);
+            thrust_table_inapplicability(&table("5x4.6", &[14.8, 16.8]), "1.0.0", &battery, &prop);
         assert_eq!(wrong_prop.len(), 1);
         assert!(wrong_prop[0].contains("does not match"));
+        let current_format =
+            thrust_table_inapplicability(&table("5x4.3", &[14.8, 16.8]), "2.0.0", &battery, &prop);
+        assert_eq!(current_format.len(), 1);
+        assert!(current_format[0].contains("newer exact-grid/curve-readback"));
     }
 
     struct VariantCatalog;

@@ -110,6 +110,12 @@ and the all-200 comparison shape without portable or tier-3 authority. The v3 ba
 additionally requires catalog-aware native v2, equipped-only proof, catalog/runtime-
 bound checkpoints, and foreign-catalog refusal; marketplace review/live persistence,
 catalog-native MuJoCo physics, tier 3, and provider/overnight claims remain false.
+The D65 v4 batch additionally binds bundle-v3/catalog-physics-v1 mass, inertia,
+compiled-mass closure, and table applicability. D66 does not alter that artifact: the
+same Rust/Python job consumes the registered catalog-grid corpus and exact-matches
+row-v1/v2 format semantics, while the Postgres job proves migration 0027 on clean and
+every populated predecessor. Format support alone remains neither sourced grid nor
+training authority.
 The worker check validates D46 structure only. P7-013 closure separately deploys from
 a clean protected revision and retains the real L4/device, billing/tag, spend-stop,
 alert/SLO, cancellation, deletion, and no-duplicate recovery evidence described in

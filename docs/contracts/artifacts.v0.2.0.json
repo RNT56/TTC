@@ -102,6 +102,16 @@
       ],
       "versionField": "lifecycleVersion"
     },
+    "fileCatalogRow": {
+      "current": "2.0.0",
+      "supported": [
+        "1.0.0",
+        "2.0.0"
+      ],
+      "versionField": "schemaVersion",
+      "legacyMissingVersion": "1.0.0",
+      "versionRule": "v1 is one declared voltage per thrust table; v2 requires voltage on every performance point and forbids mixed table/point voltage authority"
+    },
     "policyTensor": {
       "current": "2.0.0",
       "supportedMajors": [

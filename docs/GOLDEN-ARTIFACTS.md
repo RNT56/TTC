@@ -78,7 +78,7 @@ machine manifest, and human reference. Its route/request source is the running
 Fastify/TypeBox registry; its version source is the compatibility matrix; and its
 reviewed descriptive source is `contracts/documentation.json`. Generated files are
 never hand-edited. QA-007's
-`boundary-adversarial-corpora` family owns the exact eight JSON files under
+`boundary-adversarial-corpora` family owns the exact nine JSON files under
 `evals/fuzz/boundaries/`. Its cases are reviewed fixture evidence: stable IDs,
 accepted/refused outcomes, special non-finite sentinels, and the exact file set are
 machine-checked. Rust and Python consumers prove behavior; the structural checker

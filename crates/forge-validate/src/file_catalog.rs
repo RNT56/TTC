@@ -21,9 +21,16 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+pub const LEGACY_CATALOG_ROW_FORMAT_VERSION: &str = "1.0.0";
+pub const CATALOG_ROW_FORMAT_VERSION: &str = "2.0.0";
+pub const LEGACY_UNATTRIBUTED_THRUST_TABLE_ID: &str = "legacy-unattributed";
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatalogRow {
+    /// Missing is the historical v1 spelling. New producers must emit v2.
+    #[serde(default)]
+    pub schema_version: Option<String>,
     pub id: String,
     pub brand: String,
     pub model: String,
@@ -115,7 +122,10 @@ pub struct RowPrice {
 pub struct RowThrustTable {
     pub id: String,
     pub prop: String,
-    pub voltage: f64,
+    /// V1-only single-sweep voltage. V2 forbids this field and requires a
+    /// voltage on every point.
+    #[serde(default)]
+    pub voltage: Option<f64>,
     pub confidence: f64,
     pub source_url: String,
     pub points: Vec<RowThrustPoint>,
@@ -124,6 +134,9 @@ pub struct RowThrustTable {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RowThrustPoint {
+    /// Required by row schema v2 and forbidden by v1.
+    #[serde(default)]
+    pub voltage: Option<f64>,
     pub throttle: f64,
     pub thrust_g: f64,
     pub current_a: f64,
@@ -173,6 +186,7 @@ impl FileCatalog {
                 .map_err(|e| format!("{}: catalog rows must be UTF-8: {e}", path.display()))?;
             let row: CatalogRow =
                 serde_json::from_str(text).map_err(|e| format!("{}: {e}", path.display()))?;
+            let row_format = effective_row_format(&row)?;
             if !(row.confidence > 0.0 && row.confidence <= 1.0) {
                 return Err(format!("{}: confidence must be in (0, 1]", row.id));
             }
@@ -188,7 +202,7 @@ impl FileCatalog {
             validate_license(&row)?;
             validate_prices(&row)?;
             validate_citations(&row)?;
-            validate_thrust_tables(&row)?;
+            validate_thrust_tables(&row, row_format)?;
             if row.revisions.is_empty() {
                 return Err(format!("{}: at least one revision required", row.id));
             }
@@ -413,34 +427,128 @@ fn validate_citations(row: &CatalogRow) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_thrust_tables(row: &CatalogRow) -> Result<(), String> {
+fn effective_row_format(row: &CatalogRow) -> Result<&str, String> {
+    let version = row
+        .schema_version
+        .as_deref()
+        .unwrap_or(LEGACY_CATALOG_ROW_FORMAT_VERSION);
+    match version {
+        LEGACY_CATALOG_ROW_FORMAT_VERSION | CATALOG_ROW_FORMAT_VERSION => Ok(version),
+        unsupported => Err(format!(
+            "{}: unsupported catalog row schemaVersion '{unsupported}'",
+            row.id
+        )),
+    }
+}
+
+fn validate_thrust_tables(row: &CatalogRow, row_format: &str) -> Result<(), String> {
+    if row.thrust_tables.len() > 64 {
+        return Err(format!("{}: at most 64 thrust tables are allowed", row.id));
+    }
+    if !row.thrust_tables.is_empty() && row.category != "motor" {
+        return Err(format!(
+            "{}: thrust tables require motor category authority",
+            row.id
+        ));
+    }
+    let mut table_ids = std::collections::BTreeSet::new();
     for table in &row.thrust_tables {
         if table.id.trim().is_empty()
+            || table.id == LEGACY_UNATTRIBUTED_THRUST_TABLE_ID
+            || table.id.len() > 256
             || table.prop.trim().is_empty()
-            || table.source_url.trim().is_empty()
+            || table.prop.len() > 256
+            || !table.source_url.starts_with("https://")
+            || table.source_url.len() > 2_048
             || !(table.confidence > 0.0 && table.confidence <= 1.0)
-            || table.points.is_empty()
+            || !(2..=10_000).contains(&table.points.len())
         {
             return Err(format!("{}: malformed thrust table {}", row.id, table.id));
         }
+        if !table_ids.insert(table.id.as_str()) {
+            return Err(format!(
+                "{}: duplicate thrust table id {}",
+                row.id, table.id
+            ));
+        }
+        let legacy_voltage = match row_format {
+            LEGACY_CATALOG_ROW_FORMAT_VERSION => {
+                if table.points.iter().any(|point| point.voltage.is_some()) {
+                    return Err(format!(
+                        "{}: v1 thrust table {} forbids per-point voltage; migrate the whole row to v2",
+                        row.id, table.id
+                    ));
+                }
+                let voltage = table.voltage.ok_or_else(|| {
+                    format!(
+                        "{}: v1 thrust table {} requires one table voltage",
+                        row.id, table.id
+                    )
+                })?;
+                if !voltage.is_finite() || voltage <= 0.0 || voltage > 1_000.0 {
+                    return Err(format!(
+                        "{}: thrust table {} voltage must be positive finite and at most 1000 V",
+                        row.id, table.id
+                    ));
+                }
+                Some(voltage)
+            }
+            CATALOG_ROW_FORMAT_VERSION => {
+                if table.voltage.is_some() {
+                    return Err(format!(
+                        "{}: v2 thrust table {} forbids table voltage; every point must declare voltage",
+                        row.id, table.id
+                    ));
+                }
+                if table.points.iter().any(|point| point.voltage.is_none()) {
+                    return Err(format!(
+                        "{}: v2 thrust table {} requires voltage on every point",
+                        row.id, table.id
+                    ));
+                }
+                None
+            }
+            _ => unreachable!("effective_row_format admits only supported versions"),
+        };
         let pts: Vec<ThrustPoint> = table
             .points
             .iter()
             .map(|p| ThrustPoint {
-                voltage: table.voltage,
+                voltage: p.voltage.or(legacy_voltage).expect("validated voltage"),
                 throttle: p.throttle,
                 thrust_n: p.thrust_g * 9.80665 / 1000.0,
                 current_a: p.current_a,
             })
             .collect();
-        ThrustTable::from_points(&pts)
+        let table_grid = ThrustTable::from_points(&pts)
             .map_err(|e| format!("{}: thrust table {}: {e}", row.id, table.id))?;
+        let min_throttle = pts
+            .iter()
+            .map(|point| point.throttle)
+            .fold(f64::INFINITY, f64::min);
+        let max_throttle = pts
+            .iter()
+            .map(|point| point.throttle)
+            .fold(f64::NEG_INFINITY, f64::max);
+        if min_throttle != 0.0 || max_throttle != 1.0 {
+            return Err(format!(
+                "{}: thrust table {} throttle grid must cover [0,1] without edge-clamp authority",
+                row.id, table.id
+            ));
+        }
+        // Keep construction live here: it proves every point participates in a
+        // unique rectangular, bounded, monotonic grid.
+        let _ = table_grid;
     }
     Ok(())
 }
 
 fn row_to_component(row: &CatalogRow) -> CatalogComponent {
     CatalogComponent {
+        row_schema_version: row
+            .schema_version
+            .clone()
+            .unwrap_or_else(|| LEGACY_CATALOG_ROW_FORMAT_VERSION.to_string()),
         id: row.id.clone(),
         brand: row.brand.clone(),
         model: row.model.clone(),
@@ -510,14 +618,18 @@ fn row_to_component(row: &CatalogRow) -> CatalogComponent {
             .map(|t| CatalogThrustTable {
                 id: t.id.clone(),
                 prop: t.prop.clone(),
-                voltage: t.voltage,
+                voltage: t
+                    .points
+                    .iter()
+                    .filter_map(|point| point.voltage)
+                    .fold(t.voltage.unwrap_or(f64::INFINITY), f64::min),
                 confidence: t.confidence,
                 source_url: t.source_url.clone(),
                 points: t
                     .points
                     .iter()
                     .map(|p| CatalogThrustPoint {
-                        voltage: t.voltage,
+                        voltage: p.voltage.or(t.voltage).expect("validated voltage"),
                         throttle: p.throttle,
                         thrust_n: p.thrust_g * 9.80665 / 1000.0,
                         current_a: p.current_a,

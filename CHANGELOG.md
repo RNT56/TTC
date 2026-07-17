@@ -18,6 +18,51 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Version catalog performance grids per voltage point
+**Session:** Codex agent · branch `codex/p9004-per-point-voltage-catalog` · **Phase:**
+P3/P9/QA · **TODO items:** P3-010 [x], P9-002 [~], P9-003 [~], QA-007 [x]
+**Done:** Implemented D66 file-catalog row 2.0.0 without reinterpreting historical
+rows or D65 artifacts. Missing/explicit v1 remains one table-level-voltage sweep;
+v2 requires voltage on every point. Rust admission and Python ETL exact-match
+supported majors and require finite bounded rectangular grids, unique coordinates,
+exact throttle endpoints, nondecreasing thrust/current, stable table IDs, prop,
+positive confidence, and HTTPS source. Generic thrust-table construction now refuses
+non-finite, out-of-bounds, duplicate, and nonmonotonic inputs. Migration 0027 adds
+table identity and row version/authority metadata, preserves old points as
+`legacy-unattributed` v1 with null missing authority, and prevents distinct tables
+from colliding at one component/voltage/throttle coordinate. The current EMAX row
+stays v1, review-gated, and D65-inapplicable.
+**Evidence:** All 44 required local non-database gates pass under Python 3.12.13,
+including Rust fmt/Clippy/workspace tests, native/WASM/schema/golden/compatibility,
+81-route/2-event/17-worker generated docs, 39 Studio, 74 Gateway, 247 worker tests,
+Brief-25 25/25, packaging, training/offline/MJX, and the unchanged D65 200/97/two-
+point/two-held batch. Focused `forge-sim` thrust-table tests pass 4/4; the ten-case Rust
+catalog-grid corpus consumer and existing seven proof-pair tests pass; Python 3.12
+ETL/boundary tests pass 20/20. The registered boundary family reports nine surfaces/
+99 stable cases and compatibility exact-matches twenty top-level surfaces. Migration
+0027 separately passes on a fresh PostgreSQL 16 cluster: two populated legacy rows
+including RPM survive exactly, the new primary key is exact, two complete v2 table
+identities coexist, and incomplete v2 authority refuses. Full clean/every-populated-
+predecessor `verify:db` is pending because the pre-existing Docker volume fails before
+migration with `global/pg_filenode.map` I/O error; protected CI remains required.
+**Changed:** Rust contract/simulation/file-catalog parsing; Python extraction
+validation; D66 adversarial corpus and cross-language consumers; compatibility
+matrix/checker; Postgres migration/seed/assertions; generated artifact docs and
+append-only golden review; decision, compatibility, migration, system, best-practice,
+risk, project-state, roadmap, execution, TODO, changelog, and canonical `AGENTS.md`
+owners.
+**Decisions:** D66; R36 remains active and now covers format-support/data-authority
+confusion and migration fabrication.
+**Next:** Protect the exact D66 tree and let clean CI supply the all-populated-
+predecessor database/browser proof, then reconcile and source/owner-review a voltage-covered,
+prop-matched grid. Before that grid drives training, introduce a new exact-grid/
+curve-readback bundle/physics authority major; only then execute tier 3.
+**Blockers:** No sourced reviewed applicable grid exists. D66 supplies representation,
+not measurements or review. Protection, downstream authority, tier-3 scorecards, the
+course-conditioned `>=3` front, retained overnight/provider billing, marketplace/
+live-catalog maturity, external acceptance, build, hardware, and field proof remain
+separate gates.
+
 ## 2026-07-17 — Reconcile protected D65 catalog-physics evidence
 **Session:** Codex agent · branch `codex/p9003-catalog-physics-evidence` · **Phase:**
 P9 · **TODO items:** P9-002 [~], P9-003 [~]

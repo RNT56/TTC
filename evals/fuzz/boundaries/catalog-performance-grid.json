@@ -1,0 +1,139 @@
+{
+  "version": "forge-boundary-fuzz.v1",
+  "surface": "catalog-performance-grid",
+  "description": "Versioned catalog bench-grid compatibility, per-point voltage authority, and fail-closed rectangular-grid cases.",
+  "fixture": {
+    "schemaVersion": "2.0.0",
+    "id": "cmp_motor_grid_fixture",
+    "brand": "Fixture",
+    "model": "Grid Motor",
+    "category": "motor",
+    "massG": 32.0,
+    "dims": {},
+    "elec": {
+      "vMin": 14.8,
+      "vMax": 16.8,
+      "maxCurrentA": 30.0,
+      "kv": 1900.0
+    },
+    "mech": {
+      "mountPattern": "motor-16x16-M3",
+      "propShaft": "prop-shaft-M5"
+    },
+    "license": {
+      "id": "lic_grid_fixture",
+      "class": "open",
+      "terms": "Fixture terms",
+      "sourceUrl": "https://example.com/grid",
+      "exportPolicy": "full-geometry-ok"
+    },
+    "source": "datasheet",
+    "confidence": 1.0,
+    "prices": [
+      {
+        "vendor": "Fixture Vendor",
+        "sku": "GRID-1",
+        "url": "https://example.com/grid",
+        "amount": 1.0,
+        "currency": "USD",
+        "fetchedAt": "2026-07-17",
+        "region": "US",
+        "purchasable": true
+      }
+    ],
+    "thrustTables": [
+      {
+        "id": "tt_grid_fixture",
+        "prop": "5x4.3",
+        "confidence": 1.0,
+        "sourceUrl": "https://example.com/grid",
+        "points": [
+          {"voltage": 14.8, "throttle": 0.0, "thrustG": 0.0, "currentA": 0.0},
+          {"voltage": 14.8, "throttle": 1.0, "thrustG": 1000.0, "currentA": 20.0},
+          {"voltage": 16.8, "throttle": 0.0, "thrustG": 0.0, "currentA": 0.0},
+          {"voltage": 16.8, "throttle": 1.0, "thrustG": 1200.0, "currentA": 24.0}
+        ]
+      }
+    ],
+    "citations": {
+      "massG": {"value": "32 g", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "elec.kv": {"value": "1900 Kv", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "elec.vMin": {"value": "14.8 V", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "elec.vMax": {"value": "16.8 V", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "elec.maxCurrentA": {"value": "30 A", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "mech.mountPattern": {"value": "16x16 M3", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "mech.propShaft": {"value": "M5", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "license": {"value": "open fixture", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"},
+      "prices": {"value": "USD 1", "sources": ["https://example.com/grid"], "accessed": "2026-07-17"}
+    },
+    "revisions": [{"version": "1.0.0", "yanked": false}]
+  },
+  "cases": [
+    {
+      "id": "catalog-grid-legacy-markerless-read",
+      "focus": "A markerless v1 single-voltage sweep retains its historical read meaning.",
+      "input": {"shape": "legacy-markerless"},
+      "expect": {"outcome": "accept", "schemaVersion": "1.0.0", "voltageRangeV": [25.2, 25.2]}
+    },
+    {
+      "id": "catalog-grid-legacy-explicit-read",
+      "focus": "An explicit v1 row reads identically to the historical markerless spelling.",
+      "input": {"shape": "legacy-explicit"},
+      "expect": {"outcome": "accept", "schemaVersion": "1.0.0", "voltageRangeV": [25.2, 25.2]}
+    },
+    {
+      "id": "catalog-grid-current-per-point-read",
+      "focus": "A complete v2 grid preserves both explicitly sourced point-voltage axes.",
+      "input": {"shape": "current"},
+      "expect": {"outcome": "accept", "schemaVersion": "2.0.0", "voltageRangeV": [14.8, 16.8]}
+    },
+    {
+      "id": "catalog-grid-unsupported-major",
+      "focus": "An unsupported row major cannot acquire catalog or propulsion authority.",
+      "input": {"shape": "current", "mutation": {"path": "/schemaVersion", "value": "3.0.0"}},
+      "expect": {"outcome": "reject", "contains": "unsupported catalog row schemaVersion"}
+    },
+    {
+      "id": "catalog-grid-v2-mixed-voltage-shape",
+      "focus": "V2 refuses a table scalar that could conflict with point-level voltage truth.",
+      "input": {"shape": "current", "mutation": {"path": "/thrustTables/0/voltage", "value": 16.8}},
+      "expect": {"outcome": "reject", "contains": "forbids table voltage"}
+    },
+    {
+      "id": "catalog-grid-v2-missing-point-voltage",
+      "focus": "Every current-format performance point must carry explicit voltage authority.",
+      "input": {"shape": "current", "mutation": {"path": "/thrustTables/0/points/3/voltage", "$delete": true}},
+      "expect": {"outcome": "reject", "contains": "requires voltage on every point"}
+    },
+    {
+      "id": "catalog-grid-v2-incomplete-rectangle",
+      "focus": "A missing voltage-throttle cell cannot be interpolated as a complete bench grid.",
+      "input": {"shape": "current", "mutation": {"path": "/thrustTables/0/points/3", "$delete": true}},
+      "expect": {"outcome": "reject", "contains": "not rectangular"}
+    },
+    {
+      "id": "catalog-grid-v2-duplicate-coordinate",
+      "focus": "Duplicate voltage-throttle coordinates cannot overwrite another measured cell.",
+      "input": {"shape": "current", "mutation": {"path": "/thrustTables/0/points/3/voltage", "value": 14.8}},
+      "expect": {"outcome": "reject", "contains": "duplicate voltage/throttle point"}
+    },
+    {
+      "id": "catalog-grid-v2-nonmonotonic-thrust",
+      "focus": "A nonmonotonic throttle row cannot drive hover bisection or training physics.",
+      "input": {"shape": "current", "mutation": {"path": "/thrustTables/0/points/2/thrustG", "value": 1300.0}},
+      "expect": {"outcome": "reject", "contains": "non-decreasing with throttle"}
+    },
+    {
+      "id": "catalog-grid-v2-incomplete-throttle-domain",
+      "focus": "A rectangular grid that omits zero throttle cannot gain edge-clamped authority.",
+      "input": {
+        "shape": "current",
+        "mutations": [
+          {"path": "/thrustTables/0/points/0/throttle", "value": 0.5},
+          {"path": "/thrustTables/0/points/2/throttle", "value": 0.5}
+        ]
+      },
+      "expect": {"outcome": "reject", "contains": "throttle grid must cover"}
+    }
+  ]
+}

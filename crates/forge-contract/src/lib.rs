@@ -742,6 +742,10 @@ pub struct RowSummary {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatalogComponent {
+    /// File/persisted row schema. Empty only for non-file test doubles and
+    /// pre-D66 callers that do not expose row-format authority.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub row_schema_version: String,
     pub id: String,
     pub brand: String,
     pub model: String,
@@ -839,6 +843,8 @@ pub struct CatalogPrice {
 pub struct CatalogThrustTable {
     pub id: String,
     pub prop: String,
+    /// Historical v1 declared voltage; for v2 grids this is the minimum
+    /// point voltage. Exact point voltage remains authoritative below.
     pub voltage: f64,
     pub confidence: f64,
     pub source_url: String,

@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, "..");
 const corpusDir = join(root, "evals", "fuzz", "boundaries");
 const expectedFiles = [
   "catalog-citations.json",
+  "catalog-performance-grid.json",
   "envspec.json",
   "export-policy.json",
   "hardware-payloads.json",

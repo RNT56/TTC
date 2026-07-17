@@ -147,6 +147,18 @@ promotion fail closed, object-backed D45 training is refused even with active
 consent, export 1.6 contains both rows without payload bytes, and account deletion
 removes admission, telemetry, materialization, and all five objects transactionally.
 
+Migration `0027` versions persisted catalog thrust-table identity for D66. It adds
+`table_id`, `row_schema_version`, `prop`, `confidence`, and `source_url`; rebuilds
+the primary key as `(component_id, table_id, voltage, throttle)`; and bounds numeric,
+version, and v2-authority values. Every populated predecessor includes one historical
+thrust point. Migration preserves it exactly under reserved table identity
+`legacy-unattributed`, row
+1.0.0, with null prop/confidence/source rather than inventing missing authority.
+New v2 points require non-empty prop, positive confidence, and HTTPS source. The
+application seed/assert path proves the current v1 sourced table, permits two
+distinct v2 table identities at one coordinate, and refuses incomplete v2 authority.
+This migration creates no applicable bench data and upgrades no component revision.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -243,6 +255,18 @@ assertions, then enable one explicit admission. Older applications may ignore th
 additive table but must not resume writers that reinterpret D53, delete linked rows,
 inline replay bytes, or train from object-backed references.
 
+For `0027`, stop catalog ingestion and seeding writers while the migration and D66
+Rust/Python/database readers are deployed together. Inventory row counts and duplicate
+`(component_id, voltage, throttle)` coordinates before deploy. The primary-key rebuild
+takes a table lock; use the reviewed lock budget and schedule a maintenance window if
+production volume makes that nontrivial. Capture the approved backup reference before
+applying it. Historical readers may continue to inspect the expanded table, but old
+writers must remain stopped because they cannot supply stable table identity or v2
+authority and may collide under the new key. After migration, prove every old point
+is byte/numerically preserved under `legacy-unattributed`, run the D66 seed/domain
+assertions, then resume only the new writer. Do not backfill prop, confidence, source,
+review, or applicability from guesses.
+
 ### Apply and verify
 
 1. Run `pnpm db:migrate` from the exact release checkout.
@@ -298,6 +322,13 @@ new writes that the older application cannot understand and drain/cancel incompa
 jobs. Migration-specific rules remain in the owning system docs; for example,
 `0020` requires commerce jobs to stop and drain while the expanded job-kind
 constraint stays in place.
+
+After `0027`, application rollback retains the expanded columns and primary key.
+Stop v2 catalog writes before running an older reader/writer; export any newly written
+v2 rows as evidence, and roll forward to the D66-capable application. Never collapse
+table identities, drop per-point voltages, or relabel v2 rows as v1 to make an older
+binary accept them. Database restore is reserved for the verified-backup damage path,
+not ordinary application rollback.
 For `0025`, stop new recorder staging, let issued PUT contracts expire, and reconcile
 or delete every staged private object under OPS-006. Retain the table and export 1.5
 metadata, deploy an application that ignores them safely, and roll forward; never

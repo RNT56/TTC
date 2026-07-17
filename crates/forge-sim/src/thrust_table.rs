@@ -1,7 +1,9 @@
 //! Thrust-table interpolation (XC-06): when a motor/prop combo has published
 //! bench data, the table is truth and the blade-element-lite estimate retires.
-//! Tables are rectangular grids over (voltage, throttle) → (thrust, current),
-//! bilinearly interpolated, edge-clamped.
+//! Tables are finite rectangular grids over (voltage, throttle) → (thrust,
+//! current), bilinearly interpolated. Callers that grant physical authority must
+//! separately prove that the requested voltage/throttle domain is covered; the
+//! generic lookup remains edge-clamped for deterministic interpolation.
 
 use serde::{Deserialize, Serialize};
 
@@ -27,21 +29,37 @@ pub struct ThrustTable {
 #[derive(Debug, PartialEq)]
 pub enum TableError {
     Empty,
+    NonFinite,
+    OutOfBounds,
     NotAGrid { expected: usize, got: usize },
+    DuplicatePoint,
     Unsorted,
+    NonMonotonic,
 }
 
 impl std::fmt::Display for TableError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TableError::Empty => write!(f, "thrust table is empty"),
+            TableError::NonFinite => write!(f, "thrust table values must be finite"),
+            TableError::OutOfBounds => write!(
+                f,
+                "thrust table requires voltage in (0,1000], throttle in [0,1], and non-negative thrust/current"
+            ),
             TableError::NotAGrid { expected, got } => {
                 write!(
                     f,
                     "thrust table is not rectangular: expected {expected} points, got {got}"
                 )
             }
+            TableError::DuplicatePoint => {
+                write!(f, "thrust table contains a duplicate voltage/throttle point")
+            }
             TableError::Unsorted => write!(f, "thrust table grid axes must be strictly increasing"),
+            TableError::NonMonotonic => write!(
+                f,
+                "thrust table thrust/current must be non-decreasing with throttle at each voltage"
+            ),
         }
     }
 }
@@ -54,12 +72,37 @@ impl ThrustTable {
         if points.is_empty() {
             return Err(TableError::Empty);
         }
+        if points.iter().any(|point| {
+            !point.voltage.is_finite()
+                || !point.throttle.is_finite()
+                || !point.thrust_n.is_finite()
+                || !point.current_a.is_finite()
+        }) {
+            return Err(TableError::NonFinite);
+        }
+        if points.iter().any(|point| {
+            point.voltage <= 0.0
+                || point.voltage > 1_000.0
+                || !(0.0..=1.0).contains(&point.throttle)
+                || point.thrust_n < 0.0
+                || point.current_a < 0.0
+        }) {
+            return Err(TableError::OutOfBounds);
+        }
+        for (index, point) in points.iter().enumerate() {
+            if points[..index]
+                .iter()
+                .any(|other| other.voltage == point.voltage && other.throttle == point.throttle)
+            {
+                return Err(TableError::DuplicatePoint);
+            }
+        }
         let mut voltages: Vec<f64> = points.iter().map(|p| p.voltage).collect();
         let mut throttles: Vec<f64> = points.iter().map(|p| p.throttle).collect();
-        voltages.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        voltages.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
-        throttles.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        throttles.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+        voltages.sort_by(f64::total_cmp);
+        voltages.dedup();
+        throttles.sort_by(f64::total_cmp);
+        throttles.dedup();
 
         let expected = voltages.len() * throttles.len();
         if expected != points.len() {
@@ -70,7 +113,7 @@ impl ThrustTable {
         }
         let find = |axis: &[f64], v: f64| -> Result<usize, TableError> {
             axis.iter()
-                .position(|a| (a - v).abs() < 1e-9)
+                .position(|a| a.total_cmp(&v).is_eq())
                 .ok_or(TableError::Unsorted)
         };
         let mut thrust = vec![0.0; expected];
@@ -80,6 +123,17 @@ impl ThrustTable {
             let ti = find(&throttles, p.throttle)?;
             thrust[vi * throttles.len() + ti] = p.thrust_n;
             current[vi * throttles.len() + ti] = p.current_a;
+        }
+        for vi in 0..voltages.len() {
+            for ti in 1..throttles.len() {
+                let previous = vi * throttles.len() + ti - 1;
+                let current_index = vi * throttles.len() + ti;
+                if thrust[current_index] < thrust[previous]
+                    || current[current_index] < current[previous]
+                {
+                    return Err(TableError::NonMonotonic);
+                }
+            }
         }
         Ok(ThrustTable {
             voltages,
@@ -182,5 +236,53 @@ mod tests {
             ThrustTable::from_points(&pts),
             Err(TableError::NotAGrid { .. })
         ));
+    }
+
+    #[test]
+    fn duplicate_non_finite_and_non_monotonic_points_are_rejected() {
+        let duplicate = vec![
+            ThrustPoint {
+                voltage: 16.0,
+                throttle: 0.0,
+                thrust_n: 0.0,
+                current_a: 0.0,
+            },
+            ThrustPoint {
+                voltage: 16.0,
+                throttle: 0.0,
+                thrust_n: 1.0,
+                current_a: 1.0,
+            },
+        ];
+        assert_eq!(
+            ThrustTable::from_points(&duplicate),
+            Err(TableError::DuplicatePoint)
+        );
+
+        let mut invalid = duplicate.clone();
+        invalid[1].throttle = f64::NAN;
+        assert_eq!(
+            ThrustTable::from_points(&invalid),
+            Err(TableError::NonFinite)
+        );
+
+        let non_monotonic = vec![
+            ThrustPoint {
+                voltage: 16.0,
+                throttle: 0.0,
+                thrust_n: 2.0,
+                current_a: 2.0,
+            },
+            ThrustPoint {
+                voltage: 16.0,
+                throttle: 1.0,
+                thrust_n: 1.0,
+                current_a: 1.0,
+            },
+        ];
+        assert_eq!(
+            ThrustTable::from_points(&non_monotonic),
+            Err(TableError::NonMonotonic)
+        );
     }
 }
