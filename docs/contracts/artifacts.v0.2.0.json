@@ -177,7 +177,9 @@
         "codesignNativeEvaluation": "1.0.0",
         "codesignEngineSmokeEvidence": "1.0.0",
         "codesignSearchPlan": "1.0.0",
-        "codesignSearchPlanEvidence": "1.0.0"
+        "codesignSearchPlanEvidence": "1.0.0",
+        "codesignEngineBatch": "1.0.0",
+        "codesignEngineBatchEvidence": "1.0.0"
       },
       "bridgeConfigFirmwareVersion": "2025.12",
       "ghostOverlayFrame": "forge-y-up-rh-m",
@@ -271,8 +273,8 @@
         "artifactKinds": [
           "codesign"
         ],
-        "maturity": "fixture + controlled-local-engine-smoke",
-        "notes": "D59 adds internal forge-codesign-evaluation/1.0.0 and forge-codesign-native-evaluation/1.0.0: exact Gateway snapshot plus recomputed replace-only patch/hash lineage, sovereign validator, real Rapier 0.33.0, and two estimator-only MuJoCo 3.9.0 rollouts. D60 separately adds forge-codesign-search-plan/1.0.0 and p9-search-plan-evidence/1.0.0: real pinned cmaes 0.13.0 and Optuna TPE 4.9.0 emit 100 proposals each from the exact snapshot, but the bounded-diversity acquisition has no physical or engine feedback. The plan does not enter the queue, evaluate constraints, admit candidates, compute Pareto, prove an overnight engine run, train finalists, search catalog choices, call a provider, or authorize build, hardware, or field claims."
+        "maturity": "fixture + controlled-local-engine-smoke + local-engine-200-batch",
+        "notes": "D59 adds internal forge-codesign-evaluation/1.0.0 and forge-codesign-native-evaluation/1.0.0: exact Gateway snapshot plus recomputed replace-only patch/hash lineage, sovereign validator, real Rapier 0.33.0, and two estimator-only MuJoCo 3.9.0 rollouts. D60 separately adds forge-codesign-search-plan/1.0.0 and p9-search-plan-evidence/1.0.0: real pinned cmaes 0.13.0 and Optuna TPE 4.9.0 emit 100 proposals each from the exact snapshot, but the bounded-diversity acquisition has no physical or engine feedback. D61's separately versioned forge-codesign-engine-batch/1.0.0 consumes those exact 200 hashes through the sovereign ladder with per-candidate durable checkpoints, pause/cancel/resume history, measured local runtime, independently recomputed admission/Pareto, and three selected tier-3-held finalists. It remains outside the queue and does not prove an overnight schedule, provider billing, catalog-choice search, trained finalists, build, hardware, or field authority."
       },
       {
         "queueKind": "bridge.config-diff",

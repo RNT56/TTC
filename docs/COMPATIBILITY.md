@@ -460,9 +460,28 @@ loss is proposal diversity only: it is not a physical objective, constraint resu
 validator verdict, engine rollout, admission, Pareto point, or overnight completion.
 Changing the snapshot/seed/manifold/patch/hash preimages, proposal allocation,
 algorithm/dependency/acquisition semantics, replay rule, or a held nonclaim requires
-a new internal major. A future engine consumer must define a separate versioned
-artifact that consumes the exact proposal hashes and attaches sovereign evaluation;
-it may not reinterpret plan v1. External publication still requires compatibility-
+a new internal major. D61 defines the separate versioned engine consumer that
+accepts the exact proposal hashes and attaches sovereign evaluation; it may not
+reinterpret plan v1. External publication still requires compatibility-
+surface promotion, supported/unsupported fixtures, migration/deprecation guidance,
+and release notes.
+
+D61 adds two internal co-design authorities without adding a queue kind or public
+worker surface: `forge-codesign-engine-batch` 1.0.0 and
+`p9-engine-batch-evidence` 1.0.0. Batch v1 accepts only the deterministically
+replayed D60 plan and exact admitted source snapshot. Its append-only candidate
+prefix is ordinal-contiguous and every row rebinds the proposal, patch, candidate,
+native-evaluation, training-bundle, and engine hashes. The same format is the
+durable checkpoint: it records per-attempt cursor/outcome/runtime, persists after
+each candidate, fences an unfinished attempt as interrupted before resuming, and
+proves cancellation dispatched zero new candidates. Admission, Pareto, and three
+tier-3-held finalist selections appear only after all 200 hashes have sovereign
+ladder outcomes, including Rapier/MuJoCo evidence for eligible rows. Measured local
+runtime is not provider billing or an overnight schedule. Changing checkpoint/hash
+preimages, plan-consumption or
+contiguous-prefix rules, attempt/cancellation semantics, engine/task/rollout
+meaning, admission/Pareto/finalist selection, cost fields, or a held nonclaim
+requires a new internal major. External publication still requires compatibility-
 surface promotion, supported/unsupported fixtures, migration/deprecation guidance,
 and release notes.
 

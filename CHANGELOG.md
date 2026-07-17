@@ -18,6 +18,43 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Execute the D61 exact-hash co-design engine batch
+**Session:** Codex agent · branch `codex/p9003-d61-engine-batch` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Implemented D61 at local `local-engine-200-batch` candidate maturity. A
+separate versioned batch deterministically replays D60, consumes exactly 200
+proposal hashes as one contiguous prefix, reapplies and rehashes every patch and
+candidate, and binds each row to its D59-equivalent ladder outcome: native evidence
+for all rows and Rapier/MuJoCo evidence where eligible. The batch atomically
+checkpoints after every candidate, fences unfinished
+attempts before resume, records zero-dispatch cancellation, and withholds Pareto and
+finalists until complete. Focused D59/D60/D61 tests pass 14/14; compatibility passes
+19 surfaces and generated docs retain 81 routes, two events, and 17 worker families.
+The first development smoke executes 7 + cancel + 193, evaluates 200 native and 125
+eligible Rapier/MuJoCo rows, admits 89, derives four Pareto points, selects three
+tier-3-held finalists, and measures local engine runtime. It correctly
+records `worktreeClean=false`, so it is diagnostic rather than acceptance evidence.
+All 43 required local gates pass under Python 3.12.7 with 242 worker, 74 Gateway,
+and 39 Studio tests plus Rust/WASM/schema/golden/packaging/training/offline/MJX/D59/
+D60/D61 and patch-hygiene proof. Clean-source and protected evidence remain pending.
+**Changed:** New batch/checkpoint runtime, tests, exact-source smoke, root/CI gate,
+internal compatibility registrations, generated artifact reference, append-only
+golden review, D61 decision, entry guide, best practices, co-design system contract,
+and all living P9 execution/status documents. No public API, queue kind, database,
+ModelSpec, validator report, CLI/WASM version, Studio result, provider, catalog,
+training-policy, build, hardware, or field format changed. The adjacent D59 producer
+now reports tier-1 engine authority only when Rapier evidence actually exists.
+**Decisions:** D61 freezes exact-plan consumption, contiguous per-candidate
+checkpoint/recovery, complete-only Pareto/finalist selection, measured-local-cost,
+and downstream nonclaims. Selected finalists are not trained finalists; local
+completion is not overnight/provider billing.
+**Next:** Commit the complete reviewed tree, repeat the D61 smoke from that clean
+exact source, then protect the implementation and reconcile its
+exact PR/post-merge evidence.
+**Blockers:** P9 closure still requires catalog choices, actual tier-3 trained-
+finalist scorecards, retained overnight/provider scheduling and billing, and external
+acceptance. The current D61 implementation itself has no known local blocker.
+
 ## 2026-07-17 — Reconcile protected D60 proposal-plan evidence
 **Session:** Codex agent · branch `codex/p9002-d60-protected-evidence` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]

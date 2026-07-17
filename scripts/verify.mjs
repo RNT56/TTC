@@ -176,6 +176,11 @@ try {
     "--out",
     join(temp, "p9-search-plan.json"),
   ]);
+  run("Checkpointed exact-hash 200-candidate co-design engine batch", "node", [
+    "scripts/codesign-engine-batch-smoke.mjs",
+    "--out",
+    join(temp, "p9-engine-batch.json"),
+  ]);
   run("Whitespace and patch hygiene", "node", ["scripts/check-patch-hygiene.mjs"]);
 
   console.log(`\nverify: ${step} required local gates passed`);
