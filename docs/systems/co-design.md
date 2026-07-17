@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59-D63 engine/search/recovery authority plus D64 catalog-backed v3 implementation; retained overnight/provider scheduling and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D64 engine/search/recovery/catalog authority; catalog-native tier-2 physics, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
@@ -85,7 +85,8 @@ Linux-x86-64 and Apple-arm64 plans from that exact source bind authorities
 checks all 200 rows and finds 120 matches plus 80 CMA-ES patch/candidate differences
 at ordinals 20–99. This closes P9-006 for exact-authority recovery integrity only.
 
-D64 keeps D60-D63 v1/v2 immutable and introduces a coordinated v3 plan/batch lane.
+Protected 2026-07-17 (D64): D64 keeps D60-D63 v1/v2 immutable and introduces a
+coordinated v3 plan/batch lane.
 The admitted `vx2-proof` battery slot now carries two lockfile-pinned alternatives:
 CNHL 1500 mAh and 1300 mAh revision 1.0.0. A self-hashed catalog-choice authority
 binds the complete sorted file-catalog byte authority and, for each choice, its slot,
@@ -105,6 +106,13 @@ catalog bytes before work. The rows remain review-required and explicitly not
 marketplace-exposable. Tier 2 uses training-bundle 2.0.0 after catalog-backed
 admission, but that bundle deliberately consumes the exact inline powertrain mirror;
 it is not evidence of catalog-native MuJoCo mass/inertia/thrust-table dynamics.
+PR #115 exact head `b13a817`, reviewed/protected tree `9934442`, protected
+`609a70d`, exact PR/post-merge CI/security, and all 44 gates pass. Downloaded clean
+artifact `8399829664` binds catalog/runtime authorities `f6a7171…9262`/
+`31a205c…725c`, evaluates 200/200 native/Rapier/MuJoCo rows, admits 197, and returns
+the expected two-choice/two-point front with two held finalists after 7 + zero-
+dispatch cancel + 193 resume. This is protected catalog/recovery proof, not a
+`>=3` front, overnight/provider run, or tier-3 scorecard.
 
 ## 3. Algorithms (P9-002)
 
@@ -305,9 +313,9 @@ D64 adds cross-language file-catalog authority hashing, exact two-revision choic
 coverage, equipped-only HUD/proof semantics, capacity/discharge mirror checks,
 license/export/review binding, catalog-aware native v2, plan/checkpoint/candidate
 tamper refusal, and real one-candidate native/Rapier/MuJoCo integration. The v3
-search smoke independently recomputes catalog row and aggregate hashes. The full
-200-row batch smoke remains the retained CI proof path; it still cannot be called an
-overnight/provider or trained-finalist result.
+search smoke independently recomputes catalog row and aggregate hashes. PR #115 and
+protected artifact `8399829664` retain the clean full 200-row CI proof; it still
+cannot be called an overnight/provider or trained-finalist result.
 
 ## 8. Phase mapping & backlog
 
