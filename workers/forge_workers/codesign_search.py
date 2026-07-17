@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import importlib.metadata
 import json
 import math
 import os
+import platform
 import sys
 from pathlib import Path
 from typing import Any, TextIO
@@ -25,13 +27,16 @@ import optuna
 from forge_workers.net_security import assert_bounded_json
 
 SEARCH_PLAN_SCHEMA = "forge-codesign-search-plan"
-SEARCH_PLAN_VERSION = "1.0.0"
-SEARCH_PLAN_EVIDENCE_VERSION = "1.0.0"
-SEARCH_PLAN_RUNTIME = "forge-codesign-search-plan/1.0.0"
-SEARCH_PLAN_MATURITY = "local-algorithm-proposal-plan"
+SEARCH_PLAN_VERSION = "2.0.0"
+SEARCH_PLAN_EVIDENCE_VERSION = "2.0.0"
+SEARCH_PLAN_RUNTIME = "forge-codesign-search-plan/2.0.0"
+SEARCH_PLAN_MATURITY = "platform-bound-algorithm-proposal-plan"
+PROPOSAL_RUNTIME_AUTHORITY_SCHEMA = "forge-codesign-proposal-runtime-authority"
+PROPOSAL_RUNTIME_AUTHORITY_VERSION = "1.0.0"
 SNAPSHOT_SCHEMA = "forge-admitted-model-snapshot/1.0.0"
 OPTUNA_VERSION = "4.9.0"
 CMAES_VERSION = "0.13.0"
+NUMPY_VERSION = "2.5.1"
 TOTAL_PROPOSALS = 200
 CMA_PROPOSALS = 100
 TPE_PROPOSALS = 100
@@ -94,12 +99,226 @@ def _finite(value: Any, label: str) -> float:
     return float(value)
 
 
+def _sha256_string(value: Any, label: str) -> str:
+    if not isinstance(value, str) or len(value) != 64 or any(
+        character not in "0123456789abcdef" for character in value
+    ):
+        raise ValueError(f"{label} must be a lower-case SHA-256 digest")
+    return value
+
+
+def _nonempty_string(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{label} must be a non-empty string")
+    return value
+
+
 def _canonical_number(value: float) -> int | float:
     """Match JSON's language-neutral integer spelling for whole finite values."""
     return int(value) if value.is_integer() else value
 
 
-def _runtime_authority() -> tuple[str | None, str]:
+def _distribution_record_sha256(name: str) -> str:
+    try:
+        distribution = importlib.metadata.distribution(name)
+    except importlib.metadata.PackageNotFoundError as error:
+        raise RuntimeError(f"co-design search dependency {name} is absent") from error
+    records = [
+        entry
+        for entry in distribution.files or []
+        if str(entry).endswith(".dist-info/RECORD")
+    ]
+    if len(records) != 1:
+        raise RuntimeError(f"co-design search dependency {name} lacks one exact RECORD")
+    record = distribution.locate_file(records[0])
+    if not record.is_file():
+        raise RuntimeError(f"co-design search dependency {name} RECORD is absent")
+    return _sha(record.read_bytes())
+
+
+def _numpy_runtime() -> dict[str, Any]:
+    try:
+        from numpy._core import _multiarray_umath
+
+        raw_features = _multiarray_umath.__cpu_features__
+    except (AttributeError, ImportError) as error:
+        raise RuntimeError("co-design search cannot resolve NumPy CPU authority") from error
+    if not isinstance(raw_features, dict) or not raw_features:
+        raise RuntimeError("co-design search NumPy CPU authority is empty")
+    cpu_features = {
+        str(name): bool(enabled)
+        for name, enabled in sorted(raw_features.items())
+    }
+    try:
+        configuration = np.show_config(mode="dicts")
+    except TypeError as error:
+        raise RuntimeError("co-design search NumPy configuration authority is unavailable") from error
+    if not isinstance(configuration, dict):
+        raise RuntimeError("co-design search NumPy configuration authority is invalid")
+    dependencies = configuration.get("Build Dependencies")
+    if not isinstance(dependencies, dict):
+        raise RuntimeError("co-design search NumPy build dependencies are unavailable")
+    blas = dependencies.get("blas")
+    lapack = dependencies.get("lapack")
+    if not isinstance(blas, dict) or not isinstance(lapack, dict):
+        raise RuntimeError("co-design search NumPy BLAS/LAPACK authority is unavailable")
+    return {
+        "version": np.__version__,
+        "distributionRecordSha256": _distribution_record_sha256("numpy"),
+        "configurationSha256": _sha(_stable_json(configuration)),
+        "cpuFeatures": cpu_features,
+        "blas": copy.deepcopy(blas),
+        "lapack": copy.deepcopy(lapack),
+    }
+
+
+def _proposal_runtime_authority() -> dict[str, Any]:
+    libc_name, libc_version = platform.libc_ver()
+    value = {
+        "schemaVersion": (
+            f"{PROPOSAL_RUNTIME_AUTHORITY_SCHEMA}/{PROPOSAL_RUNTIME_AUTHORITY_VERSION}"
+        ),
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "version": platform.version(),
+            "machine": platform.machine(),
+            "byteOrder": sys.byteorder,
+            "libc": {"name": libc_name, "version": libc_version},
+        },
+        "python": {
+            "implementation": platform.python_implementation(),
+            "version": platform.python_version(),
+            "cacheTag": sys.implementation.cache_tag,
+        },
+        "numpy": _numpy_runtime(),
+        "algorithms": {
+            "cmaes": {
+                "version": cmaes.__version__,
+                "distributionRecordSha256": _distribution_record_sha256("cmaes"),
+            },
+            "optuna": {
+                "version": optuna.__version__,
+                "distributionRecordSha256": _distribution_record_sha256("optuna"),
+            },
+        },
+        "authoritySha256": "",
+    }
+    value["authoritySha256"] = _sha(
+        _stable_json({name: item for name, item in value.items() if name != "authoritySha256"})
+    )
+    return value
+
+
+def _validate_proposal_runtime_authority(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("co-design proposal runtime authority must be an object")
+    _exact(
+        value,
+        {"schemaVersion", "platform", "python", "numpy", "algorithms", "authoritySha256"},
+        "co-design proposal runtime authority",
+    )
+    if value.get("schemaVersion") != (
+        f"{PROPOSAL_RUNTIME_AUTHORITY_SCHEMA}/{PROPOSAL_RUNTIME_AUTHORITY_VERSION}"
+    ):
+        raise ValueError("co-design proposal runtime authority version is unsupported")
+    platform_value = value.get("platform")
+    python_value = value.get("python")
+    numpy_value = value.get("numpy")
+    algorithms = value.get("algorithms")
+    if not all(isinstance(item, dict) for item in (platform_value, python_value, numpy_value, algorithms)):
+        raise ValueError("co-design proposal runtime authority fields are invalid")
+    _exact(
+        platform_value,
+        {"system", "release", "version", "machine", "byteOrder", "libc"},
+        "co-design proposal platform authority",
+    )
+    _exact(
+        python_value,
+        {"implementation", "version", "cacheTag"},
+        "co-design proposal Python authority",
+    )
+    _exact(
+        numpy_value,
+        {
+            "version",
+            "distributionRecordSha256",
+            "configurationSha256",
+            "cpuFeatures",
+            "blas",
+            "lapack",
+        },
+        "co-design proposal NumPy authority",
+    )
+    _exact(algorithms, {"cmaes", "optuna"}, "co-design proposal algorithm authority")
+    libc = platform_value.get("libc")
+    if not isinstance(libc, dict):
+        raise ValueError("co-design proposal libc authority is invalid")
+    _exact(libc, {"name", "version"}, "co-design proposal libc authority")
+    for name in ("system", "release", "version", "machine"):
+        _nonempty_string(platform_value.get(name), f"co-design proposal platform {name}")
+    if platform_value.get("byteOrder") not in {"little", "big"}:
+        raise ValueError("co-design proposal platform byte order is invalid")
+    for name in ("name", "version"):
+        if not isinstance(libc.get(name), str):
+            raise ValueError(f"co-design proposal libc {name} must be a string")
+    for name in ("implementation", "version", "cacheTag"):
+        _nonempty_string(python_value.get(name), f"co-design proposal Python {name}")
+    if python_value.get("implementation") != "CPython":
+        raise ValueError("co-design proposal Python implementation is unsupported")
+    if numpy_value.get("version") != NUMPY_VERSION:
+        raise ValueError("co-design proposal NumPy version drifted from the reviewed pin")
+    _sha256_string(
+        numpy_value.get("distributionRecordSha256"),
+        "co-design proposal NumPy distribution RECORD",
+    )
+    _sha256_string(
+        numpy_value.get("configurationSha256"),
+        "co-design proposal NumPy configuration",
+    )
+    cpu_features = numpy_value.get("cpuFeatures")
+    if not isinstance(cpu_features, dict) or not cpu_features or any(
+        not isinstance(name, str) or not name or not isinstance(enabled, bool)
+        for name, enabled in cpu_features.items()
+    ):
+        raise ValueError("co-design proposal NumPy CPU authority is invalid")
+    for name in ("blas", "lapack"):
+        if not isinstance(numpy_value.get(name), dict):
+            raise ValueError(f"co-design proposal NumPy {name} authority is invalid")
+    for name in ("cmaes", "optuna"):
+        algorithm = algorithms.get(name)
+        if not isinstance(algorithm, dict):
+            raise ValueError(f"co-design proposal {name} authority is invalid")
+        _exact(
+            algorithm,
+            {"version", "distributionRecordSha256"},
+            f"co-design proposal {name} authority",
+        )
+        expected_version = CMAES_VERSION if name == "cmaes" else OPTUNA_VERSION
+        if algorithm.get("version") != expected_version:
+            raise ValueError(f"co-design proposal {name} version drifted from the reviewed pin")
+        _sha256_string(
+            algorithm.get("distributionRecordSha256"),
+            f"co-design proposal {name} distribution RECORD",
+        )
+    expected_sha = _sha(
+        _stable_json({name: item for name, item in value.items() if name != "authoritySha256"})
+    )
+    if _sha256_string(
+        value.get("authoritySha256"), "co-design proposal runtime authority"
+    ) != expected_sha:
+        raise ValueError("co-design proposal runtime authority hash drifted")
+    assert_bounded_json(
+        value,
+        label="co-design proposal runtime authority",
+        max_bytes=64 * 1024,
+        max_depth=12,
+        max_nodes=2_000,
+    )
+    return value
+
+
+def _runtime_authority() -> tuple[str | None, str, dict[str, Any]]:
     if optuna.__version__ != OPTUNA_VERSION or cmaes.__version__ != CMAES_VERSION:
         raise RuntimeError("co-design search dependency versions drifted from the reviewed pins")
     revision = os.environ.get("FORGE_SOURCE_REVISION", "").strip() or None
@@ -110,7 +329,9 @@ def _runtime_authority() -> tuple[str | None, str]:
     manifest = Path(__file__).resolve().parents[1] / "pyproject.toml"
     if not manifest.is_file():
         raise RuntimeError("worker dependency manifest is absent")
-    return revision, _sha(manifest.read_bytes())
+    authority = _proposal_runtime_authority()
+    _validate_proposal_runtime_authority(authority)
+    return revision, _sha(manifest.read_bytes()), authority
 
 
 def _snapshot(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -144,7 +365,7 @@ def _snapshot(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         raise ValueError("co-design search snapshot hash authority drifted")
     raw_budget = payload.get("candidateBudget")
     if isinstance(raw_budget, bool) or not isinstance(raw_budget, int) or raw_budget != TOTAL_PROPOSALS:
-        raise ValueError("co-design search v1 requires exactly 200 proposals")
+        raise ValueError("co-design search v2 requires exactly 200 proposals")
     try:
         contract = json.loads(contract_json)
     except (json.JSONDecodeError, RecursionError) as error:
@@ -197,7 +418,7 @@ def _base_values(contract: dict[str, Any]) -> tuple[list[float], list[float], fl
     meta = contract.get("meta")
     sim = contract.get("sim")
     if not isinstance(meta, dict) or meta.get("archetype") != "multirotor" or not isinstance(sim, dict):
-        raise ValueError("co-design search v1 supports admitted inline multirotors only")
+        raise ValueError("co-design search v2 supports admitted inline multirotors only")
     motors = sim.get("motors")
     props = sim.get("props")
     battery = sim.get("battery")
@@ -416,7 +637,7 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
     base = _base_values(contract)
     seed = _seed(payload, snapshot["contractHash"])
     constraints = _constraints(payload)
-    source_revision, dependency_manifest_sha256 = _runtime_authority()
+    source_revision, dependency_manifest_sha256, runtime_authority = _runtime_authority()
     proposals = _cma_proposals(contract, base, seed) + _tpe_proposals(contract, base, seed)
     if len(proposals) != TOTAL_PROPOSALS:
         raise RuntimeError("co-design search did not produce exactly 200 proposals")
@@ -434,6 +655,9 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
             "sourceRevision": source_revision,
             "sourceRevisionRecorded": source_revision is not None,
             "dependencyManifestSha256": dependency_manifest_sha256,
+            "proposalRuntimeAuthority": runtime_authority,
+            "resumePolicy": "exact-proposal-runtime-authority",
+            "heterogeneousResumeAllowed": False,
             "runtime": SEARCH_PLAN_RUNTIME,
             "maturity": SEARCH_PLAN_MATURITY,
         },
@@ -472,7 +696,10 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
         "planSha256": "",
     }
     value["planSha256"] = _sha(_stable_json(_plan_hash_payload(value)))
-    value["cacheKey"] = f"codesign.search:{snapshot['contractHash'][:16]}:{value['planSha256'][:16]}"
+    value["cacheKey"] = (
+        f"codesign.search:v2:{snapshot['contractHash'][:16]}:"
+        f"{runtime_authority['authoritySha256'][:16]}:{value['planSha256'][:16]}"
+    )
     return value
 
 
@@ -502,6 +729,19 @@ def validate_search_plan(value: Any, payload: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("co-design search plan identity drifted")
     if value.get("nonclaims") != NONCLAIMS:
         raise ValueError("co-design search plan nonclaims drifted")
+    source = value.get("source")
+    if not isinstance(source, dict):
+        raise ValueError("co-design search plan source is invalid")
+    if (
+        source.get("resumePolicy") != "exact-proposal-runtime-authority"
+        or source.get("heterogeneousResumeAllowed") is not False
+    ):
+        raise ValueError("co-design search plan proposal runtime policy drifted")
+    authority = _validate_proposal_runtime_authority(source.get("proposalRuntimeAuthority"))
+    current_authority = _proposal_runtime_authority()
+    _validate_proposal_runtime_authority(current_authority)
+    if _stable_json(authority) != _stable_json(current_authority):
+        raise ValueError("co-design search plan proposal runtime authority does not match this worker")
     if value.get("planSha256") != _sha(_stable_json(_plan_hash_payload(value))):
         raise ValueError("co-design search plan hash drifted")
     replayed = build_search_plan(payload)

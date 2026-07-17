@@ -11,10 +11,14 @@ pytest.importorskip("cmaes")
 pytest.importorskip("numpy")
 pytest.importorskip("optuna")
 
+import forge_workers.codesign_search as codesign_search
 from forge_workers.codesign_search import (
     CMAES_VERSION,
     NONCLAIMS,
     OPTUNA_VERSION,
+    PROPOSAL_RUNTIME_AUTHORITY_SCHEMA,
+    PROPOSAL_RUNTIME_AUTHORITY_VERSION,
+    _proposal_runtime_authority,
     apply_search_patch,
     build_search_plan,
     validate_search_plan,
@@ -61,11 +65,22 @@ def _stable_json(value: object) -> str:
 def test_real_pinned_algorithms_produce_exact_mixed_200_proposal_plan(search_plan):
     _payload_value, result = search_plan
 
-    assert result["schemaVersion"] == "forge-codesign-search-plan/1.0.0"
-    assert result["source"]["maturity"] == "local-algorithm-proposal-plan"
+    assert result["schemaVersion"] == "forge-codesign-search-plan/2.0.0"
+    assert result["source"]["maturity"] == "platform-bound-algorithm-proposal-plan"
     assert result["source"]["dependencyManifestSha256"] == hashlib.sha256(
         (ROOT / "workers" / "pyproject.toml").read_bytes()
     ).hexdigest()
+    authority = result["source"]["proposalRuntimeAuthority"]
+    assert authority == _proposal_runtime_authority()
+    assert result["source"]["resumePolicy"] == "exact-proposal-runtime-authority"
+    assert result["source"]["heterogeneousResumeAllowed"] is False
+    assert authority["schemaVersion"] == (
+        f"{PROPOSAL_RUNTIME_AUTHORITY_SCHEMA}/{PROPOSAL_RUNTIME_AUTHORITY_VERSION}"
+    )
+    assert result["cacheKey"] == (
+        f"codesign.search:v2:{result['source']['baseContractHash'][:16]}:"
+        f"{authority['authoritySha256'][:16]}:{result['planSha256'][:16]}"
+    )
     assert result["algorithms"]["candidateBudget"] == 200
     assert result["algorithms"]["cmaEs"] == {
         "library": "cmaes",
@@ -134,6 +149,37 @@ def test_plan_exactly_replays_instead_of_trusting_external_bytes(search_plan):
     tampered_nonclaim["nonclaims"]["mujocoEvaluated"] = True
     with pytest.raises(ValueError, match="nonclaims drifted"):
         validate_search_plan(tampered_nonclaim, payload)
+
+    tampered_authority = copy.deepcopy(result)
+    tampered_authority["source"]["proposalRuntimeAuthority"]["authoritySha256"] = "0" * 64
+    with pytest.raises(ValueError, match="runtime authority hash drifted"):
+        validate_search_plan(tampered_authority, payload)
+
+    malformed_authority = copy.deepcopy(result)
+    malformed_authority["source"]["proposalRuntimeAuthority"]["numpy"][
+        "configurationSha256"
+    ] = "not-a-digest"
+    with pytest.raises(ValueError, match="NumPy configuration must be"):
+        validate_search_plan(malformed_authority, payload)
+
+
+def test_plan_binds_exact_numeric_runtime_and_refuses_foreign_resume(monkeypatch):
+    payload = _payload()
+    current = _proposal_runtime_authority()
+    foreign = copy.deepcopy(current)
+    foreign["platform"]["machine"] = f"{current['platform']['machine']}-foreign"
+    foreign["authoritySha256"] = hashlib.sha256(
+        _stable_json(
+            {name: value for name, value in foreign.items() if name != "authoritySha256"}
+        ).encode("utf-8")
+    ).hexdigest()
+    with monkeypatch.context() as context:
+        context.setattr(codesign_search, "_proposal_runtime_authority", lambda: foreign)
+        foreign_plan = build_search_plan(payload)
+
+    assert foreign_plan["source"]["proposalRuntimeAuthority"] == foreign
+    with pytest.raises(ValueError, match="runtime authority does not match this worker"):
+        validate_search_plan(foreign_plan, payload)
 
 
 def test_search_plan_refuses_budget_manifold_and_seed_authority_drift():

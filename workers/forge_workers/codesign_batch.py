@@ -1,11 +1,12 @@
-"""Checkpointed D61 consumer for the exact D60 co-design proposal plan.
+"""Checkpointed D61 consumer for the exact D60/D62 co-design proposal plan.
 
 The batch owns no proposal generation semantics.  It replays and validates the
 exact D60 plan, evaluates its contiguous proposal hashes through the D59 sovereign
 native/Rapier/MuJoCo ladder, and writes a hash-bound checkpoint after every
 candidate.  Pareto and finalist selection are withheld until all 200 candidates
 have engine evidence.  Tier 3, provider billing, catalog choice, build, hardware,
-field, and the separate overnight claim remain held.
+field, and the separate overnight claim remain held. Version 2 binds the exact
+proposal numeric runtime and refuses heterogeneous resume.
 """
 
 from __future__ import annotations
@@ -54,10 +55,10 @@ from forge_workers.training.bundle import (
 from forge_workers.training.tasks import task_definition
 
 ENGINE_BATCH_SCHEMA = "forge-codesign-engine-batch"
-ENGINE_BATCH_VERSION = "1.0.0"
-ENGINE_BATCH_EVIDENCE_VERSION = "1.0.0"
-ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/1.0.0"
-ENGINE_BATCH_MATURITY = "local-engine-200-batch"
+ENGINE_BATCH_VERSION = "2.0.0"
+ENGINE_BATCH_EVIDENCE_VERSION = "2.0.0"
+ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/2.0.0"
+ENGINE_BATCH_MATURITY = "platform-bound-local-engine-200-batch"
 MAX_INPUT_BYTES = 8 * 1024 * 1024
 MAX_CHECKPOINT_BYTES = 32 * 1024 * 1024
 TIER3_REASON = "tier 3 is held until a separately evidenced selected-finalist training run"
@@ -104,7 +105,7 @@ def _search_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if payload.get("task") != "codesign.engine-batch":
         raise ValueError("co-design engine batch requires task=codesign.engine-batch")
     if payload.get("candidateBudget") != TOTAL_PROPOSALS:
-        raise ValueError("co-design engine batch v1 requires exactly 200 candidates")
+        raise ValueError("co-design engine batch v2 requires exactly 200 candidates")
     return {
         "task": "codesign.search-plan",
         "contractHash": payload.get("contractHash"),
@@ -187,6 +188,9 @@ def _candidate_expected(
             "baseContractHash": snapshot["contractHash"],
             "searchPlanSchema": f"{SEARCH_PLAN_SCHEMA}/{SEARCH_PLAN_VERSION}",
             "searchPlanSha256": plan["planSha256"],
+            "proposalRuntimeAuthoritySha256": plan["source"]["proposalRuntimeAuthority"][
+                "authoritySha256"
+            ],
             "proposalId": proposal["id"],
             "candidateSnapshotSha256": candidate_hash,
             "patchSha256": proposal["lineage"]["patchSha256"],
@@ -458,7 +462,11 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
         "schemaVersion": f"{ENGINE_BATCH_SCHEMA}/{ENGINE_BATCH_VERSION}",
         "artifactKind": "codesignEngineBatch",
         "provider": "forge-local-engine-batch",
-        "cacheKey": f"codesign.batch:{snapshot['contractHash'][:16]}:{plan['planSha256'][:16]}",
+        "cacheKey": (
+            f"codesign.batch:v2:{snapshot['contractHash'][:16]}:"
+            f"{plan['source']['proposalRuntimeAuthority']['authoritySha256'][:16]}:"
+            f"{plan['planSha256'][:16]}"
+        ),
         "source": {
             "snapshotSchema": SNAPSHOT_SCHEMA,
             "modelId": snapshot["modelId"],
@@ -469,6 +477,9 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
             "sourceRevision": plan["source"]["sourceRevision"],
             "sourceRevisionRecorded": plan["source"]["sourceRevisionRecorded"],
             "dependencyManifestSha256": plan["source"]["dependencyManifestSha256"],
+            "proposalRuntimeAuthority": copy.deepcopy(
+                plan["source"]["proposalRuntimeAuthority"]
+            ),
             "runtime": ENGINE_BATCH_RUNTIME,
             "maturity": ENGINE_BATCH_MATURITY,
         },
@@ -481,6 +492,11 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
             "completedCandidates": 0,
             "checkpointEveryCandidate": True,
             "serialExecution": True,
+            "resumePolicy": "exact-proposal-runtime-authority",
+            "requiredRuntimeAuthoritySha256": plan["source"]["proposalRuntimeAuthority"][
+                "authoritySha256"
+            ],
+            "heterogeneousResumeAllowed": False,
             "resumeObserved": False,
             "cancellationObserved": False,
             "attempts": [],
@@ -619,6 +635,9 @@ def validate_checkpoint(checkpoint: Any, payload: dict[str, Any]) -> dict[str, A
             "completedCandidates",
             "checkpointEveryCandidate",
             "serialExecution",
+            "resumePolicy",
+            "requiredRuntimeAuthoritySha256",
+            "heterogeneousResumeAllowed",
             "resumeObserved",
             "cancellationObserved",
             "attempts",
@@ -638,7 +657,16 @@ def validate_checkpoint(checkpoint: Any, payload: dict[str, Any]) -> dict[str, A
         or completed_candidates != next_ordinal
     ):
         raise ValueError("co-design engine checkpoint scheduler counters are invalid")
-    if scheduler.get("checkpointEveryCandidate") is not True or scheduler.get("serialExecution") is not True:
+    source = checkpoint.get("source")
+    authority = source.get("proposalRuntimeAuthority") if isinstance(source, dict) else None
+    authority_sha = authority.get("authoritySha256") if isinstance(authority, dict) else None
+    if (
+        scheduler.get("checkpointEveryCandidate") is not True
+        or scheduler.get("serialExecution") is not True
+        or scheduler.get("resumePolicy") != "exact-proposal-runtime-authority"
+        or scheduler.get("requiredRuntimeAuthoritySha256") != authority_sha
+        or scheduler.get("heterogeneousResumeAllowed") is not False
+    ):
         raise ValueError("co-design engine checkpoint durability or scheduling drifted")
     _validate_attempts(scheduler)
     candidates = checkpoint.get("candidates")

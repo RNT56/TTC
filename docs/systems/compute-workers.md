@@ -184,20 +184,33 @@ Optuna, catalog-choice search, 200 candidates, or tier-3 training. Use
 `pnpm codesign:engine-smoke`; add `--require-tier0-budget` only with the release
 validator binary when recording the <50 ms latency proof.
 
-Under D60, `python -m forge_workers.codesign_search` is a separate proposal-only
+Under D60/D63, `python -m forge_workers.codesign_search` is a separate proposal-only
 planner, not a `codesign.evaluate` result and not a new queue kind. It requires one
 exact Gateway-owned admitted inline-multirotor snapshot and exactly 200 proposals,
 refuses extra request fields, and applies the shared byte/depth/node JSON boundary
 before algorithm execution. It then runs pinned `cmaes==0.13.0` for 100 continuous
 proposals and `optuna==4.9.0` TPE for 100 mixed profile/continuous proposals. It
 freezes source revision, worker-manifest digest, seed, constraints, manifold,
-replace-only patches, candidate/patch hashes, and deterministic replay in
-`forge-codesign-search-plan/1.0.0`; `p9-search-plan-evidence/1.0.0` adds the exact
-checkout and clean marker. The acquisition is bounded diversity only. No validator,
+replace-only patches, and candidate/patch hashes. V2 additionally binds exact OS,
+Python, NumPy distribution/build/CPU/BLAS/LAPACK, and optimizer distribution RECORD
+authority in `forge-codesign-search-plan/2.0.0`;
+`p9-search-plan-evidence/2.0.0` adds the exact checkout and clean marker. Cache keys
+are runtime-partitioned and foreign-runtime replay is refused. The acquisition is
+bounded diversity only. No validator,
 Rapier, MuJoCo, physical constraint, admission, Pareto, overnight engine result,
 trained finalist, catalog choice, provider, build, hardware, or field authority is
-created. Run `pnpm codesign:search-plan`; a future consumer must take exact proposal
-hashes into a separately versioned D59-equivalent engine boundary.
+created. Run `pnpm codesign:search-plan`.
+
+D61/D63's separate `python -m forge_workers.codesign_batch` consumer accepts only
+that exact v2 plan and snapshot. It retains one contiguous 200-ordinal prefix,
+atomically checkpoints every candidate, fences interrupted attempts, proves zero-
+dispatch cancellation, and runs native/Rapier/eligible-MuJoCo evidence before
+complete-only admission, Pareto, and three tier-3-held finalists. Engine-batch v2
+copies the full proposal runtime authority into source, binds its hash into every
+candidate and cache key, and records `resumePolicy=exact-proposal-runtime-authority`
+with heterogeneous resume false. `pnpm codesign:engine-batch` exercises 7 + cancel +
+193 recovery. `pnpm codesign:platform-compare` compares all 200 lineages from two
+clean same-revision plan artifacts without authorizing cross-runtime cache or tier 3.
 
 The repository also owns a native controlled command,
 `python -m forge_workers.mjx_benchmark`, and the required

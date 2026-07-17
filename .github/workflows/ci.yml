@@ -225,6 +225,8 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.13.0
           pip install -e "workers[dev,mujoco,training,mjx,deployment,codesign]"
       - run: python -m pytest workers -q
+      - name: D62 co-design cross-platform authority policy
+        run: node --test scripts/codesign-platform-compare.test.mjs
       - name: P7-003/P7-014 real seeded multirotor + ground MuJoCo-SB3-ONNX smoke
         env:
           FORGE_VALIDATE_BIN: target/debug/forge-validate

@@ -158,14 +158,16 @@ exactKeys(
   "co-design search-plan",
 );
 if (
-  plan.schemaVersion !== "forge-codesign-search-plan/1.0.0"
+  plan.schemaVersion !== "forge-codesign-search-plan/2.0.0"
   || plan.artifactKind !== "codesignSearchPlan"
   || plan.provider !== "forge-local-algorithm-search"
   || plan.source?.baseContractHash !== contractHash
   || plan.source?.sourceRevision !== sourceRevision
   || plan.source?.sourceRevisionRecorded !== true
   || plan.source?.dependencyManifestSha256 !== dependencyManifestSha256
-  || plan.source?.maturity !== "local-algorithm-proposal-plan"
+  || plan.source?.maturity !== "platform-bound-algorithm-proposal-plan"
+  || plan.source?.resumePolicy !== "exact-proposal-runtime-authority"
+  || plan.source?.heterogeneousResumeAllowed !== false
   || plan.algorithms?.candidateBudget !== 200
   || plan.algorithms?.cmaEs?.version !== "0.13.0"
   || plan.algorithms?.cmaEs?.proposals !== 100
@@ -177,6 +179,55 @@ if (
   || plan.manifold?.catalogChoiceSearch !== false
 ) {
   throw new Error("co-design search-plan identity, source, algorithm, or maturity contract drifted");
+}
+const runtimeAuthority = plan.source?.proposalRuntimeAuthority;
+exactKeys(
+  runtimeAuthority,
+  ["schemaVersion", "platform", "python", "numpy", "algorithms", "authoritySha256"],
+  "co-design proposal runtime authority",
+);
+exactKeys(
+  runtimeAuthority.platform,
+  ["system", "release", "version", "machine", "byteOrder", "libc"],
+  "co-design proposal platform authority",
+);
+exactKeys(runtimeAuthority.platform.libc, ["name", "version"], "co-design proposal libc authority");
+exactKeys(
+  runtimeAuthority.python,
+  ["implementation", "version", "cacheTag"],
+  "co-design proposal Python authority",
+);
+exactKeys(
+  runtimeAuthority.numpy,
+  [
+    "version",
+    "distributionRecordSha256",
+    "configurationSha256",
+    "cpuFeatures",
+    "blas",
+    "lapack",
+  ],
+  "co-design proposal NumPy authority",
+);
+exactKeys(runtimeAuthority.algorithms, ["cmaes", "optuna"], "co-design proposal algorithm authority");
+for (const algorithm of ["cmaes", "optuna"]) {
+  exactKeys(
+    runtimeAuthority.algorithms[algorithm],
+    ["version", "distributionRecordSha256"],
+    `co-design proposal ${algorithm} authority`,
+  );
+}
+const runtimeAuthoritySha256 = sha256(stableJson(Object.fromEntries(
+  Object.entries(runtimeAuthority).filter(([name]) => name !== "authoritySha256"),
+)));
+if (
+  runtimeAuthority.schemaVersion !== "forge-codesign-proposal-runtime-authority/1.0.0"
+  || runtimeAuthority.authoritySha256 !== runtimeAuthoritySha256
+  || !/^[0-9a-f]{64}$/.test(runtimeAuthority.numpy.distributionRecordSha256)
+  || !/^[0-9a-f]{64}$/.test(runtimeAuthority.numpy.configurationSha256)
+  || Object.keys(runtimeAuthority.numpy.cpuFeatures || {}).length === 0
+) {
+  throw new Error("co-design proposal runtime authority drifted");
 }
 const cma = plan.proposals.filter((proposal) => proposal.algorithm === "cma-es");
 const tpe = plan.proposals.filter((proposal) => proposal.algorithm === "optuna-tpe");
@@ -271,12 +322,15 @@ const planHashPayload = {
 const planSha256 = sha256(stableJson(planHashPayload));
 if (
   plan.planSha256 !== planSha256
-  || plan.cacheKey !== `codesign.search:${contractHash.slice(0, 16)}:${planSha256.slice(0, 16)}`
+  || plan.cacheKey !== (
+    `codesign.search:v2:${contractHash.slice(0, 16)}:`
+    + `${runtimeAuthoritySha256.slice(0, 16)}:${planSha256.slice(0, 16)}`
+  )
 ) {
   throw new Error("co-design search-plan aggregate lineage drifted");
 }
 const evidence = {
-  evidenceSchemaVersion: "p9-search-plan-evidence/1.0.0",
+  evidenceSchemaVersion: "p9-search-plan-evidence/2.0.0",
   sourceRevision,
   worktreeClean,
   result: plan,
@@ -284,5 +338,5 @@ const evidence = {
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, `${JSON.stringify(evidence, null, 2)}\n`);
 console.log(
-  `codesign-search-plan: 100 CMA-ES + 100 Optuna TPE proposals · no engine/admission authority · ${outPath}`,
+  `codesign-search-plan: 100 CMA-ES + 100 Optuna TPE proposals · platform-bound runtime · no engine/admission authority · ${outPath}`,
 );

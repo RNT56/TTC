@@ -133,10 +133,11 @@
         "codesignEvaluation": "1.0.0",
         "codesignNativeEvaluation": "1.0.0",
         "codesignEngineSmokeEvidence": "1.0.0",
-        "codesignSearchPlan": "1.0.0",
-        "codesignSearchPlanEvidence": "1.0.0",
-        "codesignEngineBatch": "1.0.0",
-        "codesignEngineBatchEvidence": "1.0.0"
+        "codesignProposalRuntimeAuthority": "1.0.0",
+        "codesignSearchPlan": "2.0.0",
+        "codesignSearchPlanEvidence": "2.0.0",
+        "codesignEngineBatch": "2.0.0",
+        "codesignEngineBatchEvidence": "2.0.0"
       },
       "bridgeConfigFirmwareVersion": "2025.12",
       "ghostOverlayFrame": "forge-y-up-rh-m",

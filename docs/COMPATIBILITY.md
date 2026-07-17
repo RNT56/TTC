@@ -494,6 +494,16 @@ overnight authority until coordinated D60/D61 majors either canonicalize all 200
 hashes across supported architectures or add exact platform/runtime authority and
 same-platform scheduling/refusal semantics.
 
+D63 implements the explicit-platform branch locally with coordinated search-plan,
+search-evidence, engine-batch, and batch-evidence `2.0.0` majors plus
+`forge-codesign-proposal-runtime-authority/1.0.0`. V2 hashes OS, CPython, NumPy
+distribution/build/CPU/BLAS/LAPACK, and optimizer distribution identity into plan
+and batch cache partitions, records exact-runtime-only resume, binds every candidate,
+and rejects foreign runtime authority before evaluation or checkpoint recovery.
+`p9-platform-authority-comparison/1.0.0` compares all 200 lineages from two clean
+same-revision artifacts without granting portable cache or tier-3 authority. V1
+remains historical evidence; v2 does not silently read or relabel it.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

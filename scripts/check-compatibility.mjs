@@ -297,6 +297,13 @@ requireValue(
   "co-design engine-smoke script does not emit the matrix version",
 );
 requireValue(
+  pythonConstant(
+    "workers/forge_workers/codesign_search.py",
+    "PROPOSAL_RUNTIME_AUTHORITY_VERSION",
+  ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignProposalRuntimeAuthority,
+  "co-design proposal runtime-authority version does not match compatibility matrix",
+);
+requireValue(
   pythonConstant("workers/forge_workers/codesign_search.py", "SEARCH_PLAN_VERSION") ===
     matrix.surfaces.workerArtifacts.internalSchemas.codesignSearchPlan,
   "co-design search-plan version does not match compatibility matrix",
