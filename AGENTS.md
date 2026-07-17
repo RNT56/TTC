@@ -153,7 +153,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   in progress. Exact head `e64c601`, reviewed tree `08e8a12`, PR CI/security
   `29545327465`/`29545327485`, protected-tree equality, and post-merge CI/security
   `29545811003`/`29545810996` pass;
-- D60/P9-002 has a local implementation candidate at
+- D60/P9-002 is protected at
   `local-algorithm-proposal-plan` maturity. Internal search-plan/evidence 1.0.0
   formats run exact `cmaes==0.13.0` and `optuna==4.9.0` against the gateway-owned
   admitted inline-multirotor snapshot to produce 100 proposals each, with frozen
@@ -166,9 +166,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   candidate, trained-finalist, catalog-choice, provider, build, hardware, and field
   claims remain false. All 42 local gates pass under Python 3.12.7 with 238 worker,
   74 Gateway, and 39 Studio tests, and the pinned Python dependency audit is clean.
-  This branch is not protected evidence; P9-002/P9-003 remain in progress, and the
-  next engine-consumption lane must attach sovereign evidence to the exact proposal
-  hashes rather than promote the plan;
+  Exact implementation head `340c88d`, reviewed tree `7139ad5`, PR #109 CI/security
+  `29549718149`/`29549718173`, protected squash `71e7217`, protected-tree equality,
+  and post-merge CI/security `29550088422`/`29550088452` pass. P9-002/P9-003 remain
+  in progress, and the next engine-consumption lane must attach sovereign evidence
+  to the exact proposal hashes rather than promote the plan;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;

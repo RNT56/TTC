@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D60 proposal-plan evidence
+**Session:** Codex agent · branch `codex/p9002-d60-protected-evidence` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Reconciled D60's former local candidate with exact protected evidence.
+Implementation head `340c88d22b865ef436e7634716149ea7be43ebae` passed PR #109
+CI `29549718149` and security `29549718173`; reviewed tree
+`7139ad56a129dd941e222259688909cf10117a17` is byte-identical at protected squash
+`71e721730b2c060aa759d83b018c1dfaf27d8670`. Post-merge CI `29550088422`,
+security `29550088452`, and dependency-graph run `29550090915` pass. The clean
+exact-source smoke binds plan SHA-256
+`2c82be7f68b2297bd2fae37a652092b0625abb554299817c51308b5468093717` to 100
+CMA-ES plus 100 Optuna TPE proposals and 200 unique candidate hashes.
+**Changed:** Evidence-only updates to the entry guide, project state, roadmap, TODO,
+execution roadmap, and co-design system contract. No executable code, schema,
+generated artifact, dependency, API, queue, database, Studio, validator, provider,
+hardware, or field meaning changed.
+**Decisions:** D60 remains proposal-only even after protection. Protection verifies
+algorithm execution, deterministic lineage, and replay; it does not promote any
+physical or downstream nonclaim.
+**Next:** Define a separately versioned consumer that schedules the exact 200
+proposal hashes through sovereign native/Rapier/MuJoCo evaluation with resumable
+recovery, cost, admission, and independently derived Pareto evidence.
+**Blockers:** P9 closure still requires real catalog choices, 200 sovereign engine
+evaluations, retained scheduled/overnight recovery and cost, at least three admitted
+Pareto points, trained finalists, provider operations, and external acceptance.
+
 ## 2026-07-16 — Execute the D60 co-design proposal plan
 **Session:** Codex agent · branch `codex/p9002-d60-search-plan` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
