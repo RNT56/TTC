@@ -16,6 +16,8 @@ from forge_workers.training.bundle import (
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = ROOT / "target" / "debug" / "forge-validate"
 CONTRACT = ROOT / "examples" / "vx2-mini.forge.json"
+CATALOG_CONTRACT = ROOT / "examples" / "vx2-proof.forge.json"
+CATALOG = ROOT / "catalog"
 ROVER_CONTRACT = ROOT / "workers" / "tests" / "fixtures" / "rover-training.forge.json"
 QUADRUPED_CONTRACT = ROOT / "examples" / "qd-mini.forge.json"
 
@@ -54,6 +56,23 @@ def ground_request(path: Path, task: str) -> dict:
     }
 
 
+def catalog_request() -> dict:
+    contract_json = CATALOG_CONTRACT.read_text(encoding="utf-8")
+    contract_hash = hashlib.sha256(contract_json.encode("utf-8")).hexdigest()
+    return {
+        "jobKind": "train.policy",
+        "task": "hover-hold",
+        "modelId": "vx2-proof",
+        "contractHash": contract_hash,
+        "modelSnapshot": {
+            "schemaVersion": SNAPSHOT_SCHEMA,
+            "modelId": "vx2-proof",
+            "contractHash": contract_hash,
+            "contractJson": contract_json,
+        },
+    }
+
+
 def test_gateway_snapshot_compiles_through_rust_training_authority(monkeypatch):
     if not VALIDATOR.is_file():
         pytest.skip("forge-validate binary is not built")
@@ -71,6 +90,19 @@ def test_gateway_snapshot_compiles_through_rust_training_authority(monkeypatch):
     assert len(bundle["powertrain"]["curve"]) == 101
     assert bundle["control"]["tiltMaxRad"] == 0.4
     assert bundle["control"]["yawRateRadS"] == 2.4
+
+
+def test_catalog_snapshot_requires_catalog_admission_but_retains_inline_bundle(monkeypatch):
+    if not VALIDATOR.is_file():
+        pytest.skip("forge-validate binary is not built")
+    monkeypatch.setenv("FORGE_VALIDATE_BIN", str(VALIDATOR))
+    with pytest.raises(RuntimeError, match="validator verdict is Rejected"):
+        compile_training_bundle(catalog_request())
+
+    bundle = compile_training_bundle(catalog_request(), catalog_path=CATALOG)
+    assert bundle["schemaVersion"] == "2.0.0"
+    assert bundle["massKg"] == 0.479
+    assert any("inline-constant powertrain" in assumption for assumption in bundle["assumptions"])
 
 
 def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):

@@ -17,8 +17,9 @@ use forge_contract::{
 };
 use forge_sim::thrust_table::{ThrustPoint, ThrustTable};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -139,6 +140,8 @@ pub struct RowRevision {
 #[derive(Debug)]
 pub struct FileCatalog {
     rows: BTreeMap<String, CatalogRow>,
+    row_sha256: BTreeMap<String, String>,
+    authority_sha256: String,
 }
 
 impl FileCatalog {
@@ -149,15 +152,27 @@ impl FileCatalog {
         let mut rows = BTreeMap::new();
         let entries =
             std::fs::read_dir(&components).map_err(|e| format!("{}: {e}", components.display()))?;
-        for entry in entries {
-            let path = entry.map_err(|e| e.to_string())?.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
-            }
-            let text =
-                std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let mut paths: Vec<PathBuf> = entries
+            .map(|entry| {
+                entry
+                    .map(|entry| entry.path())
+                    .map_err(|error| error.to_string())
+            })
+            .collect::<Result<_, _>>()?;
+        paths.retain(|path| {
+            path.extension().and_then(|extension| extension.to_str()) == Some("json")
+        });
+        paths.sort();
+
+        let mut row_sha256 = BTreeMap::new();
+        let mut authority = Sha256::new();
+        authority.update(b"forge-file-catalog-authority-v1\0");
+        for path in paths {
+            let bytes = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+            let text = std::str::from_utf8(&bytes)
+                .map_err(|e| format!("{}: catalog rows must be UTF-8: {e}", path.display()))?;
             let row: CatalogRow =
-                serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+                serde_json::from_str(text).map_err(|e| format!("{}: {e}", path.display()))?;
             if !(row.confidence > 0.0 && row.confidence <= 1.0) {
                 return Err(format!("{}: confidence must be in (0, 1]", row.id));
             }
@@ -185,9 +200,29 @@ impl FileCatalog {
                     ));
                 }
             }
-            rows.insert(row.id.clone(), row);
+            let filename = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .ok_or_else(|| format!("{}: catalog filename must be UTF-8", path.display()))?;
+            let relative_path = format!("components/{filename}");
+            let digest = format!("{:x}", Sha256::digest(&bytes));
+            authority.update(relative_path.as_bytes());
+            authority.update(b"\0");
+            authority.update(digest.as_bytes());
+            authority.update(b"\n");
+            row_sha256.insert(row.id.clone(), digest);
+            if rows.insert(row.id.clone(), row).is_some() {
+                return Err(format!(
+                    "{}: duplicate catalog component id",
+                    path.display()
+                ));
+            }
         }
-        Ok(FileCatalog { rows })
+        Ok(FileCatalog {
+            rows,
+            row_sha256,
+            authority_sha256: format!("{:x}", authority.finalize()),
+        })
     }
 
     pub fn rows(&self) -> impl Iterator<Item = &CatalogRow> {
@@ -196,6 +231,16 @@ impl FileCatalog {
 
     pub fn get(&self, id: &str) -> Option<&CatalogRow> {
         self.rows.get(id)
+    }
+
+    /// Deterministic authority over every sorted component filename and raw-row
+    /// SHA-256. This binds a co-design run to the exact repository catalog bytes.
+    pub fn authority_sha256(&self) -> &str {
+        &self.authority_sha256
+    }
+
+    pub fn row_sha256(&self, id: &str) -> Option<&str> {
+        self.row_sha256.get(id).map(String::as_str)
     }
 
     /// The compat engine's view of a row.

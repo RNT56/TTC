@@ -1,10 +1,11 @@
-"""Deterministic D60 CMA-ES/TPE proposal-plan evidence.
+"""Deterministic D64 catalog-backed CMA-ES/TPE proposal-plan evidence.
 
 This module executes the real pinned proposal algorithms but deliberately does not
 evaluate a design.  The resulting 200-proposal plan has no validator, Rapier,
 MuJoCo, training, Pareto, overnight-result, provider, build, hardware, or field
-authority.  A later worker lane must consume the exact proposal hashes and attach
-sovereign engine evidence before any candidate can be admitted.
+authority.  The separately versioned engine-batch worker must consume the exact
+proposal hashes and attach sovereign engine evidence before any candidate can be
+admitted.
 """
 
 from __future__ import annotations
@@ -27,12 +28,14 @@ import optuna
 from forge_workers.net_security import assert_bounded_json
 
 SEARCH_PLAN_SCHEMA = "forge-codesign-search-plan"
-SEARCH_PLAN_VERSION = "2.0.0"
-SEARCH_PLAN_EVIDENCE_VERSION = "2.0.0"
-SEARCH_PLAN_RUNTIME = "forge-codesign-search-plan/2.0.0"
-SEARCH_PLAN_MATURITY = "platform-bound-algorithm-proposal-plan"
+SEARCH_PLAN_VERSION = "3.0.0"
+SEARCH_PLAN_EVIDENCE_VERSION = "3.0.0"
+SEARCH_PLAN_RUNTIME = "forge-codesign-search-plan/3.0.0"
+SEARCH_PLAN_MATURITY = "catalog-bound-platform-algorithm-proposal-plan"
 PROPOSAL_RUNTIME_AUTHORITY_SCHEMA = "forge-codesign-proposal-runtime-authority"
 PROPOSAL_RUNTIME_AUTHORITY_VERSION = "1.0.0"
+CATALOG_CHOICE_AUTHORITY_SCHEMA = "forge-codesign-catalog-choice-authority"
+CATALOG_CHOICE_AUTHORITY_VERSION = "1.0.0"
 SNAPSHOT_SCHEMA = "forge-admitted-model-snapshot/1.0.0"
 OPTUNA_VERSION = "4.9.0"
 CMAES_VERSION = "0.13.0"
@@ -46,15 +49,8 @@ TPE_STARTUP_TRIALS = 20
 MAX_INPUT_BYTES = 4 * 1024 * 1024
 
 BOUNDS = {
-    "motorKvScale": (0.94, 1.06),
-    "propDiameterScale": (0.94, 1.06),
-    "batteryCapacityScale": (0.90, 1.10),
-}
-PROFILE_TARGETS = {
-    "balanced": (1.00, 1.00, 1.00),
-    "endurance-prior": (0.97, 1.02, 1.08),
-    "agility-prior": (1.05, 0.97, 0.94),
-    "lightweight-prior": (0.98, 0.98, 0.92),
+    "tiltMaxRad": (0.32, 0.48),
+    "yawRateRadS": (2.0, 2.8),
 }
 NONCLAIMS = {
     "validatorEvaluated": False,
@@ -65,7 +61,8 @@ NONCLAIMS = {
     "physicalConstraintsEvaluated": False,
     "overnight200Candidate": False,
     "trainedFinalist": False,
-    "catalogChoiceSearch": False,
+    "catalogMarketplacePublicationReviewed": False,
+    "catalogLivePersistence": False,
     "providerSandbox": False,
     "buildReady": False,
     "hardwareAuthority": False,
@@ -116,6 +113,164 @@ def _nonempty_string(value: Any, label: str) -> str:
 def _canonical_number(value: float) -> int | float:
     """Match JSON's language-neutral integer spelling for whole finite values."""
     return int(value) if value.is_integer() else value
+
+
+def catalog_dir() -> Path:
+    configured = os.environ.get("FORGE_CATALOG_DIR", "").strip()
+    root = Path(configured) if configured else Path(__file__).resolve().parents[2] / "catalog"
+    if not (root / "components").is_dir():
+        raise RuntimeError("co-design catalog components directory is absent")
+    return root
+
+
+def _catalog_rows(root: Path) -> tuple[str, dict[str, tuple[dict[str, Any], str]]]:
+    paths = sorted((root / "components").glob("*.json"))
+    if not paths:
+        raise RuntimeError("co-design catalog contains no component rows")
+    authority = hashlib.sha256()
+    authority.update(b"forge-file-catalog-authority-v1\0")
+    rows: dict[str, tuple[dict[str, Any], str]] = {}
+    for path in paths:
+        raw = path.read_bytes()
+        row_sha256 = _sha(raw)
+        authority.update(f"components/{path.name}".encode("utf-8"))
+        authority.update(b"\0")
+        authority.update(row_sha256.encode("ascii"))
+        authority.update(b"\n")
+        try:
+            row = json.loads(raw)
+        except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as error:
+            raise ValueError(f"co-design catalog row {path.name} is invalid") from error
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str):
+            raise ValueError(f"co-design catalog row {path.name} has no exact identity")
+        if row["id"] in rows:
+            raise ValueError("co-design catalog component ids are not unique")
+        rows[row["id"]] = (row, row_sha256)
+    return authority.hexdigest(), rows
+
+
+def _catalog_choice_authority(contract: dict[str, Any]) -> dict[str, Any]:
+    root = catalog_dir()
+    catalog_authority_sha256, rows = _catalog_rows(root)
+    lockfile = contract.get("lockfile")
+    slots = contract.get("slots")
+    if not isinstance(lockfile, dict) or not isinstance(slots, list):
+        raise ValueError("co-design catalog search requires slots and an exact lockfile")
+    candidates: list[tuple[int, dict[str, Any], list[dict[str, Any]]]] = []
+    for slot_index, slot in enumerate(slots):
+        if not isinstance(slot, dict) or not isinstance(slot.get("variants"), list):
+            continue
+        choices: list[dict[str, Any]] = []
+        for variant in slot["variants"]:
+            if not isinstance(variant, dict):
+                choices = []
+                break
+            choice_id = variant.get("id")
+            slot_id = slot.get("id")
+            if (
+                not isinstance(choice_id, str)
+                or not choice_id
+                or not isinstance(slot_id, str)
+                or not slot_id
+            ):
+                choices = []
+                break
+            component_ref = variant.get("componentRef")
+            pin = lockfile.get(component_ref) if isinstance(component_ref, str) else None
+            if not isinstance(pin, str) or "@" not in pin:
+                choices = []
+                break
+            component_id, revision = pin.rsplit("@", 1)
+            if component_ref.rsplit("@", 1)[0] != component_id:
+                choices = []
+                break
+            record = rows.get(component_id)
+            if record is None:
+                choices = []
+                break
+            row, row_sha256 = record
+            revisions = row.get("revisions")
+            if not isinstance(revisions, list) or not any(
+                isinstance(item, dict)
+                and item.get("version") == revision
+                and item.get("yanked") is False
+                for item in revisions
+            ):
+                choices = []
+                break
+            if row.get("category") != "battery":
+                choices = []
+                break
+            elec = row.get("elec")
+            license_value = row.get("license")
+            if not isinstance(elec, dict) or not isinstance(license_value, dict):
+                raise ValueError("co-design battery catalog row lacks electrical or license authority")
+            capacity = _finite(elec.get("capacityMah"), "catalog battery capacity")
+            max_discharge = _finite(
+                elec.get("maxDischargeA"), "catalog battery maximum discharge"
+            )
+            mass = _finite(row.get("massG"), "catalog battery mass")
+            confidence = _finite(row.get("confidence"), "catalog row confidence")
+            review = row.get("review")
+            if capacity <= 0 or max_discharge <= 0 or mass <= 0 or not 0 < confidence <= 1:
+                raise ValueError("co-design battery catalog row values are outside bounds")
+            if review is not None and not isinstance(review, str):
+                raise ValueError("co-design catalog review authority is invalid")
+            license_proof = {
+                "id": license_value.get("id"),
+                "class": license_value.get("class"),
+                "sourceUrl": license_value.get("sourceUrl"),
+                "exportPolicy": license_value.get("exportPolicy"),
+            }
+            if any(
+                not isinstance(value, str) or not value for value in license_proof.values()
+            ):
+                raise ValueError("co-design catalog license authority is incomplete")
+            if not license_proof["sourceUrl"].startswith("https://"):
+                raise ValueError("co-design catalog license source must use HTTPS")
+            choices.append(
+                {
+                    "choiceId": choice_id,
+                    "slotId": slot_id,
+                    "componentRef": component_ref,
+                    "exactRevision": pin,
+                    "componentId": component_id,
+                    "rowSha256": row_sha256,
+                    "category": "battery",
+                    "massG": _canonical_number(mass),
+                    "capacityMah": _canonical_number(capacity),
+                    "maxDischargeA": _canonical_number(max_discharge),
+                    "cRating": _canonical_number(max_discharge / (capacity / 1000)),
+                    "confidence": confidence,
+                    "reviewRequired": confidence < 1 or review is not None,
+                    "review": review,
+                    "license": license_proof,
+                }
+            )
+        if len(choices) >= 2:
+            candidates.append((slot_index, slot, choices))
+    if len(candidates) != 1:
+        raise ValueError("co-design catalog search requires exactly one multi-choice battery slot")
+    slot_index, slot, choices = candidates[0]
+    choices.sort(key=lambda choice: choice["choiceId"])
+    equipped = slot.get("equippedVariantId")
+    if equipped not in {choice["choiceId"] for choice in choices}:
+        raise ValueError("co-design catalog search requires one exact equipped battery variant")
+    value = {
+        "schemaVersion": f"{CATALOG_CHOICE_AUTHORITY_SCHEMA}/{CATALOG_CHOICE_AUTHORITY_VERSION}",
+        "catalogAuthoritySha256": catalog_authority_sha256,
+        "searchSlotId": slot.get("id"),
+        "searchSlotIndex": slot_index,
+        "baseEquippedChoiceId": equipped,
+        "choices": choices,
+        "marketplacePublicationReviewed": False,
+        "marketplaceExposable": False,
+        "authoritySha256": "",
+    }
+    value["authoritySha256"] = _sha(
+        _stable_json({key: item for key, item in value.items() if key != "authoritySha256"})
+    )
+    return value
 
 
 def _distribution_record_sha256(name: str) -> str:
@@ -365,7 +520,7 @@ def _snapshot(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         raise ValueError("co-design search snapshot hash authority drifted")
     raw_budget = payload.get("candidateBudget")
     if isinstance(raw_budget, bool) or not isinstance(raw_budget, int) or raw_budget != TOTAL_PROPOSALS:
-        raise ValueError("co-design search v2 requires exactly 200 proposals")
+        raise ValueError("co-design search v3 requires exactly 200 proposals")
     try:
         contract = json.loads(contract_json)
     except (json.JSONDecodeError, RecursionError) as error:
@@ -414,30 +569,46 @@ def _constraints(payload: dict[str, Any]) -> dict[str, int | float]:
     return {name: _canonical_number(value) for name, value in finite.items()}
 
 
-def _base_values(contract: dict[str, Any]) -> tuple[list[float], list[float], float]:
+def _base_values(
+    contract: dict[str, Any], catalog_authority: dict[str, Any]
+) -> dict[str, float | int]:
     meta = contract.get("meta")
     sim = contract.get("sim")
-    if not isinstance(meta, dict) or meta.get("archetype") != "multirotor" or not isinstance(sim, dict):
-        raise ValueError("co-design search v2 supports admitted inline multirotors only")
-    motors = sim.get("motors")
-    props = sim.get("props")
+    driver = contract.get("driver")
+    if (
+        not isinstance(meta, dict)
+        or meta.get("archetype") != "multirotor"
+        or not isinstance(sim, dict)
+        or not isinstance(driver, dict)
+        or not isinstance(driver.get("params"), dict)
+    ):
+        raise ValueError("co-design search v3 supports admitted catalog-backed multirotors only")
     battery = sim.get("battery")
-    if not isinstance(motors, list) or not motors or not isinstance(props, list) or not props:
-        raise ValueError("co-design search requires inline motors and props")
     if not isinstance(battery, dict):
         raise ValueError("co-design search requires an inline battery")
-    motor_kv = [
-        _finite(motor.get("kv") if isinstance(motor, dict) else None, f"motor[{index}].kv")
-        for index, motor in enumerate(motors)
-    ]
-    prop_diameter = [
-        _finite(prop.get("diameterIn") if isinstance(prop, dict) else None, f"prop[{index}].diameterIn")
-        for index, prop in enumerate(props)
-    ]
+    params = driver["params"]
+    tilt = _finite(params.get("tiltMaxRad"), "driver.params.tiltMaxRad")
+    yaw = _finite(params.get("yawRate"), "driver.params.yawRate")
     capacity = _finite(battery.get("capacity_mAh"), "battery.capacity_mAh")
-    if any(value <= 0 for value in (*motor_kv, *prop_diameter, capacity)):
-        raise ValueError("co-design search electrical values must be positive")
-    return motor_kv, prop_diameter, capacity
+    c_rating = _finite(battery.get("cRating"), "battery.cRating")
+    base_choice = next(
+        choice
+        for choice in catalog_authority["choices"]
+        if choice["choiceId"] == catalog_authority["baseEquippedChoiceId"]
+    )
+    if capacity != float(base_choice["capacityMah"]):
+        raise ValueError("co-design base battery simulation does not match its equipped catalog revision")
+    if c_rating != float(base_choice["cRating"]):
+        raise ValueError("co-design base battery discharge does not match its equipped catalog revision")
+    if not BOUNDS["tiltMaxRad"][0] <= tilt <= BOUNDS["tiltMaxRad"][1]:
+        raise ValueError("co-design base tilt limit is outside the reviewed manifold")
+    if not BOUNDS["yawRateRadS"][0] <= yaw <= BOUNDS["yawRateRadS"][1]:
+        raise ValueError("co-design base yaw rate is outside the reviewed manifold")
+    return {
+        "searchSlotIndex": int(catalog_authority["searchSlotIndex"]),
+        "tiltMaxRad": tilt,
+        "yawRateRadS": yaw,
+    }
 
 
 def _clamp(name: str, value: float) -> float:
@@ -445,49 +616,54 @@ def _clamp(name: str, value: float) -> float:
     return min(high, max(low, float(value)))
 
 
-def _acquisition_loss(parameters: tuple[float, float, float], profile: str) -> float:
-    target = PROFILE_TARGETS[profile]
+def _acquisition_loss(
+    parameters: tuple[float, float], choice: dict[str, Any], choices: list[dict[str, Any]]
+) -> float:
+    choice_index = next(index for index, item in enumerate(choices) if item["choiceId"] == choice["choiceId"])
+    fraction = (choice_index + 1) / (len(choices) + 1)
     normalized = []
     for index, name in enumerate(BOUNDS):
         low, high = BOUNDS[name]
-        normalized.append((parameters[index] - target[index]) / (high - low))
+        target = low + fraction * (high - low)
+        normalized.append((parameters[index] - target) / (high - low))
     smooth = sum((index + 1) * value * value for index, value in enumerate(normalized))
-    coupling = abs(normalized[0] + normalized[1] - normalized[2]) * 0.075
-    profile_bias = list(PROFILE_TARGETS).index(profile) * 0.0025
-    return float(smooth + coupling + profile_bias)
+    coupling = abs(normalized[0] - normalized[1]) * 0.075
+    return float(smooth + coupling + choice_index * 0.0025)
 
 
 def _candidate_patch(
-    parameters: tuple[float, float, float],
-    base: tuple[list[float], list[float], float],
+    parameters: tuple[float, float],
+    base: dict[str, float | int],
+    choice: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    motor_scale, prop_scale, capacity_scale = parameters
-    motor_kv, prop_diameter, capacity = base
-    patch: list[dict[str, Any]] = []
-    patch.extend(
+    tilt_max_rad, yaw_rate_rad_s = parameters
+    return [
         {
             "op": "replace",
-            "path": f"/sim/motors/{index}/kv",
-            "value": _canonical_number(round(value * motor_scale, 6)),
-        }
-        for index, value in enumerate(motor_kv)
-    )
-    patch.extend(
-        {
-            "op": "replace",
-            "path": f"/sim/props/{index}/diameterIn",
-            "value": _canonical_number(round(value * prop_scale, 6)),
-        }
-        for index, value in enumerate(prop_diameter)
-    )
-    patch.append(
+            "path": f"/slots/{int(base['searchSlotIndex'])}/equippedVariantId",
+            "value": choice["choiceId"],
+        },
         {
             "op": "replace",
             "path": "/sim/battery/capacity_mAh",
-            "value": _canonical_number(round(capacity * capacity_scale, 6)),
-        }
-    )
-    return patch
+            "value": choice["capacityMah"],
+        },
+        {
+            "op": "replace",
+            "path": "/sim/battery/cRating",
+            "value": choice["cRating"],
+        },
+        {
+            "op": "replace",
+            "path": "/driver/params/tiltMaxRad",
+            "value": _canonical_number(round(tilt_max_rad, 9)),
+        },
+        {
+            "op": "replace",
+            "path": "/driver/params/yawRate",
+            "value": _canonical_number(round(yaw_rate_rad_s, 9)),
+        },
+    ]
 
 
 def _pointer_tokens(pointer: str) -> list[str]:
@@ -530,15 +706,16 @@ def apply_search_patch(contract: dict[str, Any], patch: list[dict[str, Any]]) ->
 
 def _proposal(
     contract: dict[str, Any],
-    base: tuple[list[float], list[float], float],
+    base: dict[str, float | int],
+    catalog_authority: dict[str, Any],
     ordinal: int,
     algorithm: str,
-    profile: str,
-    parameters: tuple[float, float, float],
+    choice: dict[str, Any],
+    parameters: tuple[float, float],
     acquisition_loss: float,
 ) -> dict[str, Any]:
     rounded = tuple(round(_clamp(name, parameters[index]), 9) for index, name in enumerate(BOUNDS))
-    patch = _candidate_patch(rounded, base)
+    patch = _candidate_patch(rounded, base, choice)
     candidate = apply_search_patch(contract, patch)
     candidate_json = _stable_json(candidate)
     patch_json = _stable_json(patch)
@@ -546,7 +723,7 @@ def _proposal(
         "id": f"proposal-{ordinal:03d}-{_sha(candidate_json)[:12]}",
         "ordinal": ordinal,
         "algorithm": algorithm,
-        "profile": profile,
+        "catalogChoice": copy.deepcopy(choice),
         "parameters": {
             name: _canonical_number(rounded[index]) for index, name in enumerate(BOUNDS)
         },
@@ -560,38 +737,55 @@ def _proposal(
         "lineage": {
             "patchSha256": _sha(patch_json),
             "candidateSnapshotSha256": _sha(candidate_json),
+            "catalogAuthoritySha256": catalog_authority["catalogAuthoritySha256"],
+            "catalogChoiceAuthoritySha256": catalog_authority["authoritySha256"],
+            "selectedRowSha256": choice["rowSha256"],
+            "selectedExactRevision": choice["exactRevision"],
         },
     }
 
 
 def _cma_proposals(
-    contract: dict[str, Any], base: tuple[list[float], list[float], float], seed: int
+    contract: dict[str, Any],
+    base: dict[str, float | int],
+    catalog_authority: dict[str, Any],
+    seed: int,
 ) -> list[dict[str, Any]]:
     names = list(BOUNDS)
     bounds = np.asarray([BOUNDS[name] for name in names], dtype=np.float64)
     optimizer = cmaes.CMA(
-        mean=np.ones(len(names), dtype=np.float64),
-        sigma=0.04,
+        mean=np.asarray([(low + high) / 2 for low, high in BOUNDS.values()], dtype=np.float64),
+        sigma=0.03,
         bounds=bounds,
         population_size=CMA_POPULATION,
         seed=seed,
     )
     proposals: list[dict[str, Any]] = []
+    choice = next(
+        item
+        for item in catalog_authority["choices"]
+        if item["choiceId"] == catalog_authority["baseEquippedChoiceId"]
+    )
     for _generation in range(CMA_GENERATIONS):
         solutions: list[tuple[np.ndarray, float]] = []
         for _member in range(CMA_POPULATION):
             vector = optimizer.ask()
             parameters = tuple(float(value) for value in vector)
-            loss = _acquisition_loss(parameters, "balanced")
+            loss = _acquisition_loss(parameters, choice, catalog_authority["choices"])
             ordinal = len(proposals)
-            proposals.append(_proposal(contract, base, ordinal, "cma-es", "balanced", parameters, loss))
+            proposals.append(
+                _proposal(contract, base, catalog_authority, ordinal, "cma-es", choice, parameters, loss)
+            )
             solutions.append((vector, loss))
         optimizer.tell(solutions)
     return proposals
 
 
 def _tpe_proposals(
-    contract: dict[str, Any], base: tuple[list[float], list[float], float], seed: int
+    contract: dict[str, Any],
+    base: dict[str, float | int],
+    catalog_authority: dict[str, Any],
+    seed: int,
 ) -> list[dict[str, Any]]:
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     sampler = optuna.samplers.TPESampler(
@@ -601,16 +795,29 @@ def _tpe_proposals(
     )
     study = optuna.create_study(direction="minimize", sampler=sampler)
     proposals: list[dict[str, Any]] = []
-    profiles = list(PROFILE_TARGETS)
+    choices = catalog_authority["choices"]
+    choice_ids = [choice["choiceId"] for choice in choices]
     for index in range(TPE_PROPOSALS):
         trial = study.ask()
-        profile = trial.suggest_categorical("electricalProfile", profiles)
+        choice_id = trial.suggest_categorical("batteryComponentRevision", choice_ids)
+        choice = next(item for item in choices if item["choiceId"] == choice_id)
         parameters = tuple(
             trial.suggest_float(name, BOUNDS[name][0], BOUNDS[name][1]) for name in BOUNDS
         )
-        loss = _acquisition_loss(parameters, profile)
+        loss = _acquisition_loss(parameters, choice, choices)
         study.tell(trial, loss)
-        proposals.append(_proposal(contract, base, CMA_PROPOSALS + index, "optuna-tpe", profile, parameters, loss))
+        proposals.append(
+            _proposal(
+                contract,
+                base,
+                catalog_authority,
+                CMA_PROPOSALS + index,
+                "optuna-tpe",
+                choice,
+                parameters,
+                loss,
+            )
+        )
     return proposals
 
 
@@ -634,11 +841,14 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
         max_nodes=60_000,
     )
     snapshot, contract = _snapshot(payload)
-    base = _base_values(contract)
+    catalog_authority = _catalog_choice_authority(contract)
+    base = _base_values(contract, catalog_authority)
     seed = _seed(payload, snapshot["contractHash"])
     constraints = _constraints(payload)
     source_revision, dependency_manifest_sha256, runtime_authority = _runtime_authority()
-    proposals = _cma_proposals(contract, base, seed) + _tpe_proposals(contract, base, seed)
+    proposals = _cma_proposals(contract, base, catalog_authority, seed) + _tpe_proposals(
+        contract, base, catalog_authority, seed
+    )
     if len(proposals) != TOTAL_PROPOSALS:
         raise RuntimeError("co-design search did not produce exactly 200 proposals")
     candidate_hashes = [proposal["lineage"]["candidateSnapshotSha256"] for proposal in proposals]
@@ -656,17 +866,31 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
             "sourceRevisionRecorded": source_revision is not None,
             "dependencyManifestSha256": dependency_manifest_sha256,
             "proposalRuntimeAuthority": runtime_authority,
+            "catalogChoiceAuthority": catalog_authority,
             "resumePolicy": "exact-proposal-runtime-authority",
             "heterogeneousResumeAllowed": False,
             "runtime": SEARCH_PLAN_RUNTIME,
             "maturity": SEARCH_PLAN_MATURITY,
         },
         "manifold": {
-            "source": "exact-admitted-inline-multirotor-contract",
-            "categorical": [{"name": "electricalProfile", "choices": list(PROFILE_TARGETS)}],
-            "continuous": [{"name": name, "bounds": list(bounds)} for name, bounds in BOUNDS.items()],
-            "units": {"motorKv": "rpm/V", "propDiameter": "in", "batteryCapacity": "mAh"},
-            "catalogChoiceSearch": False,
+            "source": "exact-admitted-catalog-backed-multirotor-contract",
+            "categorical": [
+                {
+                    "name": "batteryComponentRevision",
+                    "slotId": catalog_authority["searchSlotId"],
+                    "choices": copy.deepcopy(catalog_authority["choices"]),
+                }
+            ],
+            "continuous": [
+                {
+                    "name": name,
+                    "bounds": [_canonical_number(value) for value in bounds],
+                }
+                for name, bounds in BOUNDS.items()
+            ],
+            "units": {"tiltMaxRad": "rad", "yawRateRadS": "rad/s"},
+            "catalogChoiceSearch": True,
+            "equippedVariantSemantics": "exactly-one-equipped-d32",
         },
         "constraints": constraints,
         "algorithms": {
@@ -680,6 +904,7 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
                 "generations": CMA_GENERATIONS,
                 "feedback": "bounded-diversity-acquisition-v1",
                 "engineFeedback": False,
+                "categoricalSearch": False,
             },
             "optunaTpe": {
                 "library": "optuna",
@@ -689,6 +914,7 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
                 "multivariate": False,
                 "feedback": "bounded-diversity-acquisition-v1",
                 "engineFeedback": False,
+                "categoricalSearch": True,
             },
         },
         "proposals": proposals,
@@ -697,7 +923,8 @@ def build_search_plan(payload: dict[str, Any]) -> dict[str, Any]:
     }
     value["planSha256"] = _sha(_stable_json(_plan_hash_payload(value)))
     value["cacheKey"] = (
-        f"codesign.search:v2:{snapshot['contractHash'][:16]}:"
+        f"codesign.search:v3:{snapshot['contractHash'][:16]}:"
+        f"{catalog_authority['authoritySha256'][:16]}:"
         f"{runtime_authority['authoritySha256'][:16]}:{value['planSha256'][:16]}"
     )
     return value

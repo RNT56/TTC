@@ -5,8 +5,8 @@
 //!   forge-validate patch <contract.json> <patch.json> [--out out.json]
 //!   forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]
 //!   forge-validate env <env.json> [--report out.json] [--as-draft]
-//!   forge-validate training-bundle <contract.json> --contract-hash <sha256> [--out bundle.json]
-//!   forge-validate codesign-evaluate <contract.json> --snapshot-hash <sha256> [--out evaluation.json]
+//!   forge-validate training-bundle <contract.json> --contract-hash <sha256> [--catalog dir] [--out bundle.json]
+//!   forge-validate codesign-evaluate <contract.json> --snapshot-hash <sha256> [--catalog dir] [--out evaluation.json]
 //!   forge-validate sim-parity rapier-baseline [--out baseline.json]
 //!   forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json]
 //!   forge-validate sim-parity compare --mujoco mujoco-baseline.json [--out report.json]
@@ -42,7 +42,7 @@ fn main() -> ExitCode {
         }
         _ => {
             eprintln!(
-                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate training-bundle <contract.json> --contract-hash <sha256> [--out bundle.json]\n       forge-validate codesign-evaluate <contract.json> --snapshot-hash <sha256> [--out evaluation.json]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
+                "usage: forge-validate run <contract.json> [--report out.json] [--catalog dir] [--as-draft]\n       forge-validate bake <contract.json> [--out bake.json] [--catalog dir]\n       forge-validate bom <contract.json> [--out bom.csv|bom.json] [--format csv|json] [--catalog dir]\n       forge-validate patch <contract.json> <patch.json> [--out out.json]\n       forge-validate migrate <contract.json> [--to 2.2.0|current] [--out out.json]\n       forge-validate env <env.json> [--report out.json] [--as-draft]\n       forge-validate training-bundle <contract.json> --contract-hash <sha256> [--catalog dir] [--out bundle.json]\n       forge-validate codesign-evaluate <contract.json> --snapshot-hash <sha256> [--catalog dir] [--out evaluation.json]\n       forge-validate sim-parity rapier-baseline [--out baseline.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity mujoco-request --source-revision <git-sha> [--out request.json] [--gravity 9.80665] [--pendulum-length 0.4] [--hover-trim 0.42] [--gait-com 0.004]\n       forge-validate sim-parity compare --mujoco mujoco-baseline.json [--rapier rapier-baseline.json] [--out report.json]\n       forge-validate schema [--out schema.json]\n       forge-validate version [--json]"
             );
             eprintln!("       forge-validate recorder-verify <archive-dir> [--out report.json]");
             ExitCode::from(1)
@@ -109,7 +109,15 @@ fn cmd_training_bundle(args: &[String]) -> ExitCode {
         );
         return ExitCode::from(2);
     }
-    let report = run_full(&doc, &EmptyCatalog, &Options::default());
+    let file_catalog = match load_catalog(args, "training-bundle") {
+        Ok(catalog) => catalog,
+        Err(code) => return code,
+    };
+    let report = run_full(
+        &doc,
+        catalog_ref(file_catalog.as_ref()),
+        &Options::default(),
+    );
     if report.verdict != Verdict::Admitted {
         eprintln!(
             "training-bundle: sovereign validator verdict is {:?}; only admitted contracts may train",
@@ -171,6 +179,38 @@ fn cmd_codesign_evaluate(args: &[String]) -> ExitCode {
             "codesign-evaluate: immutable candidate snapshot hash mismatch (expected {expected_hash}, got {actual_hash})"
         );
         return ExitCode::from(2);
+    }
+    let file_catalog = match load_catalog(args, "codesign-evaluate") {
+        Ok(catalog) => catalog,
+        Err(code) => return code,
+    };
+    if let Some(catalog) = file_catalog.as_ref() {
+        let artifact =
+            forge_validate::codesign::evaluate_candidate_with_catalog(&doc, &actual_hash, catalog);
+        eprintln!(
+            "forge-validate codesign-evaluate · validator {} · catalog {} · Rapier {} → {}",
+            if artifact.tier0.passed {
+                "passed"
+            } else {
+                "failed"
+            },
+            if artifact.catalog_proof.resolution_complete {
+                "resolved"
+            } else {
+                "unresolved"
+            },
+            if artifact.tier1.as_ref().is_some_and(|proof| proof.passed) {
+                "passed"
+            } else {
+                "not-passed"
+            },
+            if artifact.passed { "passed" } else { "failed" }
+        );
+        return match emit_json("codesign-evaluate", args, &artifact) {
+            ExitCode::SUCCESS if artifact.passed => ExitCode::SUCCESS,
+            ExitCode::SUCCESS => ExitCode::from(2),
+            code => code,
+        };
     }
     let artifact = forge_validate::codesign::evaluate_candidate(&doc, &actual_hash);
     eprintln!(

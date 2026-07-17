@@ -286,6 +286,30 @@ requireValue(
   "Rust native co-design evaluation version does not match compatibility matrix",
 );
 requireValue(
+  pythonConstant(
+    "workers/forge_workers/codesign_runtime.py",
+    "CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION",
+  ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignCatalogNativeEvaluation,
+  "worker catalog-native co-design evaluation version does not match compatibility matrix",
+);
+requireValue(
+  sourceConstant(
+    "crates/forge-validate/src/codesign.rs",
+    "CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION",
+  ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignCatalogNativeEvaluation,
+  "Rust catalog-native co-design evaluation version does not match compatibility matrix",
+);
+requireValue(
+  pythonConstant("workers/forge_workers/codesign_runtime.py", "CODESIGN_CATALOG_PROOF_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignCatalogProof,
+  "worker co-design catalog-proof version does not match compatibility matrix",
+);
+requireValue(
+  sourceConstant("crates/forge-validate/src/codesign.rs", "CODESIGN_CATALOG_PROOF_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignCatalogProof,
+  "Rust co-design catalog-proof version does not match compatibility matrix",
+);
+requireValue(
   pythonConstant("workers/forge_workers/codesign_runtime.py", "CODESIGN_ENGINE_SMOKE_EVIDENCE_VERSION") ===
     matrix.surfaces.workerArtifacts.internalSchemas.codesignEngineSmokeEvidence,
   "co-design engine-smoke evidence version does not match compatibility matrix",
@@ -302,6 +326,13 @@ requireValue(
     "PROPOSAL_RUNTIME_AUTHORITY_VERSION",
   ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignProposalRuntimeAuthority,
   "co-design proposal runtime-authority version does not match compatibility matrix",
+);
+requireValue(
+  pythonConstant(
+    "workers/forge_workers/codesign_search.py",
+    "CATALOG_CHOICE_AUTHORITY_VERSION",
+  ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignCatalogChoiceAuthority,
+  "co-design catalog-choice authority version does not match compatibility matrix",
 );
 requireValue(
   pythonConstant("workers/forge_workers/codesign_search.py", "SEARCH_PLAN_VERSION") ===
@@ -362,7 +393,10 @@ for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.int
     "ghostOverlay",
     "codesignEvaluation",
     "codesignNativeEvaluation",
+    "codesignCatalogNativeEvaluation",
+    "codesignCatalogProof",
     "codesignEngineSmokeEvidence",
+    "codesignCatalogChoiceAuthority",
     "codesignSearchPlan",
     "codesignSearchPlanEvidence",
     "codesignEngineBatch",

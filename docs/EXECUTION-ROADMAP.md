@@ -654,14 +654,21 @@ successor must wait for the named-hardware/D54-to-twin gate above.
 
 P9-006 is closed at protected `54385c2`: exact-platform authority permits same-
 authority scheduling and resume only and never grants portable cache, heterogeneous
-resume, or cross-runtime tier-3 authority. The current dependency-complete local P9
-step is catalog-backed categorical search: replace the four synthetic electrical
-profiles with exact reviewed catalog component revisions, preserve license/export/
-compatibility and equipped-variant semantics, reapply every resulting patch through
-the sovereign validator/engine ladder, and retain the choice/revision/provenance
-lineage. Actual tier-3 training/scorecards follow only for engine-admitted finalists.
-Retained overnight/provider scheduling and billing remain separately gated. Fast
-proposal or local engine completion is not an overnight run.
+resume, or cross-runtime tier-3 authority. D64 implements the next local slice:
+search-plan/batch v3 replaces the four synthetic electrical profiles with exact
+lockfile-pinned CNHL 1500/1300 battery revisions, binds raw catalog row plus review/
+license/export authority, switches only the D32 equipped variant and required inline
+mirrors, and re-runs catalog-aware native admission before Rapier/MuJoCo. Protection
+and retained clean all-200 evidence are the immediate gate for that slice. The dirty-
+tree local smoke already proves 7 + zero-dispatch cancel + 193 resume, 200/200 native/
+Rapier/MuJoCo rows, 197 admissions, and the expected two-choice/two-point front. That
+passes inside all 44 local gates with 246 worker, 74 Gateway, and 39 Studio tests, but
+does not satisfy the separate P9 `>=3` phase exit. After protection,
+the next dependency-complete P9 work is actual tier-3 training/scorecards for the
+engine-admitted catalog finalists, followed separately by retained overnight/provider
+scheduling and billing. Catalog-native MuJoCo mass/inertia/thrust-table authority is
+an explicit adjacent lane and must receive a new bundle contract before it is claimed.
+Fast proposal or local engine completion is not an overnight run.
 
 Acceptance:
 

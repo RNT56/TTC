@@ -144,6 +144,19 @@ Live P3 fixture set (2026-06-13): `catalog/reference-rigs/` pins the quad and ro
 purchasable SKU rows; catalog-backed HUD includes equipped component masses and
 responds to the CNHL 1500 -> 1300 pack swap.
 
+D64 co-design authority (2026-07-17): the proof contract now retains both exact
+CNHL battery revisions in one slot while equipping exactly one under D32. The file
+catalog exposes a deterministic SHA-256 authority over every sorted component
+filename and raw-row digest plus each row digest. Search choice authority binds the
+slot/variant/ref/exact pin, mass, capacity, maximum discharge, confidence, review
+note, and license/export source. Native co-design evaluation records only equipped
+rows and keeps both catalog choices `reviewRequired=true`,
+`marketplacePublicationReviewed=false`, and `marketplaceExposable=false`. This is
+repository catalog/fixture authority, not owner publication approval, live Postgres
+persistence, vendor freshness, or a credentialed ingestion result. Changing any
+catalog byte partitions plan/batch cache and blocks checkpoint resume before engine
+work.
+
 ## 8. Dependencies
 
 Postgres + object storage; OCCT worker (tessellation); Claude (extraction);

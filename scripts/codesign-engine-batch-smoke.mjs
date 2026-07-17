@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// D61 retained local evidence: exact D60 200-proposal plan -> durable pause,
-// zero-dispatch cancellation, resume -> D59 sovereign native/Rapier/MuJoCo
-// evaluation. This is not provider, catalog-choice, tier-3, or overnight proof.
+// D64 retained local evidence: exact 200-proposal catalog plan -> durable pause,
+// zero-dispatch cancellation, resume -> sovereign catalog-aware native/Rapier/
+// MuJoCo evaluation. This is not provider, tier-3, or overnight proof.
 
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -67,7 +67,8 @@ if (process.env.FORGE_REQUIRE_CLEAN_EVIDENCE === "1" && !worktreeClean) {
   throw new Error("co-design engine-batch evidence requires a clean exact-source checkout");
 }
 
-const contract = JSON.parse(readFileSync(resolve(root, "examples/vx2-mini.forge.json"), "utf8"));
+const catalogRoot = resolve(root, "catalog");
+const contract = JSON.parse(readFileSync(resolve(root, "examples/vx2-proof.forge.json"), "utf8"));
 const contractJson = stableJson(contract);
 const contractHash = sha256(contractJson);
 const dependencyManifestSha256 = sha256(readFileSync(resolve(root, "workers/pyproject.toml")));
@@ -76,7 +77,7 @@ const searchRequest = {
   contractHash,
   modelSnapshot: {
     schemaVersion: "forge-admitted-model-snapshot/1.0.0",
-    modelId: "vx2-mini",
+    modelId: "vx2-proof",
     contractHash,
     contractJson,
   },
@@ -84,9 +85,9 @@ const searchRequest = {
   seed: 60,
   constraints: {
     maxMassG: 850,
-    minEnduranceMin: 8,
+    minEnduranceMin: 4,
     maxTaskTimeS: 21,
-    minScore: 0.70,
+    minScore: 0.50,
   },
 };
 const python = process.env.FORGE_PYTHON || "python3";
@@ -95,16 +96,17 @@ const env = {
   ...process.env,
   FORGE_SOURCE_REVISION: sourceRevision,
   FORGE_VALIDATE_BIN: validator,
+  FORGE_CATALOG_DIR: catalogRoot,
   PYTHONPATH: [resolve(root, "workers"), process.env.PYTHONPATH].filter(Boolean).join(delimiter),
 };
 const plan = runPython(python, ["-m", "forge_workers.codesign_search"], searchRequest, env);
 if (
-  plan.schemaVersion !== "forge-codesign-search-plan/2.0.0"
+  plan.schemaVersion !== "forge-codesign-search-plan/3.0.0"
   || plan.source?.sourceRevision !== sourceRevision
   || plan.source?.dependencyManifestSha256 !== dependencyManifestSha256
   || plan.proposals?.length !== 200
 ) {
-  throw new Error("co-design engine-batch input plan lost exact D60 source or proposal authority");
+  throw new Error("co-design engine-batch input plan lost exact D64 source or proposal authority");
 }
 
 const request = {
@@ -125,7 +127,7 @@ try {
     env,
   );
   if (
-    paused.schemaVersion !== "forge-codesign-engine-batch/2.0.0"
+    paused.schemaVersion !== "forge-codesign-engine-batch/3.0.0"
     || paused.scheduler?.state !== "paused"
     || paused.scheduler?.nextOrdinal !== 7
     || paused.candidates?.length !== 7
@@ -159,26 +161,30 @@ try {
 }
 
 if (
-  result.schemaVersion !== "forge-codesign-engine-batch/2.0.0"
+  result.schemaVersion !== "forge-codesign-engine-batch/3.0.0"
   || result.artifactKind !== "codesignEngineBatch"
   || result.provider !== "forge-local-engine-batch"
   || result.source?.baseContractHash !== contractHash
   || result.source?.searchPlanSha256 !== plan.planSha256
   || result.source?.proposalRuntimeAuthority?.authoritySha256
     !== plan.source?.proposalRuntimeAuthority?.authoritySha256
+  || result.source?.catalogChoiceAuthority?.authoritySha256
+    !== plan.source?.catalogChoiceAuthority?.authoritySha256
   || result.source?.sourceRevision !== sourceRevision
   || result.source?.sourceRevisionRecorded !== true
   || result.source?.dependencyManifestSha256 !== dependencyManifestSha256
-  || result.source?.maturity !== "platform-bound-local-engine-200-batch"
+  || result.source?.maturity !== "catalog-bound-platform-local-engine-200-batch"
   || result.scheduler?.state !== "complete"
   || result.scheduler?.nextOrdinal !== 200
   || result.scheduler?.completedCandidates !== 200
   || result.scheduler?.resumeObserved !== true
   || result.scheduler?.cancellationObserved !== true
   || result.scheduler?.checkpointEveryCandidate !== true
-  || result.scheduler?.resumePolicy !== "exact-proposal-runtime-authority"
+  || result.scheduler?.resumePolicy !== "exact-proposal-and-catalog-authority"
   || result.scheduler?.requiredRuntimeAuthoritySha256
     !== plan.source?.proposalRuntimeAuthority?.authoritySha256
+  || result.scheduler?.requiredCatalogAuthoritySha256
+    !== plan.source?.catalogChoiceAuthority?.catalogAuthoritySha256
   || result.scheduler?.heterogeneousResumeAllowed !== false
   || result.benchmark?.exactCandidateHashesEvaluated !== 200
   || result.benchmark?.nativeEvaluated !== 200
@@ -186,13 +192,26 @@ if (
   || result.benchmark?.engineBatchComplete !== true
   || result.benchmark?.overnightComplete !== false
   || result.candidates?.length !== 200
-  || result.pareto?.length < 3
-  || result.finalists?.length !== 3
+  // The D64 fixture has exactly two real battery revisions. Driver-only variants
+  // share mass/endurance within a revision, so physical dominance intentionally
+  // leaves one point per revision. This is not the separate P9 >=3 phase-exit proof.
+  || result.pareto?.length !== 2
+  || result.finalists?.length !== 2
   || result.cost?.localExecution !== true
   || result.cost?.providerBillingVerified !== false
   || result.cost?.providerChargedAmount !== null
 ) {
-  throw new Error("co-design engine-batch completion, recovery, cost, or Pareto contract drifted");
+  throw new Error(
+    `co-design engine-batch completion, recovery, cost, or Pareto contract drifted: ${stableJson({
+      schemaVersion: result.schemaVersion,
+      provider: result.provider,
+      scheduler: result.scheduler,
+      benchmark: result.benchmark,
+      paretoCount: result.pareto?.length,
+      finalistCount: result.finalists?.length,
+      cost: result.cost,
+    })}`,
+  );
 }
 for (const [ordinal, candidate] of result.candidates.entries()) {
   const proposal = plan.proposals[ordinal];
@@ -204,13 +223,42 @@ for (const [ordinal, candidate] of result.candidates.entries()) {
     || candidate.lineage?.searchPlanSha256 !== plan.planSha256
     || candidate.lineage?.proposalRuntimeAuthoritySha256
       !== plan.source?.proposalRuntimeAuthority?.authoritySha256
+    || candidate.lineage?.catalogAuthoritySha256
+      !== plan.source?.catalogChoiceAuthority?.catalogAuthoritySha256
+    || candidate.lineage?.catalogChoiceAuthoritySha256
+      !== plan.source?.catalogChoiceAuthority?.authoritySha256
+    || candidate.lineage?.selectedRowSha256 !== proposal.catalogChoice?.rowSha256
+    || candidate.lineage?.selectedExactRevision !== proposal.catalogChoice?.exactRevision
+    || stableJson(candidate.catalogChoice) !== stableJson(proposal.catalogChoice)
     || candidate.nativeEvaluation?.candidateSnapshotSha256 !== proposal.lineage?.candidateSnapshotSha256
+    || candidate.nativeEvaluation?.schemaVersion !== "forge-codesign-native-evaluation/2.0.0"
+    || candidate.nativeEvaluation?.catalogProof?.schemaVersion !== "forge-codesign-catalog-proof/1.0.0"
+    || candidate.nativeEvaluation?.catalogProof?.catalogAuthoritySha256
+      !== plan.source?.catalogChoiceAuthority?.catalogAuthoritySha256
+    || candidate.nativeEvaluation?.catalogProof?.resolutionComplete !== true
+    || candidate.nativeEvaluation?.catalogProof?.marketplacePublicationReviewed !== false
+    || candidate.nativeEvaluation?.catalogProof?.marketplaceExposable !== false
     || candidate.evaluations?.tier3?.evaluated !== false
     || candidate.evaluations?.tier3?.held !== true
     || candidate.lineage?.mujocoRuntime !== "3.9.0"
     || candidate.lineage?.trainingBundleSchema !== "2.0.0"
   ) {
     throw new Error(`co-design engine-batch candidate ${ordinal} lost exact plan or tier authority`);
+  }
+  const selectedProof = candidate.nativeEvaluation.catalogProof.equippedComponents.filter(
+    (component) => component.slotId === proposal.catalogChoice.slotId,
+  );
+  if (
+    selectedProof.length !== 1
+    || selectedProof[0].variantId !== proposal.catalogChoice.choiceId
+    || selectedProof[0].exactRevision !== proposal.catalogChoice.exactRevision
+    || selectedProof[0].rowSha256 !== proposal.catalogChoice.rowSha256
+    || selectedProof[0].license?.id !== proposal.catalogChoice.license?.id
+    || selectedProof[0].license?.class !== proposal.catalogChoice.license?.class
+    || selectedProof[0].license?.exportPolicy !== proposal.catalogChoice.license?.exportPolicy
+    || selectedProof[0].reviewRequired !== true
+  ) {
+    throw new Error(`co-design engine-batch candidate ${ordinal} lost equipped catalog authority`);
   }
   if (candidate.admitted === true && (
     candidate.evaluations?.tier0?.engineBacked !== true
@@ -229,7 +277,7 @@ if (Object.values(result.nonclaims || {}).some((claim) => claim !== false)) {
 }
 const resultHash = sha256(stableJson(result));
 const evidence = {
-  evidenceSchemaVersion: "p9-engine-batch-evidence/2.0.0",
+  evidenceSchemaVersion: "p9-engine-batch-evidence/3.0.0",
   sourceRevision,
   worktreeClean,
   validator,

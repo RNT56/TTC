@@ -462,8 +462,9 @@ every user-facing capability claim.
   derive admission/Pareto and select tier-3 finalists. Keep selected finalists
   distinct from trained finalists, and measured local wall runtime distinct from an
   overnight schedule, provider billing/currency, energy measurement, or production
-  cost. A complete local batch still grants no catalog, build, hardware, or field
-  authority.
+  cost. A complete local batch grants catalog authority only when the separately
+  versioned choice, row, and native proofs below are present; it never grants build,
+  hardware, or field authority.
 - Test seeded optimizer identity across every supported worker architecture before
   calling a proposal plan portable or deterministic. Same-host replay proves only a
   local fixed point. Compare all patch/candidate hashes across hosts; if any differ,
@@ -479,6 +480,17 @@ every user-facing capability claim.
   hash in plan/checkpoint cache keys and candidate lineage. Refuse a foreign
   authority before dispatch, compare every proposal hash at one clean source
   revision, and keep cross-runtime cache/tier-3 claims false.
+- Treat a co-design categorical as an exact equipped revision, not a preference
+  label. Hash the sorted raw catalog rows, bind slot/variant/ranged ref/exact pin,
+  row digest, physical fields, confidence/review state, and license/export source;
+  then switch only `equippedVariantId` and exact required simulation mirrors under
+  D32. Re-run the sovereign validator with the same catalog and record only equipped
+  component proofs. Unequipped choices must not affect HUD, BOM, lockfile resolution,
+  simulation, or lineage. Any catalog-byte drift partitions cache and blocks resume.
+  Repository row authority is not marketplace approval or live persistence: keep
+  review and exposure false until an explicit owner workflow proves them. If a
+  downstream bundle still consumes inline mirrors, say so and do not call it
+  catalog-native mass/inertia/thrust-table physics.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

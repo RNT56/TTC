@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// D60 proposal-only evidence: exact admitted snapshot -> real pinned CMA-ES/TPE
-// -> deterministic 200-proposal plan. No proposal is evaluated or admitted here.
+// D64 proposal-only evidence: exact admitted catalog-backed snapshot -> pinned
+// CMA-ES/TPE -> deterministic 200-proposal plan. No proposal is admitted here.
 
 import { createHash } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { delimiter, dirname, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -52,11 +52,8 @@ function applyReplacePatch(source, patch) {
   const result = structuredClone(source);
   for (const operation of patch) {
     exactKeys(operation, ["op", "path", "value"], "co-design search-plan patch operation");
-    if (
-      operation.op !== "replace"
-      || !/^\/sim\/(motors\/\d+\/kv|props\/\d+\/diameterIn|battery\/capacity_mAh)$/.test(operation.path)
-    ) {
-      throw new Error("co-design search-plan patch escaped the frozen electrical manifold");
+    if (operation.op !== "replace") {
+      throw new Error("co-design search-plan patch escaped replace-only authority");
     }
     const tokens = pointerTokens(operation.path);
     let parent = result;
@@ -101,7 +98,21 @@ if (process.env.FORGE_REQUIRE_CLEAN_EVIDENCE === "1" && !worktreeClean) {
   throw new Error("co-design search-plan evidence requires a clean exact-source checkout");
 }
 
-const contract = JSON.parse(readFileSync(resolve(root, "examples/vx2-mini.forge.json"), "utf8"));
+const catalogRoot = resolve(root, "catalog");
+const componentNames = readdirSync(resolve(catalogRoot, "components"))
+  .filter((name) => name.endsWith(".json"))
+  .sort();
+const catalogHasher = createHash("sha256").update("forge-file-catalog-authority-v1\0");
+const catalogRows = new Map();
+for (const name of componentNames) {
+  const raw = readFileSync(resolve(catalogRoot, "components", name));
+  const rowSha256 = sha256(raw);
+  catalogHasher.update(`components/${name}\0${rowSha256}\n`);
+  const row = JSON.parse(raw);
+  catalogRows.set(row.id, { row, rowSha256 });
+}
+const catalogAuthoritySha256 = catalogHasher.digest("hex");
+const contract = JSON.parse(readFileSync(resolve(root, "examples/vx2-proof.forge.json"), "utf8"));
 const contractJson = JSON.stringify(stable(contract));
 const contractHash = sha256(contractJson);
 const dependencyManifestSha256 = sha256(readFileSync(resolve(root, "workers/pyproject.toml")));
@@ -110,7 +121,7 @@ const request = {
   contractHash,
   modelSnapshot: {
     schemaVersion: "forge-admitted-model-snapshot/1.0.0",
-    modelId: "vx2-mini",
+    modelId: "vx2-proof",
     contractHash,
     contractJson,
   },
@@ -118,9 +129,9 @@ const request = {
   seed: 60,
   constraints: {
     maxMassG: 850,
-    minEnduranceMin: 8,
+    minEnduranceMin: 4,
     maxTaskTimeS: 21,
-    minScore: 0.70,
+    minScore: 0.50,
   },
 };
 const python = process.env.FORGE_PYTHON || "python3";
@@ -132,6 +143,7 @@ const run = spawnSync(python, ["-m", "forge_workers.codesign_search"], {
   env: {
     ...process.env,
     FORGE_SOURCE_REVISION: sourceRevision,
+    FORGE_CATALOG_DIR: catalogRoot,
     PYTHONPATH: [resolve(root, "workers"), process.env.PYTHONPATH].filter(Boolean).join(delimiter),
   },
 });
@@ -158,14 +170,14 @@ exactKeys(
   "co-design search-plan",
 );
 if (
-  plan.schemaVersion !== "forge-codesign-search-plan/2.0.0"
+  plan.schemaVersion !== "forge-codesign-search-plan/3.0.0"
   || plan.artifactKind !== "codesignSearchPlan"
   || plan.provider !== "forge-local-algorithm-search"
   || plan.source?.baseContractHash !== contractHash
   || plan.source?.sourceRevision !== sourceRevision
   || plan.source?.sourceRevisionRecorded !== true
   || plan.source?.dependencyManifestSha256 !== dependencyManifestSha256
-  || plan.source?.maturity !== "platform-bound-algorithm-proposal-plan"
+  || plan.source?.maturity !== "catalog-bound-platform-algorithm-proposal-plan"
   || plan.source?.resumePolicy !== "exact-proposal-runtime-authority"
   || plan.source?.heterogeneousResumeAllowed !== false
   || plan.algorithms?.candidateBudget !== 200
@@ -176,7 +188,8 @@ if (
   || plan.algorithms?.optunaTpe?.proposals !== 100
   || plan.algorithms?.optunaTpe?.engineFeedback !== false
   || plan.proposals?.length !== 200
-  || plan.manifold?.catalogChoiceSearch !== false
+  || plan.manifold?.catalogChoiceSearch !== true
+  || plan.manifold?.equippedVariantSemantics !== "exactly-one-equipped-d32"
 ) {
   throw new Error("co-design search-plan identity, source, algorithm, or maturity contract drifted");
 }
@@ -229,19 +242,63 @@ if (
 ) {
   throw new Error("co-design proposal runtime authority drifted");
 }
+const catalogChoiceAuthority = plan.source?.catalogChoiceAuthority;
+exactKeys(
+  catalogChoiceAuthority,
+  [
+    "schemaVersion",
+    "catalogAuthoritySha256",
+    "searchSlotId",
+    "searchSlotIndex",
+    "baseEquippedChoiceId",
+    "choices",
+    "marketplacePublicationReviewed",
+    "marketplaceExposable",
+    "authoritySha256",
+  ],
+  "co-design catalog-choice authority",
+);
+const catalogChoiceAuthoritySha256 = sha256(stableJson(Object.fromEntries(
+  Object.entries(catalogChoiceAuthority).filter(([name]) => name !== "authoritySha256"),
+)));
+if (
+  catalogChoiceAuthority.schemaVersion !== "forge-codesign-catalog-choice-authority/1.0.0"
+  || catalogChoiceAuthority.catalogAuthoritySha256 !== catalogAuthoritySha256
+  || catalogChoiceAuthority.authoritySha256 !== catalogChoiceAuthoritySha256
+  || catalogChoiceAuthority.searchSlotId !== "battery"
+  || catalogChoiceAuthority.choices?.length !== 2
+  || catalogChoiceAuthority.marketplacePublicationReviewed !== false
+  || catalogChoiceAuthority.marketplaceExposable !== false
+) {
+  throw new Error("co-design catalog-choice authority drifted");
+}
+for (const choice of catalogChoiceAuthority.choices) {
+  const resolved = catalogRows.get(choice.componentId);
+  if (
+    resolved?.rowSha256 !== choice.rowSha256
+    || resolved?.row.category !== "battery"
+    || resolved?.row.elec?.capacityMah !== choice.capacityMah
+    || resolved?.row.elec?.maxDischargeA !== choice.maxDischargeA
+    || resolved?.row.license?.id !== choice.license?.id
+    || resolved?.row.license?.class !== choice.license?.class
+    || resolved?.row.license?.exportPolicy !== choice.license?.exportPolicy
+    || choice.reviewRequired !== true
+  ) {
+    throw new Error(`co-design catalog choice ${choice.choiceId} lost row, license, or review authority`);
+  }
+}
 const cma = plan.proposals.filter((proposal) => proposal.algorithm === "cma-es");
 const tpe = plan.proposals.filter((proposal) => proposal.algorithm === "optuna-tpe");
 const candidateHashes = new Set();
 const parameterRows = new Set();
 const bounds = {
-  motorKvScale: [0.94, 1.06],
-  propDiameterScale: [0.94, 1.06],
-  batteryCapacityScale: [0.90, 1.10],
+  tiltMaxRad: [0.32, 0.48],
+  yawRateRadS: [2.0, 2.8],
 };
 for (const [ordinal, proposal] of plan.proposals.entries()) {
   exactKeys(
     proposal,
-    ["id", "ordinal", "algorithm", "profile", "parameters", "acquisition", "patch", "lineage"],
+    ["id", "ordinal", "algorithm", "catalogChoice", "parameters", "acquisition", "patch", "lineage"],
     `co-design proposal ${ordinal}`,
   );
   exactKeys(proposal.parameters, Object.keys(bounds), `co-design proposal ${ordinal} parameters`);
@@ -252,7 +309,14 @@ for (const [ordinal, proposal] of plan.proposals.entries()) {
   );
   exactKeys(
     proposal.lineage,
-    ["patchSha256", "candidateSnapshotSha256"],
+    [
+      "patchSha256",
+      "candidateSnapshotSha256",
+      "catalogAuthoritySha256",
+      "catalogChoiceAuthoritySha256",
+      "selectedRowSha256",
+      "selectedExactRevision",
+    ],
     `co-design proposal ${ordinal} lineage`,
   );
   if (
@@ -262,6 +326,7 @@ for (const [ordinal, proposal] of plan.proposals.entries()) {
     || proposal.acquisition.engineFeedback !== false
     || !Number.isFinite(proposal.acquisition.loss)
     || !Array.isArray(proposal.patch)
+    || !catalogChoiceAuthority.choices.some((choice) => stableJson(choice) === stableJson(proposal.catalogChoice))
   ) {
     throw new Error(`co-design proposal ${ordinal} identity or acquisition drifted`);
   }
@@ -272,11 +337,28 @@ for (const [ordinal, proposal] of plan.proposals.entries()) {
     }
   }
   const patchSha256 = sha256(stableJson(proposal.patch));
+  const expectedPaths = [
+    "/slots/1/equippedVariantId",
+    "/sim/battery/capacity_mAh",
+    "/sim/battery/cRating",
+    "/driver/params/tiltMaxRad",
+    "/driver/params/yawRate",
+  ];
+  if (stableJson(proposal.patch.map((operation) => operation.path)) !== stableJson(expectedPaths)) {
+    throw new Error(`co-design proposal ${ordinal} escaped exact catalog/driver patch authority`);
+  }
   const candidate = applyReplacePatch(contract, proposal.patch);
   const candidateSnapshotSha256 = sha256(stableJson(candidate));
   if (
     proposal.lineage.patchSha256 !== patchSha256
     || proposal.lineage.candidateSnapshotSha256 !== candidateSnapshotSha256
+    || proposal.lineage.catalogAuthoritySha256 !== catalogAuthoritySha256
+    || proposal.lineage.catalogChoiceAuthoritySha256 !== catalogChoiceAuthoritySha256
+    || proposal.lineage.selectedRowSha256 !== proposal.catalogChoice.rowSha256
+    || proposal.lineage.selectedExactRevision !== proposal.catalogChoice.exactRevision
+    || candidate.slots?.[1]?.equippedVariantId !== proposal.catalogChoice.choiceId
+    || candidate.sim?.battery?.capacity_mAh !== proposal.catalogChoice.capacityMah
+    || candidate.sim?.battery?.cRating !== proposal.catalogChoice.cRating
     || proposal.id !== `proposal-${String(ordinal).padStart(3, "0")}-${candidateSnapshotSha256.slice(0, 12)}`
   ) {
     throw new Error(`co-design proposal ${ordinal} lineage drifted`);
@@ -296,7 +378,8 @@ const expectedNonclaims = [
   "physicalConstraintsEvaluated",
   "overnight200Candidate",
   "trainedFinalist",
-  "catalogChoiceSearch",
+  "catalogMarketplacePublicationReviewed",
+  "catalogLivePersistence",
   "providerSandbox",
   "buildReady",
   "hardwareAuthority",
@@ -323,14 +406,17 @@ const planSha256 = sha256(stableJson(planHashPayload));
 if (
   plan.planSha256 !== planSha256
   || plan.cacheKey !== (
-    `codesign.search:v2:${contractHash.slice(0, 16)}:`
+    `codesign.search:v3:${contractHash.slice(0, 16)}:`
+    + `${catalogChoiceAuthoritySha256.slice(0, 16)}:`
     + `${runtimeAuthoritySha256.slice(0, 16)}:${planSha256.slice(0, 16)}`
   )
 ) {
-  throw new Error("co-design search-plan aggregate lineage drifted");
+  throw new Error(
+    `co-design search-plan aggregate lineage drifted: plan=${plan.planSha256}/${planSha256} cache=${plan.cacheKey}`,
+  );
 }
 const evidence = {
-  evidenceSchemaVersion: "p9-search-plan-evidence/2.0.0",
+  evidenceSchemaVersion: "p9-search-plan-evidence/3.0.0",
   sourceRevision,
   worktreeClean,
   result: plan,
@@ -338,5 +424,5 @@ const evidence = {
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, `${JSON.stringify(evidence, null, 2)}\n`);
 console.log(
-  `codesign-search-plan: 100 CMA-ES + 100 Optuna TPE proposals · platform-bound runtime · no engine/admission authority · ${outPath}`,
+  `codesign-search-plan: 100 CMA-ES + 100 Optuna TPE proposals · 2 exact battery revisions · catalog/runtime bound · no engine/admission authority · ${outPath}`,
 );

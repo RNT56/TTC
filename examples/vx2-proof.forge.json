@@ -785,7 +785,7 @@
   "battery": {
    "cells": 4,
    "capacity_mAh": 1500,
-   "cRating": 100,
+    "cRating": 130,
    "r_int_mohm": 18
   },
   "motors": [
@@ -870,14 +870,20 @@
    "variants": [
     {
      "id": "cnhl-4s-1500",
-     "name": "CNHL Black Series 4S 1500 mAh 100C",
+     "name": "CNHL Black Series 4S 1500 mAh 130C",
      "componentRef": "cmp_batt_cnhl-black-4s-1500@^1.0.0"
+    },
+    {
+     "id": "cnhl-v2-4s-1300",
+     "name": "CNHL Black Series V2 4S 1300 mAh 130C",
+     "componentRef": "cmp_batt_cnhl-black-v2-4s-1300@^1.0.0"
     }
    ]
   }
  ],
  "lockfile": {
   "cmp_motor_emax-eco2-2207-1900kv@^1.0.0": "cmp_motor_emax-eco2-2207-1900kv@1.0.0",
-  "cmp_batt_cnhl-black-4s-1500@^1.0.0": "cmp_batt_cnhl-black-4s-1500@1.0.0"
+  "cmp_batt_cnhl-black-4s-1500@^1.0.0": "cmp_batt_cnhl-black-4s-1500@1.0.0",
+  "cmp_batt_cnhl-black-v2-4s-1300@^1.0.0": "cmp_batt_cnhl-black-v2-4s-1300@1.0.0"
  }
 }

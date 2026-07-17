@@ -1,12 +1,13 @@
-"""Checkpointed D61 consumer for the exact D60/D62 co-design proposal plan.
+"""Checkpointed D64 consumer for the exact catalog-backed co-design plan.
 
-The batch owns no proposal generation semantics.  It replays and validates the
-exact D60 plan, evaluates its contiguous proposal hashes through the D59 sovereign
-native/Rapier/MuJoCo ladder, and writes a hash-bound checkpoint after every
-candidate.  Pareto and finalist selection are withheld until all 200 candidates
-have engine evidence.  Tier 3, provider billing, catalog choice, build, hardware,
-field, and the separate overnight claim remain held. Version 2 binds the exact
-proposal numeric runtime and refuses heterogeneous resume.
+The batch owns no proposal generation semantics. It replays and validates the exact
+D64 catalog-backed plan, evaluates its contiguous proposal hashes through the
+sovereign catalog/native/Rapier/MuJoCo ladder, and writes a hash-bound checkpoint
+after every candidate. Pareto and finalist selection are withheld until all 200
+candidates have engine evidence. Tier 3, provider billing, catalog marketplace
+publication, live catalog persistence, build, hardware, field, and the separate
+overnight claim remain held. Version 3 binds both catalog and exact proposal-runtime
+authority and refuses foreign-catalog or heterogeneous resume.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ from typing import Any, Callable, TextIO
 
 from forge_workers.codesign_runtime import (
     CODESIGN_NATIVE_EVALUATION_SCHEMA,
-    CODESIGN_NATIVE_EVALUATION_VERSION,
+    CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION,
     RAPIER_ENGINE,
     ROLLOUT_CONTROL_PERIOD_S,
     ROLLOUT_EPISODES,
@@ -43,6 +44,7 @@ from forge_workers.codesign_search import (
     SEARCH_PLAN_VERSION,
     TOTAL_PROPOSALS,
     apply_search_patch,
+    catalog_dir,
     validate_search_plan,
 )
 from forge_workers.net_security import assert_bounded_json
@@ -55,17 +57,18 @@ from forge_workers.training.bundle import (
 from forge_workers.training.tasks import task_definition
 
 ENGINE_BATCH_SCHEMA = "forge-codesign-engine-batch"
-ENGINE_BATCH_VERSION = "2.0.0"
-ENGINE_BATCH_EVIDENCE_VERSION = "2.0.0"
-ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/2.0.0"
-ENGINE_BATCH_MATURITY = "platform-bound-local-engine-200-batch"
+ENGINE_BATCH_VERSION = "3.0.0"
+ENGINE_BATCH_EVIDENCE_VERSION = "3.0.0"
+ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/3.0.0"
+ENGINE_BATCH_MATURITY = "catalog-bound-platform-local-engine-200-batch"
 MAX_INPUT_BYTES = 8 * 1024 * 1024
 MAX_CHECKPOINT_BYTES = 32 * 1024 * 1024
 TIER3_REASON = "tier 3 is held until a separately evidenced selected-finalist training run"
 NONCLAIMS = {
     "overnight200Candidate": False,
     "trainedFinalist": False,
-    "catalogChoiceSearch": False,
+    "catalogMarketplacePublicationReviewed": False,
+    "catalogLivePersistence": False,
     "providerSandbox": False,
     "providerBillingVerified": False,
     "buildReady": False,
@@ -105,7 +108,7 @@ def _search_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if payload.get("task") != "codesign.engine-batch":
         raise ValueError("co-design engine batch requires task=codesign.engine-batch")
     if payload.get("candidateBudget") != TOTAL_PROPOSALS:
-        raise ValueError("co-design engine batch v2 requires exactly 200 candidates")
+        raise ValueError("co-design engine batch v3 requires exactly 200 candidates")
     return {
         "task": "codesign.search-plan",
         "contractHash": payload.get("contractHash"),
@@ -158,7 +161,9 @@ def _candidate_expected(
         raise ValueError("co-design engine-batch proposal candidate hash drifted")
     if _sha(_stable_json(proposal["patch"])) != proposal["lineage"]["patchSha256"]:
         raise ValueError("co-design engine-batch proposal patch hash drifted")
-    _validate_native_evaluation(native, candidate_hash)
+    catalog_authority = plan["source"]["catalogChoiceAuthority"]
+    _validate_native_evaluation(native, candidate_hash, catalog_authority["catalogAuthoritySha256"])
+    _validate_selected_catalog_choice(native, proposal["catalogChoice"], catalog_authority)
     if rollout is not None:
         _validate_rollout(rollout)
     evaluations, metrics, admitted, admission_reasons = _tier_records(
@@ -174,7 +179,7 @@ def _candidate_expected(
         "id": f"{proposal['id']}-engine",
         "ordinal": ordinal,
         "algorithm": proposal["algorithm"],
-        "profile": proposal["profile"],
+        "catalogChoice": copy.deepcopy(proposal["catalogChoice"]),
         "patch": copy.deepcopy(proposal["patch"]),
         "tier": "mujoco-rollout" if evaluations["tier2"]["pass"] else (
             "rapier-smoke" if evaluations["tier1"]["pass"] else "validator-oracle"
@@ -191,11 +196,15 @@ def _candidate_expected(
             "proposalRuntimeAuthoritySha256": plan["source"]["proposalRuntimeAuthority"][
                 "authoritySha256"
             ],
+            "catalogAuthoritySha256": catalog_authority["catalogAuthoritySha256"],
+            "catalogChoiceAuthoritySha256": catalog_authority["authoritySha256"],
+            "selectedRowSha256": proposal["catalogChoice"]["rowSha256"],
+            "selectedExactRevision": proposal["catalogChoice"]["exactRevision"],
             "proposalId": proposal["id"],
             "candidateSnapshotSha256": candidate_hash,
             "patchSha256": proposal["lineage"]["patchSha256"],
             "nativeEvaluationSchema": (
-                f"{CODESIGN_NATIVE_EVALUATION_SCHEMA}/{CODESIGN_NATIVE_EVALUATION_VERSION}"
+                f"{CODESIGN_NATIVE_EVALUATION_SCHEMA}/{CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION}"
             ),
             "nativeEvaluationSha256": native_sha,
             "trainingBundleSchema": TRAINING_BUNDLE_VERSION,
@@ -207,6 +216,41 @@ def _candidate_expected(
     if _sha(candidate_json) != candidate_hash:
         raise RuntimeError("co-design engine-batch candidate serialization drifted")
     return record
+
+
+def _validate_selected_catalog_choice(
+    native: dict[str, Any], choice: dict[str, Any], catalog_authority: dict[str, Any]
+) -> None:
+    if choice not in catalog_authority["choices"]:
+        raise ValueError("co-design engine-batch selected choice is outside catalog authority")
+    proof = native.get("catalogProof")
+    if not isinstance(proof, dict):
+        raise ValueError("co-design engine-batch native catalog proof is absent")
+    matches = [
+        component
+        for component in proof.get("equippedComponents", [])
+        if isinstance(component, dict) and component.get("slotId") == choice["slotId"]
+    ]
+    if len(matches) != 1:
+        raise ValueError("co-design engine-batch selected catalog slot is not uniquely equipped")
+    component = matches[0]
+    expected = {
+        "variantId": choice["choiceId"],
+        "componentRef": choice["componentRef"],
+        "exactRevision": choice["exactRevision"],
+        "componentId": choice["componentId"],
+        "category": choice["category"],
+        "rowSha256": choice["rowSha256"],
+        "massG": choice["massG"],
+        "capacityMah": choice["capacityMah"],
+        "maxDischargeA": choice["maxDischargeA"],
+        "confidence": choice["confidence"],
+        "reviewRequired": choice["reviewRequired"],
+        "review": choice["review"],
+        "license": choice["license"],
+    }
+    if any(component.get(name) != value for name, value in expected.items()):
+        raise ValueError("co-design engine-batch selected catalog revision proof drifted")
 
 
 def _validate_rollout(rollout: dict[str, Any]) -> None:
@@ -281,7 +325,7 @@ def evaluate_proposal(
     plan: dict[str, Any],
     proposal: dict[str, Any],
 ) -> dict[str, Any]:
-    """Run one exact D60 proposal through the D59 sovereign engine ladder."""
+    """Run one exact D64 proposal through the sovereign catalog/engine ladder."""
 
     ordinal = proposal["ordinal"]
     candidate_contract = apply_search_patch(contract, proposal["patch"])
@@ -291,11 +335,17 @@ def evaluate_proposal(
     )
     if candidate_hash != proposal["lineage"]["candidateSnapshotSha256"]:
         raise ValueError("co-design engine-batch proposal hash does not match the exact candidate")
-    native, native_runtime_ms = _native_evaluation(candidate_json, candidate_hash)
+    catalog_authority = plan["source"]["catalogChoiceAuthority"]
+    native, native_runtime_ms = _native_evaluation(
+        candidate_json,
+        candidate_hash,
+        catalog_path=catalog_dir(),
+        catalog_authority_sha256=catalog_authority["catalogAuthoritySha256"],
+    )
     rollout: dict[str, Any] | None = None
     rollout_runtime_ms = 0.0
     if native["passed"] is True:
-        bundle = compile_training_bundle(training_payload)
+        bundle = compile_training_bundle(training_payload, catalog_path=catalog_dir())
         rollout, rollout_runtime_ms = _mujoco_rollout(
             bundle,
             plan["algorithms"]["seed"] + ordinal * 100,
@@ -327,7 +377,7 @@ def _validate_candidate(
             "id",
             "ordinal",
             "algorithm",
-            "profile",
+            "catalogChoice",
             "patch",
             "tier",
             "admitted",
@@ -463,7 +513,8 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
         "artifactKind": "codesignEngineBatch",
         "provider": "forge-local-engine-batch",
         "cacheKey": (
-            f"codesign.batch:v2:{snapshot['contractHash'][:16]}:"
+            f"codesign.batch:v3:{snapshot['contractHash'][:16]}:"
+            f"{plan['source']['catalogChoiceAuthority']['authoritySha256'][:16]}:"
             f"{plan['source']['proposalRuntimeAuthority']['authoritySha256'][:16]}:"
             f"{plan['planSha256'][:16]}"
         ),
@@ -480,6 +531,7 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
             "proposalRuntimeAuthority": copy.deepcopy(
                 plan["source"]["proposalRuntimeAuthority"]
             ),
+            "catalogChoiceAuthority": copy.deepcopy(plan["source"]["catalogChoiceAuthority"]),
             "runtime": ENGINE_BATCH_RUNTIME,
             "maturity": ENGINE_BATCH_MATURITY,
         },
@@ -492,9 +544,12 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
             "completedCandidates": 0,
             "checkpointEveryCandidate": True,
             "serialExecution": True,
-            "resumePolicy": "exact-proposal-runtime-authority",
+            "resumePolicy": "exact-proposal-and-catalog-authority",
             "requiredRuntimeAuthoritySha256": plan["source"]["proposalRuntimeAuthority"][
                 "authoritySha256"
+            ],
+            "requiredCatalogAuthoritySha256": plan["source"]["catalogChoiceAuthority"][
+                "catalogAuthoritySha256"
             ],
             "heterogeneousResumeAllowed": False,
             "resumeObserved": False,
@@ -637,6 +692,7 @@ def validate_checkpoint(checkpoint: Any, payload: dict[str, Any]) -> dict[str, A
             "serialExecution",
             "resumePolicy",
             "requiredRuntimeAuthoritySha256",
+            "requiredCatalogAuthoritySha256",
             "heterogeneousResumeAllowed",
             "resumeObserved",
             "cancellationObserved",
@@ -660,11 +716,18 @@ def validate_checkpoint(checkpoint: Any, payload: dict[str, Any]) -> dict[str, A
     source = checkpoint.get("source")
     authority = source.get("proposalRuntimeAuthority") if isinstance(source, dict) else None
     authority_sha = authority.get("authoritySha256") if isinstance(authority, dict) else None
+    catalog_authority = source.get("catalogChoiceAuthority") if isinstance(source, dict) else None
+    catalog_sha = (
+        catalog_authority.get("catalogAuthoritySha256")
+        if isinstance(catalog_authority, dict)
+        else None
+    )
     if (
         scheduler.get("checkpointEveryCandidate") is not True
         or scheduler.get("serialExecution") is not True
-        or scheduler.get("resumePolicy") != "exact-proposal-runtime-authority"
+        or scheduler.get("resumePolicy") != "exact-proposal-and-catalog-authority"
         or scheduler.get("requiredRuntimeAuthoritySha256") != authority_sha
+        or scheduler.get("requiredCatalogAuthoritySha256") != catalog_sha
         or scheduler.get("heterogeneousResumeAllowed") is not False
     ):
         raise ValueError("co-design engine checkpoint durability or scheduling drifted")
@@ -823,7 +886,9 @@ def _writer(path: Path) -> CheckpointWriter:
 
 
 def _arguments(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate the exact D60 co-design plan with durable checkpoints")
+    parser = argparse.ArgumentParser(
+        description="Evaluate the exact D64 catalog-backed co-design plan with durable checkpoints"
+    )
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--max-candidates", type=int)
     parser.add_argument("--cancel", action="store_true")

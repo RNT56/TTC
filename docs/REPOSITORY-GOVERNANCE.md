@@ -100,12 +100,16 @@ drop/pendulum/hover/gait scenes, and uploads the request, both baselines, and
 comparison even on failure. A provider/version/source/timestep/substep mismatch or a
 tolerance failure blocks the same existing check; the job name and default-branch
 ruleset do not change. The keyless local full gate still compares against the
-registered engine-backed fixture. The same job executes D60/D63's exact-source
-`forge-codesign-search-plan/2.0.0` smoke under pinned `cmaes==0.13.0` and
-`optuna==4.9.0`; this checks exact 100/100 proposal breadth and every held nonclaim,
-not physical evaluation or an overnight result. D62 policy tests require v2 to bind
-exact numeric-runtime identity, partition caches, refuse heterogeneous resume, and
-retain an all-200 comparison shape without granting portable or tier-3 authority.
+registered engine-backed fixture. The same job executes D64's exact-source
+`forge-codesign-search-plan/3.0.0` smoke under pinned `cmaes==0.13.0` and
+`optuna==4.9.0`; this checks exact 100/100 proposal breadth, raw catalog authority,
+both exact equipped battery revisions, review/license/export lineage, and every held
+nonclaim, not an overnight result. D62/D63 policy tests retain v2 historical coverage
+for exact numeric-runtime identity, cache partitioning, heterogeneous-resume refusal,
+and the all-200 comparison shape without portable or tier-3 authority. The v3 batch
+additionally requires catalog-aware native v2, equipped-only proof, catalog/runtime-
+bound checkpoints, and foreign-catalog refusal; marketplace review/live persistence,
+catalog-native MuJoCo physics, tier 3, and provider/overnight claims remain false.
 The worker check validates D46 structure only. P7-013 closure separately deploys from
 a clean protected revision and retains the real L4/device, billing/tag, spend-stop,
 alert/SLO, cancellation, deletion, and no-duplicate recovery evidence described in
