@@ -171,6 +171,19 @@ requires D12 quad, D12 rover, and legged coverage, then adopts MJX only when CPU
 MuJoCo/SB3 needs help, parity stays inside frozen bands, and cost-normalized
 throughput is at least 3x.
 
+Under D59, `FORGE_CODESIGN_CMD` no longer gains authority by returning a dictionary
+with `artifactKind=codesign`. The worker requires
+`forge-codesign-evaluation/1.0.0`, reapplies every bounded replace-only patch to the
+exact Gateway-owned admitted snapshot, recomputes candidate/patch/native-evidence
+SHA-256 values, recomputes the admitted-only Pareto front, and exact-checks source,
+engine, tier, metric, runtime, and permanent nonclaim fields. The repository-owned
+`python -m forge_workers.codesign_runtime` is a 3–9-candidate controlled smoke:
+native `forge-validate codesign-evaluate` plus Rapier 0.33.0, then training-bundle
+2.0.0 plus two estimator-only 200-step MuJoCo 3.9.0 rollouts. It never runs CMA-ES,
+Optuna, catalog-choice search, 200 candidates, or tier-3 training. Use
+`pnpm codesign:engine-smoke`; add `--require-tier0-budget` only with the release
+validator binary when recording the <50 ms latency proof.
+
 The repository also owns a native controlled command,
 `python -m forge_workers.mjx_benchmark`, and the required
 `pnpm sim:mjx:feasibility` wrapper. It reuses the admitted-model/Rust training-bundle

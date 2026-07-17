@@ -433,6 +433,22 @@ parity bands, CPU-need rule, or the 3x threshold requires a new internal major. 
 artifacts remain non-public measured evidence: publication still requires registered
 compatibility fixtures, deprecation/migration guidance, and release notes.
 
+D59 adds three internal co-design authorities without promoting a public worker
+format: `forge-codesign-evaluation` 1.0.0,
+`forge-codesign-native-evaluation` 1.0.0, and
+`p9-engine-smoke-evidence` 1.0.0. Evaluation v1 binds the Gateway-owned admitted
+snapshot, replace-only JSON Patch, candidate/patch/native hashes, exact tier engine
+proof, metrics, Pareto recomputation, source/dependency lineage, and permanent
+nonclaims. Native v1 binds the raw candidate SHA-256, validator summary/HUD, and the
+Rapier 0.33.0 120-step/two-substep/one-second protocol. Evidence v1 wraps an exact
+source revision/clean marker and says whether the release-binary tier-0 budget was
+required. Changing hash preimages, accepted patch operations, engine versions,
+step/control/task semantics, metrics, admission/Pareto meaning, or a held nonclaim
+requires a new internal major. The additive `forge-validate codesign-evaluate`
+command belongs to the unreleased CLI 0.2.0 minor line. External publication still
+requires compatibility-surface promotion, supported/unsupported fixtures,
+migration/deprecation guidance, and release notes.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

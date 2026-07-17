@@ -248,6 +248,12 @@ jobs:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/mjx-feasibility-smoke.mjs --out artifacts/mjx/p7-mjx-feasibility.json
+      - name: D59 controlled native, Rapier, and MuJoCo co-design smoke
+        env:
+          FORGE_VALIDATE_BIN: target/debug/forge-validate
+          FORGE_SOURCE_REVISION: ${{ github.sha }}
+          FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
+        run: node scripts/codesign-engine-smoke.mjs --out artifacts/codesign/p9-engine-smoke.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
@@ -263,6 +269,11 @@ jobs:
         with:
           name: mjx-feasibility-evidence
           path: artifacts/mjx
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: codesign-engine-smoke-evidence
+          path: artifacts/codesign
 
   desktop-native:
     name: desktop native (macOS)

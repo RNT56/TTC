@@ -172,7 +172,10 @@
         "offlinePolicyWarmstart": "1.0.0",
         "sb3Runtime": "3.0.0",
         "bridgeConfig": "1.0.0",
-        "ghostOverlay": "1.0.0"
+        "ghostOverlay": "1.0.0",
+        "codesignEvaluation": "1.0.0",
+        "codesignNativeEvaluation": "1.0.0",
+        "codesignEngineSmokeEvidence": "1.0.0"
       },
       "bridgeConfigFirmwareVersion": "2025.12",
       "ghostOverlayFrame": "forge-y-up-rh-m",
@@ -266,7 +269,8 @@
         "artifactKinds": [
           "codesign"
         ],
-        "maturity": "fixture"
+        "maturity": "fixture + controlled-local-engine-smoke",
+        "notes": "D59 adds internal forge-codesign-evaluation/1.0.0 and forge-codesign-native-evaluation/1.0.0: exact Gateway snapshot plus recomputed replace-only patch/hash lineage, sovereign validator, real Rapier 0.33.0, and two estimator-only MuJoCo 3.9.0 rollouts. Tier 3, CMA-ES/Optuna, 200-candidate overnight, trained finalist, catalog-choice, provider sandbox, build, hardware, and field claims remain false."
       },
       {
         "queueKind": "bridge.config-diff",

@@ -166,6 +166,11 @@ try {
     "--out",
     join(temp, "p7-mjx-feasibility.json"),
   ]);
+  run("Controlled native/Rapier/MuJoCo co-design smoke", "node", [
+    "scripts/codesign-engine-smoke.mjs",
+    "--out",
+    join(temp, "p9-engine-smoke.json"),
+  ]);
   run("Whitespace and patch hygiene", "node", ["scripts/check-patch-hygiene.mjs"]);
 
   console.log(`\nverify: ${step} required local gates passed`);

@@ -435,6 +435,17 @@ every user-facing capability claim.
   Caller-supplied inputs stay unverified and fixture inputs stay
   controlled-synthetic; device, recorded-device and field flags remain false. A
   seek-computation benchmark is not a full render, named-hardware or field claim.
+- Treat co-design as an untrusted patch-producing optimization boundary. Start from
+  one exact gateway-owned admitted snapshot; allow only a versioned bounded patch
+  subset; reapply every patch and recompute candidate, native-evidence, admission,
+  and Pareto truth inside the worker. Keep the sovereign native validator separate
+  from the runtime-budget measurement so host jitter never changes an engineering
+  verdict. Pin and name each real engine, timestep/substep protocol, training-bundle
+  version, task/controller maturity, and source/dependency digest. A three-candidate
+  controlled engine smoke proves plumbing, not CMA-ES/Optuna breadth, 200-candidate
+  overnight completion, trained finalists, catalog search, provider maturity, build
+  readiness, hardware authority, or field evidence; those require separately
+  versioned retained proof.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

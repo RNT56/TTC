@@ -1,3 +1,5 @@
+import pytest
+
 from forge_workers.codesign import evaluate
 
 
@@ -16,6 +18,7 @@ def test_codesign_ladder_returns_admitted_pareto_points_under_course_constraints
     )
 
     assert result["optimizer"]["candidateBudget"] == 200
+    assert result["schemaVersion"] == "forge-codesign-evaluation/1.0.0"
     assert result["optimizer"]["tier0BudgetMs"] == 50
     assert result["benchmark"]["tier0MaxMs"] < 50
     assert result["benchmark"]["tier2CandidateBudget"] == 200
@@ -49,3 +52,13 @@ def test_codesign_candidate_prefix_is_stable_when_budget_expands():
     wide = evaluate({"modelId": "stable", "candidateBudget": 24})
 
     assert small["candidates"] == wide["candidates"][:12]
+
+
+def test_external_codesign_output_is_never_passed_through_without_exact_authority(monkeypatch):
+    monkeypatch.setattr(
+        "forge_workers.codesign.run_json_command",
+        lambda *_args, **_kwargs: {"artifactKind": "codesign", "candidates": []},
+    )
+
+    with pytest.raises(ValueError, match="fields are not exact"):
+        evaluate({"modelId": "untrusted"})
