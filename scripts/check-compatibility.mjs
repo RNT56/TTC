@@ -64,6 +64,7 @@ const required = [
   "consentLedger",
   "accountDeletionReceipt",
   "dataLifecycle",
+  "fileCatalogRow",
   "policyTensor",
   "desktopRecorderArchive",
   "desktopRecorderMaterialization",
@@ -114,6 +115,10 @@ const expected = {
     "packages/gateway/src/dataLifecycle.ts",
     "DATA_LIFECYCLE_FORMAT_VERSION",
   ),
+  fileCatalogRow: sourceConstant(
+    "crates/forge-validate/src/file_catalog.rs",
+    "CATALOG_ROW_FORMAT_VERSION",
+  ),
   policyTensor: typescriptConstant(
     "packages/studio/src/policyRuntime.ts",
     "POLICY_TENSOR_VERSION",
@@ -132,6 +137,18 @@ requireValue(
   matrix.surfaces.policyTensor.schema ===
     typescriptConstant("packages/studio/src/policyRuntime.ts", "POLICY_TENSOR_SCHEMA"),
   "policyTensor schema token must match the Studio runtime",
+);
+requireValue(
+  matrix.surfaces.fileCatalogRow.legacyMissingVersion ===
+    sourceConstant("crates/forge-validate/src/file_catalog.rs", "LEGACY_CATALOG_ROW_FORMAT_VERSION"),
+  "file-catalog legacy markerless version must match the loader",
+);
+requireValue(
+  matrix.surfaces.fileCatalogRow.current ===
+    pythonConstant("workers/forge_workers/etl/adapters.py", "CATALOG_ROW_FORMAT_VERSION")
+    && matrix.surfaces.fileCatalogRow.legacyMissingVersion ===
+      pythonConstant("workers/forge_workers/etl/adapters.py", "LEGACY_CATALOG_ROW_FORMAT_VERSION"),
+  "file-catalog row versions must match the ETL parser",
 );
 requireValue(
   sourceConstant("packages/desktop/src-tauri/src/main.rs", "RECORDER_ARCHIVE_SCHEMA_VERSION") ===

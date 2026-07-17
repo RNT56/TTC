@@ -686,13 +686,27 @@ worker, 74 Gateway, and 39 Studio tests. It creates no applicable-catalog-thrust
 tier-3, overnight/provider, marketplace/live-catalog, build, hardware, field, or
 external claim.
 
+D66 is implemented locally as the next compatibility-complete format/persistence
+slice. All 44 non-database gates and fresh-PostgreSQL migration-specific proof pass;
+clean every-predecessor database CI and protection remain pending. File-catalog row
+2.0.0 moves voltage onto every point, retains exact markerless/explicit v1 reads,
+requires complete rectangular unique monotonic grids, and exact-matches Rust
+admission with Python ETL through the registered nine-surface/99-case corpus.
+Migration 0027 preserves every populated predecessor's thrust point as
+`legacy-unattributed` v1 with null missing authority and expands the primary key by
+stable table ID. The current EMAX row remains v1 and inapplicable; D66 changes no D65
+bundle, curve, review, marketplace, or physical claim.
+
 Next dependency order for P9 is exact and must not be collapsed:
 
-1. version the file-catalog bench-grid row/loader so one table can carry sourced per-
-   point voltage coverage; add compatibility, migration, corpus, and golden proof;
-   then source and review an actually voltage-covered, prop-matched grid (or keep the
-   analytic fallback explicit). Never merge, infer, or rescale separate 6S points;
-2. run tier-3 training only for the exact admitted D65 finalists, retain policy bytes,
+1. protect and reconcile D66's row-v2/read-v1/migration/corpus/golden implementation;
+   then source and owner-review an actually voltage-covered, prop-matched grid (or
+   keep the analytic fallback explicit). Create a new immutable component revision;
+   never merge, infer, or rescale separate legacy sweeps;
+2. before that grid drives training, introduce a coordinated bundle/catalog-physics
+   authority major retaining the exact grid and require independent Python curve
+   reconstruction; only then run tier-3 training for the exact admitted finalists,
+   retaining policy bytes,
    scorecards, bundle/physics/catalog/runtime lineage, failure/cancellation/recovery,
    and keep build/hardware/field authority false;
 3. expand the course-conditioned physical manifold to produce at least three
@@ -865,7 +879,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64; catalog-bound tier-2 physics protected at D65 | P6/P7 evidence; versioned per-point-voltage rows plus reviewed applicable bench data or explicit fallback; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; add a `>=3` course-conditioned physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
+| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64; catalog-bound tier-2 physics protected at D65; D66 row-v2/read-v1/persistence candidate local pending protection | P6/P7 evidence; protect D66, then reviewed applicable bench data or explicit fallback plus a new exact-grid/curve-readback authority major; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; add a `>=3` course-conditioned physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |

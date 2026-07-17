@@ -26,6 +26,7 @@ package to adopt that same number.
 | gateway events | 0.2.0 | event names/order/terminal meaning follow gateway package SemVer before 1.0; additive fields and new stage values are minor | current minor line |
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
+| file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.6.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
@@ -536,6 +537,28 @@ batch/evidence 4.0.0 bind exact bundle/catalog-physics hashes and table-use stat
 tier-2 rollout; v3 batch evidence remains immutable history. Any change to inertial
 placement, applicability, fallback, curve, or authority-hash meaning is another
 major.
+
+D66 registers file-catalog row 2.0.0 as the twentieth top-level compatibility
+surface. Missing or explicit 1.0.0 retains the historical one-voltage-per-table
+shape: table `voltage` is required and point `voltage` is forbidden. Version 2.0.0
+forbids table voltage and requires voltage on every point, a complete rectangular
+voltage×throttle grid with unique coordinates, exact throttle coverage `[0,1]`, and
+nondecreasing thrust/current at each voltage. Both majors retain stable table ID,
+prop, positive confidence, and HTTPS source requirements in file rows; unsupported
+versions, mixed shapes, incomplete rectangles, duplicate coordinates, non-finite or
+out-of-range values, and nonmonotonic sweeps refuse in both Rust and Python.
+
+To migrate an authoritative v1 file row without changing its physics, set top-level
+`schemaVersion` to `2.0.0`, copy the table's scalar voltage verbatim onto every point,
+and remove the table-level voltage. Create a new immutable component revision before
+persistence. This produces only a v2 single-voltage sweep; it does not create a
+multi-voltage grid, source missing measurements, or make the table applicable.
+Migration 0027 separately preserves pre-D66 Postgres points under reserved
+`legacy-unattributed` v1 identity with null prop/confidence/source rather than fabricating
+authority. New persisted v2 points require those fields and include `table_id` in
+their primary identity. Existing D65 bundle/physics/batch versions do not gain v2
+grid authority: an applicable reviewed grid requires a later coordinated downstream
+major with exact-grid and independent curve-readback proof.
 
 ## Change classification
 

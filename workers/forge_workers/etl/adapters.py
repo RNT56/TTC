@@ -35,6 +35,9 @@ ANTHROPIC_ETL_MAX_TOKENS = 8192
 ANTHROPIC_ETL_REQUEST_BYTES = 4 * 1024 * 1024
 ANTHROPIC_ETL_RESPONSE_BYTES = 2 * 1024 * 1024
 ANTHROPIC_ETL_TOOL_BYTES = 512 * 1024
+LEGACY_CATALOG_ROW_FORMAT_VERSION = "1.0.0"
+CATALOG_ROW_FORMAT_VERSION = "2.0.0"
+LEGACY_UNATTRIBUTED_THRUST_TABLE_ID = "legacy-unattributed"
 
 
 def _catalog_extraction_tool() -> dict[str, Any]:
@@ -57,7 +60,9 @@ def _catalog_extraction_tool() -> dict[str, Any]:
                     "description": (
                         "A bounded JSON object string containing id, brand, model, category, "
                         "massG, license, prices, confidence, citations, and any sourced "
-                        "category-specific fields. Local validation enforces the full row."
+                        "category-specific fields. New rows use schemaVersion 2.0.0; motor "
+                        "bench points put voltage on every point, never on the table. Local "
+                        "validation enforces the full row."
                     ),
                 },
                 "sourceConflicts": {
@@ -99,6 +104,122 @@ def _required_number(value: Any, *, label: str, minimum: float, maximum: float |
     return number
 
 
+def _validate_catalog_thrust_tables(row: dict[str, Any], row_format: str) -> None:
+    tables = row.get("thrustTables", [])
+    if not isinstance(tables, list) or len(tables) > 64:
+        raise RuntimeError("Anthropic catalog extraction has invalid thrust tables")
+    if tables and row.get("category") != "motor":
+        raise RuntimeError("Anthropic catalog extraction thrust tables require motor category")
+    table_ids: set[str] = set()
+    for table_index, table in enumerate(tables):
+        label = f"thrustTables[{table_index}]"
+        if not isinstance(table, dict):
+            raise RuntimeError("Anthropic catalog extraction has an invalid thrust table")
+        table_id = _required_string(table.get("id"), label=f"{label}.id", max_length=256)
+        if table_id == LEGACY_UNATTRIBUTED_THRUST_TABLE_ID:
+            raise RuntimeError("Anthropic catalog extraction uses a reserved thrust table id")
+        if table_id in table_ids:
+            raise RuntimeError("Anthropic catalog extraction has a duplicate thrust table id")
+        table_ids.add(table_id)
+        _required_string(table.get("prop"), label=f"{label}.prop", max_length=256)
+        confidence = _required_number(
+            table.get("confidence"), label=f"{label}.confidence", minimum=0, maximum=1
+        )
+        if confidence <= 0:
+            raise RuntimeError(f"{label}.confidence must be greater than zero")
+        table_source_url = _required_string(
+            table.get("sourceUrl"), label=f"{label}.sourceUrl", max_length=2048
+        )
+        if not table_source_url.startswith("https://"):
+            raise RuntimeError(f"{label}.sourceUrl must use HTTPS")
+        points = table.get("points")
+        if not isinstance(points, list) or not 2 <= len(points) <= 10_000:
+            raise RuntimeError("Anthropic catalog extraction has invalid thrust-table points")
+
+        legacy_voltage: float | None
+        if row_format == LEGACY_CATALOG_ROW_FORMAT_VERSION:
+            legacy_voltage = _required_number(
+                table.get("voltage"),
+                label=f"{label}.voltage",
+                minimum=0,
+                maximum=1_000,
+            )
+            if legacy_voltage <= 0 or any(
+                isinstance(point, dict) and "voltage" in point for point in points
+            ):
+                raise RuntimeError(
+                    "Anthropic catalog extraction v1 thrust table forbids per-point voltage"
+                )
+        else:
+            legacy_voltage = None
+            if "voltage" in table:
+                raise RuntimeError(
+                    "Anthropic catalog extraction v2 thrust table forbids table voltage"
+                )
+
+        grid: list[tuple[float, float, float, float]] = []
+        coordinates: set[tuple[float, float]] = set()
+        for point_index, point in enumerate(points):
+            point_label = f"{label}.points[{point_index}]"
+            if not isinstance(point, dict):
+                raise RuntimeError("Anthropic catalog extraction has an invalid thrust-table point")
+            if row_format == CATALOG_ROW_FORMAT_VERSION and "voltage" not in point:
+                raise RuntimeError(
+                    "Anthropic catalog extraction v2 thrust table requires voltage on every point"
+                )
+            voltage = legacy_voltage
+            if voltage is None:
+                voltage = _required_number(
+                    point.get("voltage"),
+                    label=f"{point_label}.voltage",
+                    minimum=0,
+                    maximum=1_000,
+                )
+            if voltage <= 0:
+                raise RuntimeError("Anthropic catalog extraction has invalid thrust-table voltage")
+            throttle = _required_number(
+                point.get("throttle"),
+                label=f"{point_label}.throttle",
+                minimum=0,
+                maximum=1,
+            )
+            thrust_g = _required_number(
+                point.get("thrustG"), label=f"{point_label}.thrustG", minimum=0
+            )
+            current_a = _required_number(
+                point.get("currentA"), label=f"{point_label}.currentA", minimum=0
+            )
+            coordinate = (voltage, throttle)
+            if coordinate in coordinates:
+                raise RuntimeError(
+                    "Anthropic catalog extraction thrust table contains a duplicate voltage/throttle point"
+                )
+            coordinates.add(coordinate)
+            grid.append((voltage, throttle, thrust_g, current_a))
+
+        voltages = sorted({point[0] for point in grid})
+        throttles = sorted({point[1] for point in grid})
+        expected = len(voltages) * len(throttles)
+        if expected != len(grid):
+            raise RuntimeError(
+                f"Anthropic catalog extraction thrust table is not rectangular: expected {expected} points, got {len(grid)}"
+            )
+        if throttles[0] != 0 or throttles[-1] != 1:
+            raise RuntimeError(
+                "Anthropic catalog extraction thrust-table throttle grid must cover [0,1]"
+            )
+        by_coordinate = {(point[0], point[1]): point[2:] for point in grid}
+        for voltage in voltages:
+            previous = (-1.0, -1.0)
+            for throttle in throttles:
+                measured = by_coordinate[(voltage, throttle)]
+                if measured[0] < previous[0] or measured[1] < previous[1]:
+                    raise RuntimeError(
+                        "Anthropic catalog extraction thrust/current must be non-decreasing with throttle"
+                    )
+                previous = measured
+
+
 def _parse_catalog_row_json(raw: Any) -> dict[str, Any]:
     if not isinstance(raw, str):
         raise RuntimeError("Anthropic catalog extraction has an invalid canonicalRowJson")
@@ -115,10 +236,19 @@ def _parse_catalog_row_json(raw: Any) -> dict[str, Any]:
     )
     if not isinstance(row, dict):
         raise RuntimeError("Anthropic catalog extraction returned a non-object canonical row")
+    row_format = row.get("schemaVersion", LEGACY_CATALOG_ROW_FORMAT_VERSION)
+    if row_format not in {LEGACY_CATALOG_ROW_FORMAT_VERSION, CATALOG_ROW_FORMAT_VERSION}:
+        raise RuntimeError(
+            f"Anthropic catalog extraction has unsupported catalog row schemaVersion '{row_format}'"
+        )
     for field in ("id", "brand", "model", "category"):
         _required_string(row.get(field), label=field, max_length=256)
     _required_number(row.get("massG"), label="massG", minimum=0)
-    _required_number(row.get("confidence"), label="confidence", minimum=0, maximum=1)
+    row_confidence = _required_number(
+        row.get("confidence"), label="confidence", minimum=0, maximum=1
+    )
+    if row_confidence <= 0:
+        raise RuntimeError("Anthropic catalog extraction confidence must be greater than zero")
     if not isinstance(row.get("dims"), dict):
         raise RuntimeError("Anthropic catalog extraction has invalid dims")
     if row.get("source") not in {"datasheet", "manufacturer-cad", "photoscan"}:
@@ -184,6 +314,7 @@ def _parse_catalog_row_json(raw: Any) -> dict[str, Any]:
         for source in sources:
             _required_string(source, label="citation source", max_length=2048)
         _required_string(citation.get("accessed"), label="citation accessed date", max_length=64)
+    _validate_catalog_thrust_tables(row, row_format)
     return row
 
 
@@ -203,6 +334,7 @@ def _validate_catalog_source_urls(row: dict[str, Any], bundle: "SourceBundle") -
     linked_urls = [row["license"]["sourceUrl"]]
     linked_urls.extend(price["url"] for price in row["prices"])
     linked_urls.extend(source for citation in row["citations"].values() for source in citation["sources"])
+    linked_urls.extend(table["sourceUrl"] for table in row.get("thrustTables", []))
     if any(candidate != expected for candidate in linked_urls):
         raise RuntimeError("Anthropic catalog extraction contains an unsupported provenance URL")
 

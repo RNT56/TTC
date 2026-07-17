@@ -178,6 +178,44 @@ def test_catalog_citation_boundary_corpus_matches_publication_outcomes():
     assert "invalid confidence values" in " | ".join(verdict.problems)
 
 
+def _catalog_grid_row(fixture: dict[str, Any], shape: str) -> dict[str, Any]:
+    row = copy.deepcopy(fixture)
+    if shape == "current":
+        return row
+    if shape not in {"legacy-markerless", "legacy-explicit"}:
+        raise AssertionError(f"unknown catalog grid shape {shape}")
+    if shape == "legacy-markerless":
+        row.pop("schemaVersion")
+    else:
+        row["schemaVersion"] = "1.0.0"
+    table = row["thrustTables"][0]
+    table["voltage"] = 25.2
+    table["points"] = table["points"][:2]
+    for point in table["points"]:
+        point.pop("voltage")
+    return row
+
+
+def test_catalog_performance_grid_corpus_matches_etl_parser_outcomes():
+    corpus = _corpus("catalog-performance-grid")
+    for test_case in corpus["cases"]:
+        value = _catalog_grid_row(corpus["fixture"], test_case["input"]["shape"])
+        if "mutation" in test_case["input"]:
+            _mutate(value, test_case["input"]["mutation"])
+        for mutation in test_case["input"].get("mutations", []):
+            _mutate(value, mutation)
+        raw = json.dumps(value, separators=(",", ":"))
+        if test_case["expect"]["outcome"] == "reject":
+            _assert_error(test_case, lambda raw=raw: _parse_catalog_row_json(raw))
+            continue
+        parsed = _parse_catalog_row_json(raw)
+        version = parsed.get("schemaVersion", "1.0.0")
+        assert version == test_case["expect"]["schemaVersion"], test_case["id"]
+        table = parsed["thrustTables"][0]
+        voltages = [point.get("voltage", table.get("voltage")) for point in table["points"]]
+        assert [min(voltages), max(voltages)] == test_case["expect"]["voltageRangeV"]
+
+
 def test_export_policy_boundary_corpus_matches_d10_outcomes():
     corpus = _corpus("export-policy")
     for test_case in corpus["cases"]:

@@ -503,6 +503,16 @@ every user-facing capability claim.
   contract-owned, and require the compiled MuJoCo body-mass sum to close exactly. A
   review-gated, rejected table is lineage—not applicable thrust, marketplace
   approval, or physical validation.
+- Version bench-grid representation independently from component revision and
+  downstream physics artifacts. Missing or v1 rows remain exact single-voltage
+  sweeps; v2 carries voltage on every point and forbids the table scalar. Require a
+  finite bounded rectangular voltage×throttle grid, unique coordinates, exact
+  throttle endpoints, monotonic thrust/current per voltage, stable table identity,
+  prop, positive confidence, and HTTPS source. Preserve unattributed database history
+  as such—never synthesize prop/source/review authority during migration. Copying a
+  v1 scalar onto every point is a shape migration only, not new measurement coverage.
+  Before a v2 grid drives training, bump the downstream physics authority, retain
+  the exact grid, and independently recompute the curve in the consumer.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

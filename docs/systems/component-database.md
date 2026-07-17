@@ -2,7 +2,7 @@
 
 **Status:** P3 deterministic/local production slice implemented; native Claude ETL contract exists, credentialed sandbox/live ingestion does not · **Phases:** P3 · **Home:** Postgres (data plane) +
 `crates/forge-validate::compat` (compatibility rules — CORE-side per D16, corrected from the earlier gateway *(proposed)* placement; gateway/studio consume) + `workers/etl`; lockfile resolution in `crates/forge-contract` (live) · **Plan refs:** §9 (v3.0) · **Decisions:** D1,
-D5, D10, D12, D36
+D5, D10, D12, D36, D65, D66
 
 ## 1. Purpose
 
@@ -42,8 +42,15 @@ CREATE TABLE component_revisions (           -- IMMUTABLE; lockfiles pin these (
 CREATE TABLE connector_types (id text PRIMARY KEY, kind text, params jsonb);
 CREATE TABLE licenses (id text PRIMARY KEY, class text NOT NULL  -- open|attribution|no-redistribution|view-only
   , terms text, source_url text);
-CREATE TABLE thrust_tables (component_id text, voltage numeric, throttle numeric,
-  thrust_g numeric, current_a numeric, rpm numeric);
+CREATE TABLE thrust_tables (
+  component_id text REFERENCES components(id),
+  table_id text NOT NULL,
+  row_schema_version text NOT NULL,          -- 1.0.0 | 2.0.0
+  voltage numeric NOT NULL, throttle numeric NOT NULL,
+  thrust_g numeric NOT NULL, current_a numeric NOT NULL, rpm numeric,
+  prop text, confidence numeric, source_url text,
+  PRIMARY KEY (component_id, table_id, voltage, throttle)
+);
 CREATE TABLE prices (component_id text, vendor text, sku text, price numeric, currency text,
   url text, fetched_at timestamptz, region text, purchasable boolean);
 CREATE TABLE provenance (artifact_id text, field text, source_url text,
@@ -71,21 +78,29 @@ merely enforced (the reason a card is greyed):
 | TWR floor | per preset: freestyle reject < 1.8, warn < 2.5 |
 | connectors | electrical port types match across pairs |
 
-### Bench-grid authority boundary (D65)
+### Bench-grid authority boundary (D65/D66)
 
-The checked-in file-catalog row currently declares `voltage` once per thrust table;
-the loader assigns that voltage to every throttle point. It therefore represents a
-single-voltage sweep, not one multi-voltage grid capable of covering a non-degenerate
-battery operating range. D65 retains and rejects such rows when voltage/prop coverage
-does not match, and it never merges separate single-voltage tables implicitly.
+File-catalog row 2.0.0 now carries sourced voltage on every thrust point and forbids
+the historical table-level scalar. Admission requires a finite bounded complete
+rectangular voltage×throttle grid, unique coordinates, exact throttle endpoints 0
+and 1, and nondecreasing thrust/current at every voltage. Stable table ID, exact prop,
+positive confidence, and HTTPS source remain mandatory. Missing or explicit row
+1.0.0 remains readable as exactly one table-declared-voltage sweep; separate v1
+sweeps are never merged implicitly.
 
-Before applicable catalog thrust can be claimed, version the row and loader so each
-point (or an equivalently explicit reviewed grid axis) carries sourced voltage
-authority. The change needs compatibility classification, old-row migration/read
-semantics, ETL and boundary-corpus cases, rectangular-grid/duplicate/ambiguity
-refusals, generated-doc/golden review where affected, and source/review/license proof
-for the actual grid. Until then the analytic fallback is the only honest curve for a
-battery range.
+Migration 0027 preserves pre-D66 database rows under reserved table ID
+`legacy-unattributed`, row 1.0.0, and null prop/confidence/source. That history is
+inspectable but cannot become file-row or D65 curve authority without a new sourced
+immutable component revision. The primary key includes table ID so distinct sourced
+tables cannot collide at the same component/voltage/throttle coordinate. New v2
+persistence requires complete authority metadata.
+
+D66 closes representation only. The checked-in EMAX row remains v1, review-gated,
+and inapplicable to the D12 4S/5×4.3 configuration. Before any reviewed v2 grid can
+drive catalog-bound training, version the downstream bundle/physics authority so it
+retains the exact grid and the Python consumer independently recomputes the curve.
+Until sourced and reviewed coverage exists, the named analytic fallback remains the
+only honest curve for that battery range.
 
 ## 4. ETL pipeline (P3-004; worker detail in [`compute-workers.md`](compute-workers.md))
 
@@ -188,7 +203,10 @@ ingestion-without-license rejection test. The registered QA-007 citation/provide
 corpora cover complete rows, missing citations/prices/revisions, low and invalid
 confidence, invalid source/extractor identity, prototype-pollution keys, non-finite
 claims, and excessive nesting. D10 corpus cases cover open, attribution, restricted,
-and mixed assemblies plus contradictory/missing license evidence.
+and mixed assemblies plus contradictory/missing license evidence. D66 adds old,
+current, unsupported-major, mixed-shape, missing-voltage, incomplete-rectangle,
+duplicate-coordinate, nonmonotonic, and incomplete-throttle-domain catalog-grid
+cases consumed by both Rust admission and Python ETL.
 
 ## 10. Phase mapping & backlog
 

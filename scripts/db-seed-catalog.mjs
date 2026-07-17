@@ -16,6 +16,119 @@ const stable = (value) => {
 };
 
 const canonical = (value) => JSON.stringify(stable(value));
+const LEGACY_CATALOG_ROW_FORMAT_VERSION = "1.0.0";
+const CATALOG_ROW_FORMAT_VERSION = "2.0.0";
+const LEGACY_UNATTRIBUTED_THRUST_TABLE_ID = "legacy-unattributed";
+
+const finite = (value, label, { min = -Infinity, max = Infinity, exclusiveMin = false } = {}) => {
+  if (
+    typeof value !== "number"
+    || !Number.isFinite(value)
+    || (exclusiveMin ? value <= min : value < min)
+    || value > max
+  ) {
+    throw new Error(`${label} is outside its finite bounds`);
+  }
+  return value;
+};
+
+const materializeThrustTables = (row) => {
+  const version = row.schemaVersion ?? LEGACY_CATALOG_ROW_FORMAT_VERSION;
+  if (![LEGACY_CATALOG_ROW_FORMAT_VERSION, CATALOG_ROW_FORMAT_VERSION].includes(version)) {
+    throw new Error(`${row.id}: unsupported catalog row schemaVersion '${version}'`);
+  }
+  const tables = row.thrustTables ?? [];
+  if (!Array.isArray(tables) || tables.length > 64 || (tables.length > 0 && row.category !== "motor")) {
+    throw new Error(`${row.id}: invalid thrust-table authority`);
+  }
+  const tableIds = new Set();
+  return tables.map((table) => {
+    if (!table || typeof table !== "object" || Array.isArray(table)) {
+      throw new Error(`${row.id}: thrust table is not an object`);
+    }
+    if (
+      typeof table.id !== "string"
+      || !table.id.trim()
+      || table.id.length > 256
+      || table.id === LEGACY_UNATTRIBUTED_THRUST_TABLE_ID
+      || tableIds.has(table.id)
+    ) {
+      throw new Error(`${row.id}: thrust table id is empty or duplicated`);
+    }
+    tableIds.add(table.id);
+    if (
+      typeof table.prop !== "string"
+      || !table.prop.trim()
+      || table.prop.length > 256
+      || typeof table.sourceUrl !== "string"
+      || !table.sourceUrl.startsWith("https://")
+      || table.sourceUrl.length > 2_048
+    ) {
+      throw new Error(`${row.id}/${table.id}: thrust table lacks prop/source authority`);
+    }
+    const confidence = finite(table.confidence, `${row.id}/${table.id}: confidence`, {
+      min: 0,
+      max: 1,
+      exclusiveMin: true,
+    });
+    if (!Array.isArray(table.points) || table.points.length < 2 || table.points.length > 10_000) {
+      throw new Error(`${row.id}/${table.id}: thrust-table points are outside bounds`);
+    }
+    let legacyVoltage;
+    if (version === LEGACY_CATALOG_ROW_FORMAT_VERSION) {
+      legacyVoltage = finite(table.voltage, `${row.id}/${table.id}: voltage`, {
+        min: 0,
+        max: 1_000,
+        exclusiveMin: true,
+      });
+      if (table.points.some((point) => Object.hasOwn(point, "voltage"))) {
+        throw new Error(`${row.id}/${table.id}: v1 forbids per-point voltage`);
+      }
+    } else if (Object.hasOwn(table, "voltage")) {
+      throw new Error(`${row.id}/${table.id}: v2 forbids table voltage`);
+    }
+    const coordinates = new Set();
+    const points = table.points.map((point, index) => {
+      const voltage = finite(
+        version === CATALOG_ROW_FORMAT_VERSION ? point.voltage : legacyVoltage,
+        `${row.id}/${table.id}/points/${index}: voltage`,
+        { min: 0, max: 1_000, exclusiveMin: true },
+      );
+      const throttle = finite(point.throttle, `${row.id}/${table.id}/points/${index}: throttle`, {
+        min: 0,
+        max: 1,
+      });
+      const thrustG = finite(point.thrustG, `${row.id}/${table.id}/points/${index}: thrustG`, { min: 0 });
+      const currentA = finite(point.currentA, `${row.id}/${table.id}/points/${index}: currentA`, { min: 0 });
+      const coordinate = `${voltage}\0${throttle}`;
+      if (coordinates.has(coordinate)) {
+        throw new Error(`${row.id}/${table.id}: duplicate voltage/throttle point`);
+      }
+      coordinates.add(coordinate);
+      return { voltage, throttle, thrustG, currentA };
+    });
+    const voltages = [...new Set(points.map((point) => point.voltage))].sort((a, b) => a - b);
+    const throttles = [...new Set(points.map((point) => point.throttle))].sort((a, b) => a - b);
+    if (voltages.length * throttles.length !== points.length) {
+      throw new Error(`${row.id}/${table.id}: thrust table is not rectangular`);
+    }
+    if (throttles[0] !== 0 || throttles.at(-1) !== 1) {
+      throw new Error(`${row.id}/${table.id}: throttle grid must cover [0,1]`);
+    }
+    const cells = new Map(points.map((point) => [`${point.voltage}\0${point.throttle}`, point]));
+    for (const voltage of voltages) {
+      let previous = { thrustG: -1, currentA: -1 };
+      for (const throttle of throttles) {
+        const point = cells.get(`${voltage}\0${throttle}`);
+        if (point.thrustG < previous.thrustG || point.currentA < previous.currentA) {
+          throw new Error(`${row.id}/${table.id}: thrust/current is not monotonic`);
+        }
+        previous = point;
+      }
+    }
+    return { ...table, rowSchemaVersion: version, confidence, points };
+  });
+};
 
 const readJsonDir = (dir) =>
   readdirSync(dir)
@@ -30,6 +143,7 @@ const client = new Client({ connectionString: DATABASE_URL });
 await client.connect();
 
 for (const row of components) {
+  const thrustTables = materializeThrustTables(row);
   await client.query(
     `INSERT INTO licenses (id, class, terms, source_url)
      VALUES ($1, $2, $3, $4)
@@ -93,14 +207,33 @@ for (const row of components) {
   }
 
   await client.query("DELETE FROM thrust_tables WHERE component_id = $1", [row.id]);
-  for (const table of row.thrustTables ?? []) {
+  for (const table of thrustTables) {
     for (const point of table.points) {
       await client.query(
-        `INSERT INTO thrust_tables (component_id, voltage, throttle, thrust_g, current_a)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (component_id, voltage, throttle) DO UPDATE
-         SET thrust_g = EXCLUDED.thrust_g, current_a = EXCLUDED.current_a`,
-        [row.id, table.voltage, point.throttle, point.thrustG, point.currentA],
+        `INSERT INTO thrust_tables (
+           component_id, table_id, row_schema_version, prop, confidence, source_url,
+           voltage, throttle, thrust_g, current_a
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (component_id, table_id, voltage, throttle) DO UPDATE
+         SET row_schema_version = EXCLUDED.row_schema_version,
+             prop = EXCLUDED.prop,
+             confidence = EXCLUDED.confidence,
+             source_url = EXCLUDED.source_url,
+             thrust_g = EXCLUDED.thrust_g,
+             current_a = EXCLUDED.current_a`,
+        [
+          row.id,
+          table.id,
+          table.rowSchemaVersion,
+          table.prop,
+          table.confidence,
+          table.sourceUrl,
+          point.voltage,
+          point.throttle,
+          point.thrustG,
+          point.currentA,
+        ],
       );
     }
   }

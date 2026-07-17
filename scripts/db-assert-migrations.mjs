@@ -178,6 +178,18 @@ async function assertCurrentLedger(client) {
     assert.equal(rows[index].checksum, migrations[index].checksum);
   }
   assert.ok((await client.query("SELECT to_regclass('licenses') AS name")).rows[0].name);
+  const thrustPrimaryKey = (
+    await client.query(
+      `SELECT pg_get_constraintdef(oid) AS definition
+         FROM pg_constraint
+        WHERE conrelid = 'thrust_tables'::regclass
+          AND conname = 'thrust_tables_pkey'`,
+    )
+  ).rows[0]?.definition;
+  assert.match(
+    thrustPrimaryKey ?? "",
+    /PRIMARY KEY \(component_id, table_id, voltage, throttle\)/,
+  );
   assert.ok((await client.query("SELECT to_regclass('jobs') AS name")).rows[0].name);
   const jobsKindConstraint = (
     await client.query(
@@ -269,6 +281,11 @@ async function populatePredecessor(client, prefix) {
   await client.query(
     `INSERT INTO prices (component_id, vendor, price, currency, url)
      VALUES ($1, 'QA004 Vendor', 42.5, 'EUR', 'https://example.test/component')`,
+    [ids.component],
+  );
+  await client.query(
+    `INSERT INTO thrust_tables (component_id, voltage, throttle, thrust_g, current_a)
+     VALUES ($1, 16.8, 0.5, 500, 10)`,
     [ids.component],
   );
   await client.query(
@@ -504,6 +521,26 @@ async function assertFixturePreserved(client, prefix, fixture) {
   assert.equal(component.region, "US");
   assert.equal(component.purchasable, true);
   assert.equal(component.provenance_count, 1);
+  const legacyThrust = (
+    await client.query(
+      `SELECT table_id, row_schema_version, prop, confidence, source_url,
+              voltage, throttle, thrust_g, current_a
+         FROM thrust_tables
+        WHERE component_id = $1`,
+      [ids.component],
+    )
+  ).rows[0];
+  assert.deepEqual(legacyThrust, {
+    table_id: "legacy-unattributed",
+    row_schema_version: "1.0.0",
+    prop: null,
+    confidence: null,
+    source_url: null,
+    voltage: "16.8",
+    throttle: "0.5",
+    thrust_g: "500",
+    current_a: "10",
+  });
 
   if (prefix >= 3) {
     const review = (

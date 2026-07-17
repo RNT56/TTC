@@ -4,7 +4,7 @@
 and real-engine MuJoCo 3.9.0 parity protected in required CI; deterministic P6 exit
 complete · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
-**Decisions:** D7, D8, D16, D17, D20, D32, D65
+**Decisions:** D7, D8, D16, D17, D20, D32, D65, D66
 
 ## 1. Purpose
 
@@ -71,6 +71,15 @@ declared uniform-solid tensors and mount-centered COM, then verifies that MuJoCo
 compiled body-mass sum equals the bundle total. The current D12 proof retains but
 does not use its lone 25.2 V/5×4.6 bench point for a 14.8–16.8 V/5×4.3 design; this
 prevents the historical edge clamp from overstating 4S thrust.
+
+D66 makes a range-spanning source representation possible without changing that
+training authority. File-catalog row 2.0.0 places voltage on each point and admits
+only complete rectangular, unique, finite, bounded, monotonic grids with exact
+throttle endpoints. Row 1.0.0 remains a single-voltage read. The current EMAX row is
+still v1 and inapplicable; no v2 grid is checked in or reviewed. A future applicable
+grid must enter a new bundle/catalog-physics major that retains its exact grid and
+requires independent Python curve reconstruction before D65's analytic fallback may
+be displaced.
 
 ## 4. Estimator-in-sim (D8)
 
