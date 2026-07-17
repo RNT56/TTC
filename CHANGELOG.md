@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Reconcile protected D59 controlled-engine evidence
+**Session:** Codex agent · branch `codex/p9003-d59-protected-evidence` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Reconciled D59 to protected `local-engine-controlled-smoke` maturity. PR
+#106 exact head `e64c601ade7835d9271d11184917601d4a017e0c` passed PR CI
+`29545327465` and security `29545327485`; reviewed tree
+`08e8a129e9f10634e0ac766456b7e737135e98a0` is byte-identical at protected
+squash `fae00c58d1111c4b98fb5e8b84f404e199a3dec7`. Post-merge CI
+`29545811003` and security `29545810996` pass; the push-only security run contains
+the expected skip for its PR-scoped dependency-review job. The remote implementation
+branch was deleted. This protects only the exact admitted-snapshot, three-candidate
+release smoke, sovereign native/Rapier/MuJoCo ladder, strict worker/Studio readback,
+and separate passing tier-0 SLO evidence.
+**Changed:** Entry guidance, changelog, project state, roadmap, TODO, execution
+roadmap, and co-design, Studio, and validation-harness system contracts only. No
+runtime, dependency, schema, migration, artifact, worker, optimizer, training,
+provider, catalog, hardware, field, or release format changed.
+**Decisions:** none; D59 remains active unchanged and D60 remains the next regular
+decision ID.
+**Next:** Design and execute a separately versioned, protected-source CMA-ES/Optuna
+overnight lane with catalog choices, 200 real-engine candidates, at least three
+admitted Pareto points, tier-3 trained finalists, and retained cost/recovery proof.
+**Blockers:** P9 closure still needs actual algorithm, provider/accelerator budget,
+overnight scheduling, trained-finalist, catalog-choice, and external-acceptance
+evidence. D59 may not be promoted to satisfy any of those gates.
+
 ## 2026-07-16 — Execute the controlled co-design engine ladder
 **Session:** Codex agent · branch `codex/p9003-d59-engine-codesign` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]

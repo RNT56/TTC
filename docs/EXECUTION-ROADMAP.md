@@ -388,7 +388,8 @@ Work:
   closes policy-object inventory/orphan cleanup and production storage operations;
 - P9 protected controlled-engine seam followed by the live optimizer and full
   multi-fidelity ladder (`P9-002`, `P9-003`, conditional `P9-005`). D59 now proves
-  the exact admitted-snapshot/native-validator/Rapier/MuJoCo shape locally for three
+  the exact admitted-snapshot/native-validator/Rapier/MuJoCo shape at protected
+  local maturity through PR #106/`fae00c5` for three
   candidates; it does not supply CMA-ES/Optuna, 200 engine candidates, overnight
   scheduling, trained finalists, or provider evidence;
 - provider reliability, cost, data-retention, and artifact-integrity work from
@@ -549,8 +550,9 @@ Work:
   `3f3c4ec`, reviewed tree `4b36fac`, PR CI/security `29541145577`/`29541145559`,
   protected-tree equality, and post-merge CI/security `29541456427`/`29541456430`
   pass; real ladder execution remains an external named-hardware lane;
-- D59/P9-002/P9-003 is an unprotected local `local-engine-controlled-smoke`
-  candidate. The gateway-owned admitted snapshot is the only source model; the
+- D59/P9-002/P9-003 is protected at local `local-engine-controlled-smoke` maturity
+  through PR #106/`fae00c5`. The gateway-owned admitted snapshot is the only source
+  model; the
   repository-owned command derives three-to-nine replace-only inline multirotor
   electrical variants, and worker readback recomputes patched snapshots, hashes,
   admission, and Pareto membership. `forge-validate codesign-evaluate` supplies the
@@ -562,9 +564,11 @@ Work:
   Python
   3.12.7 with 233 workers, 74 Gateway tests, and 39 Studio tests. Tier 3 is held and
   every CMA-ES/Optuna/overnight/trained-
-  finalist/catalog/provider/build/hardware/field claim is false. Next protect this
-  exact tree, then implement a separately versioned optimizer/overnight evidence
-  lane without reusing the controlled-smoke claim;
+  finalist/catalog/provider/build/hardware/field claim is false. Exact head
+  `e64c601`, reviewed tree `08e8a12`, PR CI/security `29545327465`/`29545327485`,
+  protected-tree equality, and post-merge CI/security `29545811003`/`29545810996`
+  pass. Next implement a separately versioned optimizer/overnight evidence lane
+  without reusing the controlled-smoke claim;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -748,7 +752,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | protect D59; then P9-002, 003, conditional 005 | P6/P7 evidence; accelerator/provider budget for overnight work | protected exact-snapshot engine seam, then ≥3 admitted Pareto points from a separately evidenced CMA-ES/Optuna 200-candidate overnight run with tier-3 finalists only |
+| P9 | P9-002, 003, conditional 005 after protected D59 | P6/P7 evidence; accelerator/provider budget for overnight work | protected exact-snapshot engine seam, then ≥3 admitted Pareto points from a separately evidenced CMA-ES/Optuna 200-candidate overnight run with tier-3 finalists only |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |

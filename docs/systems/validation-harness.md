@@ -98,7 +98,7 @@ RND-002 blueprint pass renders cleanly.
 > reports in-browser. Animation-frame scans, the BVH joint sweep, and the remaining
 > rows land with their phases.
 
-> **D59 co-design boundary (2026-07-16 candidate):** `codesign-evaluate` is a native-
+> **D59 co-design boundary (2026-07-16 protected smoke):** `codesign-evaluate` is a native-
 > only internal evidence command. It hashes the exact raw candidate snapshot, runs
 > the sovereign validator plus bake/HUD path, and—only for native-admitted input—runs
 > a deterministic real Rapier 0.33.0 world for 120 steps at 1/120 s with two
@@ -106,8 +106,8 @@ RND-002 blueprint pass renders cleanly.
 > explicit MuJoCo/training/build/hardware/field nonclaims. Worker orchestration owns
 > the separately pinned MuJoCo tier and must rebind the native artifact hash. The
 > measured <50 ms tier-0 budget is reported separately and never changes the
-> validator verdict. This candidate is not yet protected and does not authorize an
-> overnight optimizer or trained finalist.
+> validator verdict. PR #106/`fae00c5` protects this controlled-smoke boundary; it
+> does not authorize an overnight optimizer or trained finalist.
 **XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
 bit-identical native↔WASM (detail: [`core-runtime.md`](core-runtime.md) §5).
 **CAT — catalog compatibility (P3-003; live 2026-06-12 in `forge-validate::compat`)** ·

@@ -90,10 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected runtime anchor is D58/P8-007 PR #104 at `f7e7f57`.
-  Exact implementation head `3f3c4ec` passed PR CI `29541145577` and security
-  `29541145559`; reviewed tree `4b36fac` is byte-identical at the protected squash,
-  whose post-merge CI `29541456427` and security `29541456430` pass. D57 evidence-
+  latest verified protected runtime anchor is D59/P9-002/P9-003 PR #106 at
+  `fae00c5`. Exact implementation head `e64c601` passed PR CI `29545327465` and
+  security `29545327485`; reviewed tree `08e8a12` is byte-identical at the protected
+  squash, whose post-merge CI `29545811003` and security `29545810996` pass. D57
+  evidence-
   reconciliation PR #103/`dd29789`, D56 evidence-
   reconciliation PR #101/`9035d09` and runtime PR #100/`1bf127d`, D55 evidence-
   reconciliation PR #98/`9e94c71` and runtime PR
@@ -135,8 +136,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   It performs no hardware I/O and its acknowledgments may not be cited as HITL,
   constrained, free, deployment, lab, or physical-evidence proof until separately
   exercised under the named D12/D30 external-acceptance boundary;
-- D59/P9-002/P9-003 is currently an unprotected local co-design candidate, not a
-  protected or overnight result. Its internal evaluation/native-evaluation/smoke-
+- D59/P9-002/P9-003 is protected at local controlled-engine-smoke maturity through
+  PR #106/`fae00c5`, not as an overnight result. Its internal evaluation/native-
+  evaluation/smoke-
   evidence 1.0.0 formats bind an exact gateway-owned admitted snapshot to a
   repository-owned three-to-nine-candidate inline-multirotor electrical grid,
   sovereign native validation, deterministic real Rapier 0.33.0, and pinned MuJoCo
@@ -148,8 +150,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   is held; CMA-ES, Optuna, 200 engine candidates, overnight completion, trained
   finalists, catalog search, provider
   sandbox, build, hardware, and field claims remain false and P9-002/P9-003 remain
-  in progress. Protect and reconcile the exact tree before citing this as a current
-  protected boundary;
+  in progress. Exact head `e64c601`, reviewed tree `08e8a12`, PR CI/security
+  `29545327465`/`29545327485`, protected-tree equality, and post-merge CI/security
+  `29545811003`/`29545810996` pass;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
