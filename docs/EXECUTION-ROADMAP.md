@@ -404,9 +404,13 @@ Work:
   every plan, cache, checkpoint, and candidate and refuses foreign replay/evaluation/
   resume. PR #113/protected `54385c2`, all 44 gates with 244 workers, artifact
   `8397860593`, and a clean same-protected-source all-200 Linux/Apple comparison pass;
-  P9-006 is closed for exact-authority recovery integrity. None of these lanes
-  supplies portable/heterogeneous recovery, overnight/provider billing, actual
-  trained finalists, catalog-choice, or external evidence;
+  P9-006 is closed for exact-authority recovery integrity. PR #115/protected
+  `609a70d` then protects D64's exact catalog-choice successor; clean artifact
+  `8399829664` evaluates 200/200 native/Rapier/MuJoCo rows, admits 197, and retains
+  two physical front points/two held finalists through same-authority recovery.
+  These lanes still supply no portable/heterogeneous recovery, catalog-native tier-2
+  physics, `>=3` physical front, overnight/provider billing, actual trained finalists,
+  or external evidence;
 - provider reliability, cost, data-retention, and artifact-integrity work from
   `OPS-*`, `QA-*`, and `SEC-*`.
 
@@ -654,20 +658,21 @@ successor must wait for the named-hardware/D54-to-twin gate above.
 
 P9-006 is closed at protected `54385c2`: exact-platform authority permits same-
 authority scheduling and resume only and never grants portable cache, heterogeneous
-resume, or cross-runtime tier-3 authority. D64 implements the next local slice:
+resume, or cross-runtime tier-3 authority. D64 protects the next local slice through
+PR #115/`609a70d`:
 search-plan/batch v3 replaces the four synthetic electrical profiles with exact
 lockfile-pinned CNHL 1500/1300 battery revisions, binds raw catalog row plus review/
 license/export authority, switches only the D32 equipped variant and required inline
-mirrors, and re-runs catalog-aware native admission before Rapier/MuJoCo. Protection
-and retained clean all-200 evidence are the immediate gate for that slice. The dirty-
-tree local smoke already proves 7 + zero-dispatch cancel + 193 resume, 200/200 native/
-Rapier/MuJoCo rows, 197 admissions, and the expected two-choice/two-point front. That
-passes inside all 44 local gates with 246 worker, 74 Gateway, and 39 Studio tests, but
-does not satisfy the separate P9 `>=3` phase exit. After protection,
-the next dependency-complete P9 work is actual tier-3 training/scorecards for the
-engine-admitted catalog finalists, followed separately by retained overnight/provider
-scheduling and billing. Catalog-native MuJoCo mass/inertia/thrust-table authority is
-an explicit adjacent lane and must receive a new bundle contract before it is claimed.
+mirrors, and re-runs catalog-aware native admission before Rapier/MuJoCo. Exact PR/
+reviewed/protected tree proof and post-merge CI/security pass; clean artifact
+`8399829664` proves 7 + zero-dispatch cancel + 193 resume, 200/200 native/Rapier/
+MuJoCo rows, 197 admissions, and the expected two-choice/two-point front. That passes
+inside all 44 local/PR/protected gates with 246 worker, 74 Gateway, and 39 Studio
+tests, but does not satisfy the separate P9 `>=3` phase exit. The next dependency-
+complete P9 work is catalog-native MuJoCo mass/inertia/thrust-table authority under a
+new bundle contract, followed by actual tier-3 training/scorecards for the admitted
+catalog finalists. A `>=3` physical front and retained overnight/provider scheduling
+and billing remain separate gates.
 Fast proposal or local engine completion is not an overnight run.
 
 Acceptance:
@@ -829,7 +834,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63 | P6/P7 evidence; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; prove real catalog choices, retained overnight/provider billing, and actual scorecard-passing tier-3 finalists |
+| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64 | P6/P7 evidence; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; add catalog-native tier-2 physics and a `>=3` physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |

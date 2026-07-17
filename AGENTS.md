@@ -90,11 +90,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D61 evidence-reconciliation PR #112 at
-  `4ad8c8b`; reviewed tree `5ef3a5d` is byte-identical at the protected squash.
-  PR CI/security `29554043285`/`29554043269` and protected CI/security
-  `29555056417`/`29555056481` pass. The owning D61 implementation remains PR #111
-  at `1c37567`.
+  latest verified protected descendant is D64 implementation PR #115 at `609a70d`.
+  Exact head `b13a817`, reviewed/protected tree `9934442`, PR CI/security
+  `29561709484`/`29561709504`, and post-merge CI/security
+  `29562278744`/`29562278736` pass. The owning D61 implementation remains PR #111
+  at `1c37567`, and its evidence reconciliation remains PR #112 at `4ad8c8b`.
   Exact head `6c446a5` passed PR CI/security `29552818736`/`29552818716`; reviewed
   tree `c6520fd` is byte-identical at the protected squash, whose post-merge CI/
   security `29553189264`/`29553189257` pass. Downloaded artifact `8396554544` binds
@@ -208,9 +208,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   different at ordinals 20–99, confirming exact-runtime scheduling/refusal while
   portable cache, heterogeneous resume, and cross-runtime tier-3 authority remain
   false;
-- D64/P9-002/P9-003 implements the catalog-backed v3 successor without reinterpreting
-  v2. Search-plan/evidence and engine-batch/evidence 3.0.0 bind the exact sorted raw-
-  catalog authority, two lockfile-pinned CNHL battery revisions, D32 equipped-only
+- D64/P9-002/P9-003 is protected at catalog-backed, exact-runtime-scoped
+  `local-catalog-engine-200-batch` maturity through PR #115/`609a70d`, without
+  reinterpreting v2. Search-plan/evidence and engine-batch/evidence 3.0.0 bind the
+  exact sorted raw-catalog authority, two lockfile-pinned CNHL battery revisions,
+  D32 equipped-only
   materialization, inline capacity/discharge mirrors, driver bounds, row hashes,
   confidence/review state, and license/export source. Native evaluation 2.0.0 plus
   catalog proof 1.0.0 re-runs admission with `FileCatalog` and records only equipped
@@ -219,13 +221,18 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   work. Every current row remains review-required and non-marketplace-exposable.
   Training-bundle 2.0.0 uses catalog-backed admission but retains explicit inline-
   mirror physics; do not claim catalog-native MuJoCo mass/inertia/thrust tables.
-  The dirty-tree local v3 smoke completes 7 + zero-dispatch cancel + 193 resume,
-  evaluates all 200 rows through native/Rapier/MuJoCo, admits 197, and returns the
-  physically expected two-choice/two-point front with two tier-3-held finalists.
-  All 44 local gates pass under Python 3.12.13 with 246 worker, 74 Gateway, and 39
-  Studio tests. This does not satisfy P9's separate `>=3` phase exit. Protection,
-  retained clean all-200 evidence, tier-3 training, overnight/provider billing,
-  build, hardware, field, and external acceptance remain separate gates;
+  Exact head `b13a817`, reviewed/protected tree `9934442`, PR CI/security
+  `29561709484`/`29561709504`, protected squash `609a70d`, and post-merge CI/security
+  `29562278744`/`29562278736` pass. Downloaded protected artifact `8399829664`
+  binds clean source `609a70d`, catalog/runtime authorities `f6a7171…9262`/
+  `31a205c…725c`, and completes 7 + zero-dispatch cancel + 193 resume. It evaluates
+  all 200 rows through native/Rapier/MuJoCo, admits 197, and returns the physically
+  expected two-choice/two-point front with two tier-3-held finalists. Its evidence/
+  result SHA-256 values are `208d5103…45b8`/`8353900e…a4c`. All 44 local, PR, and
+  protected gates pass under Python 3.12.13 with 246 worker, 74 Gateway, and 39
+  Studio tests. This does not satisfy P9's separate `>=3` phase exit. Tier-3
+  training, overnight/provider billing, build, hardware, field, and external
+  acceptance remain separate gates;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;

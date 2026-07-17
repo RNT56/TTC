@@ -18,6 +18,40 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D64 catalog co-design evidence
+**Session:** Codex agent · branch `codex/p9002-catalog-evidence` · **Phase:** P9 ·
+**TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Protected D64 at exact-runtime-scoped
+`local-catalog-engine-200-batch` maturity. PR #115 exact head `b13a817`, reviewed
+tree `9934442`, PR CI/security `29561709484`/`29561709504`, protected squash
+`609a70d`, byte-identical protected tree, and post-merge CI/security
+`29562278744`/`29562278736` pass. Downloaded protected artifact `8399829664`
+self-binds to clean source `609a70d`; its batch evidence/result SHA-256 values are
+`208d5103…45b8`/`8353900e…a4c`, search-plan evidence/plan values are
+`f4dee0ce…98cf`/`19871d39…5bac`, and catalog/runtime authorities are
+`f6a7171f…9262`/`31a205c8…725c`.
+**Evidence:** The protected batch retains the exact 7 + zero-dispatch cancel + 193
+resume sequence, evaluates 200/200 exact hashes through catalog-aware native v2,
+Rapier 0.33.0, and MuJoCo 3.9.0, admits 197, and returns the physically expected
+two-choice/two-point front with two tier-3-held finalists. The retained artifact
+keeps overnight completion, provider billing, trained-finalist, marketplace review,
+live catalog persistence, build, hardware, and field authority false. All 44
+protected gates pass, including 246 worker, 74 Gateway, 39 Studio, Rust/WASM/schema,
+compatibility, security, isolated Postgres, real-browser, and accessibility proof.
+**Changed:** Reconciled `AGENTS.md`, current state, roadmap, TODO ledger, execution
+sequencing, and the co-design system boundary. No runtime, schema, API, event, queue,
+database, catalog row, golden artifact, provider, training, build, hardware, or field
+format changed.
+**Decisions:** none; D64/R35 remain the governing semantics and risk.
+**Next:** Add catalog-native MuJoCo training-bundle physics under a new versioned
+contract, then execute actual tier-3 training/scorecards for admitted catalog
+finalists. Separately add a physical manifold that can prove the `>=3` front and
+retain a real overnight/provider schedule with billing evidence.
+**Blockers:** P9 closure still lacks catalog-native tier-2 physics, three admitted
+physical Pareto points for the course objective, trained-finalist scorecards,
+retained overnight/provider billing, and external acceptance. Marketplace approval,
+hardware, field, and live-provider maturity remain independent gates.
+
 ## 2026-07-17 — Bind co-design to exact equipped catalog revisions
 **Session:** Codex agent · branch `codex/p9002-catalog-categorical` · **Phase:** P9 ·
 **TODO items:** P9-002 [~], P9-003 [~]
