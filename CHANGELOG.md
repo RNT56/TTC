@@ -18,6 +18,36 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D61 evidence and expose cross-platform plan drift
+**Session:** Codex agent · branch `codex/p9003-d61-protected-evidence` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-006 [~]
+**Done:** Reconciled D61 from local candidate to protected platform-scoped
+`local-engine-200-batch` maturity. Exact implementation head `6c446a5`, reviewed
+tree `c6520fd`, PR #111 CI/security `29552818736`/`29552818716`, protected squash
+`1c37567`, byte-identical protected tree, and post-merge CI/security
+`29553189264`/`29553189257` pass. Downloaded clean protected artifact `8396554544`
+contains `p9-engine-batch.json` SHA-256 `66470448…bbd3`, source `1c37567`, result
+SHA-256 `6718e9cb…608f`, 200 native and 123 eligible Rapier/MuJoCo evaluations, 87
+admissions, four Pareto points, three tier-3-held finalists, and exact 7 + zero-
+dispatch cancel + 193 resume proof. Every overnight/provider/catalog/trained/build/
+hardware/field nonclaim remains false.
+**Changed:** Corrected every living D61 claim and `AGENTS.md` to protected evidence;
+added D62, P9-006, R34, compatibility guidance, and best practice for cross-platform
+optimizer identity. Download comparison found that Linux x86-64 PR/protected runs
+repeat all 200 hashes, while clean Apple-arm64 differs only at CMA-ES ordinals
+20–99. The first CMA generation, all 100 TPE rows, the four-point front, and the same
+three finalist hashes remain stable. D60/D61 v1 already rejects foreign replay, so
+evidence integrity is fail-closed, but portable recovery is not proven.
+**Decisions:** D62 makes cross-platform plan identity or explicit platform-bound
+scheduling a blocking prerequisite for tier 3, heterogeneous resume, portable cache,
+or overnight/provider authority. Any changed replay/hash/cache meaning requires
+coordinated D60/D61 internal majors.
+**Next:** Protect this evidence reconciliation, then implement P9-006 as the next
+dependency-complete local lane before training any finalist.
+**Blockers:** P9 still requires cross-platform plan/recovery authority, catalog-
+choice search, actual tier-3 scorecards, retained overnight/provider scheduling and
+billing, and external acceptance.
+
 ## 2026-07-17 — Execute the D61 exact-hash co-design engine batch
 **Session:** Codex agent · branch `codex/p9003-d61-engine-batch` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]

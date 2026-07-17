@@ -393,14 +393,15 @@ Work:
   candidates. D60 now has a protected exact-snapshot proposal plan through PR
   #109/`71e7217` that executes 100 pinned CMA-ES plus 100 pinned Optuna TPE
   proposals with no physical/engine feedback. Consume its exact hashes through
-  D61's separately versioned checkpointed 200-candidate engine artifact. The local
-  candidate now demonstrates exact-prefix consumption, per-candidate durability,
-  zero-dispatch cancellation, resume, measured local runtime, 200 native and 125
-  eligible Rapier/MuJoCo rows, 89 admissions, four Pareto points, and three selected
-  tier-3-held finalists. All 43 local gates pass with 242 worker tests; clean exact-
-  source/protected evidence is pending. None of these
-  lanes supplies overnight/provider billing, actual trained finalists, catalog-
-  choice, or external evidence;
+  D61's separately versioned checkpointed 200-candidate engine artifact. PR #111/
+  protected `1c37567` and artifact `8396554544` prove exact-prefix consumption,
+  per-candidate durability, zero-dispatch cancellation, resume, measured local
+  runtime, 200 native/123 eligible Rapier-MuJoCo rows, 87 admissions, four Pareto
+  points, and three tier-3-held finalists in all 43 gates with 242 worker tests.
+  D62/P9-006 now blocks tier 3 because Apple-arm64 changes CMA-ES ordinals 20–99
+  relative to repeated Linux-x86-64 hashes. None of these lanes supplies portable/
+  heterogeneous recovery, overnight/provider billing, actual trained finalists,
+  catalog-choice, or external evidence;
 - provider reliability, cost, data-retention, and artifact-integrity work from
   `OPS-*`, `QA-*`, and `SEC-*`.
 
@@ -576,7 +577,8 @@ Work:
   finalist/catalog/provider/build/hardware/field claim is false. Exact head
   `e64c601`, reviewed tree `08e8a12`, PR CI/security `29545327465`/`29545327485`,
   protected-tree equality, and post-merge CI/security `29545811003`/`29545810996`
-  pass. D60 and D61 now supply separate proposal-plan and local batch lanes without
+  pass. D60 and D61 now supply separate proposal-plan and protected platform-scoped
+  batch lanes without
   reusing or promoting the controlled-smoke claim;
 - D60/P9-002 is protected at `local-algorithm-proposal-plan` maturity.
   `forge-codesign-search-plan/1.0.0` and `p9-search-plan-evidence/1.0.0` bind the
@@ -590,21 +592,23 @@ Work:
   Studio tests, and the pinned dependency audit is clean. Exact head `340c88d`,
   reviewed tree `7139ad5`, PR #109 CI/security `29549718149`/`29549718173`,
   protected squash `71e7217`, protected-tree equality, and post-merge CI/security
-  `29550088422`/`29550088452` pass. D61 is the separate local engine-consumption
+  `29550088422`/`29550088452` pass. D61 is the separate protected platform-scoped
+  engine-consumption
   artifact; it does not promote this plan;
-- D61/P9-002/P9-003 is a local `local-engine-200-batch` implementation candidate.
+- D61/P9-002/P9-003 is protected at platform-scoped
+  `local-engine-200-batch` maturity.
   `forge-codesign-engine-batch/1.0.0` deterministically replays the D60 plan, accepts
   exactly 200 proposal hashes, and retains one hash-bound ordinal-contiguous prefix.
   It atomically checkpoints after each candidate, fences an unfinished attempt as
   interrupted, records cancellation only with zero dispatch, and withholds Pareto/
-  finalists until complete. Its development smoke executes 7 + cancel + 193,
-  evaluates 200 native and 125 eligible Rapier/MuJoCo rows, admits 89, derives four
-  Pareto points, selects three real engine-admitted finalists with tier 3 held, and
-  records measured local engine hours. The worktree was dirty, so this
-  is diagnostic rather than clean acceptance evidence. All 43 local gates pass under
-  Python 3.12.7 with 242 worker tests; a clean exact-source repeat, protected PR/
-  post-merge proof, overnight/provider billing,
-  catalog choices, and actual tier-3 training remain open;
+  finalists until complete. Artifact `8396554544` at protected `1c37567` executes
+  7 + cancel + 193, evaluates 200 native/123 eligible Rapier-MuJoCo rows, admits 87,
+  derives four Pareto points, selects three real engine-admitted finalists with tier
+  3 held, and records measured local engine hours. Exact head `6c446a5`, reviewed
+  tree `c6520fd`, PR #111 CI/security `29552818736`/`29552818716`, protected-tree
+  equality, and post-merge CI/security `29553189264`/`29553189257` pass. D62/P9-006
+  keeps cross-platform/heterogeneous recovery, tier 3, overnight/provider billing,
+  and portable cache authority open; catalog choices also remain open;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -629,12 +633,14 @@ real-transition boundary. No further local acknowledgment or fixture can satisfy
 that evidence requirement. Do not fabricate a D54 ghost source: the real D57
 successor must wait for the named-hardware/D54-to-twin gate above.
 
-The current dependency-complete local P9 step is to finish the clean-source repeat
-and protected publication of D61's 43-gate-green exact-hash batch without promoting
-its local run to overnight/provider maturity. After protection, the next local design
-boundary is actual tier-3 training/scorecards for only the selected finalists;
-catalog-choice search and provider scheduling/billing remain separately gated. Fast
-proposal or local engine completion is not an overnight run.
+The current dependency-complete local P9 step is P9-006/D62: resolve the observed
+Apple-arm64/Linux-x86-64 CMA-ES drift before training any finalist. Prefer a
+coordinated D60/D61 v2 that yields identical all-200 patch/candidate hashes across
+supported worker architectures; if the underlying library cannot support that bar,
+version exact platform/runtime authority and enforce same-platform scheduling and
+resume. Only then may actual tier-3 training/scorecards begin. Catalog-choice search
+and provider scheduling/billing remain separately gated. Fast proposal or local
+engine completion is not an overnight run.
 
 Acceptance:
 
@@ -795,7 +801,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, conditional 005 after protected D59/D60 and local D61 | P6/P7 evidence; accelerator/provider budget for overnight/tier-3 work | protect D61's exact-hash 200-candidate sovereign evaluation with retained recovery/local-cost and ≥3 admitted Pareto points; then prove catalog choices, retained overnight/provider billing, and actual scorecard-passing tier-3 finalists |
+| P9 | P9-002, 003, 006, conditional 005 after protected D59-D61 | P6/P7 evidence; cross-platform plan/recovery authority; accelerator/provider budget for overnight/tier-3 work | close D62 with all-200 cross-platform equality or exact platform-bound scheduling/refusal; then prove catalog choices, retained overnight/provider billing, and actual scorecard-passing tier-3 finalists |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |
