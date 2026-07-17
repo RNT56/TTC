@@ -163,7 +163,7 @@ compatibility fixtures, migration/deprecation guidance, and a documented read po
 | `train.offline-bc` | `offline-learning`, `policy` | fixture |
 | `train.sysid-fit` | `sysid` | fixture |
 | `replay.verify` | `replay` | fixture |
-| `codesign.evaluate` | `codesign` | fixture + controlled-local-engine-smoke + local-engine-200-batch |
+| `codesign.evaluate` | `codesign` | fixture + controlled-local-engine-smoke + platform-bound-local-engine-200-batch |
 | `bridge.config-diff` | `bridge-config` | fixture |
 | `bridge.telemetry-ingest` | `telemetry-replay` | fixture |
 | `bridge.supervisor-check` | `supervisor-decision` | fixture |

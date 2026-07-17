@@ -13,6 +13,7 @@ pytest.importorskip("mujoco")
 pytest.importorskip("numpy")
 pytest.importorskip("optuna")
 
+import forge_workers.codesign_search as codesign_search
 from forge_workers.codesign_batch import (
     _candidate_expected,
     _checkpoint_payload,
@@ -21,7 +22,7 @@ from forge_workers.codesign_batch import (
     validate_checkpoint,
 )
 from forge_workers.codesign_runtime import _sha, _stable_json
-from forge_workers.codesign_search import build_search_plan
+from forge_workers.codesign_search import _proposal_runtime_authority, build_search_plan
 from forge_workers.training.tasks import task_definition
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -145,12 +146,18 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
 
     completed = advance_batch(batch_payload, cancelled, evaluator=_fake_evaluator)
     assert validate_checkpoint(completed, batch_payload) == completed
-    assert completed["schemaVersion"] == "forge-codesign-engine-batch/1.0.0"
+    assert completed["schemaVersion"] == "forge-codesign-engine-batch/2.0.0"
     assert completed["artifactKind"] == "codesignEngineBatch"
+    assert completed["source"]["maturity"] == "platform-bound-local-engine-200-batch"
     assert completed["scheduler"]["state"] == "complete"
     assert completed["scheduler"]["completedCandidates"] == 200
     assert completed["scheduler"]["resumeObserved"] is True
     assert completed["scheduler"]["cancellationObserved"] is True
+    assert completed["scheduler"]["resumePolicy"] == "exact-proposal-runtime-authority"
+    assert completed["scheduler"]["heterogeneousResumeAllowed"] is False
+    assert completed["scheduler"]["requiredRuntimeAuthoritySha256"] == (
+        completed["source"]["proposalRuntimeAuthority"]["authoritySha256"]
+    )
     assert [candidate["ordinal"] for candidate in completed["candidates"]] == list(range(200))
     assert completed["benchmark"]["exactCandidateHashesEvaluated"] == 200
     assert completed["benchmark"]["nativeEvaluated"] == 200
@@ -161,6 +168,11 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
     assert len(completed["pareto"]) >= 3
     assert len(completed["finalists"]) == 3
     assert all(finalist["tier3Status"] == "held-not-run" for finalist in completed["finalists"])
+    assert all(
+        candidate["lineage"]["proposalRuntimeAuthoritySha256"]
+        == completed["source"]["proposalRuntimeAuthority"]["authoritySha256"]
+        for candidate in completed["candidates"]
+    )
     assert completed["cost"]["providerBillingVerified"] is False
     assert completed["cost"]["providerChargedAmount"] is None
     assert all(value is False for value in completed["nonclaims"].values())
@@ -219,6 +231,12 @@ def test_checkpoint_refuses_plan_candidate_verdict_and_hash_substitution(batch_p
     with pytest.raises(ValueError, match="state lacks its terminal attempt"):
         validate_checkpoint(state_tamper, batch_payload)
 
+    runtime_tamper = copy.deepcopy(checkpoint)
+    runtime_tamper["scheduler"]["requiredRuntimeAuthoritySha256"] = "0" * 64
+    runtime_tamper["checkpointSha256"] = _sha(_stable_json(_checkpoint_payload(runtime_tamper)))
+    with pytest.raises(ValueError, match="durability or scheduling drifted"):
+        validate_checkpoint(runtime_tamper, batch_payload)
+
 
 def test_engine_batch_refuses_partial_budget_extra_fields_and_negative_slice(batch_payload):
     for key, value, message in (
@@ -238,3 +256,16 @@ def test_engine_batch_refuses_partial_budget_extra_fields_and_negative_slice(bat
 
     with pytest.raises(ValueError, match="non-negative integer"):
         advance_batch(batch_payload, max_candidates=-1, evaluator=_fake_evaluator)
+
+
+def test_engine_batch_refuses_foreign_runtime_before_resume(batch_payload, monkeypatch):
+    foreign = copy.deepcopy(_proposal_runtime_authority())
+    foreign["platform"]["machine"] = f"{foreign['platform']['machine']}-foreign"
+    foreign["authoritySha256"] = _sha(
+        _stable_json(
+            {name: value for name, value in foreign.items() if name != "authoritySha256"}
+        )
+    )
+    monkeypatch.setattr(codesign_search, "_proposal_runtime_authority", lambda: foreign)
+    with pytest.raises(ValueError, match="runtime authority does not match this worker"):
+        advance_batch(batch_payload, max_candidates=0, evaluator=_fake_evaluator)

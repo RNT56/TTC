@@ -471,6 +471,12 @@ every user-facing capability claim.
   heterogeneous resume, and block tier-3/cache/overnight authority until a reviewed
   major either canonicalizes arithmetic/update semantics or binds exact platform and
   scheduler authority.
+- When selecting platform-bound recovery, bind more than an architecture label.
+  Hash the exact OS/runtime, Python ABI, numerical wheel RECORD and build metadata,
+  CPU feature map, BLAS/LAPACK backend, and optimizer package RECORDs; include that
+  hash in plan/checkpoint cache keys and candidate lineage. Refuse a foreign
+  authority before dispatch, compare every proposal hash at one clean source
+  revision, and keep cross-runtime cache/tier-3 claims false.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

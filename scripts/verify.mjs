@@ -166,6 +166,7 @@ try {
     "--out",
     join(temp, "p7-mjx-feasibility.json"),
   ]);
+  run("Co-design cross-platform authority policy", "pnpm", ["codesign:platform-compare:test"]);
   run("Controlled native/Rapier/MuJoCo co-design smoke", "node", [
     "scripts/codesign-engine-smoke.mjs",
     "--out",

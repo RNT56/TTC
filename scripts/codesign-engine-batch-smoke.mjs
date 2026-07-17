@@ -99,7 +99,7 @@ const env = {
 };
 const plan = runPython(python, ["-m", "forge_workers.codesign_search"], searchRequest, env);
 if (
-  plan.schemaVersion !== "forge-codesign-search-plan/1.0.0"
+  plan.schemaVersion !== "forge-codesign-search-plan/2.0.0"
   || plan.source?.sourceRevision !== sourceRevision
   || plan.source?.dependencyManifestSha256 !== dependencyManifestSha256
   || plan.proposals?.length !== 200
@@ -125,7 +125,7 @@ try {
     env,
   );
   if (
-    paused.schemaVersion !== "forge-codesign-engine-batch/1.0.0"
+    paused.schemaVersion !== "forge-codesign-engine-batch/2.0.0"
     || paused.scheduler?.state !== "paused"
     || paused.scheduler?.nextOrdinal !== 7
     || paused.candidates?.length !== 7
@@ -159,21 +159,27 @@ try {
 }
 
 if (
-  result.schemaVersion !== "forge-codesign-engine-batch/1.0.0"
+  result.schemaVersion !== "forge-codesign-engine-batch/2.0.0"
   || result.artifactKind !== "codesignEngineBatch"
   || result.provider !== "forge-local-engine-batch"
   || result.source?.baseContractHash !== contractHash
   || result.source?.searchPlanSha256 !== plan.planSha256
+  || result.source?.proposalRuntimeAuthority?.authoritySha256
+    !== plan.source?.proposalRuntimeAuthority?.authoritySha256
   || result.source?.sourceRevision !== sourceRevision
   || result.source?.sourceRevisionRecorded !== true
   || result.source?.dependencyManifestSha256 !== dependencyManifestSha256
-  || result.source?.maturity !== "local-engine-200-batch"
+  || result.source?.maturity !== "platform-bound-local-engine-200-batch"
   || result.scheduler?.state !== "complete"
   || result.scheduler?.nextOrdinal !== 200
   || result.scheduler?.completedCandidates !== 200
   || result.scheduler?.resumeObserved !== true
   || result.scheduler?.cancellationObserved !== true
   || result.scheduler?.checkpointEveryCandidate !== true
+  || result.scheduler?.resumePolicy !== "exact-proposal-runtime-authority"
+  || result.scheduler?.requiredRuntimeAuthoritySha256
+    !== plan.source?.proposalRuntimeAuthority?.authoritySha256
+  || result.scheduler?.heterogeneousResumeAllowed !== false
   || result.benchmark?.exactCandidateHashesEvaluated !== 200
   || result.benchmark?.nativeEvaluated !== 200
   || result.benchmark?.rapierEvaluated !== result.benchmark?.mujocoEvaluated
@@ -196,6 +202,8 @@ for (const [ordinal, candidate] of result.candidates.entries()) {
     || candidate.lineage?.candidateSnapshotSha256 !== proposal.lineage?.candidateSnapshotSha256
     || candidate.lineage?.patchSha256 !== proposal.lineage?.patchSha256
     || candidate.lineage?.searchPlanSha256 !== plan.planSha256
+    || candidate.lineage?.proposalRuntimeAuthoritySha256
+      !== plan.source?.proposalRuntimeAuthority?.authoritySha256
     || candidate.nativeEvaluation?.candidateSnapshotSha256 !== proposal.lineage?.candidateSnapshotSha256
     || candidate.evaluations?.tier3?.evaluated !== false
     || candidate.evaluations?.tier3?.held !== true
@@ -221,7 +229,7 @@ if (Object.values(result.nonclaims || {}).some((claim) => claim !== false)) {
 }
 const resultHash = sha256(stableJson(result));
 const evidence = {
-  evidenceSchemaVersion: "p9-engine-batch-evidence/1.0.0",
+  evidenceSchemaVersion: "p9-engine-batch-evidence/2.0.0",
   sourceRevision,
   worktreeClean,
   validator,

@@ -18,6 +18,46 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Bind co-design recovery to exact numeric-runtime authority
+**Session:** Codex agent · branch `codex/p9006-d62-platform-authority` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-006 [~]
+**Done:** Implemented D62's D63 exact-runtime branch at local candidate maturity.
+Coordinated internal search-plan/evidence and engine-batch/evidence 2.0.0 formats now
+bind one self-hashed proposal-runtime authority into plan/cache/scheduler/checkpoint/
+candidate lineage. It covers OS/kernel/machine/libc/byte order, Python
+implementation/version/cache tag, pinned NumPy distribution/configuration/CPU/
+BLAS/LAPACK identity, and pinned CMA-ES/Optuna distribution records. Foreign replay,
+evaluation, or resume fails before work; heterogeneous resume and portable cache are
+false. Focused search/batch tests pass 11/11, comparison-policy tests pass 2/2,
+compatibility passes 19 top-level surfaces, and all 44 local gates pass under Python
+3.12.13 with 244 worker, 74 Gateway, and 39 Studio tests. A dirty Apple-arm64 real-engine
+diagnostic executes 7 + zero-dispatch cancel + 193 resume, evaluates 200 native and
+125 eligible Rapier/MuJoCo rows, admits 89, returns four Pareto points, and retains
+the same three tier-3-held finalists. Search plan SHA-256 is `7b77693d…603f`, batch
+result SHA-256 is `39b9bea7…dc2e`, and runtime authority is `a99337a8…b312`.
+**Changed:** Exact authority capture/validation, coordinated plan/batch majors,
+runtime-partitioned caches, checkpoint/candidate binding, focused/refusal tests,
+independent all-200 comparison command/tests, CI/root verification policy, internal
+compatibility registrations, generated-contract sources, append-only golden review,
+D63, risk/best-practice/governance/system contracts, entry guidance, and all living
+P9 execution/status documents. No public API, event, queue kind, database,
+ModelSpec, validator report, CLI/WASM facade, Studio result, provider, catalog,
+training-policy, build, hardware, or field format changes. The preceding D61
+evidence reconciliation is now protected through PR #112/`4ad8c8b`: reviewed tree
+`5ef3a5d` is byte-identical, PR CI/security `29554043285`/`29554043269` and
+post-merge CI/security `29555056417`/`29555056481` pass.
+**Decisions:** D63 selects exact numeric-runtime scheduling/refusal rather than
+custom floating-point arithmetic or ad hoc rounding. V1 stays historical; changing
+authority fields/hash preimages, cache partitioning, or foreign-runtime refusal
+requires coordinated new majors and a superseding decision.
+**Next:** Commit/rebase the reviewed tree onto protected `main`, produce clean exact-
+source plan/batch evidence, then protect the tree and compare Linux/Apple artifacts
+from that exact protected revision before reconciling P9-006.
+**Blockers:** P9-006 still lacks clean/protected same-source cross-platform evidence.
+P9 closure separately lacks real catalog choices, actual tier-3 trained-finalist
+scorecards, retained overnight/provider scheduling and billing, and external
+acceptance.
+
 ## 2026-07-17 — Reconcile protected D61 evidence and expose cross-platform plan drift
 **Session:** Codex agent · branch `codex/p9003-d61-protected-evidence` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-006 [~]
