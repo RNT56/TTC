@@ -13,9 +13,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const TRAINING_BUNDLE_VERSION: &str = "2.0.0";
-pub const CATALOG_TRAINING_BUNDLE_VERSION: &str = "3.0.0";
+pub const CATALOG_TRAINING_BUNDLE_VERSION: &str = "4.0.0";
 pub const CATALOG_TRAINING_PHYSICS_SCHEMA: &str = "forge-training-catalog-physics";
-pub const CATALOG_TRAINING_PHYSICS_VERSION: &str = "1.0.0";
+pub const CATALOG_TRAINING_PHYSICS_VERSION: &str = "2.0.0";
+pub const CATALOG_TRAINING_CURVE_READBACK_SCHEMA: &str = "forge-training-catalog-curve-readback";
+pub const CATALOG_TRAINING_CURVE_READBACK_VERSION: &str = "1.0.0";
 pub const POLICY_TENSOR_SCHEMA: &str = "forge-policy-tensor";
 pub const POLICY_TENSOR_VERSION: &str = "2.0.0";
 pub const TRAINING_MUJOCO_VERSION: &str = "3.9.0";
@@ -156,16 +158,44 @@ pub struct TrainingCatalogGeometry {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogThrustPointAuthority {
+    pub voltage_v: f64,
+    pub throttle: f64,
+    pub thrust_n: f64,
+    pub current_a: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TrainingCatalogThrustTableAuthority {
     pub id: String,
+    pub row_schema_version: String,
     pub prop: String,
     pub voltage_v: f64,
     pub voltage_range_v: [f64; 2],
     pub confidence: f64,
     pub source_url: String,
     pub point_count: usize,
+    pub points: Vec<TrainingCatalogThrustPointAuthority>,
     pub used_for_curve: bool,
     pub inapplicability_reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogCurveReadback {
+    pub schema_version: String,
+    pub selected_table_id: Option<String>,
+    pub table_driven: bool,
+    pub curve_point_count: usize,
+    pub motor_count: usize,
+    pub max_total_current_a: f64,
+    pub battery_nominal_voltage_v: f64,
+    pub battery_resistance_ohm: f64,
+    pub motor_resistance_ohm: f64,
+    pub fixed_point_iterations: u32,
+    pub convergence_tolerance_v: f64,
+    pub minimum_voltage_fraction: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -213,6 +243,7 @@ pub struct TrainingCatalogPhysics {
     pub inline_fallbacks: Vec<String>,
     pub battery_operating_voltage_v: [f64; 2],
     pub equipped_prop: TrainingCatalogPropAuthority,
+    pub curve_readback: TrainingCatalogCurveReadback,
     pub components: Vec<TrainingCatalogComponent>,
 }
 
@@ -668,6 +699,7 @@ fn catalog_training_physics(
                     })?;
                 Ok(TrainingCatalogThrustTableAuthority {
                     id: table.id.clone(),
+                    row_schema_version: component.row_schema_version.clone(),
                     prop: table.prop.clone(),
                     voltage_v: table.voltage,
                     voltage_range_v: [
@@ -685,6 +717,16 @@ fn catalog_training_physics(
                     confidence: table.confidence,
                     source_url: table.source_url.clone(),
                     point_count: table.points.len(),
+                    points: table
+                        .points
+                        .iter()
+                        .map(|point| TrainingCatalogThrustPointAuthority {
+                            voltage_v: point.voltage,
+                            throttle: point.throttle,
+                            thrust_n: point.thrust_n,
+                            current_a: point.current_a,
+                        })
+                        .collect(),
                     used_for_curve: applicability.used_for_curve,
                     inapplicability_reasons: applicability.inapplicability_reasons.clone(),
                 })
@@ -737,6 +779,11 @@ fn catalog_training_physics(
     components.sort_by(|left, right| left.slot_id.cmp(&right.slot_id));
     let base_contract_mass_kg = forge_geometry::model_mass_g(spec, baked) / 1000.0;
     let total_mass_kg = base_contract_mass_kg + equipped_catalog_mass_kg;
+    let selected_table_id = powertrain
+        .table_applicability
+        .iter()
+        .find(|table| table.used_for_curve)
+        .map(|table| table.id.clone());
     Ok((
         TrainingCatalogPhysics {
             schema_version: format!(
@@ -752,7 +799,7 @@ fn catalog_training_physics(
                 .iter()
                 .any(|table| table.used_for_curve)
             {
-                "catalog-motor-battery-applicability-checked-thrust-table-v1".to_string()
+                "catalog-motor-battery-exact-grid-readback-v2".to_string()
             } else {
                 "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1".to_string()
             },
@@ -763,6 +810,22 @@ fn catalog_training_physics(
                 pitch_in: powertrain.prop_pitch_in,
                 blades: powertrain.prop_blades,
                 source: powertrain.prop_source.clone(),
+            },
+            curve_readback: TrainingCatalogCurveReadback {
+                schema_version: format!(
+                    "{CATALOG_TRAINING_CURVE_READBACK_SCHEMA}/{CATALOG_TRAINING_CURVE_READBACK_VERSION}"
+                ),
+                table_driven: selected_table_id.is_some(),
+                selected_table_id,
+                curve_point_count: 101,
+                motor_count: powertrain.powertrain.n_motors,
+                max_total_current_a: powertrain.max_total_current_a,
+                battery_nominal_voltage_v: powertrain.powertrain.battery_v0,
+                battery_resistance_ohm: powertrain.powertrain.battery_r_ohm,
+                motor_resistance_ohm: powertrain.powertrain.motor_r_ohm,
+                fixed_point_iterations: 12,
+                convergence_tolerance_v: 1e-6,
+                minimum_voltage_fraction: 0.5,
             },
             components,
         },

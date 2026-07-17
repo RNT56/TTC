@@ -4,7 +4,7 @@
 and real-engine MuJoCo 3.9.0 parity protected in required CI; deterministic P6 exit
 complete · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
-**Decisions:** D7, D8, D16, D17, D20, D32, D65, D66
+**Decisions:** D7, D8, D16, D17, D20, D32, D65, D66, D67
 
 ## 1. Purpose
 
@@ -76,10 +76,15 @@ D66 makes a range-spanning source representation possible without changing that
 training authority. File-catalog row 2.0.0 places voltage on each point and admits
 only complete rectangular, unique, finite, bounded, monotonic grids with exact
 throttle endpoints. Row 1.0.0 remains a single-voltage read. The current EMAX row is
-still v1 and inapplicable; no v2 grid is checked in or reviewed. A future applicable
-grid must enter a new bundle/catalog-physics major that retains its exact grid and
-requires independent Python curve reconstruction before D65's analytic fallback may
-be displaced.
+still v1 and inapplicable; no v2 grid is checked in or reviewed. D67 implements the
+consumer boundary as catalog bundle v4, catalog-physics v2, and curve-readback v1.
+The artifact retains every exact SI point and the complete fixed-point recipe;
+Python independently validates the grid and reconstructs all 101 thrust/voltage/
+current curve points before accepting the table-driven model; any fixed-point lookup
+outside the measured voltage axis refuses instead of edge-clamping. A controlled-
+synthetic v2 grid proves acceptance and tamper refusal only. The real row remains v1
+and inapplicable, so D65's analytic fallback is still the current physical authority
+until separately sourced and owner-reviewed applicable data exists.
 
 ## 4. Estimator-in-sim (D8)
 

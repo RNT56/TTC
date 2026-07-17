@@ -127,8 +127,9 @@
       "internalSchemas": {
         "admittedModelSnapshot": "1.0.0",
         "trainingBundle": "2.0.0",
-        "catalogTrainingBundle": "3.0.0",
-        "catalogTrainingPhysics": "1.0.0",
+        "catalogTrainingBundle": "4.0.0",
+        "catalogTrainingPhysics": "2.0.0",
+        "catalogTrainingCurveReadback": "1.0.0",
         "trainingTask": "3.0.0",
         "groundTrainingBundle": "1.0.0",
         "groundTrainingTask": "1.0.0",
@@ -146,11 +147,11 @@
         "codesignEngineSmokeEvidence": "1.0.0",
         "codesignProposalRuntimeAuthority": "1.0.0",
         "codesignCatalogChoiceAuthority": "1.0.0",
-        "codesignTrainingAuthority": "1.0.0",
+        "codesignTrainingAuthority": "2.0.0",
         "codesignSearchPlan": "3.0.0",
         "codesignSearchPlanEvidence": "3.0.0",
-        "codesignEngineBatch": "4.0.0",
-        "codesignEngineBatchEvidence": "4.0.0"
+        "codesignEngineBatch": "5.0.0",
+        "codesignEngineBatchEvidence": "5.0.0"
       },
       "bridgeConfigFirmwareVersion": "2025.12",
       "ghostOverlayFrame": "forge-y-up-rh-m",

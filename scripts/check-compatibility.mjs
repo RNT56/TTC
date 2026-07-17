@@ -239,6 +239,16 @@ requireValue(
   "worker catalog-training-physics version does not match Rust/Python source",
 );
 requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.catalogTrainingCurveReadback ===
+    sourceConstant("crates/forge-sim/src/training.rs", "CATALOG_TRAINING_CURVE_READBACK_VERSION")
+    && matrix.surfaces.workerArtifacts.internalSchemas.catalogTrainingCurveReadback ===
+      pythonConstant(
+        "workers/forge_workers/training/bundle.py",
+        "CATALOG_TRAINING_CURVE_READBACK_VERSION",
+      ),
+  "worker catalog-training curve-readback version does not match Rust/Python source",
+);
+requireValue(
   matrix.surfaces.workerArtifacts.internalSchemas.trainingTask ===
     pythonConstant("workers/forge_workers/training/tasks.py", "TASK_VERSION"),
   "worker training-task version does not match Python source",

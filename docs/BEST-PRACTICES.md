@@ -513,6 +513,16 @@ every user-facing capability claim.
   v1 scalar onto every point is a shape migration only, not new measurement coverage.
   Before a v2 grid drives training, bump the downstream physics authority, retain
   the exact grid, and independently recompute the curve in the consumer.
+- Make exact-grid readback a complete consumer proof, not a metadata spot-check.
+  Retain every SI voltage/throttle/thrust/current point and exact table authority;
+  independently validate rectangularity, coordinate uniqueness, endpoints, and
+  per-voltage monotonicity; then reproduce every emitted thrust, voltage, and current
+  curve sample under an explicitly versioned interpolation and fixed-point recipe.
+  Bind the grid, recipe, readback result, cache, checkpoint, and resume authority.
+  If no uniquely applicable table exists, emit null selection and `tableDriven=false`
+  instead of claiming the rejected grid was reconstructed. Controlled-synthetic grids
+  prove the implementation path, never catalog sourcing, owner review, marketplace
+  readiness, or physical accuracy.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

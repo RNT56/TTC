@@ -18,6 +18,50 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Bind exact catalog grids to independent curve readback
+**Session:** Codex agent · branch `codex/p9006-exact-grid-readback` · **Phase:** P9 ·
+**TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Implemented D67's coordinated internal authority majors without changing
+file-catalog data or the v3 search plan. Catalog multirotor bundle 4.0.0 and
+`forge-training-catalog-physics/2.0.0` retain every exact SI bench point, row major,
+table identity, prop, confidence, source, range, and applicability result. Child
+`forge-training-catalog-curve-readback/1.0.0` freezes the selected table and complete
+101-point/fixed-point recipe. Python independently validates rectangularity,
+coordinate uniqueness, endpoints, and monotonicity, then reconstructs every Rust
+total-thrust/normalized-voltage/normalized-current point before accepting table-
+driven model `catalog-motor-battery-exact-grid-readback-v2`. Rejected tables emit
+null selection and `tableDriven=false`. Training-authority 2.0.0 and co-design batch/
+evidence 5.0.0 bind exact-grid/readback truth through cache, checkpoint, resume, and
+every tier-2 candidate.
+**Evidence:** Focused Rust CLI tests pass 3/3; Python catalog-bundle and co-design-
+batch tests pass 14/14; compatibility exact-matches all 20 top-level surfaces. A
+controlled-synthetic 10.0/16.8 V × 0/0.5/1 test grid proves exact retention,
+independent all-101 readback, point/curve tamper refusal, and refusal when fixed-point
+sag would leave the measured voltage axis, without modifying the catalog. The local
+dirty-tree 200-row smoke preserves 7 + zero-dispatch cancel + 193
+resume, evaluates 200/200, admits 97, and returns two Pareto points/two tier-3-held
+finalists. Its evidence/result hashes are `9dfc41e1…9efe`/`d747d8fd…c0c66`. Full
+`pnpm verify` passes all 44 required local gates under Python 3.12.13, including 56
+`forge-sim` tests, native/WASM parity, generated/golden review, 39 Studio, 74 Gateway,
+248 worker tests, Brief-25 25/25, packaging, training/offline/MJX, a second exact D67
+200/97/two-point/two-held batch, and patch hygiene. Protected evidence is pending.
+**Changed:** Rust catalog training authority and CLI expectations; Python training
+readback, batch authority, and adversarial tests; batch smoke; compatibility matrix/
+checker; generated-contract source; D67 decision; canonical `AGENTS.md` entry guide;
+project state, roadmap, TODO, execution order, simulation/co-design contracts, best
+practices, risk register, compatibility guide, and changelog.
+**Decisions:** D67; R36 now covers exact-grid/readback drift and synthetic-proof
+overstatement.
+**Next:** Protect the exact D67 tree. After protection, source and owner-review an
+applicable voltage/prop grid or keep analytic fallback explicit; pass any real row
+through D67 before tier 3, then produce the separate course-conditioned `>=3` front
+and retained overnight/provider billing proof.
+**Blockers:** No sourced, owner-reviewed 14.8–16.8 V/5×4.3 grid exists. The current
+EMAX row remains v1, review-gated, and 25.2 V/5×4.6, so it is retained but rejected
+and named analytic fallbacks still drive the curve. Protected D67, tier-3 finalists,
+`>=3` phase exit, provider billing, marketplace/live-catalog, build, hardware, field,
+and external evidence remain open.
+
 ## 2026-07-17 — Reconcile protected D66 performance-grid evidence
 **Session:** Codex agent · branch `codex/p9005-per-point-voltage-evidence` ·
 **Phase:** P3/P9/QA · **TODO items:** P3-010 [x], P9-002 [~], P9-003 [~],

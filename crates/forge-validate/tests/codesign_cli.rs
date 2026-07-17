@@ -40,11 +40,11 @@ fn training_bundle_catalog_major_binds_mass_inertia_and_rejects_inapplicable_tab
         String::from_utf8_lossy(&output.stderr)
     );
     let bundle: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(bundle["schemaVersion"], "3.0.0");
+    assert_eq!(bundle["schemaVersion"], "4.0.0");
     assert_eq!(bundle["massKg"], 0.769);
     assert_eq!(
         bundle["catalogPhysics"]["schemaVersion"],
-        "forge-training-catalog-physics/1.0.0"
+        "forge-training-catalog-physics/2.0.0"
     );
     assert_eq!(bundle["catalogPhysics"]["baseContractMassKg"], 0.479);
     assert_eq!(
@@ -68,11 +68,28 @@ fn training_bundle_catalog_major_binds_mass_inertia_and_rejects_inapplicable_tab
     assert_eq!(motor["quantity"], 4);
     assert_eq!(motor["geometry"]["model"], "uniform-cylinder-y");
     assert_eq!(motor["thrustTables"][0]["pointCount"], 2);
+    assert_eq!(motor["thrustTables"][0]["rowSchemaVersion"], "1.0.0");
+    assert_eq!(
+        motor["thrustTables"][0]["points"].as_array().unwrap().len(),
+        2
+    );
     assert_eq!(
         motor["thrustTables"][0]["voltageRangeV"],
         serde_json::json!([25.2, 25.2])
     );
     assert_eq!(motor["thrustTables"][0]["usedForCurve"], false);
+    assert_eq!(
+        bundle["catalogPhysics"]["curveReadback"]["schemaVersion"],
+        "forge-training-catalog-curve-readback/1.0.0"
+    );
+    assert_eq!(
+        bundle["catalogPhysics"]["curveReadback"]["tableDriven"],
+        false
+    );
+    assert_eq!(
+        bundle["catalogPhysics"]["curveReadback"]["maxTotalCurrentA"],
+        120.0
+    );
     assert_eq!(
         motor["thrustTables"][0]["inapplicabilityReasons"]
             .as_array()

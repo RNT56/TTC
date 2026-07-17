@@ -697,15 +697,28 @@ Migration 0027 preserves every populated predecessor's thrust point as
 stable table ID. The current EMAX row remains v1 and inapplicable; D66 changes no D65
 bundle, curve, review, marketplace, or physical claim.
 
+D67 is implemented locally as the compatibility-complete downstream consumer slice.
+Catalog bundle v4/physics v2 retain exact row/table authority and every SI bench point;
+curve-readback v1 freezes the 101-point/fixed-point recipe and Python independently
+reconstructs every thrust/voltage/current sample before table-driven authority.
+Training-authority v2 and engine batch/evidence v5 bind this result through cache,
+checkpoint, resume, and every tier-2 row. All 44 local gates pass under Python
+3.12.13 with 248 worker tests. Focused cross-language tests and the local dirty-tree
+200-row smoke pass with 97 admissions, two Pareto points, and two held
+finalists after 7 + zero-dispatch cancel + 193 resume. The accepted grid exists only
+in a controlled-synthetic test copy; the catalog is unchanged and the real EMAX row
+remains v1, rejected, and analytic-fallback driven. This is not protected evidence,
+sourced/reviewed thrust, tier 3, overnight/provider, build, hardware, field, or
+external maturity.
+
 Next dependency order for P9 is exact and must not be collapsed:
 
-1. source and owner-review an actually voltage-covered, prop-matched grid (or
-   keep the analytic fallback explicit). Create a new immutable component revision;
-   never merge, infer, or rescale separate legacy sweeps;
-2. before that grid drives training, introduce a coordinated bundle/catalog-physics
-   authority major retaining the exact grid and require independent Python curve
-   reconstruction; only then run tier-3 training for the exact admitted finalists,
-   retaining policy bytes,
+1. source and owner-review an actually voltage-covered, prop-matched grid (or keep
+   the analytic fallback explicit). Create a new immutable component revision; never
+   merge, infer, or rescale separate legacy sweeps;
+2. run that exact reviewed row through D67's bundle-v4/physics-v2/readback-v1
+   authority and protect the clean 101-point readback/recovery evidence; only then run
+   tier-3 training for the exact admitted finalists, retaining policy bytes,
    scorecards, bundle/physics/catalog/runtime lineage, failure/cancellation/recovery,
    and keep build/hardware/field authority false;
 3. expand the course-conditioned physical manifold to produce at least three
@@ -878,7 +891,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64; catalog-bound tier-2 physics protected at D65; D66 row-v2/read-v1/persistence protected at `5a162b0` | P6/P7 evidence; reviewed applicable bench data or explicit fallback plus a new exact-grid/curve-readback authority major; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; add a `>=3` course-conditioned physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
+| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63; exact catalog choices protected at D64; catalog-bound tier-2 physics protected at D65; D66 row-v2/read-v1/persistence protected at `5a162b0`; D67 exact-grid/readback consumer local | P6/P7 evidence; reviewed applicable bench data or explicit fallback through protected D67 authority; accelerator/provider budget for overnight/tier-3 work | protect D67; preserve exact-authority recovery; add a `>=3` course-conditioned physical front; retain overnight/provider billing and actual scorecard-passing tier-3 finalists |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |

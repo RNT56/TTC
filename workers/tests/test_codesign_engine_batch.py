@@ -142,12 +142,12 @@ def _fake_evaluator(snapshot: dict, contract: dict, plan: dict, proposal: dict) 
         "meanFinalPositionErrorM": 0.1,
         "rolloutSha256": hashlib.sha256(f"mujoco:{ordinal}".encode()).hexdigest(),
         "trainingAuthority": {
-            "schemaVersion": "forge-codesign-training-authority/1.0.0",
-            "trainingBundleSchema": "3.0.0",
+            "schemaVersion": "forge-codesign-training-authority/2.0.0",
+            "trainingBundleSchema": "4.0.0",
             "trainingBundleSha256": hashlib.sha256(
                 f"training-bundle:{ordinal}".encode()
             ).hexdigest(),
-            "catalogPhysicsSchema": "forge-training-catalog-physics/1.0.0",
+            "catalogPhysicsSchema": "forge-training-catalog-physics/2.0.0",
             "catalogPhysicsSha256": hashlib.sha256(
                 f"catalog-physics:{ordinal}".encode()
             ).hexdigest(),
@@ -155,7 +155,12 @@ def _fake_evaluator(snapshot: dict, contract: dict, plan: dict, proposal: dict) 
             "massKg": 0.769,
             "catalogNativeMassInertia": True,
             "catalogBenchTableAuthority": True,
+            "catalogBenchGridRetained": True,
             "catalogBenchTableUsed": False,
+            "catalogCurveReadbackSchema": (
+                "forge-training-catalog-curve-readback/1.0.0"
+            ),
+            "catalogCurveReadbackVerified": False,
             "powertrainModel": (
                 "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
             ),
@@ -199,24 +204,29 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
 
     completed = advance_batch(batch_payload, cancelled, evaluator=_fake_evaluator)
     assert validate_checkpoint(completed, batch_payload) == completed
-    assert completed["schemaVersion"] == "forge-codesign-engine-batch/4.0.0"
+    assert completed["schemaVersion"] == "forge-codesign-engine-batch/5.0.0"
     assert completed["artifactKind"] == "codesignEngineBatch"
     assert (
         completed["source"]["maturity"]
-        == "catalog-bound-physics-platform-local-engine-200-batch"
+        == "catalog-grid-readback-platform-local-engine-200-batch"
     )
     assert completed["source"]["trainingPhysics"] == {
-        "trainingBundleSchema": "3.0.0",
-        "catalogPhysicsSchema": "forge-training-catalog-physics/1.0.0",
+        "trainingBundleSchema": "4.0.0",
+        "catalogPhysicsSchema": "forge-training-catalog-physics/2.0.0",
         "catalogNativeMassInertia": True,
         "catalogBenchTableApplicability": "bound-and-fail-closed",
+        "catalogExactGridRetained": True,
+        "curveReadbackSchema": "forge-training-catalog-curve-readback/1.0.0",
+        "independentCurveReadback": "required-when-grid-selected",
         "analyticFallbackAllowed": True,
     }
     assert completed["scheduler"]["state"] == "complete"
     assert completed["scheduler"]["completedCandidates"] == 200
     assert completed["scheduler"]["resumeObserved"] is True
     assert completed["scheduler"]["cancellationObserved"] is True
-    assert completed["scheduler"]["resumePolicy"] == "exact-proposal-and-catalog-authority"
+    assert completed["scheduler"]["resumePolicy"] == (
+        "exact-proposal-catalog-and-training-authority"
+    )
     assert completed["scheduler"]["heterogeneousResumeAllowed"] is False
     assert completed["scheduler"]["requiredRuntimeAuthoritySha256"] == (
         completed["source"]["proposalRuntimeAuthority"]["authoritySha256"]
@@ -252,7 +262,7 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
             "catalogNativeMassInertia"
         ]
         is True
-        and candidate["lineage"]["trainingBundleSchema"] == "3.0.0"
+        and candidate["lineage"]["trainingBundleSchema"] == "4.0.0"
         for candidate in completed["candidates"]
     )
     assert completed["cost"]["providerBillingVerified"] is False

@@ -37,7 +37,7 @@ package to adopt that same number.
 | Desktop recorder materialization | 1.0.0 | `forge-recorder-materialization` binds the sanitized upload plan, five private checksum-bound object roles, same-origin native streaming upload, gateway object-integrity transition, and explicit false archive-semantics/device/field/sharing/training authority; changing any role or authority meaning is major | major 1 |
 | recorder archive admission | 1.0.0 | `forge-recorder-admission` binds the sovereign native verification report, exact D53 materialization/admitted-model/replay reference, and explicit false device/field/sharing/training authority; verification or object-reference meaning changes are major | major 1 |
 | Desktop recorder custody | 1.0.0 | `forge-recorder-custody-trust-bundle`, `forge-recorder-custody-authorization`, and `forge-recorder-custody-proof` bind the deployment-pinned public trust root, exact short-lived signed capture authority, native two-port D55 continuity, canonical receipt hash, create-new proof, and permanent device/recorded-device/field/sharing/training nonclaims; changing any preimage, continuity, or authority meaning is major | major 1 |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 19 registered gateway/worker and internal admitted-snapshot/training-bundle/training-task/ghost-overlay/co-design authority surfaces; public families must gain an independent `schemaVersion` before external publication | current minor line; inline multirotor bundle v2, catalog-bound multirotor bundle v3, ground bundle v1, and task v3 are current in their declared domains, while older task/policy metadata remains immutable legacy evidence |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all registered gateway/worker and internal admitted-snapshot/training-bundle/training-task/ghost-overlay/co-design authority surfaces; public families must gain an independent `schemaVersion` before external publication | current minor line; inline multirotor bundle v2, catalog-bound multirotor bundle v4 with catalog-physics v2 and curve-readback v1, ground bundle v1, and task v3 are current in their declared domains, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
@@ -559,6 +559,26 @@ authority. New persisted v2 points require those fields and include `table_id` i
 their primary identity. Existing D65 bundle/physics/batch versions do not gain v2
 grid authority: an applicable reviewed grid requires a later coordinated downstream
 major with exact-grid and independent curve-readback proof.
+
+D67 supplies that coordinated downstream major without adding measurements or changing
+the current catalog row. Catalog multirotor bundle 4.0.0 and
+`forge-training-catalog-physics/2.0.0` retain every exact SI bench point plus its row
+major, table/prop/source/confidence/range metadata, applicability result, and reasons.
+Child `forge-training-catalog-curve-readback/1.0.0` freezes the selected-table identity,
+101-point schedule, motor count, maximum total current, nominal voltage and resistances, twelve fixed-point
+iterations, `1e-6` voltage tolerance, and 0.5 minimum-voltage fraction. Python accepts
+table-driven model `catalog-motor-battery-exact-grid-readback-v2` only after independently
+validating the complete rectangular unique monotonic grid, confirming every fixed-
+point voltage lookup stays on the retained axis, and reproducing every Rust curve
+point; rejected tables require null selection and `tableDriven=false`.
+`forge-codesign-training-authority/2.0.0` and engine batch/evidence 5.0.0 bind that
+readback result through cache, checkpoint, resume, and per-row source authority while
+search-plan 3.0.0 remains unchanged. These are internal pre-release majors with no
+automatic migration; old evidence remains immutable. The controlled-synthetic v2
+fixture proves the consumer and tamper-refusal path only. The real EMAX row remains v1,
+inapplicable, and analytic-fallback driven. Changing retained point semantics,
+interpolation/fixed-point recipe, readback comparison, table-driven model identity, or
+authority-hash meaning requires coordinated new majors.
 
 ## Change classification
 
