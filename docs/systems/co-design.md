@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59 controlled native/Rapier/MuJoCo smoke, D60 v1 proposal plan, and platform-scoped D61 v1 engine batch; D62/D63 exact-runtime v2 plan/recovery candidate local, protection and same-revision cross-runtime evidence open; overnight/provider scheduling, catalog choices, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59 controlled native/Rapier/MuJoCo smoke, D60 v1 proposal plan, platform-scoped D61 v1 engine batch, and D62/D63 exact-runtime v2 plan/recovery authority with same-source Linux/Apple comparison; overnight/provider scheduling, catalog choices, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
@@ -70,17 +70,19 @@ portability limit: repeated Linux x86-64 plans match all 200 hashes, while clean
 Apple-arm64 changes CMA-ES ordinals 20–99. V1 replay rejects that foreign plan, so
 integrity fails closed, but cross-platform recovery is not proven.
 
-Local 2026-07-17 (D63): coordinated plan/batch/evidence v2 binds
+Protected 2026-07-17 (D63): coordinated plan/batch/evidence v2 binds
 `forge-codesign-proposal-runtime-authority/1.0.0`. It hashes OS, CPython, NumPy
 distribution/build/CPU/BLAS/LAPACK, and optimizer distribution identity; partitions
 plan and batch caches; records exact-runtime-only resume; and binds the authority
 hash into every engine candidate. Validation refuses a foreign authority before
 evaluation or checkpoint resume. The all-200 comparison tool requires two clean
 same-revision artifacts and permanently keeps cross-runtime cache and tier-3
-authority false. Clean exact-source Apple-arm64 evidence at `092af38` executes 7 +
-cancel + 193, evaluates 200 native/125 eligible Rapier-MuJoCo rows, admits 89,
-returns four Pareto points, and selects three held finalists. Protected Linux and
-same-protected-revision cross-runtime evidence remain required.
+authority false. PR #113/protected `54385c2`, exact PR/post-merge CI/security,
+reviewed-tree equality, all 44 gates, and protected artifact `8397860593` pass. Clean
+Linux-x86-64 and Apple-arm64 plans from that exact source bind authorities
+`25ee0796…aff7e` and `a99337a8…b312`; independent comparison `d255c441…6562`
+checks all 200 rows and finds 120 matches plus 80 CMA-ES patch/candidate differences
+at ordinals 20–99. This closes P9-006 for exact-authority recovery integrity only.
 
 ## 3. Algorithms (P9-002)
 
@@ -115,11 +117,12 @@ sovereign engine rows. P9-002 remains in progress because the current electrical
 profiles are not catalog choices and no retained overnight/provider scheduler or
 cost reconciliation exists.
 
-D62/P9-006 remains the next algorithm prerequisite. D63 selects exact-runtime
-authority instead of modifying floating-point CMA-ES arithmetic. No finalist may
-enter tier 3 and no checkpoint may move between authority hashes until v2 is clean,
-protected, and compared across the supported Apple-arm64/Linux-x86-64 pair. Stable
-final selections do not erase the 80 changed v1 CMA-ES candidate preimages.
+D62/P9-006 is closed by D63 exact-runtime authority instead of modified floating-
+point CMA-ES arithmetic. No checkpoint or cache entry may move between authority
+hashes; cross-runtime tier-3 authority remains false. The protected comparison does
+not authorize training by itself: finalists still require real catalog-choice
+lineage, retained training scorecards, and the overnight/provider gates. Stable
+final selections do not erase the 80 changed CMA-ES candidate preimages.
 
 ## 4. Multi-fidelity evaluation ladder (P9-003 — what makes cost sane)
 
@@ -259,13 +262,13 @@ tree `c6520fd`, and protected `1c37567` with passing exact PR/post-merge CI/secu
 Downloaded artifact `8396554544` evaluates 200 native/123 eligible Rapier-MuJoCo
 rows, admits 87, returns four Pareto points, and selects three tier-3-held finalists.
 D62 adds a required cross-architecture all-200 hash comparison; the observed
-Apple-arm64/Linux-x86-64 divergence is tracked under P9-006/R34 before tier 3. D63's
-local v2 adds exact runtime-authority/hash/cache/scheduler/candidate validation,
+Apple-arm64/Linux-x86-64 divergence is tracked under P9-006/R34. D63's protected v2
+adds exact runtime-authority/hash/cache/scheduler/candidate validation,
 foreign-runtime refusal, two cross-platform comparison-policy tests, and focused
-search/batch coverage. Eleven focused tests and the clean exact-source Apple-arm64
-200-candidate batch at `092af38` pass; all 44 local gates pass with 244 worker, 74
-Gateway, and 39 Studio tests. Protected Linux, downloaded artifact,
-same-revision comparison, and evidence reconciliation remain required.
+search/batch coverage. Eleven focused tests and all 44 local/PR/protected gates pass
+with 244 worker, 74 Gateway, and 39 Studio tests. PR #113, artifact `8397860593`,
+and comparison `d255c441…6562` supply the clean protected Linux/Apple evidence and
+close P9-006 without granting portability, heterogeneous resume, or tier 3.
 
 ## 8. Phase mapping & backlog
 
