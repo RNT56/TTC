@@ -1,9 +1,10 @@
 # Validation harness (`forge-validate`) — implementation doc
 
-**Status:** not started · **Phases:** P0 (embryo), P1 (Rust assembly), P2
-(productized), evolves always · **Home:** `crates/forge-validate` *(proposed)* ·
+**Status:** productized and released; evolves always · **Phases:** P0 (embryo), P1
+(Rust assembly), P2 (productized), P9 (co-design oracle) · **Home:**
+`crates/forge-validate` ·
 **Plan refs:** §10, Appendix B (v3.0) · **Decisions:** D2, D5, D7, D8, D14, D17,
-D-evals
+D59, D-evals
 
 ## 1. Purpose
 
@@ -93,9 +94,20 @@ RND-002 blueprint pass renders cleanly.
 > SIM-001..003, BEH-001 (multirotor/rover/quadruped/**arm** smoke), BEH-002,
 > MFG-001..004 (mesh-derived FDM/SLA structural profiles), PRV-001 —
 > with the diagnostic JSON and report envelope below, the CLI
-> (`run`/`bake`/`bom`/`schema`/`sim-parity`), and the WASM facade producing `target: "wasm"`
+> (`run`/`bake`/`bom`/`schema`/`sim-parity`/`codesign-evaluate`), and the WASM facade producing `target: "wasm"`
 > reports in-browser. Animation-frame scans, the BVH joint sweep, and the remaining
 > rows land with their phases.
+
+> **D59 co-design boundary (2026-07-16 candidate):** `codesign-evaluate` is a native-
+> only internal evidence command. It hashes the exact raw candidate snapshot, runs
+> the sovereign validator plus bake/HUD path, and—only for native-admitted input—runs
+> a deterministic real Rapier 0.33.0 world for 120 steps at 1/120 s with two
+> substeps. Its versioned result carries native tier-0 and Rapier tier-1 evidence plus
+> explicit MuJoCo/training/build/hardware/field nonclaims. Worker orchestration owns
+> the separately pinned MuJoCo tier and must rebind the native artifact hash. The
+> measured <50 ms tier-0 budget is reported separately and never changes the
+> validator verdict. This candidate is not yet protected and does not authorize an
+> overnight optimizer or trained finalist.
 **XT — cross-target (D17)** · XT-001 golden-number suite — canonical scenes
 bit-identical native↔WASM (detail: [`core-runtime.md`](core-runtime.md) §5).
 **CAT — catalog compatibility (P3-003; live 2026-06-12 in `forge-validate::compat`)** ·

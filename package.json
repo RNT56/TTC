@@ -35,6 +35,7 @@
     "sim:mjx:decision": "node scripts/mjx-decision-benchmark.mjs",
     "training:smoke": "node scripts/training-smoke.mjs",
     "training:offline-smoke": "node scripts/offline-training-smoke.mjs",
+    "codesign:engine-smoke": "node scripts/codesign-engine-smoke.mjs",
     "demo:sync": "cp examples/vx2-mini.forge.json examples/qd-mini.forge.json examples/hrx7.forge.json examples/vx2-hornet.forge.json packages/studio/public/demo/",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:migrations:test": "node --test scripts/postgres-migrations.test.mjs",

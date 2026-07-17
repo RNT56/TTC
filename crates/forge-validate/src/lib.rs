@@ -21,6 +21,8 @@ use std::collections::{BTreeMap, BTreeSet};
 // js-sys — the same glue the facade already requires.
 // ---------------------------------------------------------------------------
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod codesign;
 pub mod compat;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod file_catalog;

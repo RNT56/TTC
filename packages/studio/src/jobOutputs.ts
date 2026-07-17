@@ -101,17 +101,154 @@ export interface CodesignCandidate {
   patch?: JsonPatchOp[];
   tier?: string;
   admitted?: boolean;
-  metrics?: { massG?: number; enduranceMin?: number; score?: number };
+  metrics?: { massG?: number; enduranceMin?: number; taskTimeS?: number; score?: number; energyWh?: number };
+  evaluations?: Record<string, { pass?: boolean; engine?: string; engineBacked?: boolean; held?: boolean }>;
+  lineage?: { maturity?: string; candidateSnapshotSha256?: string; mujocoRuntime?: string };
 }
 
 export interface CodesignOutput {
+  schemaVersion?: "forge-codesign-evaluation/1.0.0";
   artifactKind: "codesign";
   provider?: string;
   cacheKey?: string;
   tiers?: string[];
   manifold?: Record<string, unknown>;
+  source?: { maturity?: string; sourceRevisionRecorded?: boolean };
+  optimizer?: { algorithm?: string; engineBacked?: boolean; overnightComplete?: boolean; trainingFinalists?: number };
+  benchmark?: { tier0MaxMs?: number; tier0BudgetMs?: number; controlledSmoke?: boolean; engineBacked?: boolean };
+  nonclaims?: Record<string, boolean>;
   candidates?: CodesignCandidate[];
   pareto?: CodesignCandidate[];
+}
+
+export interface ControlledCodesignDisclosure {
+  tier0MaxMs: number;
+  tier0BudgetMs: number;
+  candidateCount: number;
+  paretoCount: number;
+}
+
+const CONTROLLED_CODESIGN_NONCLAIMS = [
+  "cmaEsExecuted",
+  "optunaTpeExecuted",
+  "overnight200Candidate",
+  "trainedFinalist",
+  "catalogChoiceSearch",
+  "providerSandbox",
+  "buildReady",
+  "hardwareAuthority",
+  "fieldEvidence",
+] as const;
+
+function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  return Object.keys(value).sort().join("\0") === [...keys].sort().join("\0");
+}
+
+export function controlledCodesignDisclosure(value: unknown): ControlledCodesignDisclosure | null {
+  const output = asRecord(value);
+  const source = asRecord(output?.source);
+  const optimizer = asRecord(output?.optimizer);
+  const benchmark = asRecord(output?.benchmark);
+  const nonclaims = asRecord(output?.nonclaims);
+  const tiers = output?.tiers;
+  const candidates = output?.candidates;
+  const pareto = output?.pareto;
+  const tier0MaxMs = benchmark?.tier0MaxMs;
+  const tier0BudgetMs = benchmark?.tier0BudgetMs;
+  const sourceRevision = source?.sourceRevision;
+  const dependencyManifestSha256 = source?.dependencyManifestSha256;
+  if (
+    output?.schemaVersion !== "forge-codesign-evaluation/1.0.0"
+    || output.artifactKind !== "codesign"
+    || output.provider !== "forge-local-engine-codesign"
+    || source?.runtime !== "forge-codesign-engine-smoke/1.0.0"
+    || source.maturity !== "local-engine-controlled-smoke"
+    || source.sourceRevisionRecorded !== true
+    || typeof sourceRevision !== "string"
+    || !/^[0-9a-f]{40}$/.test(sourceRevision)
+    || typeof dependencyManifestSha256 !== "string"
+    || !/^[0-9a-f]{64}$/.test(dependencyManifestSha256)
+    || optimizer?.algorithm !== "deterministic-controlled-smoke"
+    || optimizer.engineBacked !== true
+    || optimizer.overnightComplete !== false
+    || optimizer.trainingFinalists !== 0
+    || benchmark?.engineBacked !== true
+    || benchmark.controlledSmoke !== true
+    || benchmark.overnightComplete !== false
+    || typeof tier0MaxMs !== "number"
+    || !Number.isFinite(tier0MaxMs)
+    || tier0MaxMs < 0
+    || typeof tier0BudgetMs !== "number"
+    || !Number.isFinite(tier0BudgetMs)
+    || tier0BudgetMs !== 50
+    || !Array.isArray(tiers)
+    || tiers.join("\0") !== "validator-oracle\0rapier-smoke\0mujoco-rollout\0training-finalist-held"
+    || !nonclaims
+    || !hasExactKeys(nonclaims, CONTROLLED_CODESIGN_NONCLAIMS)
+    || CONTROLLED_CODESIGN_NONCLAIMS.some((key) => nonclaims[key] !== false)
+    || !Array.isArray(candidates)
+    || candidates.length < 3
+    || candidates.length > 9
+    || !Array.isArray(pareto)
+  ) {
+    return null;
+  }
+  const candidateIds = new Set<string>();
+  for (const candidateValue of candidates) {
+    const candidate = asRecord(candidateValue);
+    const lineage = asRecord(candidate?.lineage);
+    const evaluations = asRecord(candidate?.evaluations);
+    const tier0 = asRecord(evaluations?.tier0);
+    const tier1 = asRecord(evaluations?.tier1);
+    const tier2 = asRecord(evaluations?.tier2);
+    const tier3 = asRecord(evaluations?.tier3);
+    const candidateSnapshotSha256 = lineage?.candidateSnapshotSha256;
+    const nativeEvaluationSha256 = lineage?.nativeEvaluationSha256;
+    if (
+      typeof candidate?.id !== "string"
+      || candidateIds.has(candidate.id)
+      || typeof candidate.admitted !== "boolean"
+      || lineage?.maturity !== "local-engine-controlled-smoke"
+      || lineage.mujocoRuntime !== "3.9.0"
+      || lineage.trainingBundleSchema !== "2.0.0"
+      || typeof candidateSnapshotSha256 !== "string"
+      || !/^[0-9a-f]{64}$/.test(candidateSnapshotSha256)
+      || typeof nativeEvaluationSha256 !== "string"
+      || !/^[0-9a-f]{64}$/.test(nativeEvaluationSha256)
+      || tier0?.engine !== "forge-validate-native"
+      || tier0.engineBacked !== true
+      || typeof tier0.pass !== "boolean"
+      || tier1?.engine !== "rapier3d/0.33.0"
+      || tier1.engineBacked !== true
+      || typeof tier1.pass !== "boolean"
+      || tier2?.engine !== "mujoco/3.9.0"
+      || typeof tier2.pass !== "boolean"
+      || (tier2.pass && tier2.engineBacked !== true)
+      || tier3?.engine !== "not-run"
+      || tier3.engineBacked !== false
+      || tier3.pass !== false
+      || tier3.evaluated !== false
+      || tier3.held !== true
+      || (candidate.admitted && (tier0.pass !== true || tier1.pass !== true || tier2.pass !== true))
+    ) {
+      return null;
+    }
+    candidateIds.add(candidate.id);
+  }
+  const paretoIds = new Set<string>();
+  for (const candidateValue of pareto) {
+    const candidate = asRecord(candidateValue);
+    if (
+      typeof candidate?.id !== "string"
+      || !candidateIds.has(candidate.id)
+      || candidate.admitted !== true
+      || paretoIds.has(candidate.id)
+    ) {
+      return null;
+    }
+    paretoIds.add(candidate.id);
+  }
+  return { tier0MaxMs, tier0BudgetMs, candidateCount: candidates.length, paretoCount: pareto.length };
 }
 
 export interface BridgeConfigOutput {

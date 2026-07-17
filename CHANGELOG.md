@@ -18,6 +18,46 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-16 — Execute the controlled co-design engine ladder
+**Session:** Codex agent · branch `codex/p9003-d59-engine-codesign` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Implemented D59's bounded exact-snapshot engine candidate without claiming
+optimizer closure. The repository-owned `FORGE_CODESIGN_CMD` derives three-to-nine
+replace-only inline-multirotor electrical variants from the gateway-owned admitted
+snapshot. Native `forge-validate codesign-evaluate` independently binds the raw
+candidate hash, sovereign validator/bake/HUD result, and a deterministic real Rapier
+0.33.0 120-step/two-substep trajectory; native-passing candidates compile training
+bundle 2.0.0 and execute two pinned MuJoCo 3.9.0 200-step hover estimator-controller
+rollouts. Strict worker readback reapplies patches, recomputes candidate/patch/native-
+evidence hashes, rejects source/manifold/constraint/optimizer/benchmark drift, and
+derives Pareto only from admitted candidates. Studio displays controlled maturity,
+tier-0 SLO evidence, named engines, held tier 3, and the complete false nonclaim set.
+The release-binary smoke admits 2/3, returns one Pareto point, and records native tier
+0 passes the 50 ms SLO in repeated release-binary runs. All 41 required local gates
+pass under Python 3.12.7 with 233 worker,
+74 Gateway, and 39 Studio tests, 19 compatibility surfaces, generated 81-route/
+2-event/17-worker docs, native/WASM parity, packaging, training/offline/MJX/co-design
+smokes, the append-only golden review, and patch hygiene.
+Chromium, Firefox, and WebKit also pass the supported-browser matrix.
+**Changed:** Native validator/CLI/tests; strict worker boundary and controlled runtime;
+shared estimator-teacher controller; worker tests; Studio output parsing/disclosure;
+CI and root verification; compatibility and generated artifact references; golden
+review; `AGENTS.md`, decision, best-practice, system, roadmap, task, execution, and
+current-state documentation. No public route, event, worker kind, persisted schema,
+migration, ModelSpec, validator report, CLI/WASM facade version, user-data export,
+catalog row, trained policy, provider deployment, hardware path, or field format
+changed.
+**Decisions:** D59 freezes the three internal 1.0.0 evidence meanings and controlled-
+smoke nonclaims; D60 is the next regular decision ID.
+**Next:** Inspect the complete exact diff, commit it, then protect the same tree
+through reviewed PR and exact PR/post-merge CI/security before reconciling protected
+hashes in a separate evidence change. After protection, design a separately versioned
+CMA-ES/Optuna 200-candidate overnight lane rather than promoting D59's smoke.
+**Blockers:** Protected-main evidence is pending. P9 closure still needs actual CMA-
+ES/Optuna and catalog-choice search, at least three admitted Pareto points, 200 real-
+engine candidates overnight, tier-3 trained finalists, provider scheduling/cost/
+recovery evidence, and external acceptance.
+
 ## 2026-07-16 — Reconcile protected D58 deployment-ladder evidence
 **Session:** Codex agent · branch `codex/p8007-d58-protected-evidence` ·
 **Phase:** P8 · **TODO items:** P8-007 [~], P8-008 [~]

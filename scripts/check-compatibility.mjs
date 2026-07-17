@@ -270,6 +270,32 @@ for (const [path, helper, label] of [
     `${label} ghost-overlay render-point bound does not match compatibility matrix`,
   );
 }
+requireValue(
+  pythonConstant("workers/forge_workers/codesign.py", "CODESIGN_EVALUATION_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignEvaluation,
+  "worker co-design evaluation version does not match compatibility matrix",
+);
+requireValue(
+  pythonConstant("workers/forge_workers/codesign.py", "CODESIGN_NATIVE_EVALUATION_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignNativeEvaluation,
+  "worker native co-design evaluation version does not match compatibility matrix",
+);
+requireValue(
+  sourceConstant("crates/forge-validate/src/codesign.rs", "CODESIGN_NATIVE_EVALUATION_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignNativeEvaluation,
+  "Rust native co-design evaluation version does not match compatibility matrix",
+);
+requireValue(
+  pythonConstant("workers/forge_workers/codesign_runtime.py", "CODESIGN_ENGINE_SMOKE_EVIDENCE_VERSION") ===
+    matrix.surfaces.workerArtifacts.internalSchemas.codesignEngineSmokeEvidence,
+  "co-design engine-smoke evidence version does not match compatibility matrix",
+);
+requireValue(
+  read("scripts/codesign-engine-smoke.mjs").includes(
+    `p9-engine-smoke-evidence/${matrix.surfaces.workerArtifacts.internalSchemas.codesignEngineSmokeEvidence}`,
+  ),
+  "co-design engine-smoke script does not emit the matrix version",
+);
 
 const workerContract = read("workers/forge_workers/contract.py");
 const trainingBundleContract = read("workers/forge_workers/training/bundle.py");
@@ -289,7 +315,16 @@ requireValue(
   "worker license export manifest version does not match compatibility matrix",
 );
 for (const [name, version] of Object.entries(matrix.surfaces.workerArtifacts.internalSchemas).filter(
-  ([name]) => !["trainingTask", "groundTrainingTask", "sb3Runtime", "bridgeConfig", "ghostOverlay"].includes(name),
+  ([name]) => ![
+    "trainingTask",
+    "groundTrainingTask",
+    "sb3Runtime",
+    "bridgeConfig",
+    "ghostOverlay",
+    "codesignEvaluation",
+    "codesignNativeEvaluation",
+    "codesignEngineSmokeEvidence",
+  ].includes(name),
 )) {
   requireValue(
     trainingBundleContract.includes(`${version}`),

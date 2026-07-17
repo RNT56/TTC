@@ -98,6 +98,7 @@ import {
 import {
   artifactKind,
   asRecord,
+  controlledCodesignDisclosure,
   isKnownJobOutput,
   isPatchList,
   numberOrNull,
@@ -5562,12 +5563,32 @@ function JobDetails({
         </div>
       );
     }
-    case "codesign":
+    case "codesign": {
+      const controlled = controlledCodesignDisclosure(output);
+      const controlledClaimed = output.schemaVersion !== undefined;
+      const tier0Label = controlled
+        ? `${controlled.tier0MaxMs.toFixed(1)}/${controlled.tier0BudgetMs.toFixed(0)} ms`
+        : undefined;
       return (
         <div style={jobDetailStyle}>
           <div style={{ color: "#7d899b" }}>
             {(output.pareto?.length ?? 0)} Pareto · {(output.candidates?.length ?? 0)} candidates
           </div>
+          {controlled ? (
+            <div data-testid="codesign-maturity" style={{ color: "#7dd87d" }}>
+              controlled engine smoke · native + Rapier + MuJoCo
+              {tier0Label ? ` · tier 0 ${tier0Label}` : ""}
+            </div>
+          ) : controlledClaimed ? (
+            <div data-testid="codesign-maturity" style={{ color: "#e66" }}>
+              controlled engine evidence refused · version, engine, tier, lineage, or nonclaim drift
+            </div>
+          ) : null}
+          {controlled ? (
+            <div style={{ color: "#e6a23c" }}>
+              tier 3 held · no CMA-ES/Optuna overnight run · no trained finalist/build/field claim
+            </div>
+          ) : null}
           <ParetoPlot candidates={output.pareto ?? output.candidates ?? []} />
           {(output.pareto ?? output.candidates ?? []).slice(0, 5).map((candidate) => (
             <div key={candidate.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 6, alignItems: "center" }}>
@@ -5575,14 +5596,14 @@ function JobDetails({
                 {candidate.id} · {candidate.tier ?? "tier"} · {formatMetrics(candidate.metrics)}
               </span>
               <button
-                disabled={!isPatchList(candidate.patch)}
+                disabled={(controlledClaimed && !controlled) || !isPatchList(candidate.patch)}
                 onClick={() => candidate.patch && onApplyPatch(candidate.patch)}
                 style={btn}
               >
                 apply
               </button>
               <button
-                disabled={!candidate.admitted || !isPatchList(candidate.patch)}
+                disabled={(controlledClaimed && !controlled) || !candidate.admitted || !isPatchList(candidate.patch)}
                 onClick={() => onSaveCandidate(candidate)}
                 style={btn}
               >
@@ -5592,6 +5613,7 @@ function JobDetails({
           ))}
         </div>
       );
+    }
     case "replay":
     case "telemetry-replay":
       return (

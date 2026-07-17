@@ -129,7 +129,10 @@
         "offlinePolicyWarmstart": "1.0.0",
         "sb3Runtime": "3.0.0",
         "bridgeConfig": "1.0.0",
-        "ghostOverlay": "1.0.0"
+        "ghostOverlay": "1.0.0",
+        "codesignEvaluation": "1.0.0",
+        "codesignNativeEvaluation": "1.0.0",
+        "codesignEngineSmokeEvidence": "1.0.0"
       },
       "bridgeConfigFirmwareVersion": "2025.12",
       "ghostOverlayFrame": "forge-y-up-rh-m",
