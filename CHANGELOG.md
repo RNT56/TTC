@@ -18,6 +18,41 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D66 performance-grid evidence
+**Session:** Codex agent · branch `codex/p9005-per-point-voltage-evidence` ·
+**Phase:** P3/P9/QA · **TODO items:** P3-010 [x], P9-002 [~], P9-003 [~],
+QA-007 [x]
+**Done:** Protected D66 file-catalog row 2.0.0 and migration 0027 through PR #119.
+Exact head `7306a6e`, GitHub reviewed merge `0050bcb`, reviewed tree `f5a9a323`,
+protected squash `5a162b0`, and the protected tree are exact. PR CI/security
+`29575066749`/`29575066748` and post-merge CI/security
+`29575647835`/`29575647768` pass.
+**Evidence:** All 44 local gates and all 11 PR checks pass with 20 compatibility
+surfaces, nine/99 boundary cases, 39 Studio, 74 Gateway, 247 worker tests, Brief-25
+25/25, and unchanged D65 200/97/two-point/two-held behavior. Downloaded protected
+artifact `8405061774` binds clean source/checkout `5a162b0`. Its
+`qa004-migration-acceptance.json` SHA-256 is `d6764fec…313a` and records PostgreSQL
+16.14, pgvector 0.8.5, all 27 migrations, a clean idempotent install, exact populated-
+data preservation and idempotency for every predecessor 0001–0026, atomic rollback/
+corrected roll-forward, checksum/gap refusal, and serialized apply-once concurrency.
+The browser, accessibility, fault, policy-delivery, and provider-operation evidence
+in the same artifact also passes at the exact protected revision.
+**Changed:** Reconciled the canonical `AGENTS.md` entry guide, project-state snapshot,
+roadmap, stable TODO ledger, execution order, co-design system contract, and changelog
+against exact protected evidence. No code, catalog row, format, schema, generated
+contract, API, event, database migration, queue, provider, build, hardware, or field
+surface changed.
+**Decisions:** none; D66 and R36 remain active without reinterpretation.
+**Next:** Source and owner-review a voltage-covered, 5×4.3 prop-matched grid or keep
+the named analytic fallback. Create a new immutable component revision and, before
+the grid drives training, add a coordinated exact-grid/curve-readback bundle/physics
+major with independent Python reconstruction. Then execute tier 3, the separate
+course-conditioned `>=3` front, and retained overnight/provider billing proof.
+**Blockers:** D66 proves representation and migration, not measurements or review.
+Applicable sourced data, downstream authority, actual trained finalists, the `>=3`
+phase exit, provider billing, marketplace/live-catalog maturity, external acceptance,
+build, hardware, and field proof remain separate gates.
+
 ## 2026-07-17 — Version catalog performance grids per voltage point
 **Session:** Codex agent · branch `codex/p9004-per-point-voltage-catalog` · **Phase:**
 P3/P9/QA · **TODO items:** P3-010 [x], P9-002 [~], P9-003 [~], QA-007 [x]
