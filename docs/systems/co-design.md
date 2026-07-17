@@ -1,6 +1,6 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59-D66 engine/search/recovery/catalog/catalog-physics/format authority; local D67 exact-grid/readback consumer; sourced applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D67 engine/search/recovery/catalog/catalog-physics/format/exact-grid-readback authority; sourced applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
@@ -154,7 +154,7 @@ merge/tree `0050bcb`/`f5a9a323`, protected squash `5a162b0`, exact PR/post-merge
 CI/security, all 44 gates, and clean every-predecessor/browser artifact `8405061774`
 pass. That evidence protects representation/persistence only.
 
-Local implementation 2026-07-17 (D67): catalog multirotor bundle 4.0.0 and
+Protected 2026-07-17 (D67): catalog multirotor bundle 4.0.0 and
 `forge-training-catalog-physics/2.0.0` retain every exact SI point from every equipped
 motor table together with row major, identity, prop, ranges, source, confidence, and
 applicability. Child `forge-training-catalog-curve-readback/1.0.0` freezes the selected
@@ -168,11 +168,14 @@ only inside a controlled-synthetic test copy at 10.0/16.8 V × 0/0.5/1; it also
 proves that fixed-point sag outside the measured axis refuses instead of edge-
 clamping. No catalog row changes. The real EMAX row remains v1/review-gated/
 inapplicable, so current batch
-physics remains analytic fallback with `tableDriven=false`. This is local consumer-
-path evidence. All 44 local gates pass under Python 3.12.13 with 248 worker tests and
-the local v5 batch repeats 200/97/two-point/two-held after exact recovery. It is not
-protected D67, sourced thrust, owner review, tier 3, provider, build, hardware, field,
-or external proof.
+physics remains analytic fallback with `tableDriven=false`. Exact head `3bd22bc`,
+reviewed merge/tree `e4c836c`/`1d8f50f`, protected squash `08e880b`, exact PR/post-
+merge CI/security, all 44 local gates, and all 11 PR checks pass under Python 3.12.13
+with 248 worker tests. Protected artifact `8407177912` binds clean `08e880b`, file/
+result hashes `ab956b4a…de06`/`137a066f…16645`, and repeats 200/97/two-point/two-
+held after exact recovery. This is protected platform-local consumer/readback proof,
+not sourced thrust, owner review, tier 3, provider, build, hardware, field, or
+external proof.
 
 ## 3. Algorithms (P9-002)
 
@@ -304,11 +307,10 @@ readback before it may set table-driven authority. The run records measured
 local engine/attempt wall runtime only. Catalog-choice evaluation is true and exact,
 while marketplace review, live catalog persistence,
 `overnight200Candidate`, trained-finalist, provider sandbox/billing, energy, build,
-hardware, and field authority remain false. Protected artifact `8402573520` at
-`ad54ab3` remains the canonical retained v4 execution: 200/200 evaluated, 97
-admitted, two physical front points, and two held finalists after 7 + zero-dispatch
-cancel + 193 resume. D67 v5 remains local until its exact implementation tree and
-evidence are protected.
+hardware, and field authority remain false. Protected D67 artifact `8407177912` at
+`08e880b` is the canonical retained v5 execution: 200/200 evaluated, 97 admitted,
+two physical front points, and two held finalists after 7 + zero-dispatch cancel +
+193 resume. It grants platform-local consumer/readback and recovery authority only.
 
 ## 5. Output
 

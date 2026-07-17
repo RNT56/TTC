@@ -281,21 +281,27 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   D66 alone grants no sourced grid, applicable thrust,
   downstream training authority, marketplace review, build, hardware, field, or
   external evidence;
-- D67 is implemented locally at `exact-grid-readback-platform-local-engine-200-batch`
-  maturity. Catalog multirotor bundle 4.0.0, catalog-physics 2.0.0, and child curve-
-  readback 1.0.0 retain every exact SI table point and fixed-point recipe; Python
+- D67 is protected at `exact-grid-readback-platform-local-engine-200-batch`
+  maturity through PR #121. Catalog multirotor bundle 4.0.0, catalog-physics 2.0.0,
+  and child curve-readback 1.0.0 retain every exact SI table point and fixed-point
+  recipe; Python
   independently validates a complete rectangular unique monotonic grid and
   reconstructs all 101 Rust curve points before table-driven authority. Training-
   authority 2.0.0 and engine batch/evidence 5.0.0 bind the result through cache,
   checkpoint, resume, and every tier-2 row. A controlled-synthetic v2 grid proves
   the accepted/tamper-refusal path without changing catalog data. The real EMAX row
-  remains v1, review-gated, rejected, and analytic-fallback driven. All 44 local
-  gates pass under Python 3.12.13 with 56 `forge-sim`, 39 Studio, 74 Gateway, and
-  248 worker tests plus the complete native/WASM/package/training/co-design gates.
-  Until exact D67 PR/protected evidence exists, cite it only as local consumer-path
-  evidence; never
-  as sourced thrust, owner review, tier 3, overnight/provider, marketplace/live-
-  catalog, build, hardware, field, or external proof;
+  remains v1, review-gated, rejected, and analytic-fallback driven. Exact head
+  `3bd22bc`, reviewed merge/tree `e4c836c`/`1d8f50f`, protected squash `08e880b`,
+  PR CI/security `29580572145`/`29580572132`, and post-merge CI/security
+  `29581121537`/`29581121450` pass. All 44 local gates and all 11 PR checks pass
+  under Python 3.12.13 with 56 `forge-sim`, 39 Studio, 74 Gateway, and 248 worker
+  tests plus the complete native/WASM/database/browser/package/training/co-design
+  gates. Protected artifact `8407177912` binds clean source/checkout `08e880b`,
+  file/result hashes `ab956b4a…de06`/`137a066f…16645`, exact 7 + zero-dispatch
+  cancel + 193 resume, 200/200 evaluation, 97 admissions, two Pareto points, and
+  two held finalists. Cite this only as protected platform-local consumer/readback
+  and recovery evidence; never as sourced thrust, owner review, tier 3, overnight/
+  provider, marketplace/live-catalog, build, hardware, field, or external proof;
 - QA-008's protected implementation anchor is PR #36 at `2589503`, with exact
   post-merge CI `29264679254` and security `29264678863` green; this advances the
   quality/governance boundary, not runtime maturity;
