@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -13,6 +14,9 @@ from typing import Any
 
 SNAPSHOT_SCHEMA = "forge-admitted-model-snapshot/1.0.0"
 TRAINING_BUNDLE_VERSION = "2.0.0"
+CATALOG_TRAINING_BUNDLE_VERSION = "3.0.0"
+CATALOG_TRAINING_PHYSICS_SCHEMA = "forge-training-catalog-physics"
+CATALOG_TRAINING_PHYSICS_VERSION = "1.0.0"
 POLICY_TENSOR_SCHEMA = "forge-policy-tensor"
 POLICY_TENSOR_VERSION = "2.0.0"
 LEGACY_POLICY_TENSOR_VERSION = "1.0.0"
@@ -132,7 +136,7 @@ def validate_training_bundle(value: Any, contract_hash: str) -> dict[str, Any]:
         raise ValueError("training bundle must be an object")
     if value.get("artifactKind") == "groundTrainingMuJoCoBundle":
         return _validate_ground_training_bundle(value, contract_hash)
-    _exact(value, {
+    fields = {
         "artifactKind",
         "schemaVersion",
         "contractHash",
@@ -151,10 +155,14 @@ def validate_training_bundle(value: Any, contract_hash: str) -> dict[str, Any]:
         "powertrain",
         "control",
         "assumptions",
-    }, "training bundle")
+    }
+    version = value.get("schemaVersion")
+    if version == CATALOG_TRAINING_BUNDLE_VERSION:
+        fields.add("catalogPhysics")
+    _exact(value, fields, "training bundle")
     if value.get("artifactKind") != "trainingMuJoCoBundle":
         raise ValueError("unsupported training bundle artifact kind")
-    if value.get("schemaVersion") != TRAINING_BUNDLE_VERSION:
+    if version not in {TRAINING_BUNDLE_VERSION, CATALOG_TRAINING_BUNDLE_VERSION}:
         raise ValueError("unsupported training bundle version")
     if value.get("contractHash") != contract_hash:
         raise ValueError("training bundle contract hash mismatch")
@@ -200,10 +208,332 @@ def validate_training_bundle(value: Any, contract_hash: str) -> dict[str, Any]:
     _estimator(value.get("estimator"))
     _powertrain(value.get("powertrain"), mass_kg=mass_kg, gravity_m_s2=gravity_m_s2)
     _control(value.get("control"))
+    if version == CATALOG_TRAINING_BUNDLE_VERSION:
+        _catalog_physics(value.get("catalogPhysics"), mass_kg)
     assumptions = value.get("assumptions")
     if not isinstance(assumptions, list) or not assumptions or not all(_bounded_string(item, 1, 500) for item in assumptions):
         raise ValueError("training bundle assumptions are required and bounded")
     return value
+
+
+def _catalog_physics(value: Any, mass_kg: float) -> None:
+    if not isinstance(value, dict):
+        raise ValueError("catalog training physics authority is missing")
+    _exact(
+        value,
+        {
+            "schemaVersion",
+            "catalogAuthoritySha256",
+            "baseContractMassKg",
+            "equippedCatalogMassKg",
+            "totalMassKg",
+            "inertiaModel",
+            "powertrainModel",
+            "inlineFallbacks",
+            "batteryOperatingVoltageV",
+            "equippedProp",
+            "components",
+        },
+        "catalog training physics",
+    )
+    if value.get("schemaVersion") != (
+        f"{CATALOG_TRAINING_PHYSICS_SCHEMA}/{CATALOG_TRAINING_PHYSICS_VERSION}"
+    ):
+        raise ValueError("catalog training physics version drifted")
+    _lower_sha256(value.get("catalogAuthoritySha256"), "catalog training authority")
+    base_mass = _finite(value, "baseContractMassKg", positive=True)
+    equipped_mass = _finite(value, "equippedCatalogMassKg", positive=True)
+    total_mass = _finite(value, "totalMassKg", positive=True)
+    if abs(base_mass + equipped_mass - total_mass) > 1e-12 or abs(total_mass - mass_kg) > 1e-12:
+        raise ValueError("catalog training mass closure drifted")
+    if value.get("inertiaModel") != "uniform-datasheet-solid-lumped-at-slot-mount-v1":
+        raise ValueError("catalog training inertia model drifted")
+    powertrain_model = value.get("powertrainModel")
+    if powertrain_model not in {
+        "catalog-motor-battery-applicability-checked-thrust-table-v1",
+        "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1",
+    }:
+        raise ValueError("catalog training powertrain model drifted")
+    inline_fallbacks = value.get("inlineFallbacks")
+    if (
+        not isinstance(inline_fallbacks, list)
+        or not inline_fallbacks
+        or len(inline_fallbacks) != len(set(inline_fallbacks))
+        or not all(_bounded_string(item, 1, 200) for item in inline_fallbacks)
+    ):
+        raise ValueError("catalog training inline fallbacks are missing or invalid")
+    expected_fallbacks = [
+        "sim.battery.rIntMohm",
+        "sim.motors[].rIntMohm",
+    ]
+    if (
+        powertrain_model
+        == "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
+    ):
+        expected_fallbacks += [
+            "sim.motors[].maxCurrentA",
+            "sim.props[0].diameterIn,pitchIn,blades",
+            "forge-sim.DEFAULT_CT",
+        ]
+    if inline_fallbacks != expected_fallbacks:
+        raise ValueError("catalog training inline fallback meaning drifted")
+    battery_voltage = _finite_vector(
+        value.get("batteryOperatingVoltageV"),
+        2,
+        "catalog training battery operating voltage",
+        positive=True,
+    )
+    if battery_voltage[0] > battery_voltage[1] or battery_voltage[1] > 1_000:
+        raise ValueError("catalog training battery operating voltage is invalid")
+    equipped_prop = value.get("equippedProp")
+    if not isinstance(equipped_prop, dict):
+        raise ValueError("catalog training equipped prop authority is missing")
+    _exact(
+        equipped_prop,
+        {"diameterIn", "pitchIn", "blades", "source"},
+        "catalog training equipped prop",
+    )
+    prop_diameter = _finite(equipped_prop, "diameterIn", positive=True)
+    prop_pitch = _finite(equipped_prop, "pitchIn", positive=True)
+    prop_blades = equipped_prop.get("blades")
+    if (
+        prop_diameter > 100
+        or prop_pitch > 100
+        or isinstance(prop_blades, bool)
+        or not isinstance(prop_blades, int)
+        or not 1 <= prop_blades <= 32
+        or not _bounded_string(equipped_prop.get("source"), 1, 500)
+    ):
+        raise ValueError("catalog training equipped prop authority is invalid")
+    components = value.get("components")
+    if not isinstance(components, list) or not 1 <= len(components) <= 64:
+        raise ValueError("catalog training components are missing or unbounded")
+    if [component.get("slotId") for component in components if isinstance(component, dict)] != sorted(
+        component.get("slotId") for component in components if isinstance(component, dict)
+    ):
+        raise ValueError("catalog training components are not deterministically ordered")
+    observed_mass = 0.0
+    observed_slots: set[str] = set()
+    thrust_tables = 0
+    used_thrust_tables = 0
+    motor_quantities: list[int] = []
+    battery_quantities: list[int] = []
+    for component in components:
+        if not isinstance(component, dict):
+            raise ValueError("catalog training component must be an object")
+        fields = {
+            "slotId",
+            "variantId",
+            "componentRef",
+            "exactRevision",
+            "componentId",
+            "category",
+            "rowSha256",
+            "mountNodes",
+            "quantity",
+            "massKgEach",
+            "geometry",
+            "reviewRequired",
+            "licenseId",
+            "licenseClass",
+            "licenseSourceUrl",
+            "exportPolicy",
+        }
+        if "thrustTables" in component:
+            fields.add("thrustTables")
+        _exact(component, fields, "catalog training component")
+        for field in (
+            "slotId",
+            "variantId",
+            "componentRef",
+            "exactRevision",
+            "componentId",
+            "category",
+            "licenseId",
+            "licenseClass",
+            "licenseSourceUrl",
+            "exportPolicy",
+        ):
+            if not _bounded_string(component.get(field), 1, 500):
+                raise ValueError(f"catalog training component {field} is invalid")
+        slot_id = component["slotId"]
+        if slot_id in observed_slots:
+            raise ValueError("catalog training slot authority is duplicated")
+        observed_slots.add(slot_id)
+        _lower_sha256(component.get("rowSha256"), "catalog training row")
+        quantity = component.get("quantity")
+        mounts = component.get("mountNodes")
+        if (
+            isinstance(quantity, bool)
+            or not isinstance(quantity, int)
+            or not 1 <= quantity <= 256
+            or not isinstance(mounts, list)
+            or len(mounts) != quantity
+            or len(set(mounts)) != quantity
+            or not all(_bounded_string(node, 1, 120) for node in mounts)
+        ):
+            raise ValueError("catalog training component mount quantity drifted")
+        mass_each = _finite(component, "massKgEach", positive=True)
+        observed_mass += mass_each * quantity
+        if component.get("category") == "motor":
+            motor_quantities.append(quantity)
+        elif component.get("category") == "battery":
+            battery_quantities.append(quantity)
+        geometry = component.get("geometry")
+        if not isinstance(geometry, dict):
+            raise ValueError("catalog training component geometry is missing")
+        _exact(
+            geometry,
+            {"model", "sizeM", "centerOfMassM", "inertiaKgM2"},
+            "catalog training geometry",
+        )
+        if geometry.get("model") not in {
+            "uniform-cylinder-y",
+            "uniform-box-x-width-y-height-z-length",
+        }:
+            raise ValueError("catalog training geometry model drifted")
+        size = _finite_vector(
+            geometry.get("sizeM"), 3, "catalog training size", positive=True
+        )
+        center_of_mass = _finite_vector(
+            geometry.get("centerOfMassM"), 3, "catalog training center of mass"
+        )
+        if any(abs(value) > 1e-15 for value in center_of_mass):
+            raise ValueError("catalog training component is not lumped at its slot mount")
+        inertia = _finite_vector(
+            geometry.get("inertiaKgM2"), 6, "catalog training inertia"
+        )
+        if any(value <= 0 for value in inertia[:3]):
+            raise ValueError("catalog training principal inertia is not positive")
+        if geometry["model"] == "uniform-cylinder-y":
+            if not math.isclose(size[0], size[2], rel_tol=0, abs_tol=1e-15):
+                raise ValueError("catalog training cylinder dimensions drifted")
+            radius = size[0] * 0.5
+            transverse = mass_each * (
+                3 * radius * radius + size[1] * size[1]
+            ) / 12
+            axial = 0.5 * mass_each * radius * radius
+            expected_inertia = [transverse, axial, transverse, 0.0, 0.0, 0.0]
+        else:
+            x, y, z = size
+            expected_inertia = [
+                mass_each * (y * y + z * z) / 12,
+                mass_each * (x * x + z * z) / 12,
+                mass_each * (x * x + y * y) / 12,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        if any(
+            not math.isclose(actual, expected, rel_tol=1e-12, abs_tol=1e-15)
+            for actual, expected in zip(inertia, expected_inertia, strict=True)
+        ):
+            raise ValueError("catalog training inertia does not match its mass and dimensions")
+        if not isinstance(component.get("reviewRequired"), bool):
+            raise ValueError("catalog training review authority is invalid")
+        tables = component.get("thrustTables")
+        if tables is not None:
+            if (
+                component.get("category") != "motor"
+                or not isinstance(tables, list)
+                or not 1 <= len(tables) <= 64
+            ):
+                raise ValueError("catalog training thrust tables are not bounded motor authority")
+            for table in tables:
+                if not isinstance(table, dict):
+                    raise ValueError("catalog training thrust table is not an object")
+                _exact(
+                    table,
+                    {
+                        "id",
+                        "prop",
+                        "voltageV",
+                        "voltageRangeV",
+                        "confidence",
+                        "sourceUrl",
+                        "pointCount",
+                        "usedForCurve",
+                        "inapplicabilityReasons",
+                    },
+                    "catalog training thrust table",
+                )
+                for field in ("id", "prop", "sourceUrl"):
+                    if not _bounded_string(table.get(field), 1, 1_000):
+                        raise ValueError("catalog training thrust-table text is invalid")
+                declared_voltage = _finite(table, "voltageV", positive=True)
+                if declared_voltage > 1_000:
+                    raise ValueError("catalog training thrust-table voltage is outside bounds")
+                voltage_range = _finite_vector(
+                    table.get("voltageRangeV"),
+                    2,
+                    "catalog training thrust-table voltage range",
+                    positive=True,
+                )
+                if voltage_range[0] > voltage_range[1] or voltage_range[1] > 1_000:
+                    raise ValueError("catalog training thrust-table voltage range is invalid")
+                if not voltage_range[0] <= declared_voltage <= voltage_range[1]:
+                    raise ValueError("catalog training declared thrust-table voltage drifted")
+                confidence = _finite(table, "confidence", positive=True)
+                point_count = table.get("pointCount")
+                used = table.get("usedForCurve")
+                reasons = table.get("inapplicabilityReasons")
+                if (
+                    confidence > 1
+                    or isinstance(point_count, bool)
+                    or not isinstance(point_count, int)
+                    or not 2 <= point_count <= 10_000
+                    or not isinstance(used, bool)
+                    or not isinstance(reasons, list)
+                    or not all(_bounded_string(reason, 1, 1_000) for reason in reasons)
+                    or (used and reasons)
+                    or (not used and not reasons)
+                ):
+                    raise ValueError("catalog training thrust-table authority is outside bounds")
+                try:
+                    table_diameter_text, table_pitch_text = table["prop"].lower().replace(
+                        " ", ""
+                    ).split("x")
+                    table_diameter = float(table_diameter_text)
+                    table_pitch = float(table_pitch_text)
+                except (AttributeError, TypeError, ValueError):
+                    table_diameter = float("nan")
+                    table_pitch = float("nan")
+                voltage_applicable = (
+                    voltage_range[0] <= battery_voltage[0] + 1e-9
+                    and voltage_range[1] >= battery_voltage[1] - 1e-9
+                )
+                prop_applicable = (
+                    abs(table_diameter - prop_diameter) <= 1e-9
+                    and abs(table_pitch - prop_pitch) <= 1e-9
+                )
+                independently_applicable = voltage_applicable and prop_applicable
+                if used != independently_applicable:
+                    raise ValueError("catalog training thrust-table applicability is false")
+                if not voltage_applicable and not any(
+                    "voltage grid" in reason and "does not cover" in reason
+                    for reason in reasons
+                ):
+                    raise ValueError("catalog training voltage rejection reason is absent")
+                if not prop_applicable and not any(
+                    "bench prop" in reason
+                    and ("does not match" in reason or "not a canonical" in reason)
+                    for reason in reasons
+                ):
+                    raise ValueError("catalog training prop rejection reason is absent")
+                thrust_tables += 1
+                used_thrust_tables += int(used)
+    if abs(observed_mass - equipped_mass) > 1e-12:
+        raise ValueError("catalog training equipped mass does not match component authority")
+    if motor_quantities != [4] or battery_quantities != [1]:
+        raise ValueError("catalog training motor/battery mount authority drifted")
+    if thrust_tables < 1:
+        raise ValueError("catalog training requires equipped motor thrust-table authority")
+    expected_used = int(
+        powertrain_model
+        == "catalog-motor-battery-applicability-checked-thrust-table-v1"
+    )
+    if used_thrust_tables != expected_used:
+        raise ValueError("catalog training thrust-table applicability drifted")
 
 
 def _validate_ground_training_bundle(value: dict[str, Any], contract_hash: str) -> dict[str, Any]:
@@ -515,6 +845,32 @@ def _finite(value: dict[str, Any], key: str, *, positive: bool = False) -> float
     return number
 
 
+def _finite_vector(
+    value: Any, size: int, label: str, *, positive: bool = False
+) -> list[float]:
+    if not isinstance(value, list) or len(value) != size:
+        raise ValueError(f"{label} must be a finite {size}-vector")
+    numbers: list[float] = []
+    for raw in value:
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            raise ValueError(f"{label} must be a finite {size}-vector")
+        number = float(raw)
+        if not (-float("inf") < number < float("inf")) or (positive and number <= 0):
+            raise ValueError(f"{label} must be a finite {size}-vector")
+        numbers.append(number)
+    return numbers
+
+
+def _lower_sha256(value: Any, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{label} authority must be a lower-case SHA-256")
+    return value
+
+
 def _exact(value: dict[str, Any], keys: set[str], surface: str) -> None:
     if set(value) != keys:
         raise ValueError(f"{surface} fields drifted")
@@ -525,6 +881,9 @@ def _bounded_string(value: Any, minimum: int, maximum: int) -> bool:
 
 
 __all__ = [
+    "CATALOG_TRAINING_BUNDLE_VERSION",
+    "CATALOG_TRAINING_PHYSICS_SCHEMA",
+    "CATALOG_TRAINING_PHYSICS_VERSION",
     "GROUND_POLICY_INPUT_LAYOUT",
     "GROUND_POLICY_TENSOR_SCHEMA",
     "GROUND_POLICY_TENSOR_VERSION",

@@ -119,14 +119,14 @@ fn node_inertial(
     physical_parts: &[(String, &Part)],
     baked: &BakedModel,
     node: &str,
+    lumped: &[LumpedInertial],
 ) -> NodeInertial {
     let mut mass = 0.0f64;
     let mut com = [0.0f64; 3];
     struct PartTerm {
         m: f64,
         com: [f64; 3],
-        i_unit: [f64; 6],
-        density: f64,
+        inertia_com: [f64; 6],
     }
     let mut terms: Vec<PartTerm> = Vec::new();
 
@@ -146,8 +146,18 @@ fn node_inertial(
         terms.push(PartTerm {
             m,
             com: mp.com,
-            i_unit: mp.inertia_unit_density,
-            density,
+            inertia_com: mp.inertia_unit_density.map(|value| value * density),
+        });
+    }
+    for term in lumped.iter().filter(|term| term.node == node) {
+        mass += term.mass_kg;
+        for (c, pc) in com.iter_mut().zip(term.com_m.iter()) {
+            *c += term.mass_kg * pc;
+        }
+        terms.push(PartTerm {
+            m: term.mass_kg,
+            com: term.com_m,
+            inertia_com: term.inertia_kg_m2,
         });
     }
     if mass > 1e-12 {
@@ -161,12 +171,12 @@ fn node_inertial(
     for t in &terms {
         let d = [t.com[0] - com[0], t.com[1] - com[1], t.com[2] - com[2]];
         let (dx2, dy2, dz2) = (d[0] * d[0], d[1] * d[1], d[2] * d[2]);
-        i[0] += t.i_unit[0] * t.density + t.m * (dy2 + dz2);
-        i[1] += t.i_unit[1] * t.density + t.m * (dx2 + dz2);
-        i[2] += t.i_unit[2] * t.density + t.m * (dx2 + dy2);
-        i[3] += t.i_unit[3] * t.density - t.m * d[0] * d[1];
-        i[4] += t.i_unit[4] * t.density - t.m * d[1] * d[2];
-        i[5] += t.i_unit[5] * t.density - t.m * d[0] * d[2];
+        i[0] += t.inertia_com[0] + t.m * (dy2 + dz2);
+        i[1] += t.inertia_com[1] + t.m * (dx2 + dz2);
+        i[2] += t.inertia_com[2] + t.m * (dx2 + dy2);
+        i[3] += t.inertia_com[3] - t.m * d[0] * d[1];
+        i[4] += t.inertia_com[4] - t.m * d[1] * d[2];
+        i[5] += t.inertia_com[5] - t.m * d[0] * d[2];
     }
 
     // convert to Z-up: x'=x, y'=-z, z'=y →
@@ -291,7 +301,7 @@ pub fn to_urdf(spec: &ModelSpec, baked: &BakedModel) -> String {
     out.push_str(&format!("<robot name=\"{}\">\n", xml_escape(&spec.meta.id)));
 
     for node in &spec.skeleton {
-        let inertial = node_inertial(&physical_parts, baked, &node.name);
+        let inertial = node_inertial(&physical_parts, baked, &node.name, &[]);
         out.push_str(&format!("  <link name=\"{}\">\n", xml_escape(&node.name)));
         if inertial.mass_kg > 1e-9 {
             let [ixx, iyy, izz, ixy, ixz, iyz] = inertial.inertia_zup;
@@ -424,6 +434,18 @@ pub struct MjcfExportOptions {
     pub euler_integrator: bool,
 }
 
+/// A sourced component mass attached to one contract node. Inertia uses the
+/// forge Y-up frame and `[ixx, iyy, izz, ixy, iyz, ixz]` ordering. Training
+/// bundle majors may add these terms without changing the contract or the
+/// general-purpose URDF/MJCF export meaning.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LumpedInertial {
+    pub node: String,
+    pub mass_kg: f64,
+    pub com_m: [f64; 3],
+    pub inertia_kg_m2: [f64; 6],
+}
+
 /// Export the contract as MJCF (Z-up). The body tree nests by skeleton parent;
 /// gravity/density come from the contract's env block — never ambient.
 pub fn to_mjcf(spec: &ModelSpec, baked: &BakedModel) -> String {
@@ -439,9 +461,41 @@ pub fn to_mjcf_with_options(
     baked: &BakedModel,
     options: MjcfExportOptions,
 ) -> Result<String, String> {
+    to_mjcf_with_options_and_lumped_inertials(spec, baked, options, &[])
+}
+
+/// Export runtime MJCF while adding explicitly sourced component mass and
+/// inertia at contract mount nodes. The terms affect inertials only; collision
+/// geometry remains contract-owned and therefore cannot be invented from a
+/// catalog row.
+pub fn to_mjcf_with_options_and_lumped_inertials(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    options: MjcfExportOptions,
+    lumped_inertials: &[LumpedInertial],
+) -> Result<String, String> {
     if let Some(timestep_s) = options.timestep_s {
         if !timestep_s.is_finite() || timestep_s <= 0.0 {
             return Err("MJCF timestep must be positive and finite".to_string());
+        }
+    }
+    for term in lumped_inertials {
+        if spec.node(&term.node).is_none() {
+            return Err(format!(
+                "MJCF lumped inertial node '{}' is absent from the contract",
+                term.node
+            ));
+        }
+        if !term.mass_kg.is_finite()
+            || term.mass_kg <= 0.0
+            || !term.com_m.iter().all(|value| value.is_finite())
+            || !term.inertia_kg_m2.iter().all(|value| value.is_finite())
+            || term.inertia_kg_m2[..3].iter().any(|value| *value <= 0.0)
+        {
+            return Err(format!(
+                "MJCF lumped inertial for '{}' is not positive finite authority",
+                term.node
+            ));
         }
     }
     let physical_parts = spec.physical_parts_with_paths();
@@ -487,6 +541,7 @@ pub fn to_mjcf_with_options(
         physical_parts: &physical_parts,
         baked,
         options,
+        lumped_inertials,
     };
     for root in roots {
         mjcf_body(&context, root, 2, &mut out, &mut actuators);
@@ -506,6 +561,7 @@ struct MjcfExportContext<'a> {
     physical_parts: &'a [(String, &'a Part)],
     baked: &'a BakedModel,
     options: MjcfExportOptions,
+    lumped_inertials: &'a [LumpedInertial],
 }
 
 fn mjcf_body(
@@ -550,7 +606,12 @@ fn mjcf_body(
         }
     }
 
-    let inertial = node_inertial(context.physical_parts, context.baked, &node.name);
+    let inertial = node_inertial(
+        context.physical_parts,
+        context.baked,
+        &node.name,
+        context.lumped_inertials,
+    );
     if inertial.mass_kg > 1e-9 {
         let [ixx, iyy, izz, ixy, ixz, iyz] = inertial.inertia_zup;
         out.push_str(&format!(
@@ -756,6 +817,50 @@ mod tests {
         )
         .unwrap_err();
         assert!(err.contains("positive and finite"));
+    }
+
+    #[test]
+    fn catalog_lumped_inertials_add_mass_without_inventing_geometry() {
+        let (spec, baked) = load("../../examples/vx2-mini.forge.json");
+        let total_mass = |mjcf: &str| {
+            mjcf.lines()
+                .filter_map(|line| line.split_once(" mass=\"").map(|(_, tail)| tail))
+                .filter_map(|tail| tail.split_once('"').map(|(mass, _)| mass))
+                .filter_map(|mass| mass.parse::<f64>().ok())
+                .sum::<f64>()
+        };
+        let baseline = to_mjcf_with_options(&spec, &baked, MjcfExportOptions::default()).unwrap();
+        let lumped = to_mjcf_with_options_and_lumped_inertials(
+            &spec,
+            &baked,
+            MjcfExportOptions::default(),
+            &[LumpedInertial {
+                node: "root".to_string(),
+                mass_kg: 0.123,
+                com_m: [0.01, 0.02, -0.03],
+                inertia_kg_m2: [0.001, 0.002, 0.003, 0.0, 0.0, 0.0],
+            }],
+        )
+        .unwrap();
+        assert!((total_mass(&lumped) - total_mass(&baseline) - 0.123).abs() < 1e-12);
+        assert_eq!(
+            lumped.matches("<geom ").count(),
+            baseline.matches("<geom ").count()
+        );
+
+        let error = to_mjcf_with_options_and_lumped_inertials(
+            &spec,
+            &baked,
+            MjcfExportOptions::default(),
+            &[LumpedInertial {
+                node: "missing".to_string(),
+                mass_kg: 0.1,
+                com_m: [0.0; 3],
+                inertia_kg_m2: [0.001, 0.001, 0.001, 0.0, 0.0, 0.0],
+            }],
+        )
+        .unwrap_err();
+        assert!(error.contains("absent from the contract"));
     }
 
     #[test]

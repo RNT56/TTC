@@ -71,6 +71,22 @@ merely enforced (the reason a card is greyed):
 | TWR floor | per preset: freestyle reject < 1.8, warn < 2.5 |
 | connectors | electrical port types match across pairs |
 
+### Bench-grid authority boundary (D65)
+
+The checked-in file-catalog row currently declares `voltage` once per thrust table;
+the loader assigns that voltage to every throttle point. It therefore represents a
+single-voltage sweep, not one multi-voltage grid capable of covering a non-degenerate
+battery operating range. D65 retains and rejects such rows when voltage/prop coverage
+does not match, and it never merges separate single-voltage tables implicitly.
+
+Before applicable catalog thrust can be claimed, version the row and loader so each
+point (or an equivalently explicit reviewed grid axis) carries sourced voltage
+authority. The change needs compatibility classification, old-row migration/read
+semantics, ETL and boundary-corpus cases, rectangular-grid/duplicate/ambiguity
+refusals, generated-doc/golden review where affected, and source/review/license proof
+for the actual grid. Until then the analytic fallback is the only honest curve for a
+battery range.
+
 ## 4. ETL pipeline (P3-004; worker detail in [`compute-workers.md`](compute-workers.md))
 
 fetch manufacturer pages/datasheets/STEP → Claude-extracted structured specs against

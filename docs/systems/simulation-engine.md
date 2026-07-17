@@ -4,7 +4,7 @@
 and real-engine MuJoCo 3.9.0 parity protected in required CI; deterministic P6 exit
 complete · **Phases:** P1 (port + Rapier wiring), P6 (depth) ·
 **Home:** `crates/forge-sim` · **Plan refs:** §7.4, Appendix C (v3.0) ·
-**Decisions:** D7, D8, D16, D17, D20, D32
+**Decisions:** D7, D8, D16, D17, D20, D32, D65
 
 ## 1. Purpose
 
@@ -55,10 +55,22 @@ Q      = C_Q · ρ · n² · D⁵       (torque)
 endurance ≈ 0.8 · C / I_avg      (usable-capacity convention)
 ```
 
-C_T/C_Q interpolated from catalog **thrust tables** where published (XC-06),
-blade-element-lite estimates where not — and the HUD says which. Battery: internal-
-resistance sag + capacity integration, unit-tested against bench math (XC-07).
+C_T/C_Q interpolate from catalog **thrust tables** only when the published voltage
+grid covers the equipped battery range and the table's diameter×pitch exactly
+matches the equipped prop (XC-06/D65). Exactly one table must be applicable; multiple
+matches are ambiguous and fail closed rather than inheriting catalog array order.
+Merely publishing a table is insufficient: inapplicable or malformed tables remain
+visible as rejected authority and the HUD names the blade-element-lite fallback. Battery: internal-resistance sag + capacity
+integration, unit-tested against bench math (XC-07).
 ρ and g come from the contract's `env` block, never ambient constants.
+
+The D65 catalog training major also compiles exact equipped catalog mass and
+sourced-dimension uniform-solid inertia into the same MJCF inertials, while leaving
+collision geometry contract-owned. Its Python consumer independently recomputes the
+declared uniform-solid tensors and mount-centered COM, then verifies that MuJoCo's
+compiled body-mass sum equals the bundle total. The current D12 proof retains but
+does not use its lone 25.2 V/5×4.6 bench point for a 14.8–16.8 V/5×4.3 design; this
+prevents the historical edge clamp from overstating 4S thrust.
 
 ## 4. Estimator-in-sim (D8)
 

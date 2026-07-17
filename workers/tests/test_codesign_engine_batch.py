@@ -141,6 +141,32 @@ def _fake_evaluator(snapshot: dict, contract: dict, plan: dict, proposal: dict) 
         "unsafeEpisodes": 0,
         "meanFinalPositionErrorM": 0.1,
         "rolloutSha256": hashlib.sha256(f"mujoco:{ordinal}".encode()).hexdigest(),
+        "trainingAuthority": {
+            "schemaVersion": "forge-codesign-training-authority/1.0.0",
+            "trainingBundleSchema": "3.0.0",
+            "trainingBundleSha256": hashlib.sha256(
+                f"training-bundle:{ordinal}".encode()
+            ).hexdigest(),
+            "catalogPhysicsSchema": "forge-training-catalog-physics/1.0.0",
+            "catalogPhysicsSha256": hashlib.sha256(
+                f"catalog-physics:{ordinal}".encode()
+            ).hexdigest(),
+            "catalogAuthoritySha256": catalog_authority["catalogAuthoritySha256"],
+            "massKg": 0.769,
+            "catalogNativeMassInertia": True,
+            "catalogBenchTableAuthority": True,
+            "catalogBenchTableUsed": False,
+            "powertrainModel": (
+                "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
+            ),
+            "inlineFallbacks": [
+                "sim.battery.rIntMohm",
+                "sim.motors[].rIntMohm",
+                "sim.motors[].maxCurrentA",
+                "sim.props[0].diameterIn,pitchIn,blades",
+                "forge-sim.DEFAULT_CT",
+            ],
+        },
     }
     return _candidate_expected(
         snapshot,
@@ -173,9 +199,19 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
 
     completed = advance_batch(batch_payload, cancelled, evaluator=_fake_evaluator)
     assert validate_checkpoint(completed, batch_payload) == completed
-    assert completed["schemaVersion"] == "forge-codesign-engine-batch/3.0.0"
+    assert completed["schemaVersion"] == "forge-codesign-engine-batch/4.0.0"
     assert completed["artifactKind"] == "codesignEngineBatch"
-    assert completed["source"]["maturity"] == "catalog-bound-platform-local-engine-200-batch"
+    assert (
+        completed["source"]["maturity"]
+        == "catalog-bound-physics-platform-local-engine-200-batch"
+    )
+    assert completed["source"]["trainingPhysics"] == {
+        "trainingBundleSchema": "3.0.0",
+        "catalogPhysicsSchema": "forge-training-catalog-physics/1.0.0",
+        "catalogNativeMassInertia": True,
+        "catalogBenchTableApplicability": "bound-and-fail-closed",
+        "analyticFallbackAllowed": True,
+    }
     assert completed["scheduler"]["state"] == "complete"
     assert completed["scheduler"]["completedCandidates"] == 200
     assert completed["scheduler"]["resumeObserved"] is True
@@ -209,6 +245,14 @@ def test_exact_200_candidate_batch_pauses_cancels_resumes_and_selects_finalists(
     assert all(
         candidate["lineage"]["catalogAuthoritySha256"]
         == completed["source"]["catalogChoiceAuthority"]["catalogAuthoritySha256"]
+        for candidate in completed["candidates"]
+    )
+    assert all(
+        candidate["evaluations"]["tier2"]["evidence"]["trainingAuthority"][
+            "catalogNativeMassInertia"
+        ]
+        is True
+        and candidate["lineage"]["trainingBundleSchema"] == "3.0.0"
         for candidate in completed["candidates"]
     )
     assert completed["cost"]["providerBillingVerified"] is False
@@ -257,6 +301,16 @@ def test_checkpoint_refuses_plan_candidate_verdict_and_hash_substitution(batch_p
     )
     with pytest.raises(ValueError, match="row proof fields are not exact"):
         validate_checkpoint(catalog_tamper, batch_payload)
+
+    training_tamper = copy.deepcopy(checkpoint)
+    training_tamper["candidates"][0]["evaluations"]["tier2"]["evidence"][
+        "trainingAuthority"
+    ]["catalogNativeMassInertia"] = False
+    training_tamper["checkpointSha256"] = _sha(
+        _stable_json(_checkpoint_payload(training_tamper))
+    )
+    with pytest.raises(ValueError, match="training authority drifted"):
+        validate_checkpoint(training_tamper, batch_payload)
 
     verdict_tamper = copy.deepcopy(checkpoint)
     verdict_tamper["candidates"][0]["admitted"] = False

@@ -92,7 +92,7 @@ def test_gateway_snapshot_compiles_through_rust_training_authority(monkeypatch):
     assert bundle["control"]["yawRateRadS"] == 2.4
 
 
-def test_catalog_snapshot_requires_catalog_admission_but_retains_inline_bundle(monkeypatch):
+def test_catalog_snapshot_binds_mass_inertia_and_rejects_inapplicable_bench_table(monkeypatch):
     if not VALIDATOR.is_file():
         pytest.skip("forge-validate binary is not built")
     monkeypatch.setenv("FORGE_VALIDATE_BIN", str(VALIDATOR))
@@ -100,9 +100,42 @@ def test_catalog_snapshot_requires_catalog_admission_but_retains_inline_bundle(m
         compile_training_bundle(catalog_request())
 
     bundle = compile_training_bundle(catalog_request(), catalog_path=CATALOG)
-    assert bundle["schemaVersion"] == "2.0.0"
-    assert bundle["massKg"] == 0.479
-    assert any("inline-constant powertrain" in assumption for assumption in bundle["assumptions"])
+    assert bundle["schemaVersion"] == "3.0.0"
+    assert bundle["massKg"] == 0.769
+    physics = bundle["catalogPhysics"]
+    assert physics["schemaVersion"] == "forge-training-catalog-physics/1.0.0"
+    assert physics["baseContractMassKg"] == 0.479
+    assert physics["equippedCatalogMassKg"] == pytest.approx(0.29)
+    assert physics["totalMassKg"] == bundle["massKg"]
+    assert physics["batteryOperatingVoltageV"] == [14.8, 16.8]
+    assert physics["equippedProp"] == {
+        "diameterIn": 5.0,
+        "pitchIn": 4.3,
+        "blades": 3,
+        "source": "inline:sim.props[0]",
+    }
+    assert [component["slotId"] for component in physics["components"]] == [
+        "battery",
+        "rotors",
+    ]
+    motor = next(
+        component for component in physics["components"] if component["category"] == "motor"
+    )
+    assert motor["quantity"] == 4
+    assert motor["geometry"]["model"] == "uniform-cylinder-y"
+    assert motor["thrustTables"][0]["pointCount"] == 2
+    assert motor["thrustTables"][0]["voltageRangeV"] == [25.2, 25.2]
+    assert motor["thrustTables"][0]["usedForCurve"] is False
+    assert len(motor["thrustTables"][0]["inapplicabilityReasons"]) == 2
+    assert physics["powertrainModel"] == (
+        "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
+    )
+    assert "forge-sim.DEFAULT_CT" in physics["inlineFallbacks"]
+    assert bundle["powertrain"]["maxTotalCurrentA"] == 120.0
+    assert bundle["powertrain"]["curve"][-1]["totalThrustN"] > (
+        bundle["massKg"] * bundle["gravityMS2"]
+    )
+    assert any("exact equipped catalog masses" in assumption for assumption in bundle["assumptions"])
 
 
 def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):
@@ -124,6 +157,89 @@ def test_snapshot_and_bundle_tampering_fail_closed(monkeypatch):
     extra["providerOverride"] = "untrusted"
     with pytest.raises(ValueError, match="fields drifted"):
         validate_training_bundle(extra, request()["contractHash"])
+
+    catalog_bundle = compile_training_bundle(catalog_request(), catalog_path=CATALOG)
+    catalog_mass = copy.deepcopy(catalog_bundle)
+    catalog_mass["catalogPhysics"]["equippedCatalogMassKg"] += 0.001
+    with pytest.raises(ValueError, match="mass closure"):
+        validate_training_bundle(catalog_mass, catalog_request()["contractHash"])
+
+    catalog_row = copy.deepcopy(catalog_bundle)
+    catalog_row["catalogPhysics"]["components"][0]["rowSha256"] = "A" * 64
+    with pytest.raises(ValueError, match="lower-case SHA-256"):
+        validate_training_bundle(catalog_row, catalog_request()["contractHash"])
+
+    catalog_inertia = copy.deepcopy(catalog_bundle)
+    catalog_inertia["catalogPhysics"]["components"][0]["geometry"]["inertiaKgM2"][0] = 0
+    with pytest.raises(ValueError, match="principal inertia"):
+        validate_training_bundle(catalog_inertia, catalog_request()["contractHash"])
+
+    catalog_inertia_formula = copy.deepcopy(catalog_bundle)
+    catalog_inertia_formula["catalogPhysics"]["components"][0]["geometry"][
+        "inertiaKgM2"
+    ][0] *= 2
+    with pytest.raises(ValueError, match="does not match its mass and dimensions"):
+        validate_training_bundle(catalog_inertia_formula, catalog_request()["contractHash"])
+
+    catalog_applicability = copy.deepcopy(catalog_bundle)
+    motor = next(
+        component
+        for component in catalog_applicability["catalogPhysics"]["components"]
+        if component["category"] == "motor"
+    )
+    motor["thrustTables"][0]["usedForCurve"] = True
+    with pytest.raises(ValueError, match="thrust-table authority"):
+        validate_training_bundle(catalog_applicability, catalog_request()["contractHash"])
+
+    catalog_coverage = copy.deepcopy(catalog_bundle)
+    motor = next(
+        component
+        for component in catalog_coverage["catalogPhysics"]["components"]
+        if component["category"] == "motor"
+    )
+    motor["thrustTables"][0]["voltageRangeV"] = [14.8, 16.8]
+    motor["thrustTables"][0]["voltageV"] = 14.8
+    motor["thrustTables"][0]["prop"] = "5x4.3"
+    with pytest.raises(ValueError, match="applicability is false"):
+        validate_training_bundle(catalog_coverage, catalog_request()["contractHash"])
+
+    catalog_multiple_rejected = copy.deepcopy(catalog_bundle)
+    motor = next(
+        component
+        for component in catalog_multiple_rejected["catalogPhysics"]["components"]
+        if component["category"] == "motor"
+    )
+    second_rejected = copy.deepcopy(motor["thrustTables"][0])
+    second_rejected["id"] = "second-inapplicable-table"
+    motor["thrustTables"].append(second_rejected)
+    assert (
+        validate_training_bundle(
+            catalog_multiple_rejected, catalog_request()["contractHash"]
+        )
+        is catalog_multiple_rejected
+    )
+
+    catalog_ambiguous = copy.deepcopy(catalog_multiple_rejected)
+    motor = next(
+        component
+        for component in catalog_ambiguous["catalogPhysics"]["components"]
+        if component["category"] == "motor"
+    )
+    for table in motor["thrustTables"]:
+        table["voltageV"] = 14.8
+        table["voltageRangeV"] = [14.8, 16.8]
+        table["prop"] = "5x4.3"
+        table["usedForCurve"] = True
+        table["inapplicabilityReasons"] = []
+    catalog_ambiguous["catalogPhysics"]["powertrainModel"] = (
+        "catalog-motor-battery-applicability-checked-thrust-table-v1"
+    )
+    catalog_ambiguous["catalogPhysics"]["inlineFallbacks"] = [
+        "sim.battery.rIntMohm",
+        "sim.motors[].rIntMohm",
+    ]
+    with pytest.raises(ValueError, match="applicability drifted"):
+        validate_training_bundle(catalog_ambiguous, catalog_request()["contractHash"])
 
     external_mjcf = copy.deepcopy(bundle)
     external_mjcf["mjcf"] = external_mjcf["mjcf"].replace(

@@ -5,11 +5,17 @@
 //! Python owns the Gymnasium/SB3 orchestration, but it must consume this bounded
 //! bundle rather than reinterpret a user-authored contract.
 
-use forge_contract::{Archetype, EstimatorKind, Geom, JointKind, ModelSpec};
+use forge_contract::{
+    Archetype, CatalogComponent, CatalogSource, EstimatorKind, Geom, JointKind, ModelSpec,
+};
 use forge_geometry::BakedModel;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 pub const TRAINING_BUNDLE_VERSION: &str = "2.0.0";
+pub const CATALOG_TRAINING_BUNDLE_VERSION: &str = "3.0.0";
+pub const CATALOG_TRAINING_PHYSICS_SCHEMA: &str = "forge-training-catalog-physics";
+pub const CATALOG_TRAINING_PHYSICS_VERSION: &str = "1.0.0";
 pub const POLICY_TENSOR_SCHEMA: &str = "forge-policy-tensor";
 pub const POLICY_TENSOR_VERSION: &str = "2.0.0";
 pub const TRAINING_MUJOCO_VERSION: &str = "3.9.0";
@@ -127,7 +133,87 @@ pub struct TrainingBundle {
     pub estimator: TrainingEstimator,
     pub powertrain: TrainingPowertrain,
     pub control: TrainingControlAuthority,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog_physics: Option<Box<TrainingCatalogPhysics>>,
     pub assumptions: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CatalogTrainingAuthority {
+    pub catalog_authority_sha256: String,
+    pub row_sha256: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogGeometry {
+    pub model: String,
+    pub size_m: [f64; 3],
+    pub center_of_mass_m: [f64; 3],
+    /// Forge-frame `[ixx, iyy, izz, ixy, iyz, ixz]`, kg·m², for one item.
+    pub inertia_kg_m2: [f64; 6],
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogThrustTableAuthority {
+    pub id: String,
+    pub prop: String,
+    pub voltage_v: f64,
+    pub voltage_range_v: [f64; 2],
+    pub confidence: f64,
+    pub source_url: String,
+    pub point_count: usize,
+    pub used_for_curve: bool,
+    pub inapplicability_reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogPropAuthority {
+    pub diameter_in: f64,
+    pub pitch_in: f64,
+    pub blades: u32,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogComponent {
+    pub slot_id: String,
+    pub variant_id: String,
+    pub component_ref: String,
+    pub exact_revision: String,
+    pub component_id: String,
+    pub category: String,
+    pub row_sha256: String,
+    pub mount_nodes: Vec<String>,
+    pub quantity: usize,
+    pub mass_kg_each: f64,
+    pub geometry: TrainingCatalogGeometry,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub thrust_tables: Vec<TrainingCatalogThrustTableAuthority>,
+    pub review_required: bool,
+    pub license_id: String,
+    pub license_class: String,
+    pub license_source_url: String,
+    pub export_policy: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrainingCatalogPhysics {
+    pub schema_version: String,
+    pub catalog_authority_sha256: String,
+    pub base_contract_mass_kg: f64,
+    pub equipped_catalog_mass_kg: f64,
+    pub total_mass_kg: f64,
+    pub inertia_model: String,
+    pub powertrain_model: String,
+    pub inline_fallbacks: Vec<String>,
+    pub battery_operating_voltage_v: [f64; 2],
+    pub equipped_prop: TrainingCatalogPropAuthority,
+    pub components: Vec<TrainingCatalogComponent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -400,6 +486,7 @@ pub fn multirotor_training_bundle(
             max_roll_pitch_torque_nm,
             max_yaw_torque_nm,
         },
+        catalog_physics: None,
         assumptions: vec![
             "MuJoCo consumes forge-sim contract geometry, mass properties, gravity, and a floating root at four physics substeps per 50 Hz policy action".to_string(),
             "thrust, voltage, and current are sampled from forge-sim's inline-constant powertrain model; catalog-only authority fails closed".to_string(),
@@ -410,6 +497,372 @@ pub fn multirotor_training_bundle(
     })
 }
 
+fn lower_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+}
+
+fn catalog_component_geometry(
+    component: &CatalogComponent,
+) -> Result<TrainingCatalogGeometry, String> {
+    let mass_kg = component.mass_g / 1000.0;
+    if !mass_kg.is_finite() || mass_kg <= 0.0 {
+        return Err(format!(
+            "catalog training component '{}' has invalid sourced mass",
+            component.id
+        ));
+    }
+    let (model, size_m, inertia_kg_m2) = if let (Some(diameter_mm), Some(height_mm)) = (
+        component.dims.get("diameterMm"),
+        component.dims.get("heightMm"),
+    ) {
+        let diameter_m = diameter_mm / 1000.0;
+        let height_m = height_mm / 1000.0;
+        if !diameter_m.is_finite() || !height_m.is_finite() || diameter_m <= 0.0 || height_m <= 0.0
+        {
+            return Err(format!(
+                "catalog training component '{}' has invalid cylinder dimensions",
+                component.id
+            ));
+        }
+        let radius_m = diameter_m * 0.5;
+        let transverse = mass_kg * (3.0 * radius_m * radius_m + height_m * height_m) / 12.0;
+        let axial = 0.5 * mass_kg * radius_m * radius_m;
+        (
+            "uniform-cylinder-y".to_string(),
+            [diameter_m, height_m, diameter_m],
+            [transverse, axial, transverse, 0.0, 0.0, 0.0],
+        )
+    } else if let (Some(length_mm), Some(width_mm), Some(height_mm)) = (
+        component.dims.get("lengthMm"),
+        component.dims.get("widthMm"),
+        component.dims.get("heightMm"),
+    ) {
+        let x = width_mm / 1000.0;
+        let y = height_mm / 1000.0;
+        let z = length_mm / 1000.0;
+        if !x.is_finite() || !y.is_finite() || !z.is_finite() || x <= 0.0 || y <= 0.0 || z <= 0.0 {
+            return Err(format!(
+                "catalog training component '{}' has invalid box dimensions",
+                component.id
+            ));
+        }
+        (
+            "uniform-box-x-width-y-height-z-length".to_string(),
+            [x, y, z],
+            [
+                mass_kg * (y * y + z * z) / 12.0,
+                mass_kg * (x * x + z * z) / 12.0,
+                mass_kg * (x * x + y * y) / 12.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        )
+    } else {
+        return Err(format!(
+            "catalog training component '{}' lacks supported sourced dimensions",
+            component.id
+        ));
+    };
+    Ok(TrainingCatalogGeometry {
+        model,
+        size_m,
+        center_of_mass_m: [0.0; 3],
+        inertia_kg_m2,
+    })
+}
+
+fn catalog_training_physics(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    catalog: &dyn CatalogSource,
+    authority: &CatalogTrainingAuthority,
+    powertrain: &crate::CatalogTrainingPowertrain,
+) -> Result<(TrainingCatalogPhysics, Vec<crate::export::LumpedInertial>), String> {
+    if !lower_sha256(&authority.catalog_authority_sha256) {
+        return Err("catalog training authority must be a lower-case SHA-256".to_string());
+    }
+    let mut components = Vec::new();
+    let mut lumped = Vec::new();
+    let mut equipped_catalog_mass_kg = 0.0;
+    for slot in &spec.slots {
+        let Some(variant) = slot.equipped_variant() else {
+            return Err(format!(
+                "catalog training slot '{}' has no unique equipped variant",
+                slot.id
+            ));
+        };
+        let Some(component_ref) = variant.component_ref.as_ref() else {
+            continue;
+        };
+        let exact_revision = spec.lockfile.get(component_ref).ok_or_else(|| {
+            format!(
+                "catalog training ref '{}' lacks an exact lockfile pin",
+                component_ref
+            )
+        })?;
+        let (component_id, _) = exact_revision.rsplit_once('@').ok_or_else(|| {
+            format!(
+                "catalog training pin '{}' is not component@revision",
+                exact_revision
+            )
+        })?;
+        let component = catalog.component(component_id).ok_or_else(|| {
+            format!(
+                "catalog training component '{}' is absent from authority",
+                component_id
+            )
+        })?;
+        let row_sha256 = authority.row_sha256.get(component_id).ok_or_else(|| {
+            format!(
+                "catalog training component '{}' lacks raw-row authority",
+                component_id
+            )
+        })?;
+        if !lower_sha256(row_sha256) {
+            return Err(format!(
+                "catalog training row hash for '{}' is invalid",
+                component_id
+            ));
+        }
+        if slot.mount_nodes.is_empty() {
+            return Err(format!(
+                "catalog training slot '{}' has no physical mount nodes",
+                slot.id
+            ));
+        }
+        let geometry = catalog_component_geometry(&component)?;
+        let mass_kg_each = component.mass_g / 1000.0;
+        for node in &slot.mount_nodes {
+            if spec.node(node).is_none() {
+                return Err(format!(
+                    "catalog training mount node '{}' is absent from the contract",
+                    node
+                ));
+            }
+            lumped.push(crate::export::LumpedInertial {
+                node: node.clone(),
+                mass_kg: mass_kg_each,
+                com_m: geometry.center_of_mass_m,
+                inertia_kg_m2: geometry.inertia_kg_m2,
+            });
+        }
+        let quantity = slot.mount_nodes.len();
+        equipped_catalog_mass_kg += mass_kg_each * quantity as f64;
+        let thrust_tables = component
+            .thrust_tables
+            .iter()
+            .map(|table| {
+                let applicability = powertrain
+                    .table_applicability
+                    .iter()
+                    .find(|entry| entry.id == table.id)
+                    .ok_or_else(|| {
+                        format!(
+                            "catalog thrust table '{}' lacks applicability authority",
+                            table.id
+                        )
+                    })?;
+                Ok(TrainingCatalogThrustTableAuthority {
+                    id: table.id.clone(),
+                    prop: table.prop.clone(),
+                    voltage_v: table.voltage,
+                    voltage_range_v: [
+                        table
+                            .points
+                            .iter()
+                            .map(|point| point.voltage)
+                            .fold(f64::INFINITY, f64::min),
+                        table
+                            .points
+                            .iter()
+                            .map(|point| point.voltage)
+                            .fold(f64::NEG_INFINITY, f64::max),
+                    ],
+                    confidence: table.confidence,
+                    source_url: table.source_url.clone(),
+                    point_count: table.points.len(),
+                    used_for_curve: applicability.used_for_curve,
+                    inapplicability_reasons: applicability.inapplicability_reasons.clone(),
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        components.push(TrainingCatalogComponent {
+            slot_id: slot.id.clone(),
+            variant_id: variant.id.clone(),
+            component_ref: component_ref.clone(),
+            exact_revision: exact_revision.clone(),
+            component_id: component_id.to_string(),
+            category: component.category.clone(),
+            row_sha256: row_sha256.clone(),
+            mount_nodes: slot.mount_nodes.clone(),
+            quantity,
+            mass_kg_each,
+            geometry,
+            thrust_tables,
+            review_required: component.confidence < 1.0 || component.review.is_some(),
+            license_id: component.license.id.clone(),
+            license_class: component.license.class.clone(),
+            license_source_url: component.license.source_url.clone(),
+            export_policy: component.license.export_policy.clone(),
+        });
+    }
+    if components.is_empty() {
+        return Err(
+            "catalog training requires at least one equipped catalog component".to_string(),
+        );
+    }
+    let motor_components = components
+        .iter()
+        .filter(|component| component.category == "motor")
+        .collect::<Vec<_>>();
+    if motor_components.len() != 1 || motor_components[0].quantity != spec.sim.motors.len() {
+        return Err(
+            "catalog training requires one equipped motor row whose mounts exactly match sim.motors"
+                .to_string(),
+        );
+    }
+    let battery_components = components
+        .iter()
+        .filter(|component| component.category == "battery")
+        .collect::<Vec<_>>();
+    if battery_components.len() != 1 || battery_components[0].quantity != 1 {
+        return Err(
+            "catalog training requires exactly one singly mounted equipped battery row".to_string(),
+        );
+    }
+    components.sort_by(|left, right| left.slot_id.cmp(&right.slot_id));
+    let base_contract_mass_kg = forge_geometry::model_mass_g(spec, baked) / 1000.0;
+    let total_mass_kg = base_contract_mass_kg + equipped_catalog_mass_kg;
+    Ok((
+        TrainingCatalogPhysics {
+            schema_version: format!(
+                "{CATALOG_TRAINING_PHYSICS_SCHEMA}/{CATALOG_TRAINING_PHYSICS_VERSION}"
+            ),
+            catalog_authority_sha256: authority.catalog_authority_sha256.clone(),
+            base_contract_mass_kg,
+            equipped_catalog_mass_kg,
+            total_mass_kg,
+            inertia_model: "uniform-datasheet-solid-lumped-at-slot-mount-v1".to_string(),
+            powertrain_model: if powertrain
+                .table_applicability
+                .iter()
+                .any(|table| table.used_for_curve)
+            {
+                "catalog-motor-battery-applicability-checked-thrust-table-v1".to_string()
+            } else {
+                "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1".to_string()
+            },
+            inline_fallbacks: powertrain.inline_fallbacks.clone(),
+            battery_operating_voltage_v: powertrain.battery_operating_voltage_v,
+            equipped_prop: TrainingCatalogPropAuthority {
+                diameter_in: powertrain.prop_diameter_in,
+                pitch_in: powertrain.prop_pitch_in,
+                blades: powertrain.prop_blades,
+                source: powertrain.prop_source.clone(),
+            },
+            components,
+        },
+        lumped,
+    ))
+}
+
+pub fn multirotor_training_bundle_with_catalog(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    contract_hash: &str,
+    catalog: &dyn CatalogSource,
+    authority: &CatalogTrainingAuthority,
+) -> Result<TrainingBundle, String> {
+    let mut bundle = multirotor_training_bundle(spec, baked, contract_hash)?;
+    let powertrain_authority = crate::catalog_training_powertrain(spec, catalog)?;
+    let (catalog_physics, lumped) =
+        catalog_training_physics(spec, baked, catalog, authority, &powertrain_authority)?;
+    let hud = crate::derive_hud_with_catalog(spec, baked, catalog)
+        .map_err(|error| format!("catalog training HUD authority failed: {error}"))?;
+    let mass_kg = hud.auw_g / 1000.0;
+    if (mass_kg - catalog_physics.total_mass_kg).abs() > 1e-12 {
+        return Err("catalog training mass disagrees with catalog-backed HUD truth".to_string());
+    }
+    let powertrain = &powertrain_authority.powertrain;
+    let max_total_current_a = powertrain_authority.max_total_current_a;
+    let curve = (0..=100)
+        .map(|step| {
+            let throttle = f64::from(step) / 100.0;
+            let point = powertrain.at_throttle(throttle);
+            TrainingPowerPoint {
+                throttle,
+                total_thrust_n: point.thrust_n * powertrain.n_motors as f64,
+                normalized_voltage: (point.v_eff / powertrain.battery_v0).clamp(0.0, 1.0),
+                normalized_current: (point.current_a * powertrain.n_motors as f64
+                    / max_total_current_a)
+                    .clamp(0.0, 1.0),
+            }
+        })
+        .collect::<Vec<_>>();
+    let max_thrust_n = curve
+        .last()
+        .map(|point| point.total_thrust_n)
+        .unwrap_or(0.0);
+    if !max_thrust_n.is_finite() || max_thrust_n <= mass_kg * spec.env.gravity {
+        return Err("catalog training powertrain lacks authority above sourced weight".to_string());
+    }
+    let hover_throttle = {
+        let weight_n = mass_kg * spec.env.gravity;
+        let (mut low, mut high) = (0.0, 1.0);
+        for _ in 0..60 {
+            let mid = 0.5 * (low + high);
+            if powertrain.at_throttle(mid).thrust_n * (powertrain.n_motors as f64) < weight_n {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        0.5 * (low + high)
+    };
+    let mjcf = crate::export::to_mjcf_with_options_and_lumped_inertials(
+        spec,
+        baked,
+        crate::export::MjcfExportOptions {
+            floating_roots: true,
+            timestep_s: Some(MUJOCO_TIMESTEP_S),
+            euler_integrator: true,
+        },
+        &lumped,
+    )?;
+    bundle.schema_version = CATALOG_TRAINING_BUNDLE_VERSION.to_string();
+    bundle.mjcf = mjcf;
+    bundle.mass_kg = mass_kg;
+    bundle.hover_throttle = hover_throttle;
+    bundle.powertrain = TrainingPowertrain {
+        nominal_voltage_v: powertrain.battery_v0,
+        max_total_current_a,
+        curve,
+    };
+    bundle.control.max_roll_pitch_torque_nm = max_thrust_n * bundle.control.arm_radius_m * 0.5;
+    bundle.control.max_yaw_torque_nm = max_thrust_n * (powertrain.prop_d_m * 0.5) * 0.02;
+    bundle.catalog_physics = Some(Box::new(catalog_physics));
+    bundle.assumptions = vec![
+        "MuJoCo inertials combine contract mass properties with exact equipped catalog masses and sourced-dimension uniform-solid inertias at declared slot mounts".to_string(),
+        if powertrain_authority.table_applicability.iter().any(|table| table.used_for_curve) {
+            "thrust and current are interpolated only from an equipped catalog bench table whose voltage grid and prop are applicable; complete row and file-catalog byte authority are retained".to_string()
+        } else {
+            "the equipped catalog bench table is retained but rejected for curve use because its voltage grid and prop do not match; the named blade-element-lite fallback drives the curve".to_string()
+        },
+        format!(
+            "catalog motor Kv and battery voltage/discharge authority are retained; explicit inline fallbacks: {}",
+            powertrain_authority.inline_fallbacks.join(", ")
+        ),
+        "catalog dimensions produce inertia only; collision geometry remains contract-owned and is never invented from a row".to_string(),
+        "roll/pitch authority is a conservative differential-thrust bound; yaw uses the documented 2% prop-radius drag-torque proxy".to_string(),
+        "the worker exposes estimator-derived observations only; simulator truth remains private (D8)".to_string(),
+    ];
+    Ok(bundle)
+}
+
 pub fn training_bundle(
     spec: &ModelSpec,
     baked: &BakedModel,
@@ -418,6 +871,27 @@ pub fn training_bundle(
     match spec.meta.archetype {
         Archetype::Multirotor => multirotor_training_bundle(spec, baked, contract_hash)
             .map(AnyTrainingBundle::Multirotor),
+        Archetype::Rover | Archetype::Quadruped => {
+            ground_training_bundle(spec, baked, contract_hash).map(AnyTrainingBundle::Ground)
+        }
+        _ => Err(
+            "P7 real training supports multirotor, rover, and quadruped contracts only".to_string(),
+        ),
+    }
+}
+
+pub fn training_bundle_with_catalog(
+    spec: &ModelSpec,
+    baked: &BakedModel,
+    contract_hash: &str,
+    catalog: &dyn CatalogSource,
+    authority: &CatalogTrainingAuthority,
+) -> Result<AnyTrainingBundle, String> {
+    match spec.meta.archetype {
+        Archetype::Multirotor => {
+            multirotor_training_bundle_with_catalog(spec, baked, contract_hash, catalog, authority)
+                .map(AnyTrainingBundle::Multirotor)
+        }
         Archetype::Rover | Archetype::Quadruped => {
             ground_training_bundle(spec, baked, contract_hash).map(AnyTrainingBundle::Ground)
         }

@@ -170,6 +170,19 @@ then records dependency versions, seed, source/contract/config digests, and mode
 parameter digests in lineage. Unsupported roots, archetypes, estimators, physical
 constants, runtime versions, payloads, or snapshot hashes refuse before training.
 
+D65 adds a separate catalog-bound multirotor producer, not a reinterpretation of
+D42: `forge-validate training-bundle --catalog` emits `trainingMuJoCoBundle` 3.0.0
+plus `forge-training-catalog-physics/1.0.0`. It hashes the complete catalog and exact
+equipped rows, adds sourced catalog mass and uniform-solid inertia at declared mount
+nodes to the MJCF, independently recomputes those tensors in Python, and requires
+compiled MuJoCo mass to equal bundle mass. Every bench table is applicability-gated
+against the equipped battery voltage range and prop diameter×pitch; more than one
+applicable table is ambiguous and refuses the bundle. The D12 fixture's review-gated 25.2 V/5×4.6 table is bound
+but rejected for the 14.8–16.8 V/5×4.3 design, so the artifact names the inline
+resistance/current/prop/`DEFAULT_CT` fallbacks that drive its curve. This is
+catalog-bound mass/inertia and table-lineage evidence, not an applicable catalog
+thrust table, trained policy, live catalog, or field claim.
+
 The protected initial environment remains the floating-root multirotor hover task.
 P7-014 generalized that same sovereign runtime to the worker-owned `hover-hold` and
 `waypoint-chain` v2 definitions. D42's protected P7-012 implementation corrects that runtime

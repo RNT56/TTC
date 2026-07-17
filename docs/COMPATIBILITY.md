@@ -36,7 +36,7 @@ package to adopt that same number.
 | Desktop recorder materialization | 1.0.0 | `forge-recorder-materialization` binds the sanitized upload plan, five private checksum-bound object roles, same-origin native streaming upload, gateway object-integrity transition, and explicit false archive-semantics/device/field/sharing/training authority; changing any role or authority meaning is major | major 1 |
 | recorder archive admission | 1.0.0 | `forge-recorder-admission` binds the sovereign native verification report, exact D53 materialization/admitted-model/replay reference, and explicit false device/field/sharing/training authority; verification or object-reference meaning changes are major | major 1 |
 | Desktop recorder custody | 1.0.0 | `forge-recorder-custody-trust-bundle`, `forge-recorder-custody-authorization`, and `forge-recorder-custody-proof` bind the deployment-pinned public trust root, exact short-lived signed capture authority, native two-port D55 continuity, canonical receipt hash, create-new proof, and permanent device/recorded-device/field/sharing/training nonclaims; changing any preimage, continuity, or authority meaning is major | major 1 |
-| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 17 gateway queue kinds and internal admitted-snapshot/training-bundle/training-task/ghost-overlay versions; public families must gain an independent `schemaVersion` before external publication | current minor line; training bundle v2 and task v3 are current, while older task/policy metadata remains immutable legacy evidence |
+| worker artifacts | 0.2.0 | package SemVer governs unversioned internal envelopes; the machine matrix exact-matches all 19 registered gateway/worker and internal admitted-snapshot/training-bundle/training-task/ghost-overlay/co-design authority surfaces; public families must gain an independent `schemaVersion` before external publication | current minor line; inline multirotor bundle v2, catalog-bound multirotor bundle v3, ground bundle v1, and task v3 are current in their declared domains, while older task/policy metadata remains immutable legacy evidence |
 
 `forge-validate version --json` and the WASM `version()` export report the active
 package and data-contract versions. Validator reports carry `reportVersion`.
@@ -518,9 +518,24 @@ is the separate `forge-codesign-native-evaluation/2.0.0` plus
 unchanged. Adding optional `--catalog` to `codesign-evaluate` and
 `training-bundle` is an unreleased CLI 0.2.0 minor addition. Training-bundle 2.0.0
 uses the catalog only for sovereign admission and keeps its documented inline-
-mirror powertrain meaning; a catalog-native MuJoCo mass/inertia/thrust-table bundle
-would require a separately versioned compatibility change. V2 plan/batch artifacts
-remain historical and are never interpreted as exact catalog choices.
+mirror powertrain meaning. V2 plan/batch artifacts remain historical and are never
+interpreted as exact catalog choices.
+
+D65 adds `trainingMuJoCoBundle` 3.0.0 for the catalog-bound multirotor path and the
+independent `forge-training-catalog-physics/1.0.0` plus
+`forge-codesign-training-authority/1.0.0` families. Inline multirotor bundle 2.0.0
+and ground bundle 1.0.0 remain byte/meaning compatible. V3 binds complete catalog
+and equipped-row authority, exact catalog mass, sourced-dimension uniform-solid
+inertia at every slot mount, compiled MJCF mass closure, licenses/review state, and
+every named inline fallback. Motor bench tables are authority only after an exact
+applicability gate: exactly one table must qualify, its voltage grid must cover the
+equipped battery range, and its diameter×pitch must match the equipped prop.
+Ambiguous or rejected tables cannot drive the curve; rejected tables remain visible
+with machine-checked reasons. Coordinated co-design
+batch/evidence 4.0.0 bind exact bundle/catalog-physics hashes and table-use status per
+tier-2 rollout; v3 batch evidence remains immutable history. Any change to inertial
+placement, applicability, fallback, curve, or authority-hash meaning is another
+major.
 
 ## Change classification
 

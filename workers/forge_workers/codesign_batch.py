@@ -1,4 +1,4 @@
-"""Checkpointed D64 consumer for the exact catalog-backed co-design plan.
+"""Checkpointed D65 consumer for the exact D64 catalog-backed co-design plan.
 
 The batch owns no proposal generation semantics. It replays and validates the exact
 D64 catalog-backed plan, evaluates its contiguous proposal hashes through the
@@ -6,8 +6,9 @@ sovereign catalog/native/Rapier/MuJoCo ladder, and writes a hash-bound checkpoin
 after every candidate. Pareto and finalist selection are withheld until all 200
 candidates have engine evidence. Tier 3, provider billing, catalog marketplace
 publication, live catalog persistence, build, hardware, field, and the separate
-overnight claim remain held. Version 3 binds both catalog and exact proposal-runtime
-authority and refuses foreign-catalog or heterogeneous resume.
+overnight claim remain held. Version 4 adds catalog-bound training mass, inertia,
+bench-table applicability, and exact bundle authority while retaining catalog/runtime
+recovery fences.
 """
 
 from __future__ import annotations
@@ -49,18 +50,22 @@ from forge_workers.codesign_search import (
 )
 from forge_workers.net_security import assert_bounded_json
 from forge_workers.training.bundle import (
+    CATALOG_TRAINING_BUNDLE_VERSION,
+    CATALOG_TRAINING_PHYSICS_SCHEMA,
+    CATALOG_TRAINING_PHYSICS_VERSION,
     PINNED_MUJOCO_VERSION,
     SNAPSHOT_SCHEMA,
-    TRAINING_BUNDLE_VERSION,
     compile_training_bundle,
 )
 from forge_workers.training.tasks import task_definition
 
 ENGINE_BATCH_SCHEMA = "forge-codesign-engine-batch"
-ENGINE_BATCH_VERSION = "3.0.0"
-ENGINE_BATCH_EVIDENCE_VERSION = "3.0.0"
-ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/3.0.0"
-ENGINE_BATCH_MATURITY = "catalog-bound-platform-local-engine-200-batch"
+ENGINE_BATCH_VERSION = "4.0.0"
+ENGINE_BATCH_EVIDENCE_VERSION = "4.0.0"
+ENGINE_BATCH_RUNTIME = "forge-codesign-engine-batch/4.0.0"
+ENGINE_BATCH_MATURITY = "catalog-bound-physics-platform-local-engine-200-batch"
+TRAINING_AUTHORITY_SCHEMA = "forge-codesign-training-authority"
+TRAINING_AUTHORITY_VERSION = "1.0.0"
 MAX_INPUT_BYTES = 8 * 1024 * 1024
 MAX_CHECKPOINT_BYTES = 32 * 1024 * 1024
 TIER3_REASON = "tier 3 is held until a separately evidenced selected-finalist training run"
@@ -108,7 +113,7 @@ def _search_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if payload.get("task") != "codesign.engine-batch":
         raise ValueError("co-design engine batch requires task=codesign.engine-batch")
     if payload.get("candidateBudget") != TOTAL_PROPOSALS:
-        raise ValueError("co-design engine batch v3 requires exactly 200 candidates")
+        raise ValueError("co-design engine batch v4 requires exactly 200 candidates")
     return {
         "task": "codesign.search-plan",
         "contractHash": payload.get("contractHash"),
@@ -165,7 +170,7 @@ def _candidate_expected(
     _validate_native_evaluation(native, candidate_hash, catalog_authority["catalogAuthoritySha256"])
     _validate_selected_catalog_choice(native, proposal["catalogChoice"], catalog_authority)
     if rollout is not None:
-        _validate_rollout(rollout)
+        _validate_rollout(rollout, catalog_authority["catalogAuthoritySha256"])
     evaluations, metrics, admitted, admission_reasons = _tier_records(
         native,
         native_runtime_ms,
@@ -207,7 +212,7 @@ def _candidate_expected(
                 f"{CODESIGN_NATIVE_EVALUATION_SCHEMA}/{CODESIGN_CATALOG_NATIVE_EVALUATION_VERSION}"
             ),
             "nativeEvaluationSha256": native_sha,
-            "trainingBundleSchema": TRAINING_BUNDLE_VERSION,
+            "trainingBundleSchema": CATALOG_TRAINING_BUNDLE_VERSION,
             "mujocoRuntime": PINNED_MUJOCO_VERSION,
             "engineSeed": plan["algorithms"]["seed"] + ordinal * 100,
             "maturity": ENGINE_BATCH_MATURITY,
@@ -253,7 +258,63 @@ def _validate_selected_catalog_choice(
         raise ValueError("co-design engine-batch selected catalog revision proof drifted")
 
 
-def _validate_rollout(rollout: dict[str, Any]) -> None:
+def _training_authority(
+    bundle: dict[str, Any], catalog_authority_sha256: str
+) -> dict[str, Any]:
+    physics = bundle.get("catalogPhysics")
+    if bundle.get("schemaVersion") != CATALOG_TRAINING_BUNDLE_VERSION or not isinstance(
+        physics, dict
+    ):
+        raise ValueError("co-design batch requires the catalog-bound training bundle")
+    if (
+        physics.get("schemaVersion")
+        != f"{CATALOG_TRAINING_PHYSICS_SCHEMA}/{CATALOG_TRAINING_PHYSICS_VERSION}"
+        or physics.get("catalogAuthoritySha256") != catalog_authority_sha256
+    ):
+        raise ValueError("co-design batch training catalog authority drifted")
+    components = physics.get("components")
+    if not isinstance(components, list):
+        raise ValueError("co-design batch training components are absent")
+    tables = [
+        table
+        for component in components
+        if isinstance(component, dict)
+        for table in component.get("thrustTables", [])
+        if isinstance(table, dict)
+    ]
+    if not tables:
+        raise ValueError("co-design batch training thrust-table authority is absent")
+    used_tables = sum(table.get("usedForCurve") is True for table in tables)
+    powertrain_model = physics.get("powertrainModel")
+    inline_fallbacks = physics.get("inlineFallbacks")
+    if (
+        used_tables not in {0, 1}
+        or not isinstance(powertrain_model, str)
+        or not isinstance(inline_fallbacks, list)
+        or not inline_fallbacks
+    ):
+        raise ValueError("co-design batch training applicability authority drifted")
+    return {
+        "schemaVersion": f"{TRAINING_AUTHORITY_SCHEMA}/{TRAINING_AUTHORITY_VERSION}",
+        "trainingBundleSchema": CATALOG_TRAINING_BUNDLE_VERSION,
+        "trainingBundleSha256": _sha(_stable_json(bundle)),
+        "catalogPhysicsSchema": (
+            f"{CATALOG_TRAINING_PHYSICS_SCHEMA}/{CATALOG_TRAINING_PHYSICS_VERSION}"
+        ),
+        "catalogPhysicsSha256": _sha(_stable_json(physics)),
+        "catalogAuthoritySha256": catalog_authority_sha256,
+        "massKg": float(bundle["massKg"]),
+        "catalogNativeMassInertia": True,
+        "catalogBenchTableAuthority": True,
+        "catalogBenchTableUsed": used_tables == 1,
+        "powertrainModel": powertrain_model,
+        "inlineFallbacks": copy.deepcopy(inline_fallbacks),
+    }
+
+
+def _validate_rollout(
+    rollout: dict[str, Any], catalog_authority_sha256: str
+) -> None:
     _exact(
         rollout,
         {
@@ -275,6 +336,7 @@ def _validate_rollout(rollout: dict[str, Any]) -> None:
             "unsafeEpisodes",
             "meanFinalPositionErrorM",
             "rolloutSha256",
+            "trainingAuthority",
         },
         "co-design engine-batch MuJoCo rollout",
     )
@@ -317,6 +379,70 @@ def _validate_rollout(rollout: dict[str, Any]) -> None:
     digest = rollout.get("rolloutSha256")
     if not isinstance(digest, str) or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
         raise ValueError("co-design engine-batch MuJoCo digest drifted")
+    authority = rollout.get("trainingAuthority")
+    if not isinstance(authority, dict):
+        raise ValueError("co-design engine-batch training authority is absent")
+    _exact(
+        authority,
+        {
+            "schemaVersion",
+            "trainingBundleSchema",
+            "trainingBundleSha256",
+            "catalogPhysicsSchema",
+            "catalogPhysicsSha256",
+            "catalogAuthoritySha256",
+            "massKg",
+            "catalogNativeMassInertia",
+            "catalogBenchTableAuthority",
+            "catalogBenchTableUsed",
+            "powertrainModel",
+            "inlineFallbacks",
+        },
+        "co-design engine-batch training authority",
+    )
+    if (
+        authority.get("schemaVersion")
+        != f"{TRAINING_AUTHORITY_SCHEMA}/{TRAINING_AUTHORITY_VERSION}"
+        or authority.get("trainingBundleSchema") != CATALOG_TRAINING_BUNDLE_VERSION
+        or authority.get("catalogPhysicsSchema")
+        != f"{CATALOG_TRAINING_PHYSICS_SCHEMA}/{CATALOG_TRAINING_PHYSICS_VERSION}"
+        or authority.get("catalogAuthoritySha256") != catalog_authority_sha256
+        or authority.get("catalogNativeMassInertia") is not True
+        or authority.get("catalogBenchTableAuthority") is not True
+        or not isinstance(authority.get("catalogBenchTableUsed"), bool)
+        or authority.get("powertrainModel")
+        not in {
+            "catalog-motor-battery-applicability-checked-thrust-table-v1",
+            "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1",
+        }
+        or authority.get("inlineFallbacks")
+        != (
+            ["sim.battery.rIntMohm", "sim.motors[].rIntMohm"]
+            + (
+                [
+                    "sim.motors[].maxCurrentA",
+                    "sim.props[0].diameterIn,pitchIn,blades",
+                    "forge-sim.DEFAULT_CT",
+                ]
+                if authority.get("catalogBenchTableUsed") is False
+                else []
+            )
+        )
+        or authority.get("catalogBenchTableUsed")
+        != (
+            authority.get("powertrainModel")
+            == "catalog-motor-battery-applicability-checked-thrust-table-v1"
+        )
+    ):
+        raise ValueError("co-design engine-batch training authority drifted")
+    for field in ("trainingBundleSha256", "catalogPhysicsSha256"):
+        digest = authority.get(field)
+        if not isinstance(digest, str) or len(digest) != 64 or any(
+            character not in "0123456789abcdef" for character in digest
+        ):
+            raise ValueError("co-design engine-batch training digest drifted")
+    if _finite(authority.get("massKg"), "catalog training mass") <= 0:
+        raise ValueError("co-design engine-batch training mass is invalid")
 
 
 def evaluate_proposal(
@@ -325,7 +451,7 @@ def evaluate_proposal(
     plan: dict[str, Any],
     proposal: dict[str, Any],
 ) -> dict[str, Any]:
-    """Run one exact D64 proposal through the sovereign catalog/engine ladder."""
+    """Run one exact D64 proposal through the D65 catalog-physics engine ladder."""
 
     ordinal = proposal["ordinal"]
     candidate_contract = apply_search_patch(contract, proposal["patch"])
@@ -349,6 +475,9 @@ def evaluate_proposal(
         rollout, rollout_runtime_ms = _mujoco_rollout(
             bundle,
             plan["algorithms"]["seed"] + ordinal * 100,
+        )
+        rollout["trainingAuthority"] = _training_authority(
+            bundle, catalog_authority["catalogAuthoritySha256"]
         )
     return _candidate_expected(
         snapshot,
@@ -513,7 +642,7 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
         "artifactKind": "codesignEngineBatch",
         "provider": "forge-local-engine-batch",
         "cacheKey": (
-            f"codesign.batch:v3:{snapshot['contractHash'][:16]}:"
+            f"codesign.batch:v4:{snapshot['contractHash'][:16]}:"
             f"{plan['source']['catalogChoiceAuthority']['authoritySha256'][:16]}:"
             f"{plan['source']['proposalRuntimeAuthority']['authoritySha256'][:16]}:"
             f"{plan['planSha256'][:16]}"
@@ -532,6 +661,15 @@ def new_checkpoint(payload: dict[str, Any]) -> dict[str, Any]:
                 plan["source"]["proposalRuntimeAuthority"]
             ),
             "catalogChoiceAuthority": copy.deepcopy(plan["source"]["catalogChoiceAuthority"]),
+            "trainingPhysics": {
+                "trainingBundleSchema": CATALOG_TRAINING_BUNDLE_VERSION,
+                "catalogPhysicsSchema": (
+                    f"{CATALOG_TRAINING_PHYSICS_SCHEMA}/{CATALOG_TRAINING_PHYSICS_VERSION}"
+                ),
+                "catalogNativeMassInertia": True,
+                "catalogBenchTableApplicability": "bound-and-fail-closed",
+                "analyticFallbackAllowed": True,
+            },
             "runtime": ENGINE_BATCH_RUNTIME,
             "maturity": ENGINE_BATCH_MATURITY,
         },
@@ -887,7 +1025,7 @@ def _writer(path: Path) -> CheckpointWriter:
 
 def _arguments(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate the exact D64 catalog-backed co-design plan with durable checkpoints"
+        description="Evaluate the D64 catalog plan through D65 catalog-bound physics with durable checkpoints"
     )
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--max-candidates", type=int)

@@ -139,7 +139,29 @@ fn cmd_training_bundle(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let bundle = match forge_sim::training::training_bundle(&spec, &baked, &expected_hash) {
+    let bundle_result = if let Some(catalog) = file_catalog.as_ref() {
+        let authority = forge_sim::training::CatalogTrainingAuthority {
+            catalog_authority_sha256: catalog.authority_sha256().to_string(),
+            row_sha256: catalog
+                .rows()
+                .filter_map(|row| {
+                    catalog
+                        .row_sha256(&row.id)
+                        .map(|digest| (row.id.clone(), digest.to_string()))
+                })
+                .collect(),
+        };
+        forge_sim::training::training_bundle_with_catalog(
+            &spec,
+            &baked,
+            &expected_hash,
+            catalog,
+            &authority,
+        )
+    } else {
+        forge_sim::training::training_bundle(&spec, &baked, &expected_hash)
+    };
+    let bundle = match bundle_result {
         Ok(bundle) => bundle,
         Err(error) => {
             eprintln!("training-bundle: {error}");

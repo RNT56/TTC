@@ -685,10 +685,33 @@ separate `>=3` exit.
 All rows remain review-required/non-exposable; training-bundle v2 remains inline-
 mirror rather than catalog-native MuJoCo mass/inertia/thrust-table authority.
 
+D65 is locally implemented but is not a verified protected descendant. Catalog-
+supplied multirotors emit `trainingMuJoCoBundle` 3.0.0 plus
+`forge-training-catalog-physics/1.0.0`; complete catalog/equipped-row hashes, exact
+catalog mass, sourced-dimension uniform-solid inertia at declared mounts, review/
+license state, named inline fallbacks, and compiled MuJoCo mass closure are exact-
+field validated, including independent inertia/COM formula readback. Engine-batch/evidence 4.0.0 and
+`forge-codesign-training-authority/1.0.0` bind the bundle and physics hashes per
+tier-2 rollout. The corrected HUD/training path uses exactly one uniquely applicable
+bench table only when its voltage grid covers the equipped battery range and its
+diameter×pitch matches; ambiguous matches fail closed. The
+D12 fixture therefore retains but rejects its review-gated 25.2 V/5×4.6 table for
+the 14.8–16.8 V/5×4.3 design and names inline resistance/current/prop/`DEFAULT_CT`
+fallbacks. The file row/loader currently assigns one voltage to all points in a
+table; a reviewed per-point-voltage format must precede applicable-grid ingestion.
+Manual MuJoCo compilation exactly closes 0.769 kg; a dirty-tree local
+7 + zero-dispatch cancel + 193 resume smoke evaluates 200/200 native/Rapier/MuJoCo
+rows, admits 97, and returns two battery points/two tier-3-held finalists. These are
+covered by all 44 required local gates under Python 3.12.13, including 246 worker,
+74 Gateway, and 39 Studio tests. They remain local implementation results only: no
+clean source, protected tree, applicable catalog-thrust, trained-finalist, overnight/
+provider, marketplace/live-catalog, build, hardware, field, or external claim exists.
+
 ## 2. Current verified results
 
 | Check | Result | Interpretation |
 |---|---|---|
+| D65 local catalog-bound tier-2 physics | All 44 required local gates pass under Python 3.12.13 with 246 worker, 74 Gateway, and 39 Studio tests. `forge-sim` passes 55 unit plus 5 boundary-corpus tests; focused Rust CLI 3/3 and Python bundle/batch 13/13 pass; manual MuJoCo body-mass sum equals bundle mass at 0.769 kg. A dirty-tree local batch/evidence v4 run retains 7 + zero-dispatch cancel + 193 resume, evaluates 200/200 native/Rapier/MuJoCo rows, admits 97, and returns two held battery points. Both catalog-physics variants retain `catalogBenchTableUsed=false` with exact fallback lists | proves the complete local bundle-v3/physics-v1/batch-v4 repository boundary and exposes the historical 6S-table/4S-design mismatch. It is not clean/protected evidence and grants no applicable catalog-thrust, tier-3, overnight/provider, marketplace/live-catalog, build, hardware, field, or external maturity |
 | D64 protected catalog-backed categorical v3 | All 44 local/PR/protected gates pass under Python 3.12.13 with 246 workers, 74 Gateway, and 39 Studio tests; focused search/batch tests pass 12/12; PR #115 exact head `b13a817`, reviewed/protected tree `9934442`, protected `609a70d`, and exact PR/post-merge CI/security pass. Artifact `8399829664` binds clean source plus catalog/runtime authorities, evaluates 200/200 native/Rapier/MuJoCo rows, admits 197, retains 7 + cancel + 193 recovery, and returns two Pareto points/two held finalists | proves protected exact catalog-choice, admission, engine, and same-authority recovery semantics. The two-choice fixture does not satisfy P9's separate `>=3` exit. Marketplace review/live persistence, catalog-native MuJoCo physics, tier 3, overnight/provider billing, build, hardware, field, and external maturity remain open |
 | D62/D63 protected exact-runtime-authority v2 | Focused plan/batch tests pass 11/11; all 44 local/PR/protected gates pass under Python 3.12.13 with 244/244 workers, 74/74 Gateway, and 39/39 Studio. PR #113 exact head `ceb6bb0`, reviewed/protected tree `727f6f5`, protected `54385c2`, and exact PR/post-merge CI/security pass. Artifact `8397860593` retains a clean Linux 200-row search plan and 7 + cancel + 193 engine batch; a clean same-source Apple plan plus independent comparison `d255c441…6562` prove 120 matching and 80 differing CMA-ES patch/candidate hashes at ordinals 20–99 | closes P9-006 for same-authority scheduling/resume and foreign-authority refusal. It explicitly does not grant portable cache, heterogeneous resume, cross-runtime tier 3, overnight/provider, catalog-choice, trained-finalist, build, hardware, field, or external evidence |
 | D61 protected checkpointed 200-candidate engine batch | All 43 local/PR/protected gates pass with 242/242 workers, 74/74 Gateway, 39/39 Studio, Rust/WASM/schema/golden/compatibility/package/training/offline/MJX/D59/D60/D61 proof and patch hygiene. Protected artifact `8396554544` at `1c37567` retains 7 + zero-dispatch cancel + 193 resume, 200 native/123 eligible Rapier-MuJoCo rows, 87 admissions, four Pareto points, three tier-3-held finalists, file SHA `66470448…bbd3`, and result SHA `6718e9cb…608f` | proves protected platform-scoped exact-hash consumption, recovery, local-cost, admission, and front selection through PR #111 and exact post-merge CI/security. D62 records that Apple-arm64 changes CMA-ES ordinals 20–99, so v1 is fail-closed but not portable. It is not cross-platform recovery, overnight/provider billing, catalog-choice, trained-finalist, build, hardware, or field evidence |
@@ -1012,7 +1035,7 @@ decision; none is a hidden release claim.
 | Photoscan | fixture plus command/Modal contracts | real TRELLIS/COLMAP, cache, D13 and under-five-minute evidence |
 | Simulation/interop | deterministic P6 exit protected: real Rapier, exporters/importers, admitted driveable URDF/MJCF fixtures, registered parity baseline, and required exact-MuJoCo-3.9.0 evidence | broader diverse third-party model acceptance remains product QA before a GA claim |
 | Training/policy | protected exact-pinned CPU SB3/MuJoCo flight/ground trainers, clean scorecard-passing consumer-hardware evidence, authoritative object delivery, browser playback, controlled MJX feasibility, and D45 exact source-bound controlled-synthetic BC-to-PPO evidence | recorded-device capture; deployed Modal/GPU operations; exact passing-policy delivery integration; ground browser playback; final D12 accelerator/budget/cost MJX decision; production storage operations; external acceptance; and field transfer |
-| Co-design | deterministic fixture/Pareto contracts; protected D59 exact-snapshot sovereign engine smoke; protected D60 real-CMA-ES/TPE 200-proposal plan; protected platform-scoped D61 consumes 200 exact hashes with durable recovery, 200 native/123 eligible Rapier-MuJoCo evaluations, 87 admissions, four Pareto points, and three tier-3-held finalists; protected D63 closes P9-006 with exact numeric-runtime scheduling/refusal and same-protected-source all-200 Linux/Apple comparison; protected D64 binds exact catalog-backed battery choices and catalog-aware native proof, with clean artifact `8399829664` evaluating 200/200 and admitting 197 into a two-point/two-finalist front | add a manifold that meets the separate `>=3` phase exit, catalog-native MuJoCo physics under a new bundle contract, actual trained-finalist scorecards, retained overnight/provider billing, and external acceptance; portable cache and heterogeneous resume remain deliberately unsupported |
+| Co-design | deterministic fixture/Pareto contracts; protected D59 exact-snapshot engine smoke, D60 real-CMA-ES/TPE 200-proposal plan, D61 exact-hash recovery, D63 numeric-runtime scheduling/refusal, and D64 exact catalog battery search; local D65 adds catalog-bound mass/inertia, MuJoCo mass closure, bench-table applicability, and per-rollout physics hashes, with a dirty-tree 200/97/two-point/two-held smoke | protect/reconcile D65; source reviewed voltage/prop-applicable bench data or retain the analytic fallback; add a course-conditioned manifold meeting the `>=3` exit; run actual finalist training/scorecards; retain overnight/provider billing and external acceptance; portable cache and heterogeneous resume remain deliberately unsupported |
 | Courses/leaderboards | schema, routes, verification, Studio fixture surface | real community course, competitors, and verified public board |
 | Marketplace/classroom | data/API/UI implementation | dual-use gate, external users, live policy transfer and process ownership |
 | Commerce/printing | synchronous sandbox links plus protected contract/fixture queued vendor normalizer and transactional offer materialization; print quote normalizer remains a helper contract | credentialed vendor sandbox, deployed egress/quotas/monitoring/retry/recovery/billing/current terms, true orientation, and real print quote handoff |
@@ -1098,6 +1121,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D61 200-candidate engine-batch protection | **Go only for platform-scoped `local-engine-200-batch` at protected `1c37567`** | exact PR/protected-main checks and artifact `8396554544` prove 200-hash evaluation, checkpoint/recovery, local cost, four admitted Pareto points, and three tier-3-held finalists. D62 makes portable/heterogeneous recovery no-go because Apple-arm64 changes CMA-ES ordinals 20–99. D61 still cannot be cited as overnight/provider billing, catalog-choice search, trained-finalist, build, hardware, or field evidence |
 | Claim D62 exact-runtime recovery closure | **Go only for exact-authority scheduling/resume and foreign-authority refusal at protected `54385c2`** | exact PR/post-merge proof, reviewed-tree equality, protected artifact `8397860593`, two clean Linux/Apple plans from source `54385c2`, and independent all-200 comparison close P9-006. Exact-platform authority permits only matching-runtime replay/resume; it does not grant portable cache, heterogeneous resume, cross-runtime tier 3, overnight/provider, catalog-choice, or trained-finalist authority |
 | Claim D64 catalog-backed categorical search | **Go only for exact-runtime-scoped `local-catalog-engine-200-batch` at protected `609a70d`** | PR #115 exact-head/reviewed-tree/protected-tree proof, exact PR/post-merge CI/security, all 44 gates, and clean artifact `8399829664` prove exact equipped catalog-choice lineage, catalog-aware admission, 200/200 engine evaluations, same-authority recovery, 197 admissions, two Pareto points, and two held finalists. The two-choice front does not close the `>=3` phase exit, and D64 grants no marketplace review/live persistence, catalog-native MuJoCo mass/inertia/thrust tables, tier 3, overnight/provider billing, build, hardware, field, or external maturity |
+| Claim D65 catalog-bound tier-2 physics | **No-go for protected maturity; locally verified implementation behavior only** | All 44 local gates, focused tests, exact 0.769 kg MuJoCo mass closure, and one dirty-tree 200-row smoke demonstrate the intended v3/v1/v4 contract locally. Until exact-head review, protected PR/post-merge checks, clean retained evidence, and reconciliation pass, D65 is not a verified descendant. Even after protection, the current table remains inapplicable and cannot be cited as catalog-thrust, tier-3 training, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 
@@ -1111,10 +1135,13 @@ completion lane is closed. Dependency
 order is owned by
 `EXECUTION-ROADMAP.md`.
 
-Immediate refresh trigger: protect the D64 evidence reconciliation, then implement
-the next dependency-complete P9 lane: catalog-native training-bundle physics under a
-new contract and actual tier-3 finalist scorecards. The separate `>=3` physical
-front and retained provider/overnight billing remain independent completion gates.
+Immediate refresh trigger: protect the exact locally verified D65 catalog-bound
+bundle/physics/batch tree, download a clean 200-row artifact, and
+reconcile exact PR/post-merge evidence. Then run actual tier-3 finalist training and
+scorecards under the exact D65 authority. Versioned per-point-voltage file-row/loader
+support must precede applicable reviewed bench data. The separate `>=3` course-
+conditioned physical front and retained provider/overnight
+billing remain independent completion gates.
 
 Refresh this snapshot when the next task changes the boundary or any current gate
 regresses. Preserve the v0.1.0 tag/run/asset evidence and record exact remaining
