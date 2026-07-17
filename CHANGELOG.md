@@ -18,6 +18,45 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Reconcile protected D62/D63 runtime-authority evidence
+**Session:** Codex agent · branch `codex/p9006-d62-evidence-reconciliation` ·
+**Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-006 [x]
+**Done:** Closed P9-006 through protected exact-runtime scheduling and refusal, not
+through a false cross-platform-identity claim. PR #113 exact head `ceb6bb0`, reviewed
+tree `727f6f5`, PR CI/security `29556593780`/`29556593844`, protected squash
+`54385c2`, byte-identical protected tree, and post-merge CI/security
+`29556995469`/`29556995445` pass. Downloaded protected artifact `8397860593` binds
+clean Linux-x86-64 search evidence file `8535d6df…aff0`, plan `97ead643…3c5b`, and
+runtime authority `25ee0796…aff7e`; its batch file/result hashes are
+`380b6ff1…7f3c`/`9c1abc43…691e` and retain 7 + zero-dispatch cancel + 193 resume,
+200 native/123 eligible Rapier-MuJoCo rows, 87 admissions, four Pareto points, and
+three tier-3-held finalists. A clean Apple-arm64 search artifact from the exact same
+protected source hashes to `cb67fbd2…bf2b`, with plan `7b5db9f6…963c` and authority
+`a99337a8…b312`.
+**Evidence:** Independent `p9-platform-authority-comparison/1.0.0` output hashes to
+`d255c441…6562` with internal comparison digest `61e5faa5…85e3`. It checks 200/200
+ordinals: 120 patch/candidate hashes match and 80 differ exactly at CMA-ES ordinals
+20–99; the 100 Optuna rows and first 20 CMA-ES rows match. Both inputs are clean,
+source-bound to `54385c2`, and carry distinct authority hashes. Policy remains
+`exact-proposal-runtime-authority`; heterogeneous resume, cross-runtime cache reuse,
+and cross-runtime tier-3 authority are false.
+**Changed:** Reconciled the entry guide, current state, roadmap, TODO ledger,
+execution sequencing, co-design system contract, compatibility guidance, best
+practices, decisions, and R34. No runtime, schema, API, event, queue, database,
+golden artifact, provider, catalog, training, build, hardware, or field format
+changed.
+**Decisions:** D63's protected evidence satisfies D62's explicit-authority branch.
+It does not make CMA-ES portable, reinterpret v1, or permit a checkpoint/cache entry
+to cross authority hashes.
+**Next:** Implement the next dependency-complete P9 slice: replace synthetic
+electrical profiles with exact reviewed catalog-choice revisions, then retain
+actual finalist training/scorecards and an overnight/provider schedule with billing
+evidence.
+**Blockers:** P9 closure still lacks real catalog-choice search, actual tier-3
+trained-finalist scorecards, retained overnight/provider scheduling and billing,
+and external acceptance. P7 accelerator/provider and P8 hardware/field gates remain
+separate.
+
 ## 2026-07-17 — Bind co-design recovery to exact numeric-runtime authority
 **Session:** Codex agent · branch `codex/p9006-d62-platform-authority` ·
 **Phase:** P9 · **TODO items:** P9-002 [~], P9-003 [~], P9-006 [~]

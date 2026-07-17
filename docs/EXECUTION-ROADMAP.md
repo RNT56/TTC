@@ -398,15 +398,15 @@ Work:
   per-candidate durability, zero-dispatch cancellation, resume, measured local
   runtime, 200 native/123 eligible Rapier-MuJoCo rows, 87 admissions, four Pareto
   points, and three tier-3-held finalists in all 43 gates with 242 worker tests.
-  D62/P9-006 now blocks tier 3 because Apple-arm64 changes CMA-ES ordinals 20–99
-  relative to repeated Linux-x86-64 hashes. D63's local coordinated v2 candidate
+  D62/P9-006 discovered that Apple-arm64 changes CMA-ES ordinals 20–99 relative to
+  repeated Linux-x86-64 hashes. D63's coordinated v2 contract
   binds exact platform/Python/NumPy/BLAS/LAPACK/algorithm-distribution identity into
   every plan, cache, checkpoint, and candidate and refuses foreign replay/evaluation/
-  resume; 11/11 focused tests, all 44 local gates with 244 workers, and clean Apple-
-  arm64 implementation evidence at `092af38` pass. It is not yet protected or
-  compared from one exact protected source. None of these lanes supplies portable/heterogeneous
-  recovery, overnight/provider billing, actual trained finalists, catalog-choice,
-  or external evidence;
+  resume. PR #113/protected `54385c2`, all 44 gates with 244 workers, artifact
+  `8397860593`, and a clean same-protected-source all-200 Linux/Apple comparison pass;
+  P9-006 is closed for exact-authority recovery integrity. None of these lanes
+  supplies portable/heterogeneous recovery, overnight/provider billing, actual
+  trained finalists, catalog-choice, or external evidence;
 - provider reliability, cost, data-retention, and artifact-integrity work from
   `OPS-*`, `QA-*`, and `SEC-*`.
 
@@ -612,21 +612,22 @@ Work:
   3 held, and records measured local engine hours. Exact head `6c446a5`, reviewed
   tree `c6520fd`, PR #111 CI/security `29552818736`/`29552818716`, protected-tree
   equality, and post-merge CI/security `29553189264`/`29553189257` pass. D62/P9-006
-  keeps cross-platform/heterogeneous recovery, tier 3, overnight/provider billing,
-  and portable cache authority open; catalog choices also remain open;
-- D63 is the local D62 recovery candidate. Search-plan/evidence and engine-batch/
+  exposed cross-platform drift; D63 below closes exact-runtime recovery while
+  portable/heterogeneous recovery, tier 3, overnight/provider billing, and catalog
+  choices remain unsupported or open;
+- D63 is the protected D62 recovery contract. Search-plan/evidence and engine-batch/
   evidence 2.0.0 bind one self-hashed proposal-runtime authority into plan/cache/
   scheduler/checkpoint/candidate lineage. The manifest covers OS/kernel/machine/
   libc/byte order, Python implementation/version/cache tag, pinned NumPy
   distribution/configuration/CPU/BLAS/LAPACK identity, and pinned CMA-ES/Optuna
   distributions. Foreign replay, evaluation, and resume fail before work;
-  heterogeneous resume and portable cache remain false. Focused tests pass 11/11;
-  clean Apple-arm64 evidence at `092af38` evaluates 200 native/125 eligible Rapier-
-  MuJoCo rows, admits 89, and preserves the four-point front and three held finalists.
-  All 44 local gates pass with 244 worker, 74 Gateway, and 39 Studio tests, but this
-  remains local evidence. Protect the v2 tree,
-  retain Linux and Apple artifacts from that same protected source, run the
-  independent all-200 comparison, and reconcile the result before closing P9-006;
+  heterogeneous resume and portable cache remain false. PR #113 exact head
+  `ceb6bb0`, reviewed/protected tree `727f6f5`, protected `54385c2`, exact PR/post-
+  merge CI/security, all 44 gates, and protected artifact `8397860593` pass. Clean
+  Linux and Apple plans at source `54385c2` bind authorities `25ee0796…aff7e` and
+  `a99337a8…b312`; independent all-200 comparison `d255c441…6562` proves 120 matches
+  and 80 CMA-ES patch/candidate differences at ordinals 20–99. P9-006 is closed for
+  exact-authority scheduling/refusal only;
 - signed Desktop installers/update path;
 - real serialport/WebSerial/WebUSB capture and config with explicit diffs;
 - flashable Link image, pairing, recovery, and update procedure;
@@ -651,18 +652,16 @@ real-transition boundary. No further local acknowledgment or fixture can satisfy
 that evidence requirement. Do not fabricate a D54 ghost source: the real D57
 successor must wait for the named-hardware/D54-to-twin gate above.
 
-The current dependency-complete local P9 step is to protect P9-006/D62's D63 v2
-exact-runtime authority. The reviewed implementation is committed at `092af38`, all
-44 local gates pass, and clean plan/batch evidence is recorded by exact hashes. Merge
-only after exact PR checks, then verify protected tree equality plus post-merge CI/
-security.
-Then run clean Apple and Linux plan evidence from that exact protected revision and
-compare all 200 patch/candidate hashes independently. Reconcile the protected result
-and only then close P9-006. Exact-platform authority permits same-authority scheduling
-and resume only; it never grants portable cache or heterogeneous resume. Actual
-tier-3 training/scorecards come next. Catalog-choice search and provider scheduling/
-billing remain separately gated. Fast proposal or local engine completion is not an
-overnight run.
+P9-006 is closed at protected `54385c2`: exact-platform authority permits same-
+authority scheduling and resume only and never grants portable cache, heterogeneous
+resume, or cross-runtime tier-3 authority. The current dependency-complete local P9
+step is catalog-backed categorical search: replace the four synthetic electrical
+profiles with exact reviewed catalog component revisions, preserve license/export/
+compatibility and equipped-variant semantics, reapply every resulting patch through
+the sovereign validator/engine ladder, and retain the choice/revision/provenance
+lineage. Actual tier-3 training/scorecards follow only for engine-admitted finalists.
+Retained overnight/provider scheduling and billing remain separately gated. Fast
+proposal or local engine completion is not an overnight run.
 
 Acceptance:
 
@@ -823,7 +822,7 @@ Exit: no open blocking cross-cutting item for the target release/phase.
 | P6 | none | retain P6-010 required engine evidence; broaden third-party imports as adjacent QA | closed through protected PR #60: real engines plus admitted driveable URDF/MJCF fixtures |
 | P7 | finish P7-010 and execute P7-013's exact credentialed sandbox evidence from protected `ff39cd8`; P7-009/P7-011/P7-012/P7-014 closed | P8 recorded-device source proof, OPS storage/SLO/orphans, SEC policy data, EXT-003 | protected controlled scorecard-passing hover/waypoint quality, authoritative one-click object delivery, contract-derived rover/quadruped trainers, source-bound controlled-synthetic BC-to-PPO evidence, and protected P7-013 deployment-control contract/fixtures; P7-013 still requires the clean-protected L4/billing/alert/spend-stop/cancel/application-artifact-delete/provider-call-expiry/recovery run; exact passing-policy delivery integration, ground browser playback, and final D12 MJX decision remain open |
 | P8 | P8-001..014 | G4, signed release, lab runbooks | controlled rig plus Desktop field log |
-| P9 | P9-002, 003, 006, conditional 005 after protected D59-D61 | P6/P7 evidence; protect and reconcile D63 exact-runtime recovery authority; accelerator/provider budget for overnight/tier-3 work | pass the 44-gate clean/protected D62 lane, compare same-protected-source Linux/Apple artifacts all-200, and reconcile exact platform-bound scheduling/refusal; then prove catalog choices, retained overnight/provider billing, and actual scorecard-passing tier-3 finalists |
+| P9 | P9-002, 003, conditional 005; P9-006 closed at protected D63 | P6/P7 evidence; accelerator/provider budget for overnight/tier-3 work | preserve exact-authority recovery; prove real catalog choices, retained overnight/provider billing, and actual scorecard-passing tier-3 finalists |
 | P10 | no open implementation row; external proof remains | GOV/OPS/public abuse controls | community verified leaderboard and course-to-task use |
 | P11 | P11-000, 003, 005, 006 | G5/G6, moderation/privacy | external model, policy gate, provider print handoff |
 | P12 | P12-002, 004 | G7, retention/support | real crash-to-repair and useful fleet evidence |

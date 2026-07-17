@@ -468,9 +468,11 @@ every user-facing capability claim.
   calling a proposal plan portable or deterministic. Same-host replay proves only a
   local fixed point. Compare all patch/candidate hashes across hosts; if any differ,
   record the platform boundary, pin one architecture for the complete batch, reject
-  heterogeneous resume, and block tier-3/cache/overnight authority until a reviewed
-  major either canonicalizes arithmetic/update semantics or binds exact platform and
-  scheduler authority.
+  heterogeneous resume, and require a reviewed major that either canonicalizes
+  arithmetic/update semantics or binds exact platform and scheduler authority.
+  Exact-platform binding may close recovery integrity, but it never grants cross-
+  runtime cache/resume or tier-3 authority; training and overnight/provider claims
+  retain their own evidence gates.
 - When selecting platform-bound recovery, bind more than an architecture label.
   Hash the exact OS/runtime, Python ABI, numerical wheel RECORD and build metadata,
   CPU feature map, BLAS/LAPACK backend, and optimizer package RECORDs; include that
