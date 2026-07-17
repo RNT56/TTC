@@ -49,6 +49,7 @@ MAX_CONTROLLED_CANDIDATES = 9
 TIER0_BUDGET_MS = 50.0
 ROLLOUT_EPISODES = 2
 ROLLOUT_STEPS = 200
+ROLLOUT_CONTROL_PERIOD_S = 0.02
 
 _SCALE_GRID = (
     (1.00, 1.00, 1.00),
@@ -489,7 +490,7 @@ def _tier_records(
         "pass": not tier1_reasons,
         "runtimeMs": round(native_runtime_ms, 3),
         "engine": RAPIER_ENGINE,
-        "engineBacked": True,
+        "engineBacked": isinstance(tier1_proof, dict),
         "checks": ["scene-compile", "finite-one-second-trajectory", "body-collider-presence"],
         "reasons": tier1_reasons,
         "evidence": tier1_proof,
@@ -498,7 +499,7 @@ def _tier_records(
     if rollout is None:
         tier2_reasons.append("MuJoCo rollout was not evaluated")
         score = 0.0
-        task_time_s = ROLLOUT_STEPS * 0.02
+        task_time_s = ROLLOUT_STEPS * ROLLOUT_CONTROL_PERIOD_S
         energy_wh = 0.0
     else:
         score = float(rollout["meanSuccessFraction"])

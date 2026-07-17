@@ -454,6 +454,16 @@ every user-facing capability claim.
   validator/engine verdicts, compute Pareto, or call a fast 200-proposal command an
   overnight run. The next lane must consume exact proposal hashes and add sovereign
   native/Rapier/MuJoCo evidence before any candidate can be admitted.
+- Make expensive co-design consumption a contiguous, hash-bound checkpointed prefix.
+  Persist after every candidate; on resume, validate the complete retained prefix
+  and fence an unfinished attempt before dispatch. Cancellation advances no cursor.
+  Partial and cancelled checkpoints expose no Pareto or finalists. Only after all
+  200 exact plan hashes have sovereign evidence may the consumer independently
+  derive admission/Pareto and select tier-3 finalists. Keep selected finalists
+  distinct from trained finalists, and measured local wall runtime distinct from an
+  overnight schedule, provider billing/currency, energy measurement, or production
+  cost. A complete local batch still grants no catalog, build, hardware, or field
+  authority.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

@@ -259,6 +259,12 @@ jobs:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/codesign-search-plan-smoke.mjs --out artifacts/codesign/p9-search-plan.json
+      - name: D61 checkpointed exact-hash 200-candidate co-design engine batch
+        env:
+          FORGE_VALIDATE_BIN: target/debug/forge-validate
+          FORGE_SOURCE_REVISION: ${{ github.sha }}
+          FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
+        run: node scripts/codesign-engine-batch-smoke.mjs --out artifacts/codesign/p9-engine-batch.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
