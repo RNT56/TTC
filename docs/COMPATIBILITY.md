@@ -485,6 +485,15 @@ requires a new internal major. External publication still requires compatibility
 surface promotion, supported/unsupported fixtures, migration/deprecation guidance,
 and release notes.
 
+Protected D61 evidence also bounds what “deterministic replay” means for v1. Linux
+x86-64 PR and protected runs emit the same 200 patch/candidate hashes, while a clean
+Apple-arm64 run differs at CMA-ES ordinals 20–99; the first CMA generation and all
+100 TPE hashes match. Exact replay rejects the foreign plan, so v1 fails closed but
+is not a portable recovery format. D62 prohibits heterogeneous resume or tier-3/
+overnight authority until coordinated D60/D61 majors either canonicalize all 200
+hashes across supported architectures or add exact platform/runtime authority and
+same-platform scheduling/refusal semantics.
+
 ## Change classification
 
 - **Patch:** fixes implementation without changing a valid document's meaning,

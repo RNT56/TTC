@@ -464,6 +464,13 @@ every user-facing capability claim.
   overnight schedule, provider billing/currency, energy measurement, or production
   cost. A complete local batch still grants no catalog, build, hardware, or field
   authority.
+- Test seeded optimizer identity across every supported worker architecture before
+  calling a proposal plan portable or deterministic. Same-host replay proves only a
+  local fixed point. Compare all patch/candidate hashes across hosts; if any differ,
+  record the platform boundary, pin one architecture for the complete batch, reject
+  heterogeneous resume, and block tier-3/cache/overnight authority until a reviewed
+  major either canonicalizes arithmetic/update semantics or binds exact platform and
+  scheduler authority.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

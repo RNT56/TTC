@@ -1,10 +1,10 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59 controlled native/Rapier/MuJoCo smoke and D60 200-proposal CMA-ES/TPE plan; D61 local checkpointed exact-hash 200-candidate engine-batch candidate; overnight/provider scheduling, catalog choices, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59 controlled native/Rapier/MuJoCo smoke, D60 200-proposal plan, and platform-scoped D61 checkpointed 200-candidate engine batch; D62 cross-platform plan/recovery authority, overnight/provider scheduling, catalog choices, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
-exact-hash engine batch), validator-as-oracle
+exact-hash engine batch), D62 (cross-platform plan identity), validator-as-oracle
 
 ## 1. Purpose
 
@@ -53,7 +53,7 @@ the outer request and embedded contract are byte/depth/node bounded before an
 algorithm runs. Each row contains only replace operations plus patch/candidate
 hashes that reapply against the exact source snapshot.
 
-Local candidate 2026-07-17 (D61): `python -m forge_workers.codesign_batch` accepts
+Protected 2026-07-17 (D61): `python -m forge_workers.codesign_batch` accepts
 that exact source snapshot and complete D60 plan only after deterministic replay. It
 consumes proposal ordinals as one contiguous append-only prefix, recomputes every
 patch and candidate hash, and binds each engine row to the plan. The versioned batch
@@ -61,6 +61,13 @@ is also its durable checkpoint and is atomically replaced after every candidate.
 partial or cancelled checkpoint contains neither Pareto nor finalist authority.
 Unfinished attempts are fenced as interrupted before resume, and cancellation may
 advance no candidate cursor.
+
+Protected artifact `8396554544` at `1c37567` proves 200 native and 123 eligible
+Rapier/MuJoCo rows, 87 admissions, four Pareto points, three tier-3-held finalists,
+and the 7 + zero-dispatch cancel + 193 resume sequence. D62 records a separate
+portability limit: repeated Linux x86-64 plans match all 200 hashes, while clean
+Apple-arm64 changes CMA-ES ordinals 20–99. V1 replay rejects that foreign plan, so
+integrity fails closed, but cross-platform recovery is not proven.
 
 ## 3. Algorithms (P9-002)
 
@@ -94,6 +101,12 @@ complete batch independently recomputes physical admission and Pareto from the
 sovereign engine rows. P9-002 remains in progress because the current electrical
 profiles are not catalog choices and no retained overnight/provider scheduler or
 cost reconciliation exists.
+
+D62/P9-006 is now the next algorithm prerequisite. No finalist may enter tier 3 and
+no batch may move between architectures until a coordinated v2 either produces the
+same all-200 hashes on supported hosts or binds exact platform/runtime authority and
+enforces same-platform scheduling and resume. Stable final selections do not erase
+the 80 changed CMA-ES candidate preimages.
 
 ## 4. Multi-fidelity evaluation ladder (P9-003 — what makes cost sane)
 
@@ -194,8 +207,8 @@ D60 does not alter the Studio result or queue contract. A proposal plan has no
 metrics, admitted candidates, or Pareto points to show or save. Only a later engine-
 evaluated result may enter that surface.
 
-D61 also remains outside the queue and Studio result contract at local evidence
-maturity. Its complete batch has real metrics and a Pareto front, but publication to
+D61 remains outside the queue and Studio result contract at protected platform-
+scoped evidence maturity. Its complete batch has real metrics and a Pareto front, but publication to
 the product surface requires a reviewed orchestration/materialization boundary; a
 partial or cancelled checkpoint must never be shown or saved as a completed front.
 
@@ -227,16 +240,16 @@ protected squash `71e7217` with passing PR/post-merge CI/security.
 D61 adds exact-plan replay, 200-ordinal prefix, candidate/native/engine lineage,
 per-candidate atomic checkpoint, interrupted-attempt recovery, zero-dispatch
 cancellation, admission/Pareto/finalist recomputation, measured-local-cost, tamper,
-partial-result, and nonclaim tests. Its development smoke evaluates 200 native rows,
-125 eligible Rapier/MuJoCo rows, admits 89, returns four Pareto points, and selects
-three tier-3-held finalists after a 7 + cancel + 193 execution. Because that first
-run was from a dirty implementation worktree, it is diagnostic only. All 43 local
-gates pass under Python 3.12.7 with 242 worker tests; a clean exact-source repeat and
-protected PR/post-merge evidence remain required before a protection claim.
+partial-result, and nonclaim tests. PR #111 protects exact head `6c446a5`, reviewed
+tree `c6520fd`, and protected `1c37567` with passing exact PR/post-merge CI/security.
+Downloaded artifact `8396554544` evaluates 200 native/123 eligible Rapier-MuJoCo
+rows, admits 87, returns four Pareto points, and selects three tier-3-held finalists.
+D62 adds a required cross-architecture all-200 hash comparison; the observed
+Apple-arm64/Linux-x86-64 divergence is tracked under P9-006/R34 before tier 3.
 
 ## 8. Phase mapping & backlog
 
-P9: P9-001..005. Ships only once P7 training is routine ("boring") — the ladder's
+P9: P9-001..006. Ships only once P7 training is routine ("boring") — the ladder's
 tiers 2/3 lean on it.
 
 ## 9. Open questions
