@@ -253,6 +253,18 @@ exact-pinned to NumPy 2.5.1, Gymnasium 1.3.0, PyTorch 2.13.0, Stable-Baselines3
 and a tiny clean-source training smoke; that smoke is runtime proof, not a passing
 policy or overnight-SLO claim.
 
+D65 extends only the catalog-supplied multirotor path with
+`trainingMuJoCoBundle` 3.0.0 and `forge-training-catalog-physics/1.0.0`; ordinary
+D42 training still emits v2 and ground training remains v1. The worker exact-field
+validator checks complete catalog/row hashes, equipped mass closure, independently
+recomputed mount-centered uniform-solid inertia, license/review authority, machine-
+readable inline fallbacks, unique bench-table applicability, and exact compiled
+MuJoCo body-mass closure. Co-design
+batch v4 hashes that physics authority into every tier-2 rollout. A bound but
+inapplicable bench table is not a catalog-thrust claim: the D12 fixture explicitly
+rejects its 6S/5×4.6 row for the 4S/5×4.3 design and uses the named analytic
+fallback.
+
 Protected 2026-07-15 through PR #70/`f220d25` for the P7-014 waypoint slice: the
 native runtime is generalized only to worker-owned `hover-hold` and
 `waypoint-chain` task-v2 definitions. It

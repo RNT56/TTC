@@ -18,6 +18,57 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-17 — Bind catalog mass and fail-close bench-table applicability
+**Session:** Codex agent · branch `codex/p9003-catalog-training-physics` · **Phase:**
+P9 · **TODO items:** P9-002 [~], P9-003 [~]
+**Done:** Implemented D65 without reinterpreting inline multirotor bundle v2, ground
+bundle v1, or D64 batch v3. `trainingMuJoCoBundle` 3.0.0 and
+`forge-training-catalog-physics/1.0.0` bind complete catalog/equipped-row hashes,
+exact catalog mass, sourced-dimension uniform-solid motor/battery inertia at every
+declared mount, review/license state, machine-readable inline fallbacks, and exact
+compiled MuJoCo mass closure. The HUD and training path now use a bench table only
+when its voltage grid covers the equipped battery range and diameter×pitch matches
+the equipped prop; multiple applicable tables fail closed rather than inheriting
+array-order precedence. The current 25.2 V/5×4.6 record is retained but rejected for the
+14.8–16.8 V/5×4.3 fixture; the analytic fallback replaces the prior unsafe edge
+clamp. Batch/evidence 4.0.0 plus `forge-codesign-training-authority/1.0.0` bind exact
+bundle/physics hashes and table-use status per tier-2 rollout.
+**Evidence:** All 44 required local gates pass under Python 3.12.13, including 246
+worker, 74 Gateway, and 39 Studio tests, Rust workspace fmt/Clippy/tests, WASM/schema/
+TypeScript parity, Brief-25 25/25, 19-surface compatibility, generated contract docs,
+training/offline/MJX/co-design smokes, and patch hygiene. `forge-sim` passes 55 unit
+plus 5 boundary-corpus tests; focused Rust CLI tests pass 3/3; focused Python bundle/
+batch tests pass 13/13, including independent uniform-solid inertia/COM readback.
+Manual pinned MuJoCo 3.9.0
+compilation reports body-mass sum exactly equal to bundle mass at 0.769 kg, full
+thrust 24.969915 N, and hover trim 0.502424. A dirty-tree local batch v4 smoke
+retains 7 + zero-dispatch cancel + 193 resume, evaluates 200/200 through native/
+Rapier/MuJoCo, admits 97, and returns two physical battery points/two tier-3-held
+finalists. It permanently reports `catalogBenchTableUsed=false`, local execution,
+no provider billing, and no overnight completion. The current official [EMAX ECO II
+page](https://emaxmodel.com/products/emax-eco-ii-series-2207-3-6s-1700kv-1900kv-2400kv-brushless-motor-for-rc-drone-fpv-racing)
+was rechecked and supplies no applicable performance grid in published text.
+**Changed:** Rust MJCF lumped-inertial export, catalog powertrain/HUD/training-bundle
+producer and CLI; Python exact bundle/MuJoCo/batch validators; compatibility matrix,
+focused tests, smoke/CI contract, generated-document source, AGENTS entry guidance,
+decision/state/roadmap/TODO/execution, and simulation/training/worker/co-design docs.
+The component-database guide now records the one-voltage-per-table representation
+gate. No catalog row, public schema, queue kind, API, event, database, inline/ground bundle,
+provider, build, hardware, or field format changed.
+**Decisions:** D65; R36. D65 records the applicability gate and explicit nonclaims;
+R36 watches false propulsion authority; D66 is the next regular decision ID.
+**Next:** Inspect and commit the complete locally verified diff, protect the exact
+reviewed tree through PR and post-merge CI/security, retain/reconcile a clean 200-row
+artifact, then execute actual tier-3 training/scorecards for the exact finalists.
+Separately version the file row/loader for sourced per-point voltages with compatibility/
+migration/corpus proof, then obtain reviewed voltage-covered, prop-matched bench data
+or keep the analytic fallback explicit, and expand the course-conditioned manifold to `>=3`.
+**Blockers:** D65 has no protected evidence yet. The current one-voltage-per-table
+file format cannot represent an applicable range-spanning grid; its versioned upgrade,
+applicable catalog bench data, catalog review/live persistence, tier-3 training, a `>=3` course-conditioned front,
+retained overnight/provider billing, external acceptance, build, hardware, and field
+maturity remain separate open gates.
+
 ## 2026-07-17 — Reconcile protected D64 catalog co-design evidence
 **Session:** Codex agent · branch `codex/p9002-catalog-evidence` · **Phase:** P9 ·
 **TODO items:** P9-002 [~], P9-003 [~]

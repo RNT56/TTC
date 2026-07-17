@@ -208,6 +208,20 @@ requireValue(
   "worker training-bundle version does not match Rust source",
 );
 requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.catalogTrainingBundle ===
+    sourceConstant("crates/forge-sim/src/training.rs", "CATALOG_TRAINING_BUNDLE_VERSION")
+    && matrix.surfaces.workerArtifacts.internalSchemas.catalogTrainingBundle ===
+      pythonConstant("workers/forge_workers/training/bundle.py", "CATALOG_TRAINING_BUNDLE_VERSION"),
+  "worker catalog-training-bundle version does not match Rust/Python source",
+);
+requireValue(
+  matrix.surfaces.workerArtifacts.internalSchemas.catalogTrainingPhysics ===
+    sourceConstant("crates/forge-sim/src/training.rs", "CATALOG_TRAINING_PHYSICS_VERSION")
+    && matrix.surfaces.workerArtifacts.internalSchemas.catalogTrainingPhysics ===
+      pythonConstant("workers/forge_workers/training/bundle.py", "CATALOG_TRAINING_PHYSICS_VERSION"),
+  "worker catalog-training-physics version does not match Rust/Python source",
+);
+requireValue(
   matrix.surfaces.workerArtifacts.internalSchemas.trainingTask ===
     pythonConstant("workers/forge_workers/training/tasks.py", "TASK_VERSION"),
   "worker training-task version does not match Python source",
@@ -333,6 +347,13 @@ requireValue(
     "CATALOG_CHOICE_AUTHORITY_VERSION",
   ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignCatalogChoiceAuthority,
   "co-design catalog-choice authority version does not match compatibility matrix",
+);
+requireValue(
+  pythonConstant(
+    "workers/forge_workers/codesign_batch.py",
+    "TRAINING_AUTHORITY_VERSION",
+  ) === matrix.surfaces.workerArtifacts.internalSchemas.codesignTrainingAuthority,
+  "co-design training authority version does not match compatibility matrix",
 );
 requireValue(
   pythonConstant("workers/forge_workers/codesign_search.py", "SEARCH_PLAN_VERSION") ===

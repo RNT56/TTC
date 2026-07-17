@@ -491,6 +491,18 @@ every user-facing capability claim.
   review and exposure false until an explicit owner workflow proves them. If a
   downstream bundle still consumes inline mirrors, say so and do not call it
   catalog-native mass/inertia/thrust-table physics.
+- Treat bench-table presence and bench-table applicability as different facts. Bind
+  the exact row/table/source even when unusable, but let it drive propulsion only
+  when its voltage grid covers the equipped battery operating range and its prop
+  diameter×pitch matches exactly. Require one unique applicable table; ambiguous
+  matches fail closed rather than gaining array-order precedence. Never edge-clamp,
+  rescale, or infer a missing voltage/prop regime. Record non-empty rejection reasons
+  and every fallback in the versioned physics artifact. Add catalog mass and sourced-
+  dimension inertias only at declared mounts, independently recompute each declared
+  uniform-solid tensor and mount-centered COM at readback, leave collision geometry
+  contract-owned, and require the compiled MuJoCo body-mass sum to close exactly. A
+  review-gated, rejected table is lineage—not applicable thrust, marketplace
+  approval, or physical validation.
 - Keep provider purchase truth behind one queue-owned normalizer. Gateway routes may
   enqueue bounded component IDs, timeout, and idempotency only; do not accept inline
   provider output or add a second direct-live HTTP path. Require the deployment

@@ -375,11 +375,20 @@ fn derive_hud_inner(
     let prop = resolve_prop(spec, catalog_prop.as_ref())?;
     let kv = resolve_motor_kv(spec, catalog_motor.as_ref())?;
     let motor_r = resolve_motor_r_ohm(spec);
-    let table = catalog_motor
-        .as_ref()
-        .and_then(|m| m.thrust_tables.first())
-        .and_then(|t| {
-            let points: Vec<thrust_table::ThrustPoint> = t
+    let mut table_rejections = Vec::new();
+    let mut applicable_tables = Vec::new();
+    if let Some(motor) = catalog_motor.as_ref() {
+        for candidate in &motor.thrust_tables {
+            let reasons = thrust_table_inapplicability(candidate, &battery, &prop);
+            if !reasons.is_empty() {
+                table_rejections.push(format!(
+                    "catalog bench table {} not used: {}",
+                    candidate.id,
+                    reasons.join("; ")
+                ));
+                continue;
+            }
+            let points: Vec<thrust_table::ThrustPoint> = candidate
                 .points
                 .iter()
                 .map(|p| thrust_table::ThrustPoint {
@@ -389,8 +398,32 @@ fn derive_hud_inner(
                     current_a: p.current_a,
                 })
                 .collect();
-            ThrustTable::from_points(&points).ok()
-        });
+            match ThrustTable::from_points(&points) {
+                Ok(table) => applicable_tables.push((candidate.id.clone(), table)),
+                Err(error) => {
+                    table_rejections.push(format!(
+                        "catalog bench table {} not used: invalid rectangular grid ({error})",
+                        candidate.id
+                    ));
+                }
+            }
+        }
+    }
+    let table = match applicable_tables.len() {
+        0 => None,
+        1 => applicable_tables.pop().map(|(_, table)| table),
+        _ => {
+            table_rejections.push(format!(
+                "catalog bench tables {} not used: multiple applicable tables are ambiguous",
+                applicable_tables
+                    .iter()
+                    .map(|(id, _)| id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+            None
+        }
+    };
 
     let pt = Powertrain {
         motor_kv: kv,
@@ -420,13 +453,13 @@ fn derive_hud_inner(
         ));
     }
     if pt.table.is_some() {
-        assumptions
-            .push("thrust/current from catalog bench table; edge-clamped interpolation".into());
+        assumptions.push("thrust/current from an applicability-checked catalog bench table".into());
     } else {
         assumptions.push(format!(
             "C_T = {DEFAULT_CT} blade-element-lite default (no thrust table)"
         ));
     }
+    assumptions.extend(table_rejections);
     assumptions.push(format!(
         "power: momentum theory, figure of merit {FIGURE_OF_MERIT}, electrical η {ELECTRICAL_EFF}"
     ));
@@ -482,11 +515,15 @@ struct ResolvedBattery {
     cells: u32,
     capacity_mah: f64,
     r_int_mohm: f64,
+    min_voltage_v: f64,
+    max_voltage_v: f64,
 }
 
 #[derive(Debug, Clone, Copy)]
 struct ResolvedProp {
     diameter_in: f64,
+    pitch_in: f64,
+    blades: u32,
 }
 
 fn first_catalog_component(
@@ -562,6 +599,14 @@ fn resolve_battery(
             cells,
             capacity_mah,
             r_int_mohm,
+            min_voltage_v: row
+                .elec
+                .v_min
+                .ok_or_else(|| HudError::CatalogRowIncomplete(row.id.clone()))?,
+            max_voltage_v: row
+                .elec
+                .v_max
+                .ok_or_else(|| HudError::CatalogRowIncomplete(row.id.clone()))?,
         });
     }
     let battery = inline.ok_or(HudError::MissingBattery)?;
@@ -569,6 +614,8 @@ fn resolve_battery(
         cells: battery.cells,
         capacity_mah: battery.capacity_mah,
         r_int_mohm: battery.r_int_mohm,
+        min_voltage_v: battery.cells as f64 * NOMINAL_CELL_V,
+        max_voltage_v: battery.cells as f64 * 4.2,
     })
 }
 
@@ -577,15 +624,99 @@ fn resolve_prop(
     catalog_prop: Option<&CatalogComponent>,
 ) -> Result<ResolvedProp, HudError> {
     if let Some(row) = catalog_prop {
-        if let Some(diameter_in) = row.mech.prop_diameter_in {
-            return Ok(ResolvedProp { diameter_in });
+        if let (Some(diameter_in), Some(pitch_in), Some(blades)) = (
+            row.mech.prop_diameter_in,
+            row.mech.pitch_in,
+            row.mech.blades,
+        ) {
+            return Ok(ResolvedProp {
+                diameter_in,
+                pitch_in,
+                blades,
+            });
         }
         return Err(HudError::CatalogRowIncomplete(row.id.clone()));
     }
     let prop = spec.sim.props.first().ok_or(HudError::MissingProps)?;
     Ok(ResolvedProp {
         diameter_in: prop.diameter_in,
+        pitch_in: prop.pitch_in,
+        blades: prop.blades,
     })
+}
+
+fn parsed_table_prop(value: &str) -> Option<(f64, f64)> {
+    let normalized = value.trim().to_ascii_lowercase().replace(' ', "");
+    let (diameter, pitch) = normalized.split_once('x')?;
+    let diameter = diameter.parse::<f64>().ok()?;
+    let pitch = pitch.parse::<f64>().ok()?;
+    (diameter.is_finite() && pitch.is_finite() && diameter > 0.0 && pitch > 0.0)
+        .then_some((diameter, pitch))
+}
+
+fn thrust_table_inapplicability(
+    table: &forge_contract::CatalogThrustTable,
+    battery: &ResolvedBattery,
+    prop: &ResolvedProp,
+) -> Vec<String> {
+    let mut reasons = Vec::new();
+    let min_table_voltage = table
+        .points
+        .iter()
+        .map(|point| point.voltage)
+        .fold(f64::INFINITY, f64::min);
+    let max_table_voltage = table
+        .points
+        .iter()
+        .map(|point| point.voltage)
+        .fold(f64::NEG_INFINITY, f64::max);
+    if !min_table_voltage.is_finite()
+        || !max_table_voltage.is_finite()
+        || min_table_voltage > battery.min_voltage_v + 1e-9
+        || max_table_voltage < battery.max_voltage_v - 1e-9
+    {
+        reasons.push(format!(
+            "voltage grid [{min_table_voltage:.3}, {max_table_voltage:.3}] V does not cover equipped battery [{:.3}, {:.3}] V",
+            battery.min_voltage_v, battery.max_voltage_v
+        ));
+    }
+    match parsed_table_prop(&table.prop) {
+        Some((diameter, pitch))
+            if (diameter - prop.diameter_in).abs() <= 1e-9
+                && (pitch - prop.pitch_in).abs() <= 1e-9 => {}
+        Some((diameter, pitch)) => reasons.push(format!(
+            "bench prop {diameter}x{pitch} does not match equipped prop {}x{}",
+            prop.diameter_in, prop.pitch_in
+        )),
+        None => reasons.push(format!(
+            "bench prop '{}' is not a canonical diameter×pitch authority",
+            table.prop
+        )),
+    }
+    if prop.blades == 0 {
+        reasons.push("equipped prop blade count is not positive".to_string());
+    }
+    reasons
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct CatalogTrainingTableApplicability {
+    pub id: String,
+    pub used_for_curve: bool,
+    pub inapplicability_reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct CatalogTrainingPowertrain {
+    pub powertrain: Powertrain,
+    pub max_total_current_a: f64,
+    pub table_applicability: Vec<CatalogTrainingTableApplicability>,
+    pub inline_fallbacks: Vec<String>,
+    pub battery_operating_voltage_v: [f64; 2],
+    pub prop_diameter_in: f64,
+    pub prop_pitch_in: f64,
+    pub prop_blades: u32,
+    pub prop_source: String,
 }
 
 fn resolve_motor_kv(
@@ -614,6 +745,145 @@ fn resolve_motor_r_ohm(spec: &ModelSpec) -> f64 {
         .next()
         .unwrap_or(0.0)
         / 1000.0
+}
+
+/// Catalog-bound powertrain authority for the multirotor training bundle
+/// major. Equipped motor and battery rows are mandatory. A bench table drives
+/// the curve only when its voltage grid covers the battery range and its prop
+/// matches exactly; otherwise the artifact names every inline fallback.
+pub(crate) fn catalog_training_powertrain(
+    spec: &ModelSpec,
+    catalog: &dyn CatalogSource,
+) -> Result<CatalogTrainingPowertrain, String> {
+    if spec.sim.motors.is_empty() {
+        return Err("catalog training requires inline motor mounts".to_string());
+    }
+    let motor = first_catalog_component(spec, catalog, "motor")
+        .ok_or_else(|| "catalog training requires an equipped motor row".to_string())?;
+    let battery = first_catalog_component(spec, catalog, "battery")
+        .ok_or_else(|| "catalog training requires an equipped battery row".to_string())?;
+    let resolved_battery =
+        resolve_battery(spec, Some(&battery)).map_err(|error| error.to_string())?;
+    let catalog_prop = first_catalog_component(spec, catalog, "prop");
+    let prop = resolve_prop(spec, catalog_prop.as_ref()).map_err(|error| error.to_string())?;
+    let motor_kv = motor
+        .elec
+        .kv
+        .ok_or_else(|| format!("catalog motor row '{}' lacks kv authority", motor.id))?;
+    let mut inline_fallbacks = vec![
+        "sim.battery.rIntMohm".to_string(),
+        "sim.motors[].rIntMohm".to_string(),
+    ];
+    if motor.thrust_tables.is_empty() {
+        return Err(format!(
+            "catalog motor row '{}' lacks a thrust table authority",
+            motor.id
+        ));
+    }
+    let assessments = motor
+        .thrust_tables
+        .iter()
+        .map(|table| thrust_table_inapplicability(table, &resolved_battery, &prop))
+        .collect::<Vec<_>>();
+    let applicable_indexes = assessments
+        .iter()
+        .enumerate()
+        .filter_map(|(index, reasons)| reasons.is_empty().then_some(index))
+        .collect::<Vec<_>>();
+    if applicable_indexes.len() > 1 {
+        return Err(format!(
+            "catalog motor row '{}' has multiple applicable thrust tables; curve authority is ambiguous",
+            motor.id
+        ));
+    }
+    let selected_index = applicable_indexes.first().copied();
+    let selected_table = if let Some(index) = selected_index {
+        let points = motor.thrust_tables[index]
+            .points
+            .iter()
+            .map(|point| thrust_table::ThrustPoint {
+                voltage: point.voltage,
+                throttle: point.throttle,
+                thrust_n: point.thrust_n,
+                current_a: point.current_a,
+            })
+            .collect::<Vec<_>>();
+        Some(
+            ThrustTable::from_points(&points)
+                .map_err(|error| format!("catalog motor thrust table is invalid: {error}"))?,
+        )
+    } else {
+        None
+    };
+    let table_applicability = motor
+        .thrust_tables
+        .iter()
+        .zip(assessments)
+        .enumerate()
+        .map(
+            |(index, (table, reasons))| CatalogTrainingTableApplicability {
+                id: table.id.clone(),
+                used_for_curve: Some(index) == selected_index,
+                inapplicability_reasons: reasons,
+            },
+        )
+        .collect();
+    let per_motor_current_a = if selected_table.is_some() {
+        motor.elec.max_current_a.ok_or_else(|| {
+            format!(
+                "catalog motor row '{}' lacks maximum-current authority",
+                motor.id
+            )
+        })?
+    } else {
+        inline_fallbacks.extend([
+            "sim.motors[].maxCurrentA".to_string(),
+            "sim.props[0].diameterIn,pitchIn,blades".to_string(),
+            "forge-sim.DEFAULT_CT".to_string(),
+        ]);
+        spec.sim
+            .motors
+            .iter()
+            .filter_map(|motor| motor.max_current_a)
+            .reduce(f64::min)
+            .ok_or_else(|| {
+                "catalog training needs an inline motor current fallback when no bench table is applicable"
+                    .to_string()
+            })?
+    };
+    let mut max_total_current_a = per_motor_current_a * spec.sim.motors.len() as f64;
+    if let Some(discharge_limit) = battery.elec.max_discharge_a {
+        max_total_current_a = max_total_current_a.min(discharge_limit);
+    }
+    if !max_total_current_a.is_finite() || max_total_current_a <= 0.0 {
+        return Err("catalog training current authority is not positive finite".to_string());
+    }
+    Ok(CatalogTrainingPowertrain {
+        powertrain: Powertrain {
+            motor_kv,
+            motor_r_ohm: resolve_motor_r_ohm(spec),
+            battery_v0: resolved_battery.cells as f64 * NOMINAL_CELL_V,
+            battery_r_ohm: resolved_battery.r_int_mohm / 1000.0,
+            prop_d_m: prop.diameter_in * 0.0254,
+            ct: DEFAULT_CT,
+            n_motors: spec.sim.motors.len(),
+            air_density: spec.env.air_density,
+            table: selected_table,
+        },
+        max_total_current_a,
+        table_applicability,
+        inline_fallbacks,
+        battery_operating_voltage_v: [
+            resolved_battery.min_voltage_v,
+            resolved_battery.max_voltage_v,
+        ],
+        prop_diameter_in: prop.diameter_in,
+        prop_pitch_in: prop.pitch_in,
+        prop_blades: prop.blades,
+        prop_source: catalog_prop
+            .map(|component| format!("catalog:{}", component.id))
+            .unwrap_or_else(|| "inline:sim.props[0]".to_string()),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -645,7 +915,54 @@ impl ReplayHeader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use forge_contract::{validate_shape, CatalogComponent};
+    use forge_contract::{
+        validate_shape, CatalogComponent, CatalogThrustPoint, CatalogThrustTable,
+    };
+
+    #[test]
+    fn bench_table_applicability_requires_voltage_coverage_and_exact_prop() {
+        let battery = ResolvedBattery {
+            cells: 4,
+            capacity_mah: 1500.0,
+            r_int_mohm: 18.0,
+            min_voltage_v: 14.8,
+            max_voltage_v: 16.8,
+        };
+        let prop = ResolvedProp {
+            diameter_in: 5.0,
+            pitch_in: 4.3,
+            blades: 3,
+        };
+        let table = |prop: &str, voltages: &[f64]| CatalogThrustTable {
+            id: "applicability".to_string(),
+            prop: prop.to_string(),
+            voltage: voltages[0],
+            confidence: 1.0,
+            source_url: "https://example.invalid/table".to_string(),
+            points: voltages
+                .iter()
+                .flat_map(|voltage| {
+                    [0.0, 1.0].map(|throttle| CatalogThrustPoint {
+                        voltage: *voltage,
+                        throttle,
+                        thrust_n: throttle * 10.0,
+                        current_a: throttle * 20.0,
+                    })
+                })
+                .collect(),
+        };
+        assert!(
+            thrust_table_inapplicability(&table("5x4.3", &[14.8, 16.8]), &battery, &prop)
+                .is_empty()
+        );
+        let wrong_voltage = thrust_table_inapplicability(&table("5x4.3", &[25.2]), &battery, &prop);
+        assert_eq!(wrong_voltage.len(), 1);
+        assert!(wrong_voltage[0].contains("does not cover"));
+        let wrong_prop =
+            thrust_table_inapplicability(&table("5x4.6", &[14.8, 16.8]), &battery, &prop);
+        assert_eq!(wrong_prop.len(), 1);
+        assert!(wrong_prop[0].contains("does not match"));
+    }
 
     struct VariantCatalog;
     impl CatalogSource for VariantCatalog {

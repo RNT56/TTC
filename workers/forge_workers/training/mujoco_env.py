@@ -111,6 +111,9 @@ class ForgeMultirotorTaskEnv(gym.Env[np.ndarray, np.ndarray]):
         self.model = mujoco.MjModel.from_xml_string(self.bundle["mjcf"])
         if abs(float(self.model.opt.timestep) - float(self.bundle["timestepS"])) > 1e-12:
             raise RuntimeError("MuJoCo compiled timestep differs from the training bundle")
+        compiled_mass_kg = float(np.sum(self.model.body_mass))
+        if abs(compiled_mass_kg - float(self.bundle["massKg"])) > 1e-9:
+            raise RuntimeError("MuJoCo compiled mass differs from the training bundle")
         self.data = mujoco.MjData(self.model)
         self.body_id = mujoco.mj_name2id(
             self.model,

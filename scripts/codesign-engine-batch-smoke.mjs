@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// D64 retained local evidence: exact 200-proposal catalog plan -> durable pause,
+// D65 retained local evidence: exact D64 catalog plan -> catalog-bound physics -> durable pause,
 // zero-dispatch cancellation, resume -> sovereign catalog-aware native/Rapier/
 // MuJoCo evaluation. This is not provider, tier-3, or overnight proof.
 
@@ -127,7 +127,7 @@ try {
     env,
   );
   if (
-    paused.schemaVersion !== "forge-codesign-engine-batch/3.0.0"
+    paused.schemaVersion !== "forge-codesign-engine-batch/4.0.0"
     || paused.scheduler?.state !== "paused"
     || paused.scheduler?.nextOrdinal !== 7
     || paused.candidates?.length !== 7
@@ -161,7 +161,7 @@ try {
 }
 
 if (
-  result.schemaVersion !== "forge-codesign-engine-batch/3.0.0"
+  result.schemaVersion !== "forge-codesign-engine-batch/4.0.0"
   || result.artifactKind !== "codesignEngineBatch"
   || result.provider !== "forge-local-engine-batch"
   || result.source?.baseContractHash !== contractHash
@@ -170,10 +170,17 @@ if (
     !== plan.source?.proposalRuntimeAuthority?.authoritySha256
   || result.source?.catalogChoiceAuthority?.authoritySha256
     !== plan.source?.catalogChoiceAuthority?.authoritySha256
+  || result.source?.trainingPhysics?.trainingBundleSchema !== "3.0.0"
+  || result.source?.trainingPhysics?.catalogPhysicsSchema
+    !== "forge-training-catalog-physics/1.0.0"
+  || result.source?.trainingPhysics?.catalogNativeMassInertia !== true
+  || result.source?.trainingPhysics?.catalogBenchTableApplicability
+    !== "bound-and-fail-closed"
+  || result.source?.trainingPhysics?.analyticFallbackAllowed !== true
   || result.source?.sourceRevision !== sourceRevision
   || result.source?.sourceRevisionRecorded !== true
   || result.source?.dependencyManifestSha256 !== dependencyManifestSha256
-  || result.source?.maturity !== "catalog-bound-platform-local-engine-200-batch"
+  || result.source?.maturity !== "catalog-bound-physics-platform-local-engine-200-batch"
   || result.scheduler?.state !== "complete"
   || result.scheduler?.nextOrdinal !== 200
   || result.scheduler?.completedCandidates !== 200
@@ -241,7 +248,21 @@ for (const [ordinal, candidate] of result.candidates.entries()) {
     || candidate.evaluations?.tier3?.evaluated !== false
     || candidate.evaluations?.tier3?.held !== true
     || candidate.lineage?.mujocoRuntime !== "3.9.0"
-    || candidate.lineage?.trainingBundleSchema !== "2.0.0"
+    || candidate.lineage?.trainingBundleSchema !== "3.0.0"
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.schemaVersion
+      !== "forge-codesign-training-authority/1.0.0"
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogPhysicsSchema
+      !== "forge-training-catalog-physics/1.0.0"
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogAuthoritySha256
+      !== plan.source?.catalogChoiceAuthority?.catalogAuthoritySha256
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogNativeMassInertia
+      !== true
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogBenchTableAuthority
+      !== true
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.catalogBenchTableUsed
+      !== false
+    || candidate.evaluations?.tier2?.evidence?.trainingAuthority?.powertrainModel
+      !== "catalog-motor-battery-analytic-fallback-rejected-bench-table-v1"
   ) {
     throw new Error(`co-design engine-batch candidate ${ordinal} lost exact plan or tier authority`);
   }
@@ -277,7 +298,7 @@ if (Object.values(result.nonclaims || {}).some((claim) => claim !== false)) {
 }
 const resultHash = sha256(stableJson(result));
 const evidence = {
-  evidenceSchemaVersion: "p9-engine-batch-evidence/3.0.0",
+  evidenceSchemaVersion: "p9-engine-batch-evidence/4.0.0",
   sourceRevision,
   worktreeClean,
   validator,

@@ -261,7 +261,7 @@ jobs:
           FORGE_SOURCE_REVISION: ${{ github.sha }}
           FORGE_REQUIRE_CLEAN_EVIDENCE: "1"
         run: node scripts/codesign-search-plan-smoke.mjs --out artifacts/codesign/p9-search-plan.json
-      - name: D64 catalog-bound checkpointed 200-candidate co-design engine batch
+      - name: D65 catalog-physics checkpointed 200-candidate co-design engine batch
         env:
           FORGE_VALIDATE_BIN: target/debug/forge-validate
           FORGE_SOURCE_REVISION: ${{ github.sha }}

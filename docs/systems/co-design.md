@@ -1,11 +1,11 @@
 # Co-design Optimizer — implementation doc
 
-**Status:** deterministic fixture evaluator; protected D59-D64 engine/search/recovery/catalog authority; catalog-native tier-2 physics, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
+**Status:** deterministic fixture evaluator; protected D59-D64 engine/search/recovery/catalog authority; D65 catalog-bound mass/inertia/table-applicability implemented locally; protection, applicable bench data, retained overnight/provider scheduling, and trained finalists open · **Phases:** P9 (after training is boring) · **Home:**
 gateway orchestrator + `codesign.evaluate` workers · **Plan refs:** §12
 (v3.0) · **Decisions:** D17 (native tier-0), D20 (training-side canonical),
 D59 (exact engine smoke), D60 (proposal-only algorithm plan), D61 (checkpointed
 exact-hash engine batch), D62 (cross-platform plan identity), D63 (exact-runtime v2),
-D64 (catalog-backed categorical v3),
+D64 (catalog-backed categorical v3), D65 (catalog-bound tier-2 physics v4),
 validator-as-oracle
 
 ## 1. Purpose
@@ -103,9 +103,9 @@ catalog authority, and emits only equipped component proofs; unequipped alternat
 do not enter HUD, validation, BOM, or lineage. Batch v3 binds catalog plus D63
 runtime authority in cache/checkpoint/resume/candidate records and rejects foreign
 catalog bytes before work. The rows remain review-required and explicitly not
-marketplace-exposable. Tier 2 uses training-bundle 2.0.0 after catalog-backed
-admission, but that bundle deliberately consumes the exact inline powertrain mirror;
-it is not evidence of catalog-native MuJoCo mass/inertia/thrust-table dynamics.
+marketplace-exposable. Tier 2 in protected D64 evidence uses training-bundle 2.0.0
+after catalog-backed admission and deliberately consumes the exact inline powertrain
+mirror; it is not evidence of catalog-bound MuJoCo inertials or table applicability.
 PR #115 exact head `b13a817`, reviewed/protected tree `9934442`, protected
 `609a70d`, exact PR/post-merge CI/security, and all 44 gates pass. Downloaded clean
 artifact `8399829664` binds catalog/runtime authorities `f6a7171…9262`/
@@ -113,6 +113,23 @@ artifact `8399829664` binds catalog/runtime authorities `f6a7171…9262`/
 the expected two-choice/two-point front with two held finalists after 7 + zero-
 dispatch cancel + 193 resume. This is protected catalog/recovery proof, not a
 `>=3` front, overnight/provider run, or tier-3 scorecard.
+
+Local implementation 2026-07-17 (D65): catalog-supplied multirotors now compile as
+`trainingMuJoCoBundle` 3.0.0 plus
+`forge-training-catalog-physics/1.0.0`. The artifact binds the complete catalog,
+exact equipped rows, review/license state, catalog mass, sourced-dimension
+uniform-solid inertia at every mount, and exact compiled MuJoCo mass closure.
+Engine-batch/evidence 4.0.0 and
+`forge-codesign-training-authority/1.0.0` hash that authority per tier-2 rollout.
+Bench data is not promoted merely because it exists: the voltage grid must cover the
+equipped battery range, diameter×pitch must match, and the applicable table must be
+unique. Python independently recomputes each declared uniform-solid tensor before
+MuJoCo mass readback. The D12 proof's 25.2 V/5×4.6
+row is bound but rejected for 14.8–16.8 V/5×4.3; the resulting curve names its
+inline current/resistance/prop/`DEFAULT_CT` fallbacks. This is catalog-bound
+mass/inertia and rejected-table lineage, not an applicable catalog-thrust,
+protected-tree, tier-3, overnight/provider, marketplace, build, hardware, or field
+claim.
 
 ## 3. Algorithms (P9-002)
 
@@ -214,7 +231,7 @@ Rapier, MuJoCo, physical-constraint, admission, Pareto, overnight-result, traine
 finalist, marketplace-review/live-catalog, provider, build, hardware, and field
 claim false. Runtime speed is not an overnight claim.
 
-The D64 v3 checkpoint/recovery smoke is:
+The D65 v4 checkpoint/recovery smoke (D64 v3 remains historical evidence) is:
 
 ```bash
 FORGE_PYTHON=python3 \
@@ -228,14 +245,17 @@ pnpm codesign:engine-batch -- --out /tmp/p9-engine-batch.json
 It first evaluates seven exact hashes and retains the checkpoint, then records a
 zero-dispatch cancellation at ordinal seven, resumes the remaining 193, and requires
 one contiguous complete 200-row result. Every row runs native validation; only
-native/Rapier-passing rows run the short pinned MuJoCo rollout. The complete result
+native/Rapier-passing rows run the short pinned MuJoCo rollout through catalog-bound
+bundle v3, physics authority v1, and exact compiled-mass closure. The complete result
 derives admission and Pareto itself and selects up to three engine-admitted Pareto
 candidates as tier-3-held finalists. The exact D64 fixture has two real battery
 revisions; driver-only variations share mass/endurance within each revision, so its
 expected physical front is exactly two points and two held finalists. That is a
-catalog-binding/recovery proof, not P9's separate `>=3` phase-exit evidence. The run
-records measured local engine/attempt wall runtime only. Catalog-choice evaluation is
-true and exact, while marketplace review, live catalog persistence,
+catalog-binding/recovery proof, not P9's separate `>=3` phase-exit evidence. Each row
+must retain the D12 table as rejected/inapplicable and bind all named analytic
+fallbacks; it may not claim applicable catalog thrust. The run records measured
+local engine/attempt wall runtime only. Catalog-choice evaluation is true and exact,
+while marketplace review, live catalog persistence,
 `overnight200Candidate`, trained-finalist, provider sandbox/billing, energy, build,
 hardware, and field authority remain false.
 
