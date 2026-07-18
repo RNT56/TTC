@@ -62,13 +62,14 @@ OPS-001 is complete at protected D68 contract/fixture maturity through PR #123/
 digest-pinned, non-root/read-only, TLS/private-network, file-secret, bounded-resource,
 probe- and CI-evidence-governed hardened runtime candidate. Focused local contract,
 46-step repository, compatibility, generated-document, Gateway, worker, and Compose-
-render checks pass locally. Exact implementation head `991deb3` passes all twelve PR
-checks in CI/security `29638959236`/`29638959241`; downloaded artifact `8428032260`
-binds clean source to three builds/SBOMs/provenance records, zero fixed low-or-higher
-findings, and a green ephemeral runtime smoke with every managed/live claim false.
-Ruleset `18843164` now requires the hardened job as its seventh check. The dependency
-cannot close until these changes merge and immutable registry artifacts plus a real
-managed-sandbox install/upgrade/rollback/roll-forward are retained. No managed
+render checks pass locally. Final PR head `6818812` passes all twelve checks in
+CI/security `29639349787`/`29639349785` and has the same tree as protected squash
+`290060d`. Post-merge CI/security `29639595976`/`29639595950` pass; downloaded
+protected artifact `8428228432` binds clean source to three builds/SBOMs/provenance
+records, zero fixed low-or-higher findings, and a green ephemeral runtime smoke with
+every managed/live claim false. Ruleset `18843164` requires the hardened job as its
+seventh check. The dependency remains open until immutable registry artifacts plus a
+real managed-sandbox install/upgrade/rollback/roll-forward are retained. No managed
 environment is proven.
 
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under

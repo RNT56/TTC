@@ -12,7 +12,7 @@ Hardened runtime: [`infra/deployment/hardened-runtime.v1.json`](../infra/deploym
 
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; the D69 runtime is an unprotected contract/fixture candidate; no managed environment or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity through PR #125/`290060d`; no immutable registry artifact, managed environment, rollback, or live service is proven**
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled

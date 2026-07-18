@@ -106,11 +106,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   environment or live service is proven. OPS-002 is now in progress on the D69
   hardened-runtime contract/fixture candidate; all 46 local gates pass with 8 D69
   tests, 22 compatibility surfaces, 18 golden families, 82 generated routes, 39
-  Studio, 81 Gateway, and 255 worker tests. Exact implementation head `991deb3`
-  passes all 12 PR checks in CI/security `29638959236`/`29638959241`; downloaded
-  hardened-runtime artifact `8428032260` binds a clean checkout to that source and
-  passes image, TLS, secret-custody, isolation, probe, stop, and restart checks. No
-  image, CI smoke, or Compose render may be cited
+  Studio, 81 Gateway, and 255 worker tests. Final PR head `6818812` passes all 12
+  checks in CI/security `29639349787`/`29639349785`; downloaded artifact `8428149893`
+  binds a clean checkout to that source. Its tree equals protected squash `290060d`,
+  whose post-merge CI/security `29639595976`/`29639595950` pass. Protected hardened
+  artifact `8428228432` binds clean source `290060d` and passes image, TLS,
+  secret-custody, isolation, probe, stop, and restart checks. No image, CI smoke, or
+  Compose render may be cited
   as a managed sandbox, rollback, live, or production result. D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security

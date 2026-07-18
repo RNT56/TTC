@@ -63,14 +63,16 @@ OPS-001 is complete at protected D68 contract/fixture maturity through PR #123/
 governed hardened single-host runtime: exact image/tool pins, multi-stage targets,
 staged `root:10999`/`0440` file secrets, non-root/read-only execution, TLS/private
 networking, probes, finite resources, and CI SBOM/provenance/vulnerability/smoke
-evidence now exist as an unprotected contract/fixture candidate. All 46 local gates
-pass. Exact implementation head `991deb3` passes all twelve PR checks in CI/security
-`29638959236`/`29638959241`; downloaded artifact `8428032260` binds clean source,
-three application builds/SBOMs/provenance records, zero fixed low-or-higher findings,
-and a green ephemeral runtime smoke. Ruleset `18843164` requires the hardened job as
-its seventh exact check. The dependency cannot close until these changes merge and a
-real immutable-registry managed-sandbox install/upgrade/rollback/roll-forward is
-retained. No managed environment is proven.
+evidence are protected at contract/ephemeral-CI fixture maturity through PR #125 and
+exact squash `290060d`. All 46 local gates pass. Final PR head `6818812` passes all
+twelve checks in CI/security `29639349787`/`29639349785` and has the same tree as the
+protected squash. Post-merge CI/security `29639595976`/`29639595950` pass; downloaded
+protected artifact `8428228432` binds clean source, three application
+builds/SBOMs/provenance records, zero fixed low-or-higher findings, and a green
+ephemeral runtime smoke. Ruleset `18843164` requires the hardened job as its seventh
+exact check. The dependency cannot close until a real immutable-registry managed-
+sandbox install/upgrade/rollback/roll-forward is retained. No managed environment is
+proven.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is
