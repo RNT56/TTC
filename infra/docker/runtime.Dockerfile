@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:22.17.1-bookworm-slim@sha256:2fa754a9ba4d7adbd2a51d182eaabbe355c82b673624035a38c0d42b08724854 AS web-build
+FROM node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3 AS web-build
 ENV CI=true
 WORKDIR /src
 RUN corepack enable && corepack prepare pnpm@11.13.0 --activate
@@ -15,7 +15,7 @@ WORKDIR /src
 COPY . .
 RUN cargo build --locked --release -p forge-validate
 
-FROM node:22.17.1-bookworm-slim@sha256:2fa754a9ba4d7adbd2a51d182eaabbe355c82b673624035a38c0d42b08724854 AS gateway
+FROM node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3 AS gateway
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.title="ForgedTTC gateway" \
       org.opencontainers.image.source="https://github.com/RNT56/TTC" \
@@ -25,7 +25,10 @@ ENV NODE_ENV=production \
     FORGE_CATALOG_DIR=/srv/forge/catalog \
     FORGE_VALIDATE_BIN=/srv/forge/bin/forge-validate
 WORKDIR /srv/forge/gateway
-RUN groupadd --gid 10001 forge && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin forge
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx \
+    && groupadd --gid 10001 forge \
+    && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin forge
 COPY --from=web-build --chown=10001:10001 /out/gateway/ ./
 COPY --from=web-build --chown=10001:10001 /src/scripts/db-migrate.mjs /src/scripts/postgres-migrations.mjs ./scripts/
 COPY --from=web-build --chown=10001:10001 /src/infra/migrations/ ./infra/migrations/

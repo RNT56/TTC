@@ -271,6 +271,7 @@ export function checkRepository(root = process.cwd()) {
   for (const target of TARGETS) add(errors, new RegExp(` AS ${target}(?:\\s|$)`).test(dockerfile), `Dockerfile target ${target} is missing`);
   add(errors, / AS web-build\s+ENV CI=true[\s\S]*?RUN pnpm install --frozen-lockfile/.test(dockerfile), "web build must make non-interactive pnpm deployment explicit");
   add(errors, /pnpm --filter @forge\/gateway build \\\s+&& pnpm --filter @forge\/studio build \\\s+&& pnpm --filter @forge\/gateway deploy --prod --legacy/.test(dockerfile), "all web compilation must precede production dependency pruning");
+  add(errors, dockerfile.includes("rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack"), "gateway runtime must remove unused package-manager code");
   add(errors, dockerfile.includes("cargo build --locked --release -p forge-validate"), "Dockerfile must build the release validator from the lockfile");
   add(errors, dockerfile.includes("pnpm install --frozen-lockfile"), "Dockerfile must install the exact JavaScript lockfile");
   add(errors, dockerfile.includes("python -m pip install --no-cache-dir '.[queue]'"), "Dockerfile must install the bounded worker queue runtime");

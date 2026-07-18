@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Remediate fixed vulnerabilities in the D69 gateway image
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected the retained Trivy result from protected run `29637376304`/job
+`88062030981`. Image build and all three SPDX SBOMs passed; the fixed-vulnerability
+gate found 55 Debian and 31 bundled-npm findings in the gateway image, including two
+critical fixed GnuTLS advisories. Replaced the year-old Node 22.17.1 base with the
+current exact Node 22.23.1 Bookworm-slim manifest digest published 2026-07-14 and
+removed npm/Corepack plus their shims from the runtime-only gateway stage, where no
+package-manager authority is needed. D69 now rejects restoring that unused surface.
+**Evidence:** Docker Hub reports multi-platform digest
+`sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3`
+for exact tag `22.23.1-bookworm-slim`, last updated 2026-07-14. The retained Trivy
+paths place every Node-package finding below `/usr/local/lib/node_modules/npm`.
+Replacement protected scan and runtime proof remain required.
+**Changed:** reviewed D69 Node base pin, Dockerfile runtime surface, repository
+validation, and changelog.
+**Decisions:** none; fixed advisories receive remediation, not a policy exception.
+**Next:** Rebuild and require zero fixed low-or-higher findings across all three final
+images, then run runtime isolation/restart acceptance.
+**Blockers:** No repository blocker. Replacement protected scan remains pending.
+
 ## 2026-07-18 — Compile Studio before D69 production pruning
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]
