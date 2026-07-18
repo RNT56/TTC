@@ -160,6 +160,15 @@ least privilege, probes, and finite resources. It remains contract/fixture evide
 until a protected immutable artifact is installed and rolled back in a managed
 sandbox.
 
+D70's artifact-delivery boundary is governed by
+[`hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json) and
+[`forge-hardened-runtime-publication.schema.json`](../schema/forge-hardened-runtime-publication.schema.json).
+One manual protected-main workflow publishes the three application targets to fixed
+repository-owned GHCR names by digest only, attaches BuildKit and GitHub provenance,
+and delegates acceptance to a separate exact-manifest pull/attestation/scan/runtime
+verifier. The resulting publication record is promotable artifact evidence; it has no
+managed environment, sandbox, rollback, live, production, or external-beta authority.
+
 - **Current state:** `infra/docker-compose.yml` is a local/prod-like development
   profile with development defaults and source mounts. It is not production proof.
 - **Deployable candidate:** `infra/compose.hardened.json` is the D69 single-host

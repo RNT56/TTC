@@ -115,6 +115,21 @@ vulnerability reports, and exercises the TLS/private-network/least-privilege/pro
 graceful-restart fixture. The job must stay required before OPS-002 can close, but its
 ephemeral output is not managed-sandbox install or rollback evidence.
 
+D70's separately manual
+[`hardened-runtime-release.yml`](../.github/workflows/hardened-runtime-release.yml)
+implements the machine policy in
+[`hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json). It is
+not a pull-request check and never receives pull-request input. Required CI first
+validates its versioned policy, schema, tests, immutable Action pins, digest-only
+commands, proprietary license labels, environment name, exact-source guards, and
+managed/live nonclaims. After the change is protected, an operator may dispatch only
+the exact current protected `main` SHA with the explicit confirmation input. The
+`hardened-runtime-registry` environment and job-scoped `packages: write`,
+`id-token: write`, and `attestations: write` permissions bound mutation; a separate
+`packages: read` job must pull and verify all manifests before evidence is accepted.
+The workflow's success proves registry publication only. It is not added to the PR
+ruleset and cannot replace the required D69 job or managed-sandbox rollback proof.
+
 The required `compute workers (Python)` job depends on the exact validator artifact
 from `forge-core`. It installs exact `workers[dev,mujoco,training,mjx,deployment,codesign]` so
 the Modal 1.5.2 deployment contract/evidence validator and CUDA authority cannot skip

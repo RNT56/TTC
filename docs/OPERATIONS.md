@@ -2,17 +2,24 @@
 
 Owner: platform/release maintainers
 
-Decisions: D68, D69
+Decisions: D68, D69, D70
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
 Manifest schema: [`schema/forge-deployment-manifest.schema.json`](../schema/forge-deployment-manifest.schema.json)
 
 Hardened runtime: [`infra/deployment/hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json)
+Registry publication: [`infra/deployment/hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json)
+Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.json`](../schema/forge-hardened-runtime-publication.schema.json)
 
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity through PR #125/`290060d`; no immutable registry artifact, managed environment, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity through PR #125/`290060d` and evidence PR #126/`f6f2620`; D70 defines the pending digest-only registry-publication contract; no immutable registry artifact, managed environment, rollback, or live service is proven**
+
+The D70 candidate passes all 47 local gates under Python 3.12.13, including six
+registry tests, 23 compatibility surfaces, nineteen golden families, 87 immutable
+Action references across five workflows, 255 worker tests, and the unchanged
+200/97/two-Pareto/two-held recovery batch. This is repository contract evidence only.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -217,6 +224,7 @@ and sandbox quote/vendor flags.
 ```sh
 pnpm verify:deployment
 pnpm verify:hardened-runtime
+pnpm verify:hardened-registry
 node scripts/deployment-policy.mjs validate /private/path/manifest.json
 node scripts/deployment-policy.mjs promote /private/path/source.json /private/path/target.json
 ```
@@ -270,6 +278,10 @@ record scope and follow-up without reproducing the secret.
 2. Build each deployable component once using pinned toolchains and dependencies.
 3. Produce immutable digest-addressed artifacts, SPDX SBOMs, and provenance bound to
    the source revision/tree.
+   D70 implements this as a manual protected-main-only GHCR workflow with no mutable
+   tags. It builds each application image once, pushes by digest, attaches BuildKit
+   and GitHub provenance, scans the exact registry reference, and delegates all
+   post-push authority to a separate pull-and-verify job.
 4. Record required migration, rollback, and database-plan digests.
 5. Create a planned sandbox manifest and validate it offline.
 6. Store the exact manifest bytes and record their SHA-256 as deployment input.
@@ -333,8 +345,11 @@ OPS-001 contract
 
 ### OPS-002 implementation slices
 
-Current D69 candidate status: slices 1–5 have repository contract/fixture
-implementations; slice 6 is deliberately open. The repository now contains pinned
+Current D69 candidate status: slices 1–5 have protected repository contract/fixture
+implementations; slice 6 is deliberately open. D70 splits its first external
+prerequisite into a separately reviewable publication gate: the repository contains
+the contract, schema, tests, and manual workflow, but no successful publication is
+claimed until exact protected-main remote evidence exists. The repository now contains pinned
 multi-stage application targets, a digest-pinned single-host Compose profile,
 file-secret loaders, gateway and worker readiness, resource/privilege/network
 constraints, a forward-only migration job, a CI image/SBOM/provenance/vulnerability
@@ -354,6 +369,11 @@ managed sandbox install/rollback evidence.
 5. Add CPU/memory/time/concurrency/storage limits and graceful termination/drain.
 6. Prove clean sandbox install, upgrade, application rollback, and corrected
    roll-forward with exact manifest bindings.
+
+Before slice 6 may start, D70 must produce all three immutable registry references
+from one exact protected `main` revision. A successful registry run removes only the
+publication prerequisite. It does not count as an install, upgrade, rollback,
+corrected roll-forward, managed environment, or live service.
 
 ### OPS-002 artifact and probe contract
 
@@ -383,6 +403,20 @@ managed sandbox install/rollback evidence.
   retain bounded Compose status and service logs for diagnosis. The structured smoke
   record permanently sets managed-sandbox, rollback, live, production, and external-
   beta claims false.
+- D70's manual `hardened-runtime-release` workflow is the only supported application-
+  image publisher. It accepts only the exact dispatched protected `main` head under
+  the `hardened-runtime-registry` environment, authenticates with the short-lived
+  repository Actions token, and pushes the three lowercase proprietary image names
+  only by digest. It emits no mutable application tag. BuildKit SBOM/provenance and
+  GitHub build provenance are attached to the registry manifest; separate SPDX and
+  fixed-low-or-higher vulnerability reports remain downloadable.
+- A separate workflow job downloads the raw evidence, fetches each exact registry
+  manifest and checks its SHA-256, verifies the registry-attached GitHub attestation
+  against `RNT56/TTC/.github/workflows/hardened-runtime-release.yml`, the exact source
+  digest, and `refs/heads/main`, pulls the exact images, and runs the D69 smoke over
+  their config digests. `forge-hardened-runtime-publication/1.0.0` binds all files and
+  keeps package visibility unreviewed plus every managed/live claim false. Retain the
+  final artifact for 90 days and download it again before citing publication.
 - A sandbox closeout must additionally publish immutable application image
   references, independently bind their registry manifest digests to a protected D68
   manifest, retain downloaded SBOM/provenance/vulnerability evidence, execute the

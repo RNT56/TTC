@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-18**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `290060d` (PR #125; D69/OPS-002 hardened runtime)
-Current verified implementation boundary: protected D69/OPS-002 contract/ephemeral-CI fixture at `290060d`; managed operations remain open
+Latest verified protected descendant: `f6f2620` (PR #126; D69/OPS-002 evidence reconciliation)
+Current verified implementation boundary: protected D69/OPS-002 contract/ephemeral-CI fixture at `290060d`, reconciled through `f6f2620`; managed operations remain open
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -48,6 +48,7 @@ D67 exact-grid/curve-readback implementation anchor: `08e880b` (PR #121)
 D68/OPS-001 deployment-contract anchor: `401dac84` (PR #123)
 D68/OPS-001 evidence-reconciliation anchor: `f68314d` (PR #124)
 D69/OPS-002 hardened-runtime anchor: `290060d` (PR #125)
+D69/OPS-002 evidence-reconciliation anchor: `f6f2620` (PR #126)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -129,6 +130,21 @@ production, and external-beta claims false. Ruleset `18843164` requires
 `hardened runtime images` as its seventh exact check. No immutable registry
 publication, managed sandbox install, upgrade, rollback, corrected roll-forward,
 live service, or production claim exists.
+
+D70 defines the next OPS-002 repository boundary without changing that verdict:
+[`hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json),
+[`forge-hardened-runtime-publication.schema.json`](../schema/forge-hardened-runtime-publication.schema.json),
+and the manual `hardened-runtime-release` workflow require exact protected `main`,
+digest-only GHCR publication with no mutable tags, BuildKit and GitHub registry-
+attached attestations, exact-registry SPDX and vulnerability records, a separate
+manifest-hashing/attestation-verification pull, and the unchanged D69 runtime smoke
+over the pulled image config digests. The contract is a candidate until protected
+review succeeds. All 47 local gates pass under Python 3.12.13, including six D70
+tests, 23 compatibility surfaces, nineteen golden families, 87 immutable Action
+references across five workflows, 39 Studio tests, 81 Gateway tests, 255 worker
+tests, and the unchanged 200/97/two-Pareto/two-held recovery batch. No workflow run,
+registry object, package visibility, managed sandbox, rollback, live service, or
+production result is claimed here.
 
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,

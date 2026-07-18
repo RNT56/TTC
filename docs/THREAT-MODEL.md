@@ -15,6 +15,16 @@ private networks, TLS, dropped capabilities, resource limits, probes, terminatio
 and CI evidence are contract/fixture controls. They do not prove a managed sandbox,
 rollback, production perimeter, provider isolation, or live operation.
 
+D70 registry authority is machine-readable in
+[`infra/deployment/hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json).
+Only the manual environment-gated workflow may write the three repository-owned
+GHCR image names, using the run-scoped repository token and no mutable tag. The
+separate verifier hashes the raw registry manifest, verifies registry-attached
+GitHub provenance against the exact signer/source/ref, scans and pulls the exact
+digest, and reruns D69 runtime checks. Image visibility is not assumed; image bytes
+remain proprietary. A pushed or attested manifest has no environment, secret,
+traffic, rollback, live, production, or external-beta authority.
+
 For D69's single-host Compose substrate, file secrecy is a host-side precondition:
 the materializer stages referenced sources outside the checkout as
 `root:10999`/`0440`, while only declared consumers receive supplemental GID `10999`.
@@ -124,6 +134,7 @@ misconfiguration, and a dependency/supply-chain compromise.
 | Desktop/Studio -> self-reported MSP device | OS descriptor, serial bytes, command/direction/checksum, firmware/board/build strings, UID, timing, and reconnect intent | D55 native read-only probe | D30/D12/props-off/OS-enumerated 115200-baud authority; native recorder atomically held inactive; exact MSP-v1 six-command allowlist; one-byte payload cap; checksum/command/direction validation; three-second deadline; two byte-stable identity passes on one open port; domain-separated hashes only; raw UID/responses stay native; all device/recorded-device/field/sharing/training authority remains false |
 | Acceptance authority/trust bundle -> recorder session | public trust roots, signed authorization, evidence/signoff digests, revision/time/artifact/model/two-port/identity claims, replay intent | D56 native custody verifier and shell-owned recorder state | hash-pinned bounded public-key bundle; exact purpose/key validity/revocation; strict domain-separated Ed25519 verification; maximum eight-hour binding; exact protected revision, D30/D12, evidence, artifact/model, OS-descriptor, D55 identity/UID, and false-authority checks; pre-observation before telemetry open and post-observation after clean receipt; create-new proof outside archive v1; no signing key/raw UID/signature in Studio; no D54/training/field promotion |
 | Worker/Gateway maintenance output -> Studio ghost view | oversized or malformed point rows, non-finite/duplicate time, inconsistent divergence/index, fake maturity or device/field authority, render/seek denial of service | D57 worker bounds plus independent Studio parser | exact schema/frame/layout/metric; ≤600 seconds/100,000 source samples/6,001 render points/602 seek entries; finite strict time and meter coordinates; recomputed Euclidean divergence; monotonic preceding-point index; precomputed static polylines and bounded indexed interpolation; only unverified or controlled-synthetic maturity; device/recorded-device/field flags must be false; no raw recorder frame JSON/JSONB |
+| Protected source -> GHCR -> independent runtime verifier | branch/ref substitution, mutable tag, replaced or unattested manifest, stale scan/SBOM, proprietary-visibility confusion, workflow token misuse, false deployment claim | D70 manual publisher plus separate registry reader | exact dispatched protected `main` SHA; environment-gated repository token; fixed lowercase names; digest-only push; BuildKit and GitHub registry attestations; exact-registry SPDX/scan; raw-manifest SHA-256; signer/source/ref verification; exact pull/config/runtime smoke; 90-day evidence; visibility unreviewed and all managed/live claims false |
 | Release archive -> machine/npm | filenames and compressed members | release verifier | checksum/SBOM, exact entry allowlist, traversal rejection, archive/member caps before extraction/install |
 | Desktop -> hardware | model/config/policy intent | D30/D12 gate and supervisor | local-only, physical confirmation, no auto-arm, supervisor/FC authority |
 

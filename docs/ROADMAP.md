@@ -72,6 +72,19 @@ seventh check. The dependency remains open until immutable registry artifacts pl
 real managed-sandbox install/upgrade/rollback/roll-forward are retained. No managed
 environment is proven.
 
+D70 defines the pending immutable-artifact half of that gate as a separate
+compatibility surface: one manual environment-gated workflow accepts only the exact
+dispatched protected `main` head, builds each proprietary application image once,
+pushes to fixed GHCR names by digest without mutable tags, attaches BuildKit and
+GitHub provenance, and requires a separate manifest-hashing, attestation-verifying,
+exact-pull D69 smoke before emitting `forge-hardened-runtime-publication/1.0.0`.
+The candidate passes all 47 local gates under Python 3.12.13 with six D70 tests, 23
+compatibility surfaces, nineteen golden families, 87 immutable Action references,
+255 worker tests, and the unchanged 200/97/two-Pareto/two-held recovery batch. The
+contract does not claim a successful registry run. After protected publication,
+OPS-002 will still require a real D68 sandbox install, upgrade, application rollback,
+and corrected roll-forward.
+
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
 clean revision-bound artifacts prove opaque expiring attempt leases, bounded outage/

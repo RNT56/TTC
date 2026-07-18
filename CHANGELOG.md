@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Establish protected digest-only runtime publication
+**Session:** Codex agent · branch `codex/ops002-registry-publication` ·
+**Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]
+**Done:** Added the D70 major-1 contract candidate for manually publishing the three
+D69 application images from an exact protected-main revision to fixed GHCR names by
+digest only. The workflow builds each image once, retains BuildKit SBOM/provenance,
+attaches GitHub provenance, scans the exact registry artifact, independently verifies
+and pulls the digest, reruns the D69 smoke, and emits a schema-validated durable
+record with all managed, rollback, live, production, and external-beta claims false.
+Six focused registry tests, eight D69 tests, 23 compatibility surfaces, and all 87
+immutable action references across five workflows pass locally; contract docs
+regenerate 82 routes, two event families, and seventeen worker families. The complete
+47-step gate passes under Python 3.12.13 with 39 Studio, 81 Gateway, and 255 worker
+tests plus Brief-25 25/25, native/WASM parity, packaging, training/offline/MJX, and
+the unchanged 200/97/two-Pareto/two-held co-design recovery batch.
+**Changed:** D70 registry policy, evidence schema and validator, protected publication
+workflow, application-image license labels, compatibility/golden registries,
+generated artifact reference, CI/full-gate wiring, operations/security/governance
+guidance, roadmap/task/risk state, and tests.
+**Decisions:** D70 fixes protected-source, digest-only GHCR publication and explicitly
+withholds managed deployment authority; R39 tracks substitution, mutable-tag, and
+false-promotion risk.
+**Next:** Merge this exact locally verified contract through protected main, then
+execute and independently verify the protected publication workflow before recording
+any immutable-registry maturity.
+**Blockers:** No repository blocker. This entry does not claim a registry publication;
+managed sandbox installation and rollback/roll-forward proof remain external work.
+
 ## 2026-07-18 — Reconcile protected D69 runtime evidence
 **Session:** Codex agent · branch `codex/ops002-protected-evidence` ·
 **Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]

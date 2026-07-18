@@ -72,6 +72,25 @@
       "compatibilityReview": true
     },
     {
+      "id": "hardened-runtime-registry-contract",
+      "classification": "schema",
+      "paths": [
+        "infra/deployment/hardened-registry.v1.json",
+        "schema/forge-hardened-runtime-publication.schema.json",
+        ".github/workflows/hardened-runtime-release.yml"
+      ],
+      "owner": "platform, release, and security maintainers",
+      "sourceOfTruth": "D70 protected-source, digest-only GHCR publication, attached attestation, independent pull, runtime verification, and managed/live nonclaim semantics",
+      "regenerate": "Edit deliberately with compatibility, workflow, registry, security, license, and external-evidence review; never infer managed deployment authority from image publication",
+      "verify": [
+        "pnpm verify:hardened-registry",
+        "pnpm verify:compatibility",
+        "pnpm verify:workflows",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
       "id": "api-event-artifact-docs",
       "classification": "schema",
       "paths": [

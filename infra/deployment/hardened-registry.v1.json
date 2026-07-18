@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "forge-hardened-runtime-registry/1.0.0",
+  "decision": "D70",
+  "maturity": "contract",
+  "registry": {
+    "host": "ghcr.io",
+    "owner": "rnt56",
+    "sourceRepository": "RNT56/TTC",
+    "credentialAuthority": "github-actions-repository-token",
+    "packageVisibilityClaim": "unreviewed"
+  },
+  "workflow": {
+    "path": ".github/workflows/hardened-runtime-release.yml",
+    "environment": "hardened-runtime-registry",
+    "sourceRef": "refs/heads/main",
+    "signerWorkflow": "RNT56/TTC/.github/workflows/hardened-runtime-release.yml"
+  },
+  "artifacts": [
+    {
+      "component": "gateway",
+      "target": "gateway",
+      "image": "ghcr.io/rnt56/forgedttc-gateway",
+      "license": "LicenseRef-ForgedTTC-Proprietary"
+    },
+    {
+      "component": "workers",
+      "target": "workers",
+      "image": "ghcr.io/rnt56/forgedttc-workers",
+      "license": "LicenseRef-ForgedTTC-Proprietary"
+    },
+    {
+      "component": "studio",
+      "target": "studio",
+      "image": "ghcr.io/rnt56/forgedttc-studio",
+      "license": "LicenseRef-ForgedTTC-Proprietary"
+    }
+  ],
+  "publicationRules": {
+    "manualDispatchOnly": true,
+    "protectedMainOnly": true,
+    "exactHeadInputRequired": true,
+    "digestOnlyPublication": true,
+    "mutableTagsAllowed": false,
+    "buildOnce": true,
+    "buildkitSbomAttestationRequired": true,
+    "buildkitProvenanceAttestationRequired": true,
+    "githubBuildProvenanceRequired": true,
+    "githubAttestationPushRequired": true,
+    "independentRegistryPullRequired": true,
+    "registryManifestHashRequired": true,
+    "spdxDocumentRequired": true,
+    "fixedVulnerabilityThreshold": "LOW",
+    "runtimeSmokeRequired": true,
+    "evidenceRetentionDays": 90
+  },
+  "publicationEvidenceSchema": "schema/forge-hardened-runtime-publication.schema.json",
+  "authorityCeiling": {
+    "managedEnvironment": false,
+    "sandboxInstalled": false,
+    "rollbackProven": false,
+    "live": false,
+    "production": false,
+    "externalBeta": false
+  }
+}

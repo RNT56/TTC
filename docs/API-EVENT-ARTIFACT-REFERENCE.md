@@ -134,6 +134,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `envSpec` | 1.0.0 | major 1 |
 | `deploymentManifest` | 1.0.0 | major 1 |
 | `hardenedRuntime` | 1.0.0 | major 1 |
+| `hardenedRuntimePublication` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
 | `userDataExport` | 1.6.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |

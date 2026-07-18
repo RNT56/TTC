@@ -8,6 +8,18 @@ The Apache-2.0 crates and WASM package are intentionally packageable, but packag
 registries are not the first proof boundary. The first public artifact is the
 checksummed, SBOM-backed, attested GitHub Release produced by `release.yml`.
 
+Application-container publication is a separate proprietary delivery boundary, not
+crates.io or npm publication. D70 and
+[`hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json) permit
+only the three reviewed `LicenseRef-ForgedTTC-Proprietary` runtime images to be built
+once from the exact dispatched protected `main` head and pushed to repository-owned
+GHCR by digest, without mutable tags. The manual environment-gated workflow must
+attach and independently verify registry provenance, SPDX, scan, manifest, and exact-
+image runtime evidence. Registry visibility is recorded as an observed fact and is
+not a license grant. Container publication does not change the explicit crates.io/npm
+deferral and cannot prove managed-sandbox, live, production, or external-beta
+maturity.
+
 ## What must be true before registry publication
 
 - GOV-007 compatibility policy is merged.
