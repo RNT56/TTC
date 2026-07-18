@@ -283,6 +283,11 @@ export function checkRepository(root = process.cwd()) {
   add(errors, packageJson.scripts?.["verify:hardened-runtime"] === "node --test scripts/hardened-runtime.test.mjs && node scripts/hardened-runtime.mjs check", "package.json must expose verify:hardened-runtime");
   const verify = readFileSync(resolve(root, "scripts/verify.mjs"), "utf8");
   add(errors, verify.includes('run("Hardened deployable runtime contract", "pnpm", ["verify:hardened-runtime"]);'), "pnpm verify must include hardened runtime validation");
+  const workflow = readFileSync(resolve(root, ".github/workflows/ci.yml"), "utf8");
+  add(errors, workflow.includes("BUILDX_METADATA_PROVENANCE: max"), "hardened image CI must retain max-mode Buildx build-record provenance");
+  add(errors, workflow.includes('BUILDX_METADATA_WARNINGS: "1"'), "hardened image CI must retain Buildx warnings in its metadata evidence");
+  add(errors, (workflow.match(/--provenance=false/g) ?? []).length === TARGETS.length, "Docker-loaded hardened images must disable unsupported attached attestations exactly once per target");
+  add(errors, (workflow.match(/--metadata-file artifacts\/hardened\/[a-z]+-provenance\.json/g) ?? []).length === TARGETS.length, "every hardened image target must emit Buildx provenance metadata");
   for (const path of ["AGENTS.md", "docs/OPERATIONS.md", "docs/THREAT-MODEL.md"]) {
     add(errors, readFileSync(resolve(root, path), "utf8").includes("hardened-runtime.v1.json"), `${path} must reference the hardened runtime contract`);
   }

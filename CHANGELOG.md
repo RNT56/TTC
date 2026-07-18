@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Separate D69 build-record provenance from image loading
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed replacement CI run `29637045157`/job `88061184732`:
+the pinned Buildx container driver booted successfully, but the Docker exporter
+refused the attestation manifest list before reading the Dockerfile. Applied the
+documented single-platform Docker-store boundary: each loaded CI image disables the
+unsupported attached attestation while `BUILDX_METADATA_PROVENANCE=max` retains full
+BuildKit build-record provenance in the per-image metadata file; Buildx warnings are
+retained too. Repository validation now fixes that distinction for all three targets.
+**Evidence:** Docker's current Buildx reference confirms that the default Docker image
+store does not persist attestations and independently defines max provenance in
+`--metadata-file`. Focused repository and protected replacement verification remain
+required before this correction is accepted.
+**Changed:** hardened-image CI export flags, metadata environment, D69 repository
+validation, and this changelog entry.
+**Decisions:** none; registry publication must attach provenance under the later
+managed-sandbox promotion gate, while this CI proof remains contract/fixture only.
+**Next:** Push the correction and inspect the first real Dockerfile build, SBOM,
+vulnerability scan, and runtime smoke result.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
 ## 2026-07-18 — Repair D69 provenance builder selection
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]

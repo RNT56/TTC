@@ -60,6 +60,8 @@ jobs:
     needs: core
     env:
       SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+      BUILDX_METADATA_PROVENANCE: max
+      BUILDX_METADATA_WARNINGS: "1"
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -79,15 +81,15 @@ jobs:
           mkdir -p artifacts/hardened
           docker buildx build --file infra/docker/runtime.Dockerfile --target gateway \
             --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
-            --tag forge-gateway:ci --load --provenance=mode=max \
+            --tag forge-gateway:ci --load --provenance=false \
             --metadata-file artifacts/hardened/gateway-provenance.json .
           docker buildx build --file infra/docker/runtime.Dockerfile --target workers \
             --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
-            --tag forge-workers:ci --load --provenance=mode=max \
+            --tag forge-workers:ci --load --provenance=false \
             --metadata-file artifacts/hardened/workers-provenance.json .
           docker buildx build --file infra/docker/runtime.Dockerfile --target studio \
             --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
-            --tag forge-studio:ci --load --provenance=mode=max \
+            --tag forge-studio:ci --load --provenance=false \
             --metadata-file artifacts/hardened/studio-provenance.json .
       - name: generate SPDX image SBOMs
         run: |
