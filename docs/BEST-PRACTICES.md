@@ -591,5 +591,13 @@ semantically reviewed, and bound to exact protected checks.
 - Production readiness includes secrets rotation, non-root/minimal images,
   observability, SLOs, alert ownership, incident response, retention, deletion, and
   disaster recovery.
+- Managed deployments follow D68 and [`OPERATIONS.md`](OPERATIONS.md): build once
+  from clean protected main, promote identical digest/SBOM/provenance identities one
+  direct stage at a time, bind startup to exact manifest bytes, and keep secret
+  values out of manifests/evidence. An environment name, schema, test, image, or
+  successful deploy is not live or field proof.
+- Keep database history forward-only. Roll back application artifacts with an exact
+  compatible manifest; restore data only for verified loss/corruption under the
+  backup/DR procedure, never to erase a migration.
 - Local green is not remote green. Remote green is not a release. A release is not
   field proof.

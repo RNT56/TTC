@@ -345,7 +345,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
 
 ## 10. Production operations and economics (OPS)
 
-- [ ] OPS-001 — Define supported deployment topology/environments, infrastructure ownership, configuration schema, secrets rotation, and environment promotion.
+- [~] OPS-001 — Define supported deployment topology/environments, infrastructure ownership, configuration schema, secrets rotation, and environment promotion. *(2026-07-18 local implementation candidate under D68: `OPERATIONS.md`, `deployment-policy.v1.json`, deployment-manifest schema/compatibility surface, offline validation/promotion checks, and gateway/worker exact-manifest startup fences define and test the single-region topology, six environment classes, named ownership, non-secret configuration, versioned environment-specific secret references, four-hour emergency revocation, build-once promotions, authority ceilings, and forward-only database rollback rule. All 45 required local gates pass under Python 3.12.13; protected PR/post-merge evidence is still required before `[x]`. No sandbox, staging, production, live service, real secret rotation, deployment, or external beta is claimed.)*
 - [ ] OPS-002 — Replace mutable images/default dev secrets for deployable profiles; pin images, run non-root/read-only where possible, add health/readiness and resource limits.
 - [ ] OPS-003 — Implement structured logs, request/job correlation, metrics, traces, dashboards, alert routing, and redaction rules across gateway/workers/providers/Desktop.
 - [ ] OPS-004 — Define SLOs and error budgets for API, generation, queue latency, photoscan, training, object storage, auth, and provider handoffs.

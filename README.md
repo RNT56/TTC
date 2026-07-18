@@ -54,6 +54,9 @@ maintenance records.
 > [`docs/PROJECT-STATE.md`](docs/PROJECT-STATE.md) for evidence and
 > [`docs/EXECUTION-ROADMAP.md`](docs/EXECUTION-ROADMAP.md) for the closure plan. Modal
 > operators must follow [`docs/MODAL-OPERATIONS.md`](docs/MODAL-OPERATIONS.md).
+> Deployment operators must follow [`docs/OPERATIONS.md`](docs/OPERATIONS.md) and
+> its machine [`deployment-policy.v1.json`](infra/deployment/deployment-policy.v1.json);
+> the local Compose profile is not production.
 
 > The product bet: a useful robot model is not just geometry. It is the design,
 > parts, assumptions, validation results, scorecards, quotes, telemetry, and repair

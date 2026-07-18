@@ -59,6 +59,7 @@ const required = [
   "gatewayEvents",
   "replay",
   "envSpec",
+  "deploymentManifest",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -99,6 +100,10 @@ const expected = {
   gatewayEvents: gatewayVersion,
   replay: sourceConstant("crates/forge-sim/src/runtime.rs", "REPLAY_FORMAT_VERSION"),
   envSpec: sourceConstant("crates/forge-sim/src/runtime.rs", "ENVSPEC_SCHEMA_VERSION"),
+  deploymentManifest: typescriptConstant(
+    "scripts/deployment-policy.mjs",
+    "DEPLOYMENT_MANIFEST_VERSION",
+  ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
     "USER_DATA_EXPORT_VERSION",
@@ -133,6 +138,26 @@ for (const [name, version] of Object.entries(expected)) {
   );
 }
 requireValue(matrix.productVersion === workspaceVersion, "productVersion must match the Cargo workspace version");
+requireValue(
+  typescriptConstant("packages/gateway/src/deployment.ts", "DEPLOYMENT_MANIFEST_VERSION") ===
+    matrix.surfaces.deploymentManifest.current
+    && pythonConstant("workers/forge_workers/deployment.py", "DEPLOYMENT_MANIFEST_VERSION") ===
+      matrix.surfaces.deploymentManifest.current,
+  "deployment manifest version must match policy, gateway, and worker runtime sources",
+);
+const deploymentPolicy = JSON.parse(read(matrix.surfaces.deploymentManifest.policyPath));
+const deploymentSchema = JSON.parse(read(matrix.surfaces.deploymentManifest.schemaPath));
+requireValue(
+  deploymentPolicy.manifestVersion === matrix.surfaces.deploymentManifest.current
+    && deploymentPolicy.schemaVersion ===
+      `forge-deployment-policy/${typescriptConstant("scripts/deployment-policy.mjs", "DEPLOYMENT_POLICY_VERSION")}`,
+  "deployment policy version does not match the compatibility surface",
+);
+requireValue(
+  deploymentSchema.properties.schemaVersion.const ===
+    `${matrix.surfaces.deploymentManifest.schema}/${matrix.surfaces.deploymentManifest.current}`,
+  "deployment schema version marker does not match the compatibility surface",
+);
 requireValue(
   matrix.surfaces.policyTensor.schema ===
     typescriptConstant("packages/studio/src/policyRuntime.ts", "POLICY_TENSOR_SCHEMA"),

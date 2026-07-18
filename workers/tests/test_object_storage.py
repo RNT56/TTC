@@ -45,6 +45,15 @@ def test_production_configuration_fails_closed_for_defaults_and_plain_http():
                 "FORGE_OBJECT_BUCKET": "forge-artifacts",
             }
         )
+
+    with pytest.raises(RuntimeError, match="credentials"):
+        object_store_config_from_env(
+            {
+                "FORGE_DEPLOYMENT_ENVIRONMENT": "production",
+                "FORGE_OBJECT_ENDPOINT": "https://objects.example.test",
+                "FORGE_OBJECT_BUCKET": "forge-artifacts",
+            }
+        )
     with pytest.raises(RuntimeError, match="HTTPS"):
         object_store_config_from_env(
             {

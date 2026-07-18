@@ -26,6 +26,7 @@ package to adopt that same number.
 | gateway events | 0.2.0 | event names/order/terminal meaning follow gateway package SemVer before 1.0; additive fields and new stage values are minor | current minor line |
 | replay tape | 1.0.0 | additive optional fields are minor; frame/header semantic changes are major | major 1 plus deprecated `replay.v1` alias |
 | EnvSpec schema | 1.0.0 | `schemaVersion` governs the shape; `version` is only the individual document revision | major 1 |
+| deployment manifest | 1.0.0 | `forge-deployment-manifest` binds environment, protected source, immutable component artifacts, non-secret configuration, versioned environment-specific secret references, accountable ownership, evidence gates, direct promotion, and authority ceilings; changing any meaning is major | major 1; managed gateway/worker startup accepts only the current major |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.6.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
@@ -46,6 +47,20 @@ reads; replay producers emit `1.0.0`, while readers temporarily accept the histo
 `replay.v1` alias. Manufacturing exports carry a separately versioned license export
 manifest that binds every assembly asset to its ledger class, disposition,
 attribution/link-out evidence, and the derived assembly policy.
+
+Deployment manifests are non-secret promotion authority, not evidence that an
+environment exists or is live. Version 1 is defined by
+[`forge-deployment-manifest.schema.json`](../schema/forge-deployment-manifest.schema.json)
+and the machine-owned
+[`deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json).
+Managed gateway and worker processes independently verify the exact manifest bytes,
+digest, environment, protected source revision, active status, and required component
+before startup. Literal secret values are outside this format: only versioned,
+environment-specific `secret://...@version` references may be recorded. A promotion
+must retain identical source/tree and artifact/SBOM/provenance digests, rotate secret
+references for the target environment, and follow one direct policy edge. An older
+runtime must refuse an unsupported major; a rollback retains the forward-only
+database history and uses an already admitted artifact/manifest pair.
 
 `GET /v1/account/export` emits user-data export 1.6.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but

@@ -47,6 +47,15 @@
       "versionField": "schemaVersion",
       "documentVersionField": "version"
     },
+    "deploymentManifest": {
+      "current": "1.0.0",
+      "supportedMajors": [1],
+      "schema": "forge-deployment-manifest",
+      "versionField": "schemaVersion",
+      "schemaPath": "schema/forge-deployment-manifest.schema.json",
+      "policyPath": "infra/deployment/deployment-policy.v1.json",
+      "versionRule": "environment, source, artifact, non-secret configuration, versioned secret-reference, ownership, evidence, promotion, and authority meanings are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [1],

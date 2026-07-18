@@ -90,6 +90,16 @@ without failing the protected check. This deterministic policy check never stand
 for an actual external run; the protocol is owned by
 [`EXTERNAL-ACCEPTANCE.md`](EXTERNAL-ACCEPTANCE.md).
 
+The same full gate runs `pnpm verify:deployment`. D68's
+[`deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json), manifest
+schema, compatibility versions, runtime-variable inventory, offline manifest and
+direct-promotion rules, managed gateway/worker bootstrap constants, and explicit
+local-Compose nonclaim must stay synchronized. A registered policy/schema change
+also requires append-only golden review. This deterministic gate proves contract and
+fixture behavior only; it does not prove a sandbox, production deploy, secret
+rotation, backup, SLO, or external beta. The operational acceptance sequence is
+owned by [`OPERATIONS.md`](OPERATIONS.md).
+
 The required `compute workers (Python)` job depends on the exact validator artifact
 from `forge-core`. It installs exact `workers[dev,mujoco,training,mjx,deployment,codesign]` so
 the Modal 1.5.2 deployment contract/evidence validator and CUDA authority cannot skip

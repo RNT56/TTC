@@ -36,6 +36,23 @@
       "compatibilityReview": true
     },
     {
+      "id": "deployment-policy-and-schema",
+      "classification": "schema",
+      "paths": [
+        "infra/deployment/deployment-policy.v1.json",
+        "schema/forge-deployment-manifest.schema.json"
+      ],
+      "owner": "platform, release, and security maintainers",
+      "sourceOfTruth": "D68 environment, configuration, secret-reference, ownership, promotion, and authority semantics",
+      "regenerate": "Edit deliberately with a compatibility review, focused policy/runtime tests, and a golden update record; never infer it from a deployed environment",
+      "verify": [
+        "pnpm verify:deployment",
+        "pnpm verify:compatibility",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
       "id": "api-event-artifact-docs",
       "classification": "schema",
       "paths": [

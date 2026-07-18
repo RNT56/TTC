@@ -1,5 +1,7 @@
-# FORGE local/prod-like runtime. Modal is the configured burst GPU provider;
-# fixtures remain the default worker backend for CI and local acceptance.
+# FORGE local/prod-like runtime. This source-mounted profile with development
+# defaults is not production and never supplies managed-environment evidence.
+# Modal is the configured burst GPU provider; fixtures remain the default worker
+# backend for CI and local acceptance.
 services:
   postgres:
     image: pgvector/pgvector:pg16

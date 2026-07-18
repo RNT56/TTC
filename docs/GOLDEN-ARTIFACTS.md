@@ -72,7 +72,12 @@ and a new oracle family, not an edit.
 The registry is machine-owned inventory. Adding or removing an artifact family must
 update this document, registry validation tests, and the owning system documentation.
 
-The current inventory has **sixteen families**. DOC-005's
+The current inventory has **seventeen families**. D68's
+`deployment-policy-and-schema` family owns the non-secret deployment policy and
+manifest schema. Their environment, component, gate, ownership, configuration,
+secret-reference, promotion, and authority meanings are compatibility-governed;
+they must never be regenerated from ambient infrastructure or edited to excuse a
+failed deployment. DOC-005's
 `api-event-artifact-docs` family owns the generated OpenAPI, event/artifact catalogs,
 machine manifest, and human reference. Its route/request source is the running
 Fastify/TypeBox registry; its version source is the compatibility matrix; and its

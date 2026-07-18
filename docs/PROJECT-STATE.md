@@ -55,6 +55,7 @@ QA-005 fault-acceptance evidence anchor: `7970005` (PR #46)
 QA-007 adversarial-corpus evidence anchor: `e89bb15` (PR #48)
 QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
 Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
+OPS-001 status: **local D68 contract/fixture candidate; protected evidence and every managed environment remain pending**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -77,6 +78,23 @@ prove a trustworthy baseline and release, not live operations, external-user
 acceptance, hardware safety, or field outcomes. Most P5-P12 product surfaces prove
 contracts or fixture workflows; live providers, deployed training operations, hardware,
 external users, operational recovery, and field evidence remain incomplete.
+
+D68/OPS-001 is implemented locally at contract/fixture maturity: the machine
+`deployment-policy.v1.json`, manifest schema/compatibility surface, offline
+validation/promotion gate, gateway/worker startup fences, and `OPERATIONS.md` define
+the supported first topology, environment/owner/configuration/secret/promotion
+contract, authority ceilings, and OPS-002..010 order. Focused policy, compatibility,
+Gateway, and runtime tests pass locally. This branch is not protected evidence; no
+active sandbox, staging, production, live service, real rotation, deployment, or
+external beta exists.
+
+The D68 candidate passes all 45 required local gates under Python 3.12.13: eleven
+deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
+generated 81-route/two-event/seventeen-worker documentation, Rust fmt/Clippy/tests,
+exact native/WASM parity, 39 Studio tests, 77 Gateway tests, 251 worker tests,
+Brief-25 25/25, packaging, training/offline/MJX/co-design smokes, the exact
+200-candidate 97-admission/two-Pareto/two-held recovery batch, and patch hygiene.
+This is local verification, not protected or deployed evidence.
 
 The native Anthropic ETL and queued vendor-normalizer paths are protected at
 **contract/fixture**, not live. Their bounded transports, normalization, persistence,
@@ -1181,12 +1199,13 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D65 catalog-bound tier-2 physics | **Go only for exact-runtime-scoped `catalog-bound-physics-platform-local-engine-200-batch` at protected `ad54ab3`** | PR #117 exact-head/reviewed-tree/protected-tree proof, exact PR/post-merge CI/security, all 44 gates, and clean artifact `8402573520` prove catalog-native mass/inertia, exact MuJoCo mass closure, fail-closed table applicability, 200/200 engine evaluations, 97 admissions, two Pareto points, and two held finalists. The current table remains inapplicable and D65 cannot be cited as catalog-thrust, tier-3 training, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | Claim D66 per-point-voltage format | **Go only for protected row-v2/read-v1/grid/persistence compatibility at `5a162b0`; no-go for propulsion maturity** | exact PR/reviewed/protected-tree proof, all 44 local gates, all 11 PR checks, post-merge CI/security, and protected artifact `8405061774` prove the format and every-predecessor migration boundary. It cannot be cited as sourced/applicable catalog thrust, a new D65 curve, training, review/marketplace, hardware, field, or external evidence |
 | Claim D67 exact-grid/curve-readback consumer | **Go only for protected platform-local controlled-synthetic consumer/readback mechanics; no-go for physical maturity** | PR #121 exact head/reviewed/protected-tree equality, all 44 local gates, all 11 PR checks, exact post-merge CI/security, and protected artifact `8407177912` prove exact point retention, independent all-101 curve reconstruction, tamper refusal, authority/recovery binding, and unchanged 97/two/two analytic-fallback behavior. The only applicable grid is test-generated, and the catalog row remains v1/rejected. D67 cannot be cited as sourced/applicable thrust, owner review, tier 3, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
+| Claim D68/OPS-001 deployment contract | **Go only for local contract/fixture review; no-go for managed-environment or production claims** | the machine policy/schema, offline policy/promotion tests, compatibility surface, managed gateway/worker exact-manifest startup fence, and canonical operations roadmap are implemented locally. Protected PR/post-merge evidence and OPS-002..010 remain open; no active manifest or managed infrastructure exists |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **206 tasks: 150 done, 31 in progress, 24 open,
+The stable ledger currently contains **206 tasks: 150 done, 32 in progress, 23 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
 The 56 remaining tasks include the phase/live/field program, 2 governance, 2
 security, 2 quality, 10 operations, and 9 external-proof tasks; the documentation
