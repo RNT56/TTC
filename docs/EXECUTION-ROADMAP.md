@@ -89,12 +89,14 @@ immutable publication only. The managed-sandbox install/upgrade/rollback/correct
 forward half remains open.
 D70 evidence reconciliation is protected through PR #129 exact head `3302103` and
 squash `b5c358a`; all twelve PR checks and exact-squash post-merge CI/security
-`29645096174`/`29645096195` pass. OPS-003 now has a dependency-safe local D71 first
+`29645096174`/`29645096195` pass. OPS-003 now has a dependency-safe protected D71 first
 slice: a versioned exact event allowlist plus executable Gateway request/trace roots
 and structured sink. All 48 required local gates pass under Python 3.12.13 with 24
 compatibility surfaces, twenty golden families, 84 Gateway tests, 255 worker tests,
 and the unchanged 200/97/two-Pareto/two-held recovery batch. It advances contract/
-fixture maturity only while OPS-002's
+fixture maturity only. PR #130 exact head `f161221`, all twelve PR checks, tree-
+identical protected squash `44bb3da`, and post-merge CI/security
+`29646886572`/`29646886580` pass while OPS-002's
 managed sandbox and every worker/job/provider/Desktop/backend/dashboard/alert/live
 criterion remain open.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The

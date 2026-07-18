@@ -99,7 +99,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D70/OPS-002 evidence PR #129 at `b5c358a`.
+  latest verified protected descendant is D71/OPS-003 PR #130 at `44bb3da`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -132,12 +132,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   under a real active D68 sandbox manifest. Evidence PR #129 exact head `3302103`
   passed all twelve PR checks; protected squash `b5c358a` passed post-merge CI
   `29645096174` and security `29645096195`. D71/OPS-003 is now in progress on the
-  Gateway-only structured-event contract/fixture candidate: all 48 required local
+  Gateway-only structured-event contract/fixture slice: all 48 required local
   gates pass under Python 3.12.13 with four policy tests, three focused producer
   tests, 24 compatibility surfaces, twenty golden families, 87 immutable Action
   references, 39 Studio tests, 84 Gateway tests, 255 worker tests, generated
   82-route/two-event/seventeen-worker docs, and the unchanged 200/97/two-Pareto/
-  two-held recovery batch. It proves no worker/job/provider/
+  two-held recovery batch. Exact implementation head `f161221` passed all twelve PR
+  checks in CI `29646612330` and security `29646612337`; tree-identical protected
+  squash `44bb3da` passed post-merge CI `29646886572` and security `29646886580`.
+  It proves no worker/job/provider/
   Desktop propagation, metric/trace backend, dashboard, alert, managed, live, or
   production maturity. D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,

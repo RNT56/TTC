@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-18**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `b5c358a` (PR #129; D70 evidence reconciliation)
-Current verified implementation boundary: D70 immutable registry publication verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with protected evidence reconciliation at `b5c358a`; managed sandbox installation remains open and D71/OPS-003 has only a local Gateway contract/fixture candidate
+Latest verified protected descendant: `44bb3da` (PR #130; D71 Gateway observability contract)
+Current verified implementation boundary: D71/OPS-003 protects the Gateway request-event contract/fixture at `44bb3da`; D70 immutable registry publication remains verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with no managed sandbox installation
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -52,6 +52,7 @@ D69/OPS-002 evidence-reconciliation anchor: `f6f2620` (PR #126)
 D70/OPS-002 registry-publication contract anchor: `a1d72ad` (PR #127)
 D70/OPS-002 registry-publication correction anchor: `f1d8850` (PR #128)
 D70/OPS-002 evidence-reconciliation anchor: `b5c358a` (PR #129)
+D71/OPS-003 Gateway observability anchor: `44bb3da` (PR #130)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -64,7 +65,7 @@ QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
 Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
 OPS-001 status: **complete at protected D68 contract/fixture maturity; every managed environment remains pending under OPS-002..010**
 OPS-002 status: **in progress with protected D70 immutable registry publication verified; no managed sandbox install, upgrade, rollback, corrected roll-forward, live service, or production authority is proven**
-OPS-003 status: **in progress on a local D71 Gateway request-event contract/fixture candidate; no worker/job/provider/Desktop propagation, metric/trace backend, dashboard, alert, managed, live, or production authority is proven**
+OPS-003 status: **in progress with the D71 Gateway request-event contract/fixture protected; no worker/job/provider/Desktop propagation, metric/trace backend, dashboard, alert, managed, live, or production authority is proven**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -160,7 +161,7 @@ rollback, live, production, and external-beta claims remain false.
 
 Evidence reconciliation PR #129 exact head `3302103` passed all twelve checks; its
 protected squash `b5c358a` passed post-merge CI `29645096174` and security
-`29645096195`. D71/OPS-003 now has a local first-slice candidate only:
+`29645096195`. D71/OPS-003 now has a protected first Gateway-only slice:
 `forge-observability-event/1.0.0`, its machine policy/schema/compatibility/golden
 family, and the executable Gateway entry path generate a server-owned UUIDv4 request
 ID plus W3C root trace, return both as response correlation, and emit one validated
@@ -173,8 +174,10 @@ and high-cardinality metric labels. All 48 required local gates pass under Pytho
 compatibility surfaces, twenty golden families, 87 immutable Action references, 39
 Studio tests, 84 Gateway tests, 255 worker tests, generated 82-route/two-event/
 seventeen-worker docs, and the unchanged 200/97/two-Pareto/two-held recovery batch.
-This working-tree evidence is
-not yet protected and grants no telemetry delivery, trace continuity, worker/job/
+Exact implementation head `f161221` passed all twelve PR checks in CI `29646612330`
+and security `29646612337`; its tree equals protected squash `44bb3da`, whose
+post-merge CI `29646886572` and security `29646886580` pass. This evidence grants no
+telemetry delivery, trace continuity, worker/job/
 provider/Desktop propagation, metrics, dashboards, alerts, managed sandbox, live,
 production, or external-beta authority.
 
@@ -1294,7 +1297,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D68/OPS-001 deployment contract | **Go only for protected contract/fixture maturity; no-go for managed-environment or production claims** | PR #123 exact head `a028acd`, protected squash `401dac84`, evidence PR #124 exact head `5f9ff0b`, protected `f68314d`, all 45 local gates, both sets of all 11 PR checks, and final post-merge CI/security `29635605328`/`29635605305` protect the machine policy/schema, offline promotion tests, compatibility surface, gateway/worker exact-manifest startup fence, and canonical operations roadmap. OPS-002/003 are in progress and OPS-004..010 remain open; no active manifest or managed infrastructure exists |
 | Claim D69/OPS-002 hardened runtime | **Go only for protected contract/ephemeral-CI fixture maturity; no-go for managed sandbox, rollback, live, or production claims** | PR #125 final head `6818812`, protected tree-identical squash `290060d`, all 12 PR checks, post-merge CI/security `29639595976`/`29639595950`, hardened job `88067855121`, and independently downloaded protected artifact `8428228432` bind clean source, three builds/SBOMs/provenance records, zero fixed low-or-higher findings, staged-source/effective-group custody, TLS/private topology, health/readiness, graceful stop, and same-artifact restart. D69 evidence itself grants no registry, managed sandbox, upgrade, rollback, or corrected roll-forward authority; D70 separately closes only the immutable publication boundary |
 | Claim D70/OPS-002 registry publication | **Go for immutable registry publication only; no-go for managed sandbox, rollback, live, or production** | PR #127/`a1d72ad`, correction PR #128/`f1d8850`, evidence PR #129/`b5c358a`, exact PR/post-merge CI/security, successful run `29644408106`, downloaded artifact `8429638868`, independently reproduced manifest hashes, and fresh signer/source/ref attestation checks bind all three exact images, SBOMs, scans, provenance, pulled config IDs, and runtime smoke. Record `132dc5f4…fd72` keeps every managed/live claim false |
-| Claim D71/OPS-003 observability | **Go only for local Gateway contract/fixture candidate; no-go for backend, dashboard, alert, managed, live, or production claims** | versioned policy/schema/runtime plus all 48 required local gates prove server-generated request/trace roots, one bounded structured request event, exact redaction exclusions, cardinality policy, and sink isolation. Worker/job/provider/Desktop propagation and every external telemetry consumer remain false; protected PR/post-merge proof is still pending |
+| Claim D71/OPS-003 observability | **Go only for protected Gateway contract/fixture maturity; no-go for backend, dashboard, alert, managed, live, or production claims** | PR #130 exact head `f161221`, all twelve PR checks, tree-identical protected squash `44bb3da`, exact post-merge CI/security `29646886572`/`29646886580`, and all 48 required local gates protect server-generated request/trace roots, one bounded structured request event, exact redaction exclusions, cardinality policy, and sink isolation. Worker/job/provider/Desktop propagation and every external telemetry consumer remain false |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 
