@@ -1,0 +1,294 @@
+{
+  "name": "forgedttc-managed",
+  "services": {
+    "postgres": {
+      "image": "pgvector/pgvector:0.8.1-pg16-bookworm@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "environment": {
+        "POSTGRES_DB": "forge",
+        "POSTGRES_USER": "forge",
+        "POSTGRES_PASSWORD_FILE": "/run/secrets/POSTGRES_PASSWORD"
+      },
+      "secrets": [
+        {
+          "source": "POSTGRES_PASSWORD",
+          "target": "POSTGRES_PASSWORD",
+          "mode": "0400"
+        }
+      ],
+      "volumes": [
+        "postgres-data:/var/lib/postgresql/data"
+      ],
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=64m",
+        "/var/run/postgresql:rw,nosuid,size=16m"
+      ],
+      "networks": ["app"],
+      "cap_drop": ["ALL"],
+      "cap_add": ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 256,
+      "cpus": 1.5,
+      "mem_limit": "1536m",
+      "stop_grace_period": "30s",
+      "healthcheck": {
+        "test": ["CMD-SHELL", "pg_isready -U forge -d forge"],
+        "interval": "5s",
+        "timeout": "3s",
+        "retries": 20,
+        "start_period": "10s"
+      }
+    },
+    "minio-permissions": {
+      "image": "alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4",
+      "user": "0:0",
+      "entrypoint": ["/bin/sh", "-c"],
+      "command": ["chown -R 100:101 /data"],
+      "read_only": true,
+      "volumes": ["object-data:/data"],
+      "cap_drop": ["ALL"],
+      "cap_add": ["CHOWN", "DAC_OVERRIDE", "FOWNER"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 32,
+      "cpus": 0.25,
+      "mem_limit": "64m",
+      "networks": ["app"]
+    },
+    "minio": {
+      "image": "alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4",
+      "user": "100:101",
+      "restart": "unless-stopped",
+      "entrypoint": ["/bin/sh", "-c"],
+      "command": ["export MINIO_ROOT_USER=\"$$(cat /run/secrets/FORGE_OBJECT_ACCESS_KEY_ID)\" MINIO_ROOT_PASSWORD=\"$$(cat /run/secrets/FORGE_OBJECT_SECRET_ACCESS_KEY)\"; exec minio server --certs-dir /run/minio-certs /data"],
+      "read_only": true,
+      "secrets": [
+        { "source": "FORGE_OBJECT_ACCESS_KEY_ID", "target": "FORGE_OBJECT_ACCESS_KEY_ID", "uid": "100", "gid": "101", "mode": "0400" },
+        { "source": "FORGE_OBJECT_SECRET_ACCESS_KEY", "target": "FORGE_OBJECT_SECRET_ACCESS_KEY", "uid": "100", "gid": "101", "mode": "0400" },
+        { "source": "TLS_CA_CERTIFICATE", "target": "/run/minio-certs/CAs/ca.crt", "uid": "100", "gid": "101", "mode": "0400" },
+        { "source": "TLS_OBJECT_CERTIFICATE", "target": "/run/minio-certs/public.crt", "uid": "100", "gid": "101", "mode": "0400" },
+        { "source": "TLS_OBJECT_PRIVATE_KEY", "target": "/run/minio-certs/private.key", "uid": "100", "gid": "101", "mode": "0400" }
+      ],
+      "volumes": ["object-data:/data"],
+      "tmpfs": ["/tmp:rw,noexec,nosuid,uid=100,gid=101,size=64m"],
+      "networks": ["app"],
+      "depends_on": { "minio-permissions": { "condition": "service_completed_successfully" } },
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 128,
+      "cpus": 1.0,
+      "mem_limit": "1024m",
+      "stop_grace_period": "30s",
+      "healthcheck": {
+        "test": ["CMD-SHELL", "wget --quiet --no-check-certificate --spider https://127.0.0.1:9000/minio/health/ready"],
+        "interval": "5s",
+        "timeout": "3s",
+        "retries": 20,
+        "start_period": "10s"
+      }
+    },
+    "minio-init": {
+      "image": "minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727",
+      "user": "1000:1000",
+      "entrypoint": ["/bin/sh", "-c"],
+      "command": ["user=\"$$(cat /run/secrets/FORGE_OBJECT_ACCESS_KEY_ID)\"; password=\"$$(cat /run/secrets/FORGE_OBJECT_SECRET_ACCESS_KEY)\"; mc alias set forge https://minio:9000 \"$$user\" \"$$password\"; mc mb --ignore-existing forge/${FORGE_OBJECT_BUCKET:-forge-artifacts}; mc anonymous set none forge/${FORGE_OBJECT_BUCKET:-forge-artifacts}"],
+      "read_only": true,
+      "environment": {
+        "SSL_CERT_FILE": "/run/secrets/TLS_CA_CERTIFICATE",
+        "FORGE_OBJECT_BUCKET": "${FORGE_OBJECT_BUCKET:-forge-artifacts}"
+      },
+      "secrets": [
+        { "source": "FORGE_OBJECT_ACCESS_KEY_ID", "target": "FORGE_OBJECT_ACCESS_KEY_ID", "uid": "1000", "gid": "1000", "mode": "0400" },
+        { "source": "FORGE_OBJECT_SECRET_ACCESS_KEY", "target": "FORGE_OBJECT_SECRET_ACCESS_KEY", "uid": "1000", "gid": "1000", "mode": "0400" },
+        { "source": "TLS_CA_CERTIFICATE", "target": "TLS_CA_CERTIFICATE", "uid": "1000", "gid": "1000", "mode": "0400" }
+      ],
+      "tmpfs": ["/tmp:rw,noexec,nosuid,uid=1000,gid=1000,size=32m", "/.mc:rw,noexec,nosuid,uid=1000,gid=1000,size=16m"],
+      "networks": ["app"],
+      "depends_on": { "minio": { "condition": "service_healthy" } },
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 32,
+      "cpus": 0.25,
+      "mem_limit": "128m"
+    },
+    "migrate": {
+      "image": "${FORGE_GATEWAY_IMAGE:?set an immutable gateway image reference}",
+      "user": "10001:10001",
+      "command": ["node", "scripts/run-migrations.mjs"],
+      "read_only": true,
+      "environment": {
+        "NODE_ENV": "${FORGE_RUNTIME_NODE_ENV:-production}",
+        "FORGE_RUNTIME_SECRETS_DIRECTORY": "/run/secrets"
+      },
+      "secrets": [
+        { "source": "DATABASE_URL", "target": "DATABASE_URL", "uid": "10001", "gid": "10001", "mode": "0400" }
+      ],
+      "tmpfs": ["/tmp:rw,noexec,nosuid,uid=10001,gid=10001,size=64m"],
+      "networks": ["app"],
+      "depends_on": { "postgres": { "condition": "service_healthy" } },
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 64,
+      "cpus": 0.5,
+      "mem_limit": "256m"
+    },
+    "gateway": {
+      "image": "${FORGE_GATEWAY_IMAGE:?set an immutable gateway image reference}",
+      "user": "10001:10001",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "environment": {
+        "NODE_ENV": "${FORGE_RUNTIME_NODE_ENV:-production}",
+        "PORT": "8080",
+        "AUTH_URL": "${AUTH_URL:?set the canonical HTTPS auth URL}",
+        "FORGE_PUBLIC_ORIGIN": "${FORGE_PUBLIC_ORIGIN:?set the canonical HTTPS public origin}",
+        "FORGE_CATALOG_DIR": "/srv/forge/catalog",
+        "FORGE_DEPLOYMENT_ENVIRONMENT": "${FORGE_RUNTIME_ENVIRONMENT:-sandbox}",
+        "FORGE_DEPLOYMENT_MANIFEST": "/run/forge/deployment.json",
+        "FORGE_DEPLOYMENT_MANIFEST_SHA256": "${FORGE_DEPLOYMENT_MANIFEST_SHA256:?set the manifest SHA-256}",
+        "FORGE_DEPLOYMENT_ARTIFACT_SHA256": "${FORGE_GATEWAY_ARTIFACT_SHA256:?set the gateway artifact SHA-256}",
+        "FORGE_GPU_BACKEND": "${FORGE_GPU_BACKEND:-fixture}",
+        "FORGE_OBJECT_BUCKET": "${FORGE_OBJECT_BUCKET:-forge-artifacts}",
+        "FORGE_OBJECT_ENDPOINT": "https://minio:9000",
+        "FORGE_OBJECT_FORCE_PATH_STYLE": "1",
+        "FORGE_RUNTIME_SECRETS_DIRECTORY": "/run/secrets",
+        "FORGE_SOURCE_REVISION": "${FORGE_SOURCE_REVISION:?set the exact source revision}",
+        "FORGE_VALIDATE_BIN": "/srv/forge/bin/forge-validate",
+        "NODE_EXTRA_CA_CERTS": "/run/secrets/TLS_CA_CERTIFICATE"
+      },
+      "configs": [
+        { "source": "deployment_manifest", "target": "/run/forge/deployment.json", "uid": "10001", "gid": "10001", "mode": "0440" }
+      ],
+      "secrets": [
+        { "source": "AUTH_SECRET", "target": "AUTH_SECRET", "uid": "10001", "gid": "10001", "mode": "0400" },
+        { "source": "DATABASE_URL", "target": "DATABASE_URL", "uid": "10001", "gid": "10001", "mode": "0400" },
+        { "source": "FORGE_OBJECT_ACCESS_KEY_ID", "target": "FORGE_OBJECT_ACCESS_KEY_ID", "uid": "10001", "gid": "10001", "mode": "0400" },
+        { "source": "FORGE_OBJECT_SECRET_ACCESS_KEY", "target": "FORGE_OBJECT_SECRET_ACCESS_KEY", "uid": "10001", "gid": "10001", "mode": "0400" },
+        { "source": "TLS_CA_CERTIFICATE", "target": "TLS_CA_CERTIFICATE", "uid": "10001", "gid": "10001", "mode": "0400" }
+      ],
+      "tmpfs": ["/tmp:rw,noexec,nosuid,uid=10001,gid=10001,size=256m"],
+      "networks": ["edge", "app"],
+      "depends_on": {
+        "migrate": { "condition": "service_completed_successfully" },
+        "minio-init": { "condition": "service_completed_successfully" }
+      },
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 256,
+      "cpus": 2.0,
+      "mem_limit": "1024m",
+      "stop_grace_period": "30s",
+      "healthcheck": {
+        "test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20,
+        "start_period": "15s"
+      }
+    },
+    "workers": {
+      "image": "${FORGE_WORKERS_IMAGE:?set an immutable workers image reference}",
+      "user": "10002:10002",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "environment": {
+        "NODE_ENV": "${FORGE_RUNTIME_NODE_ENV:-production}",
+        "FORGE_CATALOG_DIR": "/srv/forge/catalog",
+        "FORGE_DEPLOYMENT_ENVIRONMENT": "${FORGE_RUNTIME_ENVIRONMENT:-sandbox}",
+        "FORGE_DEPLOYMENT_MANIFEST": "/run/forge/deployment.json",
+        "FORGE_DEPLOYMENT_MANIFEST_SHA256": "${FORGE_DEPLOYMENT_MANIFEST_SHA256:?set the manifest SHA-256}",
+        "FORGE_DEPLOYMENT_ARTIFACT_SHA256": "${FORGE_WORKERS_ARTIFACT_SHA256:?set the workers artifact SHA-256}",
+        "FORGE_GPU_BACKEND": "${FORGE_GPU_BACKEND:-fixture}",
+        "FORGE_OBJECT_BUCKET": "${FORGE_OBJECT_BUCKET:-forge-artifacts}",
+        "FORGE_OBJECT_ENDPOINT": "https://minio:9000",
+        "FORGE_OBJECT_FORCE_PATH_STYLE": "1",
+        "FORGE_RUNTIME_SECRETS_DIRECTORY": "/run/secrets",
+        "FORGE_SOURCE_REVISION": "${FORGE_SOURCE_REVISION:?set the exact source revision}",
+        "FORGE_VALIDATE_BIN": "/srv/forge/bin/forge-validate",
+        "SSL_CERT_FILE": "/run/secrets/TLS_CA_CERTIFICATE"
+      },
+      "configs": [
+        { "source": "deployment_manifest", "target": "/run/forge/deployment.json", "uid": "10002", "gid": "10002", "mode": "0440" }
+      ],
+      "secrets": [
+        { "source": "DATABASE_URL", "target": "DATABASE_URL", "uid": "10002", "gid": "10002", "mode": "0400" },
+        { "source": "FORGE_OBJECT_ACCESS_KEY_ID", "target": "FORGE_OBJECT_ACCESS_KEY_ID", "uid": "10002", "gid": "10002", "mode": "0400" },
+        { "source": "FORGE_OBJECT_SECRET_ACCESS_KEY", "target": "FORGE_OBJECT_SECRET_ACCESS_KEY", "uid": "10002", "gid": "10002", "mode": "0400" },
+        { "source": "TLS_CA_CERTIFICATE", "target": "TLS_CA_CERTIFICATE", "uid": "10002", "gid": "10002", "mode": "0400" }
+      ],
+      "tmpfs": ["/tmp:rw,noexec,nosuid,uid=10002,gid=10002,size=512m"],
+      "networks": ["app"],
+      "depends_on": {
+        "migrate": { "condition": "service_completed_successfully" },
+        "minio-init": { "condition": "service_completed_successfully" }
+      },
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 256,
+      "cpus": 2.0,
+      "mem_limit": "2048m",
+      "stop_grace_period": "60s",
+      "healthcheck": {
+        "test": ["CMD", "python", "-m", "forge_workers.health", "ready"],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20,
+        "start_period": "15s"
+      }
+    },
+    "studio": {
+      "image": "${FORGE_STUDIO_IMAGE:?set an immutable Studio image reference}",
+      "user": "101:101",
+      "restart": "unless-stopped",
+      "read_only": true,
+      "ports": ["${FORGE_HTTPS_BIND:-127.0.0.1:8443}:8443"],
+      "secrets": [
+        { "source": "TLS_EDGE_CERTIFICATE", "target": "TLS_EDGE_CERTIFICATE", "uid": "101", "gid": "101", "mode": "0400" },
+        { "source": "TLS_EDGE_PRIVATE_KEY", "target": "TLS_EDGE_PRIVATE_KEY", "uid": "101", "gid": "101", "mode": "0400" }
+      ],
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,uid=101,gid=101,size=32m",
+        "/var/cache/nginx:rw,noexec,nosuid,uid=101,gid=101,size=32m",
+        "/var/run:rw,noexec,nosuid,uid=101,gid=101,size=8m"
+      ],
+      "networks": ["edge"],
+      "depends_on": { "gateway": { "condition": "service_healthy" } },
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 128,
+      "cpus": 1.0,
+      "mem_limit": "256m",
+      "stop_grace_period": "15s",
+      "healthcheck": {
+        "test": ["CMD", "wget", "--quiet", "--no-check-certificate", "--spider", "https://127.0.0.1:8443/readyz"],
+        "interval": "5s",
+        "timeout": "4s",
+        "retries": 20,
+        "start_period": "15s"
+      }
+    }
+  },
+  "networks": {
+    "edge": {},
+    "app": { "internal": true }
+  },
+  "volumes": {
+    "postgres-data": {},
+    "object-data": {}
+  },
+  "configs": {
+    "deployment_manifest": { "file": "${FORGE_DEPLOYMENT_MANIFEST:?set the deployment manifest path}" }
+  },
+  "secrets": {
+    "POSTGRES_PASSWORD": { "file": "${POSTGRES_PASSWORD_FILE:?set the Postgres password file}" },
+    "AUTH_SECRET": { "file": "${AUTH_SECRET_FILE:?set the Auth.js secret file}" },
+    "DATABASE_URL": { "file": "${DATABASE_URL_FILE:?set the database URL secret file}" },
+    "FORGE_OBJECT_ACCESS_KEY_ID": { "file": "${FORGE_OBJECT_ACCESS_KEY_ID_FILE:?set the object access-key file}" },
+    "FORGE_OBJECT_SECRET_ACCESS_KEY": { "file": "${FORGE_OBJECT_SECRET_ACCESS_KEY_FILE:?set the object secret-key file}" },
+    "TLS_CA_CERTIFICATE": { "file": "${TLS_CA_CERTIFICATE_FILE:?set the CA certificate file}" },
+    "TLS_EDGE_CERTIFICATE": { "file": "${TLS_EDGE_CERTIFICATE_FILE:?set the edge certificate file}" },
+    "TLS_EDGE_PRIVATE_KEY": { "file": "${TLS_EDGE_PRIVATE_KEY_FILE:?set the edge private-key file}" },
+    "TLS_OBJECT_CERTIFICATE": { "file": "${TLS_OBJECT_CERTIFICATE_FILE:?set the object certificate file}" },
+    "TLS_OBJECT_PRIVATE_KEY": { "file": "${TLS_OBJECT_PRIVATE_KEY_FILE:?set the object private-key file}" }
+  }
+}

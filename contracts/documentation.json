@@ -7,6 +7,7 @@
     "defaultMaturity": "fixture",
     "routes": [
       { "method": "GET", "path": "/healthz", "summary": "Report gateway and validator process health", "auth": "public", "success": [200], "maturity": "contract" },
+      { "method": "GET", "path": "/readyz", "summary": "Report bounded internal database, object-store, and validator readiness", "auth": "public", "success": [200, 503], "maturity": "contract" },
       { "method": "*", "path": "/auth", "summary": "Delegate Auth.js authentication requests", "auth": "public", "success": [200], "maturity": "contract" },
       { "method": "*", "path": "/auth/*", "summary": "Delegate Auth.js provider and callback requests", "auth": "public", "success": [200], "maturity": "contract" },
       { "method": "GET", "path": "/v1/me", "summary": "Read the current optional session identity", "auth": "optional-session", "success": [200] },

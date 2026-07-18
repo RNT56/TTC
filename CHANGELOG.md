@@ -18,6 +18,43 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Build the D69 hardened runtime candidate
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Implemented the dependency-complete repository side of D69 without claiming
+a managed environment. `forge-hardened-runtime/1.0.0` now governs reviewed exact
+base/service/evidence-tool digests, three multi-stage application targets, numeric
+non-root identities, read-only roots, explicit writable mounts, file-mounted secret
+loading, TLS edge and object storage, private data-plane networks, bounded stateful
+initializers, dropped capabilities, finite PID/CPU/memory limits, forward migration,
+readiness/liveness, graceful termination, and permanent maturity nonclaims. Gateway
+and workers bind their exact image artifact digest to the D68 startup manifest. A new
+CI job builds the targets, emits BuildKit provenance metadata and SPDX SBOMs, scans
+fixed vulnerabilities, and exercises TLS, isolation headers, effective identities,
+filesystem/capability/resource/network/port boundaries, readiness, clean stop, and
+same-artifact restart.
+**Evidence:** `pnpm verify` passes all 46 required local gates under Python 3.12.13:
+11 D68 tests, 7 D69 tests, 22 compatibility surfaces, 18 golden families, generated
+82-route/two-event/seventeen-worker docs, 39 Studio tests, 81 Gateway tests, and 255
+worker tests plus Rust/WASM parity, Brief-25 25/25, packaging, training, MJX, exact
+co-design recovery, and patch hygiene. The hardened Compose profile renders with
+explicit fixture inputs. The local Docker daemon is unavailable, so image build and
+runtime evidence is intentionally deferred to protected GitHub CI.
+**Changed:** D69 runtime/Compose/Docker/nginx contracts and tests; Gateway/worker
+secret, artifact-startup, readiness, migration, and termination paths; CI image
+evidence job; compatibility 1.0.0 surface; generated API/artifact docs; golden
+registry/update record; `AGENTS.md`, operations, roadmaps, task ledger, threat model,
+governance, architecture, best practices, project state, decisions, and risk ledger.
+**Decisions:** D69. R38 records false container, rollback, and managed-maturity risk.
+**Next:** Protect this exact candidate in PR CI, retain and inspect the image evidence,
+make `hardened runtime images` the seventh merge-blocking check, and correct any
+container-only failure. A later managed sandbox must publish immutable registry
+artifacts and prove install, upgrade, rollback, and corrected roll-forward before
+OPS-002 can close.
+**Blockers:** No repository implementation blocker. There is no local Docker daemon,
+immutable application registry publication, active sandbox manifest, managed
+sandbox, rollback observation, live service, production service, or external beta.
+
 ## 2026-07-18 — Reconcile protected D68 deployment-contract evidence
 **Session:** Codex agent · branch `codex/ops001-protected-evidence` ·
 **Phase:** OPS/QA · **TODO items:** OPS-001 [x]

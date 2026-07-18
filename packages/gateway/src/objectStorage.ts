@@ -1,6 +1,7 @@
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -164,6 +165,18 @@ export function objectStorageConfigFromEnv(env: NodeJS.ProcessEnv = process.env)
     }
   }
   return config;
+}
+
+export async function probeObjectStorage(config: ObjectStorageConfig): Promise<void> {
+  const client = objectStorageClient(config);
+  try {
+    await client.send(
+      new HeadBucketCommand({ Bucket: config.bucket }),
+      { abortSignal: AbortSignal.timeout(Math.min(config.deleteTimeoutMs, 10_000)) },
+    );
+  } finally {
+    client.destroy();
+  }
 }
 
 export async function presignObjectAccess(

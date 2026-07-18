@@ -57,12 +57,15 @@ eight-file/89-case adversarial inventory, Rust/Python consumers, and fifteenth g
 family passed exact PR CI/security and post-merge CI/security. Production backup/DR,
 multi-replica queues, object-store operations, shared quotas, and SLOs remain
 OPS-005/QA-009 and OPS-003..007.
-OPS-001 is complete at protected D68 contract/fixture maturity through PR #123 and
-`401dac84`: the compatibility-governed deployment manifest/policy, exact gateway/
-worker startup binding, and canonical OPS-002..010 sequence in `OPERATIONS.md` pass
-all 45 local gates, all 11 PR checks, and exact PR/post-merge CI/security. It proves
-no managed environment. The next operations slice is OPS-002's immutable hardened
-deployment artifacts and sandbox install/rollback proof.
+OPS-001 is complete at protected D68 contract/fixture maturity through PR #123/
+`401dac84` and evidence PR #124/`f68314d`; final post-merge CI/security
+`29635605328`/`29635605305` pass. OPS-002 is in progress on D69's compatibility-
+governed hardened single-host runtime: exact image/tool pins, multi-stage targets,
+file secrets, non-root/read-only execution, TLS/private networking, probes, finite
+resources, and CI SBOM/provenance/vulnerability/smoke evidence now exist as an
+unprotected contract/fixture candidate. All 46 local gates pass. The dependency cannot close until protected
+image evidence and a real managed-sandbox install/upgrade/rollback/roll-forward are
+retained. No managed environment is proven.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is

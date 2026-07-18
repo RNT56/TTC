@@ -152,8 +152,19 @@ promotion, rollback, and OPS-002..010 closure contract is
 [`deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json); this
 architecture section is a summary, not independent deployment authority.
 
+D69's first deployable substrate is governed by
+[`hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json) and
+`infra/compose.hardened.json`: a single-host TLS Studio edge, private Gateway,
+Postgres/object store/workers, exact multi-stage application images, file secrets,
+least privilege, probes, and finite resources. It remains contract/fixture evidence
+until a protected immutable artifact is installed and rolled back in a managed
+sandbox.
+
 - **Current state:** `infra/docker-compose.yml` is a local/prod-like development
   profile with development defaults and source mounts. It is not production proof.
+- **Deployable candidate:** `infra/compose.hardened.json` is the D69 single-host
+  contract/fixture profile. Only the Studio TLS port is published; its CI smoke does
+  not prove sandbox, rollback, live, or production maturity.
 - **Target topology:** a single-VM gateway/Postgres/worker deployment plus CDN/static
   Studio and burst GPU providers remains the intended first operating shape. It must
   satisfy OPS-001..010 before being described as production. Kubernetes and

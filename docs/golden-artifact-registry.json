@@ -53,6 +53,25 @@
       "compatibilityReview": true
     },
     {
+      "id": "hardened-runtime-contract",
+      "classification": "schema",
+      "paths": [
+        "infra/deployment/hardened-runtime.v1.json",
+        "infra/compose.hardened.json",
+        "infra/docker/runtime.Dockerfile",
+        "infra/docker/studio.nginx.conf"
+      ],
+      "owner": "platform, release, and security maintainers",
+      "sourceOfTruth": "D69 immutable application-image, runtime-identity, writable-path, probe, TLS, network, resource, termination, and evidence-nonclaim semantics",
+      "regenerate": "Edit deliberately with compatibility, security, Compose, image-smoke, and rollback review; never infer a production claim from a successful local or CI container run",
+      "verify": [
+        "pnpm verify:hardened-runtime",
+        "pnpm verify:compatibility",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
       "id": "api-event-artifact-docs",
       "classification": "schema",
       "paths": [

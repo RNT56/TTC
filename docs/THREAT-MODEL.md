@@ -1,12 +1,19 @@
 # ForgedTTC threat model
 
 Owner: repository maintainers and deployment operators
-Last reviewed: **2026-07-16**
+Last reviewed: **2026-07-18**
 Applies to: gateway, Auth.js boundary, Postgres, object storage, generation providers,
 Python workers, live command adapters, release archives, Studio-facing APIs
 Implementation maturity: **contract and deterministic fixture**; production egress,
 distributed abuse control, provider operations, restore exercises, and incident drills
 remain operations work.
+
+D69 runtime authority is machine-readable in
+[`infra/deployment/hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json).
+Its pinned images, file-secret boundary, numeric non-root identities, read-only roots,
+private networks, TLS, dropped capabilities, resource limits, probes, termination,
+and CI evidence are contract/fixture controls. They do not prove a managed sandbox,
+rollback, production perimeter, provider isolation, or live operation.
 
 This is the canonical application threat model. `security-safety-legal.md` owns
 product exclusions, privacy promises, and legal gates; `DATA-LIFECYCLE.md` owns
@@ -625,7 +632,7 @@ Before any production/live-provider claim:
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |
-| Process/container isolation | process bounds do not provide a full OS sandbox | operations: non-root container, seccomp/sandbox, limits, egress |
+| Process/container isolation | D69 supplies non-root/read-only/capability/resource/private-network contract and ephemeral CI checks, but no managed-sandbox or host-boundary proof | OPS-002: protected digest-addressed image review, retained SBOM/provenance/vulnerability evidence, sandbox install/rollback, host policy and egress verification |
 | Incident and disaster recovery | contracts exist; deployed restore/response evidence does not | `OPS-005`, `OPS-008`, `OPS-010` |
 
 These risks block the corresponding live or production maturity claims. They do not

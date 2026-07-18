@@ -362,7 +362,10 @@
       "MODAL_TOKEN_SECRET"
     ],
     "runtimeManagedVariables": [
-      "CUBLAS_WORKSPACE_CONFIG"
+      "CUBLAS_WORKSPACE_CONFIG",
+      "FORGE_DEPLOYMENT_ARTIFACT_SHA256",
+      "FORGE_RUNTIME_SECRETS_DIRECTORY",
+      "FORGE_RUNTIME_SECRETS_SOURCE"
     ],
     "localOnlyVariables": [
       "FORGE_DEV_AUTH",

@@ -8,6 +8,7 @@ import test from "node:test";
 import { assertDeploymentBootstrap } from "../src/deployment.js";
 
 const revision = "a".repeat(40);
+const artifactDigest = "d".repeat(64);
 
 function fixture(environment = "staging") {
   const directory = mkdtempSync(join(tmpdir(), "forge-gateway-deployment-"));
@@ -21,7 +22,7 @@ function fixture(environment = "staging") {
       protectedMain: true,
       worktreeClean: true,
     },
-    artifacts: [{ component: "gateway" }],
+    artifacts: [{ component: "gateway", sha256: artifactDigest }],
     configuration: {
       values: {
         FORGE_DEPLOYMENT_ENVIRONMENT: environment,
@@ -45,6 +46,8 @@ function managedEnv(path: string, digest: string) {
     FORGE_DEPLOYMENT_ENVIRONMENT: "staging",
     FORGE_DEPLOYMENT_MANIFEST: path,
     FORGE_DEPLOYMENT_MANIFEST_SHA256: digest,
+    FORGE_DEPLOYMENT_ARTIFACT_SHA256: artifactDigest,
+    FORGE_RUNTIME_SECRETS_SOURCE: "files",
     FORGE_SOURCE_REVISION: revision,
   };
 }
@@ -74,7 +77,7 @@ test("production gateway requires an exact active manifest binding", () => {
       environment: "staging",
       status: "active",
       source: { revision, protectedMain: true, worktreeClean: true },
-      artifacts: [{ component: "workers" }],
+      artifacts: [{ component: "workers", sha256: artifactDigest }],
       configuration: {
         values: {
           FORGE_DEPLOYMENT_ENVIRONMENT: "staging",
@@ -100,6 +103,14 @@ test("production gateway rejects missing authority and the legacy environment al
     assert.throws(
       () => assertDeploymentBootstrap({ ...managedEnv(value.path, value.digest), FORGE_ENV: "production" }),
       /rejects legacy FORGE_ENV/,
+    );
+    assert.throws(
+      () => assertDeploymentBootstrap({ ...managedEnv(value.path, value.digest), FORGE_RUNTIME_SECRETS_SOURCE: undefined }),
+      /file-mounted runtime secrets/,
+    );
+    assert.throws(
+      () => assertDeploymentBootstrap({ ...managedEnv(value.path, value.digest), FORGE_DEPLOYMENT_ARTIFACT_SHA256: "e".repeat(64) }),
+      /does not authorize/,
     );
   } finally {
     rmSync(value.directory, { recursive: true, force: true });

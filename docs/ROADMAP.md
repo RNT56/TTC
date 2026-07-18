@@ -56,13 +56,15 @@ atomic recovery, history refusal, and concurrent apply-once. Production
 backup/restore, disaster recovery, capacity, and measured RPO/RTO remain OPS-005 and
 QA-009.
 
-OPS-001 is complete at protected D68 contract/fixture maturity through PR #123 and
-`401dac84`. The versioned deployment policy and manifest schema, exact offline
-validation/promotion rules, managed gateway/worker startup binding, and canonical
-[`OPERATIONS.md`](OPERATIONS.md) sequence through OPS-010 passed all 45 local gates,
-all 11 PR checks, and exact PR/post-merge CI/security. This is not a deployed sandbox
-or production proof; OPS-002 hardened artifacts remain the next operational
-dependency.
+OPS-001 is complete at protected D68 contract/fixture maturity through PR #123/
+`401dac84` and evidence PR #124/`f68314d`; final post-merge CI/security
+`29635605328`/`29635605305` pass. OPS-002 is now in progress on D69's versioned,
+digest-pinned, non-root/read-only, TLS/private-network, file-secret, bounded-resource,
+probe- and CI-evidence-governed hardened runtime candidate. Focused local contract,
+46-step repository, compatibility, generated-document, Gateway, worker, and Compose-
+render checks pass locally.
+No protected image evidence or managed sandbox install/rollback exists, so OPS-002
+and every live/production claim remain open.
 
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the

@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-18**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `401dac84` (PR #123; D68/OPS-001 deployment contract)
-Current unprotected implementation boundary: none beyond the documented protected D68 slice
+Latest verified protected descendant: `f68314d` (PR #124; D68/OPS-001 evidence reconciliation)
+Current unprotected implementation boundary: D69/OPS-002 hardened-runtime contract/fixture candidate on `codex/ops002-hardened-runtime`
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -46,6 +46,7 @@ D65 evidence-reconciliation anchor: `7d63512` (PR #118)
 D66 catalog performance-grid implementation anchor: `5a162b0` (PR #119)
 D67 exact-grid/curve-readback implementation anchor: `08e880b` (PR #121)
 D68/OPS-001 deployment-contract anchor: `401dac84` (PR #123)
+D68/OPS-001 evidence-reconciliation anchor: `f68314d` (PR #124)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -57,6 +58,7 @@ QA-007 adversarial-corpus evidence anchor: `e89bb15` (PR #48)
 QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
 Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
 OPS-001 status: **complete at protected D68 contract/fixture maturity; every managed environment remains pending under OPS-002..010**
+OPS-002 status: **in progress at unprotected D69 contract/fixture candidate maturity; no managed sandbox or rollback is proven**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -89,6 +91,28 @@ OPS-002..010 order. Exact implementation head `a028acd` passed PR CI/security
 `29634700980`/`29634700969`; protected `401dac84` passed post-merge CI/security
 `29634987939`/`29634987955`. No active sandbox, staging, production, live service,
 real rotation, deployment, or external beta exists.
+
+Evidence PR #124 protects that closeout at `f68314d`: exact evidence head `5f9ff0b`
+passed all eleven PR checks and CI/security `29635355008`/`29635354985`; final
+post-merge CI/security `29635605328`/`29635605305` pass. The stable protected D68
+boundary therefore has no outstanding remote check.
+
+D69/OPS-002 is now an unprotected contract/fixture candidate. The repository has a
+versioned hardened-runtime surface and golden family; exact reviewed base/service/
+SBOM/vulnerability-tool digests; multi-stage gateway, worker, and Studio images;
+numeric non-root users, read-only roots, explicit writable paths, dropped
+capabilities, finite resources, TLS edge/object storage, a private data plane,
+forward migration, distinct readiness/liveness, and bounded graceful shutdown. The
+Gateway and worker load only exact regular file-mounted secrets and bind their image
+artifact digest to D68 startup authority. A new CI job builds the images, emits SPDX/
+provenance/vulnerability artifacts, and runs the ephemeral security/readiness/restart
+smoke. The complete 46-step local gate passes under Python 3.12.13 with D68 (11
+tests), D69 (7 tests), 22-surface compatibility, eighteen golden families, 82-route
+generated docs, 39 Studio tests, 81 Gateway tests, 255 worker tests, native/WASM,
+packaging, training, and co-design checks. Compose configuration rendering also
+passes. Docker is unavailable locally, and no
+protected CI image result, immutable registry publication, managed sandbox install,
+upgrade, rollback, corrected roll-forward, live service, or production claim exists.
 
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
@@ -1203,13 +1227,14 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D65 catalog-bound tier-2 physics | **Go only for exact-runtime-scoped `catalog-bound-physics-platform-local-engine-200-batch` at protected `ad54ab3`** | PR #117 exact-head/reviewed-tree/protected-tree proof, exact PR/post-merge CI/security, all 44 gates, and clean artifact `8402573520` prove catalog-native mass/inertia, exact MuJoCo mass closure, fail-closed table applicability, 200/200 engine evaluations, 97 admissions, two Pareto points, and two held finalists. The current table remains inapplicable and D65 cannot be cited as catalog-thrust, tier-3 training, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | Claim D66 per-point-voltage format | **Go only for protected row-v2/read-v1/grid/persistence compatibility at `5a162b0`; no-go for propulsion maturity** | exact PR/reviewed/protected-tree proof, all 44 local gates, all 11 PR checks, post-merge CI/security, and protected artifact `8405061774` prove the format and every-predecessor migration boundary. It cannot be cited as sourced/applicable catalog thrust, a new D65 curve, training, review/marketplace, hardware, field, or external evidence |
 | Claim D67 exact-grid/curve-readback consumer | **Go only for protected platform-local controlled-synthetic consumer/readback mechanics; no-go for physical maturity** | PR #121 exact head/reviewed/protected-tree equality, all 44 local gates, all 11 PR checks, exact post-merge CI/security, and protected artifact `8407177912` prove exact point retention, independent all-101 curve reconstruction, tamper refusal, authority/recovery binding, and unchanged 97/two/two analytic-fallback behavior. The only applicable grid is test-generated, and the catalog row remains v1/rejected. D67 cannot be cited as sourced/applicable thrust, owner review, tier 3, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
-| Claim D68/OPS-001 deployment contract | **Go only for protected contract/fixture maturity; no-go for managed-environment or production claims** | PR #123 exact head `a028acd`, protected squash `401dac84`, all 45 local gates, all 11 PR checks, PR CI/security `29634700980`/`29634700969`, and post-merge CI/security `29634987939`/`29634987955` protect the machine policy/schema, offline promotion tests, compatibility surface, gateway/worker exact-manifest startup fence, and canonical operations roadmap. OPS-002..010 remain open; no active manifest or managed infrastructure exists |
+| Claim D68/OPS-001 deployment contract | **Go only for protected contract/fixture maturity; no-go for managed-environment or production claims** | PR #123 exact head `a028acd`, protected squash `401dac84`, evidence PR #124 exact head `5f9ff0b`, protected `f68314d`, all 45 local gates, both sets of all 11 PR checks, and final post-merge CI/security `29635605328`/`29635605305` protect the machine policy/schema, offline promotion tests, compatibility surface, gateway/worker exact-manifest startup fence, and canonical operations roadmap. OPS-002 is in progress and OPS-003..010 remain open; no active manifest or managed infrastructure exists |
+| Claim D69/OPS-002 hardened runtime | **No-go beyond the unprotected contract/fixture candidate** | Exact runtime/image/Compose/secret/probe/resource/evidence semantics and focused local checks exist, but the image-build/runtime smoke has not yet passed protected CI and no immutable registry artifact, managed sandbox install, upgrade, rollback, or corrected roll-forward exists. CI restart cannot be cited as managed rollback |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 
 ## 7. Next evidence refresh
 
-The stable ledger currently contains **206 tasks: 151 done, 31 in progress, 23 open,
+The stable ledger currently contains **206 tasks: 151 done, 32 in progress, 22 open,
 and 1 explicitly blocked**. All 8 recovery tasks and QA-012 retain completed evidence.
 The 55 remaining tasks include the phase/live/field program, 2 governance, 2
 security, 2 quality, 9 operations, and 9 external-proof tasks; the documentation

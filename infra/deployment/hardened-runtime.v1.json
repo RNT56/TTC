@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "forge-hardened-runtime/1.0.0",
+  "decision": "D69",
+  "maturity": "contract-fixture",
+  "substrate": "docker-compose-single-host",
+  "composeFile": "infra/compose.hardened.json",
+  "dockerfile": "infra/docker/runtime.Dockerfile",
+  "verifiedUpstreamAt": "2026-07-18T07:23:00.000Z",
+  "baseImages": [
+    {
+      "name": "node",
+      "reference": "node:22.17.1-bookworm-slim@sha256:2fa754a9ba4d7adbd2a51d182eaabbe355c82b673624035a38c0d42b08724854",
+      "registry": "https://registry-1.docker.io/v2/library/node/manifests/22.17.1-bookworm-slim"
+    },
+    {
+      "name": "python",
+      "reference": "python:3.12.13-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983fc3136726336b2a4c657aa30b",
+      "registry": "https://registry-1.docker.io/v2/library/python/manifests/3.12.13-slim-bookworm"
+    },
+    {
+      "name": "rust",
+      "reference": "rust:1.96.0-slim-bookworm@sha256:4732ca96fd086cb9be682050c3f0176288eebaac2b80aa2bcefccfaf198e1950",
+      "registry": "https://registry-1.docker.io/v2/library/rust/manifests/1.96.0-slim-bookworm"
+    },
+    {
+      "name": "nginx-unprivileged",
+      "reference": "nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:42a7d7f2ee23e9f5a1dcdf3647ba5c585bbd18f79e79cd817e70e8cd61c55779",
+      "registry": "https://registry-1.docker.io/v2/nginxinc/nginx-unprivileged/manifests/1.29.5-alpine"
+    },
+    {
+      "name": "postgres-pgvector",
+      "reference": "pgvector/pgvector:0.8.1-pg16-bookworm@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337",
+      "registry": "https://registry-1.docker.io/v2/pgvector/pgvector/manifests/0.8.1-pg16-bookworm"
+    },
+    {
+      "name": "minio",
+      "reference": "alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4",
+      "registry": "https://registry-1.docker.io/v2/alpine/minio/manifests/RELEASE.2025-10-15T17-29-55Z"
+    },
+    {
+      "name": "minio-client",
+      "reference": "minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727",
+      "registry": "https://registry-1.docker.io/v2/minio/mc/manifests/RELEASE.2025-08-13T08-35-41Z"
+    }
+  ],
+  "toolImages": [
+    {
+      "name": "syft",
+      "reference": "anchore/syft:v1.38.0@sha256:825cad3a952c87676a6d07e9a3bb05ac9c401d598360070e970aa46d54c1727e",
+      "registry": "https://registry-1.docker.io/v2/anchore/syft/manifests/v1.38.0"
+    },
+    {
+      "name": "trivy",
+      "reference": "aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500",
+      "registry": "https://registry-1.docker.io/v2/aquasec/trivy/manifests/0.71.0"
+    }
+  ],
+  "applicationArtifacts": [
+    {
+      "component": "gateway",
+      "target": "gateway",
+      "user": "10001:10001",
+      "readOnlyRoot": true,
+      "writablePaths": ["/tmp"],
+      "ports": [8080],
+      "liveness": "/healthz",
+      "readiness": "/readyz"
+    },
+    {
+      "component": "workers",
+      "target": "workers",
+      "user": "10002:10002",
+      "readOnlyRoot": true,
+      "writablePaths": ["/tmp"],
+      "ports": [],
+      "liveness": "python -m forge_workers.health live",
+      "readiness": "python -m forge_workers.health ready"
+    },
+    {
+      "component": "studio-static",
+      "target": "studio",
+      "user": "101:101",
+      "readOnlyRoot": true,
+      "writablePaths": ["/tmp", "/var/cache/nginx", "/var/run"],
+      "ports": [8443],
+      "liveness": "/healthz",
+      "readiness": "/readyz"
+    }
+  ],
+  "runtimeRules": {
+    "publicServices": ["studio"],
+    "privateServices": ["gateway", "workers", "postgres", "minio"],
+    "rootInitOnly": ["minio-permissions", "postgres-entrypoint"],
+    "dropAllCapabilities": true,
+    "noNewPrivileges": true,
+    "readOnlyRoots": true,
+    "tlsEdgeRequired": true,
+    "tlsObjectStorageRequired": true,
+    "fileMountedSecretsRequired": true,
+    "resourceLimitsRequired": true,
+    "gracefulStopRequired": true,
+    "migrationMode": "forward-only-one-shot",
+    "imageRule": "tag-plus-manifest-digest",
+    "promotionRule": "identical-application-digests"
+  },
+  "requiredEvidence": [
+    "application image manifest digests",
+    "SPDX SBOM and BuildKit provenance metadata per application image",
+    "OS-package vulnerability review",
+    "non-root/read-only/capability/no-new-privilege inspection",
+    "TLS edge and private-network inspection",
+    "liveness/readiness and graceful-stop exercise",
+    "clean sandbox install and exact application rollback",
+    "forward-only migration and corrected roll-forward exercise"
+  ],
+  "currentClaim": {
+    "managedEnvironment": false,
+    "sandboxInstalled": false,
+    "rollbackProven": false,
+    "live": false,
+    "production": false,
+    "externalBeta": false
+  }
+}

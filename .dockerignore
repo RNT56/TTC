@@ -1,0 +1,12 @@
+.git
+.github
+.pnpm-store
+artifacts
+coverage
+node_modules
+target
+**/__pycache__
+**/.pytest_cache
+**/dist
+docs/evidence
+prototype

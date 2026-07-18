@@ -33,6 +33,7 @@ of the OpenAPI request body, persistence, examples, or response schemas.
 | Route | Purpose | Auth | Maturity | Documented response statuses |
 |---|---|---|---|---|
 | `GET /healthz` | Report gateway and validator process health | public | contract | 200 |
+| `GET /readyz` | Report bounded internal database, object-store, and validator readiness | public | contract | 200, 503 |
 | `* /auth` | Delegate Auth.js authentication requests | public | contract | 200 |
 | `* /auth/*` | Delegate Auth.js provider and callback requests | public | contract | 200 |
 | `GET /v1/me` | Read the current optional session identity | optional-session | fixture | 200 |
@@ -132,6 +133,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `replay` | 1.0.0 | major 1 |
 | `envSpec` | 1.0.0 | major 1 |
 | `deploymentManifest` | 1.0.0 | major 1 |
+| `hardenedRuntime` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
 | `userDataExport` | 1.6.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |
