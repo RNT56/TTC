@@ -1,0 +1,517 @@
+{
+  "schemaVersion": "forge-deployment-policy/1.0.0",
+  "manifestVersion": "1.0.0",
+  "manifestSchema": "schema/forge-deployment-manifest.schema.json",
+  "decision": "D68",
+  "maturity": "contract",
+  "currentRuntimeClaim": "local-prod-like-only",
+  "topology": {
+    "firstOperatingShape": "single-region-small",
+    "components": [
+      "studio-static",
+      "gateway",
+      "validator",
+      "workers",
+      "postgres",
+      "object-storage",
+      "gpu-provider",
+      "desktop",
+      "controlled-lab"
+    ],
+    "stateAuthorities": {
+      "postgres": "relational truth, ownership, jobs, consent, lifecycle, audit, and immutable revision metadata",
+      "object-storage": "private checksum-bound payload bytes; never independent admission authority",
+      "gateway": "authenticated mutation, cross-store transactions, admission, and lifecycle orchestration",
+      "workers": "lease-fenced compute; results gain authority only through gateway/Postgres materialization",
+      "validator": "sovereign model, export, replay, recorder, and co-design admission",
+      "desktop": "local filesystem and serial custody under explicit D30/D12 gates"
+    },
+    "forbiddenWithoutDecision": [
+      "multi-region active-active",
+      "Kubernetes",
+      "production worker public ingress",
+      "direct browser access to Postgres or object credentials",
+      "automatic hardware arming or authority promotion"
+    ]
+  },
+  "environments": {
+    "local": {
+      "kind": "development",
+      "managed": false,
+      "credentials": "development-only",
+      "data": "fixture-or-owner-local",
+      "requiredComponents": [],
+      "requiredGates": [],
+      "requiredOwnershipRoles": [],
+      "maximumAuthority": {
+        "publicTraffic": false,
+        "realUserData": false,
+        "providerCredentials": false,
+        "hardware": false,
+        "externalBeta": false,
+        "live": false,
+        "field": false
+      }
+    },
+    "ci": {
+      "kind": "ephemeral-test",
+      "managed": false,
+      "credentials": "keyless-or-test-only",
+      "data": "fixtures-only",
+      "requiredComponents": [],
+      "requiredGates": [],
+      "requiredOwnershipRoles": [],
+      "maximumAuthority": {
+        "publicTraffic": false,
+        "realUserData": false,
+        "providerCredentials": false,
+        "hardware": false,
+        "externalBeta": false,
+        "live": false,
+        "field": false
+      }
+    },
+    "sandbox": {
+      "kind": "credentialed-provider-test",
+      "managed": true,
+      "credentials": "sandbox-only",
+      "data": "synthetic-or-explicitly-consented-test",
+      "requiredComponents": [
+        "studio-static",
+        "gateway",
+        "validator",
+        "workers",
+        "postgres",
+        "object-storage"
+      ],
+      "requiredGates": [
+        "protected-main",
+        "ci",
+        "security",
+        "deployment-policy",
+        "migration-acceptance"
+      ],
+      "requiredOwnershipRoles": [
+        "releaseMaintainer",
+        "platformOperator",
+        "securityOwner",
+        "dataOwner"
+      ],
+      "maximumAuthority": {
+        "publicTraffic": false,
+        "realUserData": false,
+        "providerCredentials": true,
+        "hardware": false,
+        "externalBeta": false,
+        "live": false,
+        "field": false
+      }
+    },
+    "staging": {
+      "kind": "production-like-validation",
+      "managed": true,
+      "credentials": "staging-only",
+      "data": "synthetic-or-sanitized",
+      "requiredComponents": [
+        "studio-static",
+        "gateway",
+        "validator",
+        "workers",
+        "postgres",
+        "object-storage"
+      ],
+      "requiredGates": [
+        "protected-main",
+        "ci",
+        "security",
+        "deployment-policy",
+        "migration-acceptance",
+        "sandbox-evidence",
+        "hardened-runtime",
+        "observability",
+        "backup-restore"
+      ],
+      "requiredOwnershipRoles": [
+        "releaseMaintainer",
+        "platformOperator",
+        "securityOwner",
+        "dataOwner",
+        "incidentCommander"
+      ],
+      "maximumAuthority": {
+        "publicTraffic": false,
+        "realUserData": false,
+        "providerCredentials": true,
+        "hardware": false,
+        "externalBeta": false,
+        "live": false,
+        "field": false
+      }
+    },
+    "production": {
+      "kind": "public-service",
+      "managed": true,
+      "credentials": "production-only",
+      "data": "real-user-data",
+      "requiredComponents": [
+        "studio-static",
+        "gateway",
+        "validator",
+        "workers",
+        "postgres",
+        "object-storage"
+      ],
+      "requiredGates": [
+        "protected-main",
+        "ci",
+        "security",
+        "deployment-policy",
+        "migration-acceptance",
+        "staging-evidence",
+        "hardened-runtime",
+        "observability",
+        "backup-restore",
+        "slo-and-alerts",
+        "incident-readiness",
+        "capacity-and-cost",
+        "privacy-and-deletion",
+        "security-signoff",
+        "external-beta-rollout"
+      ],
+      "requiredOwnershipRoles": [
+        "releaseMaintainer",
+        "platformOperator",
+        "securityOwner",
+        "dataOwner",
+        "incidentCommander",
+        "supportOwner"
+      ],
+      "maximumAuthority": {
+        "publicTraffic": true,
+        "realUserData": true,
+        "providerCredentials": true,
+        "hardware": false,
+        "externalBeta": true,
+        "live": true,
+        "field": false
+      }
+    },
+    "controlled-lab": {
+      "kind": "named-hardware-lab",
+      "managed": true,
+      "credentials": "lab-and-signing-only",
+      "data": "explicitly-consented-lab-evidence",
+      "requiredComponents": [
+        "validator",
+        "desktop",
+        "controlled-lab"
+      ],
+      "requiredGates": [
+        "protected-main",
+        "ci",
+        "security",
+        "deployment-policy",
+        "signed-desktop",
+        "D30",
+        "D12",
+        "lab-supervisor",
+        "physical-confirmation"
+      ],
+      "requiredOwnershipRoles": [
+        "releaseMaintainer",
+        "securityOwner",
+        "labSupervisor",
+        "evidenceReviewer"
+      ],
+      "maximumAuthority": {
+        "publicTraffic": false,
+        "realUserData": false,
+        "providerCredentials": false,
+        "hardware": true,
+        "externalBeta": false,
+        "live": false,
+        "field": false
+      }
+    }
+  },
+  "promotion": {
+    "edges": [
+      {
+        "from": "protected-main",
+        "to": "sandbox"
+      },
+      {
+        "from": "sandbox",
+        "to": "staging"
+      },
+      {
+        "from": "staging",
+        "to": "production"
+      },
+      {
+        "from": "protected-main",
+        "to": "controlled-lab"
+      }
+    ],
+    "artifactRule": "build once from clean protected main; promote identical component digests without rebuilding",
+    "databaseRule": "apply forward migrations in each environment; never copy production data down except an independently authorized sanitized export",
+    "secretRule": "resolve environment-specific versioned secret references at deployment; never copy secret values or references across environments",
+    "rollbackRule": "retain an artifact rollback target and application rollback procedure; database history remains forward-only"
+  },
+  "ownership": {
+    "roles": [
+      "releaseMaintainer",
+      "platformOperator",
+      "securityOwner",
+      "dataOwner",
+      "incidentCommander",
+      "supportOwner",
+      "labSupervisor",
+      "evidenceReviewer"
+    ],
+    "rule": "every required role resolves to a named accountable owner or rotation; an empty, TBD, team-only, or repository-bot value is invalid"
+  },
+  "configuration": {
+    "environmentVariable": "FORGE_DEPLOYMENT_ENVIRONMENT",
+    "legacyEnvironmentVariable": "FORGE_ENV",
+    "sourceRevisionVariable": "FORGE_SOURCE_REVISION",
+    "manifestPathVariable": "FORGE_DEPLOYMENT_MANIFEST",
+    "manifestDigestVariable": "FORGE_DEPLOYMENT_MANIFEST_SHA256",
+    "valueVariables": [
+      "AUTH_URL",
+      "AWS_REGION",
+      "FORGE_CATALOG_DIR",
+      "FORGE_CLAUDE_EXTRACT_CMD",
+      "FORGE_CODESIGN_CMD",
+      "FORGE_COLMAP_CMD",
+      "FORGE_DB_CONNECT_TIMEOUT_MS",
+      "FORGE_DEPLOYMENT_ENVIRONMENT",
+      "FORGE_DEPLOYMENT_MANIFEST",
+      "FORGE_DEPLOYMENT_MANIFEST_SHA256",
+      "FORGE_DESKTOP_D30_LAB_SIGNOFF",
+      "FORGE_DESKTOP_ENABLE_HARDWARE",
+      "FORGE_DESKTOP_OBJECT_UPLOAD_ORIGIN",
+      "FORGE_DESKTOP_PROTECTED_REVISION",
+      "FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE",
+      "FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE_SHA256",
+      "FORGE_GPU_BACKEND",
+      "FORGE_HARDWARE_LAB_MODE",
+      "FORGE_LOCKFILE_HASH",
+      "FORGE_MJX_BENCH_CMD",
+      "FORGE_MODAL_DAILY_CREDIT_LIMIT",
+      "FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH",
+      "FORGE_MODAL_DEPLOY_SOURCE_REVISION",
+      "FORGE_MODAL_ENDPOINT",
+      "FORGE_MODAL_ENVIRONMENT",
+      "FORGE_MODAL_FUNCTION_VERSION",
+      "FORGE_MODAL_MAX_ACTIVE_JOBS",
+      "FORGE_MODAL_SOURCE_REVISION",
+      "FORGE_MODAL_TIMEOUT_S",
+      "FORGE_MUJOCO_ENABLED",
+      "FORGE_MUJOCO_PARITY_CMD",
+      "FORGE_OBJECT_ALLOW_INSECURE_INTERNAL",
+      "FORGE_OBJECT_BUCKET",
+      "FORGE_OBJECT_DELETE_TIMEOUT_MS",
+      "FORGE_OBJECT_ENDPOINT",
+      "FORGE_OBJECT_FORCE_PATH_STYLE",
+      "FORGE_OBJECT_READ_TIMEOUT_MS",
+      "FORGE_OBJECT_REGION",
+      "FORGE_OBJECT_WRITE_TIMEOUT_S",
+      "FORGE_OCCT_ENABLED",
+      "FORGE_OCCT_TESSELLATE_CMD",
+      "FORGE_OFFLINE_RL_CMD",
+      "FORGE_PHOTOSCAN_CMD",
+      "FORGE_PRINT_QUOTE_BASE_URL",
+      "FORGE_PRINT_QUOTE_CMD",
+      "FORGE_PRINT_QUOTE_ENDPOINT",
+      "FORGE_PRINT_QUOTE_PROVIDER",
+      "FORGE_PRINT_QUOTE_SANDBOX",
+      "FORGE_PUBLIC_ORIGIN",
+      "FORGE_RAPIER_ENGINE",
+      "FORGE_RECORDER_VERIFY_TIMEOUT_MS",
+      "FORGE_REQUIRE_CLEAN_EVIDENCE",
+      "FORGE_SB3_TRAIN_CMD",
+      "FORGE_SCHEMA",
+      "FORGE_SOURCE_REVISION",
+      "FORGE_SYSID_FIT_CMD",
+      "FORGE_TO_MUJOCO",
+      "FORGE_TRAINING_BACKEND",
+      "FORGE_TRAINING_MANIFEST_HASH",
+      "FORGE_VALIDATE_BIN",
+      "FORGE_VENDOR_OFFER_BASE_URL",
+      "FORGE_VENDOR_REFRESH_CMD",
+      "FORGE_VENDOR_REFRESH_SANDBOX",
+      "FORGE_WORKER_POLL_SECONDS",
+      "NODE_ENV",
+      "NO_COLOR",
+      "PORT",
+      "PYTORCH_ENABLE_MPS_FALLBACK"
+    ],
+    "secretVariables": [
+      "ANTHROPIC_API_KEY",
+      "AUTH_SECRET",
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "DATABASE_URL",
+      "FORGE_OBJECT_ACCESS_KEY_ID",
+      "FORGE_OBJECT_SECRET_ACCESS_KEY",
+      "FORGE_REVIEW_TOKEN",
+      "GITHUB_CLIENT_ID",
+      "GITHUB_CLIENT_SECRET",
+      "MODAL_TOKEN_ID",
+      "MODAL_TOKEN_SECRET"
+    ],
+    "runtimeManagedVariables": [
+      "CUBLAS_WORKSPACE_CONFIG"
+    ],
+    "localOnlyVariables": [
+      "FORGE_DEV_AUTH",
+      "FORGE_ENV",
+      "MINIO_ROOT_PASSWORD",
+      "MINIO_ROOT_USER"
+    ],
+    "productionForbiddenVariables": [
+      "FORGE_DEV_AUTH",
+      "FORGE_ENV",
+      "MINIO_ROOT_PASSWORD",
+      "MINIO_ROOT_USER",
+      "FORGE_OBJECT_ALLOW_INSECURE_INTERNAL",
+      "FORGE_PRINT_QUOTE_SANDBOX",
+      "FORGE_VENDOR_REFRESH_SANDBOX"
+    ],
+    "baseRequiredValues": [
+      "AUTH_URL",
+      "FORGE_CATALOG_DIR",
+      "FORGE_DEPLOYMENT_ENVIRONMENT",
+      "FORGE_GPU_BACKEND",
+      "FORGE_OBJECT_BUCKET",
+      "FORGE_OBJECT_ENDPOINT",
+      "FORGE_SOURCE_REVISION",
+      "FORGE_VALIDATE_BIN",
+      "NODE_ENV"
+    ],
+    "baseRequiredSecrets": [
+      "AUTH_SECRET",
+      "DATABASE_URL",
+      "FORGE_OBJECT_ACCESS_KEY_ID",
+      "FORGE_OBJECT_SECRET_ACCESS_KEY"
+    ],
+    "capabilities": {
+      "github-oauth": {
+        "requiredValues": [],
+        "requiredSecrets": [
+          "GITHUB_CLIENT_ID",
+          "GITHUB_CLIENT_SECRET"
+        ]
+      },
+      "anthropic-etl": {
+        "requiredValues": [],
+        "requiredSecrets": [
+          "ANTHROPIC_API_KEY"
+        ]
+      },
+      "modal-gpu": {
+        "requiredValues": [
+          "FORGE_MODAL_DEPLOYMENT_CONTRACT_HASH",
+          "FORGE_MODAL_ENVIRONMENT",
+          "FORGE_MODAL_FUNCTION_VERSION",
+          "FORGE_MODAL_SOURCE_REVISION"
+        ],
+        "requiredSecrets": [
+          "MODAL_TOKEN_ID",
+          "MODAL_TOKEN_SECRET"
+        ]
+      },
+      "photoscan-command": {
+        "requiredValues": [
+          "FORGE_PHOTOSCAN_CMD"
+        ],
+        "requiredSecrets": []
+      },
+      "colmap-command": {
+        "requiredValues": [
+          "FORGE_COLMAP_CMD"
+        ],
+        "requiredSecrets": []
+      },
+      "occt-command": {
+        "requiredValues": [
+          "FORGE_OCCT_TESSELLATE_CMD"
+        ],
+        "requiredSecrets": []
+      },
+      "vendor-refresh": {
+        "requiredValues": [
+          "FORGE_VENDOR_REFRESH_CMD"
+        ],
+        "requiredSecrets": []
+      },
+      "print-quote": {
+        "requiredValues": [
+          "FORGE_PRINT_QUOTE_CMD",
+          "FORGE_PRINT_QUOTE_ENDPOINT",
+          "FORGE_PRINT_QUOTE_PROVIDER"
+        ],
+        "requiredSecrets": []
+      },
+      "controlled-lab": {
+        "requiredValues": [
+          "FORGE_DESKTOP_D30_LAB_SIGNOFF",
+          "FORGE_DESKTOP_ENABLE_HARDWARE",
+          "FORGE_DESKTOP_PROTECTED_REVISION",
+          "FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE",
+          "FORGE_DESKTOP_RECORDER_CUSTODY_TRUST_BUNDLE_SHA256",
+          "FORGE_HARDWARE_LAB_MODE"
+        ],
+        "requiredSecrets": []
+      }
+    }
+  },
+  "secrets": {
+    "referencePattern": "^secret://[a-z0-9][a-z0-9./_-]{2,160}@[A-Za-z0-9._-]{1,80}$",
+    "classes": {
+      "auth-signing": {
+        "maximumAgeDays": 90,
+        "overlapRequired": false,
+        "rotationEffect": "existing sessions may be invalidated"
+      },
+      "database": {
+        "maximumAgeDays": 90,
+        "overlapRequired": true,
+        "rotationEffect": "dual credential or ordered pool drain"
+      },
+      "object-storage": {
+        "maximumAgeDays": 90,
+        "overlapRequired": true,
+        "rotationEffect": "dual key then old-key revocation"
+      },
+      "oauth": {
+        "maximumAgeDays": 180,
+        "overlapRequired": true,
+        "rotationEffect": "provider overlap where supported"
+      },
+      "provider": {
+        "maximumAgeDays": 90,
+        "overlapRequired": true,
+        "rotationEffect": "sandbox validation then environment-specific cutover"
+      },
+      "review-authority": {
+        "maximumAgeDays": 90,
+        "overlapRequired": false,
+        "rotationEffect": "review sessions invalidated"
+      },
+      "desktop-signing": {
+        "maximumAgeDays": 365,
+        "overlapRequired": true,
+        "rotationEffect": "old and new signed artifacts remain independently verifiable"
+      }
+    },
+    "emergencyRevocationHours": 4,
+    "rules": [
+      "secret values never enter manifests, logs, evidence, source, generated docs, or promotion records",
+      "every managed secret reference is environment-specific and versioned",
+      "rotation proves new credential use before old credential revocation",
+      "suspected disclosure triggers immediate revocation rather than waiting for maximum age"
+    ]
+  }
+}

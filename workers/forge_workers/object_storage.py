@@ -75,7 +75,11 @@ def object_store_config_from_env(env: dict[str, str] | None = None) -> ObjectSto
         "FORGE_OBJECT_SECRET_ACCESS_KEY",
         values.get("AWS_SECRET_ACCESS_KEY", "forge-dev-only"),
     )
-    production = values.get("NODE_ENV") == "production" or values.get("FORGE_ENV") == "production"
+    production = (
+        values.get("NODE_ENV") == "production"
+        or values.get("FORGE_DEPLOYMENT_ENVIRONMENT") == "production"
+        or values.get("FORGE_ENV") == "production"
+    )
     if production:
         if not values.get("FORGE_OBJECT_ENDPOINT") or not values.get("FORGE_OBJECT_BUCKET"):
             raise RuntimeError("production object storage endpoint and bucket must be explicit")

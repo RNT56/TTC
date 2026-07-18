@@ -1,5 +1,7 @@
 import { buildServer } from "./server.js";
+import { assertDeploymentBootstrap } from "./deployment.js";
 
+assertDeploymentBootstrap();
 const port = Number(process.env.PORT ?? 8080);
 const app = buildServer();
 app

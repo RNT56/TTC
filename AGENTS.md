@@ -50,19 +50,23 @@ Read in this order for every non-trivial session:
    accelerator, running the three-morphology P7-010 benchmark, or changing its verdict.
 14. `docs/MODAL-OPERATIONS.md` before deploying, configuring, invoking, cancelling,
    recovering, measuring, or making a maturity claim about Modal training.
-15. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
+15. `docs/OPERATIONS.md` before changing deployment topology, managed environments,
+   runtime configuration, secret references/rotation, promotion, rollback,
+   observability, SLOs, backup/restore, incident response, capacity, or launch limits;
+   exact names and gates live in `infra/deployment/deployment-policy.v1.json`.
+16. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
    persisted-data compatibility, backup impact, or database recovery behavior.
-16. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
+17. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
    `docs/DEPRECATIONS.md` before changing gateway routes, authentication classes,
    events, externally consumed artifacts, examples, or removal plans.
-17. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
+18. `docs/COMPATIBILITY.md` before changing schemas, reports, CLI/WASM APIs, replay,
    EnvSpec, consent/export/deletion records, worker artifacts, or version numbers.
-18. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
+19. `docs/REPOSITORY-GOVERNANCE.md` before changing workflows, checks, branch rules,
    dependencies, or releases.
-19. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
+20. `docs/RELEASE.md` before building, tagging, publishing, withdrawing, or verifying
    a validator release.
-20. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
-21. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
+21. `docs/PUBLICATION.md` before adding registry credentials or publishing crates/npm.
+22. `docs/DATA-LIFECYCLE.md` before changing export/deletion, retention, legal holds,
     backup catalogs/adapters, restore behavior, or lifecycle audit evidence.
 
 When documents disagree, use this authority order:
@@ -708,6 +712,7 @@ Do not repeat these facts without re-running or re-checking them. Update
 | API/data/platform | `packages/gateway`, `infra/migrations`, `contracts/documentation.json` | Validate writes, scope ownership, fail closed, preserve audit history; registered routes and TypeBox request schemas generate the versioned API/event/artifact reference without hand-edited drift; policy reads cross-check owner/job/model/scorecard/tensor/lineage/object bytes |
 | Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
+| Deployment/operations | `infra/deployment`, `scripts/deployment-policy.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion authority; build once, environment-specific secret references, forward-only migrations, no live claim from contract evidence |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
 

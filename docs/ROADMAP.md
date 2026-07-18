@@ -56,6 +56,13 @@ atomic recovery, history refusal, and concurrent apply-once. Production
 backup/restore, disaster recovery, capacity, and measured RPO/RTO remain OPS-005 and
 QA-009.
 
+OPS-001 is in progress under D68 at local contract/fixture maturity. The repository
+now has a versioned deployment policy and manifest schema, exact offline
+validation/promotion rules, managed gateway/worker startup binding, and one canonical
+[`OPERATIONS.md`](OPERATIONS.md) sequence through OPS-010. This is not a deployed
+sandbox or production proof; protection is pending, and OPS-002 hardened artifacts
+remain the next operational dependency.
+
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
 clean revision-bound artifacts prove opaque expiring attempt leases, bounded outage/

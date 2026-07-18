@@ -18,6 +18,40 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Bind managed deployments to one exact D68 contract
+**Session:** Codex agent · branch `codex/ops001-deployment-contract` ·
+**Phase:** OPS/QA · **TODO items:** OPS-001 [~]
+**Done:** Implemented the OPS-001 contract/fixture candidate without claiming a
+managed environment. D68 fixes the first single-region topology, six environment
+classes, accountable roles, non-secret configuration inventory, versioned
+environment-specific secret references, normal/emergency rotation, direct build-once
+promotion ladder, forward-only database rule, and explicit authority ceilings.
+`forge-deployment-manifest/1.0.0` is a strict compatibility surface. Offline checks
+validate policy, manifests, and exact promotion; managed gateway and worker startup
+independently hash and bind the active manifest, source revision, environment, and
+required component. `OPERATIONS.md` owns the dependency-complete OPS-002..010 path.
+**Evidence:** `pnpm verify:deployment` passes 11/11 policy/adversarial tests and the
+runtime-variable/document consistency scan. Compatibility exact-matches 21 surfaces;
+generated docs verify 81 routes, two event families, and seventeen worker families.
+Gateway typecheck and 77/77 tests pass. Python 3.12.13 passes 7/7 focused deployment/
+object tests and all 251 worker tests. Three append-only golden records cover the new
+registered policy/schema and generated compatibility output. The cumulative
+`pnpm verify` passes all 45 required local gates, including Rust/WASM exact parity,
+Brief-25 25/25, release packaging, four-morphology/offline/MJX training, and the exact
+200-candidate pause/cancel/resume batch with 97 admissions, two Pareto points, and two
+held finalists. Protected evidence remains pending.
+**Changed:** Deployment policy/schema/checker/tests; gateway and worker bootstrap;
+worker object-production alias; compatibility/generated docs/golden registry;
+canonical `AGENTS.md`, operations/best-practices/governance/architecture guidance,
+project state, roadmap, TODO, risk register, README, and verification wiring.
+**Decisions:** D68. R37 records deployment/configuration/promotion-drift risk.
+**Next:** Publish the exact fully verified candidate through protected review,
+reconcile post-merge evidence, and only then mark
+OPS-001 `[x]`. Start OPS-002 with immutable non-root deployable artifacts afterward.
+**Blockers:** No implementation blocker. No sandbox, staging, production, real secret
+rotation, deployment substrate, SLO/backup/incident/capacity proof, live service, or
+external beta exists; OPS-002..010 remain required.
+
 ## 2026-07-17 — Reconcile protected D67 exact-grid readback evidence
 **Session:** Codex agent · branch `codex/p9006-d67-protected-evidence` ·
 **Phase:** P9/QA · **TODO items:** P9-002 [~], P9-003 [~]

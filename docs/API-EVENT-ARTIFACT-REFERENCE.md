@@ -131,6 +131,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `gatewayEvents` | 0.2.0 | major 0 |
 | `replay` | 1.0.0 | major 1 |
 | `envSpec` | 1.0.0 | major 1 |
+| `deploymentManifest` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
 | `userDataExport` | 1.6.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |

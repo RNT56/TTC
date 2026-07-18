@@ -146,6 +146,12 @@ leaderboard runs are re-verified server-side as anti-cheat hygiene only.
 
 ## 6. Deployment, surfaces & operations
 
+The binding topology, environment, ownership, configuration, secret-rotation,
+promotion, rollback, and OPS-002..010 closure contract is
+[`OPERATIONS.md`](OPERATIONS.md) under D68. Exact machine policy lives in
+[`deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json); this
+architecture section is a summary, not independent deployment authority.
+
 - **Current state:** `infra/docker-compose.yml` is a local/prod-like development
   profile with development defaults and source mounts. It is not production proof.
 - **Target topology:** a single-VM gateway/Postgres/worker deployment plus CDN/static

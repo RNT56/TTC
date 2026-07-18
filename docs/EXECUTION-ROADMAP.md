@@ -6,6 +6,7 @@ Evidence baseline: [`PROJECT-STATE.md`](PROJECT-STATE.md)
 
 Vision and phase contract: [`FORGE-plan.md`](FORGE-plan.md)
 Atomic work ledger: [`TODO.md`](TODO.md)
+Operations contract: [`OPERATIONS.md`](OPERATIONS.md)
 
 This document is the master execution overlay. It does not redefine product vision
 or duplicate implementation specifications. It orders all remaining phase,
@@ -56,6 +57,11 @@ eight-file/89-case adversarial inventory, Rust/Python consumers, and fifteenth g
 family passed exact PR CI/security and post-merge CI/security. Production backup/DR,
 multi-replica queues, object-store operations, shared quotas, and SLOs remain
 OPS-005/QA-009 and OPS-003..007.
+OPS-001 now has a local D68 implementation candidate: a compatibility-governed
+deployment manifest/policy, exact gateway/worker startup binding, and the canonical
+OPS-002..010 sequence in `OPERATIONS.md`. Until protected evidence lands, it remains
+`[~]`; it proves no managed environment. The next operations slice is OPS-002's
+immutable hardened deployment artifacts and sandbox install/rollback proof.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is
@@ -877,6 +883,13 @@ Exit: G7.
 
 Owns `SEC-*`, `GOV-*`, `OPS-*`, and `DOC-*`. These are product work, not cleanup.
 Every functional lane consumes its gates.
+
+D68/OPS-001 fixes the operations dependency order as OPS-002 hardened artifacts,
+then OPS-003 observability, then parallel SLO/data-resilience/job-control work
+(OPS-004..006), provider resilience (OPS-007), incident/support and economics
+(OPS-008/009), and capacity/launch limits (OPS-010). Do not run a production
+promotion or external beta around an incomplete predecessor; exact deliverables and
+acceptance evidence are owned by `OPERATIONS.md`.
 
 Exit: no open blocking cross-cutting item for the target release/phase.
 
