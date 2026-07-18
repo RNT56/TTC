@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Reconcile protected D68 deployment-contract evidence
+**Session:** Codex agent · branch `codex/ops001-protected-evidence` ·
+**Phase:** OPS/QA · **TODO items:** OPS-001 [x]
+**Done:** Closed OPS-001 at protected contract/fixture maturity without promoting any
+managed environment. PR #123 exact implementation head `a028acd29e574dd0a4ffc55fb49a9c172176c785`
+passed all eleven required checks, CI `29634700980`, and security `29634700969`.
+Protected squash `401dac84a143c6ee09e1f8eb2f1723eefd1d5a1a` passed post-merge CI
+`29634987939` and security `29634987955`: core, Desktop, workers, TypeScript,
+isolated Postgres/production-browser, supported-browser/accessibility, dependency
+audit, both CodeQL languages, and the validated SPDX source SBOM are green.
+**Evidence:** The exact implementation head passed all 45 local gates under Python
+3.12.13, including 11 deployment-policy tests, 21 compatibility surfaces, 17 golden
+families, 81 routes/two events/17 worker families, 77 Gateway and 251 worker tests,
+Brief-25 25/25, native/WASM parity, packaging, training/offline/MJX/co-design, and
+the 200/97/two-Pareto/two-held recovery batch. The stable active ledger is now 206
+tasks: 151 done, 31 in progress, 23 open, and one blocked; 55 remain.
+**Changed:** Canonical `AGENTS.md`; project-state, phase roadmap, execution roadmap,
+stable TODO ledger, and changelog evidence language only. No runtime, schema,
+migration, golden artifact, compatibility surface, dependency, or deployment
+authority changed in this reconciliation.
+**Decisions:** none. D68 and R37 remain active unchanged.
+**Next:** Execute OPS-002: produce immutable non-root hardened deployable artifacts,
+pin their digests, prove filesystem/network/health/resource constraints, and retain a
+clean sandbox install plus rollback before starting OPS-003 observability.
+**Blockers:** No local OPS-002 design blocker. No deployment substrate, sandbox,
+staging, production, real secret rotation, SLO/backup/incident/capacity proof, live
+service, or external beta exists; OPS-002..010 remain required.
+
 ## 2026-07-18 — Bind managed deployments to one exact D68 contract
 **Session:** Codex agent · branch `codex/ops001-deployment-contract` ·
 **Phase:** OPS/QA · **TODO items:** OPS-001 [~]

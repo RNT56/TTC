@@ -94,8 +94,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D66 implementation PR #119 at `5a162b0`.
-  Exact head `7306a6e`, reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
+  latest verified protected descendant is D68/OPS-001 PR #123 at `401dac84`. Exact
+  implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR CI/security
+  `29634700980`/`29634700969`, and post-merge CI/security
+  `29634987939`/`29634987955` pass at contract/fixture maturity; no managed
+  environment or live service is proven, and OPS-002 is next. D66 implementation PR
+  #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
+  reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
   `29575066749`/`29575066748`, protected-tree equality, and post-merge CI/security
   `29575647835`/`29575647768` pass. Protected browser/database artifact
   `8405061774` binds clean source `5a162b0`; its migration acceptance file

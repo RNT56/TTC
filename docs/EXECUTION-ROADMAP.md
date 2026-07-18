@@ -1,6 +1,6 @@
 # EXECUTION ROADMAP - complete program from recovery to field proof
 
-Last rebuilt: **2026-07-15**
+Last rebuilt: **2026-07-18**
 
 Evidence baseline: [`PROJECT-STATE.md`](PROJECT-STATE.md)
 
@@ -57,11 +57,12 @@ eight-file/89-case adversarial inventory, Rust/Python consumers, and fifteenth g
 family passed exact PR CI/security and post-merge CI/security. Production backup/DR,
 multi-replica queues, object-store operations, shared quotas, and SLOs remain
 OPS-005/QA-009 and OPS-003..007.
-OPS-001 now has a local D68 implementation candidate: a compatibility-governed
-deployment manifest/policy, exact gateway/worker startup binding, and the canonical
-OPS-002..010 sequence in `OPERATIONS.md`. Until protected evidence lands, it remains
-`[~]`; it proves no managed environment. The next operations slice is OPS-002's
-immutable hardened deployment artifacts and sandbox install/rollback proof.
+OPS-001 is complete at protected D68 contract/fixture maturity through PR #123 and
+`401dac84`: the compatibility-governed deployment manifest/policy, exact gateway/
+worker startup binding, and canonical OPS-002..010 sequence in `OPERATIONS.md` pass
+all 45 local gates, all 11 PR checks, and exact PR/post-merge CI/security. It proves
+no managed environment. The next operations slice is OPS-002's immutable hardened
+deployment artifacts and sandbox install/rollback proof.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is
