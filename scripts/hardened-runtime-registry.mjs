@@ -288,7 +288,9 @@ export function validatePublicationEvidenceFiles(record, root) {
       const build = json(buildPath);
       const provenance = build["buildx.build.provenance"];
       add(errors, build["containerimage.digest"] === image.manifestDigest, `${label}.buildRecord manifest digest drifted`);
-      add(errors, build["containerimage.config.digest"] === image.configDigest, `${label}.buildRecord config digest drifted`);
+      if (build["containerimage.config.digest"] !== undefined) {
+        add(errors, build["containerimage.config.digest"] === image.configDigest, `${label}.buildRecord config digest drifted`);
+      }
       add(errors, provenance?.invocation?.parameters?.args?.["build-arg:SOURCE_REVISION"] === record.sourceRevision, `${label}.buildRecord source build argument drifted`);
       add(errors, provenance?.invocation?.parameters?.args?.target === image.target, `${label}.buildRecord target drifted`);
       add(errors, provenance?.invocation?.parameters?.root?.request?.args?.["vcs:revision"] === record.sourceRevision, `${label}.buildRecord VCS revision drifted`);
@@ -337,12 +339,14 @@ export function createPublicationEvidence({ evidenceRoot, sourceRevision, source
   if (!SHA1.test(sourceTree)) throw new Error("sourceTree must be a full Git tree ID");
   if (repository !== SOURCE_REPOSITORY) throw new Error(`repository must be ${SOURCE_REPOSITORY}`);
   const attestations = readAttestations(evidenceRoot);
+  const runtimePath = resolve(evidenceRoot, "runtime-smoke.json");
+  const runtime = json(runtimePath);
   const images = COMPONENTS.map((expected) => {
     const component = expected.component;
     const buildPath = `${component}.build-record.json`;
     const build = json(resolve(evidenceRoot, buildPath));
     const manifestDigest = build["containerimage.digest"];
-    const configDigest = build["containerimage.config.digest"];
+    const configDigest = runtime.images?.[component]?.id;
     const spdxPath = `${component}.spdx.json`;
     const spdx = json(resolve(evidenceRoot, spdxPath));
     const trivyPath = `${component}.trivy.json`;
@@ -390,7 +394,6 @@ export function createPublicationEvidence({ evidenceRoot, sourceRevision, source
       },
     };
   });
-  const runtimePath = resolve(evidenceRoot, "runtime-smoke.json");
   const record = {
     schemaVersion: PUBLICATION_MARKER,
     decision: "D70",
@@ -416,7 +419,7 @@ export function createPublicationEvidence({ evidenceRoot, sourceRevision, source
       path: "runtime-smoke.json",
       sha256: sha256File(runtimePath),
       exactRegistryImages: true,
-      sameArtifactRestartReady: json(runtimePath).sameArtifactRestartReady === true,
+      sameArtifactRestartReady: runtime.sameArtifactRestartReady === true,
     },
     claims: {
       immutableRegistryPublished: true,

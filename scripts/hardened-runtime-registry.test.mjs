@@ -78,7 +78,6 @@ function fixture() {
         },
       },
       "containerimage.digest": manifestDigest,
-      "containerimage.config.digest": CONFIG[component],
     });
     writeFileSync(join(root, `${component}.github-attestation.jsonl`), `${component}-bundle\n`);
     writeJson(join(root, `${component}.attestation-verification.json`), [{
@@ -147,8 +146,29 @@ test("publication evidence binds exact registry manifests, source, scans, attest
     assert.deepEqual(validatePublicationEvidence(record), []);
     assert.deepEqual(validatePublicationEvidenceFiles(record, root), []);
     assert.equal(record.images.length, 3);
+    assert.deepEqual(record.images.map((image) => image.configDigest), [
+      CONFIG.gateway,
+      CONFIG.workers,
+      CONFIG.studio,
+    ]);
     assert.equal(record.claims.immutableRegistryPublished, true);
     assert.equal(record.claims.managedEnvironment, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("config digest authority is the exact pulled runtime and optional build metadata cannot contradict it", () => {
+  const root = fixture();
+  try {
+    const record = create(root);
+    const buildPath = join(root, "gateway.build-record.json");
+    const build = JSON.parse(readFileSync(buildPath, "utf8"));
+    build["containerimage.config.digest"] = `sha256:${"f".repeat(64)}`;
+    writeJson(buildPath, build);
+    record.images[0].buildRecord.sha256 = sha256(readFileSync(buildPath));
+    const errors = validatePublicationEvidenceFiles(record, root).join("\n");
+    assert.match(errors, /buildRecord config digest drifted/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

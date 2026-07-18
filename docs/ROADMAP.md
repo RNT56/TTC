@@ -78,10 +78,14 @@ dispatched protected `main` head, builds each proprietary application image once
 pushes to fixed GHCR names by digest without mutable tags, attaches BuildKit and
 GitHub provenance, and requires a separate manifest-hashing, attestation-verifying,
 exact-pull D69 smoke before emitting `forge-hardened-runtime-publication/1.0.0`.
-The candidate passes all 47 local gates under Python 3.12.13 with six D70 tests, 23
-compatibility surfaces, nineteen golden families, 87 immutable Action references,
+The protected contract passed all 47 local gates under Python 3.12.13 with six D70
+tests, 23 compatibility surfaces, nineteen golden families, 87 immutable Action references,
 255 worker tests, and the unchanged 200/97/two-Pareto/two-held recovery batch. The
-contract does not claim a successful registry run. After protected publication,
+first protected run `29642829329` proved publish/scan/attestation/independent-pull/
+smoke but failed final evidence creation because attested OCI-index metadata omitted
+the assumed config field. The pulled-runtime authority correction has seven focused
+tests, passes all 47 local gates, and still requires protected rerun. After accepted
+protected publication,
 OPS-002 will still require a real D68 sandbox install, upgrade, application rollback,
 and corrected roll-forward.
 

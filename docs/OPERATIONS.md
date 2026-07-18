@@ -14,10 +14,11 @@ Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.
 
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity through PR #125/`290060d` and evidence PR #126/`f6f2620`; D70 defines the pending digest-only registry-publication contract; no immutable registry artifact, managed environment, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity through PR #125/`290060d` and evidence PR #126/`f6f2620`; D70's registry contract is protected through PR #127/`a1d72ad`, but first run `29642829329` produced objects without an accepted final record; no managed environment, rollback, or live service is proven**
 
-The D70 candidate passes all 47 local gates under Python 3.12.13, including six
-registry tests, 23 compatibility surfaces, nineteen golden families, 87 immutable
+The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
+focused registry tests; the pre-correction protected contract's full gate included
+six registry tests, 23 compatibility surfaces, nineteen golden families, 87 immutable
 Action references across five workflows, 255 worker tests, and the unchanged
 200/97/two-Pareto/two-held recovery batch. This is repository contract evidence only.
 
@@ -414,7 +415,9 @@ corrected roll-forward, managed environment, or live service.
   manifest and checks its SHA-256, verifies the registry-attached GitHub attestation
   against `RNT56/TTC/.github/workflows/hardened-runtime-release.yml`, the exact source
   digest, and `refs/heads/main`, pulls the exact images, and runs the D69 smoke over
-  their config digests. `forge-hardened-runtime-publication/1.0.0` binds all files and
+  their config digests. Config identity comes from the exact pulled runtime; an
+  optional index-level Buildx config field is corroboration and must not contradict
+  that pull. `forge-hardened-runtime-publication/1.0.0` binds all files and
   keeps package visibility unreviewed plus every managed/live claim false. Retain the
   final artifact for 90 days and download it again before citing publication.
 - A sandbox closeout must additionally publish immutable application image
