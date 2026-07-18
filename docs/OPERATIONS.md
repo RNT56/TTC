@@ -61,6 +61,18 @@ immutable application image references, exact manifest and artifact digests,
 file-backed secrets, and TLS material. A successful configuration render or CI smoke
 is fixture evidence, not an installed sandbox or rollback result.
 
+The single-host substrate does not support Compose service-level `uid`, `gid`, or
+`mode` controls for local file-backed secrets/configs; Compose ignores those fields.
+Before rendering or starting this profile, the deployment secret materializer must
+write every referenced source outside the repository, set the source bytes to
+`root:10999` and mode `0440`, and expose supplemental GID `10999` only to declared
+consumers. The checked profile encodes that group with `group_add` and deliberately
+omits unsupported per-mount ownership fields. Do not make sources world-readable to
+work around a staging error. The ephemeral CI fixture uses an already reviewed,
+digest-pinned service image for the bounded ownership/mode operation; a managed host
+must use its privileged deployment agent or secret-manager materializer and retain a
+metadata-only inspection of path class, numeric owner/group, mode, and version.
+
 ## 2. Supported first topology
 
 ```mermaid
@@ -351,7 +363,10 @@ managed sandbox install/rollback evidence.
   `10001:10001`, `10002:10002`, and `101:101` respectively.
 - `infra/compose.hardened.json` is the single-host substrate. Only Studio publishes
   `8443`; Postgres, object storage, Gateway, migration, and workers remain private.
-  Root-only volume ownership initialization is short-lived and separately bounded.
+  Root-only Postgres/object-volume ownership initialization is short-lived and
+  separately bounded. Every secret/config consumer is non-root and receives only
+  supplemental GID `10999`; mounted source files must already be `root:10999`/`0440`
+  outside the checkout before Compose starts.
 - Liveness means that the process can execute; readiness means that declared local
   dependencies are usable. Gateway readiness checks the validator, Postgres, and
   object bucket. Worker readiness checks its deployment fence, validator, and
@@ -362,8 +377,10 @@ managed sandbox install/rollback evidence.
   source-mounted profile.
 - CI builds the exact targets, records build metadata, emits an SPDX image SBOM and
   vulnerability report per component, then checks effective identity, read-only
-  root, capabilities, security options, limits, health, TLS, isolation headers,
-  private networking, graceful stop, and same-artifact restart. The structured smoke
+  root, capabilities, security options, limits, staged source ownership/mode,
+  configured and effective supplemental groups, health, TLS, isolation headers,
+  private networking, graceful stop, and same-artifact restart. Startup failures
+  retain bounded Compose status and service logs for diagnosis. The structured smoke
   record permanently sets managed-sandbox, rollback, live, production, and external-
   beta claims false.
 - A sandbox closeout must additionally publish immutable application image

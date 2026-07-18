@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -31,6 +32,31 @@ function run(command, args, options = {}) {
   return (result.stdout ?? "").trim();
 }
 
+function commandOutput(command, args, env) {
+  const result = spawnSync(command, args, {
+    cwd: process.cwd(),
+    env,
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+  return `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+}
+
+function composeUp(composeArgs, env, timeout) {
+  const args = [...composeArgs, "up", "--detach", "--wait", "--wait-timeout", timeout];
+  const result = spawnSync("docker", args, {
+    cwd: process.cwd(),
+    env,
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+  if (!result.error && result.status === 0) return;
+  const commandFailure = result.error?.message ?? `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+  const ps = commandOutput("docker", [...composeArgs, "ps", "--all"], env);
+  const logs = commandOutput("docker", [...composeArgs, "logs", "--no-color", "--tail", "200"], env);
+  throw new Error(`hardened Compose startup failed: ${commandFailure}\n\ncompose ps:\n${ps}\n\ncompose logs:\n${logs}`);
+}
+
 function checkoutClean() {
   for (const args of [["diff", "--quiet"], ["diff", "--cached", "--quiet"]]) {
     const result = spawnSync("git", args, { cwd: process.cwd(), stdio: "ignore" });
@@ -48,6 +74,28 @@ function writeSecret(directory, name, value) {
   writeFileSync(path, value, { mode: 0o600 });
   chmodSync(path, 0o600);
   return path;
+}
+
+function stageRuntimeFiles(directory, image) {
+  run("docker", [
+    "run",
+    "--rm",
+    "--user", "0:0",
+    "--volume", `${directory}:/staged`,
+    "--entrypoint", "/bin/sh",
+    image,
+    "-c",
+    "for path in /staged/*; do chown 0:10999 \"$path\"; chmod 0440 \"$path\"; done",
+  ]);
+}
+
+function stagedFileInspection(path) {
+  const value = statSync(path);
+  return {
+    uid: value.uid,
+    gid: value.gid,
+    mode: (value.mode & 0o777).toString(8).padStart(4, "0"),
+  };
 }
 
 function certificate(directory, name, commonName, altNames, caCertificate, caKey) {
@@ -98,6 +146,7 @@ function containerInspection(id) {
     readOnlyRoot: value.HostConfig.ReadonlyRootfs,
     capDrop: value.HostConfig.CapDrop ?? [],
     securityOptions: value.HostConfig.SecurityOpt ?? [],
+    groupAdd: value.HostConfig.GroupAdd ?? [],
     pidsLimit: value.HostConfig.PidsLimit,
     memoryBytes: value.HostConfig.Memory,
     nanoCpus: value.HostConfig.NanoCpus,
@@ -110,6 +159,9 @@ function containerInspection(id) {
 
 const output = resolve(flag("--out", "artifacts/hardened/runtime-smoke.json"));
 const composeFile = resolve("infra/compose.hardened.json");
+const runtimeContract = JSON.parse(readFileSync(resolve("infra/deployment/hardened-runtime.v1.json"), "utf8"));
+const stagingImage = runtimeContract.baseImages.find((image) => image.name === "minio")?.reference;
+if (!stagingImage) throw new Error("D69 runtime contract does not declare the secret-staging image");
 const temporary = mkdtempSync(join(tmpdir(), "forge-hardened-runtime-"));
 const project = `forge-hardened-${process.pid}`;
 const sourceRevision = process.env.FORGE_SOURCE_REVISION || run("git", ["rev-parse", "HEAD"], { capture: true });
@@ -124,6 +176,8 @@ let started = false;
 try {
   const caKey = join(temporary, "ca.key");
   const caCertificate = join(temporary, "ca.crt");
+  const stagedDirectory = join(temporary, "staged");
+  mkdirSync(stagedDirectory, { mode: 0o700 });
   run("openssl", [
     "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-sha256", "-days", "1",
     "-subj", "/CN=ForgedTTC-CI-CA",
@@ -132,14 +186,35 @@ try {
   ]);
   chmodSync(caKey, 0o600);
   chmodSync(caCertificate, 0o600);
-  const edge = certificate(temporary, "edge", "localhost", "DNS:localhost,IP:127.0.0.1", caCertificate, caKey);
-  const object = certificate(temporary, "object", "minio", "DNS:minio,DNS:localhost,IP:127.0.0.1", caCertificate, caKey);
-  const deploymentManifest = writeSecret(temporary, "deployment.json", "{}\n");
-  const postgresPassword = writeSecret(temporary, "postgres-password", "forge-ci-postgres-password");
-  const databaseUrl = writeSecret(temporary, "database-url", "postgres://forge:forge-ci-postgres-password@postgres:5432/forge");
-  const authSecret = writeSecret(temporary, "auth-secret", "a".repeat(48));
-  const objectAccess = writeSecret(temporary, "object-access", "forge-ci-access");
-  const objectSecret = writeSecret(temporary, "object-secret", "o".repeat(48));
+  const edge = certificate(stagedDirectory, "edge", "localhost", "DNS:localhost,IP:127.0.0.1", caCertificate, caKey);
+  const object = certificate(stagedDirectory, "object", "minio", "DNS:minio,DNS:localhost,IP:127.0.0.1", caCertificate, caKey);
+  const runtimeCaCertificate = writeSecret(stagedDirectory, "ca.crt", readFileSync(caCertificate));
+  const deploymentManifest = writeSecret(stagedDirectory, "deployment.json", "{}\n");
+  const deploymentManifestSha256 = sha256(deploymentManifest);
+  const postgresPassword = writeSecret(stagedDirectory, "postgres-password", "forge-ci-postgres-password");
+  const databaseUrl = writeSecret(stagedDirectory, "database-url", "postgres://forge:forge-ci-postgres-password@postgres:5432/forge");
+  const authSecret = writeSecret(stagedDirectory, "auth-secret", "a".repeat(48));
+  const objectAccess = writeSecret(stagedDirectory, "object-access", "forge-ci-access");
+  const objectSecret = writeSecret(stagedDirectory, "object-secret", "o".repeat(48));
+  stageRuntimeFiles(stagedDirectory, stagingImage);
+  const stagedSources = Object.fromEntries(Object.entries({
+    deploymentManifest,
+    postgresPassword,
+    databaseUrl,
+    authSecret,
+    objectAccess,
+    objectSecret,
+    caCertificate: runtimeCaCertificate,
+    edgeCertificate: edge.certificate,
+    edgePrivateKey: edge.key,
+    objectCertificate: object.certificate,
+    objectPrivateKey: object.key,
+  }).map(([name, path]) => [name, stagedFileInspection(path)]));
+  for (const [name, source] of Object.entries(stagedSources)) {
+    if (source.uid !== 0 || source.gid !== 10999 || source.mode !== "0440") {
+      throw new Error(`${name} was not staged root:10999/0440`);
+    }
+  }
   const inspectedImages = Object.fromEntries(Object.entries(images).map(([name, reference]) => [name, imageInspection(reference)]));
   for (const [name, expectedUser] of [["gateway", "10001:10001"], ["workers", "10002:10002"], ["studio", "101:101"]]) {
     if (inspectedImages[name].user !== expectedUser) throw new Error(`${name} image user is ${inspectedImages[name].user}`);
@@ -156,7 +231,7 @@ try {
     FORGE_STUDIO_ARTIFACT_SHA256: inspectedImages.studio.id.replace(/^sha256:/, ""),
     FORGE_SOURCE_REVISION: sourceRevision,
     FORGE_DEPLOYMENT_MANIFEST: deploymentManifest,
-    FORGE_DEPLOYMENT_MANIFEST_SHA256: sha256(deploymentManifest),
+    FORGE_DEPLOYMENT_MANIFEST_SHA256: deploymentManifestSha256,
     FORGE_RUNTIME_NODE_ENV: "test",
     FORGE_RUNTIME_ENVIRONMENT: "ci",
     FORGE_HTTPS_BIND: "127.0.0.1:8443",
@@ -167,7 +242,7 @@ try {
     AUTH_SECRET_FILE: authSecret,
     FORGE_OBJECT_ACCESS_KEY_ID_FILE: objectAccess,
     FORGE_OBJECT_SECRET_ACCESS_KEY_FILE: objectSecret,
-    TLS_CA_CERTIFICATE_FILE: caCertificate,
+    TLS_CA_CERTIFICATE_FILE: runtimeCaCertificate,
     TLS_EDGE_CERTIFICATE_FILE: edge.certificate,
     TLS_EDGE_PRIVATE_KEY_FILE: edge.key,
     TLS_OBJECT_CERTIFICATE_FILE: object.certificate,
@@ -176,7 +251,7 @@ try {
 
   run("docker", [...composeArgs, "config", "--quiet"], { env: environment });
   started = true;
-  run("docker", [...composeArgs, "up", "--detach", "--wait", "--wait-timeout", "240"], { env: environment });
+  composeUp(composeArgs, environment, "240");
   const health = JSON.parse(run("curl", ["--fail", "--silent", "--cacert", caCertificate, "https://127.0.0.1:8443/healthz"], { capture: true }));
   const readiness = JSON.parse(run("docker", [
     ...composeArgs,
@@ -205,6 +280,18 @@ try {
     if (services[name].pidsLimit <= 0 || services[name].memoryBytes <= 0 || services[name].nanoCpus <= 0 || services[name].health !== "healthy") {
       throw new Error(`${name} runtime resource or health evidence is incomplete`);
     }
+    if (JSON.stringify(services[name].groupAdd) !== JSON.stringify(["10999"])) {
+      throw new Error(`${name} runtime secret group drifted`);
+    }
+    services[name].effectiveGroups = run("docker", [...composeArgs, "exec", "--no-TTY", name, "id", "-G"], { env: environment, capture: true }).split(/\s+/);
+    if (!services[name].effectiveGroups.includes("10999")) throw new Error(`${name} process cannot read staged runtime secrets`);
+  }
+  const secretConsumers = {};
+  for (const name of ["postgres", "minio", "minio-init", "migrate", "gateway", "workers", "studio"]) {
+    const id = run("docker", [...composeArgs, "ps", "--all", "--quiet", name], { env: environment, capture: true });
+    const inspection = containerInspection(id);
+    secretConsumers[name] = { configuredUser: inspection.configuredUser, groupAdd: inspection.groupAdd, exitCode: inspection.exitCode };
+    if (JSON.stringify(inspection.groupAdd) !== JSON.stringify(["10999"])) throw new Error(`${name} lost the runtime secret group`);
   }
   const expectedNetworks = {
     postgres: [`${project}_app`],
@@ -235,7 +322,7 @@ try {
     if (stopped[name] !== 0) throw new Error(`${name} did not stop cleanly`);
   }
   run("docker", [...composeArgs, "start", "gateway", "workers", "studio"], { env: environment });
-  run("docker", [...composeArgs, "up", "--detach", "--wait", "--wait-timeout", "180"], { env: environment });
+  composeUp(composeArgs, environment, "180");
   const restartedReady = JSON.parse(run("docker", [
     ...composeArgs,
     "exec",
@@ -256,6 +343,8 @@ try {
     environment: "ephemeral-ci",
     managedSandbox: false,
     images: inspectedImages,
+    stagedSources,
+    secretConsumers,
     services,
     tls: { edge: true, objectStorage: true, isolationHeaders: true },
     health,
@@ -278,7 +367,7 @@ try {
         FORGE_GATEWAY_IMAGE: images.gateway,
         FORGE_WORKERS_IMAGE: images.workers,
         FORGE_STUDIO_IMAGE: images.studio,
-        FORGE_DEPLOYMENT_MANIFEST: join(temporary, "deployment.json"),
+        FORGE_DEPLOYMENT_MANIFEST: join(temporary, "staged", "deployment.json"),
         AUTH_URL: "https://localhost:8443",
         FORGE_PUBLIC_ORIGIN: "https://localhost:8443",
         FORGE_SOURCE_REVISION: sourceRevision,
@@ -286,16 +375,16 @@ try {
         FORGE_GATEWAY_ARTIFACT_SHA256: "0".repeat(64),
         FORGE_WORKERS_ARTIFACT_SHA256: "0".repeat(64),
         FORGE_STUDIO_ARTIFACT_SHA256: "0".repeat(64),
-        POSTGRES_PASSWORD_FILE: join(temporary, "postgres-password"),
-        DATABASE_URL_FILE: join(temporary, "database-url"),
-        AUTH_SECRET_FILE: join(temporary, "auth-secret"),
-        FORGE_OBJECT_ACCESS_KEY_ID_FILE: join(temporary, "object-access"),
-        FORGE_OBJECT_SECRET_ACCESS_KEY_FILE: join(temporary, "object-secret"),
-        TLS_CA_CERTIFICATE_FILE: join(temporary, "ca.crt"),
-        TLS_EDGE_CERTIFICATE_FILE: join(temporary, "edge.crt"),
-        TLS_EDGE_PRIVATE_KEY_FILE: join(temporary, "edge.key"),
-        TLS_OBJECT_CERTIFICATE_FILE: join(temporary, "object.crt"),
-        TLS_OBJECT_PRIVATE_KEY_FILE: join(temporary, "object.key"),
+        POSTGRES_PASSWORD_FILE: join(temporary, "staged", "postgres-password"),
+        DATABASE_URL_FILE: join(temporary, "staged", "database-url"),
+        AUTH_SECRET_FILE: join(temporary, "staged", "auth-secret"),
+        FORGE_OBJECT_ACCESS_KEY_ID_FILE: join(temporary, "staged", "object-access"),
+        FORGE_OBJECT_SECRET_ACCESS_KEY_FILE: join(temporary, "staged", "object-secret"),
+        TLS_CA_CERTIFICATE_FILE: join(temporary, "staged", "ca.crt"),
+        TLS_EDGE_CERTIFICATE_FILE: join(temporary, "staged", "edge.crt"),
+        TLS_EDGE_PRIVATE_KEY_FILE: join(temporary, "staged", "edge.key"),
+        TLS_OBJECT_CERTIFICATE_FILE: join(temporary, "staged", "object.crt"),
+        TLS_OBJECT_PRIVATE_KEY_FILE: join(temporary, "staged", "object.key"),
       },
       stdio: "inherit",
     });

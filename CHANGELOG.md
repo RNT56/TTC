@@ -18,6 +18,37 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Repair D69 single-host secret custody
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected protected run `29637855300`/job `88063316211`: all three exact
+images built, all three SPDX documents were emitted, and every fixed-low-or-higher
+Trivy result was empty. The first runtime smoke then failed at MinIO because
+standalone Compose explicitly ignored the profile's service-level secret/config
+`uid`, `gid`, and `mode` fields, leaving non-root consumers unable to read the
+runner-owned sources. Replaced that invalid ownership claim with an explicit
+single-host custody boundary: sources are staged outside the checkout as
+`root:10999`/`0440`, declared consumers receive only supplemental GID `10999`, and
+Postgres now runs as numeric non-root `999:999` behind a bounded root volume
+initializer. The smoke records source metadata plus configured/effective groups and
+emits bounded Compose status/log diagnostics on startup failure.
+**Evidence:** The failed protected job reached the runtime only after three clean
+image vulnerability scans and printed Compose's unsupported-field warnings before
+MinIO became unhealthy. The repaired profile passes its eight focused D69 tests, an
+explicit warning-free Compose render, and all 46 local gates under Python 3.12.13,
+including 22 compatibility surfaces, eighteen golden families, 39 Studio tests, 81
+Gateway tests, 255 worker tests, and the exact 200-candidate co-design recovery
+batch. Protected runtime proof remains required; this entry does not claim that the
+repaired profile has started.
+**Changed:** D69 runtime and Compose contracts, contract tests, runtime smoke,
+`AGENTS.md`, operations, threat model, and changelog.
+**Decisions:** none; this corrects the existing D69 single-host contract before it is
+protected and does not expand its contract/fixture maturity.
+**Next:** Push the repair and use the improved protected smoke evidence to prove or
+further diagnose the entire runtime.
+**Blockers:** No repository blocker. Docker-only replacement acceptance remains
+pending in protected CI.
+
 ## 2026-07-18 — Refresh the D69 Studio edge image
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]

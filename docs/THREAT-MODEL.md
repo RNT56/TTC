@@ -15,6 +15,13 @@ private networks, TLS, dropped capabilities, resource limits, probes, terminatio
 and CI evidence are contract/fixture controls. They do not prove a managed sandbox,
 rollback, production perimeter, provider isolation, or live operation.
 
+For D69's single-host Compose substrate, file secrecy is a host-side precondition:
+the materializer stages referenced sources outside the checkout as
+`root:10999`/`0440`, while only declared consumers receive supplemental GID `10999`.
+The profile omits Compose `uid`/`gid`/`mode` mount attributes because the local-file
+implementation ignores them. World-readable sources, repository-resident values,
+and an unrecorded ownership workaround are fail-closed deployment errors.
+
 This is the canonical application threat model. `security-safety-legal.md` owns
 product exclusions, privacy promises, and legal gates; `DATA-LIFECYCLE.md` owns
 retention, holds, backup, deletion, and restore authority; system documents own
@@ -291,6 +298,11 @@ and error redaction only; no real provider/proxy/APM log has been inspected.
 
 - Store production secrets in a deployment secret manager, not repository files,
   Compose defaults, client bundles, command arguments, or logs.
+- On the D69 single-host profile, materialize only the selected immutable versions
+  into a host directory unavailable to ordinary users, set each source
+  `root:10999`/`0440`, verify metadata without reading values, and remove superseded
+  material after consumers have restarted and the old version is revoked. Compose
+  cannot supply or repair those source ownership semantics.
 - Rotate a suspected provider key immediately at the provider, then restart/reload
   every consumer and confirm the old value fails. BYO users rotate their own key.
 - Rotate `AUTH_SECRET` only with an explicit session-invalidation plan; treat all old

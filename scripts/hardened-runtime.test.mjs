@@ -43,18 +43,32 @@ test("long-lived services require least privilege and finite resources", () => {
   assert.match(errors, /workers must use a read-only root/);
   assert.match(errors, /workers must drop all capabilities/);
   assert.match(errors, /workers must set a memory limit/);
+  assert.match(errors, /workers must declare a numeric non-root identity/);
 });
 
-test("application probe, secret, and writable-path semantics are major-version exact", () => {
+test("root authority is limited to bounded one-shot volume initializers", () => {
+  const candidate = copy(compose);
+  candidate.services["postgres-permissions"].restart = "unless-stopped";
+  candidate.services["minio-permissions"].cap_add.push("SETUID");
+  candidate.services.migrate.user = "0:0";
+  const errors = validateHardenedCompose(candidate, contract).join("\n");
+  assert.match(errors, /postgres-permissions cannot restart/);
+  assert.match(errors, /minio-permissions must add only bounded volume-ownership capabilities/);
+  assert.match(errors, /migrate must declare a numeric non-root identity/);
+});
+
+test("application probe, staged-secret, and writable-path semantics are major-version exact", () => {
   const runtime = copy(contract);
   runtime.applicationArtifacts[1].readiness = "python -c pass";
   assert.match(validateHardenedRuntime(runtime).join("\n"), /readiness must match/);
 
   const candidate = copy(compose);
   candidate.services.gateway.secrets[0].mode = "0444";
+  candidate.services.workers.group_add = ["10002"];
   candidate.services.workers.environment.FORGE_OBJECT_ENDPOINT = "http://minio:9000";
   const errors = validateHardenedCompose(candidate, contract).join("\n");
-  assert.match(errors, /gateway secret AUTH_SECRET must be read-only/);
+  assert.match(errors, /gateway secret AUTH_SECRET cannot claim unsupported Compose ownership or mode/);
+  assert.match(errors, /workers must receive only the runtime secret supplemental group/);
   assert.match(errors, /workers object storage must use private TLS/);
 });
 

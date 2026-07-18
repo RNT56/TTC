@@ -10,6 +10,9 @@ const PINNED_IMAGE = /^[a-z0-9][a-z0-9./_-]*:[A-Za-z0-9_.-]+@sha256:([a-f0-9]{64
 const APPLICATIONS = ["gateway", "workers", "studio-static"];
 const TARGETS = ["gateway", "workers", "studio"];
 const LONG_LIVED = ["postgres", "minio", "gateway", "workers", "studio"];
+const ROOT_INITIALIZERS = ["postgres-permissions", "minio-permissions"];
+const SECRET_CONSUMERS = ["postgres", "minio", "minio-init", "migrate", "gateway", "workers", "studio"];
+const SECRET_SUPPLEMENTAL_GID = "10999";
 const BASE_NAMES = ["node", "python", "rust", "nginx-unprivileged", "postgres-pgvector", "minio", "minio-client"];
 const APPLICATION_CONTRACTS = [
   { user: "10001:10001", writablePaths: ["/tmp"], ports: [8080], liveness: "/healthz", readiness: "/readyz" },
@@ -143,6 +146,8 @@ export function validateHardenedRuntime(contract) {
     "tlsEdgeRequired",
     "tlsObjectStorageRequired",
     "fileMountedSecretsRequired",
+    "secretFileMode",
+    "secretSupplementalGid",
     "resourceLimitsRequired",
     "gracefulStopRequired",
     "migrationMode",
@@ -161,7 +166,9 @@ export function validateHardenedRuntime(contract) {
   })) add(errors, contract.runtimeRules?.[name] === expected, `runtime.runtimeRules.${name} must be true`);
   add(errors, JSON.stringify(contract.runtimeRules?.publicServices) === JSON.stringify(["studio"]), "runtime public-service boundary is invalid");
   add(errors, JSON.stringify(contract.runtimeRules?.privateServices) === JSON.stringify(["gateway", "workers", "postgres", "minio"]), "runtime private-service boundary is invalid");
-  add(errors, JSON.stringify(contract.runtimeRules?.rootInitOnly) === JSON.stringify(["minio-permissions", "postgres-entrypoint"]), "runtime root-init boundary is invalid");
+  add(errors, JSON.stringify(contract.runtimeRules?.rootInitOnly) === JSON.stringify(["postgres-permissions", "minio-permissions"]), "runtime root-init boundary is invalid");
+  add(errors, contract.runtimeRules?.secretFileMode === "0440", "runtime secret source-file mode is invalid");
+  add(errors, contract.runtimeRules?.secretSupplementalGid === SECRET_SUPPLEMENTAL_GID, "runtime secret supplemental GID is invalid");
   add(errors, contract.runtimeRules?.migrationMode === "forward-only-one-shot", "runtime migration mode is invalid");
   add(errors, contract.runtimeRules?.imageRule === "tag-plus-manifest-digest", "runtime image rule is invalid");
   add(errors, contract.runtimeRules?.promotionRule === "identical-application-digests", "runtime promotion rule is invalid");
@@ -184,11 +191,11 @@ export function validateHardenedCompose(compose, contract) {
   const errors = [];
   add(errors, compose.name === "forgedttc-managed", "compose project name is invalid");
   const services = compose.services ?? {};
-  for (const name of ["postgres", "minio-permissions", "minio", "minio-init", "migrate", "gateway", "workers", "studio"]) {
+  for (const name of ["postgres-permissions", "postgres", "minio-permissions", "minio", "minio-init", "migrate", "gateway", "workers", "studio"]) {
     add(errors, isObject(services[name]), `compose service ${name} is required`);
   }
   const pins = new Set((contract.baseImages ?? []).map((entry) => entry.reference));
-  for (const name of ["postgres", "minio-permissions", "minio", "minio-init"]) {
+  for (const name of ["postgres-permissions", "postgres", "minio-permissions", "minio", "minio-init"]) {
     add(errors, pins.has(services[name]?.image), `compose service ${name} must use a reviewed pinned image`);
   }
   add(errors, services.gateway?.image === "${FORGE_GATEWAY_IMAGE:?set an immutable gateway image reference}", "gateway image must be deployment-supplied and immutable");
@@ -196,11 +203,26 @@ export function validateHardenedCompose(compose, contract) {
   add(errors, services.workers?.image === "${FORGE_WORKERS_IMAGE:?set an immutable workers image reference}", "workers image must be deployment-supplied and immutable");
   add(errors, services.studio?.image === "${FORGE_STUDIO_IMAGE:?set an immutable Studio image reference}", "Studio image must be deployment-supplied and immutable");
 
+  for (const [name, service] of Object.entries(services)) {
+    if (ROOT_INITIALIZERS.includes(name)) {
+      add(errors, service.user === "0:0", `${name} must declare its bounded root identity`);
+      add(errors, service.read_only === true, `${name} must use a read-only root`);
+      add(errors, JSON.stringify(service.cap_drop) === JSON.stringify(["ALL"]), `${name} must drop all capabilities before its exact additions`);
+      add(errors, JSON.stringify(service.cap_add) === JSON.stringify(["CHOWN", "DAC_OVERRIDE", "FOWNER"]), `${name} must add only bounded volume-ownership capabilities`);
+      add(errors, service.security_opt?.includes("no-new-privileges:true"), `${name} must forbid new privileges`);
+      add(errors, Number(service.pids_limit) > 0 && Number(service.cpus) > 0 && typeof service.mem_limit === "string", `${name} must retain finite resources`);
+      add(errors, !("restart" in service), `${name} cannot restart after its one-shot volume operation`);
+    } else {
+      add(errors, /^\d{2,5}:\d{2,5}$/.test(service.user ?? "") && !service.user.startsWith("0:"), `${name} must declare a numeric non-root identity`);
+    }
+  }
+
   for (const name of LONG_LIVED) {
     const service = services[name] ?? {};
     add(errors, service.read_only === true, `${name} must use a read-only root`);
     add(errors, service.cap_drop?.length === 1 && service.cap_drop[0] === "ALL", `${name} must drop all capabilities`);
     add(errors, service.security_opt?.includes("no-new-privileges:true"), `${name} must forbid new privileges`);
+    add(errors, !Array.isArray(service.cap_add) || service.cap_add.length === 0, `${name} cannot add Linux capabilities`);
     add(errors, Number(service.pids_limit) > 0, `${name} must set a PID limit`);
     add(errors, Number(service.cpus) > 0, `${name} must set a CPU limit`);
     add(errors, typeof service.mem_limit === "string" && service.mem_limit.length > 1, `${name} must set a memory limit`);
@@ -208,6 +230,7 @@ export function validateHardenedCompose(compose, contract) {
     add(errors, isObject(service.healthcheck), `${name} must define a health check`);
     add(errors, Array.isArray(service.tmpfs) || Array.isArray(service.volumes), `${name} must inventory writable mounts`);
   }
+  add(errors, services.postgres?.user === "999:999", "Postgres must run as the declared non-root identity");
   add(errors, services.gateway?.user === "10001:10001", "gateway must run as the declared non-root identity");
   add(errors, services.workers?.user === "10002:10002", "workers must run as the declared non-root identity");
   add(errors, services.studio?.user === "101:101", "Studio must run as the declared non-root identity");
@@ -222,13 +245,18 @@ export function validateHardenedCompose(compose, contract) {
   add(errors, JSON.stringify(services.studio?.networks) === JSON.stringify(["edge"]), "Studio must stay off the data network");
   add(errors, services.gateway?.environment?.FORGE_OBJECT_ENDPOINT === "https://minio:9000", "gateway object storage must use private TLS");
   add(errors, services.workers?.environment?.FORGE_OBJECT_ENDPOINT === "https://minio:9000", "workers object storage must use private TLS");
+  add(errors, JSON.stringify(services.postgres?.depends_on) === JSON.stringify({ "postgres-permissions": { condition: "service_completed_successfully" } }), "Postgres must wait for its bounded volume initializer");
   add(errors, JSON.stringify(services.migrate?.depends_on) === JSON.stringify({ postgres: { condition: "service_healthy" } }), "migration must wait for healthy Postgres only");
   add(errors, services.gateway?.depends_on?.migrate?.condition === "service_completed_successfully", "gateway must wait for the forward migration");
   add(errors, services.workers?.depends_on?.migrate?.condition === "service_completed_successfully", "workers must wait for the forward migration");
-  for (const [name, user] of [["gateway", "10001:10001"], ["workers", "10002:10002"], ["studio", "101:101"]]) {
-    const [uid, gid] = user.split(":");
+  for (const name of SECRET_CONSUMERS) {
+    add(errors, JSON.stringify(services[name]?.group_add) === JSON.stringify([SECRET_SUPPLEMENTAL_GID]), `${name} must receive only the runtime secret supplemental group`);
     for (const secret of services[name]?.secrets ?? []) {
-      add(errors, secret.mode === "0400" && secret.uid === uid && secret.gid === gid, `${name} secret ${secret.source} must be read-only and owned by its runtime identity`);
+      add(errors, isObject(secret) && Object.keys(secret).every((key) => key === "source" || key === "target"), `${name} secret ${secret.source} cannot claim unsupported Compose ownership or mode`);
+      add(errors, typeof secret.source === "string" && typeof secret.target === "string", `${name} secret mount must declare source and target`);
+    }
+    for (const config of services[name]?.configs ?? []) {
+      add(errors, isObject(config) && Object.keys(config).every((key) => key === "source" || key === "target"), `${name} config ${config.source} cannot claim unsupported Compose ownership or mode`);
     }
   }
   add(errors, JSON.stringify(services.gateway?.healthcheck?.test ?? []).includes("/readyz"), "gateway health check must use readiness");
