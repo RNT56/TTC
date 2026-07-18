@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-18**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `a1d72ad` (PR #127; D70 digest-only registry-publication contract)
-Current verified implementation boundary: protected D70/OPS-002 registry contract at `a1d72ad`; the first external publication produced registry objects but no accepted final record, and managed operations remain open
+Latest verified protected descendant: `f1d8850` (PR #128; D70 pulled-config correction)
+Current verified implementation boundary: D70 immutable registry publication verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`; managed sandbox installation and operations remain open
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -50,6 +50,7 @@ D68/OPS-001 evidence-reconciliation anchor: `f68314d` (PR #124)
 D69/OPS-002 hardened-runtime anchor: `290060d` (PR #125)
 D69/OPS-002 evidence-reconciliation anchor: `f6f2620` (PR #126)
 D70/OPS-002 registry-publication contract anchor: `a1d72ad` (PR #127)
+D70/OPS-002 registry-publication correction anchor: `f1d8850` (PR #128)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -61,7 +62,7 @@ QA-007 adversarial-corpus evidence anchor: `e89bb15` (PR #48)
 QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
 Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
 OPS-001 status: **complete at protected D68 contract/fixture maturity; every managed environment remains pending under OPS-002..010**
-OPS-002 status: **in progress at protected D70 registry-contract maturity; digest objects exist from a failed final-record run, but no accepted immutable publication record, managed sandbox, or rollback is proven**
+OPS-002 status: **in progress with protected D70 immutable registry publication verified; no managed sandbox install, upgrade, rollback, corrected roll-forward, live service, or production authority is proven**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -132,30 +133,28 @@ production, and external-beta claims false. Ruleset `18843164` requires
 publication, managed sandbox install, upgrade, rollback, corrected roll-forward,
 live service, or production claim exists.
 
-D70 now protects the next OPS-002 repository boundary through PR #127 and exact
-protected squash `a1d72ad` without changing the managed-runtime verdict:
+D70 now protects and verifies the immutable-artifact half of OPS-002 without changing
+the managed-runtime verdict:
 [`hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json),
 [`forge-hardened-runtime-publication.schema.json`](../schema/forge-hardened-runtime-publication.schema.json),
 and the manual `hardened-runtime-release` workflow require exact protected `main`,
 digest-only GHCR publication with no mutable tags, BuildKit and GitHub registry-
 attached attestations, exact-registry SPDX and vulnerability records, a separate
 manifest-hashing/attestation-verification pull, and the unchanged D69 runtime smoke
-over the pulled image config digests. All 47 local gates pass under Python 3.12.13,
-including six D70
-tests, 23 compatibility surfaces, nineteen golden families, 87 immutable Action
-references across five workflows, 39 Studio tests, 81 Gateway tests, 255 worker
-tests, and the unchanged 200/97/two-Pareto/two-held recovery batch. All twelve PR
-checks pass, and exact post-merge CI/security `29642565755`/`29642565768` pass.
-Manual run `29642829329` then authorized protected source, published, scanned, and
-attested three digest-only GHCR objects, independently hashed/verified/pulled them,
-and passed the D69 runtime smoke. Final record creation correctly failed because the
-attested OCI index build records did not contain the assumed index-level
-`containerimage.config.digest`. The correction derives config identity from exact
-pulled runtime inspection and retains any Buildx config field only as contradiction-
-checked corroboration; seven focused tests and all 47 local gates pass. Until that
-correction is protected
-and rerun, no accepted immutable publication record, package-visibility conclusion,
-managed sandbox, rollback, live service, or production result is claimed.
+over the pulled image config digests. Contract PR #127 is protected at `a1d72ad`.
+Correction PR #128 exact head `f6dd129` passes all 47 local gates and all twelve PR
+checks in CI/security `29643812333`/`29643812326`; protected squash `f1d8850` passes
+post-merge CI/security `29644126620`/`29644126611`. Manual run `29644408106` passes
+source authorization, digest-only build/publish/scan/attestation, and independent
+manifest-hash/attestation/pull/runtime verification. Downloaded final artifact
+`8429638868` and publication record SHA-256 `132dc5f4…fd72` bind exact gateway
+`fd45d6d5…6c84`, workers `75cd8e68…7e1b`, and Studio `7fc6cc3c…caca` manifests to
+source `f1d8850` and pulled config digests. Fresh independent public-registry manifest
+hashes and `gh attestation verify` checks reproduce those identities. The three SPDX
+documents contain 219/118/71 packages and 3117/3340/951 files; all three exact-
+registry vulnerability reports contain zero fixed low-or-higher findings. Same-
+artifact restart is true. Package visibility remains unreviewed, and managed sandbox,
+rollback, live, production, and external-beta claims remain false.
 
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
@@ -1271,8 +1270,8 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D66 per-point-voltage format | **Go only for protected row-v2/read-v1/grid/persistence compatibility at `5a162b0`; no-go for propulsion maturity** | exact PR/reviewed/protected-tree proof, all 44 local gates, all 11 PR checks, post-merge CI/security, and protected artifact `8405061774` prove the format and every-predecessor migration boundary. It cannot be cited as sourced/applicable catalog thrust, a new D65 curve, training, review/marketplace, hardware, field, or external evidence |
 | Claim D67 exact-grid/curve-readback consumer | **Go only for protected platform-local controlled-synthetic consumer/readback mechanics; no-go for physical maturity** | PR #121 exact head/reviewed/protected-tree equality, all 44 local gates, all 11 PR checks, exact post-merge CI/security, and protected artifact `8407177912` prove exact point retention, independent all-101 curve reconstruction, tamper refusal, authority/recovery binding, and unchanged 97/two/two analytic-fallback behavior. The only applicable grid is test-generated, and the catalog row remains v1/rejected. D67 cannot be cited as sourced/applicable thrust, owner review, tier 3, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | Claim D68/OPS-001 deployment contract | **Go only for protected contract/fixture maturity; no-go for managed-environment or production claims** | PR #123 exact head `a028acd`, protected squash `401dac84`, evidence PR #124 exact head `5f9ff0b`, protected `f68314d`, all 45 local gates, both sets of all 11 PR checks, and final post-merge CI/security `29635605328`/`29635605305` protect the machine policy/schema, offline promotion tests, compatibility surface, gateway/worker exact-manifest startup fence, and canonical operations roadmap. OPS-002 is in progress and OPS-003..010 remain open; no active manifest or managed infrastructure exists |
-| Claim D69/OPS-002 hardened runtime | **Go only for protected contract/ephemeral-CI fixture maturity; no-go for managed sandbox, rollback, live, or production claims** | PR #125 final head `6818812`, protected tree-identical squash `290060d`, all 12 PR checks, post-merge CI/security `29639595976`/`29639595950`, hardened job `88067855121`, and independently downloaded protected artifact `8428228432` bind clean source, three builds/SBOMs/provenance records, zero fixed low-or-higher findings, staged-source/effective-group custody, TLS/private topology, health/readiness, graceful stop, and same-artifact restart. No immutable registry artifact, managed sandbox install, upgrade, rollback, or corrected roll-forward exists; the record keeps those maturity claims false, and CI restart cannot be cited as managed rollback |
-| Claim D70/OPS-002 registry publication | **No-go for accepted publication until the corrected protected workflow reruns** | PR #127/`a1d72ad` and exact post-merge CI/security protect the contract. Run `29642829329` proved authorization, three digest-only pushes/scans/attestations, independent manifest/attestation/pull verification, and runtime smoke, but final record creation failed on an invalid assumption that an attested OCI-index Buildx record exposes a config digest. Registry objects exist, but no final evidence artifact or managed-runtime authority exists |
+| Claim D69/OPS-002 hardened runtime | **Go only for protected contract/ephemeral-CI fixture maturity; no-go for managed sandbox, rollback, live, or production claims** | PR #125 final head `6818812`, protected tree-identical squash `290060d`, all 12 PR checks, post-merge CI/security `29639595976`/`29639595950`, hardened job `88067855121`, and independently downloaded protected artifact `8428228432` bind clean source, three builds/SBOMs/provenance records, zero fixed low-or-higher findings, staged-source/effective-group custody, TLS/private topology, health/readiness, graceful stop, and same-artifact restart. D69 evidence itself grants no registry, managed sandbox, upgrade, rollback, or corrected roll-forward authority; D70 separately closes only the immutable publication boundary |
+| Claim D70/OPS-002 registry publication | **Go for immutable registry publication only; no-go for managed sandbox, rollback, live, or production** | PR #127/`a1d72ad`, correction PR #128/`f1d8850`, exact PR/post-merge CI/security, successful run `29644408106`, downloaded artifact `8429638868`, independently reproduced manifest hashes, and fresh signer/source/ref attestation checks bind all three exact images, SBOMs, scans, provenance, pulled config IDs, and runtime smoke. Record `132dc5f4…fd72` keeps every managed/live claim false |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 

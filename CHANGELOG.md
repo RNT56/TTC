@@ -18,6 +18,35 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Verify protected immutable runtime publication
+**Session:** Codex agent · branch `codex/ops002-registry-evidence` ·
+**Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~]
+**Done:** Protected correction PR #128 exact head `f6dd129` passed all twelve checks
+in CI `29643812333` and security `29643812326`; protected squash `f1d8850` then
+passed post-merge CI `29644126620` and security `29644126611`. Manual protected-main
+publication run `29644408106` passed source authorization, digest-only publish job
+`88080166666`, and independent pull/verify job `88080413829`. Downloaded final
+artifact `8429638868` verifies under `forge-hardened-runtime-publication/1.0.0`; its
+publication record SHA-256 is `132dc5f4…fd72`. Gateway `fd45d6d5…6c84`, workers
+`75cd8e68…7e1b`, and Studio `7fc6cc3c…caca` raw public registry manifests independently
+hash to their exact references, and fresh local `gh attestation verify` checks bind
+all three to `RNT56/TTC`, the D70 workflow, protected `main`, and source `f1d8850`.
+The three SPDX documents contain 219/118/71 packages and 3117/3340/951 files; all
+three exact-registry Trivy reports contain zero fixed low-or-higher findings. Exact-
+pull runtime config digests match the publication record and same-artifact restart is
+true while every managed-sandbox, rollback, live, production, and external-beta claim
+remains false.
+**Changed:** agent entry point; project state; task, phase, execution, operations, and
+risk documentation; changelog.
+**Decisions:** none; D70 is fulfilled at immutable-registry publication maturity, not
+managed-runtime maturity.
+**Next:** Bind these exact three references into a real active D68 sandbox manifest,
+then retain clean install, forward migration, representative read/write and queue
+smoke, upgrade, application rollback, and corrected roll-forward evidence.
+**Blockers:** No managed sandbox target or active D68 sandbox manifest is available in
+the repository context. OPS-002 remains in progress; this publication is not a live,
+production, hardware, field, or external-beta release.
+
 ## 2026-07-18 — Correct pulled-image config-digest authority
 **Session:** Codex agent · branch `codex/ops002-registry-config-proof` ·
 **Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~]
