@@ -89,6 +89,18 @@
       "composePath": "infra/compose.hardened.json",
       "versionRule": "base-image identity, application targets and identities, writable paths, network and port boundaries, file-mounted secret authority, probes, least privilege, resource limits, graceful termination, and evidence nonclaims are major-version semantics"
     },
+    "hardenedRuntimePublication": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-hardened-runtime-publication",
+      "versionField": "schemaVersion",
+      "contractPath": "infra/deployment/hardened-registry.v1.json",
+      "schemaPath": "schema/forge-hardened-runtime-publication.schema.json",
+      "workflowPath": ".github/workflows/hardened-runtime-release.yml",
+      "versionRule": "registry/image identity, protected source, digest-only publication, SBOM/provenance/vulnerability evidence, independent pull, runtime verification, and managed/live nonclaims are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [

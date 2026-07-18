@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgedttc.dev/schemas/forge-hardened-runtime-publication.v1.json",
+  "title": "ForgedTTC hardened-runtime registry publication evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "decision",
+    "sourceRevision",
+    "sourceTree",
+    "repository",
+    "workflow",
+    "registry",
+    "images",
+    "runtimeSmoke",
+    "claims"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "forge-hardened-runtime-publication/1.0.0"
+    },
+    "decision": {
+      "const": "D70"
+    },
+    "sourceRevision": {
+      "$ref": "#/$defs/gitObjectId"
+    },
+    "sourceTree": {
+      "$ref": "#/$defs/gitObjectId"
+    },
+    "repository": {
+      "const": "RNT56/TTC"
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path", "runId", "runAttempt", "ref", "protected"],
+      "properties": {
+        "name": { "const": "hardened-runtime-release" },
+        "path": { "const": ".github/workflows/hardened-runtime-release.yml" },
+        "runId": { "type": "integer", "minimum": 1 },
+        "runAttempt": { "type": "integer", "minimum": 1 },
+        "ref": { "const": "refs/heads/main" },
+        "protected": { "const": true }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "owner", "credentialAuthority", "packageVisibilityClaim"],
+      "properties": {
+        "host": { "const": "ghcr.io" },
+        "owner": { "const": "rnt56" },
+        "credentialAuthority": { "const": "github-actions-repository-token" },
+        "packageVisibilityClaim": { "const": "unreviewed" }
+      }
+    },
+    "images": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/imageEvidence" }
+    },
+    "runtimeSmoke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "exactRegistryImages", "sameArtifactRestartReady"],
+      "properties": {
+        "path": { "const": "runtime-smoke.json" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "exactRegistryImages": { "const": true },
+        "sameArtifactRestartReady": { "const": true }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutableRegistryPublished",
+        "registryVerified",
+        "managedEnvironment",
+        "sandboxInstalled",
+        "rollbackProven",
+        "live",
+        "production",
+        "externalBeta"
+      ],
+      "properties": {
+        "immutableRegistryPublished": { "const": true },
+        "registryVerified": { "const": true },
+        "managedEnvironment": { "const": false },
+        "sandboxInstalled": { "const": false },
+        "rollbackProven": { "const": false },
+        "live": { "const": false },
+        "production": { "const": false },
+        "externalBeta": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "gitObjectId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "imageEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component",
+        "target",
+        "image",
+        "reference",
+        "manifestDigest",
+        "configDigest",
+        "sourceRevision",
+        "license",
+        "registryManifest",
+        "spdx",
+        "vulnerabilityReport",
+        "buildRecord",
+        "githubAttestation"
+      ],
+      "properties": {
+        "component": { "enum": ["gateway", "workers", "studio"] },
+        "target": { "enum": ["gateway", "workers", "studio"] },
+        "image": {
+          "type": "string",
+          "pattern": "^ghcr\\.io/rnt56/forgedttc-(gateway|workers|studio)$"
+        },
+        "reference": {
+          "type": "string",
+          "pattern": "^ghcr\\.io/rnt56/forgedttc-(gateway|workers|studio)@sha256:[a-f0-9]{64}$"
+        },
+        "manifestDigest": { "$ref": "#/$defs/digest" },
+        "configDigest": { "$ref": "#/$defs/digest" },
+        "sourceRevision": { "$ref": "#/$defs/gitObjectId" },
+        "license": { "const": "LicenseRef-ForgedTTC-Proprietary" },
+        "registryManifest": { "$ref": "#/$defs/fileEvidence" },
+        "spdx": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "packages", "files"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1, "maxLength": 160 },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "packages": { "type": "integer", "minimum": 1 },
+            "files": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "vulnerabilityReport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "fixedLowOrHigher"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1, "maxLength": 160 },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "fixedLowOrHigher": { "const": 0 }
+          }
+        },
+        "buildRecord": { "$ref": "#/$defs/fileEvidence" },
+        "githubAttestation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "url", "bundlePath", "bundleSha256", "verificationPath", "verificationSha256", "verified"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "url": { "type": "string", "pattern": "^https://github\\.com/RNT56/TTC/attestations/" },
+            "bundlePath": { "type": "string", "pattern": "^(gateway|workers|studio)\\.github-attestation\\.jsonl$" },
+            "bundleSha256": { "$ref": "#/$defs/sha256" },
+            "verificationPath": { "type": "string", "pattern": "^(gateway|workers|studio)\\.attestation-verification\\.json$" },
+            "verificationSha256": { "$ref": "#/$defs/sha256" },
+            "verified": { "const": true }
+          }
+        }
+      }
+    },
+    "fileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

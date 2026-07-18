@@ -61,6 +61,7 @@ const required = [
   "envSpec",
   "deploymentManifest",
   "hardenedRuntime",
+  "hardenedRuntimePublication",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -108,6 +109,10 @@ const expected = {
   hardenedRuntime: typescriptConstant(
     "scripts/hardened-runtime.mjs",
     "HARDENED_RUNTIME_VERSION",
+  ),
+  hardenedRuntimePublication: typescriptConstant(
+    "scripts/hardened-runtime-registry.mjs",
+    "HARDENED_PUBLICATION_VERSION",
   ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
@@ -169,6 +174,20 @@ requireValue(
     `${matrix.surfaces.hardenedRuntime.schema}/${matrix.surfaces.hardenedRuntime.current}`
     && hardenedRuntime.composeFile === matrix.surfaces.hardenedRuntime.composePath,
   "hardened runtime contract does not match the compatibility surface",
+);
+const hardenedRegistry = JSON.parse(read(matrix.surfaces.hardenedRuntimePublication.contractPath));
+const hardenedPublicationSchema = JSON.parse(read(matrix.surfaces.hardenedRuntimePublication.schemaPath));
+requireValue(
+  hardenedRegistry.schemaVersion ===
+    `forge-hardened-runtime-registry/${typescriptConstant("scripts/hardened-runtime-registry.mjs", "HARDENED_REGISTRY_VERSION")}`
+    && hardenedRegistry.publicationEvidenceSchema === matrix.surfaces.hardenedRuntimePublication.schemaPath
+    && hardenedRegistry.workflow.path === matrix.surfaces.hardenedRuntimePublication.workflowPath,
+  "hardened registry contract does not match the compatibility surface",
+);
+requireValue(
+  hardenedPublicationSchema.properties.schemaVersion.const ===
+    `${matrix.surfaces.hardenedRuntimePublication.schema}/${matrix.surfaces.hardenedRuntimePublication.current}`,
+  "hardened registry publication schema does not match the compatibility surface",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===

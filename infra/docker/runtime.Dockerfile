@@ -19,7 +19,8 @@ FROM node:22.23.1-bookworm-slim@sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.title="ForgedTTC gateway" \
       org.opencontainers.image.source="https://github.com/RNT56/TTC" \
-      org.opencontainers.image.revision="${SOURCE_REVISION}"
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.licenses="LicenseRef-ForgedTTC-Proprietary"
 ENV NODE_ENV=production \
     PORT=8080 \
     FORGE_CATALOG_DIR=/srv/forge/catalog \
@@ -44,7 +45,8 @@ FROM python:3.12.13-slim-bookworm@sha256:d50fb7611f86d04a3b0471b46d7557818d88983
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.title="ForgedTTC workers" \
       org.opencontainers.image.source="https://github.com/RNT56/TTC" \
-      org.opencontainers.image.revision="${SOURCE_REVISION}"
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.licenses="LicenseRef-ForgedTTC-Proprietary"
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FORGE_CATALOG_DIR=/srv/forge/catalog \
@@ -67,7 +69,8 @@ FROM nginxinc/nginx-unprivileged:1.31.3-alpine@sha256:a718212f9cf21e241f14067333
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.title="ForgedTTC Studio" \
       org.opencontainers.image.source="https://github.com/RNT56/TTC" \
-      org.opencontainers.image.revision="${SOURCE_REVISION}"
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      org.opencontainers.image.licenses="LicenseRef-ForgedTTC-Proprietary"
 COPY --from=web-build --chown=101:101 /src/packages/studio/dist/ /usr/share/nginx/html/
 COPY --chown=101:101 infra/docker/studio.nginx.conf /etc/nginx/conf.d/default.conf
 USER 101:101

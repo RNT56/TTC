@@ -603,6 +603,14 @@ semantically reviewed, and bound to exact protected checks.
   TLS, dropped capabilities, finite resources, distinct liveness/readiness, graceful
   stop, SPDX/provenance/vulnerability evidence, and retained nonclaims. An ephemeral
   CI container restart is not a managed-sandbox rollback.
+- Registry publication follows D70 and
+  [`hardened-registry.v1.json`](../infra/deployment/hardened-registry.v1.json): dispatch
+  only the exact protected `main` head, build each proprietary application image
+  once, push without mutable tags, bind the raw registry-manifest digest, attach both
+  BuildKit and GitHub provenance, scan and generate SPDX from the exact registry
+  reference, then pull and verify it in a separate job before emitting the versioned
+  publication record. A registry object is a promotable artifact, not an installed
+  sandbox, rollback, live service, production release, or license grant.
 - Keep database history forward-only. Roll back application artifacts with an exact
   compatible manifest; restore data only for verified loss/corruption under the
   backup/DR procedure, never to erase a migration.

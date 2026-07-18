@@ -1,0 +1,253 @@
+name: hardened-runtime-release
+
+run-name: Publish hardened runtime ${{ inputs.source_revision }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_revision:
+        description: Exact protected-main commit to publish
+        required: true
+        type: string
+      confirm:
+        description: Confirm immutable registry publication
+        required: true
+        type: choice
+        options:
+          - refuse
+          - publish-protected-main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hardened-runtime-release-${{ inputs.source_revision }}
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    name: authorize protected source
+    if: >-
+      github.repository == 'RNT56/TTC' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_protected == true &&
+      github.sha == inputs.source_revision &&
+      inputs.confirm == 'publish-protected-main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_REVISION: ${{ inputs.source_revision }}
+    outputs:
+      source_tree: ${{ steps.source.outputs.tree }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: source
+        name: require clean exact protected-main source
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_REVISION"
+          test -z "$(git status --porcelain)"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          test -n "$tree"
+          echo "tree=$tree" >> "$GITHUB_OUTPUT"
+      - name: validate runtime, registry, compatibility, and workflow authority
+        run: |
+          pnpm verify:hardened-runtime
+          pnpm verify:hardened-registry
+          pnpm verify:compatibility
+          pnpm verify:workflows
+
+  publish:
+    name: publish digest-only application images
+    needs: authorize
+    environment: hardened-runtime-registry
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      SOURCE_REVISION: ${{ inputs.source_revision }}
+      REGISTRY_TOKEN: ${{ github.token }}
+      BUILDX_METADATA_PROVENANCE: max
+      BUILDX_METADATA_WARNINGS: "1"
+    outputs:
+      gateway_digest: ${{ steps.build.outputs.gateway_digest }}
+      workers_digest: ${{ steps.build.outputs.workers_digest }}
+      studio_digest: ${{ steps.build.outputs.studio_digest }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+          fetch-depth: 0
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - name: authenticate the repository-scoped registry writer
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - id: build
+        name: build once and publish without mutable tags
+        run: |
+          mkdir -p artifacts/registry
+          docker buildx build --file infra/docker/runtime.Dockerfile --target gateway \
+            --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
+            --provenance=mode=max --sbom=true \
+            --output "type=image,name=ghcr.io/rnt56/forgedttc-gateway,push-by-digest=true,name-canonical=true,push=true" \
+            --metadata-file artifacts/registry/gateway.build-record.json .
+          docker buildx build --file infra/docker/runtime.Dockerfile --target workers \
+            --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
+            --provenance=mode=max --sbom=true \
+            --output "type=image,name=ghcr.io/rnt56/forgedttc-workers,push-by-digest=true,name-canonical=true,push=true" \
+            --metadata-file artifacts/registry/workers.build-record.json .
+          docker buildx build --file infra/docker/runtime.Dockerfile --target studio \
+            --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
+            --provenance=mode=max --sbom=true \
+            --output "type=image,name=ghcr.io/rnt56/forgedttc-studio,push-by-digest=true,name-canonical=true,push=true" \
+            --metadata-file artifacts/registry/studio.build-record.json .
+          for component in gateway workers studio; do
+            digest="$(jq -er '."containerimage.digest" | select(test("^sha256:[a-f0-9]{64}$"))' "artifacts/registry/${component}.build-record.json")"
+            echo "${component}_digest=$digest" >> "$GITHUB_OUTPUT"
+          done
+      - name: generate exact-registry SPDX documents and vulnerability reports
+        run: |
+          for component in gateway workers studio; do
+            digest="$(jq -er '."containerimage.digest"' "artifacts/registry/${component}.build-record.json")"
+            reference="ghcr.io/rnt56/forgedttc-${component}@${digest}"
+            docker run --rm \
+              --volume "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
+              --volume "$PWD/artifacts/registry:/out" \
+              anchore/syft:v1.38.0@sha256:825cad3a952c87676a6d07e9a3bb05ac9c401d598360070e970aa46d54c1727e \
+              "registry:${reference}" --output "spdx-json=/out/${component}.spdx.json"
+            docker run --rm \
+              --volume "$HOME/.docker/config.json:/root/.docker/config.json:ro" \
+              --volume "$PWD/artifacts/registry:/out" \
+              --volume forge-registry-trivy-cache:/root/.cache/ \
+              aquasec/trivy:0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500 \
+              image --scanners vuln --ignore-unfixed --severity LOW,MEDIUM,HIGH,CRITICAL \
+              --exit-code 1 --format json --output "/out/${component}.trivy.json" "$reference"
+          done
+      - id: attest_gateway
+        name: attach GitHub provenance to the gateway manifest
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-name: ghcr.io/rnt56/forgedttc-gateway
+          subject-digest: ${{ steps.build.outputs.gateway_digest }}
+          push-to-registry: true
+      - id: attest_workers
+        name: attach GitHub provenance to the workers manifest
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-name: ghcr.io/rnt56/forgedttc-workers
+          subject-digest: ${{ steps.build.outputs.workers_digest }}
+          push-to-registry: true
+      - id: attest_studio
+        name: attach GitHub provenance to the Studio manifest
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-name: ghcr.io/rnt56/forgedttc-studio
+          subject-digest: ${{ steps.build.outputs.studio_digest }}
+          push-to-registry: true
+      - name: retain attestation bundles and identities
+        env:
+          FORGE_GATEWAY_ATTESTATION_ID: ${{ steps.attest_gateway.outputs.attestation-id }}
+          FORGE_GATEWAY_ATTESTATION_URL: ${{ steps.attest_gateway.outputs.attestation-url }}
+          FORGE_WORKERS_ATTESTATION_ID: ${{ steps.attest_workers.outputs.attestation-id }}
+          FORGE_WORKERS_ATTESTATION_URL: ${{ steps.attest_workers.outputs.attestation-url }}
+          FORGE_STUDIO_ATTESTATION_ID: ${{ steps.attest_studio.outputs.attestation-id }}
+          FORGE_STUDIO_ATTESTATION_URL: ${{ steps.attest_studio.outputs.attestation-url }}
+        run: |
+          install -m 0600 "${{ steps.attest_gateway.outputs.bundle-path }}" artifacts/registry/gateway.github-attestation.jsonl
+          install -m 0600 "${{ steps.attest_workers.outputs.bundle-path }}" artifacts/registry/workers.github-attestation.jsonl
+          install -m 0600 "${{ steps.attest_studio.outputs.bundle-path }}" artifacts/registry/studio.github-attestation.jsonl
+          node scripts/hardened-runtime-registry.mjs write-attestations --out artifacts/registry/attestations.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: hardened-runtime-registry-raw-${{ inputs.source_revision }}
+          path: artifacts/registry
+          if-no-files-found: error
+          retention-days: 90
+      - name: close registry credentials
+        if: always()
+        run: docker logout ghcr.io
+
+  verify:
+    name: independently pull and verify registry images
+    needs: [authorize, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    env:
+      SOURCE_REVISION: ${{ inputs.source_revision }}
+      SOURCE_TREE: ${{ needs.authorize.outputs.source_tree }}
+      REGISTRY_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+          fetch-depth: 0
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: hardened-runtime-registry-raw-${{ inputs.source_revision }}
+          path: artifacts/registry
+      - name: authenticate the independent registry reader
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: pull exact manifests and verify registry-attached provenance
+        run: |
+          verify_image() {
+            component="$1"
+            digest="$2"
+            image="ghcr.io/rnt56/forgedttc-${component}"
+            reference="${image}@${digest}"
+            docker buildx imagetools inspect "$reference" --raw > "artifacts/registry/${component}.registry-manifest.json"
+            test "$(sha256sum "artifacts/registry/${component}.registry-manifest.json" | cut -d' ' -f1)" = "${digest#sha256:}"
+            gh attestation verify "oci://${reference}" \
+              --bundle-from-oci \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/hardened-runtime-release.yml" \
+              --source-digest "$SOURCE_REVISION" \
+              --source-ref "refs/heads/main" \
+              --deny-self-hosted-runners \
+              --format json > "artifacts/registry/${component}.attestation-verification.json"
+            docker pull "$reference"
+            docker tag "$reference" "forge-${component}:ci"
+          }
+          verify_image gateway "${{ needs.publish.outputs.gateway_digest }}"
+          verify_image workers "${{ needs.publish.outputs.workers_digest }}"
+          verify_image studio "${{ needs.publish.outputs.studio_digest }}"
+      - name: exercise the exact pulled images without promoting runtime maturity
+        run: node scripts/hardened-runtime-smoke.mjs --out artifacts/registry/runtime-smoke.json
+      - name: create and verify the bounded publication record
+        run: |
+          node scripts/hardened-runtime-registry.mjs create \
+            --evidence artifacts/registry \
+            --source "$SOURCE_REVISION" \
+            --tree "$SOURCE_TREE" \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --out artifacts/registry/publication.json
+          node scripts/hardened-runtime-registry.mjs verify \
+            --file artifacts/registry/publication.json \
+            --evidence artifacts/registry
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: hardened-runtime-registry-evidence-${{ inputs.source_revision }}
+          path: artifacts/registry
+          if-no-files-found: error
+          retention-days: 90
+      - name: close registry credentials
+        if: always()
+        run: docker logout ghcr.io
