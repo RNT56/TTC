@@ -34,8 +34,10 @@ The exact merge-blocking check names are:
 
 As of 2026-07-18, active ruleset `18843164` contains all seven names. The D69 check
 was added only after exact implementation head `991deb3` passed job `88066177198`
-and its downloaded artifact `8428032260` was independently inspected; this changes
-merge authority, not managed-runtime maturity.
+and its downloaded artifact `8428032260` was independently inspected. Final PR head
+`6818812` and protected squash `290060d` then passed that same required job; protected
+artifact `8428228432` binds the latter. This changes merge authority, not managed-
+runtime maturity.
 
 Do not casually rename these jobs. Change a required name in two stages: first ship
 the replacement check while the old name is still present, then update the ruleset

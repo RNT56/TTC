@@ -18,6 +18,39 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Reconcile protected D69 runtime evidence
+**Session:** Codex agent · branch `codex/ops002-protected-evidence` ·
+**Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]
+**Done:** Merged PR #125 through the active seven-check ruleset as protected squash
+`290060db1dff53b82e8a22596829bd60b238cf3f` without advancing OPS-002 beyond
+contract/ephemeral-CI fixture maturity. Final PR head
+`6818812ba54f62d041adf9f930563c3b2181681a` passed all twelve checks in CI
+`29639349787` and security `29639349785`; its tree
+`1a5232f4e60438faf9abbba65431436fa4a7270b` is byte-identical to the protected
+squash. Exact post-merge CI `29639595976` and security `29639595950` pass, including
+required hardened job `88067855121`.
+**Evidence:** Independently downloaded protected artifact `8428228432` binds a clean
+checkout and all three image records to exact source `290060d`. Runtime record
+SHA-256 `1377c026c791662d54746c3110717f6fa7df9ef51fcf191d82b37a70fea7491b`
+proves `root:10999`/`0440` source custody, declared/effective supplemental groups,
+numeric non-root steady state, TLS edge/object storage, private topology, healthy
+database/object/validator dependencies, zero graceful-exit codes, and same-artifact
+restart. Three SPDX 2.3 documents contain packages, three Trivy result sets contain
+zero fixed low-or-higher findings, and three Buildx records bind exact targets,
+revision, repository, and digested materials. Every managed-sandbox, rollback, live,
+production, and external-beta claim remains false.
+**Changed:** `AGENTS.md`; project state; operations, execution, and phase roadmaps;
+GOV/OPS task evidence; repository governance; changelog.
+**Decisions:** none; D69 and its authority ceiling are unchanged.
+**Next:** Execute the external remainder of OPS-002: publish identical immutable
+registry artifacts with attached attestations, install them under an active D68
+sandbox manifest, then retain upgrade, application rollback, and corrected roll-
+forward evidence. OPS-003 may proceed only where its dependency and maturity claims
+remain explicit.
+**Blockers:** Immutable registry publication, a managed sandbox, and observed
+rollback/roll-forward are external prerequisites; they do not block this protected
+repository evidence closeout.
+
 ## 2026-07-18 — Require the proven D69 runtime check
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]
