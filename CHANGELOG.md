@@ -18,6 +18,25 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Compile Studio before D69 production pruning
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed protected CI run `29637289827`/job `88061808590`: the explicit
+non-interactive pnpm deployment completed, then Studio could not find `tsc` because
+the gateway's legacy production deploy had correctly removed workspace development
+dependencies. Reordered the web stage so gateway and Studio both compile before the
+gateway-only production deployment prunes dependencies, and made that order a D69
+repository invariant.
+**Evidence:** BuildKit passed dependency resolution and the non-interactive production
+install; the failure was the subsequent `tsc` lookup. Focused validation and another
+protected Docker run remain required.
+**Changed:** hardened runtime Dockerfile, D69 repository validation, and changelog.
+**Decisions:** none; build-only tools must not survive in the gateway runtime image,
+but every build consumer must finish before pruning them.
+**Next:** Push the corrected build order and continue through image, SBOM, scan, and
+runtime acceptance.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
 ## 2026-07-18 — Make the D69 pnpm image build non-interactive
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]

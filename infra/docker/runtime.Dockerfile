@@ -7,8 +7,8 @@ RUN corepack enable && corepack prepare pnpm@11.13.0 --activate
 COPY . .
 RUN pnpm install --frozen-lockfile \
     && pnpm --filter @forge/gateway build \
-    && pnpm --filter @forge/gateway deploy --prod --legacy /out/gateway \
-    && pnpm --filter @forge/studio build
+    && pnpm --filter @forge/studio build \
+    && pnpm --filter @forge/gateway deploy --prod --legacy /out/gateway
 
 FROM rust:1.96.0-slim-bookworm@sha256:4732ca96fd086cb9be682050c3f0176288eebaac2b80aa2bcefccfaf198e1950 AS validator-build
 WORKDIR /src
