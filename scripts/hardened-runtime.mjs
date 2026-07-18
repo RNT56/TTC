@@ -275,6 +275,7 @@ export function checkRepository(root = process.cwd()) {
   add(errors, dockerfile.includes("cargo build --locked --release -p forge-validate"), "Dockerfile must build the release validator from the lockfile");
   add(errors, dockerfile.includes("pnpm install --frozen-lockfile"), "Dockerfile must install the exact JavaScript lockfile");
   add(errors, dockerfile.includes("python -m pip install --no-cache-dir '.[queue]'"), "Dockerfile must install the bounded worker queue runtime");
+  add(errors, dockerfile.includes("python -m pip uninstall --yes pip setuptools wheel"), "worker runtime must remove unused Python package-manager code");
   add(errors, dockerfile.includes('forge_workers.health", "live"'), "worker image liveness must remain process-only");
   add(errors, dockerfile.includes("127.0.0.1:8080/healthz"), "gateway image liveness must remain process-only");
   const nginx = readFileSync(resolve(root, "infra/docker/studio.nginx.conf"), "utf8");

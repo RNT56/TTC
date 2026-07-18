@@ -53,7 +53,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /srv/forge/workers
 RUN groupadd --gid 10002 forge && useradd --uid 10002 --gid 10002 --no-create-home --shell /usr/sbin/nologin forge
 COPY --chown=10002:10002 workers/ ./
-RUN python -m pip install --no-cache-dir '.[queue]'
+RUN python -m pip install --no-cache-dir '.[queue]' \
+    && python -m pip uninstall --yes pip setuptools wheel
 COPY --chown=10002:10002 schema/forge-modelspec.schema.json /srv/forge/schema/forge-modelspec.schema.json
 COPY --chown=10002:10002 catalog/ /srv/forge/catalog/
 COPY --from=validator-build --chown=10002:10002 /src/target/release/forge-validate /srv/forge/bin/forge-validate

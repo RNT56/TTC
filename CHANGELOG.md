@@ -18,6 +18,25 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Remove package installers from the D69 worker runtime
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected protected run `29637568506`/job `88062525902`. The refreshed and
+minimized gateway scan is now empty. Trivy advanced to workers and found exactly five
+fixed low/medium advisories, all under the bundled pip 25.0.1 metadata. The worker
+image now removes pip, setuptools, and wheel immediately after its deterministic
+queue-runtime install; D69 validation rejects restoring those unused installers.
+**Evidence:** Retained `gateway.trivy.json` contains zero vulnerabilities.
+`workers.trivy.json` contains only CVE-2025-8869, CVE-2026-3219, CVE-2026-6357,
+CVE-2026-8643, and CVE-2026-1703 against pip itself. Replacement protected scan and
+the not-yet-reached Studio scan/runtime smoke remain required.
+**Changed:** hardened worker image, D69 repository validation, and changelog.
+**Decisions:** none; runtime images retain application dependencies, not build-time
+package-manager authority.
+**Next:** Rebuild, require all three Trivy files to be empty, and execute runtime
+isolation, probe, stop, and restart acceptance.
+**Blockers:** No repository blocker. Replacement protected scan remains pending.
+
 ## 2026-07-18 — Remediate fixed vulnerabilities in the D69 gateway image
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]
