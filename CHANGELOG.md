@@ -18,6 +18,26 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Protect the first observability contract
+**Session:** Codex agent · branch `codex/ops003-observability-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Reconciled D71's first Gateway-only observability slice with protected
+evidence. PR #130 exact head `f161221` passed all twelve required checks in CI
+`29646612330` and security `29646612337`; protected squash `44bb3da` is tree-identical
+and passed post-merge CI `29646886572` plus security `29646886580`. The boundary is
+now protected at contract/fixture maturity only. It still grants no worker/job/
+provider/Desktop propagation, telemetry backend, dashboard, alert, managed, live,
+production, or external-beta authority.
+**Changed:** Agent entry point; project state; task, phase, execution, and operations
+roadmaps; changelog.
+**Decisions:** none; D71 and R40 remain active unchanged.
+**Next:** Bind the protected Gateway request root to owner-scoped persisted jobs,
+D38 attempts, Python worker spans, terminal results, cancellation, and recovery with
+no payload capture or caller correlation authority.
+**Blockers:** OPS-002 still lacks a real managed sandbox target/manifest. The first
+OPS-003 slice has no code blocker; external telemetry backends and live operational
+proof remain intentionally later gates.
+
 ## 2026-07-18 — Establish the structured observability boundary
 **Session:** Codex agent · branch `codex/ops003-observability-contract` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

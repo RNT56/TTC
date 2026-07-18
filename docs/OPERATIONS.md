@@ -15,7 +15,7 @@ Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
 Observability policy: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D71 has a local Gateway-only contract/fixture candidate; no managed environment, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D71's Gateway-only contract/fixture is protected at `44bb3da`; no managed environment, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -23,11 +23,13 @@ six registry tests, 23 compatibility surfaces, nineteen golden families, 87 immu
 Action references across five workflows, 255 worker tests, and the unchanged
 200/97/two-Pareto/two-held recovery batch. This is repository contract evidence only.
 
-The D71 Gateway-only candidate passes all 48 required local gates under Python
+The D71 Gateway-only slice passes all 48 required local gates under Python
 3.12.13 with four policy tests, three focused producer tests, 24 compatibility
 surfaces, twenty golden families, 87 immutable Action references, 39 Studio tests,
 84 Gateway tests, 255 worker tests, generated 82-route/two-event/seventeen-worker
-docs, and the unchanged 200/97/two-Pareto/two-held recovery batch. This remains local
+docs, and the unchanged 200/97/two-Pareto/two-held recovery batch. PR #130 exact head
+`f161221`, all twelve PR checks, tree-identical protected squash `44bb3da`, and exact
+post-merge CI/security `29646886572`/`29646886580` pass. This remains protected
 contract/fixture evidence only.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
@@ -442,7 +444,7 @@ corrected roll-forward, managed environment, or live service.
 
 Current D71 slice status:
 
-1. **Gateway request contract/fixture — implemented locally.** Versioned policy,
+1. **Gateway request contract/fixture — protected.** Versioned policy,
    schema, compatibility surface, golden family, and executable producer generate
    server-owned UUIDv4/W3C request roots and one validated request-completion JSON
    line. Only UTC/source/version/environment, template route, method, status,

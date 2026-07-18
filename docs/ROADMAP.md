@@ -90,7 +90,10 @@ corrected roll-forward using those exact references.
 
 D70 evidence reconciliation is protected through PR #129/`b5c358a`; all twelve PR
 checks and exact-squash post-merge CI `29645096174`/security `29645096195` pass.
-OPS-003 is now in progress on D71's first local contract/fixture slice. The versioned
+OPS-003 is now in progress on D71's first protected Gateway contract/fixture slice.
+PR #130 exact head `f161221` passed all twelve required checks in CI `29646612330`
+and security `29646612337`; tree-identical protected squash `44bb3da` passed
+post-merge CI `29646886572` and security `29646886580`. The versioned
 4 KiB observability event policy/schema and Gateway entry path create trusted UUIDv4/
 W3C request roots, emit only UTC/source/version/template-route/status/duration/outcome
 fields, refuse sensitive/arbitrary/high-cardinality telemetry, and isolate response
