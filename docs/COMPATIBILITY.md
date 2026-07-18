@@ -29,6 +29,7 @@ package to adopt that same number.
 | deployment manifest | 1.0.0 | `forge-deployment-manifest` binds environment, protected source, immutable component artifacts, non-secret configuration, versioned environment-specific secret references, accountable ownership, evidence gates, direct promotion, and authority ceilings; changing any meaning is major | major 1; managed gateway/worker startup accepts only the current major |
 | hardened runtime | 1.0.0 | `forge-hardened-runtime` binds reviewed base images, application targets and numeric identities, writable paths, TLS/private networking, file-mounted secrets, probes, least privilege, resource limits, graceful termination, and evidence nonclaims; changing any meaning is major | major 1; the checked profile is contract/fixture evidence until a protected artifact is installed and rolled back in a managed sandbox |
 | hardened runtime publication | 1.0.0 | `forge-hardened-runtime-publication` binds protected source/tree, digest-only GHCR identities, registry manifest/config digests, SPDX/build/scan records, registry-attached GitHub provenance, independent pull/runtime verification, and explicit managed/live nonclaims; changing any meaning is major | major 1; publication proves immutable registry artifacts only and cannot prove a managed sandbox, rollback, live service, or production |
+| observability event | 1.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | major 1; only Gateway request-completion production exists, at contract/fixture maturity |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.6.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
@@ -63,6 +64,18 @@ must retain identical source/tree and artifact/SBOM/provenance digests, rotate s
 references for the target environment, and follow one direct policy edge. An older
 runtime must refuse an unsupported major; a rollback retains the forward-only
 database history and uses an already admitted artifact/manifest pair.
+
+Observability event 1.0.0 is defined by
+[`forge-observability-event.schema.json`](../schema/forge-observability-event.schema.json)
+and [`observability-policy.v1.json`](../infra/observability/observability-policy.v1.json).
+The first producer emits only `gateway.request.completed`: a server-generated opaque
+request ID and W3C root trace, UTC clock, Gateway/package/source/environment identity,
+route template, method, status class/code, bounded duration, and outcome. Unknown
+fields and unsupported correlation are refused before serialization; raw URLs,
+queries, headers, bodies, prompts, provider/error text, user data, telemetry, model
+bytes, presigned URLs, and secret references are outside the format. User/job/
+provider/deployment propagation and every telemetry backend remain future additive or
+major-version work as appropriate. A JSON line proves neither delivery nor monitoring.
 
 `GET /v1/account/export` emits user-data export 1.6.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but

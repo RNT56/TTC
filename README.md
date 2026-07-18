@@ -444,6 +444,17 @@ versions, and worker queue kinds. It includes OpenAPI 3.1, migration/deprecation
 guidance, and synthetic examples. These are contract/fixture docs, not a hosted-live
 service claim.
 
+Validate the D71 structured-event, trusted-correlation, redaction, and cardinality
+contract with:
+
+```bash
+pnpm verify:observability
+```
+
+This currently exercises a Gateway request-completion producer at contract/fixture
+maturity. It does not prove a telemetry backend, worker/job/provider/Desktop trace
+continuity, dashboards, alert delivery, managed deployment, or live monitoring.
+
 Inspect the eight external-acceptance milestone contracts and generated evidence
 templates with:
 

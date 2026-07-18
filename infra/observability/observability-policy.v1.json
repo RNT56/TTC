@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "forge-observability-policy/1.0.0",
+  "eventVersion": "1.0.0",
+  "eventSchema": "schema/forge-observability-event.schema.json",
+  "decision": "D71",
+  "status": "contract-fixture",
+  "maxEventBytes": 4096,
+  "headers": {
+    "responseRequestId": "x-forge-request-id",
+    "responseTraceParent": "traceparent",
+    "clientRequestIdAuthority": false,
+    "clientTraceParentAuthority": false
+  },
+  "trust": {
+    "requestId": "server-generated-uuid-v4",
+    "traceId": "server-generated-w3c-root",
+    "actorDigest": "not-implemented",
+    "jobId": "not-implemented",
+    "providerCallId": "not-implemented",
+    "deploymentId": "not-implemented"
+  },
+  "eventNames": [
+    "gateway.request.completed"
+  ],
+  "requiredContext": [
+    "clock.source",
+    "clock.timezone",
+    "environment",
+    "occurredAt",
+    "service",
+    "serviceVersion",
+    "source.component",
+    "source.revision"
+  ],
+  "denyFields": [
+    "authorization",
+    "body",
+    "cookie",
+    "errorMessage",
+    "headers",
+    "modelBytes",
+    "personalData",
+    "presignedUrl",
+    "prompt",
+    "query",
+    "secretReference",
+    "telemetry",
+    "url"
+  ],
+  "cardinality": {
+    "allowedMetricLabels": [
+      "environment",
+      "eventName",
+      "method",
+      "outcome",
+      "route",
+      "service",
+      "statusClass"
+    ],
+    "forbiddenMetricLabels": [
+      "actorDigest",
+      "deploymentId",
+      "jobId",
+      "providerCallId",
+      "requestId",
+      "spanId",
+      "traceId"
+    ]
+  },
+  "maturity": {
+    "gatewayRequestEvents": true,
+    "workerPropagation": false,
+    "jobPropagation": false,
+    "providerPropagation": false,
+    "desktopEvents": false,
+    "metricsBackend": false,
+    "traceBackend": false,
+    "dashboards": false,
+    "alertRouting": false,
+    "syntheticAlertDelivery": false,
+    "managedSandbox": false,
+    "live": false,
+    "production": false
+  }
+}

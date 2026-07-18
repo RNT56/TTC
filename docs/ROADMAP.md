@@ -88,6 +88,21 @@ reproduced public manifest/attestation checks close immutable publication only.
 OPS-002 still requires a real D68 sandbox install, upgrade, application rollback, and
 corrected roll-forward using those exact references.
 
+D70 evidence reconciliation is protected through PR #129/`b5c358a`; all twelve PR
+checks and exact-squash post-merge CI `29645096174`/security `29645096195` pass.
+OPS-003 is now in progress on D71's first local contract/fixture slice. The versioned
+4 KiB observability event policy/schema and Gateway entry path create trusted UUIDv4/
+W3C request roots, emit only UTC/source/version/template-route/status/duration/outcome
+fields, refuse sensitive/arbitrary/high-cardinality telemetry, and isolate response
+authority from sink failure. All 48 required local gates pass under Python 3.12.13
+with four policy tests, 24 compatibility surfaces, twenty golden families, 87
+immutable Action references, 39 Studio tests, 84 Gateway tests, 255 worker tests,
+generated 82-route/two-event/seventeen-worker docs, and the unchanged 200/97/two-
+Pareto/two-held recovery batch. Worker/job/provider/Desktop propagation, metric and
+trace backends, dashboards, alert delivery/acknowledgement, managed sandbox, live,
+production, and external-beta evidence remain open; this slice does not satisfy the
+OPS-002 managed-install prerequisite or close OPS-003.
+
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
 clean revision-bound artifacts prove opaque expiring attempt leases, bounded outage/

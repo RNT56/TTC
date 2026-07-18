@@ -101,6 +101,17 @@
       "workflowPath": ".github/workflows/hardened-runtime-release.yml",
       "versionRule": "registry/image identity, protected source, digest-only publication, SBOM/provenance/vulnerability evidence, independent pull, runtime verification, and managed/live nonclaims are major-version semantics"
     },
+    "observabilityEvent": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-observability-event",
+      "versionField": "schemaVersion",
+      "schemaPath": "schema/forge-observability-event.schema.json",
+      "policyPath": "infra/observability/observability-policy.v1.json",
+      "versionRule": "event identity, trusted correlation, clock/source/version binding, field allowlist, redaction exclusions, and metric-cardinality rules are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [

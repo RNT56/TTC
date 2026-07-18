@@ -36,6 +36,7 @@ try {
   run("Deployment topology and configuration policy", "pnpm", ["verify:deployment"]);
   run("Hardened deployable runtime contract", "pnpm", ["verify:hardened-runtime"]);
   run("Protected runtime registry publication", "pnpm", ["verify:hardened-registry"]);
+  run("Structured observability contract", "pnpm", ["verify:observability"]);
   run("Compatibility matrix and version contracts", "node", ["scripts/check-compatibility.mjs"]);
   run("Generated API, event, and artifact documentation", "pnpm", ["verify:docs-contracts"]);
   run("Postgres migration runner policy", "pnpm", ["db:migrations:test"]);

@@ -2,7 +2,7 @@
 
 Owner: platform/release maintainers
 
-Decisions: D68, D69, D70
+Decisions: D68, D69, D70, D71
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
@@ -13,8 +13,9 @@ Registry publication: [`infra/deployment/hardened-registry.v1.json`](../infra/de
 Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.json`](../schema/forge-hardened-runtime-publication.schema.json)
 
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
+Observability policy: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`; no managed environment, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D71 has a local Gateway-only contract/fixture candidate; no managed environment, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -22,10 +23,18 @@ six registry tests, 23 compatibility surfaces, nineteen golden families, 87 immu
 Action references across five workflows, 255 worker tests, and the unchanged
 200/97/two-Pareto/two-held recovery batch. This is repository contract evidence only.
 
+The D71 Gateway-only candidate passes all 48 required local gates under Python
+3.12.13 with four policy tests, three focused producer tests, 24 compatibility
+surfaces, twenty golden families, 87 immutable Action references, 39 Studio tests,
+84 Gateway tests, 255 worker tests, generated 82-route/two-event/seventeen-worker
+docs, and the unchanged 200/97/two-Pareto/two-held recovery batch. This remains local
+contract/fixture evidence only.
+
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
 external beta. It does not claim that sandbox, staging, production, backup,
-observability, support, or on-call infrastructure exists. `PROJECT-STATE.md` owns
+telemetry transport, dashboards, alert routing, support, or on-call infrastructure
+exists. `PROJECT-STATE.md` owns
 dated evidence; the JSON policy owns exact machine-enforced names, requirements,
 promotion edges, and authority ceilings.
 
@@ -226,6 +235,7 @@ and sandbox quote/vendor flags.
 pnpm verify:deployment
 pnpm verify:hardened-runtime
 pnpm verify:hardened-registry
+pnpm verify:observability
 node scripts/deployment-policy.mjs validate /private/path/manifest.json
 node scripts/deployment-policy.mjs promote /private/path/source.json /private/path/target.json
 ```
@@ -430,6 +440,32 @@ corrected roll-forward, managed environment, or live service.
 
 ### OPS-003/004 measurement rules
 
+Current D71 slice status:
+
+1. **Gateway request contract/fixture — implemented locally.** Versioned policy,
+   schema, compatibility surface, golden family, and executable producer generate
+   server-owned UUIDv4/W3C request roots and one validated request-completion JSON
+   line. Only UTC/source/version/environment, template route, method, status,
+   duration, outcome, and opaque correlation are admitted. Sink failure cannot
+   change response authority.
+2. **Job and worker propagation — open.** Bind the trusted Gateway request to the
+   owner-scoped persisted job, each D38 attempt, worker span, result, cancellation,
+   and recovery without accepting a caller ID or storing payload content.
+3. **Provider, deployment, and Desktop propagation — open.** Add authority-specific
+   bounded IDs only after the provider-call, D68 manifest, and native Desktop trust
+   boundaries can independently validate them.
+4. **Metrics/traces backends — open.** Export only reviewed finite-cardinality
+   dimensions; retain sampled slow/error trace continuity without payload capture;
+   define access, retention, deletion, availability, and delivery-failure behavior.
+5. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
+   action, silence/expiry, separate delivery-failure route, synthetic delivery, and
+   acknowledgement before claiming operational monitoring.
+
+The first slice may proceed while OPS-002's real managed-sandbox exercise is waiting
+on an external target because it creates no live exercise or backend. Slices 2–5 do
+not close from schemas or local output, and every deployed exercise still requires
+the exact D68/D69/D70 sandbox authority plus retained private operations evidence.
+
 - Correlation IDs are generated/validated at trusted boundaries and propagated to
   jobs/provider calls; never accept a client claim as audit identity.
 - Logs are structured, bounded, UTC timestamped, source/version/environment bound,
@@ -499,7 +535,7 @@ Before merging an operations change:
   substitution, rollback, and boundary tests;
 - update `COMPATIBILITY.md`, `DECISIONS.md`, threat model/risk register as needed;
 - add golden review records for registered policy/schema drift;
-- run `pnpm verify:deployment`, `pnpm verify:hardened-runtime`, the narrow surface gates, full `pnpm verify`, and
+- run `pnpm verify:deployment`, `pnpm verify:hardened-runtime`, `pnpm verify:hardened-registry`, `pnpm verify:observability`, the narrow surface gates, full `pnpm verify`, and
   database/browser/deployment gates required by the changed surface;
 - inspect `git diff --check`, the full diff, dependency/security impact, and current
   remote checks;

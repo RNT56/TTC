@@ -18,6 +18,41 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Establish the structured observability boundary
+**Session:** Codex agent · branch `codex/ops003-observability-contract` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Closed D70 evidence reconciliation through PR #129 exact head `3302103`,
+all twelve PR checks, protected squash `b5c358a`, post-merge CI `29645096174`, and
+security `29645096195`. Added D71's first OPS-003 contract/fixture slice:
+`forge-observability-event/1.0.0`, a machine policy and registered golden family,
+compatibility and generated-document coverage, and an executable Gateway producer.
+Every request gets a server-generated UUIDv4 ID and W3C root trace returned in safe
+response headers; the entry path emits one validated UTC/source/version/template-
+route/status/duration/outcome JSON line. The exact 4 KiB allowlist refuses client
+correlation authority, raw queries, headers, bodies, prompts, errors/provider output,
+personal data, telemetry/model bytes, presigned URLs, secret references, arbitrary
+extensions, unsupported actor/job/provider/deployment bindings, and high-cardinality
+metric identifiers. Sink failure cannot alter the response. Four policy/adversarial
+tests, three focused producer tests, and the complete 48-step local gate pass under
+Python 3.12.13: 24 compatibility surfaces, twenty golden families, 87 immutable
+Action references, 39 Studio tests, all 84 Gateway tests with the real validator,
+255 worker tests, generated 82-route/two-event/seventeen-worker docs, and the
+unchanged 200/97/two-Pareto/two-held recovery batch.
+**Changed:** Gateway observability runtime/tests; policy and event schema; compatibility
+and generated contract references; protected CI/local gate registration; golden
+registry/update evidence; agent entry point; operations, security, best-practice,
+risk, decision, task, roadmap, execution, current-state, and changelog documents.
+**Decisions:** D71 makes telemetry versioned and allowlisted, correlation service-
+owned, identifiers forbidden as metric labels, and all backend/live maturity
+independent. R40 tracks leakage, forgery, cardinality, and false-monitoring risk.
+**Next:** Complete protected proof for this Gateway slice, then propagate exact
+request/job/attempt correlation through the persisted queue and Python worker without
+capturing payload content or opening a telemetry backend prematurely.
+**Blockers:** OPS-002 still lacks a real managed sandbox target/manifest. OPS-003
+still lacks job/worker/provider/Desktop propagation, metric/trace storage, dashboards,
+alert delivery/acknowledgement, retention/access operations, and any managed/live/
+production evidence.
+
 ## 2026-07-18 — Verify protected immutable runtime publication
 **Session:** Codex agent · branch `codex/ops002-registry-evidence` ·
 **Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~]

@@ -2,11 +2,12 @@ import { buildServer } from "./server.js";
 import { assertDeploymentBootstrap } from "./deployment.js";
 import { closeGatewayDb } from "./db.js";
 import { loadManagedRuntimeSecrets } from "./runtimeSecrets.js";
+import { createStdoutObservationSink } from "./observability.js";
 
 loadManagedRuntimeSecrets();
 assertDeploymentBootstrap();
 const port = Number(process.env.PORT ?? 8080);
-const app = buildServer();
+const app = buildServer({ observationSink: createStdoutObservationSink() });
 let stopping = false;
 async function stop(signal: string): Promise<void> {
   if (stopping) return;

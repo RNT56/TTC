@@ -62,6 +62,7 @@ const required = [
   "deploymentManifest",
   "hardenedRuntime",
   "hardenedRuntimePublication",
+  "observabilityEvent",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -113,6 +114,10 @@ const expected = {
   hardenedRuntimePublication: typescriptConstant(
     "scripts/hardened-runtime-registry.mjs",
     "HARDENED_PUBLICATION_VERSION",
+  ),
+  observabilityEvent: typescriptConstant(
+    "packages/gateway/src/observability.ts",
+    "OBSERVABILITY_EVENT_VERSION",
   ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
@@ -188,6 +193,22 @@ requireValue(
   hardenedPublicationSchema.properties.schemaVersion.const ===
     `${matrix.surfaces.hardenedRuntimePublication.schema}/${matrix.surfaces.hardenedRuntimePublication.current}`,
   "hardened registry publication schema does not match the compatibility surface",
+);
+const observabilityPolicy = JSON.parse(read(matrix.surfaces.observabilityEvent.policyPath));
+const observabilitySchema = JSON.parse(read(matrix.surfaces.observabilityEvent.schemaPath));
+requireValue(
+  observabilityPolicy.eventVersion === matrix.surfaces.observabilityEvent.current
+    && observabilitySchema.properties.schemaVersion.const ===
+      `${matrix.surfaces.observabilityEvent.schema}/${matrix.surfaces.observabilityEvent.current}`,
+  "observability event policy/schema does not match the compatibility surface",
+);
+requireValue(
+  observabilitySchema.properties.serviceVersion.const === gatewayVersion
+    && typescriptConstant(
+      "packages/gateway/src/observability.ts",
+      "GATEWAY_OBSERVABILITY_SERVICE_VERSION",
+    ) === gatewayVersion,
+  "observability event schema/runtime service versions must match the gateway package",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===
