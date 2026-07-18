@@ -63,7 +63,7 @@ HEALTHCHECK --interval=10s --timeout=4s --start-period=10s --retries=6 \
   CMD ["python", "-m", "forge_workers.health", "live"]
 CMD ["python", "-m", "forge_workers.runner"]
 
-FROM nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:42a7d7f2ee23e9f5a1dcdf3647ba5c585bbd18f79e79cd817e70e8cd61c55779 AS studio
+FROM nginxinc/nginx-unprivileged:1.31.3-alpine@sha256:a718212f9cf21e241f14067333000a3f0930292f5354fe0db269e9a2a2596b9e AS studio
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.title="ForgedTTC Studio" \
       org.opencontainers.image.source="https://github.com/RNT56/TTC" \

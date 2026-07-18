@@ -18,6 +18,26 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Refresh the D69 Studio edge image
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected protected run `29637705581`/job `88062906363`. Gateway and
+workers now both have empty fixed-vulnerability results. The scan reached Studio for
+the first time and found 87 fixed Alpine advisories in the April Nginx 1.29.5 image.
+Replaced that stale pin with upstream current mainline Nginx-unprivileged
+`1.31.3-alpine` at its exact multi-platform manifest digest, published 2026-07-16.
+**Evidence:** Docker Hub reports digest
+`sha256:a718212f9cf21e241f14067333000a3f0930292f5354fe0db269e9a2a2596b9e`
+for exact tag `1.31.3-alpine`. Retained protected Trivy results contain zero findings
+for gateway and workers and 87 fixed findings only for the superseded Studio base.
+Replacement protected scan and runtime smoke remain required.
+**Changed:** reviewed D69 Nginx base pin, Studio Docker target, and changelog.
+**Decisions:** none; the current exact upstream base replaces the stale vulnerable
+image without a security-policy exception.
+**Next:** Require an empty Studio scan, then execute TLS, isolation, least-privilege,
+readiness, graceful-stop, and same-artifact restart acceptance.
+**Blockers:** No repository blocker. Replacement protected scan remains pending.
+
 ## 2026-07-18 — Remove package installers from the D69 worker runtime
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]
