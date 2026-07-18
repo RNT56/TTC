@@ -73,6 +73,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: validate hardened runtime contract
         run: pnpm verify:hardened-runtime
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - name: build exact application images with provenance metadata
         run: |
           mkdir -p artifacts/hardened

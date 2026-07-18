@@ -18,6 +18,27 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Repair D69 provenance builder selection
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed the first protected `hardened runtime images` run
+`29636900716`/job `88060820517`: the contract gate passed 7/7, then BuildKit
+correctly refused provenance attestations under GitHub's default Docker driver.
+Selected upstream immutable release `docker/setup-buildx-action` v4.2.0 at exact
+commit `bb05f3f5519dd87d3ba754cc423b652a5edd6d2c`, added its Buildx container driver
+before the image builds, and admitted only that exact revision to the repository
+Actions allowlist.
+**Evidence:** The amended workflow parses as YAML, `pnpm verify:workflows` accepts all
+74 immutable action references across four files, and `git diff --check` is clean.
+Container build, SBOM, fixed-vulnerability, and runtime-smoke evidence still require
+the replacement protected PR run and are not claimed here.
+**Changed:** `.github/workflows/ci.yml`, repository Actions selected-action policy,
+and this changelog entry.
+**Decisions:** none; D69 and R38 remain active unchanged.
+**Next:** Push the repair, inspect every Docker-only stage, then add the green context
+to the protected-main ruleset and reconcile the exact evidence artifact.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
 ## 2026-07-18 — Build the D69 hardened runtime candidate
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]
