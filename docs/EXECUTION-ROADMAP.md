@@ -81,12 +81,12 @@ runtime smoke. The versioned publication record keeps all managed/live claims fa
 The protected contract passes all 47 local gates under Python 3.12.13 with six D70
 tests, 23 compatibility surfaces, nineteen golden families, 87 immutable Action
 references, 255 worker tests,
-and the unchanged 200/97/two-Pareto/two-held recovery batch. First run `29642829329`
-proved digest publish through independent pull/smoke, then failed final record
-creation on absent OCI-index Buildx config metadata. The pulled-runtime correction
-has seven focused tests, passes all 47 local gates, and needs a protected rerun; even
-a successful run leaves the
-managed-sandbox install/upgrade/rollback/corrected-forward half open.
+and the unchanged 200/97/two-Pareto/two-held recovery batch. PR #128 corrected the
+first run's OCI-index config-metadata defect at protected `f1d8850`; all local, PR,
+and post-merge gates pass. Successful run `29644408106`, verified artifact
+`8429638868`, and independently reproduced public manifest/attestation checks close
+immutable publication only. The managed-sandbox install/upgrade/rollback/corrected-
+forward half remains open.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is

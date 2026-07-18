@@ -72,7 +72,7 @@ seventh check. The dependency remains open until immutable registry artifacts pl
 real managed-sandbox install/upgrade/rollback/roll-forward are retained. No managed
 environment is proven.
 
-D70 defines the pending immutable-artifact half of that gate as a separate
+D70 defines the now-verified immutable-artifact half of that gate as a separate
 compatibility surface: one manual environment-gated workflow accepts only the exact
 dispatched protected `main` head, builds each proprietary application image once,
 pushes to fixed GHCR names by digest without mutable tags, attaches BuildKit and
@@ -81,13 +81,12 @@ exact-pull D69 smoke before emitting `forge-hardened-runtime-publication/1.0.0`.
 The protected contract passed all 47 local gates under Python 3.12.13 with six D70
 tests, 23 compatibility surfaces, nineteen golden families, 87 immutable Action references,
 255 worker tests, and the unchanged 200/97/two-Pareto/two-held recovery batch. The
-first protected run `29642829329` proved publish/scan/attestation/independent-pull/
-smoke but failed final evidence creation because attested OCI-index metadata omitted
-the assumed config field. The pulled-runtime authority correction has seven focused
-tests, passes all 47 local gates, and still requires protected rerun. After accepted
-protected publication,
-OPS-002 will still require a real D68 sandbox install, upgrade, application rollback,
-and corrected roll-forward.
+first protected run exposed and preserved an OCI-index config-metadata defect. PR #128
+corrected it at protected `f1d8850`; all local, PR, and post-merge gates pass.
+Successful run `29644408106`, verified artifact `8429638868`, and independently
+reproduced public manifest/attestation checks close immutable publication only.
+OPS-002 still requires a real D68 sandbox install, upgrade, application rollback, and
+corrected roll-forward using those exact references.
 
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the

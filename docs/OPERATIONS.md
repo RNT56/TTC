@@ -14,7 +14,7 @@ Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.
 
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity through PR #125/`290060d` and evidence PR #126/`f6f2620`; D70's registry contract is protected through PR #127/`a1d72ad`, but first run `29642829329` produced objects without an accepted final record; no managed environment, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`; no managed environment, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -346,11 +346,11 @@ OPS-001 contract
 
 ### OPS-002 implementation slices
 
-Current D69 candidate status: slices 1–5 have protected repository contract/fixture
-implementations; slice 6 is deliberately open. D70 splits its first external
-prerequisite into a separately reviewable publication gate: the repository contains
-the contract, schema, tests, and manual workflow, but no successful publication is
-claimed until exact protected-main remote evidence exists. The repository now contains pinned
+Current D69 status: slices 1–5 have protected repository contract/fixture
+implementations; slice 6 is deliberately open. D70 closes slice 6's immutable-
+publication prerequisite through exact protected-main run `29644408106` and verified
+artifact `8429638868`, but does not perform a managed install. The repository
+contains pinned
 multi-stage application targets, a digest-pinned single-host Compose profile,
 file-secret loaders, gateway and worker readiness, resource/privilege/network
 constraints, a forward-only migration job, a CI image/SBOM/provenance/vulnerability
@@ -371,8 +371,8 @@ managed sandbox install/rollback evidence.
 6. Prove clean sandbox install, upgrade, application rollback, and corrected
    roll-forward with exact manifest bindings.
 
-Before slice 6 may start, D70 must produce all three immutable registry references
-from one exact protected `main` revision. A successful registry run removes only the
+Slice 6 must use the three D70 references from exact protected `f1d8850`; rebuilding,
+retagging, or substituting any component is forbidden. D70 removes only the
 publication prerequisite. It does not count as an install, upgrade, rollback,
 corrected roll-forward, managed environment, or live service.
 
