@@ -2,13 +2,17 @@
 
 Owner: platform/release maintainers
 
-Decision: D68
+Decisions: D68, D69
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
 Manifest schema: [`schema/forge-deployment-manifest.schema.json`](../schema/forge-deployment-manifest.schema.json)
 
-Current maturity: **contract + deterministic fixture; no managed environment or live service is proven**
+Hardened runtime: [`infra/deployment/hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json)
+
+Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
+
+Current maturity: **D68 is protected at contract/fixture maturity; the D69 runtime is an unprotected contract/fixture candidate; no managed environment or live service is proven**
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -44,6 +48,30 @@ docker compose -f infra/docker-compose.yml --profile app up
 
 That profile has source mounts and development credentials. It is intentionally
 excluded from all managed-environment and production claims.
+
+The separately governed D69 profile is validated with:
+
+```sh
+pnpm verify:hardened-runtime
+docker compose -f infra/compose.hardened.json config --quiet
+```
+
+It is not a replacement local-development command. It requires deployment-supplied
+immutable application image references, exact manifest and artifact digests,
+file-backed secrets, and TLS material. A successful configuration render or CI smoke
+is fixture evidence, not an installed sandbox or rollback result.
+
+The single-host substrate does not support Compose service-level `uid`, `gid`, or
+`mode` controls for local file-backed secrets/configs; Compose ignores those fields.
+Before rendering or starting this profile, the deployment secret materializer must
+write every referenced source outside the repository, set the source bytes to
+`root:10999` and mode `0440`, and expose supplemental GID `10999` only to declared
+consumers. The checked profile encodes that group with `group_add` and deliberately
+omits unsupported per-mount ownership fields. Do not make sources world-readable to
+work around a staging error. The ephemeral CI fixture uses an already reviewed,
+digest-pinned service image for the bounded ownership/mode operation; a managed host
+must use its privileged deployment agent or secret-manager materializer and retain a
+metadata-only inspection of path class, numeric owner/group, mode, and version.
 
 ## 2. Supported first topology
 
@@ -142,6 +170,9 @@ Managed gateway and worker startup requires these process-level bindings:
 | `FORGE_SOURCE_REVISION` | exact 40-character protected-main source revision |
 | `FORGE_DEPLOYMENT_MANIFEST` | path to the mounted non-secret manifest bytes |
 | `FORGE_DEPLOYMENT_MANIFEST_SHA256` | exact SHA-256 of those bytes |
+| `FORGE_DEPLOYMENT_ARTIFACT_SHA256` | exact digest for the current gateway or worker image; it must match that component in the manifest |
+| `FORGE_RUNTIME_SECRETS_DIRECTORY` | absolute mount directory from which only exact allowlisted secret-value filenames are loaded; TLS material may coexist but is not ingested as an application secret value |
+| `FORGE_RUNTIME_SECRETS_SOURCE=files` | runtime proof that managed secrets came from files rather than inherited environment values |
 
 These bootstrap values are intentionally not all embedded as manifest configuration;
 requiring a manifest to contain its own path or digest would be self-referential.
@@ -149,6 +180,13 @@ Gateway and worker startup independently hash the file and require current schem
 active status, matching environment/source, clean protected source, matching
 configuration bindings, and their own component declaration. `FORGE_ENV` is a
 legacy local alias and is rejected in managed startup.
+
+Gateway and worker secret loaders inspect only the exact secret-value allowlist
+declared by the deployment policy; unrelated mounted TLS/config files are not loaded
+into environment variables. The directory must be absolute and real; each present
+allowlisted entry must be a non-empty regular non-symlink file of at most 16 KiB with
+no NUL or multiline content. A secret already present in the process environment is
+ambiguous and fails closed. Neither filenames nor values may be logged as evidence.
 
 ### 5.2 Manifest content
 
@@ -178,6 +216,7 @@ and sandbox quote/vendor flags.
 
 ```sh
 pnpm verify:deployment
+pnpm verify:hardened-runtime
 node scripts/deployment-policy.mjs validate /private/path/manifest.json
 node scripts/deployment-policy.mjs promote /private/path/source.json /private/path/target.json
 ```
@@ -294,6 +333,15 @@ OPS-001 contract
 
 ### OPS-002 implementation slices
 
+Current D69 candidate status: slices 1–5 have repository contract/fixture
+implementations; slice 6 is deliberately open. The repository now contains pinned
+multi-stage application targets, a digest-pinned single-host Compose profile,
+file-secret loaders, gateway and worker readiness, resource/privilege/network
+constraints, a forward-only migration job, a CI image/SBOM/provenance/vulnerability
+and runtime-smoke lane, and exact nonclaims. Local Docker configuration validation
+and deterministic tests do not replace the still-required protected CI artifact or
+managed sandbox install/rollback evidence.
+
 1. Inventory deployable artifacts, writable paths, ports, identities, and health
    dependencies; choose the deployment substrate without introducing Kubernetes.
 2. Add pinned multi-stage gateway/worker/Studio/validator images and exact lockfile
@@ -306,6 +354,42 @@ OPS-001 contract
 5. Add CPU/memory/time/concurrency/storage limits and graceful termination/drain.
 6. Prove clean sandbox install, upgrade, application rollback, and corrected
    roll-forward with exact manifest bindings.
+
+### OPS-002 artifact and probe contract
+
+- `infra/docker/runtime.Dockerfile` builds `gateway`, `workers`, and `studio` from
+  exact reviewed bases. Gateway and workers carry the release validator; Studio is a
+  static TLS edge. Images label the exact source revision and run as
+  `10001:10001`, `10002:10002`, and `101:101` respectively.
+- `infra/compose.hardened.json` is the single-host substrate. Only Studio publishes
+  `8443`; Postgres, object storage, Gateway, migration, and workers remain private.
+  Root-only Postgres/object-volume ownership initialization is short-lived and
+  separately bounded. Every secret/config consumer is non-root and receives only
+  supplemental GID `10999`; mounted source files must already be `root:10999`/`0440`
+  outside the checkout before Compose starts.
+- Liveness means that the process can execute; readiness means that declared local
+  dependencies are usable. Gateway readiness checks the validator, Postgres, and
+  object bucket. Worker readiness checks its deployment fence, validator, and
+  Postgres. A downstream outage must not be converted into a process-only liveness
+  success claim.
+- The Studio edge terminates TLS and retains COOP/COEP plus defensive headers. The
+  object store also requires TLS. Development HTTP remains confined to the explicit
+  source-mounted profile.
+- CI builds the exact targets, records build metadata, emits an SPDX image SBOM and
+  vulnerability report per component, then checks effective identity, read-only
+  root, capabilities, security options, limits, staged source ownership/mode,
+  configured and effective supplemental groups, health, TLS, isolation headers,
+  private networking, graceful stop, and same-artifact restart. Startup failures
+  retain bounded Compose status and service logs for diagnosis. The structured smoke
+  record permanently sets managed-sandbox, rollback, live, production, and external-
+  beta claims false.
+- A sandbox closeout must additionally publish immutable application image
+  references, independently bind their registry manifest digests to a protected D68
+  manifest, retain downloaded SBOM/provenance/vulnerability evidence, execute the
+  forward migration, perform representative read/write and queue smoke, install the
+  last admitted candidate, exercise rollback to it, and prove corrected roll-forward.
+  Record exact timestamps, identities, outcomes, and limitations in the private
+  operations evidence store before marking OPS-002 done.
 
 ### OPS-003/004 measurement rules
 
@@ -378,7 +462,7 @@ Before merging an operations change:
   substitution, rollback, and boundary tests;
 - update `COMPATIBILITY.md`, `DECISIONS.md`, threat model/risk register as needed;
 - add golden review records for registered policy/schema drift;
-- run `pnpm verify:deployment`, the narrow surface gates, full `pnpm verify`, and
+- run `pnpm verify:deployment`, `pnpm verify:hardened-runtime`, the narrow surface gates, full `pnpm verify`, and
   database/browser/deployment gates required by the changed surface;
 - inspect `git diff --check`, the full diff, dependency/security impact, and current
   remote checks;

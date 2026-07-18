@@ -6,6 +6,7 @@ import pytest
 from forge_workers.deployment import assert_deployment_bootstrap
 
 REVISION = "a" * 40
+ARTIFACT_DIGEST = "d" * 64
 
 
 def fixture(tmp_path, environment="staging"):
@@ -18,7 +19,7 @@ def fixture(tmp_path, environment="staging"):
             "protectedMain": True,
             "worktreeClean": True,
         },
-        "artifacts": [{"component": "workers"}],
+        "artifacts": [{"component": "workers", "sha256": ARTIFACT_DIGEST}],
         "configuration": {
             "values": {
                 "FORGE_DEPLOYMENT_ENVIRONMENT": environment,
@@ -39,6 +40,8 @@ def managed_env(path, digest):
         "FORGE_DEPLOYMENT_ENVIRONMENT": "staging",
         "FORGE_DEPLOYMENT_MANIFEST": str(path),
         "FORGE_DEPLOYMENT_MANIFEST_SHA256": digest,
+        "FORGE_DEPLOYMENT_ARTIFACT_SHA256": ARTIFACT_DIGEST,
+        "FORGE_RUNTIME_SECRETS_SOURCE": "files",
         "FORGE_SOURCE_REVISION": REVISION,
     }
 
@@ -57,7 +60,7 @@ def test_production_worker_requires_exact_active_manifest_binding(tmp_path):
     with pytest.raises(RuntimeError, match="does not authorize"):
         assert_deployment_bootstrap({**managed_env(path, digest), "FORGE_SOURCE_REVISION": "c" * 40})
     manifest = json.loads(path.read_text())
-    manifest["artifacts"] = [{"component": "gateway"}]
+    manifest["artifacts"] = [{"component": "gateway", "sha256": ARTIFACT_DIGEST}]
     manifest_bytes = json.dumps(manifest, separators=(",", ":")).encode()
     path.write_bytes(manifest_bytes)
     with pytest.raises(RuntimeError, match="does not authorize"):
@@ -70,3 +73,7 @@ def test_production_worker_rejects_missing_authority_and_legacy_alias(tmp_path):
     path, digest = fixture(tmp_path)
     with pytest.raises(RuntimeError, match="rejects legacy FORGE_ENV"):
         assert_deployment_bootstrap({**managed_env(path, digest), "FORGE_ENV": "production"})
+    with pytest.raises(RuntimeError, match="file-mounted runtime secrets"):
+        assert_deployment_bootstrap({**managed_env(path, digest), "FORGE_RUNTIME_SECRETS_SOURCE": "environment"})
+    with pytest.raises(RuntimeError, match="does not authorize"):
+        assert_deployment_bootstrap({**managed_env(path, digest), "FORGE_DEPLOYMENT_ARTIFACT_SHA256": "e" * 64})

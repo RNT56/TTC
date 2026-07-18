@@ -11,6 +11,7 @@
     "verify:desktop-native": "pnpm --filter @forge/desktop check:native",
     "verify:workflows": "node scripts/check-actions-pinned.mjs",
     "verify:deployment": "node --test scripts/deployment-policy.test.mjs && node scripts/deployment-policy.mjs check",
+    "verify:hardened-runtime": "node --test scripts/hardened-runtime.test.mjs && node scripts/hardened-runtime.mjs check",
     "verify:compatibility": "node scripts/check-compatibility.mjs",
     "docs:contracts": "pnpm --filter @forge/gateway exec tsx ../../scripts/generate-contract-docs.mts",
     "verify:docs-contracts": "pnpm --filter @forge/gateway exec tsx ../../scripts/generate-contract-docs.mts --check",

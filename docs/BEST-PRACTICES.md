@@ -596,6 +596,13 @@ semantically reviewed, and bound to exact protected checks.
   direct stage at a time, bind startup to exact manifest bytes, and keep secret
   values out of manifests/evidence. An environment name, schema, test, image, or
   successful deploy is not live or field proof.
+- Hardened artifacts follow D69 and
+  [`hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json): exact
+  base/tool digests, multi-stage minimal targets, numeric non-root users, read-only
+  roots, explicit writable paths, file-mounted secrets, private data-plane networks,
+  TLS, dropped capabilities, finite resources, distinct liveness/readiness, graceful
+  stop, SPDX/provenance/vulnerability evidence, and retained nonclaims. An ephemeral
+  CI container restart is not a managed-sandbox rollback.
 - Keep database history forward-only. Roll back application artifacts with an exact
   compatible manifest; restore data only for verified loss/corruption under the
   backup/DR procedure, never to erase a migration.

@@ -1,7 +1,7 @@
 # Repository governance and required checks
 
 Owner: repository maintainers  
-Last reviewed: **2026-07-15**
+Last reviewed: **2026-07-18**
 
 This is the executable contract for default-branch protection, check stability,
 dependency/security triage, and release escalation. It complements `AGENTS.md`; it
@@ -30,6 +30,12 @@ The exact merge-blocking check names are:
 4. `compute workers (Python)`
 5. `dependency review`
 6. `desktop native (macOS)`
+7. `hardened runtime images`
+
+As of 2026-07-18, active ruleset `18843164` contains all seven names. The D69 check
+was added only after exact implementation head `991deb3` passed job `88066177198`
+and its downloaded artifact `8428032260` was independently inspected; this changes
+merge authority, not managed-runtime maturity.
 
 Do not casually rename these jobs. Change a required name in two stages: first ship
 the replacement check while the old name is still present, then update the ruleset
@@ -99,6 +105,13 @@ also requires append-only golden review. This deterministic gate proves contract
 fixture behavior only; it does not prove a sandbox, production deploy, secret
 rotation, backup, SLO, or external beta. The operational acceptance sequence is
 owned by [`OPERATIONS.md`](OPERATIONS.md).
+
+The required CI workflow also owns D69's `hardened runtime images` job. It validates
+[`hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json), builds the
+three exact application targets, retains build metadata plus SPDX SBOM and
+vulnerability reports, and exercises the TLS/private-network/least-privilege/probe/
+graceful-restart fixture. The job must stay required before OPS-002 can close, but its
+ephemeral output is not managed-sandbox install or rollback evidence.
 
 The required `compute workers (Python)` job depends on the exact validator artifact
 from `forge-core`. It installs exact `workers[dev,mujoco,training,mjx,deployment,codesign]` so

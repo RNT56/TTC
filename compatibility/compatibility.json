@@ -56,6 +56,15 @@
       "policyPath": "infra/deployment/deployment-policy.v1.json",
       "versionRule": "environment, source, artifact, non-secret configuration, versioned secret-reference, ownership, evidence, promotion, and authority meanings are major-version semantics"
     },
+    "hardenedRuntime": {
+      "current": "1.0.0",
+      "supportedMajors": [1],
+      "schema": "forge-hardened-runtime",
+      "versionField": "schemaVersion",
+      "contractPath": "infra/deployment/hardened-runtime.v1.json",
+      "composePath": "infra/compose.hardened.json",
+      "versionRule": "base-image identity, application targets and identities, writable paths, network and port boundaries, file-mounted secret authority, probes, least privilege, resource limits, graceful termination, and evidence nonclaims are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [1],

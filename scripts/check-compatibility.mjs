@@ -60,6 +60,7 @@ const required = [
   "replay",
   "envSpec",
   "deploymentManifest",
+  "hardenedRuntime",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -103,6 +104,10 @@ const expected = {
   deploymentManifest: typescriptConstant(
     "scripts/deployment-policy.mjs",
     "DEPLOYMENT_MANIFEST_VERSION",
+  ),
+  hardenedRuntime: typescriptConstant(
+    "scripts/hardened-runtime.mjs",
+    "HARDENED_RUNTIME_VERSION",
   ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
@@ -157,6 +162,13 @@ requireValue(
   deploymentSchema.properties.schemaVersion.const ===
     `${matrix.surfaces.deploymentManifest.schema}/${matrix.surfaces.deploymentManifest.current}`,
   "deployment schema version marker does not match the compatibility surface",
+);
+const hardenedRuntime = JSON.parse(read(matrix.surfaces.hardenedRuntime.contractPath));
+requireValue(
+  hardenedRuntime.schemaVersion ===
+    `${matrix.surfaces.hardenedRuntime.schema}/${matrix.surfaces.hardenedRuntime.current}`
+    && hardenedRuntime.composeFile === matrix.surfaces.hardenedRuntime.composePath,
+  "hardened runtime contract does not match the compatibility surface",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===

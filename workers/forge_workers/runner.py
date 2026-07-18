@@ -9,9 +9,11 @@ import time
 from forge_workers import register_all_handlers
 from forge_workers.deployment import assert_deployment_bootstrap
 from forge_workers.queue import PostgresQueueStore, registry, run_forever
+from forge_workers.runtime_secrets import load_managed_runtime_secrets
 
 
 def main() -> None:
+    load_managed_runtime_secrets()
     assert_deployment_bootstrap()
     register_all_handlers()
     print(f"forge-workers ready: {', '.join(registry.tasks())}", flush=True)

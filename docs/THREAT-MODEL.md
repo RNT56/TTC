@@ -1,12 +1,26 @@
 # ForgedTTC threat model
 
 Owner: repository maintainers and deployment operators
-Last reviewed: **2026-07-16**
+Last reviewed: **2026-07-18**
 Applies to: gateway, Auth.js boundary, Postgres, object storage, generation providers,
 Python workers, live command adapters, release archives, Studio-facing APIs
 Implementation maturity: **contract and deterministic fixture**; production egress,
 distributed abuse control, provider operations, restore exercises, and incident drills
 remain operations work.
+
+D69 runtime authority is machine-readable in
+[`infra/deployment/hardened-runtime.v1.json`](../infra/deployment/hardened-runtime.v1.json).
+Its pinned images, file-secret boundary, numeric non-root identities, read-only roots,
+private networks, TLS, dropped capabilities, resource limits, probes, termination,
+and CI evidence are contract/fixture controls. They do not prove a managed sandbox,
+rollback, production perimeter, provider isolation, or live operation.
+
+For D69's single-host Compose substrate, file secrecy is a host-side precondition:
+the materializer stages referenced sources outside the checkout as
+`root:10999`/`0440`, while only declared consumers receive supplemental GID `10999`.
+The profile omits Compose `uid`/`gid`/`mode` mount attributes because the local-file
+implementation ignores them. World-readable sources, repository-resident values,
+and an unrecorded ownership workaround are fail-closed deployment errors.
 
 This is the canonical application threat model. `security-safety-legal.md` owns
 product exclusions, privacy promises, and legal gates; `DATA-LIFECYCLE.md` owns
@@ -284,6 +298,11 @@ and error redaction only; no real provider/proxy/APM log has been inspected.
 
 - Store production secrets in a deployment secret manager, not repository files,
   Compose defaults, client bundles, command arguments, or logs.
+- On the D69 single-host profile, materialize only the selected immutable versions
+  into a host directory unavailable to ordinary users, set each source
+  `root:10999`/`0440`, verify metadata without reading values, and remove superseded
+  material after consumers have restarted and the old version is revoked. Compose
+  cannot supply or repair those source ownership semantics.
 - Rotate a suspected provider key immediately at the provider, then restart/reload
   every consumer and confirm the old value fails. BYO users rotate their own key.
 - Rotate `AUTH_SECRET` only with an explicit session-invalidation plan; treat all old
@@ -625,7 +644,7 @@ Before any production/live-provider claim:
 | Queue recovery is fixture-proven, not production-operated | no multi-replica partition/backlog/dead-letter/SLO exercise | `OPS-003`, `OPS-004`, `OPS-006`, `OPS-007`, `QA-006`, `QA-009` |
 | External logs and secret custody | repository tests cannot inspect proxy/APM/provider/operator systems | operations: seeded-secret scan and rotation drill |
 | Live provider integrity/cost | deterministic adapters do not prove outage, billing, cancellation, or retention | `OPS-*`, `EXT-*`, and live sandbox acceptance |
-| Process/container isolation | process bounds do not provide a full OS sandbox | operations: non-root container, seccomp/sandbox, limits, egress |
+| Process/container isolation | D69 supplies non-root/read-only/capability/resource/private-network contract and ephemeral CI checks, but no managed-sandbox or host-boundary proof | OPS-002: protected digest-addressed image review, retained SBOM/provenance/vulnerability evidence, sandbox install/rollback, host policy and egress verification |
 | Incident and disaster recovery | contracts exist; deployed restore/response evidence does not | `OPS-005`, `OPS-008`, `OPS-010` |
 
 These risks block the corresponding live or production maturity claims. They do not

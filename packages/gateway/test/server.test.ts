@@ -1024,6 +1024,33 @@ test("healthz reports the validator binary", async () => {
   await app.close();
 });
 
+test("readyz distinguishes healthy dependencies from process liveness", async () => {
+  const ready = buildServer({
+    readinessProbe: async () => ({
+      ok: true,
+      checks: { database: true, objectStorage: true, validator: true },
+    }),
+  });
+  const readyResponse = await ready.inject({ method: "GET", url: "/readyz" });
+  assert.equal(readyResponse.statusCode, 200);
+  assert.equal(readyResponse.json().ok, true);
+  await ready.close();
+
+  const unavailable = buildServer({
+    readinessProbe: async () => ({
+      ok: false,
+      checks: { database: false, objectStorage: true, validator: true },
+    }),
+  });
+  const unavailableResponse = await unavailable.inject({ method: "GET", url: "/readyz" });
+  assert.equal(unavailableResponse.statusCode, 503);
+  assert.deepEqual(unavailableResponse.json(), {
+    ok: false,
+    checks: { database: false, objectStorage: true, validator: true },
+  });
+  await unavailable.close();
+});
+
 test("validate rejects a malformed body at the schema boundary", async () => {
   const app = buildServer();
   const res = await app.inject({

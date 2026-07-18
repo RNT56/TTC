@@ -75,6 +75,69 @@
         }
       }
     },
+    "/readyz": {
+      "get": {
+        "operationId": "get-readyz",
+        "summary": "Report bounded internal database, object-store, and validator readiness",
+        "tags": [
+          "gateway"
+        ],
+        "x-forge-auth": "public",
+        "x-forge-capability-maturity": "contract",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or bounded-input refusal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Documented response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth": {
       "get": {
         "operationId": "get-auth",
@@ -9012,5 +9075,5 @@
   },
   "x-forge-documentation-version": "1.0.0",
   "x-forge-status": "pre-1.0-internal",
-  "x-forge-route-count": 81
+  "x-forge-route-count": 82
 }

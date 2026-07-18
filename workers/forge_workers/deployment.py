@@ -54,11 +54,16 @@ def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
 
     manifest_path = Path(_required(values, "FORGE_DEPLOYMENT_MANIFEST"))
     expected_digest = _required(values, "FORGE_DEPLOYMENT_MANIFEST_SHA256")
+    artifact_digest = _required(values, "FORGE_DEPLOYMENT_ARTIFACT_SHA256")
     source_revision = _required(values, "FORGE_SOURCE_REVISION")
     if _SHA256.fullmatch(expected_digest) is None:
         raise RuntimeError("FORGE_DEPLOYMENT_MANIFEST_SHA256 is invalid")
+    if _SHA256.fullmatch(artifact_digest) is None:
+        raise RuntimeError("FORGE_DEPLOYMENT_ARTIFACT_SHA256 is invalid")
     if _GIT_HASH.fullmatch(source_revision) is None:
         raise RuntimeError("FORGE_SOURCE_REVISION is invalid")
+    if values.get("FORGE_RUNTIME_SECRETS_SOURCE") != "files":
+        raise RuntimeError("managed worker startup requires file-mounted runtime secrets")
     size = manifest_path.stat().st_size
     if not manifest_path.is_file() or size <= 0 or size > _MAX_MANIFEST_BYTES:
         raise RuntimeError("deployment manifest file size is invalid")
@@ -74,7 +79,10 @@ def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
     configuration_values = _mapping(configuration.get("values"), "deployment manifest configuration values")
     artifacts = manifest.get("artifacts")
     has_workers = isinstance(artifacts, list) and any(
-        isinstance(artifact, dict) and artifact.get("component") == "workers" for artifact in artifacts
+        isinstance(artifact, dict)
+        and artifact.get("component") == "workers"
+        and artifact.get("sha256") == artifact_digest
+        for artifact in artifacts
     )
     if not (
         manifest.get("schemaVersion") == f"forge-deployment-manifest/{DEPLOYMENT_MANIFEST_VERSION}"

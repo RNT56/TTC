@@ -140,6 +140,7 @@ import {
   type RateLimitClass,
   type RateLimitPolicy,
 } from "./security.js";
+import { checkGatewayReadiness, type GatewayReadiness } from "./readiness.js";
 import {
   runBake,
   runBom,
@@ -168,6 +169,7 @@ export interface ServerOptions {
   rateLimitPolicy?: RateLimitPolicy | null;
   rateLimitNow?: () => number;
   observeRoute?: (route: GatewayRouteObservation) => void;
+  readinessProbe?: () => Promise<GatewayReadiness>;
 }
 
 export interface GatewayRouteObservation {
@@ -847,6 +849,10 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     validatorBin: validatorBin(),
     validatorPresent: existsSync(validatorBin()),
   }));
+  app.get("/readyz", async (_request, reply) => {
+    const result = await (options.readinessProbe ?? (() => checkGatewayReadiness(db)))();
+    return reply.status(result.ok ? 200 : 503).send(result);
+  });
 
   app.register(async (authApp) => {
     if (rateLimitPolicy !== null) {

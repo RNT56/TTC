@@ -18,6 +18,243 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Require the proven D69 runtime check
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]
+**Done:** Exact implementation head `991deb380aa0340ab89f57454b320b8f267d16a3`
+passed all twelve PR checks in CI `29638959236` and security `29638959241` after the
+secret-custody repair. Hardened job `88066177198` built all three application images,
+generated all three SPDX documents and Buildx records, found zero fixed
+low-or-higher vulnerabilities, and passed TLS, private-network, source custody,
+effective-group, least-privilege, health/readiness, graceful-stop, and same-artifact
+restart acceptance. Independently downloaded artifact `8428032260` binds a clean
+checkout to the exact source and keeps managed-sandbox, rollback, live, production,
+and external-beta claims false. Added the already-green `hardened runtime images`
+context to active ruleset `18843164` as the seventh merge-blocking check.
+**Evidence:** Runtime record SHA-256
+`64c36b70a11d46639d18ab0db644ac1e5e25eb9886311240bf462d9ba77d6124`;
+three SPDX 2.3 documents contain packages; three Trivy result sets are empty; three
+Buildx records bind target, Dockerfile, exact revision, repository, parameters,
+environment, and digested base materials. The evidence is ephemeral CI fixture
+proof, not an attached registry attestation or managed rollback.
+**Changed:** live repository ruleset; `AGENTS.md`; project state, roadmaps, GOV/OPS
+task ledger, repository governance, and changelog.
+**Decisions:** none; D69 and its maturity ceiling remain unchanged.
+**Next:** Re-run the now-seven-check PR boundary at the documentation-reconciled
+head, merge through protection, verify post-merge CI/security, and reconcile the
+protected exact evidence without closing OPS-002.
+**Blockers:** No repository blocker. Immutable registry publication and managed
+sandbox install/upgrade/rollback/corrected-forward evidence remain external work.
+
+## 2026-07-18 — Repair D69 single-host secret custody
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected protected run `29637855300`/job `88063316211`: all three exact
+images built, all three SPDX documents were emitted, and every fixed-low-or-higher
+Trivy result was empty. The first runtime smoke then failed at MinIO because
+standalone Compose explicitly ignored the profile's service-level secret/config
+`uid`, `gid`, and `mode` fields, leaving non-root consumers unable to read the
+runner-owned sources. Replaced that invalid ownership claim with an explicit
+single-host custody boundary: sources are staged outside the checkout as
+`root:10999`/`0440`, declared consumers receive only supplemental GID `10999`, and
+Postgres now runs as numeric non-root `999:999` behind a bounded root volume
+initializer. The smoke records source metadata plus configured/effective groups and
+emits bounded Compose status/log diagnostics on startup failure.
+**Evidence:** The failed protected job reached the runtime only after three clean
+image vulnerability scans and printed Compose's unsupported-field warnings before
+MinIO became unhealthy. The repaired profile passes its eight focused D69 tests, an
+explicit warning-free Compose render, and all 46 local gates under Python 3.12.13,
+including 22 compatibility surfaces, eighteen golden families, 39 Studio tests, 81
+Gateway tests, 255 worker tests, and the exact 200-candidate co-design recovery
+batch. Protected runtime proof remains required; this entry does not claim that the
+repaired profile has started.
+**Changed:** D69 runtime and Compose contracts, contract tests, runtime smoke,
+`AGENTS.md`, operations, threat model, and changelog.
+**Decisions:** none; this corrects the existing D69 single-host contract before it is
+protected and does not expand its contract/fixture maturity.
+**Next:** Push the repair and use the improved protected smoke evidence to prove or
+further diagnose the entire runtime.
+**Blockers:** No repository blocker. Docker-only replacement acceptance remains
+pending in protected CI.
+
+## 2026-07-18 — Refresh the D69 Studio edge image
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected protected run `29637705581`/job `88062906363`. Gateway and
+workers now both have empty fixed-vulnerability results. The scan reached Studio for
+the first time and found 87 fixed Alpine advisories in the April Nginx 1.29.5 image.
+Replaced that stale pin with upstream current mainline Nginx-unprivileged
+`1.31.3-alpine` at its exact multi-platform manifest digest, published 2026-07-16.
+**Evidence:** Docker Hub reports digest
+`sha256:a718212f9cf21e241f14067333000a3f0930292f5354fe0db269e9a2a2596b9e`
+for exact tag `1.31.3-alpine`. Retained protected Trivy results contain zero findings
+for gateway and workers and 87 fixed findings only for the superseded Studio base.
+Replacement protected scan and runtime smoke remain required.
+**Changed:** reviewed D69 Nginx base pin, Studio Docker target, and changelog.
+**Decisions:** none; the current exact upstream base replaces the stale vulnerable
+image without a security-policy exception.
+**Next:** Require an empty Studio scan, then execute TLS, isolation, least-privilege,
+readiness, graceful-stop, and same-artifact restart acceptance.
+**Blockers:** No repository blocker. Replacement protected scan remains pending.
+
+## 2026-07-18 — Remove package installers from the D69 worker runtime
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected protected run `29637568506`/job `88062525902`. The refreshed and
+minimized gateway scan is now empty. Trivy advanced to workers and found exactly five
+fixed low/medium advisories, all under the bundled pip 25.0.1 metadata. The worker
+image now removes pip, setuptools, and wheel immediately after its deterministic
+queue-runtime install; D69 validation rejects restoring those unused installers.
+**Evidence:** Retained `gateway.trivy.json` contains zero vulnerabilities.
+`workers.trivy.json` contains only CVE-2025-8869, CVE-2026-3219, CVE-2026-6357,
+CVE-2026-8643, and CVE-2026-1703 against pip itself. Replacement protected scan and
+the not-yet-reached Studio scan/runtime smoke remain required.
+**Changed:** hardened worker image, D69 repository validation, and changelog.
+**Decisions:** none; runtime images retain application dependencies, not build-time
+package-manager authority.
+**Next:** Rebuild, require all three Trivy files to be empty, and execute runtime
+isolation, probe, stop, and restart acceptance.
+**Blockers:** No repository blocker. Replacement protected scan remains pending.
+
+## 2026-07-18 — Remediate fixed vulnerabilities in the D69 gateway image
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Inspected the retained Trivy result from protected run `29637376304`/job
+`88062030981`. Image build and all three SPDX SBOMs passed; the fixed-vulnerability
+gate found 55 Debian and 31 bundled-npm findings in the gateway image, including two
+critical fixed GnuTLS advisories. Replaced the year-old Node 22.17.1 base with the
+current exact Node 22.23.1 Bookworm-slim manifest digest published 2026-07-14 and
+removed npm/Corepack plus their shims from the runtime-only gateway stage, where no
+package-manager authority is needed. D69 now rejects restoring that unused surface.
+**Evidence:** Docker Hub reports multi-platform digest
+`sha256:6c74791e557ce11fc957704f6d4fe134a7bc8d6f5ca4403205b2966bd488f6b3`
+for exact tag `22.23.1-bookworm-slim`, last updated 2026-07-14. The retained Trivy
+paths place every Node-package finding below `/usr/local/lib/node_modules/npm`.
+Replacement protected scan and runtime proof remain required.
+**Changed:** reviewed D69 Node base pin, Dockerfile runtime surface, repository
+validation, and changelog.
+**Decisions:** none; fixed advisories receive remediation, not a policy exception.
+**Next:** Rebuild and require zero fixed low-or-higher findings across all three final
+images, then run runtime isolation/restart acceptance.
+**Blockers:** No repository blocker. Replacement protected scan remains pending.
+
+## 2026-07-18 — Compile Studio before D69 production pruning
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed protected CI run `29637289827`/job `88061808590`: the explicit
+non-interactive pnpm deployment completed, then Studio could not find `tsc` because
+the gateway's legacy production deploy had correctly removed workspace development
+dependencies. Reordered the web stage so gateway and Studio both compile before the
+gateway-only production deployment prunes dependencies, and made that order a D69
+repository invariant.
+**Evidence:** BuildKit passed dependency resolution and the non-interactive production
+install; the failure was the subsequent `tsc` lookup. Focused validation and another
+protected Docker run remain required.
+**Changed:** hardened runtime Dockerfile, D69 repository validation, and changelog.
+**Decisions:** none; build-only tools must not survive in the gateway runtime image,
+but every build consumer must finish before pruning them.
+**Next:** Push the corrected build order and continue through image, SBOM, scan, and
+runtime acceptance.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
+## 2026-07-18 — Make the D69 pnpm image build non-interactive
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed protected CI run `29637189342`/job `88061558009`: Buildx
+accepted the Docker load plus max build-record provenance contract and entered the
+real build, then `pnpm deploy --legacy` fail-closed when its production install would
+have purged a modules directory without a TTY. Made `CI=true` explicit in the pinned
+web build stage and added a repository assertion that non-interactive authority stays
+ahead of every pnpm install/deploy operation.
+**Evidence:** The failure occurred in the web-build layer after dependency resolution,
+not in Buildx startup or export. Focused D69 validation and replacement protected CI
+remain required before acceptance.
+**Changed:** hardened runtime Dockerfile, D69 repository validation, and changelog.
+**Decisions:** none; no install prompt or implicit terminal authority is permitted in
+a reproducible image build.
+**Next:** Push the correction and continue through all remaining container-only gates.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
+## 2026-07-18 — Separate D69 build-record provenance from image loading
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed replacement CI run `29637045157`/job `88061184732`:
+the pinned Buildx container driver booted successfully, but the Docker exporter
+refused the attestation manifest list before reading the Dockerfile. Applied the
+documented single-platform Docker-store boundary: each loaded CI image disables the
+unsupported attached attestation while `BUILDX_METADATA_PROVENANCE=max` retains full
+BuildKit build-record provenance in the per-image metadata file; Buildx warnings are
+retained too. Repository validation now fixes that distinction for all three targets.
+**Evidence:** Docker's current Buildx reference confirms that the default Docker image
+store does not persist attestations and independently defines max provenance in
+`--metadata-file`. Focused repository and protected replacement verification remain
+required before this correction is accepted.
+**Changed:** hardened-image CI export flags, metadata environment, D69 repository
+validation, and this changelog entry.
+**Decisions:** none; registry publication must attach provenance under the later
+managed-sandbox promotion gate, while this CI proof remains contract/fixture only.
+**Next:** Push the correction and inspect the first real Dockerfile build, SBOM,
+vulnerability scan, and runtime smoke result.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
+## 2026-07-18 — Repair D69 provenance builder selection
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed the first protected `hardened runtime images` run
+`29636900716`/job `88060820517`: the contract gate passed 7/7, then BuildKit
+correctly refused provenance attestations under GitHub's default Docker driver.
+Selected upstream immutable release `docker/setup-buildx-action` v4.2.0 at exact
+commit `bb05f3f5519dd87d3ba754cc423b652a5edd6d2c`, added its Buildx container driver
+before the image builds, and admitted only that exact revision to the repository
+Actions allowlist.
+**Evidence:** The amended workflow parses as YAML, `pnpm verify:workflows` accepts all
+74 immutable action references across four files, and `git diff --check` is clean.
+Container build, SBOM, fixed-vulnerability, and runtime-smoke evidence still require
+the replacement protected PR run and are not claimed here.
+**Changed:** `.github/workflows/ci.yml`, repository Actions selected-action policy,
+and this changelog entry.
+**Decisions:** none; D69 and R38 remain active unchanged.
+**Next:** Push the repair, inspect every Docker-only stage, then add the green context
+to the protected-main ruleset and reconcile the exact evidence artifact.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
+## 2026-07-18 — Build the D69 hardened runtime candidate
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Implemented the dependency-complete repository side of D69 without claiming
+a managed environment. `forge-hardened-runtime/1.0.0` now governs reviewed exact
+base/service/evidence-tool digests, three multi-stage application targets, numeric
+non-root identities, read-only roots, explicit writable mounts, file-mounted secret
+loading, TLS edge and object storage, private data-plane networks, bounded stateful
+initializers, dropped capabilities, finite PID/CPU/memory limits, forward migration,
+readiness/liveness, graceful termination, and permanent maturity nonclaims. Gateway
+and workers bind their exact image artifact digest to the D68 startup manifest. A new
+CI job builds the targets, emits BuildKit provenance metadata and SPDX SBOMs, scans
+fixed vulnerabilities, and exercises TLS, isolation headers, effective identities,
+filesystem/capability/resource/network/port boundaries, readiness, clean stop, and
+same-artifact restart.
+**Evidence:** `pnpm verify` passes all 46 required local gates under Python 3.12.13:
+11 D68 tests, 7 D69 tests, 22 compatibility surfaces, 18 golden families, generated
+82-route/two-event/seventeen-worker docs, 39 Studio tests, 81 Gateway tests, and 255
+worker tests plus Rust/WASM parity, Brief-25 25/25, packaging, training, MJX, exact
+co-design recovery, and patch hygiene. The hardened Compose profile renders with
+explicit fixture inputs. The local Docker daemon is unavailable, so image build and
+runtime evidence is intentionally deferred to protected GitHub CI.
+**Changed:** D69 runtime/Compose/Docker/nginx contracts and tests; Gateway/worker
+secret, artifact-startup, readiness, migration, and termination paths; CI image
+evidence job; compatibility 1.0.0 surface; generated API/artifact docs; golden
+registry/update record; `AGENTS.md`, operations, roadmaps, task ledger, threat model,
+governance, architecture, best practices, project state, decisions, and risk ledger.
+**Decisions:** D69. R38 records false container, rollback, and managed-maturity risk.
+**Next:** Protect this exact candidate in PR CI, retain and inspect the image evidence,
+make `hardened runtime images` the seventh merge-blocking check, and correct any
+container-only failure. A later managed sandbox must publish immutable registry
+artifacts and prove install, upgrade, rollback, and corrected roll-forward before
+OPS-002 can close.
+**Blockers:** No repository implementation blocker. There is no local Docker daemon,
+immutable application registry publication, active sandbox manifest, managed
+sandbox, rollback observation, live service, production service, or external beta.
+
 ## 2026-07-18 — Reconcile protected D68 deployment-contract evidence
 **Session:** Codex agent · branch `codex/ops001-protected-evidence` ·
 **Phase:** OPS/QA · **TODO items:** OPS-001 [x]

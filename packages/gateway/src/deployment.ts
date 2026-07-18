@@ -59,9 +59,14 @@ export function assertDeploymentBootstrap(env: Environment = process.env): void 
 
   const manifestPath = required(env, "FORGE_DEPLOYMENT_MANIFEST");
   const expectedDigest = required(env, "FORGE_DEPLOYMENT_MANIFEST_SHA256");
+  const artifactDigest = required(env, "FORGE_DEPLOYMENT_ARTIFACT_SHA256");
   const sourceRevision = required(env, "FORGE_SOURCE_REVISION");
   if (!SHA256.test(expectedDigest)) throw new Error("FORGE_DEPLOYMENT_MANIFEST_SHA256 is invalid");
+  if (!SHA256.test(artifactDigest)) throw new Error("FORGE_DEPLOYMENT_ARTIFACT_SHA256 is invalid");
   if (!GIT_HASH.test(sourceRevision)) throw new Error("FORGE_SOURCE_REVISION is invalid");
+  if (env.FORGE_RUNTIME_SECRETS_SOURCE !== "files") {
+    throw new Error("managed gateway startup requires file-mounted runtime secrets");
+  }
   const stats = statSync(manifestPath);
   if (!stats.isFile() || stats.size === 0 || stats.size > MAX_MANIFEST_BYTES) {
     throw new Error("deployment manifest file size is invalid");
@@ -87,7 +92,8 @@ export function assertDeploymentBootstrap(env: Environment = process.env): void 
     !Array.isArray(artifacts) ||
     !artifacts.some((entry) => {
       try {
-        return object(entry, "deployment artifact").component === "gateway";
+        const artifact = object(entry, "deployment artifact");
+        return artifact.component === "gateway" && artifact.sha256 === artifactDigest;
       } catch {
         return false;
       }
