@@ -4,7 +4,7 @@ Snapshot date: **2026-07-18**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
 Latest verified protected descendant: `f68314d` (PR #124; D68/OPS-001 evidence reconciliation)
-Current unprotected implementation boundary: D69/OPS-002 hardened-runtime contract/fixture candidate on `codex/ops002-hardened-runtime`
+Current unprotected implementation boundary: D69/OPS-002 hardened-runtime contract/fixture candidate at exact implementation head `991deb3` on `codex/ops002-hardened-runtime`
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -58,7 +58,7 @@ QA-007 adversarial-corpus evidence anchor: `e89bb15` (PR #48)
 QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
 Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
 OPS-001 status: **complete at protected D68 contract/fixture maturity; every managed environment remains pending under OPS-002..010**
-OPS-002 status: **in progress at unprotected D69 contract/fixture candidate maturity; no managed sandbox or rollback is proven**
+OPS-002 status: **in progress at unprotected D69 contract/ephemeral-CI fixture maturity; no immutable registry artifact, managed sandbox, or rollback is proven**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -104,15 +104,26 @@ numeric non-root users, read-only roots, explicit writable paths, dropped
 capabilities, finite resources, TLS edge/object storage, a private data plane,
 forward migration, distinct readiness/liveness, and bounded graceful shutdown. The
 Gateway and worker load only exact regular file-mounted secrets and bind their image
-artifact digest to D68 startup authority. A new CI job builds the images, emits SPDX/
-provenance/vulnerability artifacts, and runs the ephemeral security/readiness/restart
-smoke. The complete 46-step local gate passes under Python 3.12.13 with D68 (11
-tests), D69 (7 tests), 22-surface compatibility, eighteen golden families, 82-route
-generated docs, 39 Studio tests, 81 Gateway tests, 255 worker tests, native/WASM,
-packaging, training, and co-design checks. Compose configuration rendering also
-passes. Docker is unavailable locally, and no
-protected CI image result, immutable registry publication, managed sandbox install,
-upgrade, rollback, corrected roll-forward, live service, or production claim exists.
+artifact digest to D68 startup authority. The single-host profile stages sources as
+`root:10999`/`0440`, gives only declared consumers supplemental group `10999`, and
+runs Postgres as numeric non-root behind a bounded volume initializer. The CI job
+builds the images, emits SPDX/provenance/vulnerability artifacts, and runs the
+ephemeral security/readiness/restart smoke. The complete 46-step local gate passes
+under Python 3.12.13 with D68 (11 tests), D69 (8 tests), 22-surface compatibility,
+eighteen golden families, 82-route generated docs, 39 Studio tests, 81 Gateway tests,
+255 worker tests, native/WASM, packaging, training, and co-design checks. Warning-free
+Compose rendering also passes. Exact implementation head `991deb3` passes all twelve
+PR checks in CI `29638959236` and security `29638959241`. Hardened job `88066177198`
+builds all three images, emits three nonempty SPDX 2.3 SBOMs and exact-source/target
+Buildx records, finds zero fixed low-or-higher vulnerabilities, and passes the
+complete ephemeral runtime smoke. Downloaded artifact `8428032260` binds a clean
+checkout to `991deb3`; runtime record `64c36b70…d6124` proves
+`root:10999`/`0440` sources, effective consumer groups, TLS edge/object storage,
+private networks, healthy dependencies, zero graceful-exit codes, and same-artifact
+restart while keeping managed-sandbox, rollback, live, production, and external-beta
+claims false. Ruleset `18843164` now requires `hardened runtime images` as its seventh
+exact check. No immutable registry publication, managed sandbox install, upgrade,
+rollback, corrected roll-forward, live service, or production claim exists.
 
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
@@ -1073,8 +1084,8 @@ Live GitHub evidence checked on 2026-07-15:
   its protected P7-008 documentation descendant; PR #62/`1de7974` remains the
   runtime/browser evidence anchor;
 - [ruleset 18843164](https://github.com/RNT56/TTC/rules/18843164) protects `main` with PR-only delivery, strict current
-  branches, resolved threads, no force pushes/deletions, and six required checks,
-  including the native macOS Desktop compile;
+  branches, resolved threads, no force pushes/deletions, and seven required checks,
+  including the native macOS Desktop compile and D69 hardened runtime images;
 - manual nightly parity/coverage passed on the recovery merge at
   [run 29211055558](https://github.com/RNT56/TTC/actions/runs/29211055558); final-commit rerun
   [29211517706](https://github.com/RNT56/TTC/actions/runs/29211517706) also passed and is the closeout record;
@@ -1228,7 +1239,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D66 per-point-voltage format | **Go only for protected row-v2/read-v1/grid/persistence compatibility at `5a162b0`; no-go for propulsion maturity** | exact PR/reviewed/protected-tree proof, all 44 local gates, all 11 PR checks, post-merge CI/security, and protected artifact `8405061774` prove the format and every-predecessor migration boundary. It cannot be cited as sourced/applicable catalog thrust, a new D65 curve, training, review/marketplace, hardware, field, or external evidence |
 | Claim D67 exact-grid/curve-readback consumer | **Go only for protected platform-local controlled-synthetic consumer/readback mechanics; no-go for physical maturity** | PR #121 exact head/reviewed/protected-tree equality, all 44 local gates, all 11 PR checks, exact post-merge CI/security, and protected artifact `8407177912` prove exact point retention, independent all-101 curve reconstruction, tamper refusal, authority/recovery binding, and unchanged 97/two/two analytic-fallback behavior. The only applicable grid is test-generated, and the catalog row remains v1/rejected. D67 cannot be cited as sourced/applicable thrust, owner review, tier 3, overnight/provider billing, marketplace/live-catalog, build, hardware, field, or external evidence |
 | Claim D68/OPS-001 deployment contract | **Go only for protected contract/fixture maturity; no-go for managed-environment or production claims** | PR #123 exact head `a028acd`, protected squash `401dac84`, evidence PR #124 exact head `5f9ff0b`, protected `f68314d`, all 45 local gates, both sets of all 11 PR checks, and final post-merge CI/security `29635605328`/`29635605305` protect the machine policy/schema, offline promotion tests, compatibility surface, gateway/worker exact-manifest startup fence, and canonical operations roadmap. OPS-002 is in progress and OPS-003..010 remain open; no active manifest or managed infrastructure exists |
-| Claim D69/OPS-002 hardened runtime | **No-go beyond the unprotected contract/fixture candidate** | Exact runtime/image/Compose/secret/probe/resource/evidence semantics and focused local checks exist, but the image-build/runtime smoke has not yet passed protected CI and no immutable registry artifact, managed sandbox install, upgrade, rollback, or corrected roll-forward exists. CI restart cannot be cited as managed rollback |
+| Claim D69/OPS-002 hardened runtime | **Go only for the unmerged exact-head contract/ephemeral-CI fixture; no-go for managed sandbox, rollback, live, or production claims** | Exact head `991deb3` passes all 46 local gates and all 12 PR checks in CI/security `29638959236`/`29638959241`. Hardened job `88066177198` and downloaded artifact `8428032260` bind clean source, three builds/SBOMs/provenance records, zero fixed low-or-higher findings, staged-source/effective-group custody, TLS/private topology, health/readiness, graceful stop, and same-artifact restart. No immutable registry artifact, managed sandbox install, upgrade, rollback, or corrected roll-forward exists; the record keeps those maturity claims false, and CI restart cannot be cited as managed rollback |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 

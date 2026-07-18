@@ -32,6 +32,11 @@ The exact merge-blocking check names are:
 6. `desktop native (macOS)`
 7. `hardened runtime images`
 
+As of 2026-07-18, active ruleset `18843164` contains all seven names. The D69 check
+was added only after exact implementation head `991deb3` passed job `88066177198`
+and its downloaded artifact `8428032260` was independently inspected; this changes
+merge authority, not managed-runtime maturity.
+
 Do not casually rename these jobs. Change a required name in two stages: first ship
 the replacement check while the old name is still present, then update the ruleset
 and this document, then remove the old check.

@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Require the proven D69 runtime check
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]
+**Done:** Exact implementation head `991deb380aa0340ab89f57454b320b8f267d16a3`
+passed all twelve PR checks in CI `29638959236` and security `29638959241` after the
+secret-custody repair. Hardened job `88066177198` built all three application images,
+generated all three SPDX documents and Buildx records, found zero fixed
+low-or-higher vulnerabilities, and passed TLS, private-network, source custody,
+effective-group, least-privilege, health/readiness, graceful-stop, and same-artifact
+restart acceptance. Independently downloaded artifact `8428032260` binds a clean
+checkout to the exact source and keeps managed-sandbox, rollback, live, production,
+and external-beta claims false. Added the already-green `hardened runtime images`
+context to active ruleset `18843164` as the seventh merge-blocking check.
+**Evidence:** Runtime record SHA-256
+`64c36b70a11d46639d18ab0db644ac1e5e25eb9886311240bf462d9ba77d6124`;
+three SPDX 2.3 documents contain packages; three Trivy result sets are empty; three
+Buildx records bind target, Dockerfile, exact revision, repository, parameters,
+environment, and digested base materials. The evidence is ephemeral CI fixture
+proof, not an attached registry attestation or managed rollback.
+**Changed:** live repository ruleset; `AGENTS.md`; project state, roadmaps, GOV/OPS
+task ledger, repository governance, and changelog.
+**Decisions:** none; D69 and its maturity ceiling remain unchanged.
+**Next:** Re-run the now-seven-check PR boundary at the documentation-reconciled
+head, merge through protection, verify post-merge CI/security, and reconcile the
+protected exact evidence without closing OPS-002.
+**Blockers:** No repository blocker. Immutable registry publication and managed
+sandbox install/upgrade/rollback/corrected-forward evidence remain external work.
+
 ## 2026-07-18 — Repair D69 single-host secret custody
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]

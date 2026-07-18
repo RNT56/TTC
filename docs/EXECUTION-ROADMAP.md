@@ -61,10 +61,15 @@ OPS-001 is complete at protected D68 contract/fixture maturity through PR #123/
 `401dac84` and evidence PR #124/`f68314d`; final post-merge CI/security
 `29635605328`/`29635605305` pass. OPS-002 is in progress on D69's compatibility-
 governed hardened single-host runtime: exact image/tool pins, multi-stage targets,
-file secrets, non-root/read-only execution, TLS/private networking, probes, finite
-resources, and CI SBOM/provenance/vulnerability/smoke evidence now exist as an
-unprotected contract/fixture candidate. All 46 local gates pass. The dependency cannot close until protected
-image evidence and a real managed-sandbox install/upgrade/rollback/roll-forward are
+staged `root:10999`/`0440` file secrets, non-root/read-only execution, TLS/private
+networking, probes, finite resources, and CI SBOM/provenance/vulnerability/smoke
+evidence now exist as an unprotected contract/fixture candidate. All 46 local gates
+pass. Exact implementation head `991deb3` passes all twelve PR checks in CI/security
+`29638959236`/`29638959241`; downloaded artifact `8428032260` binds clean source,
+three application builds/SBOMs/provenance records, zero fixed low-or-higher findings,
+and a green ephemeral runtime smoke. Ruleset `18843164` requires the hardened job as
+its seventh exact check. The dependency cannot close until these changes merge and a
+real immutable-registry managed-sandbox install/upgrade/rollback/roll-forward is
 retained. No managed environment is proven.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the

@@ -104,9 +104,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   post-merge CI/security `29635605328`/`29635605305` pass at contract/fixture
   maturity; no managed
   environment or live service is proven. OPS-002 is now in progress on the D69
-  hardened-runtime contract/fixture candidate; all 46 local gates pass with 22
-  compatibility surfaces, 18 golden families, 82 generated routes, 39 Studio, 81
-  Gateway, and 255 worker tests. No image, CI smoke, or Compose render may be cited
+  hardened-runtime contract/fixture candidate; all 46 local gates pass with 8 D69
+  tests, 22 compatibility surfaces, 18 golden families, 82 generated routes, 39
+  Studio, 81 Gateway, and 255 worker tests. Exact implementation head `991deb3`
+  passes all 12 PR checks in CI/security `29638959236`/`29638959241`; downloaded
+  hardened-runtime artifact `8428032260` binds a clean checkout to that source and
+  passes image, TLS, secret-custody, isolation, probe, stop, and restart checks. No
+  image, CI smoke, or Compose render may be cited
   as a managed sandbox, rollback, live, or production result. D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
