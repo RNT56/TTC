@@ -18,6 +18,24 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Make the D69 pnpm image build non-interactive
+**Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
+**Phase:** OPS/QA · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed protected CI run `29637189342`/job `88061558009`: Buildx
+accepted the Docker load plus max build-record provenance contract and entered the
+real build, then `pnpm deploy --legacy` fail-closed when its production install would
+have purged a modules directory without a TTY. Made `CI=true` explicit in the pinned
+web build stage and added a repository assertion that non-interactive authority stays
+ahead of every pnpm install/deploy operation.
+**Evidence:** The failure occurred in the web-build layer after dependency resolution,
+not in Buildx startup or export. Focused D69 validation and replacement protected CI
+remain required before acceptance.
+**Changed:** hardened runtime Dockerfile, D69 repository validation, and changelog.
+**Decisions:** none; no install prompt or implicit terminal authority is permitted in
+a reproducible image build.
+**Next:** Push the correction and continue through all remaining container-only gates.
+**Blockers:** No repository blocker. Docker-only acceptance remains pending in CI.
+
 ## 2026-07-18 — Separate D69 build-record provenance from image loading
 **Session:** Codex agent · branch `codex/ops002-hardened-runtime` ·
 **Phase:** OPS/QA · **TODO items:** OPS-002 [~]
