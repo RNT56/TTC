@@ -130,6 +130,15 @@ the exact current protected `main` SHA with the explicit confirmation input. The
 The workflow's success proves registry publication only. It is not added to the PR
 ruleset and cannot replace the required D69 job or managed-sandbox rollback proof.
 
+D71's `pnpm verify:observability` gate runs in the required hardened-runtime job and
+the full local gate. It exact-matches the registered event schema, policy, Gateway
+producer version/byte bound, compatibility matrix, and golden review; adversarial
+tests refuse client correlation authority, unsafe fields, cardinality drift, and
+unsupported maturity claims. The job name/ruleset does not change. A green check
+proves the Gateway request event contract/fixture only—not external telemetry
+delivery, worker/job/provider/Desktop continuity, dashboards, alerts, managed
+deployment, live operations, or production monitoring.
+
 The required `compute workers (Python)` job depends on the exact validator artifact
 from `forge-core`. It installs exact `workers[dev,mujoco,training,mjx,deployment,codesign]` so
 the Modal 1.5.2 deployment contract/evidence validator and CUDA authority cannot skip

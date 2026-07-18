@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgedttc.dev/schema/forge-observability-event/1.0.0",
+  "title": "ForgedTTC observability event",
+  "description": "D71 allowlisted structured event contract. Payloads, headers, query strings, prompts, personal data, secret references, URLs, and error text are outside the format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "occurredAt",
+    "clock",
+    "level",
+    "eventName",
+    "service",
+    "serviceVersion",
+    "environment",
+    "source",
+    "correlation",
+    "attributes"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "forge-observability-event/1.0.0" },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+      "maxLength": 24
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "timezone"],
+      "properties": {
+        "source": { "const": "system" },
+        "timezone": { "const": "UTC" }
+      }
+    },
+    "level": { "enum": ["info", "warn", "error"] },
+    "eventName": { "const": "gateway.request.completed" },
+    "service": { "const": "gateway" },
+    "serviceVersion": { "const": "0.2.0" },
+    "environment": {
+      "enum": ["local", "ci", "sandbox", "staging", "production", "controlled-lab"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "revision"],
+      "properties": {
+        "component": { "const": "packages/gateway" },
+        "revision": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestId",
+        "traceId",
+        "spanId",
+        "parentSpanId",
+        "actorDigest",
+        "jobId",
+        "providerCallId",
+        "deploymentId"
+      ],
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "traceId": { "type": "string", "pattern": "^(?!0{32}$)[a-f0-9]{32}$" },
+        "spanId": { "type": "string", "pattern": "^(?!0{16}$)[a-f0-9]{16}$" },
+        "parentSpanId": { "type": "null" },
+        "actorDigest": { "type": "null" },
+        "jobId": { "type": "null" },
+        "providerCallId": { "type": "null" },
+        "deploymentId": { "type": "null" }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "route", "statusCode", "statusClass", "outcome", "durationMs"],
+      "properties": {
+        "method": { "enum": ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"] },
+        "route": {
+          "type": "string",
+          "pattern": "^(?:unmatched|/[A-Za-z0-9_/:.*-]{0,255})$",
+          "maxLength": 256
+        },
+        "statusCode": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "statusClass": { "enum": ["1xx", "2xx", "3xx", "4xx", "5xx"] },
+        "outcome": { "enum": ["success", "client-error", "server-error"] },
+        "durationMs": { "type": "number", "minimum": 0, "maximum": 3600000 }
+      }
+    }
+  }
+}

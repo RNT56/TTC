@@ -142,6 +142,16 @@ import {
 } from "./security.js";
 import { checkGatewayReadiness, type GatewayReadiness } from "./readiness.js";
 import {
+  createGatewayRequestObservation,
+  gatewayObservabilityRuntimeContext,
+  newGatewayRequestCorrelation,
+  newGatewayRequestId,
+  traceParent,
+  type GatewayObservationSink,
+  type GatewayObservabilityRuntimeContext,
+  type GatewayRequestCorrelation,
+} from "./observability.js";
+import {
   runBake,
   runBom,
   runEnvSpec,
@@ -170,6 +180,8 @@ export interface ServerOptions {
   rateLimitNow?: () => number;
   observeRoute?: (route: GatewayRouteObservation) => void;
   readinessProbe?: () => Promise<GatewayReadiness>;
+  observationSink?: GatewayObservationSink;
+  observabilityRuntime?: GatewayObservabilityRuntimeContext;
 }
 
 export interface GatewayRouteObservation {
@@ -771,8 +783,12 @@ async function executeGeneration(
 
 export function buildServer(options: ServerOptions = {}): FastifyInstance {
   assertAuthConfiguration();
+  const requestCorrelations = new WeakMap<FastifyRequest, GatewayRequestCorrelation>();
+  const observabilityRuntime = options.observabilityRuntime ?? gatewayObservabilityRuntimeContext();
   const app = Fastify({
     logger: false,
+    genReqId: newGatewayRequestId,
+    requestIdHeader: false,
     bodyLimit: DEFAULT_REQUEST_BODY_BYTES,
     trustProxy: false,
     routerOptions: { maxParamLength: 2_000 },
@@ -792,6 +808,28 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
   const limiter = rateLimitPolicy === null
     ? null
     : new InMemoryRateLimiter(rateLimitPolicy, options.rateLimitNow);
+  app.addHook("onRequest", async (request, reply) => {
+    const correlation = newGatewayRequestCorrelation(request.id);
+    requestCorrelations.set(request, correlation);
+    reply.header("x-forge-request-id", correlation.requestId);
+    reply.header("traceparent", traceParent(correlation));
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    const correlation = requestCorrelations.get(request);
+    if (!correlation || !options.observationSink) return;
+    try {
+      options.observationSink(createGatewayRequestObservation({
+        runtime: observabilityRuntime,
+        correlation,
+        method: request.method,
+        route: request.routeOptions.url ?? "unmatched",
+        statusCode: reply.statusCode,
+        durationMs: reply.elapsedTime,
+      }));
+    } catch {
+      // Observability transport or validation failure must never alter request authority.
+    }
+  });
   app.addHook("onRequest", async (request, reply) => {
     try {
       assertTrustedRequestOrigin(request);
