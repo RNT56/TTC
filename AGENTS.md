@@ -97,7 +97,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D68/OPS-001 evidence PR #124 at `f68314d`.
+  latest verified protected descendant is D70/OPS-002 contract PR #127 at `a1d72ad`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -117,10 +117,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Compose render may be cited
   as a managed sandbox, rollback, live, or production result. D70 now defines the
   reviewable digest-only GHCR publication contract and independent-pull evidence
-  format; until its manual protected-main workflow succeeds and the resulting
-  registry objects are independently verified, no immutable registry publication is
-  claimed. Its candidate passes all 47 local gates under Python 3.12.13, including
-  six D70 tests, 23 compatibility surfaces, nineteen golden families, 87 immutable
+  format. PR #127 is protected at `a1d72ad`; exact post-merge CI/security
+  `29642565755`/`29642565768` pass. First publication run `29642829329` authorized,
+  pushed/scanned/attested three digest-only objects, independently verified and
+  pulled them, and passed the runtime smoke, but correctly failed final record
+  creation because attested OCI-index Buildx metadata omitted an index-level config
+  digest. No accepted immutable publication record is claimed. The correction passes
+  all 47 local gates, including seven focused D70 tests plus the unchanged 23
+  compatibility surfaces, nineteen
+  golden families, 87 immutable
   Action references across five workflows, and the unchanged 255-worker and
   200-candidate recovery boundaries. Even a successful D70 publication cannot claim
   a managed sandbox or rollback. D66 implementation PR

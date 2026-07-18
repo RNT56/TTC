@@ -18,6 +18,32 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-18 — Correct pulled-image config-digest authority
+**Session:** Codex agent · branch `codex/ops002-registry-config-proof` ·
+**Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~]
+**Done:** Diagnosed protected publication run `29642829329` without weakening its
+gate. Source authorization and digest-only publish job `88076083862` succeeded for
+all three GHCR objects; exact-registry SPDX/Trivy, GitHub attestations, independent
+manifest hashing, attestation verification, pulls, and D69 runtime smoke also passed.
+Final record creation correctly failed because Buildx emits an attested OCI index and
+does not expose `containerimage.config.digest` in that index-level build record.
+Corrected the evidence builder to take each config digest from the exact pulled and
+inspected runtime; an optional Buildx config digest remains corroborating evidence
+and now fails if it contradicts the pull. Seven focused D70 tests pass, including the
+real metadata shape and contradiction refusal. The complete 47-step local gate passes
+under Python 3.12.13, including 23 compatibility surfaces, nineteen golden families,
+39 Studio, 81 Gateway, and 255 worker tests, native/WASM parity, Brief-25 25/25,
+packaging, training/offline/MJX, and the unchanged 200/97/two-Pareto/two-held batch.
+**Changed:** hardened-runtime registry evidence builder/tests; entry-point, current-
+state, roadmap, task, execution, and operations documentation.
+**Decisions:** none; D70's format and authority ceiling are unchanged.
+**Next:** Protect this correction through a new PR, rerun the manual workflow against
+that exact protected-main commit, download the final artifact, and independently
+verify it before claiming immutable-registry publication.
+**Blockers:** No repository blocker. Run `29642829329` created three digest-addressed
+registry objects but no accepted publication record; managed sandbox installation,
+rollback, corrected roll-forward, live, and production evidence remain absent.
+
 ## 2026-07-18 — Establish protected digest-only runtime publication
 **Session:** Codex agent · branch `codex/ops002-registry-publication` ·
 **Phase:** OPS/QA/GOV · **TODO items:** OPS-002 [~], GOV-001 [x]

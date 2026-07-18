@@ -78,10 +78,14 @@ the manual protected-main workflow publishes three build-once proprietary GHCR
 objects by digest only, attaches registry provenance, then requires a separate raw-
 manifest hash, exact signer/source/ref attestation verification, pull, scan, and D69
 runtime smoke. The versioned publication record keeps all managed/live claims false.
-All 47 local gates pass under Python 3.12.13 with six D70 tests, 23 compatibility
-surfaces, nineteen golden families, 87 immutable Action references, 255 worker tests,
-and the unchanged 200/97/two-Pareto/two-held recovery batch. No registry run is
-claimed until protected remote evidence exists; even a successful run leaves the
+The protected contract passes all 47 local gates under Python 3.12.13 with six D70
+tests, 23 compatibility surfaces, nineteen golden families, 87 immutable Action
+references, 255 worker tests,
+and the unchanged 200/97/two-Pareto/two-held recovery batch. First run `29642829329`
+proved digest publish through independent pull/smoke, then failed final record
+creation on absent OCI-index Buildx config metadata. The pulled-runtime correction
+has seven focused tests, passes all 47 local gates, and needs a protected rerun; even
+a successful run leaves the
 managed-sandbox install/upgrade/rollback/corrected-forward half open.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
