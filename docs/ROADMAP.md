@@ -140,9 +140,10 @@ held batch. A disposable isolated database passes 28 migrations, 27 populated
 predecessors, the provider-call handoff, and all 12 browser flows; these results
 support only the protected contract/fixture boundary.
 
-D74 is the next unprotected OPS-003 contract/fixture candidate. It leaves event major
-3 frozen and adds independent delivery-batch major 1: only v3 is admitted; every
-4 KiB JSON line is revalidated; one memory-only batch holds at most 32 events/
+D74 is protected at OPS-003 contract/fixture maturity through PR #142/`7abcb56`. It
+leaves event major 3 frozen and adds independent delivery-batch major 1: only v3 is
+admitted; every 4 KiB JSON line is revalidated; one memory-only batch holds at most
+32 events/
 135168 bytes; and the executable fixture makes one credential-free exact-loopback
 POST under two seconds. Invalid/overflow input, remote or credentialed URL state,
 redirect, non-2xx, and timeout fail without retry/spool or product-authority change.
@@ -151,7 +152,9 @@ export, residency, and retention as mandatory later managed-custody work. Eleven
 focused D73/D74 tests pass. All 48 required local gates are green under Python 3.12.13
 with 25 compatibility surfaces, 21 golden families, 39 Studio tests, 85 Gateway tests,
 259 workers, Brief-25 25/25, parity, packaging, training/MJX, and the unchanged
-200/97/two/two batch. Exact PR/protected-main/post-merge evidence is pending.
+200/97/two/two batch. Exact head `c7b4035`, all twelve PR checks in CI
+`29872947817` and security `29872947795`, tree-identical protected squash `7abcb56`,
+and post-merge CI/security `29873512358`/`29873512339` pass.
 External/authenticated collection, durable delivery/custody, metrics/traces,
 other provider/Desktop continuity, dashboards, alerts, managed, live, production,
 and external-beta proof remain open, so OPS-003 remains in progress.

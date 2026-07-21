@@ -386,7 +386,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   The complete slice passes all 48 local gates with 85 Gateway and 259 worker tests
   plus a disposable 28-migration/27-predecessor/12-browser-flow database matrix; this
   advances only protected contract/fixture maturity.
-  **D74 unprotected candidate (2026-07-21, contract/fixture):** event major 3 remains
+  **D74 protected slice (2026-07-21, contract/fixture):** event major 3 remains
   frozen. New `forge-observability-delivery-batch/1.0.0` accepts only v3, revalidates
   each 4 KiB line, and bounds an in-memory envelope to 1..32 events/135168 bytes. The
   fixture adapter makes one credential-free exact-loopback POST under two seconds,
@@ -397,8 +397,10 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   deletion, owner export, residency, and retention. All 48 required local gates pass
   under Python 3.12.13 with eleven focused D73/D74 tests, 25 compatibility surfaces,
   21 golden families, 39 Studio tests, 85 Gateway tests, 259 workers, Brief-25 25/25,
-  parity, packaging, training/MJX, and the unchanged 200/97/two/two batch. Exact PR/
-  protected-main/post-merge evidence remains pending. OPS-003 stays
+  parity, packaging, training/MJX, and the unchanged 200/97/two/two batch. PR #142
+  exact head `c7b4035` passed all twelve checks in CI `29872947817` and security
+  `29872947795`; tree-identical protected squash `7abcb56` passed post-merge CI
+  `29873512358` and security `29873512339`. OPS-003 stays
   `[~]`: external/authenticated transport, durable queue/custody, finite-cardinality
   metrics and sampled traces, other provider/Desktop continuity, dashboards, alerts,
   managed, live, production, and external-beta proof remain open.
