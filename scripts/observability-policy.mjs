@@ -3,13 +3,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const OBSERVABILITY_POLICY_VERSION = "2.0.0";
-export const OBSERVABILITY_EVENT_VERSION = "2.0.0";
+export const OBSERVABILITY_POLICY_VERSION = "3.0.0";
+export const OBSERVABILITY_EVENT_VERSION = "3.0.0";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = resolve(MODULE_DIR, "..");
-const POLICY_PATH = join(REPOSITORY_ROOT, "infra/observability/observability-policy.v2.json");
-const SCHEMA_PATH = join(REPOSITORY_ROOT, "schema/forge-observability-event.v2.schema.json");
+const POLICY_PATH = join(REPOSITORY_ROOT, "infra/observability/observability-policy.v3.json");
+const SCHEMA_PATH = join(REPOSITORY_ROOT, "schema/forge-observability-event.v3.schema.json");
 const RUNTIME_PATH = join(REPOSITORY_ROOT, "packages/gateway/src/observability.ts");
 const WORKER_RUNTIME_PATH = join(REPOSITORY_ROOT, "workers/forge_workers/observability.py");
 
@@ -70,13 +70,16 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
   ]);
   add(errors, policy.schemaVersion === `forge-observability-policy/${OBSERVABILITY_POLICY_VERSION}`, "policy schemaVersion is invalid");
   add(errors, policy.eventVersion === OBSERVABILITY_EVENT_VERSION, "policy eventVersion is invalid");
-  add(errors, policy.eventSchema === "schema/forge-observability-event.v2.schema.json", "policy eventSchema is invalid");
+  add(errors, policy.eventSchema === "schema/forge-observability-event.v3.schema.json", "policy eventSchema is invalid");
   add(
     errors,
-    JSON.stringify(policy.legacyEventSchemas) === JSON.stringify(["schema/forge-observability-event.schema.json"]),
-    "legacyEventSchemas must retain the D71 v1 schema",
+    JSON.stringify(policy.legacyEventSchemas) === JSON.stringify([
+      "schema/forge-observability-event.schema.json",
+      "schema/forge-observability-event.v2.schema.json",
+    ]),
+    "legacyEventSchemas must retain the D71 v1 and D72 v2 schemas",
   );
-  add(errors, policy.decision === "D72", "policy must cite D72");
+  add(errors, policy.decision === "D73", "policy must cite D73");
   add(errors, policy.status === "contract-fixture", "policy cannot claim maturity above contract-fixture");
   add(errors, policy.maxEventBytes === 4096, "policy maxEventBytes must remain 4096");
 
@@ -112,9 +115,17 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     policy.trust?.attemptId === "database-generated-uuid-v4-per-d38-claim",
     "attempt identity trust is invalid",
   );
-  for (const name of ["actorDigest", "providerCallId", "deploymentId"]) {
-    add(errors, policy.trust?.[name] === "not-implemented", `${name} must remain an explicit nonclaim`);
-  }
+  add(errors, policy.trust?.actorDigest === "not-implemented", "actorDigest must remain an explicit nonclaim");
+  add(
+    errors,
+    policy.trust?.providerCallId === "persisted-modal-function-call-id-for-train-policy-completion-or-null",
+    "providerCallId trust is invalid",
+  );
+  add(
+    errors,
+    policy.trust?.deploymentId === "active-d68-manifest-id-for-managed-gateway-workers-or-null-local-ci",
+    "deploymentId trust is invalid",
+  );
   add(
     errors,
     JSON.stringify(policy.eventNames) === JSON.stringify([
@@ -184,6 +195,7 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     "workerPropagation",
     "persistentAttemptEvidence",
     "providerPropagation",
+    "deploymentPropagation",
     "desktopEvents",
     "metricsBackend",
     "traceBackend",
@@ -198,8 +210,17 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
   add(errors, policy.maturity?.jobPropagation === true, "job propagation must be implemented");
   add(errors, policy.maturity?.workerPropagation === true, "worker propagation must be implemented");
   add(errors, policy.maturity?.persistentAttemptEvidence === true, "persistent attempt evidence must be implemented");
+  add(errors, policy.maturity?.providerPropagation === true, "bounded Modal training provider propagation must be implemented");
+  add(errors, policy.maturity?.deploymentPropagation === true, "D68 deployment propagation must be implemented");
   for (const [name, value] of Object.entries(policy.maturity ?? {})) {
-    if (!["gatewayRequestEvents", "jobPropagation", "workerPropagation", "persistentAttemptEvidence"].includes(name)) {
+    if (![
+      "gatewayRequestEvents",
+      "jobPropagation",
+      "workerPropagation",
+      "persistentAttemptEvidence",
+      "providerPropagation",
+      "deploymentPropagation",
+    ].includes(name)) {
       add(errors, value === false, `${name} must remain false in the current slice`);
     }
   }
@@ -227,6 +248,52 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     schema?.properties?.occurredAt?.pattern === "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
     "event schema UTC timestamp pattern is invalid",
   );
+  add(
+    errors,
+    schema?.$defs?.providerCallId?.pattern === "^[A-Za-z0-9][A-Za-z0-9_-]{2,199}$",
+    "providerCallId schema bound is invalid",
+  );
+  add(
+    errors,
+    schema?.$defs?.deploymentId?.pattern === "^[a-z0-9][a-z0-9-]{2,62}$",
+    "deploymentId schema bound is invalid",
+  );
+  const schemaRules = Array.isArray(schema?.allOf) ? schema.allOf : [];
+  const environmentRule = schemaRules.find(
+    (rule) => JSON.stringify(rule?.if?.properties?.environment?.enum) === JSON.stringify(["local", "ci"]),
+  );
+  add(
+    errors,
+    environmentRule?.then?.properties?.correlation?.properties?.deploymentId?.type === "null" &&
+      environmentRule?.else?.properties?.correlation?.properties?.deploymentId?.$ref === "#/$defs/deploymentId",
+    "deploymentId environment authority rule is invalid",
+  );
+  const gatewayRule = schemaRules.find(
+    (rule) => rule?.if?.properties?.eventName?.const === "gateway.request.completed",
+  );
+  add(
+    errors,
+    gatewayRule?.then?.properties?.correlation?.properties?.providerCallId?.type === "null",
+    "gateway providerCallId authority rule is invalid",
+  );
+  const startedRule = schemaRules.find(
+    (rule) => rule?.if?.properties?.eventName?.const === "worker.job.attempt.started",
+  );
+  add(
+    errors,
+    startedRule?.then?.properties?.correlation?.properties?.providerCallId?.type === "null",
+    "worker-start providerCallId authority rule is invalid",
+  );
+  const providerRule = schemaRules.find(
+    (rule) => rule?.if?.properties?.correlation?.properties?.providerCallId?.$ref === "#/$defs/providerCallId",
+  );
+  add(
+    errors,
+    providerRule?.then?.properties?.eventName?.const === "worker.job.attempt.completed" &&
+      providerRule?.then?.properties?.attributes?.properties?.task?.const === "train.policy" &&
+      providerRule?.then?.properties?.attributes?.properties?.provider?.const === "modal",
+    "providerCallId completion authority rule is invalid",
+  );
   const runtime = readFileSync(RUNTIME_PATH, "utf8");
   add(errors, runtime.includes(`OBSERVABILITY_EVENT_VERSION = "${OBSERVABILITY_EVENT_VERSION}"`), "gateway runtime event version drifted");
   add(errors, runtime.includes('GATEWAY_OBSERVABILITY_SERVICE_VERSION = "0.2.0"'), "gateway runtime service version drifted");
@@ -253,7 +320,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       for (const error of errors) console.error(`observability-policy: ${error}`);
       process.exitCode = 1;
     } else {
-      console.log("observability-policy: D72 gateway/job/worker contract/fixture is coherent; external backends and live claims remain false");
+      console.log("observability-policy: D73 trusted D68 deployment and bounded Modal call correlation is coherent; external backends and live claims remain false");
     }
   }
 }

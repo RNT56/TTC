@@ -98,7 +98,7 @@ event lines, and persisted artifact formats independently; preserve old document
 read fixtures while their support window is active. Examples use synthetic IDs and
 fixture values, never secrets, signed URLs, raw user content, or claims of live proof.
 
-**Operational telemetry:** follow D71/D72 and the versioned observability policy. Generate
+**Operational telemetry:** follow D71/D72/D73 and the versioned observability policy. Generate
 request/trace authority at a trusted service boundary; never trust a client identifier
 as audit continuity. Emit only an exact bounded allowlist with UTC, source, version,
 environment, template route, status, duration, outcome, and opaque correlation. Raw
@@ -109,9 +109,15 @@ metric labels. Persist a trusted request on the job before asynchronous dispatch
 create each attempt ID/span in the same transaction as the D38 claim; close the row
 with a bounded outcome/code while excluding leases, payloads, result bytes, and raw
 errors. Historical/direct jobs get a new trace root with null request/parent, never
-fabricated continuity. Telemetry transport failure must not change product authority,
-and a local JSON line or attempt row is not a backend, dashboard, alert, managed,
-live, or production evidence.
+fabricated continuity. In managed environments, propagate a deployment ID only from
+successful verification of the exact active D68 manifest; local and CI events carry
+null. Propagate a provider-call ID only after it is transactionally persisted under
+the current lease, and currently only on the completion of that same Modal
+`train.policy` job. Started events and all other provider/job families carry null.
+Provider and deployment IDs are correlation, never metric labels or evidence of
+provider delivery or deployment health. Telemetry transport failure must not change
+product authority, and a local JSON line or attempt row is not a backend, dashboard,
+alert, managed, live, or production evidence.
 
 **Executable policy artifacts:** keep category metadata separate from the exact
 scalar tensor contract. Version schema/layout/coordinate/rate semantics independently;

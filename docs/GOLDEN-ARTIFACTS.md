@@ -89,11 +89,12 @@ accepted/refused outcomes, special non-finite sentinels, and the exact file set 
 machine-checked. Rust and Python consumers prove behavior; the structural checker
 alone cannot justify changing an outcome.
 
-D71/D72's `observability-policy-and-schema` family retains both the frozen v1
-Gateway-only policy/schema and current v2 job/D38-attempt/worker policy/schema. Event
-identity, correlation trust, parentage, lifecycle outcome, exclusion, byte bound,
-cardinality, and maturity-nonclaim changes require compatibility/security/privacy/
-operations review; captured logs or payloads are never an input to regeneration.
+D71/D72/D73's `observability-policy-and-schema` family retains frozen v1 Gateway-only
+and v2 job/D38-attempt readers beside current v3 active-D68 deployment and persisted
+Modal training-call correlation. Event identity, correlation trust, parentage,
+lifecycle outcome, exclusion, byte bound, cardinality, and maturity-nonclaim changes
+require compatibility/security/privacy/operations review; captured logs or payloads
+are never an input to regeneration.
 
 P6-010's `sim-parity-baseline` is generated only by the live pinned-engine path.
 The orchestrator verifies exact MuJoCo provider, source revision, request SHA-256,

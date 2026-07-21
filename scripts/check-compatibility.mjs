@@ -217,10 +217,13 @@ requireValue(
       workerVersion,
   "observability event version must match the worker runtime and worker package",
 );
-const legacyObservabilitySchema = JSON.parse(read(matrix.surfaces.observabilityEvent.legacySchemaPaths[0]));
+const legacyObservabilitySchemas = matrix.surfaces.observabilityEvent.legacySchemaPaths.map(
+  (path) => JSON.parse(read(path)),
+);
 requireValue(
-  legacyObservabilitySchema.properties.schemaVersion.const === "forge-observability-event/1.0.0",
-  "observability v1 read schema must remain available",
+  JSON.stringify(legacyObservabilitySchemas.map((schema) => schema.properties.schemaVersion.const)) ===
+    JSON.stringify(["forge-observability-event/1.0.0", "forge-observability-event/2.0.0"]),
+  "observability v1 and v2 read schemas must remain available in order",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===

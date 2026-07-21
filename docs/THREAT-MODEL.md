@@ -597,9 +597,14 @@ emit bounded start/completion lines; and terminal persistence carries only an ou
 plus stable code. Historical/direct jobs get an independent trace root with null
 request/parent. Serializers and database constraints refuse unknown fields,
 unpaired authority, raw queries, lease/idempotency/payload/result data, raw errors,
-and unsupported actor/provider/deployment bindings. Sink failure cannot change
+and unsupported actor/provider/deployment bindings. D73 keeps v1/v2 frozen and uses
+major 3 to accept a managed deployment ID only from the exact active D68 startup
+verifier and a Modal `train.policy` provider-call ID only after transactional
+persistence on that same claimed job. Local/CI deployment, worker start, other
+provider/job, actor, and Desktop fields remain null; provider/deployment IDs remain
+forbidden metric labels. Sink failure cannot change
 response, lease, retry, cancellation, or materialization authority. This remains
-contract/fixture evidence: proxy/APM transport, provider/Desktop continuity,
+contract/fixture evidence: proxy/APM transport, other provider/Desktop continuity,
 seeded-secret scans, retention/access operations, dashboards, alerts, and live
 delivery remain unproven.
 
@@ -610,7 +615,7 @@ delivery remain unproven.
 | Host-header/origin/CSRF confusion | pinned-origin config, forwarded-header stripping, unsafe cookie-origin tests, Auth.js CSRF enabled | deployed proxy/TLS/cookie inspection |
 | Dev/admin auth bypass | production startup negatives, dev-header refusal, absent/short owner-token failures | named roles and revocation drill |
 | Secret persistence/reflection | HTTP BYO header-only rejection/no env fallback/query audit plus ETL header-only body/command/error tests | provider/proxy/APM log inspection and separate BYO/service-key rotation drills |
-| Log/correlation injection or telemetry leakage | D71/D72 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation | proxy/APM/provider/Desktop continuity, seeded-secret scan, retention/access review, dashboards, and synthetic alert delivery |
+| Log/correlation injection or telemetry leakage | D71/D72/D73 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, exact active-D68 deployment identity, persisted Modal `train.policy` call identity, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation | proxy/APM and other-provider/Desktop continuity, seeded-secret scan, retention/access review, deployment/provider delivery proof, dashboards, and synthetic alert delivery |
 | JSON/parameter bombs | byte/depth/node/key/string/non-finite/cycle tests; direct job/object tests | load/concurrency/memory exercise |
 | SSRF/redirect/rebinding | private-range, allowlist, DNS, redirect, type, timeout/body tests | egress proxy/firewall connection-time proof |
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |

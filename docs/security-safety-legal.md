@@ -114,7 +114,7 @@ live provider artifact audit.
   explicit per-model opt-in; no marketplace default, geometry, or attribution is
   inferred. Withdrawal removes the contributed retrieval row.
 
-Implementation evidence (2026-07-13, `SEC-003..005`, extended through D72):
+Implementation evidence (2026-07-13, `SEC-003..005`, extended through D73):
 authenticated user-data export 1.7.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
@@ -143,6 +143,13 @@ provider fields and adds no raw provider content or secrets. These database rows
 share the terminal-job retention and deletion boundary; they do not grant access to
 another owner or imply that an external telemetry system received the corresponding
 event.
+
+D73 changes no export, retention, consent, ownership, or deletion surface. Its
+managed deployment ID comes only from the active D68 startup authority, and its Modal
+`train.policy` call ID is the same non-secret identifier already persisted under D46;
+neither adds provider inputs/outputs, manifest bytes, secret references, personal
+data, or metric labels. Their presence in a validated local event proves neither
+external delivery nor a managed/live deployment.
 
 D53 additionally includes the owner's recorder materialization rows and five private
 blob references. The export retains only the sanitized plan and explicit authority

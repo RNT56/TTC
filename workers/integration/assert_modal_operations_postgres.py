@@ -74,6 +74,8 @@ def main() -> None:
                 "submittedAt": "2026-07-15T12:00:00+00:00",
             },
         )
+        if job.provider_call_id != call_id:
+            raise AssertionError("persisted provider call did not become worker completion correlation")
         with conn.transaction():
             persisted = conn.execute(
                 """

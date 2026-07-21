@@ -2,7 +2,7 @@
 
 Owner: platform/release maintainers
 
-Decisions: D68, D69, D70, D71, D72
+Decisions: D68, D69, D70, D71, D72, D73
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
@@ -13,11 +13,11 @@ Registry publication: [`infra/deployment/hardened-registry.v1.json`](../infra/de
 Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.json`](../schema/forge-hardened-runtime-publication.schema.json)
 
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
-Current observability policy: [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
+Current observability policy: [`infra/observability/observability-policy.v3.json`](../infra/observability/observability-policy.v3.json)
 
-Frozen v1 policy: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json)
+Frozen policies: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json), [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`; no managed environment, provider/deployment/Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is an unprotected local candidate until exact branch, PR, protected-main, and post-merge evidence pass; no managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -45,6 +45,16 @@ cancellation/success correlation, owner export/deletion/lifecycle assertions, an
 checks in CI `29859593049` and security `29859592862`; tree-identical protected squash
 `a17ff74` passed post-merge CI `29860284729` and security `29860284861`. This remains
 repository contract/fixture evidence only.
+
+The unprotected D73 candidate passes all 48 required local gates with four D73 policy
+tests, 24 compatibility surfaces, 85 Gateway tests, all 259 fully enabled worker
+tests, Brief-25 25/25, and the unchanged 200/97/two-Pareto/two-held recovery batch.
+A disposable isolated Postgres/pgvector database passes all 28 migrations, every 27
+populated predecessor, the Modal provider-call persistence-to-completion handoff,
+every other data-plane assertion, and all 12 production-browser flows. This is local
+candidate evidence only; exact PR/protected-main/post-merge proof is still required,
+and the provider/deployment/backend/live nonclaims in the maturity banner remain
+binding.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -456,7 +466,7 @@ corrected roll-forward, managed environment, or live service.
 
 ### OPS-003/004 measurement rules
 
-Current D71/D72 slice status:
+Current D71/D72/D73 slice status:
 
 1. **Gateway request contract/fixture — protected.** Versioned policy,
    schema, compatibility surface, golden family, and executable producer generate
@@ -473,9 +483,15 @@ Current D71/D72 slice status:
    exposes only owner-scoped non-secret correlation/outcomes. All exact local, PR,
    protected-main, and post-merge gates pass; this advances only contract/fixture
    maturity.
-3. **Provider, deployment, and Desktop propagation — open.** Add authority-specific
-   bounded IDs only after the provider-call, D68 manifest, and native Desktop trust
-   boundaries can independently validate them.
+3. **Provider and deployment propagation — unprotected D73 candidate; Desktop open.**
+   Event major 3 retains frozen v1/v2 reads. Managed Gateway/worker events accept a
+   bounded deployment ID only from the exact active D68 startup verifier; local/CI
+   require null. A worker completion accepts the provider-call ID only after the same
+   Modal `train.policy` job persisted it transactionally under the current lease;
+   started events and every other provider/job family require null. Both IDs remain
+   forbidden metric labels. Until exact protected evidence passes, this is not a
+   protected capability; even then it proves neither provider delivery, deployment
+   health, other provider families, actor/Desktop continuity, nor managed/live use.
 4. **Metrics/traces backends — open.** Export only reviewed finite-cardinality
    dimensions; retain sampled slow/error trace continuity without payload capture;
    define access, retention, deletion, availability, and delivery-failure behavior.
@@ -483,11 +499,12 @@ Current D71/D72 slice status:
    action, silence/expiry, separate delivery-failure route, synthetic delivery, and
    acknowledgement before claiming operational monitoring.
 
-The first two repository-only slices may proceed while OPS-002's real managed-sandbox
-exercise is waiting on an external target because they create no live exercise or
-backend. Slices 3–5 do not close from schemas, database rows, or local output, and
-every deployed exercise still requires the exact D68/D69/D70 sandbox authority plus
-retained private operations evidence.
+The three repository-only contract slices may proceed while OPS-002's real managed-
+sandbox exercise is waiting on an external target because they create no live
+exercise or backend. The D73 subset does not close the broader third slice, and
+slices 3–5 never close from schemas, database rows, or local output. Every deployed
+exercise still requires the exact D68/D69/D70 sandbox authority plus retained private
+operations evidence.
 
 - Correlation IDs are generated/validated at trusted boundaries and propagated to
   jobs/provider calls; never accept a client claim as audit identity.

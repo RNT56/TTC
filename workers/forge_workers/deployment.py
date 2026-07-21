@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
@@ -21,7 +22,16 @@ DEPLOYMENT_ENVIRONMENTS = (
 _WORKER_ENVIRONMENTS = frozenset(("sandbox", "staging", "production"))
 _GIT_HASH = re.compile(r"^[a-f0-9]{40}$")
 _SHA256 = re.compile(r"^[a-f0-9]{64}$")
+_DEPLOYMENT_ID = re.compile(r"^[a-z0-9][a-z0-9-]{2,62}$")
 _MAX_MANIFEST_BYTES = 1024 * 1024
+
+
+@dataclass(frozen=True)
+class DeploymentBootstrapContext:
+    deployment_id: str
+    environment: str
+    source_revision: str
+    manifest_sha256: str
 
 
 def _mapping(value: object, label: str) -> dict[str, object]:
@@ -37,7 +47,9 @@ def _required(env: Mapping[str, str], name: str) -> str:
     return value
 
 
-def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
+def assert_deployment_bootstrap(
+    env: Mapping[str, str] | None = None,
+) -> DeploymentBootstrapContext | None:
     """Require exact non-secret deployment authority before managed worker startup."""
 
     values = os.environ if env is None else env
@@ -46,7 +58,7 @@ def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
     if node_environment != "production":
         if deployment_environment in _WORKER_ENVIRONMENTS:
             raise RuntimeError("managed worker environment requires NODE_ENV=production")
-        return
+        return None
     if deployment_environment not in _WORKER_ENVIRONMENTS:
         raise RuntimeError("production worker requires sandbox, staging, or production deployment environment")
     if values.get("FORGE_ENV"):
@@ -75,6 +87,7 @@ def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
     except (json.JSONDecodeError, UnicodeDecodeError) as error:
         raise RuntimeError("deployment manifest is not valid JSON") from error
     source = _mapping(manifest.get("source"), "deployment manifest source")
+    deployment_id = manifest.get("deploymentId")
     configuration = _mapping(manifest.get("configuration"), "deployment manifest configuration")
     configuration_values = _mapping(configuration.get("values"), "deployment manifest configuration values")
     artifacts = manifest.get("artifacts")
@@ -86,6 +99,8 @@ def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
     )
     if not (
         manifest.get("schemaVersion") == f"forge-deployment-manifest/{DEPLOYMENT_MANIFEST_VERSION}"
+        and isinstance(deployment_id, str)
+        and _DEPLOYMENT_ID.fullmatch(deployment_id) is not None
         and manifest.get("status") == "active"
         and manifest.get("environment") == deployment_environment
         and source.get("revision") == source_revision
@@ -97,3 +112,9 @@ def assert_deployment_bootstrap(env: Mapping[str, str] | None = None) -> None:
         and has_workers
     ):
         raise RuntimeError("deployment manifest does not authorize this worker process")
+    return DeploymentBootstrapContext(
+        deployment_id=deployment_id,
+        environment=deployment_environment,
+        source_revision=source_revision,
+        manifest_sha256=expected_digest,
+    )

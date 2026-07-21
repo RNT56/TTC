@@ -1,4 +1,4 @@
-"""D72 deny-by-default structured events for private worker attempts."""
+"""D73 deny-by-default worker events with trusted deployment/provider correlation."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Protocol, TextIO
 
-OBSERVABILITY_EVENT_VERSION = "2.0.0"
+OBSERVABILITY_EVENT_VERSION = "3.0.0"
 OBSERVABILITY_EVENT_SCHEMA = f"forge-observability-event/{OBSERVABILITY_EVENT_VERSION}"
 WORKER_OBSERVABILITY_SERVICE_VERSION = "0.2.0"
 MAX_OBSERVABILITY_EVENT_BYTES = 4_096
@@ -32,6 +32,8 @@ _UUID_V4 = re.compile(
 _TRACE_ID = re.compile(r"^(?!0{32}$)[a-f0-9]{32}$")
 _SPAN_ID = re.compile(r"^(?!0{16}$)[a-f0-9]{16}$")
 _SAFE_JOB_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
+_SAFE_PROVIDER_CALL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{2,199}$")
+_SAFE_DEPLOYMENT_ID = re.compile(r"^[a-z0-9][a-z0-9-]{2,62}$")
 _SAFE_TASK = re.compile(r"^[a-z][a-z0-9.-]{0,79}$")
 _SAFE_ERROR_CODE = re.compile(r"^[a-z0-9][a-z0-9-]{0,79}$")
 
@@ -40,6 +42,7 @@ _SAFE_ERROR_CODE = re.compile(r"^[a-z0-9][a-z0-9-]{0,79}$")
 class WorkerObservabilityRuntimeContext:
     environment: str
     source_revision: str | None
+    deployment_id: str | None = None
 
 
 class ObservableJob(Protocol):
@@ -52,6 +55,7 @@ class ObservableJob(Protocol):
     observability_parent_span_id: str | None
     observability_attempt_id: str
     observability_span_id: str
+    provider_call_id: str | None
 
 
 WorkerObservation = dict[str, Any]
@@ -72,6 +76,7 @@ def new_attempt_id() -> str:
 
 def worker_observability_runtime_context(
     env: Mapping[str, str] | None = None,
+    deployment_id: str | None = None,
 ) -> WorkerObservabilityRuntimeContext:
     values = os.environ if env is None else env
     requested = values.get("FORGE_DEPLOYMENT_ENVIRONMENT")
@@ -80,6 +85,11 @@ def worker_observability_runtime_context(
     return WorkerObservabilityRuntimeContext(
         environment=environment,
         source_revision=revision if revision and _GIT_HASH.fullmatch(revision) else None,
+        deployment_id=(
+            deployment_id
+            if deployment_id is not None and _SAFE_DEPLOYMENT_ID.fullmatch(deployment_id)
+            else None
+        ),
     )
 
 
@@ -91,7 +101,12 @@ def _timestamp(value: datetime | None = None) -> str:
     return milliseconds.replace("+00:00", "Z")
 
 
-def _correlation(job: ObservableJob) -> dict[str, str | None]:
+def _correlation(
+    job: ObservableJob,
+    runtime: WorkerObservabilityRuntimeContext,
+    *,
+    include_provider_call: bool,
+) -> dict[str, str | None]:
     return {
         "requestId": job.observability_request_id,
         "traceId": job.observability_trace_id,
@@ -100,8 +115,8 @@ def _correlation(job: ObservableJob) -> dict[str, str | None]:
         "actorDigest": None,
         "jobId": job.id,
         "attemptId": job.observability_attempt_id,
-        "providerCallId": None,
-        "deploymentId": None,
+        "providerCallId": job.provider_call_id if include_provider_call else None,
+        "deploymentId": runtime.deployment_id,
     }
 
 
@@ -127,7 +142,11 @@ def _base_event(
             "component": "workers/forge_workers",
             "revision": runtime.source_revision,
         },
-        "correlation": _correlation(job),
+        "correlation": _correlation(
+            job,
+            runtime,
+            include_provider_call=event_name == "worker.job.attempt.completed",
+        ),
         "attributes": attributes,
     }
 
@@ -272,9 +291,25 @@ def validate_worker_observation(value: object) -> list[str]:
             errors.append("jobId is invalid")
         if not isinstance(correlation["attemptId"], str) or _UUID_V4.fullmatch(correlation["attemptId"]) is None:
             errors.append("attemptId is invalid")
-        for field in ("actorDigest", "providerCallId", "deploymentId"):
-            if correlation[field] is not None:
-                errors.append(f"{field} is not implemented in worker attempt events")
+        if correlation["actorDigest"] is not None:
+            errors.append("actorDigest is not implemented in worker attempt events")
+        provider_call_id = correlation["providerCallId"]
+        if provider_call_id is not None and (
+            not isinstance(provider_call_id, str)
+            or _SAFE_PROVIDER_CALL_ID.fullmatch(provider_call_id) is None
+        ):
+            errors.append("providerCallId is invalid")
+        deployment_id = correlation["deploymentId"]
+        if deployment_id is not None and (
+            not isinstance(deployment_id, str)
+            or _SAFE_DEPLOYMENT_ID.fullmatch(deployment_id) is None
+        ):
+            errors.append("deploymentId is invalid")
+        if value["environment"] not in ("local", "ci"):
+            if deployment_id is None:
+                errors.append("managed worker observations require verified deploymentId authority")
+        elif deployment_id is not None:
+            errors.append("unmanaged worker observations cannot claim deploymentId authority")
 
     event_name = value["eventName"]
     attributes = value["attributes"]
@@ -282,6 +317,8 @@ def validate_worker_observation(value: object) -> list[str]:
         if value["level"] != "info":
             errors.append("started event level must be info")
         expected_attributes = {"task", "provider", "attempt"}
+        if isinstance(correlation, dict) and correlation.get("providerCallId") is not None:
+            errors.append("started events cannot claim providerCallId before provider persistence")
     elif event_name == "worker.job.attempt.completed":
         expected_attributes = {
             "task",
@@ -343,6 +380,11 @@ def validate_worker_observation(value: object) -> list[str]:
             errors.append("retry-scheduled outcome requires an error and delay")
         if outcome in ("failed", "discarded") and (error_code is None or retry_after is not None):
             errors.append(f"{outcome} outcome requires one error code and no retry delay")
+        provider_call_id = correlation.get("providerCallId") if isinstance(correlation, dict) else None
+        if provider_call_id is not None and not (
+            attributes["provider"] == "modal" and attributes["task"] == "train.policy"
+        ):
+            errors.append("providerCallId is supported only for persisted Modal train.policy calls")
     return errors
 
 
