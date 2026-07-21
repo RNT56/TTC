@@ -202,6 +202,17 @@ post-merge CI `29860284729` and security `29860284861` pass. Neither slice grant
 provider/deployment/actor/Desktop propagation, transport/backend delivery, metrics,
 dashboards, alerts, managed sandbox, live, production, or external-beta authority.
 
+Evidence reconciliation PR #137 exact head `adcb92e` passed all twelve required
+checks in CI `29861234484` and security `29861234368`; its tree equals protected
+squash `434dc85`. Exact post-merge CI `29861900858` passes, but security
+`29861900881` failed after high-severity `GHSA-4c8g-83qw-93j6` entered the audit feed
+on 2026-07-21 for the locked `fast-uri` 3.1.2 runtime transitive. Therefore
+`434dc85` is not a verified protected descendant and `a17ff74` remains the evidence
+boundary. The dependency-safe successor pins every already-compatible Fastify/AJV
+edge to `fast-uri` 3.1.4; its frozen install, low-threshold audit, 85 Gateway tests,
+and all 48 required local gates pass. Protected PR and post-merge proof for that
+remediation remain pending.
+
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
 generated 81-route/two-event/seventeen-worker documentation, Rust fmt/Clippy/tests,
