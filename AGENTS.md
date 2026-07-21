@@ -100,8 +100,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D72/OPS-003 implementation PR #135 at
-  `a17ff74`.
+  latest verified protected descendant is dependency-remediation PR #138 at
+  `8aac400`, while the D72/OPS-003 capability remains anchored at implementation
+  PR #135/`a17ff74`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -157,7 +158,15 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   protected squash `a17ff74` passed post-merge CI `29860284729` and security
   `29860284861`. This slice proves no provider/deployment/actor/Desktop
   propagation, metric/trace backend, dashboard, alert, managed, live, or production
-  maturity.
+  maturity. Evidence PR #137 exact head `adcb92e` passed all twelve PR checks in CI
+  `29861234484` and security `29861234368`; tree-identical protected squash
+  `434dc85` passed post-merge CI `29861900858`, but security `29861900881` failed
+  after `GHSA-4c8g-83qw-93j6` entered the audit feed for locked `fast-uri` 3.1.2.
+  Remediation PR #138 exact head `80e884e` passed all twelve checks in CI
+  `29862758202` and security `29862758114`; tree-identical protected squash
+  `8aac400` passed post-merge CI `29863425902` and security `29863425966` with every
+  compatible Fastify/AJV edge converged on `fast-uri` 3.1.4. This restores the
+  protected security baseline without advancing D72 beyond contract/fixture maturity.
   D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
