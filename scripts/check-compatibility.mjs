@@ -63,6 +63,7 @@ const required = [
   "hardenedRuntime",
   "hardenedRuntimePublication",
   "observabilityEvent",
+  "observabilityDeliveryBatch",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -118,6 +119,10 @@ const expected = {
   observabilityEvent: typescriptConstant(
     "packages/gateway/src/observability.ts",
     "OBSERVABILITY_EVENT_VERSION",
+  ),
+  observabilityDeliveryBatch: typescriptConstant(
+    "scripts/observability-transport.mjs",
+    "OBSERVABILITY_DELIVERY_BATCH_VERSION",
   ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
@@ -224,6 +229,28 @@ requireValue(
   JSON.stringify(legacyObservabilitySchemas.map((schema) => schema.properties.schemaVersion.const)) ===
     JSON.stringify(["forge-observability-event/1.0.0", "forge-observability-event/2.0.0"]),
   "observability v1 and v2 read schemas must remain available in order",
+);
+const observabilityTransportPolicy = JSON.parse(
+  read(matrix.surfaces.observabilityDeliveryBatch.policyPath),
+);
+const observabilityDeliveryBatchSchema = JSON.parse(
+  read(matrix.surfaces.observabilityDeliveryBatch.schemaPath),
+);
+requireValue(
+  observabilityTransportPolicy.deliveryBatchVersion ===
+    matrix.surfaces.observabilityDeliveryBatch.current
+    && observabilityDeliveryBatchSchema.properties.schemaVersion.const ===
+      `${matrix.surfaces.observabilityDeliveryBatch.schema}/${matrix.surfaces.observabilityDeliveryBatch.current}`,
+  "observability delivery policy/schema does not match the compatibility surface",
+);
+requireValue(
+  JSON.stringify(observabilityTransportPolicy.acceptedEventVersions) ===
+    JSON.stringify(matrix.surfaces.observabilityDeliveryBatch.acceptedEventVersions)
+    && observabilityDeliveryBatchSchema.properties.eventSchemaVersion.const ===
+      `${matrix.surfaces.observabilityEvent.schema}/${matrix.surfaces.observabilityEvent.current}`
+    && observabilityDeliveryBatchSchema.properties.events.items.$ref ===
+      matrix.surfaces.observabilityEvent.schemaPath.replace("schema/", ""),
+  "observability delivery batch must bind the current frozen event contract",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===

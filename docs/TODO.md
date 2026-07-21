@@ -386,6 +386,22 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   The complete slice passes all 48 local gates with 85 Gateway and 259 worker tests
   plus a disposable 28-migration/27-predecessor/12-browser-flow database matrix; this
   advances only protected contract/fixture maturity.
+  **D74 unprotected candidate (2026-07-21, contract/fixture):** event major 3 remains
+  frozen. New `forge-observability-delivery-batch/1.0.0` accepts only v3, revalidates
+  each 4 KiB line, and bounds an in-memory envelope to 1..32 events/135168 bytes. The
+  fixture adapter makes one credential-free exact-loopback POST under two seconds,
+  refuses remote/userinfo/query/fragment/privileged targets, redirects, non-2xx,
+  invalid/overflow input, and timeout, never retries or durably spools, discards the
+  batch on either outcome, and cannot change product authority. Its policy requires
+  a later managed collector to prove access/audit, availability/delivery-failure,
+  deletion, owner export, residency, and retention. All 48 required local gates pass
+  under Python 3.12.13 with eleven focused D73/D74 tests, 25 compatibility surfaces,
+  21 golden families, 39 Studio tests, 85 Gateway tests, 259 workers, Brief-25 25/25,
+  parity, packaging, training/MJX, and the unchanged 200/97/two/two batch. Exact PR/
+  protected-main/post-merge evidence remains pending. OPS-003 stays
+  `[~]`: external/authenticated transport, durable queue/custody, finite-cardinality
+  metrics and sampled traces, other provider/Desktop continuity, dashboards, alerts,
+  managed, live, production, and external-beta proof remain open.
 - [ ] OPS-004 — Define SLOs and error budgets for API, generation, queue latency, photoscan, training, object storage, auth, and provider handoffs.
 - [ ] OPS-005 — Implement Postgres/object backup, restore verification, retention, capacity, migration, and disaster-recovery runbooks.
 - [ ] OPS-006 — Define job quotas, concurrency, cancellation/refund, idempotency, dead-letter/reconciliation, cost attribution, and runaway-spend kill switches.

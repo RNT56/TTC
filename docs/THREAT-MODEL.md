@@ -603,10 +603,16 @@ verifier and a Modal `train.policy` provider-call ID only after transactional
 persistence on that same claimed job. Local/CI deployment, worker start, other
 provider/job, actor, and Desktop fields remain null; provider/deployment IDs remain
 forbidden metric labels. Sink failure cannot change
-response, lease, retry, cancellation, or materialization authority. This remains
-contract/fixture evidence: proxy/APM transport, other provider/Desktop continuity,
-seeded-secret scans, retention/access operations, dashboards, alerts, and live
-delivery remain unproven.
+response, lease, retry, cancellation, or materialization authority. D74 leaves event
+v3 frozen and adds an independent batch major plus hostile-input fixture consumer:
+every line/event is revalidated, count/bytes/time are bounded, only exact loopback
+HTTP with no credentials/query/fragment is permitted, redirects/non-2xx fail,
+response bodies are discarded, and there is no retry or durable spool. A failed
+batch is discarded and produces a nonzero fixture exit without changing any product
+authority. This remains contract/fixture evidence: authenticated external collection,
+other provider/Desktop continuity, proxy/backend seeded-secret scans, access/audit,
+availability/failure monitoring, retention/deletion/export/residency operations,
+metrics/traces, dashboards, alerts, and live delivery remain unproven.
 
 ## 14. Control and negative-test matrix
 
@@ -615,7 +621,7 @@ delivery remain unproven.
 | Host-header/origin/CSRF confusion | pinned-origin config, forwarded-header stripping, unsafe cookie-origin tests, Auth.js CSRF enabled | deployed proxy/TLS/cookie inspection |
 | Dev/admin auth bypass | production startup negatives, dev-header refusal, absent/short owner-token failures | named roles and revocation drill |
 | Secret persistence/reflection | HTTP BYO header-only rejection/no env fallback/query audit plus ETL header-only body/command/error tests | provider/proxy/APM log inspection and separate BYO/service-key rotation drills |
-| Log/correlation injection or telemetry leakage | D71/D72/D73 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, exact active-D68 deployment identity, persisted Modal `train.policy` call identity, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation | proxy/APM and other-provider/Desktop continuity, seeded-secret scan, retention/access review, deployment/provider delivery proof, dashboards, and synthetic alert delivery |
+| Log/correlation injection or telemetry leakage | D71/D72/D73 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, exact active-D68 deployment identity, persisted Modal `train.policy` call identity, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation; D74 separately revalidates v3 into 1..32-event/135168-byte memory-only batches and proves one credential-free loopback attempt with redirect/non-2xx/timeout refusal and no retry/spool/authority mutation | authenticated external collector with egress/DNS/TLS proof; other-provider/Desktop continuity; seeded-secret proxy/backend scan; access/audit, availability/failure, retention/deletion/export/residency operations; metrics/traces, dashboards, and synthetic alert delivery |
 | JSON/parameter bombs | byte/depth/node/key/string/non-finite/cycle tests; direct job/object tests | load/concurrency/memory exercise |
 | SSRF/redirect/rebinding | private-range, allowlist, DNS, redirect, type, timeout/body tests | egress proxy/firewall connection-time proof |
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |

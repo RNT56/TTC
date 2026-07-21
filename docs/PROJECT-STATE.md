@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-21**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `90cc58c` (PR #140; D73 provider/deployment observability implementation)
-Current verified implementation boundary: D73/OPS-003 protects exact active-D68 deployment and persisted Modal `train.policy` call correlation at contract/fixture maturity at `90cc58c`; D72 trusted request/job/D38-attempt/worker correlation remains protected at `a17ff74`; D70 immutable registry publication remains verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with no managed sandbox installation
+Latest verified protected descendant: `363a8b4` (PR #141; D73 evidence reconciliation)
+Current verified implementation boundary: D73/OPS-003 protects exact active-D68 deployment and persisted Modal `train.policy` call correlation at contract/fixture maturity at `90cc58c`, reconciled through `363a8b4`; D74 bounded loopback observability delivery is an unprotected local contract/fixture candidate only; D72 trusted request/job/D38-attempt/worker correlation remains protected at `a17ff74`; D70 immutable registry publication remains verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with no managed sandbox installation
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -57,6 +57,7 @@ D71/OPS-003 evidence-reconciliation anchor: `694ccc0` (PR #131)
 D72/OPS-003 job/worker observability anchor: `a17ff74` (PR #135)
 D72/security-remediation anchor: `8aac400` (PR #138)
 D73/OPS-003 provider/deployment observability anchor: `90cc58c` (PR #140)
+D73/OPS-003 evidence-reconciliation anchor: `363a8b4` (PR #141)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -69,7 +70,7 @@ QA-012 parity-reliability evidence anchor: `6f8509b` (PR #50)
 Recovery/release gates: **G0 current acceptance restored; G1 historical release closed**
 OPS-001 status: **complete at protected D68 contract/fixture maturity; every managed environment remains pending under OPS-002..010**
 OPS-002 status: **in progress with protected D70 immutable registry publication verified; no managed sandbox install, upgrade, rollback, corrected roll-forward, live service, or production authority is proven**
-OPS-003 status: **in progress with D72 trusted request/job/D38-attempt/worker and D73 exact active-D68 deployment plus persisted Modal `train.policy` call correlation protected at contract/fixture maturity; no other provider/job family, actor/Desktop propagation, metric/trace backend, dashboard, alert, provider delivery, deployment health, managed, live, or production authority is proven**
+OPS-003 status: **in progress with D72 trusted request/job/D38-attempt/worker and D73 exact active-D68 deployment plus persisted Modal `train.policy` call correlation protected at contract/fixture maturity; D74 bounded loopback delivery is an unprotected contract/fixture candidate; no external/authenticated collector, durable queue/managed custody, other provider/job family, actor/Desktop propagation, metric/trace backend, dashboard, alert, provider delivery, deployment health, managed, live, or production authority is proven**
 
 This document records current evidence. It is not the product vision and does not
 replace the task or phase ledgers. Refresh it after any material change to CI,
@@ -238,6 +239,22 @@ pgvector database passes all 28 migrations, every 27 populated predecessor, the
 Modal persistence-to-claimed-job correlation assertion, all remaining data-plane
 checks, and all 12 production-browser flows. These results support only the protected
 D73 contract/fixture boundary above.
+
+D73 evidence reconciliation PR #141 exact head `5308a61` passed all twelve checks in
+CI `29869595763` and security `29869595647`; its tree equals protected squash
+`363a8b4`, whose post-merge CI `29870513845` and security `29870513693` pass. D74 is
+now an unprotected local follow-on: event v3 remains frozen while independent
+delivery-batch major 1 revalidates each 4 KiB line, holds at most 32 events/135168
+bytes in memory, and makes one credential-free exact-loopback POST under two seconds.
+Remote/credential/query/fragment/privileged targets, redirects, non-2xx, timeout,
+invalid input, and overflow fail; no retry or durable spool exists, failed batches
+are discarded, and delivery cannot change product authority. Eleven focused D73/D74
+tests pass. All 48 required local gates are green under Python 3.12.13 with 25
+compatibility surfaces, 21 golden families, 39 Studio tests, 85 Gateway tests, all
+259 workers, Brief-25 25/25, parity, packaging, training/MJX, and the unchanged
+200/97/two/two batch. Every PR/protected-main/post-merge,
+external collector, managed custody, backend, dashboard, alert, managed, live, and
+production criterion remain pending.
 
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
@@ -1358,6 +1375,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D71/OPS-003 observability | **Go only for protected Gateway contract/fixture maturity; no-go for backend, dashboard, alert, managed, live, or production claims** | PR #130 exact head `f161221`, all twelve PR checks, tree-identical protected squash `44bb3da`, exact post-merge CI/security `29646886572`/`29646886580`, and all 48 required local gates protect server-generated request/trace roots, one bounded structured request event, exact redaction exclusions, cardinality policy, and sink isolation. Worker/job/provider/Desktop propagation and every external telemetry consumer remain false |
 | Claim D72 job/worker observability | **Go only for protected contract/fixture maturity; no-go for provider/Desktop/backend/dashboard/alert/managed/live/production claims** | PR #135 exact head `4bb4721`, all twelve required checks in CI `29859593049` and security `29859592862`, tree-identical protected squash `a17ff74`, post-merge CI/security `29860284729`/`29860284861`, all 48 local gates, and the isolated 28-migration/27-predecessor/12-browser-flow database matrix protect event major 2, migration 0028, trusted job correlation, per-claim D38 attempt spans/outcomes, bounded worker events, and export 1.7. Evidence PR #137/`434dc85` exposed late advisory `GHSA-4c8g-83qw-93j6`; remediation PR #138 exact head `80e884e`, tree-identical protected squash `8aac400`, and post-merge CI/security `29863425902`/`29863425966` restore the dependency-safe protected descendant without advancing capability maturity. This slice cannot by itself prove provider/deployment/actor/Desktop continuity, a telemetry backend, dashboard, alert, managed, live, or production operation |
 | Claim D73 provider/deployment observability | **Go only for protected contract/fixture correlation at `90cc58c`; no-go for external or live claims** | PR #140 exact head `283b43a`, all twelve required checks in CI `29868001992` and security `29868001971`, tree-identical protected squash `90cc58c`, post-merge CI/security `29868693418`/`29868693478`, all 48 local gates, and the disposable 28-migration/27-predecessor/12-browser-flow matrix protect exact active-D68 deployment correlation and the already persisted Modal `train.policy` call on that job's completion, with frozen v1/v2 reads and metric labels forbidden. Other provider/job families, actor/Desktop, backend/dashboard/alert, provider delivery, deployment health, managed, live, and production claims remain false |
+| Claim D74 observability delivery/custody | **No-go beyond an unprotected local contract/fixture candidate** | Event v3 remains frozen. All 48 required local gates under Python 3.12.13, including eleven D73/D74 tests, 25 compatibility surfaces, 21 golden families, 39 Studio, 85 Gateway, and 259 worker tests, prove only strict delivery-batch v1 admission, 4 KiB/32-event/135168-byte/two-second limits, one credential-free exact-loopback attempt, redirect/non-2xx/timeout/no-retry/no-spool refusal, and product-authority isolation. Exact PR/protected-main/post-merge proof is pending; external/authenticated collection, durable queue, access/audit, availability/failure monitoring, deletion/export/residency/retention operations, metrics/traces, dashboards, alerts, managed, live, and production remain false |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 

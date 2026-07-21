@@ -11,7 +11,8 @@ at contract/fixture maturity, while credentialed GPU/provider proof remains gate
 (task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
 trainer authority), D45 (offline source authority), D46 (Modal deployment authority),
 D47 (MJX decision authority), D71 (telemetry boundary), D72 (job/attempt
-correlation), and D73 (provider/deployment correlation)
+correlation), D73 (provider/deployment correlation), and D74 (independent fixture
+delivery)
 
 ## 1. Purpose
 
@@ -57,6 +58,12 @@ worker completion carries `providerCallId` only when the same claimed Modal
 wait/recovery path. The started event and every other provider/job family require
 null. These values are correlation only, are forbidden metric labels, and prove
 neither provider delivery nor deployment health.
+Under D74, the worker remains a producer only. The independent fixture consumer may
+revalidate those v3 lines and deliver bounded memory-only batches to an exact
+loopback port, but it is not part of claim/lease/materialization authority and is not
+wired to an external collector. Remote authentication, durable queues, custody,
+retention/deletion, metrics/traces, dashboards, alerts, managed, live, and production
+operation remain separate OPS acceptance work.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and

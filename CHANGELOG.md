@@ -18,6 +18,34 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Bound observability fixture delivery
+**Session:** Codex agent · branch `codex/ops003-observability-transport` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Implemented the unprotected D74 transport/custody-contract candidate while
+leaving event major 3 frozen. New delivery-batch major 1 accepts only validated v3
+Gateway/worker events, revalidates each 4 KiB JSON line, buffers at most 32 events/
+135168 serialized bytes in memory, and makes one credential-free exact-loopback POST
+under a two-second ceiling. Remote/credentialed/query/fragment/privileged endpoints,
+redirects, non-2xx, invalid/overflow input, and timeout fail closed; there is no retry,
+durable spool, partial acknowledgement, or response-body ingestion, and failure cannot
+change product authority. The policy records access/audit, availability/failure,
+deletion, owner export, residency, and retention as prerequisites for any later
+managed collector. All 48 required local gates pass under Python 3.12.13 with eleven
+D73/D74 policy/adversarial tests, all 25 compatibility surfaces, 21 golden families,
+generated 82-route/two-event/seventeen-worker docs, 39 Studio tests, 85 Gateway tests,
+all 259 workers, Brief-25 25/25, native/WASM parity, release packaging, training/MJX,
+and the unchanged 200/97/two-Pareto/two-held co-design batch.
+**Changed:** Delivery-batch schema, machine transport policy, executable fixture
+adapter and tests, compatibility/golden registries, generated contract reference,
+operations/security/system/best-practice/state/roadmap/task/agent-entry documentation.
+**Decisions:** Added D74 for the independent delivery major, loopback fixture trust
+boundary, failure/lifecycle semantics, managed-custody requirements, and nonclaims.
+**Next:** Commit the exact reviewed candidate, publish it as a draft PR, and require
+exact-head/protected/post-merge proof before advancing the protected boundary.
+**Blockers:** None for repository protection. External collector authentication,
+TLS/egress/DNS, durable delivery, lifecycle operations, metrics/traces, dashboards,
+alerts, managed sandbox, live, production, and external-beta proof remain open.
+
 ## 2026-07-21 — Protect provider and deployment observability
 **Session:** Codex agent · branch `codex/ops003-provider-deployment-evidence` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

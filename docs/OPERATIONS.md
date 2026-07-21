@@ -2,7 +2,7 @@
 
 Owner: platform/release maintainers
 
-Decisions: D68, D69, D70, D71, D72, D73
+Decisions: D68, D69, D70, D71, D72, D73, D74
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
@@ -15,9 +15,13 @@ Publication evidence schema: [`schema/forge-hardened-runtime-publication.schema.
 Deployable profile: [`infra/compose.hardened.json`](../infra/compose.hardened.json)
 Current observability policy: [`infra/observability/observability-policy.v3.json`](../infra/observability/observability-policy.v3.json)
 
+Fixture transport policy: [`infra/observability/observability-transport-policy.v1.json`](../infra/observability/observability-transport-policy.v1.json)
+
+Delivery-batch schema: [`schema/forge-observability-delivery-batch.schema.json`](../schema/forge-observability-delivery-batch.schema.json)
+
 Frozen policies: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json), [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; no managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74 is an unprotected local contract/fixture candidate for bounded loopback delivery only; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -58,10 +62,18 @@ head `283b43a` passed all twelve checks in CI `29868001992` and security
 only, and the provider/deployment/backend/live nonclaims in the maturity banner remain
 binding.
 
+The unprotected D74 candidate leaves event major 3 frozen and adds a separate
+delivery-batch major plus executable loopback-only fixture adapter. Focused checks
+pass eleven D73/D74 policy and adversarial tests. All 48 required local gates are
+green under Python 3.12.13 with 25 compatibility surfaces, 21 golden families, 39
+Studio tests, 85 Gateway tests, 259 worker tests, Brief-25 25/25, parity, packaging,
+training/MJX, and the unchanged 200/97/two/two co-design batch. This is not yet
+protected evidence and proves neither external delivery nor persistent custody.
+
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
 external beta. It does not claim that sandbox, staging, production, backup,
-telemetry transport, dashboards, alert routing, support, or on-call infrastructure
+external telemetry transport/custody, dashboards, alert routing, support, or on-call infrastructure
 exists. `PROJECT-STATE.md` owns
 dated evidence; the JSON policy owns exact machine-enforced names, requirements,
 promotion edges, and authority ceilings.
@@ -468,7 +480,7 @@ corrected roll-forward, managed environment, or live service.
 
 ### OPS-003/004 measurement rules
 
-Current D71/D72/D73 slice status:
+Current D71/D72/D73/D74 slice status:
 
 1. **Gateway request contract/fixture — protected.** Versioned policy,
    schema, compatibility surface, golden family, and executable producer generate
@@ -495,19 +507,44 @@ Current D71/D72/D73 slice status:
    forbidden metric labels. Exact PR/protected-main/post-merge evidence passes, but
    this proves neither provider delivery, deployment health, other provider families,
    actor/Desktop continuity, nor managed/live use.
-4. **Metrics/traces backends — open.** Export only reviewed finite-cardinality
+4. **Delivery transport and custody — unprotected D74 contract/fixture candidate.**
+   Delivery batch major 1 accepts only frozen event v3, revalidates each 4 KiB line,
+   and groups at most 32 events/135168 serialized bytes. The adapter makes one
+   credential-free POST to an exact loopback non-privileged port, refuses query,
+   fragment, redirects, and non-2xx, aborts within two seconds, never retries or
+   spools, and discards its in-memory batch on either outcome. Invalid/overflow input
+   fails before delivery and transport failure exits nonzero without changing product
+   authority. A later managed collector must separately prove access/audit,
+   availability and delivery-failure monitoring, deletion, owner-scoped export,
+   residency, and enforced retention. All 48 local gates pass; exact PR/protected-
+   main/post-merge evidence and every external-custody criterion remain open.
+5. **Metrics/traces backends — open.** Export only reviewed finite-cardinality
    dimensions; retain sampled slow/error trace continuity without payload capture;
    define access, retention, deletion, availability, and delivery-failure behavior.
-5. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
+6. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
    action, silence/expiry, separate delivery-failure route, synthetic delivery, and
    acknowledgement before claiming operational monitoring.
 
-The three repository-only contract slices may proceed while OPS-002's real managed-
+The four repository-only contract slices may proceed while OPS-002's real managed-
 sandbox exercise is waiting on an external target because they create no live
 exercise or backend. The D73 subset does not close the broader third slice, and
-slices 3–5 never close from schemas, database rows, or local output. Every deployed
+slices 3–6 never close from schemas, database rows, loopback delivery, or local
+output. Every deployed
 exercise still requires the exact D68/D69/D70 sandbox authority plus retained private
 operations evidence.
+
+The D74 fixture can be exercised only against a disposable loopback collector:
+
+```sh
+pnpm verify:observability
+node scripts/observability-transport.mjs deliver \
+  --endpoint http://127.0.0.1:4319/fixture-collector < /private/path/events.jsonl
+```
+
+Do not add credentials, a remote hostname, a query token, a retry loop, or a spool to
+this command. A managed collector is a new reviewed slice with a secret/reference
+boundary, TLS/egress/DNS policy, lifecycle operations, availability objectives,
+failure telemetry, adversarial inspection, and retained sandbox evidence.
 
 - Correlation IDs are generated/validated at trusted boundaries and propagated to
   jobs/provider calls; never accept a client claim as audit identity.
