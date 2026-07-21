@@ -99,6 +99,15 @@ identical protected squash `44bb3da`, and post-merge CI/security
 `29646886572`/`29646886580` pass while OPS-002's
 managed sandbox and every worker/job/provider/Desktop/backend/dashboard/alert/live
 criterion remain open.
+D71 evidence reconciliation is protected at `694ccc0` through PR #131; exact
+post-merge security `29647532626` and CI `29647532654` pass. D72 is the next
+unprotected contract/fixture slice: current major 2 retains v1 reads and adds trusted
+request-to-job persistence, database-owned D38 attempt spans/outcomes, bounded worker
+lifecycle lines, and owner export 1.7. All 48 local gates and the isolated 28-migration/
+27-populated-predecessor/12-browser-flow database matrix pass; PR, protected-main, and
+post-merge proof remain pending. It cannot close provider/deployment/actor/Desktop
+propagation, a backend, metrics/traces, dashboards, alerts, managed, live, or
+production criteria.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is

@@ -159,6 +159,20 @@ application seed/assert path proves the current v1 sourced table, permits two
 distinct v2 table identities at one coordinate, and refuses incomplete v2 authority.
 This migration creates no applicable bench data and upgrades no component revision.
 
+Migration `0028` additively creates D72 request/job/D38-attempt observability
+authority. It adds nullable Gateway request UUID and parent span columns plus one
+non-null trace ID to `jobs`; every historical row receives a new random trace root
+while request and parent remain null, so no request continuity is fabricated.
+`job_observability_attempts` owns one database UUIDv4 attempt ID and random span per
+claim, paired request/parent authority, bounded outcomes/codes, timestamps, and a
+cascade to the owning job. It excludes lease tokens, idempotency keys, payloads,
+outputs, raw errors/provider content, and secrets. Populated-predecessor acceptance
+proves every historical job receives a valid root with null request/parent;
+current assertions prove pairing and outcome contradictions fail, deletion cascades,
+and the D38 queue exercise proves expiry, retry, terminal failure, cancellation, and
+success transitions. The schema creates neither a telemetry backend nor delivery,
+dashboard, alert, managed, live, or production evidence.
+
 ## 3. Writing a migration
 
 Use the next four-digit prefix and a lowercase descriptive name. Never renumber,
@@ -267,6 +281,15 @@ is byte/numerically preserved under `legacy-unattributed`, run the D66 seed/doma
 assertions, then resume only the new writer. Do not backfill prop, confidence, source,
 review, or applicability from guesses.
 
+For `0028`, stop old Gateway writers and Python workers, inventory queued/running
+jobs and current D38 attempts, and deploy the D72-capable pair together. Applying the
+migration takes a bounded update lock while assigning historical trace roots; assess
+row count, lock time, write amplification, replication lag, and backup headroom before
+the maintenance window. Resume only after the migration matrix, Gateway tests,
+queue-fault assertions, user export, and running-attempt cancellation pass. Existing
+v1 event consumers may keep reading historical v1 Gateway lines, but must reject v2;
+do not reinterpret a null request/parent as lost correlation.
+
 ### Apply and verify
 
 1. Run `pnpm db:migrate` from the exact release checkout.
@@ -329,6 +352,13 @@ v2 rows as evidence, and roll forward to the D66-capable application. Never coll
 table identities, drop per-point voltages, or relabel v2 rows as v1 to make an older
 binary accept them. Database restore is reserved for the verified-backup damage path,
 not ordinary application rollback.
+
+After `0028`, retain the additive job columns and attempt table. A prior v1 Gateway/
+worker may run only after new queue consumption is stopped and current D72 attempts
+are drained or cancelled; it will ignore the new state and emit no v2 worker events.
+Preserve all attempt rows and do not label absent v2 events as job failure. Roll
+forward before relying on job/attempt continuity again. Never drop correlation rows,
+copy request IDs onto historical jobs, or synthesize parent spans during rollback.
 For `0025`, stop new recorder staging, let issued PUT contracts expire, and reconcile
 or delete every staged private object under OPS-006. Retain the table and export 1.5
 metadata, deploy an application that ignores them safely, and roll forward; never

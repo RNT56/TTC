@@ -25,6 +25,16 @@ from forge_workers.object_storage import (
     S3PolicyObjectStore,
     StoredPolicyObject,
 )
+from forge_workers.observability import (
+    WorkerObservationSink,
+    WorkerObservabilityRuntimeContext,
+    create_worker_attempt_completed_observation,
+    create_worker_attempt_started_observation,
+    new_attempt_id,
+    new_span_id,
+    new_trace_id,
+    worker_observability_runtime_context,
+)
 
 
 @dataclass
@@ -37,6 +47,11 @@ class Job:
     idempotency_key: str
     attempts: int = 0
     provider: str = "local"
+    observability_request_id: str | None = None
+    observability_trace_id: str = field(default_factory=new_trace_id)
+    observability_parent_span_id: str | None = None
+    observability_attempt_id: str = field(default_factory=new_attempt_id)
+    observability_span_id: str = field(default_factory=new_span_id)
     lease_token: str | None = None
     lease_expires_at: str | None = None
     max_attempts: int = 3
@@ -133,7 +148,26 @@ registry = HandlerRegistry()
 """Process-global registry the worker families register into on import."""
 
 
-def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
+def _emit_observation(
+    sink: WorkerObservationSink | None,
+    event: dict[str, Any],
+) -> None:
+    if sink is None:
+        return
+    try:
+        sink(event)
+    except Exception:  # noqa: BLE001 - telemetry transport cannot change job authority.
+        return
+
+
+def run_once(
+    store: QueueStore,
+    handlers: HandlerRegistry = registry,
+    *,
+    observation_sink: WorkerObservationSink | None = None,
+    observability_runtime: WorkerObservabilityRuntimeContext | None = None,
+    monotonic: Callable[[], float] = time.monotonic,
+) -> bool:
     """Claim and execute one queued job.
 
     Returns True when a job was claimed, regardless of success or failure. Handler
@@ -147,7 +181,16 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
     job = store.claim_one(tasks)
     if job is None:
         return False
+    runtime = observability_runtime or worker_observability_runtime_context()
+    started = monotonic()
+    _emit_observation(
+        observation_sink,
+        create_worker_attempt_started_observation(job, runtime),
+    )
     store.record_event(job.id, "started", {"task": job.task, "attempt": max(1, job.attempts)})
+    observation_outcome = "discarded"
+    observation_error_code: str | None = "lease-not-current"
+    observation_retry_after: float | None = None
     try:
         output = handlers.dispatch(job)
         accepted = store.mark_succeeded(job, output)
@@ -172,6 +215,13 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
             else {"code": exc.code} if disposition == "failed"
             else {"reason": "job lease is no longer current"},
         )
+        if disposition == "queued":
+            observation_outcome = "retry-scheduled"
+            observation_error_code = exc.code
+            observation_retry_after = retry_after_seconds
+        elif disposition == "failed":
+            observation_outcome = "failed"
+            observation_error_code = exc.code
     except Exception as exc:  # noqa: BLE001 - queue workers must fail closed.
         error = f"{type(exc).__name__}: {exc}"
         accepted = store.mark_failed(job, error, "handler-failed")
@@ -180,12 +230,29 @@ def run_once(store: QueueStore, handlers: HandlerRegistry = registry) -> bool:
             "failed" if accepted else "discarded",
             {"code": "handler-failed"} if accepted else {"reason": "job lease is no longer current"},
         )
+        if accepted:
+            observation_outcome = "failed"
+            observation_error_code = "handler-failed"
     else:
         store.record_event(
             job.id,
             "succeeded" if accepted else "discarded",
             {"task": job.task} if accepted else {"reason": "job lease is no longer current"},
         )
+        if accepted:
+            observation_outcome = "succeeded"
+            observation_error_code = None
+    _emit_observation(
+        observation_sink,
+        create_worker_attempt_completed_observation(
+            job,
+            runtime,
+            outcome=observation_outcome,
+            duration_ms=(monotonic() - started) * 1_000,
+            error_code=observation_error_code,
+            retry_after_seconds=observation_retry_after,
+        ),
+    )
     return True
 
 
@@ -195,12 +262,19 @@ def run_forever(
     *,
     poll_seconds: float = 1.0,
     should_stop: Callable[[], bool] | None = None,
+    observation_sink: WorkerObservationSink | None = None,
+    observability_runtime: WorkerObservabilityRuntimeContext | None = None,
 ) -> None:
     """Poll the queue until `should_stop` returns True."""
 
     stop = should_stop or (lambda: False)
     while not stop():
-        claimed = run_once(store, handlers)
+        claimed = run_once(
+            store,
+            handlers,
+            observation_sink=observation_sink,
+            observability_runtime=observability_runtime,
+        )
         if not claimed:
             time.sleep(poll_seconds)
 
@@ -240,7 +314,17 @@ class PostgresQueueStore:
                      AND kind = ANY(%s)
                      AND lease_expires_at <= now()
                      AND attempts >= max_attempts
-                  RETURNING id
+                  RETURNING id, attempts
+                ), closed_attempts AS (
+                  UPDATE job_observability_attempts AS observation
+                     SET outcome = 'failed',
+                         error_code = 'worker-crash-exhausted',
+                         finished_at = now()
+                    FROM exhausted
+                   WHERE observation.job_id = exhausted.id
+                     AND observation.attempt = exhausted.attempts
+                     AND observation.outcome = 'running'
+                  RETURNING observation.job_id
                 )
                 INSERT INTO job_events (job_id, event, payload)
                 SELECT id, 'failed', '{"code":"worker-crash-exhausted"}'::jsonb
@@ -251,7 +335,7 @@ class PostgresQueueStore:
             row = self._conn.execute(
                 """
                 WITH claimed AS (
-                  SELECT id
+                  SELECT id, status AS prior_status, attempts AS prior_attempt
                     FROM jobs
                    WHERE provider IN ('local', 'modal')
                      AND kind = ANY(%s)
@@ -267,8 +351,19 @@ class PostgresQueueStore:
                      created_at
                    FOR UPDATE SKIP LOCKED
                    LIMIT 1
-                )
-                UPDATE jobs AS target
+                ), expired_attempt AS (
+                  UPDATE job_observability_attempts AS observation
+                     SET outcome = 'expired',
+                         error_code = 'attempt-lease-expired',
+                         finished_at = now()
+                    FROM claimed
+                   WHERE claimed.prior_status = 'running'
+                     AND observation.job_id = claimed.id
+                     AND observation.attempt = claimed.prior_attempt
+                     AND observation.outcome = 'running'
+                  RETURNING observation.job_id
+                ), updated AS (
+                  UPDATE jobs AS target
                    SET status = 'running',
                        attempts = attempts + 1,
                        started_at = COALESCE(started_at, now()),
@@ -277,16 +372,31 @@ class PostgresQueueStore:
                        last_error_code = NULL,
                        lease_token = encode(gen_random_bytes(16), 'hex'),
                        lease_expires_at = now() + make_interval(secs => timeout_seconds)
-                  FROM claimed
-                 WHERE target.id = claimed.id
-                RETURNING target.id, target.kind, target.provider, target.input,
-                          COALESCE(target.idempotency_key, target.id) AS idempotency_key,
-                          target.attempts, target.lease_token, target.lease_expires_at,
-                          target.max_attempts, target.timeout_seconds,
-                          target.provider_call_id, target.provider_function_version,
-                          target.provider_environment,
-                          target.provider_deployment_contract_hash,
-                          target.provider_submitted_at
+                    FROM claimed
+                   WHERE target.id = claimed.id
+                  RETURNING target.id, target.kind, target.provider, target.input,
+                            COALESCE(target.idempotency_key, target.id) AS idempotency_key,
+                            target.attempts, target.lease_token, target.lease_expires_at,
+                            target.max_attempts, target.timeout_seconds,
+                            target.provider_call_id, target.provider_function_version,
+                            target.provider_environment,
+                            target.provider_deployment_contract_hash,
+                            target.provider_submitted_at,
+                            target.observability_request_id,
+                            target.observability_trace_id,
+                            target.observability_parent_span_id
+                ), inserted_attempt AS (
+                  INSERT INTO job_observability_attempts (
+                    job_id, attempt, request_id, trace_id, span_id, parent_span_id
+                  )
+                  SELECT id, attempts, observability_request_id, observability_trace_id,
+                         encode(gen_random_bytes(8), 'hex'), observability_parent_span_id
+                    FROM updated
+                  RETURNING job_id, attempt_id, span_id
+                )
+                SELECT updated.*, inserted_attempt.attempt_id, inserted_attempt.span_id
+                  FROM updated
+                  JOIN inserted_attempt ON inserted_attempt.job_id = updated.id
                 """,
                 [list(tasks)],
             ).fetchone()
@@ -304,6 +414,19 @@ class PostgresQueueStore:
             idempotency_key=str(row["idempotency_key"]),
             attempts=int(row["attempts"]),
             provider=str(row["provider"]),
+            observability_request_id=(
+                str(row["observability_request_id"])
+                if row["observability_request_id"] is not None
+                else None
+            ),
+            observability_trace_id=str(row["observability_trace_id"]),
+            observability_parent_span_id=(
+                str(row["observability_parent_span_id"])
+                if row["observability_parent_span_id"] is not None
+                else None
+            ),
+            observability_attempt_id=str(row["attempt_id"]),
+            observability_span_id=str(row["span_id"]),
             lease_token=str(row["lease_token"]),
             lease_expires_at=str(row["lease_expires_at"]),
             max_attempts=int(row["max_attempts"]),
@@ -491,6 +614,17 @@ class PostgresQueueStore:
             if row is not None:
                 self._conn.execute(
                     """
+                    UPDATE job_observability_attempts
+                       SET outcome = 'succeeded', error_code = NULL, finished_at = now()
+                     WHERE job_id = %s
+                       AND attempt = %s
+                       AND attempt_id = %s
+                       AND outcome = 'running'
+                    """,
+                    [job.id, job.attempts, job.observability_attempt_id],
+                )
+                self._conn.execute(
+                    """
                     UPDATE job_provider_calls
                        SET status = 'succeeded', completed_at = COALESCE(completed_at, now())
                      WHERE job_id = %s AND call_id = %s
@@ -558,6 +692,17 @@ class PostgresQueueStore:
                 [error, code, job.id, job.lease_token],
             ).fetchone()
             if row is not None:
+                self._conn.execute(
+                    """
+                    UPDATE job_observability_attempts
+                       SET outcome = 'failed', error_code = %s, finished_at = now()
+                     WHERE job_id = %s
+                       AND attempt = %s
+                       AND attempt_id = %s
+                       AND outcome = 'running'
+                    """,
+                    [code, job.id, job.attempts, job.observability_attempt_id],
+                )
                 self._conn.execute(
                     """
                     UPDATE job_provider_calls
@@ -651,6 +796,25 @@ class PostgresQueueStore:
                 ],
             ).fetchone()
             if row is not None:
+                self._conn.execute(
+                    """
+                    UPDATE job_observability_attempts
+                       SET outcome = %s,
+                           error_code = %s,
+                           finished_at = now()
+                     WHERE job_id = %s
+                       AND attempt = %s
+                       AND attempt_id = %s
+                       AND outcome = 'running'
+                    """,
+                    [
+                        "retry-scheduled" if str(row["status"]) == "queued" else "failed",
+                        code,
+                        job.id,
+                        job.attempts,
+                        job.observability_attempt_id,
+                    ],
+                )
                 self._conn.execute(
                     """
                     UPDATE job_provider_calls

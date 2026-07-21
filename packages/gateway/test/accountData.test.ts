@@ -79,17 +79,36 @@ test("user-data export is owner-scoped, complete, and excludes authentication se
         rowCount: 1,
       } as never;
     }
+    if (text.includes("FROM job_observability_attempts")) {
+      return {
+        rows: [{
+          jobId: "job-local-1",
+          attempt: 1,
+          attemptId: "00000000-0000-4000-8000-000000000001",
+          outcome: "succeeded",
+        }],
+        rowCount: 1,
+      } as never;
+    }
     return { rows: [], rowCount: 0 } as never;
   });
 
   const exported = await exportUserData(db, user);
-  assert.equal(exported.formatVersion, "1.6.0");
+  assert.equal(exported.formatVersion, "1.7.0");
   assert.equal(exported.subject.userId, user.id);
   assert.equal(exported.data.account.length, 1);
   assert.equal(exported.data.authenticationProviders.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);
   assert.deepEqual(exported.data.jobProviderCalls, [
     { callId: "fc-export-1", jobId: "job-modal-1", status: "succeeded" },
+  ]);
+  assert.deepEqual(exported.data.jobObservabilityAttempts, [
+    {
+      jobId: "job-local-1",
+      attempt: 1,
+      attemptId: "00000000-0000-4000-8000-000000000001",
+      outcome: "succeeded",
+    },
   ]);
   assert.deepEqual(exported.data.recorderArchiveMaterializations, [
     { id: "ram-export-1", artifactId: "art-recorder", gatewayObjectIntegrityVerified: true },
@@ -274,7 +293,7 @@ test("account routes require authentication and explicit destructive confirmatio
     });
     assert.equal(exported.statusCode, 200, exported.body);
     assert.match(exported.headers["content-disposition"] ?? "", /forgedttc-user-data-/);
-    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.6.0");
+    assert.equal((exported.json() as { formatVersion: string }).formatVersion, "1.7.0");
 
     const lifecycle = await app.inject({
       method: "GET",

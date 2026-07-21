@@ -18,6 +18,49 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Bind trusted jobs to worker attempts
+**Session:** Codex agent · branch `codex/ops003-job-worker-correlation` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Implemented D72's unprotected contract/fixture candidate without changing
+the protected D71 claim boundary. `forge-observability-event/2.0.0` retains v1 reads
+and binds each trusted Gateway request to its persisted job, then each atomic D38
+claim to one database-owned UUIDv4 attempt/span. Migration 0028 and bounded Python
+start/completion events preserve success, retry, terminal failure, owner cancellation,
+expiry, and direct/historical-job roots without leases, idempotency keys, payloads,
+results, raw errors/provider text, secrets, or caller correlation authority. User
+export 1.7 exposes owner-scoped non-secret correlation and attempt outcomes. All 48
+required local gates pass with four policy/adversarial tests, 24 compatibility
+surfaces, 85 Gateway tests against the real validator, all 258 worker tests in the
+complete pinned training/MJX/co-design environment, Brief-25 25/25, and the unchanged
+200/97/two-Pareto/two-held recovery batch. A fresh isolated Postgres/pgvector database
+passes all 28 migrations, every 27 populated predecessor, recovery/concurrency, the
+D38 crash/outage/retry/cancellation/success matrix, export/deletion/lifecycle, and all
+12 production-browser flows. PR #135 security run `29858791845`, dependency-audit
+job `88729844943`, then exposed five newly published advisories in existing dev-tool
+transitives: two moderate, two high, and one critical. Exact pnpm 11.13 convergence
+pins move compatible `wasm-pack` edges to `tar` 7.5.20 and compatible
+`json-schema-to-typescript` edges to `js-yaml` 4.3.0; no direct or application runtime
+dependency is added. The frozen install resolves one patched version of each,
+`pnpm audit --audit-level low` reports no known vulnerabilities, and all 48 required
+local gates pass again on the remediated graph.
+**Changed:** Gateway request/job persistence and cancellation; D38 queue claim and
+terminal transitions; Python worker structured lifecycle output; migration 0028;
+owner export 1.7; observability policy/schema major 2; compatibility, generated API/
+event/artifact references, golden registry/update record; database assertions; agent,
+operations, security, data-lifecycle, migration, system, task, roadmap, current-state,
+risk, and governance guidance; workspace supply-chain policy and reviewed lockfile.
+**Decisions:** D72 owns service-generated correlation parentage, durable attempt
+lifecycle authority, v1-reader preservation, sink isolation, and explicit maturity
+nonclaims. R40 now also tracks job/attempt leakage, forgery, cardinality, delivery
+coupling, and false-monitoring risk.
+**Next:** Protect this exact candidate through a reviewed PR, all required checks,
+tree-equivalent protected main, and post-merge CI/security; then reconcile that exact
+evidence before starting provider/deployment correlation or a telemetry backend.
+**Blockers:** none after local dependency-audit remediation. OPS-002 still lacks a
+real managed sandbox install/upgrade/rollback exercise. Provider/Desktop propagation,
+external telemetry storage, dashboards, alert delivery/acknowledgement, and managed/
+live/production proof remain independent OPS-003 gates.
+
 ## 2026-07-18 — Protect the first observability contract
 **Session:** Codex agent · branch `codex/ops003-observability-evidence` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

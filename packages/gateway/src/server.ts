@@ -95,6 +95,7 @@ import {
   updatePhotoscanAlignment,
   validatorError,
   verifyReplayTape,
+  type CreateJobOptions,
   type JobKind,
   MAX_POLICY_MODEL_BYTES,
   POLICY_DELIVERY_ARTIFACT_VERSION,
@@ -866,6 +867,25 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
     done(null, body);
   });
   const db = options.db ?? gatewayDb();
+  const jobOptionsForRequest = (
+    request: FastifyRequest,
+    additional: Omit<CreateJobOptions, "observability"> = {},
+  ): CreateJobOptions => {
+    const correlation = requestCorrelations.get(request);
+    if (!correlation) {
+      throw Object.assign(new Error("trusted request correlation is unavailable"), {
+        statusCode: 500,
+      });
+    }
+    return {
+      ...additional,
+      observability: {
+        requestId: correlation.requestId,
+        traceId: correlation.traceId,
+        parentSpanId: correlation.spanId,
+      },
+    };
+  };
   const reviewToken = options.reviewToken ?? process.env.FORGE_REVIEW_TOKEN ?? null;
   if (process.env.NODE_ENV === "production" && reviewToken !== null && reviewToken.length < 32) {
     throw new Error("production FORGE_REVIEW_TOKEN must contain at least 32 characters");
@@ -1850,7 +1870,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
             payload: body.payload,
             idempotencyKey: body.idempotencyKey,
           },
-          { writePolicyObject },
+          jobOptionsForRequest(request, { writePolicyObject }),
         );
         return reply.status(201).send({ job });
       } catch (error) {
@@ -1959,7 +1979,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const payload = isRecord(body.payload)
           ? { ...body.payload, sourceBlobIds: body.sourceBlobIds }
           : { sourceBlobIds: body.sourceBlobIds };
-        const job = await createJob(db, user, { kind, payload, provider: "fixture" });
+        const job = await createJob(
+          db,
+          user,
+          { kind, payload, provider: "fixture" },
+          jobOptionsForRequest(request),
+        );
         return reply.status(202).send({ job });
       } catch (error) {
         const mapped = routeError(error);
@@ -2084,7 +2109,7 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           db,
           user,
           { kind: "train.policy", payload, provider: "fixture" },
-          { writePolicyObject },
+          jobOptionsForRequest(request, { writePolicyObject }),
         );
         return reply.status(202).send({ job });
       } catch (error) {
@@ -2128,7 +2153,12 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
         const user = await requireUser(request, db);
         const { tape } = request.body as { tape: unknown };
         const verification = verifyReplayTape(tape);
-        const job = await createJob(db, user, { kind: "replay.verify", payload: { tape }, provider: "fixture" });
+        const job = await createJob(
+          db,
+          user,
+          { kind: "replay.verify", payload: { tape }, provider: "fixture" },
+          jobOptionsForRequest(request),
+        );
         const replay = await insertReplayArtifact(db, user, { tape, verification });
         return reply.status(202).send({ job, replay });
       } catch (error) {
@@ -3017,15 +3047,20 @@ export function buildServer(options: ServerOptions = {}): FastifyInstance {
           if (!body.idempotencyKey) {
             return reply.status(400).send({ error: "vendor refresh worker requires an idempotencyKey" });
           }
-          const job = await createJob(db, user, {
-            kind: "commerce.vendor-refresh",
-            provider: "local",
-            payload: {
-              componentIds: body.componentIds,
-              timeoutS: body.timeoutS ?? 120,
+          const job = await createJob(
+            db,
+            user,
+            {
+              kind: "commerce.vendor-refresh",
+              provider: "local",
+              payload: {
+                componentIds: body.componentIds,
+                timeoutS: body.timeoutS ?? 120,
+              },
+              idempotencyKey: body.idempotencyKey,
             },
-            idempotencyKey: body.idempotencyKey,
-          });
+            jobOptionsForRequest(request),
+          );
           return reply.status(202).send({ job });
         }
         let offers = body.offers ?? [];

@@ -95,15 +95,18 @@
       "classification": "schema",
       "paths": [
         "infra/observability/observability-policy.v1.json",
-        "schema/forge-observability-event.schema.json"
+        "infra/observability/observability-policy.v2.json",
+        "schema/forge-observability-event.schema.json",
+        "schema/forge-observability-event.v2.schema.json"
       ],
       "owner": "platform, gateway, operations, and security maintainers",
-      "sourceOfTruth": "D71 trusted correlation, structured-event allowlist, redaction exclusion, cardinality, and maturity-nonclaim semantics",
+      "sourceOfTruth": "D71/D72 trusted request, job, and attempt correlation; structured-event allowlists; redaction exclusion; cardinality; and maturity-nonclaim semantics",
       "regenerate": "Edit deliberately with compatibility, privacy, security, runtime, and operations review plus a golden update record; never derive safe fields from captured payloads",
       "verify": [
         "pnpm verify:observability",
         "pnpm verify:compatibility",
         "pnpm --filter @forge/gateway test",
+        "pnpm --dir workers test",
         "pnpm verify"
       ],
       "compatibilityReview": true

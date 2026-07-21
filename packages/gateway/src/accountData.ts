@@ -9,7 +9,7 @@ import {
 import { withGatewayTransaction, type GatewayDb } from "./db.js";
 import type { ObjectDeletionAdapter, StoredObjectRef } from "./objectStorage.js";
 
-export const USER_DATA_EXPORT_VERSION = "1.6.0";
+export const USER_DATA_EXPORT_VERSION = "1.7.0";
 export const ACCOUNT_DELETION_RECEIPT_VERSION = "2.0.0";
 
 interface ExportDataset {
@@ -95,9 +95,23 @@ const exportDatasets: readonly ExportDataset[] = [
                  provider_cost_reconciled_at AS "providerCostReconciledAt",
                  cancel_requested_at AS "cancelRequestedAt",
                  credit_refunded_at AS "creditRefundedAt",
+                 observability_request_id AS "observabilityRequestId",
+                 observability_trace_id AS "observabilityTraceId",
+                 observability_parent_span_id AS "observabilityParentSpanId",
                  created_at AS "createdAt",
                  started_at AS "startedAt", finished_at AS "finishedAt"
             FROM jobs WHERE owner_user_id = $1 ORDER BY created_at, id`,
+  },
+  {
+    key: "jobObservabilityAttempts",
+    sql: `SELECT a.job_id AS "jobId", a.attempt, a.attempt_id AS "attemptId",
+                 a.request_id AS "requestId", a.trace_id AS "traceId",
+                 a.span_id AS "spanId", a.parent_span_id AS "parentSpanId",
+                 a.outcome, a.error_code AS "errorCode",
+                 a.started_at AS "startedAt", a.finished_at AS "finishedAt"
+            FROM job_observability_attempts a
+            JOIN jobs j ON j.id = a.job_id
+           WHERE j.owner_user_id = $1 ORDER BY a.started_at, a.job_id, a.attempt`,
   },
   {
     key: "jobEvents",

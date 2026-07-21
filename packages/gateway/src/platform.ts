@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { fixtureLicenseFilteredGeometry } from "./licenseExports.js";
 import {
   sourceBlobIdsFromPayload,
@@ -2322,6 +2322,42 @@ type CreateJobInput = {
 
 export interface CreateJobOptions {
   writePolicyObject?: PolicyObjectWriter;
+  observability?: JobObservabilityContext;
+}
+
+export interface JobObservabilityContext {
+  requestId: string;
+  traceId: string;
+  parentSpanId: string;
+}
+
+const OBSERVABILITY_UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const OBSERVABILITY_TRACE_ID = /^(?!0{32}$)[a-f0-9]{32}$/;
+const OBSERVABILITY_SPAN_ID = /^(?!0{16}$)[a-f0-9]{16}$/;
+
+function jobObservabilityContext(options: CreateJobOptions): {
+  requestId: string | null;
+  traceId: string;
+  parentSpanId: string | null;
+} {
+  const context = options.observability;
+  if (context === undefined) {
+    return {
+      requestId: null,
+      traceId: randomBytes(16).toString("hex"),
+      parentSpanId: null,
+    };
+  }
+  if (
+    !OBSERVABILITY_UUID_V4.test(context.requestId)
+    || !OBSERVABILITY_TRACE_ID.test(context.traceId)
+    || !OBSERVABILITY_SPAN_ID.test(context.parentSpanId)
+  ) {
+    throw Object.assign(new Error("trusted job observability context is invalid"), {
+      statusCode: 500,
+    });
+  }
+  return context;
 }
 
 function jobTimeoutSeconds(input: CreateJobInput): number {
@@ -2787,6 +2823,7 @@ async function createJobUnchecked(
     }
   }
   const costCredits = provider === "modal" ? 1 : 0;
+  const observability = jobObservabilityContext(options);
   await assertHardwareGateForJob(db, input.kind, provider, authoritativePayload);
   await ensureCreditAccount(db, user);
   if (provider !== "fixture") {
@@ -2796,11 +2833,12 @@ async function createJobUnchecked(
     const proposedJobId = newJobId();
     const timeoutSeconds = jobTimeoutSeconds(resolvedInput);
     const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
-      `INSERT INTO jobs (
+       `INSERT INTO jobs (
          id, owner_user_id, kind, status, provider, idempotency_key, input, output,
-         cost_credits, timeout_seconds, available_at
+         cost_credits, timeout_seconds, available_at,
+         observability_request_id, observability_trace_id, observability_parent_span_id
        )
-       VALUES ($7, $1, $2, 'queued', $3, $4, $5::jsonb, NULL, $6, $8, now())
+       VALUES ($7, $1, $2, 'queued', $3, $4, $5::jsonb, NULL, $6, $8, now(), $9, $10, $11)
        ON CONFLICT (idempotency_key) DO UPDATE
        SET idempotency_key = EXCLUDED.idempotency_key
        WHERE jobs.owner_user_id = EXCLUDED.owner_user_id
@@ -2819,6 +2857,9 @@ async function createJobUnchecked(
         costCredits,
         proposedJobId,
         timeoutSeconds,
+        observability.requestId,
+        observability.traceId,
+        observability.parentSpanId,
       ],
     );
     if (!result.rows[0]) {
@@ -2859,9 +2900,10 @@ async function createJobUnchecked(
   const result = await db.query<Parameters<typeof mapJob>[0] & { inserted: boolean }>(
     `INSERT INTO jobs (
        id, owner_user_id, kind, status, provider, idempotency_key, input, output,
-       cost_credits, started_at, finished_at
+       cost_credits, started_at, finished_at,
+       observability_request_id, observability_trace_id, observability_parent_span_id
      )
-     VALUES ($8, $1, $2, 'succeeded', $3, $4, $5::jsonb, $6::jsonb, $7, now(), now())
+     VALUES ($8, $1, $2, 'succeeded', $3, $4, $5::jsonb, $6::jsonb, $7, now(), now(), $9, $10, $11)
      ON CONFLICT (idempotency_key) DO UPDATE
      SET idempotency_key = EXCLUDED.idempotency_key
      WHERE jobs.owner_user_id = EXCLUDED.owner_user_id
@@ -2880,6 +2922,9 @@ async function createJobUnchecked(
       json(fixtureOutput),
       costCredits,
       proposedJobId,
+      observability.requestId,
+      observability.traceId,
+      observability.parentSpanId,
     ],
   );
   if (!result.rows[0]) {
@@ -3016,6 +3061,18 @@ export async function cancelOwnedJob(
                   cost_credits, created_at`,
       [user.id, jobId, refund],
     );
+    if (row.status === "running") {
+      await transaction.query(
+        `UPDATE job_observability_attempts
+            SET outcome = 'cancelled',
+                error_code = 'owner-cancelled',
+                finished_at = now()
+          WHERE job_id = $1
+            AND attempt = $2
+            AND outcome = 'running'`,
+        [jobId, Number(row.attempts ?? 0)],
+      );
+    }
     if (row.provider_call_id) {
       await transaction.query(
         `UPDATE job_provider_calls

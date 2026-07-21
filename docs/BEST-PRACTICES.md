@@ -98,15 +98,20 @@ event lines, and persisted artifact formats independently; preserve old document
 read fixtures while their support window is active. Examples use synthetic IDs and
 fixture values, never secrets, signed URLs, raw user content, or claims of live proof.
 
-**Operational telemetry:** follow D71 and the versioned observability policy. Generate
+**Operational telemetry:** follow D71/D72 and the versioned observability policy. Generate
 request/trace authority at a trusted service boundary; never trust a client identifier
 as audit continuity. Emit only an exact bounded allowlist with UTC, source, version,
 environment, template route, status, duration, outcome, and opaque correlation. Raw
 URLs/query strings, headers/cookies, bodies, prompts, errors/provider output, personal
 data, telemetry/model bytes, presigned URLs, and secret references stay out. IDs may
 correlate bounded logs/traces after their owning authority exists, but never become
-metric labels. Telemetry transport failure must not change product authority, and a
-local JSON line is not dashboard, alert, managed, live, or production evidence.
+metric labels. Persist a trusted request on the job before asynchronous dispatch;
+create each attempt ID/span in the same transaction as the D38 claim; close the row
+with a bounded outcome/code while excluding leases, payloads, result bytes, and raw
+errors. Historical/direct jobs get a new trace root with null request/parent, never
+fabricated continuity. Telemetry transport failure must not change product authority,
+and a local JSON line or attempt row is not a backend, dashboard, alert, managed,
+live, or production evidence.
 
 **Executable policy artifacts:** keep category metadata separate from the exact
 scalar tensor contract. Version schema/layout/coordinate/rate semantics independently;

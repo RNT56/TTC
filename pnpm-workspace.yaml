@@ -2,6 +2,13 @@ packages:
   - "packages/*"
   - "workers"
 
+# Security convergence pins apply only when an existing dependency range already
+# admits the patched version. Remove each pin after every parent converges and the
+# low-severity audit remains green without it.
+overrides:
+  "js-yaml@": "4.3.0"
+  "tar@": "7.5.20"
+
 # pnpm 11 fails closed when a dependency lifecycle script is not explicitly
 # reviewed. Keep this list version-exact; dependency updates must re-review it.
 allowBuilds:

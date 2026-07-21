@@ -10,7 +10,8 @@ at contract/fixture maturity, while credentialed GPU/provider proof remains gate
 (fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue), D41
 (task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
 trainer authority), D45 (offline source authority), D46 (Modal deployment authority),
-and D47 (MJX decision authority)
+D47 (MJX decision authority), D71 (telemetry boundary), and D72 (job/attempt
+correlation)
 
 ## 1. Purpose
 
@@ -40,6 +41,15 @@ unexpired token may schedule a retry, fail,
 succeed, or materialize output. Expired attempts can be reclaimed under a new token,
 while stale/duplicate/cancelled completions are discarded. Successful artifact jobs are
 materialized into the same sidecar tables as synchronous gateway fixture jobs.
+Under D72, the same atomic claim creates a database UUIDv4 attempt identity and a
+random worker span parented to the trusted Gateway request span when one exists.
+The attempt row closes on success, retry scheduling, terminal failure, owner
+cancellation, or lease expiry using only a stable code. Worker start/completion
+stdout is a separately validated 4 KiB JSON-line stream; readiness and connection
+messages use stderr. Lease tokens, payloads, raw exceptions/provider text, outputs,
+personal data, and secrets are excluded, and event-sink failure never changes queue
+or artifact authority. Direct and historical jobs carry a new trace root with null
+request/parent; they do not gain fabricated request continuity.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and

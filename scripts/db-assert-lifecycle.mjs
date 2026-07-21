@@ -360,7 +360,7 @@ try {
   );
 
   const exported = await exportUserData(pool, user);
-  assert.equal(exported.formatVersion, "1.6.0");
+  assert.equal(exported.formatVersion, "1.7.0");
   assert.equal(exported.data.lifecycleLegalHolds.length, 4);
   assert.deepEqual(
     exported.data.lifecycleLegalHolds.map((event) => event.eventSequence),

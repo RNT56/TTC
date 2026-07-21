@@ -217,6 +217,12 @@ P1-015 parity evidence.
   lockfile drift, a low-severity audit, the full relevant local gate, and exact-head
   protected security proof. `allowBuilds` entries stay version-exact; broad or
   global lifecycle-script authority is prohibited.
+- Root convergence overrides may pin an already-compatible transitive dependency to
+  a reviewed patched version when a new low-or-higher advisory blocks the
+  exact tree. Keep each override exact, regenerate and review the lockfile, prove the
+  low-severity audit plus dependent gates, and remove the pin after every parent
+  converges without reintroducing the advisory. Never force an incompatible edge or
+  use an override to suppress an advisory result.
 - Every external workflow action uses an immutable 40-character commit SHA with a
   human-readable version comment. `pnpm verify:workflows` enforces this locally and
   the required `dependency review` job enforces it on pull requests.

@@ -211,6 +211,18 @@ requireValue(
   "observability event schema/runtime service versions must match the gateway package",
 );
 requireValue(
+  pythonConstant("workers/forge_workers/observability.py", "OBSERVABILITY_EVENT_VERSION") ===
+    matrix.surfaces.observabilityEvent.current
+    && pythonConstant("workers/forge_workers/observability.py", "WORKER_OBSERVABILITY_SERVICE_VERSION") ===
+      workerVersion,
+  "observability event version must match the worker runtime and worker package",
+);
+const legacyObservabilitySchema = JSON.parse(read(matrix.surfaces.observabilityEvent.legacySchemaPaths[0]));
+requireValue(
+  legacyObservabilitySchema.properties.schemaVersion.const === "forge-observability-event/1.0.0",
+  "observability v1 read schema must remain available",
+);
+requireValue(
   matrix.surfaces.policyTensor.schema ===
     typescriptConstant("packages/studio/src/policyRuntime.ts", "POLICY_TENSOR_SCHEMA"),
   "policyTensor schema token must match the Studio runtime",

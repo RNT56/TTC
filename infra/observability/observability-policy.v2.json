@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "forge-observability-policy/2.0.0",
+  "eventVersion": "2.0.0",
+  "eventSchema": "schema/forge-observability-event.v2.schema.json",
+  "legacyEventSchemas": [
+    "schema/forge-observability-event.schema.json"
+  ],
+  "decision": "D72",
+  "status": "contract-fixture",
+  "maxEventBytes": 4096,
+  "headers": {
+    "responseRequestId": "x-forge-request-id",
+    "responseTraceParent": "traceparent",
+    "clientRequestIdAuthority": false,
+    "clientTraceParentAuthority": false
+  },
+  "trust": {
+    "requestId": "server-generated-gateway-uuid-v4-or-null-for-non-request-jobs",
+    "traceId": "server-generated-gateway-or-job-root",
+    "actorDigest": "not-implemented",
+    "jobId": "database-owned-job-id",
+    "attemptId": "database-generated-uuid-v4-per-d38-claim",
+    "providerCallId": "not-implemented",
+    "deploymentId": "not-implemented"
+  },
+  "eventNames": [
+    "gateway.request.completed",
+    "worker.job.attempt.completed",
+    "worker.job.attempt.started"
+  ],
+  "requiredContext": [
+    "clock.source",
+    "clock.timezone",
+    "environment",
+    "occurredAt",
+    "service",
+    "serviceVersion",
+    "source.component",
+    "source.revision"
+  ],
+  "denyFields": [
+    "authorization",
+    "body",
+    "cookie",
+    "errorMessage",
+    "headers",
+    "idempotencyKey",
+    "jobInput",
+    "jobOutput",
+    "leaseToken",
+    "modelBytes",
+    "personalData",
+    "presignedUrl",
+    "prompt",
+    "query",
+    "secretReference",
+    "telemetry",
+    "url"
+  ],
+  "cardinality": {
+    "allowedMetricLabels": [
+      "environment",
+      "eventName",
+      "method",
+      "outcome",
+      "provider",
+      "route",
+      "service",
+      "statusClass",
+      "task"
+    ],
+    "forbiddenMetricLabels": [
+      "actorDigest",
+      "attemptId",
+      "deploymentId",
+      "jobId",
+      "providerCallId",
+      "requestId",
+      "spanId",
+      "traceId"
+    ]
+  },
+  "maturity": {
+    "gatewayRequestEvents": true,
+    "jobPropagation": true,
+    "workerPropagation": true,
+    "persistentAttemptEvidence": true,
+    "providerPropagation": false,
+    "desktopEvents": false,
+    "metricsBackend": false,
+    "traceBackend": false,
+    "dashboards": false,
+    "alertRouting": false,
+    "syntheticAlertDelivery": false,
+    "managedSandbox": false,
+    "live": false,
+    "production": false
+  }
+}

@@ -135,9 +135,9 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `deploymentManifest` | 1.0.0 | major 1 |
 | `hardenedRuntime` | 1.0.0 | major 1 |
 | `hardenedRuntimePublication` | 1.0.0 | major 1 |
-| `observabilityEvent` | 1.0.0 | major 1 |
+| `observabilityEvent` | 2.0.0 | major 1, 2 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
-| `userDataExport` | 1.6.0 | major 1 |
+| `userDataExport` | 1.7.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |
 | `accountDeletionReceipt` | 2.0.0 | major 2 |
 | `dataLifecycle` | 1.0.0 | major 1 |

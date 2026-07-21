@@ -192,7 +192,7 @@ Postgres adapter schema, GitHub OAuth provider wiring, `/v1/me`, user-owned
 can use the explicit development header path; production auth is cookie/session
 based.
 
-Live locally 2026-07-16: `/v1/account/export` emits versioned user-data format 1.6.0
+Live locally 2026-07-21: `/v1/account/export` emits versioned user-data format 1.7.0
 from a repeatable owner-scoped snapshot with authenticated blob download endpoints
 and no OAuth/session/verification/provider secrets. Exact-confirmation
 `DELETE /v1/account` explicitly purges account, photo/model/generated/blob,
@@ -210,6 +210,11 @@ recovery, late-catalog tombstone reopening, and a mandatory manifest/tombstone r
 gate. Hold mutation, backup registration/restore evaluation, and deletion share
 globally ordered transaction-scoped user/object authority locks. The real Postgres state machine
 is green; live encrypted backup/restore and DR remain `OPS-005`.
+Format 1.7 adds the owner's D72 job request/trace/parent fields and per-claim
+attempt/span/outcome/code/timestamps. The new attempt dataset excludes leases and
+does not duplicate existing owner-visible job input/output, idempotency, error, or
+provider fields; it adds no raw provider content or secrets and never exposes another
+owner's rows.
 Recorder archive materialization rows are exported and deleted before their five
 private object records. The export retains the sanitized plan/object metadata;
 recorder archive admission rows and their bounded object-backed telemetry references

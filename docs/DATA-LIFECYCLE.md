@@ -74,6 +74,15 @@ immediate application-artifact deletion plus verified provider automatic expiry 
 the maximum seven-day TTL; neither replaces provider billing or backup lifecycle
 controls.
 
+D72 `job_observability_attempts` rows and the correlation columns on `jobs` share the
+same terminal-job operational class and cascade with the owning job. They retain only
+server/database-generated request, trace, span, job, and attempt identities; bounded
+attempt outcome/code; and start/finish timestamps. Lease/idempotency tokens, job
+input/output, raw exception/provider text, user content, and secrets are prohibited.
+Owner export 1.7 exposes only the owner's job correlation and attempt rows. These
+rows neither create independent retention authority nor prove that an external
+telemetry transport, backend, dashboard, or alert received an event.
+
 ## 3. Authority and state machines
 
 ### 3.1 Legal holds
@@ -204,12 +213,13 @@ User/API:
 - `GET /v1/data-lifecycle/policy` — public versioned defaults and maturity boundary;
 - `GET /v1/account/lifecycle` — authenticated account-plus-owned-object hold count
   and catalogued backup exposure, without authority/evidence details;
-- `GET /v1/account/export` — export 1.6.0 retains causal-sequence-ordered redacted
+- `GET /v1/account/export` — export 1.7.0 retains causal-sequence-ordered redacted
   account/owned-object hold history and backup-copy status and adds authoritative
   policy job/byte-free delivery metadata plus the owner's byte-free provider-call
-  attempt history plus recorder materialization/admission/verification metadata
-  without embedding retained ONNX/archive bytes, temporary/local paths, presigned
-  URLs, tokens, or provider payloads;
+  attempt history, D72 job/attempt correlation and lifecycle metadata, and recorder
+  materialization/admission/verification metadata without embedding retained ONNX/
+  archive bytes, temporary/local paths, presigned URLs, lease tokens, or provider
+  payloads;
 - `DELETE /v1/account` — exact confirmation, hold-aware receipt 2.0.0.
 
 Operator CLI (builds the gateway first):

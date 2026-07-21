@@ -27,6 +27,11 @@ const policyId = `db-policy-${suffix}`;
 const policyJobId = `db-policy-job-${suffix}`;
 const modalJobId = `db-modal-job-${suffix}`;
 const modalCallId = `fc-db-user-data-${suffix}`;
+const modalAttemptId = randomUUID();
+const modalRequestId = randomUUID();
+const modalTraceId = randomUUID().replaceAll("-", "");
+const modalSpanId = randomUUID().replaceAll("-", "").slice(0, 16);
+const modalParentSpanId = randomUUID().replaceAll("-", "").slice(0, 16);
 const courseId = `db-course-${suffix}`;
 const telemetryId = `db-telemetry-${suffix}`;
 const listingId = `db-listing-${suffix}`;
@@ -124,6 +129,21 @@ try {
     [modalJobId, user.id, modalCallId, "e".repeat(64), `billing-user-data-${suffix}`],
   );
   await pool.query(
+    `UPDATE jobs
+        SET observability_request_id = $2,
+            observability_trace_id = $3,
+            observability_parent_span_id = $4
+      WHERE id = $1`,
+    [modalJobId, modalRequestId, modalTraceId, modalParentSpanId],
+  );
+  await pool.query(
+    `INSERT INTO job_observability_attempts (
+       job_id, attempt, attempt_id, request_id, trace_id, span_id, parent_span_id,
+       outcome, started_at, finished_at
+     ) VALUES ($1, 1, $2, $3, $4, $5, $6, 'succeeded', now() - interval '1 minute', now())`,
+    [modalJobId, modalAttemptId, modalRequestId, modalTraceId, modalSpanId, modalParentSpanId],
+  );
+  await pool.query(
     `INSERT INTO job_provider_calls (
        call_id, job_id, attempt, provider, function_version, environment,
        deployment_contract_hash, status, submitted_at, completed_at, provider_cost_usd,
@@ -191,11 +211,19 @@ try {
   assert.equal(exported.data.jobProviderCalls[0].providerCostUsd, "0.25");
   assert.equal(exported.data.jobProviderCalls[0].billingReportId, `billing-user-data-${suffix}`);
   assert.ok(exported.data.jobProviderCalls[0].costReconciledAt);
+  assert.equal(exported.data.jobObservabilityAttempts.length, 1);
+  assert.equal(exported.data.jobObservabilityAttempts[0].jobId, modalJobId);
+  assert.equal(exported.data.jobObservabilityAttempts[0].attemptId, modalAttemptId);
+  assert.equal(exported.data.jobObservabilityAttempts[0].requestId, modalRequestId);
+  assert.equal(exported.data.jobObservabilityAttempts[0].traceId, modalTraceId);
+  assert.equal(exported.data.jobObservabilityAttempts[0].spanId, modalSpanId);
+  assert.equal(exported.data.jobObservabilityAttempts[0].parentSpanId, modalParentSpanId);
+  assert.equal(exported.data.jobObservabilityAttempts[0].outcome, "succeeded");
   const exportedModalJob = exported.data.jobs.find((job) => job.id === modalJobId);
   assert.equal(exportedModalJob.providerCostUsd, "0.25");
   assert.equal(exportedModalJob.providerBillingReportId, `billing-user-data-${suffix}`);
   assert.ok(exportedModalJob.providerCostReconciledAt);
-  assert.equal(exported.formatVersion, "1.6.0");
+  assert.equal(exported.formatVersion, "1.7.0");
   assert.equal(exported.data.policyArtifacts[0].jobId, policyJobId);
   assert.equal(exported.data.policyArtifacts[0].policyMetadata.delivery.objectBacked, true);
   assert.equal(exported.data.lifecycleLegalHolds.length, 0);
