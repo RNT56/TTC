@@ -102,17 +102,19 @@
       "versionRule": "registry/image identity, protected source, digest-only publication, SBOM/provenance/vulnerability evidence, independent pull, runtime verification, and managed/live nonclaims are major-version semantics"
     },
     "observabilityEvent": {
-      "current": "2.0.0",
+      "current": "3.0.0",
       "supportedMajors": [
         1,
-        2
+        2,
+        3
       ],
       "schema": "forge-observability-event",
       "versionField": "schemaVersion",
-      "schemaPath": "schema/forge-observability-event.v2.schema.json",
-      "policyPath": "infra/observability/observability-policy.v2.json",
+      "schemaPath": "schema/forge-observability-event.v3.schema.json",
+      "policyPath": "infra/observability/observability-policy.v3.json",
       "legacySchemaPaths": [
-        "schema/forge-observability-event.schema.json"
+        "schema/forge-observability-event.schema.json",
+        "schema/forge-observability-event.v2.schema.json"
       ],
       "versionRule": "event identity, trusted correlation, clock/source/version binding, field allowlist, redaction exclusions, and metric-cardinality rules are major-version semantics"
     },

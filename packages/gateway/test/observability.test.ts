@@ -14,12 +14,17 @@ import {
 import { buildServer } from "../src/server.js";
 
 const revision = "a".repeat(40);
+const deploymentId = "forge-sandbox-001";
 
 test("gateway creates trusted request and trace identities and ignores client claims", async () => {
   const observed: GatewayRequestObservation[] = [];
   const app = buildServer({
     observationSink: (event) => observed.push(event),
-    observabilityRuntime: { environment: "sandbox", sourceRevision: revision },
+    observabilityRuntime: {
+      environment: "sandbox",
+      sourceRevision: revision,
+      deploymentId,
+    },
   });
   try {
     const response = await app.inject({
@@ -43,6 +48,7 @@ test("gateway creates trusted request and trace identities and ignores client cl
     assert.equal(event.attributes.route, "/healthz");
     assert.equal(event.environment, "sandbox");
     assert.equal(event.source.revision, revision);
+    assert.equal(event.correlation.deploymentId, deploymentId);
     assert.equal(event.correlation.requestId, response.headers["x-forge-request-id"]);
     assert.equal(traceParent(event.correlation), response.headers.traceparent);
     const serialized = serializeGatewayRequestObservation(event);
@@ -64,7 +70,7 @@ test("request observations are bounded, versioned, and deny arbitrary fields", (
     runtime: gatewayObservabilityRuntimeContext({
       FORGE_DEPLOYMENT_ENVIRONMENT: "staging",
       FORGE_SOURCE_REVISION: revision,
-    }),
+    }, deploymentId),
     correlation: newGatewayRequestCorrelation(),
     method: "POST",
     route: "/v1/jobs/:id",
@@ -90,6 +96,38 @@ test("request observations are bounded, versioned, and deny arbitrary fields", (
     correlation: { ...event.correlation, actorDigest: "raw-user-id" },
   } as unknown as GatewayRequestObservation;
   assert.throws(() => serializeGatewayRequestObservation(withActor), /not implemented/);
+  const unboundDeployment = {
+    ...event,
+    correlation: { ...event.correlation, deploymentId: null },
+  };
+  assert.throws(
+    () => serializeGatewayRequestObservation(unboundDeployment),
+    /require verified deploymentId authority/,
+  );
+  const unboundControlledLab = createGatewayRequestObservation({
+    runtime: { environment: "controlled-lab", sourceRevision: revision, deploymentId: null },
+    correlation: newGatewayRequestCorrelation(),
+    method: "GET",
+    route: "/healthz",
+    statusCode: 200,
+    durationMs: 1,
+  });
+  assert.throws(
+    () => serializeGatewayRequestObservation(unboundControlledLab),
+    /require verified deploymentId authority/,
+  );
+  const forgedLocalDeployment = createGatewayRequestObservation({
+    runtime: { environment: "ci", sourceRevision: null, deploymentId },
+    correlation: newGatewayRequestCorrelation(),
+    method: "GET",
+    route: "/healthz",
+    statusCode: 200,
+    durationMs: 1,
+  });
+  assert.throws(
+    () => serializeGatewayRequestObservation(forgedLocalDeployment),
+    /cannot claim deploymentId authority/,
+  );
   const contradictoryStatus = {
     ...event,
     level: "info",
@@ -112,7 +150,7 @@ test("stdout sink emits one validated JSON line and sink failure cannot alter th
   let output = "";
   const sink = createStdoutObservationSink({ write: (chunk) => { output += chunk; } });
   const event = createGatewayRequestObservation({
-    runtime: { environment: "ci", sourceRevision: null },
+    runtime: { environment: "ci", sourceRevision: null, deploymentId: null },
     correlation: newGatewayRequestCorrelation(),
     method: "GET",
     route: "/healthz",

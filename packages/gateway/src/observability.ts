@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-export const OBSERVABILITY_EVENT_VERSION = "2.0.0";
+export const OBSERVABILITY_EVENT_VERSION = "3.0.0";
 export const OBSERVABILITY_EVENT_SCHEMA = `forge-observability-event/${OBSERVABILITY_EVENT_VERSION}`;
 export const GATEWAY_OBSERVABILITY_SERVICE_VERSION = "0.2.0";
 
@@ -19,6 +19,7 @@ export type GatewayObservationSink = (event: GatewayRequestObservation) => void;
 export interface GatewayObservabilityRuntimeContext {
   environment: ObservabilityEnvironment;
   sourceRevision: string | null;
+  deploymentId: string | null;
 }
 
 export interface GatewayRequestCorrelation {
@@ -52,7 +53,7 @@ export interface GatewayRequestObservation {
     jobId: null;
     attemptId: null;
     providerCallId: null;
-    deploymentId: null;
+    deploymentId: string | null;
   };
   attributes: {
     method: string;
@@ -68,6 +69,7 @@ type Environment = Record<string, string | undefined>;
 type ObservationOutput = { write(chunk: string): unknown };
 
 const GIT_HASH = /^[a-f0-9]{40}$/;
+const DEPLOYMENT_ID = /^[a-z0-9][a-z0-9-]{2,62}$/;
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const TRACE_ID = /^(?!0{32}$)[a-f0-9]{32}$/;
 const SPAN_ID = /^(?!0{16}$)[a-f0-9]{16}$/;
@@ -88,6 +90,7 @@ function exactKeys(value: unknown, required: readonly string[]): value is Record
 
 export function gatewayObservabilityRuntimeContext(
   env: Environment = process.env,
+  deploymentId: string | null = null,
 ): GatewayObservabilityRuntimeContext {
   const requestedEnvironment = env.FORGE_DEPLOYMENT_ENVIRONMENT;
   const environment = OBSERVABILITY_ENVIRONMENTS.includes(requestedEnvironment as ObservabilityEnvironment)
@@ -97,6 +100,7 @@ export function gatewayObservabilityRuntimeContext(
   return {
     environment,
     sourceRevision: revision && GIT_HASH.test(revision) ? revision : null,
+    deploymentId: deploymentId && DEPLOYMENT_ID.test(deploymentId) ? deploymentId : null,
   };
 }
 
@@ -156,7 +160,7 @@ export function createGatewayRequestObservation(input: {
       jobId: null,
       attemptId: null,
       providerCallId: null,
-      deploymentId: null,
+      deploymentId: input.runtime.deploymentId,
     },
     attributes: {
       method: input.method,
@@ -227,8 +231,17 @@ export function validateGatewayRequestObservation(value: unknown): string[] {
     if (typeof value.correlation.requestId !== "string" || !UUID_V4.test(value.correlation.requestId)) errors.push("requestId is invalid");
     if (typeof value.correlation.traceId !== "string" || !TRACE_ID.test(value.correlation.traceId)) errors.push("traceId is invalid");
     if (typeof value.correlation.spanId !== "string" || !SPAN_ID.test(value.correlation.spanId)) errors.push("spanId is invalid");
-    for (const field of ["parentSpanId", "actorDigest", "jobId", "attemptId", "providerCallId", "deploymentId"] as const) {
+    for (const field of ["parentSpanId", "actorDigest", "jobId", "attemptId", "providerCallId"] as const) {
       if (value.correlation[field] !== null) errors.push(`${field} is not implemented in gateway request events`);
+    }
+    const deploymentId = value.correlation.deploymentId;
+    if (deploymentId !== null && (typeof deploymentId !== "string" || !DEPLOYMENT_ID.test(deploymentId))) {
+      errors.push("deploymentId is invalid");
+    }
+    if (!["local", "ci"].includes(String(value.environment))) {
+      if (deploymentId === null) errors.push("managed gateway observations require verified deploymentId authority");
+    } else if (deploymentId !== null) {
+      errors.push("unmanaged gateway observations cannot claim deploymentId authority");
     }
   }
   if (!exactKeys(value.attributes, ["method", "route", "statusCode", "statusClass", "outcome", "durationMs"])) {

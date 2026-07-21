@@ -9,12 +9,14 @@ import { assertDeploymentBootstrap } from "../src/deployment.js";
 
 const revision = "a".repeat(40);
 const artifactDigest = "d".repeat(64);
+const deploymentId = "forge-staging-001";
 
 function fixture(environment = "staging") {
   const directory = mkdtempSync(join(tmpdir(), "forge-gateway-deployment-"));
   const path = join(directory, "manifest.json");
   const manifest = {
     schemaVersion: "forge-deployment-manifest/1.0.0",
+    deploymentId,
     environment,
     status: "active",
     source: {
@@ -53,7 +55,7 @@ function managedEnv(path: string, digest: string) {
 }
 
 test("local gateway startup needs no managed deployment authority", () => {
-  assert.doesNotThrow(() => assertDeploymentBootstrap({ NODE_ENV: "development" }));
+  assert.equal(assertDeploymentBootstrap({ NODE_ENV: "development" }), null);
   assert.throws(
     () => assertDeploymentBootstrap({ NODE_ENV: "development", FORGE_DEPLOYMENT_ENVIRONMENT: "staging" }),
     /requires NODE_ENV=production/,
@@ -63,7 +65,12 @@ test("local gateway startup needs no managed deployment authority", () => {
 test("production gateway requires an exact active manifest binding", () => {
   const value = fixture();
   try {
-    assert.doesNotThrow(() => assertDeploymentBootstrap(managedEnv(value.path, value.digest)));
+    assert.deepEqual(assertDeploymentBootstrap(managedEnv(value.path, value.digest)), {
+      deploymentId,
+      environment: "staging",
+      sourceRevision: revision,
+      manifestSha256: value.digest,
+    });
     assert.throws(
       () => assertDeploymentBootstrap(managedEnv(value.path, "b".repeat(64))),
       /digest mismatch/,
@@ -74,6 +81,7 @@ test("production gateway requires an exact active manifest binding", () => {
     );
     const bytes = Buffer.from(JSON.stringify({
       schemaVersion: "forge-deployment-manifest/1.0.0",
+      deploymentId,
       environment: "staging",
       status: "active",
       source: { revision, protectedMain: true, worktreeClean: true },
@@ -89,6 +97,19 @@ test("production gateway requires an exact active manifest binding", () => {
     writeFileSync(value.path, bytes);
     assert.throws(
       () => assertDeploymentBootstrap(managedEnv(value.path, createHash("sha256").update(bytes).digest("hex"))),
+      /does not authorize/,
+    );
+
+    const invalidDeployment = Buffer.from(JSON.stringify({
+      ...JSON.parse(bytes.toString("utf8")),
+      artifacts: [{ component: "gateway", sha256: artifactDigest }],
+      deploymentId: "INVALID_DEPLOYMENT",
+    }));
+    writeFileSync(value.path, invalidDeployment);
+    assert.throws(
+      () => assertDeploymentBootstrap(
+        managedEnv(value.path, createHash("sha256").update(invalidDeployment).digest("hex")),
+      ),
       /does not authorize/,
     );
   } finally {

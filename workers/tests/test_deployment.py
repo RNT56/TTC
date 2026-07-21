@@ -7,11 +7,13 @@ from forge_workers.deployment import assert_deployment_bootstrap
 
 REVISION = "a" * 40
 ARTIFACT_DIGEST = "d" * 64
+DEPLOYMENT_ID = "forge-staging-001"
 
 
 def fixture(tmp_path, environment="staging"):
     manifest = {
         "schemaVersion": "forge-deployment-manifest/1.0.0",
+        "deploymentId": DEPLOYMENT_ID,
         "environment": environment,
         "status": "active",
         "source": {
@@ -47,20 +49,32 @@ def managed_env(path, digest):
 
 
 def test_local_worker_startup_needs_no_managed_authority():
-    assert_deployment_bootstrap({"NODE_ENV": "development"})
+    assert assert_deployment_bootstrap({"NODE_ENV": "development"}) is None
     with pytest.raises(RuntimeError, match="requires NODE_ENV=production"):
         assert_deployment_bootstrap({"NODE_ENV": "development", "FORGE_DEPLOYMENT_ENVIRONMENT": "staging"})
 
 
 def test_production_worker_requires_exact_active_manifest_binding(tmp_path):
     path, digest = fixture(tmp_path)
-    assert_deployment_bootstrap(managed_env(path, digest))
+    context = assert_deployment_bootstrap(managed_env(path, digest))
+    assert context is not None
+    assert context.deployment_id == DEPLOYMENT_ID
+    assert context.environment == "staging"
+    assert context.source_revision == REVISION
+    assert context.manifest_sha256 == digest
     with pytest.raises(RuntimeError, match="digest mismatch"):
         assert_deployment_bootstrap(managed_env(path, "b" * 64))
     with pytest.raises(RuntimeError, match="does not authorize"):
         assert_deployment_bootstrap({**managed_env(path, digest), "FORGE_SOURCE_REVISION": "c" * 40})
     manifest = json.loads(path.read_text())
     manifest["artifacts"] = [{"component": "gateway", "sha256": ARTIFACT_DIGEST}]
+    manifest_bytes = json.dumps(manifest, separators=(",", ":")).encode()
+    path.write_bytes(manifest_bytes)
+    with pytest.raises(RuntimeError, match="does not authorize"):
+        assert_deployment_bootstrap(managed_env(path, hashlib.sha256(manifest_bytes).hexdigest()))
+
+    manifest["artifacts"] = [{"component": "workers", "sha256": ARTIFACT_DIGEST}]
+    manifest["deploymentId"] = "INVALID_DEPLOYMENT"
     manifest_bytes = json.dumps(manifest, separators=(",", ":")).encode()
     path.write_bytes(manifest_bytes)
     with pytest.raises(RuntimeError, match="does not authorize"):

@@ -444,19 +444,22 @@ versions, and worker queue kinds. It includes OpenAPI 3.1, migration/deprecation
 guidance, and synthetic examples. These are contract/fixture docs, not a hosted-live
 service claim.
 
-Validate the D71/D72 structured-event, trusted-correlation, redaction, and cardinality
+Validate the D71/D72/D73 structured-event, trusted-correlation, redaction, and cardinality
 contract with:
 
 ```bash
 pnpm verify:observability
 ```
 
-Current event major 2 exercises the Gateway request-completion producer, trusted
-request-to-job persistence, database-owned D38 attempt identities/outcomes, and
-bounded Python worker start/completion producers at contract/fixture maturity. The
-frozen major-1 Gateway schema remains readable. This does not prove provider,
-deployment, actor, or Desktop propagation, a telemetry backend, dashboards, alert
-delivery, managed deployment, or live monitoring.
+Current event major 3 exercises the Gateway request-completion producer, trusted
+request-to-job persistence, database-owned D38 attempt identities/outcomes, bounded
+Python worker start/completion producers, exact active-D68 deployment correlation,
+and the provider-call ID already persisted for a Modal `train.policy` completion at
+contract/fixture maturity. Frozen majors 1 and 2 remain readable. The provider and
+deployment IDs are correlation only and are forbidden metric labels. This does not
+prove other provider/job families, actor or Desktop propagation, provider delivery,
+deployment health, a telemetry backend, dashboards, alert delivery, a managed
+deployment, or live monitoring.
 
 Inspect the eight external-acceptance milestone contracts and generated evidence
 templates with:

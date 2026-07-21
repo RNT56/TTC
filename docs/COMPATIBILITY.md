@@ -29,7 +29,7 @@ package to adopt that same number.
 | deployment manifest | 1.0.0 | `forge-deployment-manifest` binds environment, protected source, immutable component artifacts, non-secret configuration, versioned environment-specific secret references, accountable ownership, evidence gates, direct promotion, and authority ceilings; changing any meaning is major | major 1; managed gateway/worker startup accepts only the current major |
 | hardened runtime | 1.0.0 | `forge-hardened-runtime` binds reviewed base images, application targets and numeric identities, writable paths, TLS/private networking, file-mounted secrets, probes, least privilege, resource limits, graceful termination, and evidence nonclaims; changing any meaning is major | major 1; the checked profile is contract/fixture evidence until a protected artifact is installed and rolled back in a managed sandbox |
 | hardened runtime publication | 1.0.0 | `forge-hardened-runtime-publication` binds protected source/tree, digest-only GHCR identities, registry manifest/config digests, SPDX/build/scan records, registry-attached GitHub provenance, independent pull/runtime verification, and explicit managed/live nonclaims; changing any meaning is major | major 1; publication proves immutable registry artifacts only and cannot prove a managed sandbox, rollback, live service, or production |
-| observability event | 2.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | majors 1 and 2; v1 is the frozen Gateway-only reader, while v2 adds persisted job/D38-attempt correlation and worker lifecycle events at contract/fixture maturity |
+| observability event | 3.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | majors 1, 2, and 3; v1 is the frozen Gateway-only reader, v2 adds persisted job/D38-attempt correlation and worker lifecycle events, and v3 adds active-D68 deployment correlation plus persisted Modal `train.policy` call correlation at contract/fixture maturity |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.7.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
@@ -68,8 +68,8 @@ database history and uses an already admitted artifact/manifest pair.
 Observability event 1.0.0 remains frozen in
 [`forge-observability-event.schema.json`](../schema/forge-observability-event.schema.json)
 with [`observability-policy.v1.json`](../infra/observability/observability-policy.v1.json).
-It reads only the D71 `gateway.request.completed` producer. Current event 2.0.0 is
-defined by
+It reads only the D71 `gateway.request.completed` producer. Event 2.0.0 remains
+frozen in
 [`forge-observability-event.v2.schema.json`](../schema/forge-observability-event.v2.schema.json)
 and [`observability-policy.v2.json`](../infra/observability/observability-policy.v2.json).
 D72 is a deliberate major because it adds database-owned job IDs, UUIDv4 attempt IDs,
@@ -79,9 +79,20 @@ headers remain non-authoritative. Migration 0028 stores request/trace/parent con
 on jobs, creates one non-secret row per D38 claim, and records success, retry, failure,
 cancellation, or expiry without lease tokens, job payloads, error text, or provider
 content. Historical/non-request jobs receive a new trace root but no fabricated
-request or parent span. Unknown fields and authority contradictions are refused before
-serialization. The stdout JSON lines and persistence rows prove neither transport
-delivery nor a metrics/trace backend, dashboard, alert, managed environment, live
+request or parent span.
+
+Current event 3.0.0 is defined by
+[`forge-observability-event.v3.schema.json`](../schema/forge-observability-event.v3.schema.json)
+and [`observability-policy.v3.json`](../infra/observability/observability-policy.v3.json).
+D73 adds only two authority-bounded correlations. Managed Gateway and worker events
+carry the deployment ID returned by successful verification of the exact active D68
+manifest; local and CI events require null. A worker completion may carry the
+provider-call ID already persisted transactionally for the same Modal
+`train.policy` job before the wait/recovery path; worker-start events, other providers,
+and other job kinds require null. Neither ID may become a metric label. Unknown fields
+and authority contradictions are refused before serialization. The stdout JSON lines
+and persistence rows prove neither provider delivery, deployment health, transport
+delivery, nor a metrics/trace backend, dashboard, alert, managed environment, live
 service, or production operation.
 
 `GET /v1/account/export` emits user-data export 1.7.0. It includes explicit
@@ -182,6 +193,15 @@ Readers that support only major 1 must reject v2 events, while current readers r
 the frozen v1 schema for historical Gateway JSON lines. Removing correlation fields,
 changing span-parent meaning, or changing attempt outcomes requires another event
 major and a forward migration.
+
+D73 requires no database migration: it consumes the already active D68 deployment
+manifest authority and the D46 provider-call ID already persisted on the job. A
+rollback may run v2 producers against the unchanged database and manifests; those
+producers omit the new correlations, and operators must not infer deployment or
+provider failure from their absence. Readers supporting only majors 1 or 2 must
+reject v3 events. Current readers retain both frozen schemas for historical lines;
+removing either correlation, broadening provider/job applicability, or changing its
+authority source requires another event major.
 
 QA-007 is a patch-level strictness correction, not a format-version change. Valid
 ModelSpec patches, replay major 1 plus the deprecated `replay.v1` alias, EnvSpec

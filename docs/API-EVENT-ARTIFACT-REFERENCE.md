@@ -135,7 +135,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `deploymentManifest` | 1.0.0 | major 1 |
 | `hardenedRuntime` | 1.0.0 | major 1 |
 | `hardenedRuntimePublication` | 1.0.0 | major 1 |
-| `observabilityEvent` | 2.0.0 | major 1, 2 |
+| `observabilityEvent` | 3.0.0 | major 1, 2, 3 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
 | `userDataExport` | 1.7.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |

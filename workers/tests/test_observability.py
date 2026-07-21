@@ -2,7 +2,9 @@ import io
 import json
 from pathlib import Path
 
+import pytest
 from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema.exceptions import ValidationError
 
 from forge_workers.observability import (
     OBSERVABILITY_EVENT_SCHEMA,
@@ -22,6 +24,7 @@ ATTEMPT_ID = "00000000-0000-4000-8000-000000000002"
 TRACE_ID = "b" * 32
 PARENT_SPAN_ID = "c" * 16
 SPAN_ID = "d" * 16
+DEPLOYMENT_ID = "forge-sandbox-001"
 
 
 def observable_job(**overrides):
@@ -45,12 +48,16 @@ def observable_job(**overrides):
 
 def schema_validator():
     root = Path(__file__).resolve().parents[2]
-    schema = json.loads((root / "schema" / "forge-observability-event.v2.schema.json").read_text())
+    schema = json.loads((root / "schema" / "forge-observability-event.v3.schema.json").read_text())
     return Draft202012Validator(schema, format_checker=FormatChecker())
 
 
-def test_worker_attempt_events_match_v2_schema_and_exclude_sensitive_content():
-    runtime = WorkerObservabilityRuntimeContext(environment="sandbox", source_revision=REVISION)
+def test_worker_attempt_events_match_v3_schema_and_exclude_sensitive_content():
+    runtime = WorkerObservabilityRuntimeContext(
+        environment="sandbox",
+        source_revision=REVISION,
+        deployment_id=DEPLOYMENT_ID,
+    )
     job = observable_job()
     started = create_worker_attempt_started_observation(job, runtime)
     completed = create_worker_attempt_completed_observation(
@@ -64,6 +71,7 @@ def test_worker_attempt_events_match_v2_schema_and_exclude_sensitive_content():
 
     assert started["schemaVersion"] == OBSERVABILITY_EVENT_SCHEMA
     assert completed["attributes"]["durationMs"] == 12.346
+    assert started["correlation"]["deploymentId"] == DEPLOYMENT_ID
     assert validate_worker_observation(started) == []
     assert validate_worker_observation(completed) == []
     schema_validator().validate(started)
@@ -81,7 +89,11 @@ def test_worker_attempt_events_match_v2_schema_and_exclude_sensitive_content():
 
 
 def test_worker_event_validation_refuses_extensions_and_authority_contradictions():
-    runtime = WorkerObservabilityRuntimeContext(environment="sandbox", source_revision=REVISION)
+    runtime = WorkerObservabilityRuntimeContext(
+        environment="sandbox",
+        source_revision=REVISION,
+        deployment_id=DEPLOYMENT_ID,
+    )
     event = create_worker_attempt_completed_observation(
         observable_job(),
         runtime,
@@ -109,6 +121,65 @@ def test_worker_event_validation_refuses_extensions_and_authority_contradictions
     invalid_calendar = json.loads(json.dumps(event))
     invalid_calendar["occurredAt"] = "2026-02-31T13:00:00.000Z"
     assert "bounded UTC timestamp" in serialize_errors(invalid_calendar)
+
+    unbound_deployment = json.loads(json.dumps(event))
+    unbound_deployment["correlation"]["deploymentId"] = None
+    assert "verified deploymentId authority" in serialize_errors(unbound_deployment)
+    with pytest.raises(ValidationError):
+        schema_validator().validate(unbound_deployment)
+
+    forged_local_deployment = json.loads(json.dumps(event))
+    forged_local_deployment["environment"] = "ci"
+    forged_local_deployment["source"]["revision"] = None
+    assert "cannot claim deploymentId authority" in serialize_errors(
+        forged_local_deployment
+    )
+    with pytest.raises(ValidationError):
+        schema_validator().validate(forged_local_deployment)
+
+
+def test_worker_completion_links_only_persisted_modal_training_calls():
+    runtime = WorkerObservabilityRuntimeContext(
+        environment="sandbox",
+        source_revision=REVISION,
+        deployment_id=DEPLOYMENT_ID,
+    )
+    job = observable_job(
+        task="train.policy",
+        provider="modal",
+        provider_call_id="fc-modal-call-001",
+    )
+    started = create_worker_attempt_started_observation(job, runtime)
+    completed = create_worker_attempt_completed_observation(
+        job,
+        runtime,
+        outcome="succeeded",
+        duration_ms=25,
+    )
+    assert started["correlation"]["providerCallId"] is None
+    assert completed["correlation"]["providerCallId"] == "fc-modal-call-001"
+    assert validate_worker_observation(completed) == []
+    schema_validator().validate(completed)
+
+    wrong_boundary = create_worker_attempt_completed_observation(
+        observable_job(provider_call_id="fc-modal-call-001"),
+        runtime,
+        outcome="succeeded",
+        duration_ms=25,
+    )
+    assert "supported only for persisted Modal train.policy calls" in serialize_errors(
+        wrong_boundary
+    )
+    with pytest.raises(ValidationError):
+        schema_validator().validate(wrong_boundary)
+
+    started_with_provider = json.loads(json.dumps(started))
+    started_with_provider["correlation"]["providerCallId"] = "fc-modal-call-001"
+    assert "started events cannot claim providerCallId" in serialize_errors(
+        started_with_provider
+    )
+    with pytest.raises(ValidationError):
+        schema_validator().validate(started_with_provider)
 
 
 def serialize_errors(event):

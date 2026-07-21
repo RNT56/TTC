@@ -58,8 +58,10 @@ Read in this order for every non-trivial session:
    `infra/deployment/hardened-runtime.v1.json` and D70 digest-only registry
    publication authority lives in `infra/deployment/hardened-registry.v1.json`; D71
    event/redaction/cardinality history remains in
-   `infra/observability/observability-policy.v1.json`, while current D72 job/attempt/
-   worker authority lives in `infra/observability/observability-policy.v2.json`.
+   `infra/observability/observability-policy.v1.json`, frozen D72 job/attempt/worker
+   authority lives in `infra/observability/observability-policy.v2.json`, and current
+   D73 active-D68 deployment plus persisted Modal `train.policy` call correlation
+   lives in `infra/observability/observability-policy.v3.json`.
 16. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
    persisted-data compatibility, backup impact, or database recovery behavior.
 17. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
@@ -100,8 +102,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is dependency-remediation PR #138 at
-  `8aac400`, while the D72/OPS-003 capability remains anchored at implementation
+  latest verified protected descendant is evidence PR #139 at `a02f42b`, while the
+  D72/OPS-003 capability remains anchored at implementation
   PR #135/`a17ff74`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
@@ -167,6 +169,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `8aac400` passed post-merge CI `29863425902` and security `29863425966` with every
   compatible Fastify/AJV edge converged on `fast-uri` 3.1.4. This restores the
   protected security baseline without advancing D72 beyond contract/fixture maturity.
+  Evidence PR #139 exact head `ba5aefe` passed all twelve checks in CI
+  `29864136319` and security `29864136746`; tree-identical protected squash
+  `a02f42b` passed post-merge CI `29864776606` and security `29864776469`. D73's
+  event-major-3 active-D68 deployment and persisted Modal `train.policy` call
+  correlation is currently an unprotected candidate; it grants no provider-delivery,
+  deployment-health, backend, managed, live, or production authority before or after
+  repository protection.
+  All 48 local gates pass with four D73 policy tests, 24 compatibility surfaces, 85
+  Gateway tests, all 259 fully enabled worker tests, Brief-25 25/25, and the unchanged
+  200/97/two-Pareto/two-held batch. A disposable isolated Postgres/pgvector database
+  passes all 28 migrations, 27 populated predecessors, the Modal provider-call
+  persistence handoff, all remaining data assertions, and all 12 production-browser
+  flows. These local results do not advance the protected boundary.
   D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
@@ -784,9 +799,9 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Admission | `crates/forge-validate` | The validator is sovereign; fix artifacts, never weaken checks to green them |
 | Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction; support tiers and accessibility acceptance are owned by `docs/BROWSER-SUPPORT.md` |
 | API/data/platform | `packages/gateway`, `infra/migrations`, `contracts/documentation.json` | Validate writes, scope ownership, fail closed, preserve audit history; registered routes and TypeBox request schemas generate the versioned API/event/artifact reference without hand-edited drift; policy reads cross-check owner/job/model/scorecard/tensor/lineage/object bytes |
-| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only; D72 creates database-owned attempt/span identity and bounded lifecycle events without coupling telemetry delivery to authority |
+| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only; D72 creates database-owned attempt/span identity and bounded lifecycle events without coupling telemetry delivery to authority; D73 permits only the already persisted Modal `train.policy` call ID on that job's completion |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
-| Deployment/operations | `infra/deployment`, `infra/observability`, `infra/docker`, `infra/compose.hardened.json`, `scripts/deployment-policy.mjs`, `scripts/hardened-runtime.mjs`, `scripts/hardened-runtime-registry.mjs`, `scripts/observability-policy.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion, D69 image/runtime, D70 digest-only registry publication, D71 Gateway event boundary, and D72 request/job/D38-attempt/worker correlation authority; build once, exact artifacts, file-mounted secrets staged outside the checkout as `root:10999`/`0440` for the single-host profile (Compose service-level `uid`/`gid`/`mode` are unsupported here), private topology, least privilege, forward-only migrations, allowlisted telemetry only, no managed/live claim from contract, image publication, database rows, local logs, or CI evidence |
+| Deployment/operations | `infra/deployment`, `infra/observability`, `infra/docker`, `infra/compose.hardened.json`, `scripts/deployment-policy.mjs`, `scripts/hardened-runtime.mjs`, `scripts/hardened-runtime-registry.mjs`, `scripts/observability-policy.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion, D69 image/runtime, D70 digest-only registry publication, D71 Gateway event boundary, D72 request/job/D38-attempt/worker correlation, and D73 exact active-manifest deployment plus persisted Modal training-call correlation authority; build once, exact artifacts, file-mounted secrets staged outside the checkout as `root:10999`/`0440` for the single-host profile (Compose service-level `uid`/`gid`/`mode` are unsupported here), private topology, least privilege, forward-only migrations, allowlisted telemetry only, no managed/live claim from contract, image publication, database rows, local logs, or CI evidence |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
 

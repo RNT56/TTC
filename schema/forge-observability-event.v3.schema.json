@@ -1,0 +1,329 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgedttc.dev/schema/forge-observability-event/3.0.0",
+  "title": "ForgedTTC observability event v3",
+  "description": "D73 deny-by-default Gateway and worker events with active-D68 deployment correlation and persisted Modal train.policy call correlation. Lease tokens, payloads, headers, query strings, prompts, personal data, secret references, URLs, provider/error text, telemetry, and model bytes are outside the format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "occurredAt",
+    "clock",
+    "level",
+    "eventName",
+    "service",
+    "serviceVersion",
+    "environment",
+    "source",
+    "correlation",
+    "attributes"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "forge-observability-event/3.0.0" },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+      "maxLength": 24
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "timezone"],
+      "properties": {
+        "source": { "const": "system" },
+        "timezone": { "const": "UTC" }
+      }
+    },
+    "level": { "enum": ["info", "warn", "error"] },
+    "eventName": {
+      "enum": [
+        "gateway.request.completed",
+        "worker.job.attempt.started",
+        "worker.job.attempt.completed"
+      ]
+    },
+    "service": { "enum": ["gateway", "workers"] },
+    "serviceVersion": { "const": "0.2.0" },
+    "environment": {
+      "enum": ["local", "ci", "sandbox", "staging", "production", "controlled-lab"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component", "revision"],
+      "properties": {
+        "component": { "enum": ["packages/gateway", "workers/forge_workers"] },
+        "revision": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestId",
+        "traceId",
+        "spanId",
+        "parentSpanId",
+        "actorDigest",
+        "jobId",
+        "attemptId",
+        "providerCallId",
+        "deploymentId"
+      ],
+      "properties": {
+        "requestId": {
+          "oneOf": [
+            { "$ref": "#/$defs/uuidV4" },
+            { "type": "null" }
+          ]
+        },
+        "traceId": { "$ref": "#/$defs/traceId" },
+        "spanId": { "$ref": "#/$defs/spanId" },
+        "parentSpanId": {
+          "oneOf": [
+            { "$ref": "#/$defs/spanId" },
+            { "type": "null" }
+          ]
+        },
+        "actorDigest": { "type": "null" },
+        "jobId": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+              "maxLength": 128
+            },
+            { "type": "null" }
+          ]
+        },
+        "attemptId": {
+          "oneOf": [
+            { "$ref": "#/$defs/uuidV4" },
+            { "type": "null" }
+          ]
+        },
+        "providerCallId": {
+          "oneOf": [
+            { "$ref": "#/$defs/providerCallId" },
+            { "type": "null" }
+          ]
+        },
+        "deploymentId": {
+          "oneOf": [
+            { "$ref": "#/$defs/deploymentId" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "attributes": {
+      "oneOf": [
+        { "$ref": "#/$defs/gatewayRequestAttributes" },
+        { "$ref": "#/$defs/workerAttemptStartedAttributes" },
+        { "$ref": "#/$defs/workerAttemptCompletedAttributes" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "environment": { "enum": ["local", "ci"] } } },
+      "then": {
+        "properties": {
+          "correlation": { "properties": { "deploymentId": { "type": "null" } } }
+        }
+      },
+      "else": {
+        "properties": {
+          "correlation": { "properties": { "deploymentId": { "$ref": "#/$defs/deploymentId" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "eventName": { "const": "gateway.request.completed" } } },
+      "then": {
+        "properties": {
+          "service": { "const": "gateway" },
+          "source": { "properties": { "component": { "const": "packages/gateway" } } },
+          "correlation": {
+            "properties": {
+              "requestId": { "$ref": "#/$defs/uuidV4" },
+              "parentSpanId": { "type": "null" },
+              "jobId": { "type": "null" },
+              "attemptId": { "type": "null" },
+              "providerCallId": { "type": "null" }
+            }
+          },
+          "attributes": { "$ref": "#/$defs/gatewayRequestAttributes" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventName": { "enum": ["worker.job.attempt.started", "worker.job.attempt.completed"] }
+        }
+      },
+      "then": {
+        "properties": {
+          "service": { "const": "workers" },
+          "source": { "properties": { "component": { "const": "workers/forge_workers" } } },
+          "correlation": {
+            "properties": {
+              "jobId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+                "maxLength": 128
+              },
+              "attemptId": { "$ref": "#/$defs/uuidV4" }
+            },
+            "oneOf": [
+              {
+                "properties": {
+                  "requestId": { "$ref": "#/$defs/uuidV4" },
+                  "parentSpanId": { "$ref": "#/$defs/spanId" }
+                }
+              },
+              {
+                "properties": {
+                  "requestId": { "type": "null" },
+                  "parentSpanId": { "type": "null" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "eventName": { "const": "worker.job.attempt.started" } } },
+      "then": {
+        "properties": {
+          "level": { "const": "info" },
+          "correlation": { "properties": { "providerCallId": { "type": "null" } } },
+          "attributes": { "$ref": "#/$defs/workerAttemptStartedAttributes" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "eventName": { "const": "worker.job.attempt.completed" } } },
+      "then": {
+        "properties": {
+          "attributes": { "$ref": "#/$defs/workerAttemptCompletedAttributes" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "correlation": {
+            "properties": { "providerCallId": { "$ref": "#/$defs/providerCallId" } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "eventName": { "const": "worker.job.attempt.completed" },
+          "attributes": {
+            "properties": {
+              "task": { "const": "train.policy" },
+              "provider": { "const": "modal" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "uuidV4": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "traceId": { "type": "string", "pattern": "^(?!0{32}$)[a-f0-9]{32}$" },
+    "spanId": { "type": "string", "pattern": "^(?!0{16}$)[a-f0-9]{16}$" },
+    "providerCallId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,199}$",
+      "maxLength": 200
+    },
+    "deploymentId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,62}$",
+      "maxLength": 63
+    },
+    "task": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{0,79}$",
+      "maxLength": 80
+    },
+    "provider": { "enum": ["local", "modal"] },
+    "gatewayRequestAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "route", "statusCode", "statusClass", "outcome", "durationMs"],
+      "properties": {
+        "method": { "enum": ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"] },
+        "route": {
+          "type": "string",
+          "pattern": "^(?:unmatched|/[A-Za-z0-9_/:.*-]{0,255})$",
+          "maxLength": 256
+        },
+        "statusCode": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "statusClass": { "enum": ["1xx", "2xx", "3xx", "4xx", "5xx"] },
+        "outcome": { "enum": ["success", "client-error", "server-error"] },
+        "durationMs": { "type": "number", "minimum": 0, "maximum": 3600000 }
+      }
+    },
+    "workerAttemptStartedAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "provider", "attempt"],
+      "properties": {
+        "task": { "$ref": "#/$defs/task" },
+        "provider": { "$ref": "#/$defs/provider" },
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 10 }
+      }
+    },
+    "workerAttemptCompletedAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task",
+        "provider",
+        "attempt",
+        "outcome",
+        "durationMs",
+        "errorCode",
+        "retryAfterSeconds"
+      ],
+      "properties": {
+        "task": { "$ref": "#/$defs/task" },
+        "provider": { "$ref": "#/$defs/provider" },
+        "attempt": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "outcome": { "enum": ["succeeded", "retry-scheduled", "failed", "discarded"] },
+        "durationMs": { "type": "number", "minimum": 0, "maximum": 28800000 },
+        "errorCode": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+              "maxLength": 80
+            },
+            { "type": "null" }
+          ]
+        },
+        "retryAfterSeconds": {
+          "oneOf": [
+            { "type": "number", "minimum": 0, "maximum": 900 },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

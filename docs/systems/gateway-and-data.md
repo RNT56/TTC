@@ -402,7 +402,7 @@ about results, not produce different ones), not as the only place truth exists.
 
 ## 8. Observability & ops
 
-The deterministic Gateway keeps Fastify's free-form logger disabled. D71/D72 instead
+The deterministic Gateway keeps Fastify's free-form logger disabled. D71/D72/D73 instead
 emit one exact validated request-completion line and persist the server-owned UUIDv4/
 W3C request root on every job created by that request. Direct or historical jobs use
 a new database trace root with null request/parent. Migration 0028 also owns one
@@ -410,6 +410,12 @@ non-secret row per D38 claim; Gateway cancellation closes a running attempt with
 making telemetry persistence a prerequisite for job authority. Raw authorization/
 cookies, bodies, query values, idempotency keys, lease tokens, errors/provider output,
 presigned URLs, and private content must never be observability fields.
+
+In a managed environment, D73 permits the Gateway event to carry only the bounded
+deployment ID returned by successful verification of the exact active D68 manifest
+bytes, digest, environment, protected source, status, and Gateway artifact/config.
+Local and CI events require null. The ID is correlation only, is forbidden as a
+metric label, and proves neither deployment health nor managed/live operation.
 
 Production trace/error tooling, proxy/provider secret-seeded inspection, retention,
 backends, dashboards, and alert delivery remain `OPS-*`. Docker Compose on one

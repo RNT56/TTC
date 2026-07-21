@@ -96,11 +96,13 @@
       "paths": [
         "infra/observability/observability-policy.v1.json",
         "infra/observability/observability-policy.v2.json",
+        "infra/observability/observability-policy.v3.json",
         "schema/forge-observability-event.schema.json",
-        "schema/forge-observability-event.v2.schema.json"
+        "schema/forge-observability-event.v2.schema.json",
+        "schema/forge-observability-event.v3.schema.json"
       ],
       "owner": "platform, gateway, operations, and security maintainers",
-      "sourceOfTruth": "D71/D72 trusted request, job, and attempt correlation; structured-event allowlists; redaction exclusion; cardinality; and maturity-nonclaim semantics",
+      "sourceOfTruth": "D71/D72/D73 trusted request, job, attempt, active-D68 deployment, and persisted Modal training-call correlation; structured-event allowlists; redaction exclusion; cardinality; and maturity-nonclaim semantics",
       "regenerate": "Edit deliberately with compatibility, privacy, security, runtime, and operations review plus a golden update record; never derive safe fields from captured payloads",
       "verify": [
         "pnpm verify:observability",

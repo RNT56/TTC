@@ -18,6 +18,35 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Bind provider and deployment observability authority
+**Session:** Codex agent · branch `codex/ops003-provider-deployment-correlation` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Implemented the unprotected D73/event-major-3 candidate without adding a
+migration or external call. Managed Gateway/worker events receive `deploymentId`
+only from the exact active-D68 startup result; local/CI events refuse it. A worker
+completion receives `providerCallId` only after the same Modal `train.policy` job
+persisted that FunctionCall transactionally under its current lease; started and
+other provider/job events refuse it. Frozen v1/v2 readers remain registered, both IDs
+are forbidden metric labels, and all downstream/live maturity claims remain false.
+All 48 local gates pass with four D73 policy tests, 24 compatibility surfaces, 85
+Gateway tests, 259 workers, Brief-25 25/25, and unchanged co-design results. A
+disposable isolated Postgres/pgvector database passes all 28 migrations, 27 populated
+predecessors, the strengthened Modal handoff assertion, all remaining data-plane
+checks, and all 12 production-browser flows.
+**Changed:** Gateway and worker deployment bootstrap contexts and event producers;
+Modal persistence handoff; event v3 schema/policy/compatibility/golden registry;
+focused and database assertions; generated contract docs; operations, security,
+system, roadmap, state, task, best-practice, and agent-entry documentation.
+**Decisions:** Added D73 for exact active-manifest and persisted Modal-call
+correlation; the next free regular ID is D74.
+**Next:** Commit the exact candidate, open its reviewed PR, require every exact-head
+CI/security check, merge only a tree-identical result, and verify protected-main
+post-merge evidence before reconciling D73 status.
+**Blockers:** None for repository protection. OPS-002 still lacks a real managed
+sandbox install/upgrade/rollback exercise; provider delivery, deployment health,
+other providers/jobs, actor/Desktop, backend, dashboard, alert, managed, live,
+production, and external-beta evidence remain open.
+
 ## 2026-07-21 — Restore the protected security baseline
 **Session:** Codex agent · branch `codex/sec-fast-uri-evidence` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

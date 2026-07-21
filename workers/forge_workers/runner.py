@@ -19,7 +19,7 @@ from forge_workers.runtime_secrets import load_managed_runtime_secrets
 
 def main() -> None:
     load_managed_runtime_secrets()
-    assert_deployment_bootstrap()
+    deployment = assert_deployment_bootstrap()
     register_all_handlers()
     print(f"forge-workers ready: {', '.join(registry.tasks())}", file=sys.stderr, flush=True)
     database_url = os.environ.get("DATABASE_URL")
@@ -40,7 +40,9 @@ def main() -> None:
             poll_seconds=float(os.environ.get("FORGE_WORKER_POLL_SECONDS", "1")),
             should_stop=lambda: not running,
             observation_sink=create_stdout_worker_observation_sink(),
-            observability_runtime=worker_observability_runtime_context(),
+            observability_runtime=worker_observability_runtime_context(
+                deployment_id=deployment.deployment_id if deployment is not None else None,
+            ),
         )
         return
 

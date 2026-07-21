@@ -525,6 +525,7 @@ class PostgresQueueStore:
                 )
         if row is None:
             raise RuntimeError("provider call lost its current job lease authority")
+        job.provider_call_id = call_id
 
     def _job_cancellation_requested(self, job: Job) -> bool:
         if not job.lease_token:

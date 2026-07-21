@@ -10,8 +10,8 @@ at contract/fixture maturity, while credentialed GPU/provider proof remains gate
 (fixture-first expansion), D36 (native ETL boundary), D38 (fault-bounded queue), D41
 (task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
 trainer authority), D45 (offline source authority), D46 (Modal deployment authority),
-D47 (MJX decision authority), D71 (telemetry boundary), and D72 (job/attempt
-correlation)
+D47 (MJX decision authority), D71 (telemetry boundary), D72 (job/attempt
+correlation), and D73 (provider/deployment correlation)
 
 ## 1. Purpose
 
@@ -49,7 +49,14 @@ stdout is a separately validated 4 KiB JSON-line stream; readiness and connectio
 messages use stderr. Lease tokens, payloads, raw exceptions/provider text, outputs,
 personal data, and secrets are excluded, and event-sink failure never changes queue
 or artifact authority. Direct and historical jobs carry a new trace root with null
-request/parent; they do not gain fabricated request continuity.
+request/parent; they do not gain fabricated request continuity. Under D73, a managed
+worker event carries only the bounded deployment ID returned by successful
+verification of the exact active D68 manifest; local and CI events require null. A
+worker completion carries `providerCallId` only when the same claimed Modal
+`train.policy` job already persisted that FunctionCall ID transactionally before its
+wait/recovery path. The started event and every other provider/job family require
+null. These values are correlation only, are forbidden metric labels, and prove
+neither provider delivery nor deployment health.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and
@@ -338,6 +345,9 @@ Modal API access, and no function secrets. The submitting worker requires the ex
 environment/function-version/source/contract hash, compiles the Rust training bundle
 locally, projects only reviewed training controls plus the bundle across the provider
 boundary, records the FunctionCall before waiting, and rejects result/device drift.
+The successful persistence also updates the in-memory claimed job used by D73 so its
+terminal worker event can carry that exact call ID; the start event remains null and
+no provider response or input enters telemetry.
 Arbitrary fields, model snapshots, and credential-shaped extras never enter provider
 transport; an ambiguous persisted call reattaches by ID instead of spawning a replacement.
 `codesign.evaluate`, photoscan, and offline-training profile presence does not inherit

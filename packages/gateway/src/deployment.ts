@@ -14,10 +14,18 @@ export const DEPLOYMENT_ENVIRONMENTS = [
 const GATEWAY_ENVIRONMENTS = new Set(["sandbox", "staging", "production"]);
 const GIT_HASH = /^[a-f0-9]{40}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
+const DEPLOYMENT_ID = /^[a-z0-9][a-z0-9-]{2,62}$/;
 const MAX_MANIFEST_BYTES = 1024 * 1024;
 
 type Environment = Record<string, string | undefined>;
 type JsonObject = Record<string, unknown>;
+
+export interface DeploymentBootstrapContext {
+  deploymentId: string;
+  environment: "sandbox" | "staging" | "production";
+  sourceRevision: string;
+  manifestSha256: string;
+}
 
 function object(value: unknown, label: string): JsonObject {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -41,14 +49,16 @@ function parseManifest(bytes: Buffer): JsonObject {
   }
 }
 
-export function assertDeploymentBootstrap(env: Environment = process.env): void {
+export function assertDeploymentBootstrap(
+  env: Environment = process.env,
+): DeploymentBootstrapContext | null {
   const nodeEnvironment = env.NODE_ENV;
   const deploymentEnvironment = env.FORGE_DEPLOYMENT_ENVIRONMENT;
   if (nodeEnvironment !== "production") {
     if (deploymentEnvironment && GATEWAY_ENVIRONMENTS.has(deploymentEnvironment)) {
       throw new Error("managed gateway environment requires NODE_ENV=production");
     }
-    return;
+    return null;
   }
   if (!deploymentEnvironment || !GATEWAY_ENVIRONMENTS.has(deploymentEnvironment)) {
     throw new Error("production gateway requires sandbox, staging, or production deployment environment");
@@ -75,12 +85,15 @@ export function assertDeploymentBootstrap(env: Environment = process.env): void 
   const actualDigest = createHash("sha256").update(bytes).digest("hex");
   if (actualDigest !== expectedDigest) throw new Error("deployment manifest digest mismatch");
   const manifest = parseManifest(bytes);
+  const deploymentId = manifest.deploymentId;
   const source = object(manifest.source, "deployment manifest source");
   const configuration = object(manifest.configuration, "deployment manifest configuration");
   const values = object(configuration.values, "deployment manifest configuration values");
   const artifacts = manifest.artifacts;
   if (
     manifest.schemaVersion !== `forge-deployment-manifest/${DEPLOYMENT_MANIFEST_VERSION}` ||
+    typeof deploymentId !== "string" ||
+    !DEPLOYMENT_ID.test(deploymentId) ||
     manifest.status !== "active" ||
     manifest.environment !== deploymentEnvironment ||
     source.revision !== sourceRevision ||
@@ -101,4 +114,10 @@ export function assertDeploymentBootstrap(env: Environment = process.env): void 
   ) {
     throw new Error("deployment manifest does not authorize this gateway process");
   }
+  return {
+    deploymentId,
+    environment: deploymentEnvironment as DeploymentBootstrapContext["environment"],
+    sourceRevision,
+    manifestSha256: actualDigest,
+  };
 }
