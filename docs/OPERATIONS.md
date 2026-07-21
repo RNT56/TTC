@@ -21,7 +21,7 @@ Delivery-batch schema: [`schema/forge-observability-delivery-batch.schema.json`]
 
 Frozen policies: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json), [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74 is an unprotected local contract/fixture candidate for bounded loopback delivery only; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -62,13 +62,16 @@ head `283b43a` passed all twelve checks in CI `29868001992` and security
 only, and the provider/deployment/backend/live nonclaims in the maturity banner remain
 binding.
 
-The unprotected D74 candidate leaves event major 3 frozen and adds a separate
+The protected D74 slice leaves event major 3 frozen and adds a separate
 delivery-batch major plus executable loopback-only fixture adapter. Focused checks
 pass eleven D73/D74 policy and adversarial tests. All 48 required local gates are
 green under Python 3.12.13 with 25 compatibility surfaces, 21 golden families, 39
 Studio tests, 85 Gateway tests, 259 worker tests, Brief-25 25/25, parity, packaging,
-training/MJX, and the unchanged 200/97/two/two co-design batch. This is not yet
-protected evidence and proves neither external delivery nor persistent custody.
+training/MJX, and the unchanged 200/97/two/two co-design batch. PR #142 exact head
+`c7b4035` passed all twelve checks in CI `29872947817` and security `29872947795`;
+tree-identical protected squash `7abcb56` passed post-merge CI `29873512358` and
+security `29873512339`. This is protected repository contract/fixture evidence only
+and proves neither external delivery nor persistent custody.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -507,7 +510,7 @@ Current D71/D72/D73/D74 slice status:
    forbidden metric labels. Exact PR/protected-main/post-merge evidence passes, but
    this proves neither provider delivery, deployment health, other provider families,
    actor/Desktop continuity, nor managed/live use.
-4. **Delivery transport and custody — unprotected D74 contract/fixture candidate.**
+4. **Delivery transport and custody — protected D74 contract/fixture subset.**
    Delivery batch major 1 accepts only frozen event v3, revalidates each 4 KiB line,
    and groups at most 32 events/135168 serialized bytes. The adapter makes one
    credential-free POST to an exact loopback non-privileged port, refuses query,
@@ -516,8 +519,8 @@ Current D71/D72/D73/D74 slice status:
    fails before delivery and transport failure exits nonzero without changing product
    authority. A later managed collector must separately prove access/audit,
    availability and delivery-failure monitoring, deletion, owner-scoped export,
-   residency, and enforced retention. All 48 local gates pass; exact PR/protected-
-   main/post-merge evidence and every external-custody criterion remain open.
+   residency, and enforced retention. All 48 local gates and exact PR/protected-main/
+   post-merge gates pass; every external-custody criterion remains open.
 5. **Metrics/traces backends — open.** Export only reviewed finite-cardinality
    dimensions; retain sampled slow/error trace continuity without payload capture;
    define access, retention, deletion, availability, and delivery-failure behavior.

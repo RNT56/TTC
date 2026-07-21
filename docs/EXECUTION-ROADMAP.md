@@ -122,17 +122,20 @@ live, and production proof remain later acceptance lanes.
 All 48 local gates and a disposable 28-migration/27-predecessor/12-browser-flow
 database matrix pass, including the persisted Modal-call handoff and all 259 worker
 tests. These results support only the protected repository contract/fixture boundary.
-D74 is the current unprotected follow-on. It deliberately keeps event v3 frozen and
-creates a separate delivery-batch v1/lifecycle surface plus an independent
-loopback-only fixture adapter. The candidate revalidates each 4 KiB line, buffers at
-most 32 events/135168 bytes in memory, uses one credential-free POST with a two-second
+D74 is protected at contract/fixture maturity through PR #142/`7abcb56`. It
+deliberately keeps event v3 frozen and creates a separate delivery-batch v1/lifecycle
+surface plus an independent loopback-only fixture adapter. The protected slice
+revalidates each 4 KiB line, buffers at most 32 events/135168 bytes in memory, uses one
+credential-free POST with a two-second
 ceiling, refuses remote/query/fragment/redirect/non-2xx/invalid/overflow paths, and
 has no retry/spool/product-authority coupling. Focused observability, compatibility,
 generated-document, golden-policy, and patch-hygiene gates pass, and the complete
 48-gate repository matrix is green under Python 3.12.13 with 85 Gateway and all 259
-worker tests. Exact PR/protected-main/post-merge evidence is pending. This advances
-no external collector, managed custody, metrics/
-traces, dashboard, alert, managed, live, production, or external-beta exit.
+worker tests. Exact head `c7b4035`, all twelve PR checks in CI `29872947817` and
+security `29872947795`, tree-identical protected squash `7abcb56`, and post-merge
+CI/security `29873512358`/`29873512339` pass. This advances no external collector,
+managed custody, metrics/traces, dashboard, alert, managed, live, production, or
+external-beta exit.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is

@@ -105,10 +105,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is evidence PR #141 at `363a8b4`; the
+  latest verified protected descendant is implementation PR #142 at `7abcb56`; the
   D72/OPS-003 job/worker capability remains anchored at PR #135/`a17ff74`, and D73's
   provider/deployment correlation is anchored at PR #140/`90cc58c`, reconciled
-  through PR #141/`363a8b4`.
+  through PR #141/`363a8b4`; D74's bounded loopback delivery contract is anchored at
+  PR #142/`7abcb56`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -191,7 +192,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Evidence PR #141 exact head `5308a61` passed all twelve checks in CI
   `29869595763` and security `29869595647`; tree-identical protected squash
   `363a8b4` passed post-merge CI `29870513845` and security `29870513693`.
-  D74 is the current unprotected candidate: `forge-observability-delivery-batch/1.0.0`
+  D74 is protected at contract/fixture maturity through PR #142/`7abcb56`:
+  `forge-observability-delivery-batch/1.0.0`
   accepts only frozen event v3 and its executable consumer revalidates/batches at
   most 32 events in memory for one credential-free exact-loopback POST under a two-
   second ceiling. Redirect, non-2xx, invalid/overflow, and timeout fail; no retry or
@@ -199,11 +201,13 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   D73/D74 tests pass, and all 48 required local gates are green under Python 3.12.13
   with 25 compatibility surfaces, 21 golden families, 39 Studio tests, 85 Gateway
   tests, 259 workers, Brief-25 25/25, native/WASM parity, packaging, training/MJX,
-  and the unchanged 200/97/two-Pareto/two-held batch. No external collector,
-  authenticated transport, durable queue,
+  and the unchanged 200/97/two-Pareto/two-held batch. Exact head `c7b4035`, all twelve
+  PR checks in CI `29872947817` and security `29872947795`, tree-identical protected
+  squash `7abcb56`, and post-merge CI/security `29873512358`/`29873512339` pass. No
+  external collector, authenticated transport, durable queue,
   managed custody, backend, dashboard, alert, managed, live, or production evidence
-  exists, and D73 remains the protected boundary until exact PR/protected-main/post-
-  merge proof completes.
+  exists; repository protection advances no claim beyond bounded contract/fixture
+  delivery.
   D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security

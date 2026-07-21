@@ -18,6 +18,28 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Protect bounded observability delivery
+**Session:** Codex agent · branch `codex/ops003-observability-transport-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Reconciled D74's independent bounded delivery contract with protected
+evidence while keeping event major 3 frozen. PR #142 exact head `c7b4035` passed all
+twelve required checks in CI `29872947817` and security `29872947795`; its tree is
+byte-identical to protected squash `7abcb56`, whose post-merge CI `29873512358` and
+security `29873512339` pass. D74 is protected at contract/fixture maturity only:
+delivery-batch v1 admits validated event v3, bounds memory and time, permits one
+credential-free exact-loopback attempt, fails closed without retry or spool, and
+cannot change product authority. No external/authenticated collector, durable queue,
+managed custody, metrics/trace backend, dashboard, alert, managed environment, live
+service, production, or external-beta claim follows.
+**Changed:** Canonical agent entry point; decision-ledger next-ID metadata; project
+state; task, phase, execution, and operations roadmaps; changelog.
+**Decisions:** none; D74 and R40 remain active unchanged.
+**Next:** Select the smallest dependency-complete OPS-003 metrics/trace or managed-
+custody contract slice without coupling telemetry delivery to product authority.
+**Blockers:** OPS-002 still lacks a real managed sandbox install/upgrade/rollback
+exercise. Authenticated external telemetry custody and every managed/live/production
+proof remain open.
+
 ## 2026-07-21 — Bound observability fixture delivery
 **Session:** Codex agent · branch `codex/ops003-observability-transport` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

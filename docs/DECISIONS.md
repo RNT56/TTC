@@ -11,7 +11,7 @@ architecture, policy, and execution decisions recorded here for visibility.
 
 1. Confirm it is genuinely a decision of consequence (architecture, scope, sequencing,
    security, legal, economics, naming) — not routine implementation detail.
-2. Append a row with the next free ID (next regular ID: **D74**), a one-line decision,
+2. Append a row with the next free ID (next regular ID: **D75**), a one-line decision,
    a one-line rationale, and status `active`.
 3. If it supersedes an earlier decision, set the old row's status to
    `superseded by Dnn` — exactly as D6 and D11 were retired by v3.0.
