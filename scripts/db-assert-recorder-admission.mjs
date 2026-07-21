@@ -211,7 +211,7 @@ try {
   );
 
   const exported = await exportUserData(pool, user);
-  assert.equal(exported.formatVersion, "1.6.0");
+  assert.equal(exported.formatVersion, "1.7.0");
   assert.equal(exported.data.recorderArchiveMaterializations.length, 1);
   assert.equal(exported.data.recorderArchiveAdmissions.length, 1);
   assert.equal(exported.data.telemetryLogs.length, 1);

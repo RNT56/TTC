@@ -114,8 +114,8 @@ live provider artifact audit.
   explicit per-model opt-in; no marketplace default, geometry, or attribution is
   inferred. Withdrawal removes the contributed retrieval row.
 
-Implementation evidence (2026-07-13, `SEC-003..005`, extended by P7-011):
-authenticated user-data export 1.6.0 reads a repeatable snapshot covering account metadata, generated artifacts,
+Implementation evidence (2026-07-13, `SEC-003..005`, extended through D72):
+authenticated user-data export 1.7.0 reads a repeatable snapshot covering account metadata, generated artifacts,
 models/shares, photoscan records, object metadata and download endpoints, jobs,
 replays, policies, courses, leaderboards, marketplace/classroom activity, telemetry,
 maintenance, quote requests, refusals, and pattern contributions. OAuth credentials,
@@ -134,6 +134,15 @@ stale/substitution refusal, cancellation without database authority, exact retai
 readback, owner-scoped browser execution, and byte-free user-data export metadata at
 controlled S3-compatible sandbox maturity. Production bucket policy, durability,
 orphan inventory/deletion, and storage SLO evidence remain deployment/OPS-006 work.
+
+D72 adds only owner-scoped job request/trace/parent identifiers and bounded D38
+attempt identity, span, outcome/code, and timestamps to export 1.7. Lease and
+event-transport state are excluded from the new attempt dataset, which does not
+duplicate the existing owner-visible job idempotency digest, input/output, error, or
+provider fields and adds no raw provider content or secrets. These database rows
+share the terminal-job retention and deletion boundary; they do not grant access to
+another owner or imply that an external telemetry system received the corresponding
+event.
 
 D53 additionally includes the owner's recorder materialization rows and five private
 blob references. The export retains only the sanitized plan and explicit authority

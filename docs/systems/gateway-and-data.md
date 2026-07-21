@@ -241,7 +241,7 @@ caller forwarding headers, its CSRF behavior remains enabled, and unsafe cookie-
 authenticated requests require the configured origin.
 
 User-data lifecycle follows D33. `GET /v1/account/export` opens a repeatable-read
-transaction and returns format 1.6.0 across every explicit owner-scoped table,
+transaction and returns format 1.7.0 across every explicit owner-scoped table,
 including consent history. It
 lists `/v1/blobs/:id/access` for payload downloads and deliberately omits OAuth
 access/refresh/ID tokens, session and verification tokens, and provider keys.
@@ -256,7 +256,12 @@ device, field, sharing, and training claims. Archive bytes remain outside JSON a
 local filesystem paths plus presigned URLs are never persisted or exported.
 Version 1.6 adds `recorder_archive_admissions`, its bounded verification report and
 linked model/telemetry/materialization IDs. Archive payloads and temporary verifier
-paths remain excluded. Account deletion removes admission rows before telemetry and
+paths remain outside the export. Version 1.7 adds owner-scoped job request/trace/
+parent correlation and `job_observability_attempts` identity, lifecycle outcome/code,
+and timestamps. The new attempt dataset excludes lease authority and does not
+duplicate the existing owner-visible job idempotency digest, input/output, error, or
+provider fields; it adds no raw provider content or secrets.
+Account deletion removes admission rows before telemetry and
 materialization rows, then reuses the normal object deletion/tombstone path for all
 five payloads.
 `DELETE /v1/account` accepts only `{"confirmation":"DELETE MY ACCOUNT"}`, locks the
@@ -397,11 +402,18 @@ about results, not produce different ones), not as the only place truth exists.
 
 ## 8. Observability & ops
 
-The current deterministic gateway disables Fastify logging. Production structured
-allowlist logging, trace/error tooling, secret-seeded log inspection, alerting, and
-retention remain `OPS-*`; raw authorization/cookies, bodies, provider output,
-presigned URLs, and private content must never be fields. Docker Compose on one
-Hetzner-class VM (gateway + Postgres + workers) + CDN for the studio remains a
+The deterministic Gateway keeps Fastify's free-form logger disabled. D71/D72 instead
+emit one exact validated request-completion line and persist the server-owned UUIDv4/
+W3C request root on every job created by that request. Direct or historical jobs use
+a new database trace root with null request/parent. Migration 0028 also owns one
+non-secret row per D38 claim; Gateway cancellation closes a running attempt without
+making telemetry persistence a prerequisite for job authority. Raw authorization/
+cookies, bodies, query values, idempotency keys, lease tokens, errors/provider output,
+presigned URLs, and private content must never be observability fields.
+
+Production trace/error tooling, proxy/provider secret-seeded inspection, retention,
+backends, dashboards, and alert delivery remain `OPS-*`. Docker Compose on one
+Hetzner-class VM (Gateway + Postgres + workers) + CDN for the Studio remains a
 proposed first deployment; GPU is burst-only. Backups require the D35/OPS-005 catalog,
 deletion, restore-suppression, encryption, and recovery evidence rather than generic
 snapshot claims.

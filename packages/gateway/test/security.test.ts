@@ -306,6 +306,7 @@ test("object registration refuses idempotency-key declaration drift", async () =
 
 test("job idempotency keys are owner-scoped digests before persistence", async () => {
   const persistedKeys: string[] = [];
+  const persistedObservability: unknown[][] = [];
   const db: GatewayDb = {
     async query<T = unknown>(text, params = []) {
       if (text.includes("INSERT INTO credit_accounts")) {
@@ -313,6 +314,7 @@ test("job idempotency keys are owner-scoped digests before persistence", async (
       }
       if (text.includes("INSERT INTO jobs")) {
         persistedKeys.push(String(params[3]));
+        persistedObservability.push(params.slice(8, 11));
         return {
           rows: [{
             id: String(params[6]),
@@ -347,4 +349,64 @@ test("job idempotency keys are owner-scoped digests before persistence", async (
   assert.match(persistedKeys[1], /^[a-f0-9]{64}$/);
   assert.notEqual(persistedKeys[0], input.idempotencyKey);
   assert.notEqual(persistedKeys[0], persistedKeys[1]);
+  for (const [requestId, traceId, parentSpanId] of persistedObservability) {
+    assert.equal(requestId, null);
+    assert.match(String(traceId), /^(?!0{32}$)[a-f0-9]{32}$/);
+    assert.equal(parentSpanId, null);
+  }
+  assert.notEqual(persistedObservability[0][1], persistedObservability[1][1]);
+});
+
+test("job persistence accepts only trusted server-generated request correlation", async () => {
+  const persisted: unknown[][] = [];
+  const db: GatewayDb = {
+    async query<T = unknown>(text, params = []) {
+      if (text.includes("INSERT INTO credit_accounts")) {
+        return { rows: [], rowCount: 1 } as { rows: T[]; rowCount: number };
+      }
+      if (text.includes("INSERT INTO jobs")) {
+        persisted.push(params.slice(8, 11));
+        return {
+          rows: [{
+            id: String(params[6]),
+            owner_user_id: params[0],
+            kind: params[1],
+            status: "queued",
+            provider: params[2],
+            input: JSON.parse(String(params[4])),
+            output: null,
+            error: null,
+            cost_credits: params[5],
+            created_at: "2026-07-21T00:00:00.000Z",
+            inserted: true,
+          } as T],
+          rowCount: 1,
+        };
+      }
+      throw new Error(`unexpected correlation test query: ${text}`);
+    },
+  };
+  const correlation = {
+    requestId: "00000000-0000-4000-8000-000000000001",
+    traceId: "a".repeat(32),
+    parentSpanId: "b".repeat(16),
+  };
+  await createJob(
+    db,
+    { id: "owner-correlation", name: null, email: null, image: null },
+    { kind: "codesign.evaluate", provider: "local", payload: {} },
+    { observability: correlation },
+  );
+  assert.deepEqual(persisted, [[correlation.requestId, correlation.traceId, correlation.parentSpanId]]);
+
+  await assert.rejects(
+    createJob(
+      db,
+      { id: "owner-correlation", name: null, email: null, image: null },
+      { kind: "codesign.evaluate", provider: "local", payload: {} },
+      { observability: { ...correlation, requestId: "client-controlled" } },
+    ),
+    /trusted job observability context is invalid/,
+  );
+  assert.equal(persisted.length, 1);
 });

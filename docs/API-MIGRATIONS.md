@@ -111,7 +111,7 @@ uploads until the 0.2 gateway returns.
 
 ## User-data formats
 
-- user-data export is 1.6.0;
+- user-data export is 1.7.0;
 - consent ledger is 1.0.0;
 - account-deletion receipt is 2.0.0;
 - data lifecycle is 1.0.0.
@@ -133,6 +133,10 @@ Export 1.6 adds the separate recorder admission, exact bounded native-verificati
 report, and object-backed telemetry-reference metadata. It still excludes frame and
 replay bytes, temporary paths, presigned URLs, device/session authenticity, field
 provenance, and sharing/training authority.
+Export 1.7 additively exposes owner-scoped job request/trace/parent correlation and
+bounded D38 attempt identity, outcome/code, and timestamps. The new attempt dataset
+never exposes leases or duplicates the existing owner-visible job idempotency digest,
+input/output, error, or provider fields; it adds no raw provider content or secrets.
 Deletion receipt 2.0 adds restore-suppression evidence but does not claim physical
 backup deletion. Do not downgrade these meanings into an older success boolean.
 

@@ -29,10 +29,10 @@ package to adopt that same number.
 | deployment manifest | 1.0.0 | `forge-deployment-manifest` binds environment, protected source, immutable component artifacts, non-secret configuration, versioned environment-specific secret references, accountable ownership, evidence gates, direct promotion, and authority ceilings; changing any meaning is major | major 1; managed gateway/worker startup accepts only the current major |
 | hardened runtime | 1.0.0 | `forge-hardened-runtime` binds reviewed base images, application targets and numeric identities, writable paths, TLS/private networking, file-mounted secrets, probes, least privilege, resource limits, graceful termination, and evidence nonclaims; changing any meaning is major | major 1; the checked profile is contract/fixture evidence until a protected artifact is installed and rolled back in a managed sandbox |
 | hardened runtime publication | 1.0.0 | `forge-hardened-runtime-publication` binds protected source/tree, digest-only GHCR identities, registry manifest/config digests, SPDX/build/scan records, registry-attached GitHub provenance, independent pull/runtime verification, and explicit managed/live nonclaims; changing any meaning is major | major 1; publication proves immutable registry artifacts only and cannot prove a managed sandbox, rollback, live service, or production |
-| observability event | 1.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | major 1; only Gateway request-completion production exists, at contract/fixture maturity |
+| observability event | 2.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | majors 1 and 2; v1 is the frozen Gateway-only reader, while v2 adds persisted job/D38-attempt correlation and worker lifecycle events at contract/fixture maturity |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
-| user-data export | 1.6.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
+| user-data export | 1.7.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
 | consent ledger | 1.0.0 | new purposes/subject kinds are additive only when old consumers can ignore them; changing grant/withdraw authority, notice binding, or subject meaning is major | major 1 |
 | account-deletion receipt | 2.0.0 | additive counts/status fields are minor; changes to primary/object deletion meaning or backup-status semantics are major | major 2 |
 | data lifecycle | 1.0.0 | retention-class meaning, legal-hold authority, subject digest domain, tombstone/restore semantics, or backup state changes are major; new ignorable evidence fields are minor | major 1 |
@@ -65,19 +65,26 @@ references for the target environment, and follow one direct policy edge. An old
 runtime must refuse an unsupported major; a rollback retains the forward-only
 database history and uses an already admitted artifact/manifest pair.
 
-Observability event 1.0.0 is defined by
+Observability event 1.0.0 remains frozen in
 [`forge-observability-event.schema.json`](../schema/forge-observability-event.schema.json)
-and [`observability-policy.v1.json`](../infra/observability/observability-policy.v1.json).
-The first producer emits only `gateway.request.completed`: a server-generated opaque
-request ID and W3C root trace, UTC clock, Gateway/package/source/environment identity,
-route template, method, status class/code, bounded duration, and outcome. Unknown
-fields and unsupported correlation are refused before serialization; raw URLs,
-queries, headers, bodies, prompts, provider/error text, user data, telemetry, model
-bytes, presigned URLs, and secret references are outside the format. User/job/
-provider/deployment propagation and every telemetry backend remain future additive or
-major-version work as appropriate. A JSON line proves neither delivery nor monitoring.
+with [`observability-policy.v1.json`](../infra/observability/observability-policy.v1.json).
+It reads only the D71 `gateway.request.completed` producer. Current event 2.0.0 is
+defined by
+[`forge-observability-event.v2.schema.json`](../schema/forge-observability-event.v2.schema.json)
+and [`observability-policy.v2.json`](../infra/observability/observability-policy.v2.json).
+D72 is a deliberate major because it adds database-owned job IDs, UUIDv4 attempt IDs,
+parented worker spans, worker start/completion event identity, and event-specific
+attribute meanings. Gateway roots remain server-generated and caller request/trace
+headers remain non-authoritative. Migration 0028 stores request/trace/parent context
+on jobs, creates one non-secret row per D38 claim, and records success, retry, failure,
+cancellation, or expiry without lease tokens, job payloads, error text, or provider
+content. Historical/non-request jobs receive a new trace root but no fabricated
+request or parent span. Unknown fields and authority contradictions are refused before
+serialization. The stdout JSON lines and persistence rows prove neither transport
+delivery nor a metrics/trace backend, dashboard, alert, managed environment, live
+service, or production operation.
 
-`GET /v1/account/export` emits user-data export 1.6.0. It includes explicit
+`GET /v1/account/export` emits user-data export 1.7.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but
 never OAuth access/refresh/ID tokens, session or verification tokens, or provider
 API keys. Version 1.1 added complete consent history; 1.2 added causal event sequences
@@ -100,6 +107,12 @@ Version 1.6 adds owner-scoped recorder admission rows and their bounded sovereig
 verification report, telemetry/model/materialization IDs, replay digest/count/
 duration, and explicit nonclaims. It does not embed archive/replay bytes, temporary
 verification paths, object credentials, presigned URLs, or training authority.
+Version 1.7 adds each owned job's request/trace/parent correlation and the bounded
+`jobObservabilityAttempts` dataset (attempt UUID, span, outcome, stable error code,
+and timestamps). The attempt dataset never exports a D38 lease token or duplicates
+the existing owner-visible job idempotency digest, input/output, error, or provider
+fields; it adds no raw telemetry transport record, payload-derived log field, raw
+provider content, or secret.
 Consent ledger 1.0.0 binds every append-only grant/withdrawal to a purpose, owned
 subject, policy version, exact notice hash, prior event, and bounded evidence; only
 the latest event under the current policy/hash can be active. Consent and legal-hold
@@ -159,6 +172,16 @@ requires length, MIME type, and SHA-256, returns a staged row and checksum-bound
 and adds `POST /v1/blobs/:id/complete`. Consumers must complete verification before
 download or photoscan consent. Legacy rows are read as complete; no public artifact
 format version changes.
+
+D72/migration 0028 is additive database state but a deliberate observability-event
+major change. Apply 0028 before deploying a v2 Gateway or worker. A rollback may run
+the prior v1 Gateway/worker while retaining the new columns and attempt table; those
+older processes ignore the additive state, and operators must not interpret missing
+v2 attempt events as a job failure. Do not drop or rewrite v2 rows during rollback.
+Readers that support only major 1 must reject v2 events, while current readers retain
+the frozen v1 schema for historical Gateway JSON lines. Removing correlation fields,
+changing span-parent meaning, or changing attempt outcomes requires another event
+major and a forward migration.
 
 QA-007 is a patch-level strictness correction, not a format-version change. Valid
 ModelSpec patches, replay major 1 plus the deprecated `replay.v1` alias, EnvSpec

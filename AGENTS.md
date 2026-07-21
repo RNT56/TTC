@@ -57,8 +57,9 @@ Read in this order for every non-trivial session:
    while D69 image/runtime authority lives in
    `infra/deployment/hardened-runtime.v1.json` and D70 digest-only registry
    publication authority lives in `infra/deployment/hardened-registry.v1.json`; D71
-   event/redaction/cardinality authority lives in
-   `infra/observability/observability-policy.v1.json`.
+   event/redaction/cardinality history remains in
+   `infra/observability/observability-policy.v1.json`, while current D72 job/attempt/
+   worker authority lives in `infra/observability/observability-policy.v2.json`.
 16. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
    persisted-data compatibility, backup impact, or database recovery behavior.
 17. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
@@ -99,7 +100,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D71/OPS-003 PR #130 at `44bb3da`.
+  latest verified protected descendant is D71/OPS-003 evidence PR #131 at `694ccc0`;
+  the implementation anchor remains PR #130 at `44bb3da`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -140,9 +142,21 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   two-held recovery batch. Exact implementation head `f161221` passed all twelve PR
   checks in CI `29646612330` and security `29646612337`; tree-identical protected
   squash `44bb3da` passed post-merge CI `29646886572` and security `29646886580`.
-  It proves no worker/job/provider/
-  Desktop propagation, metric/trace backend, dashboard, alert, managed, live, or
-  production maturity. D66 implementation PR
+  Evidence PR #131 exact head `aa918f4` and protected squash `694ccc0` then passed
+  post-merge security `29647532626` and CI `29647532654`. D72 is an unprotected
+  contract/fixture candidate that adds trusted request-to-job persistence, database-
+  owned D38 attempt spans/outcomes, bounded Python worker lifecycle events, and
+  owner export 1.7. All 48 required local gates pass with four observability-policy
+  tests, 24 compatibility surfaces, 85 Gateway tests against the real validator,
+  all 258 worker tests in the complete pinned training/MJX/co-design environment,
+  Brief-25 25/25, and the unchanged 200/97/two-Pareto/two-held recovery batch. An
+  isolated Postgres/pgvector database also passes all 28 migrations, every 27
+  populated predecessor, D38 fault/cancellation correlation, lifecycle assertions,
+  and all 12 production-browser flows. PR, protected-main, and post-merge evidence
+  remain pending. The candidate proves no provider/deployment/actor/Desktop
+  propagation, metric/trace backend, dashboard, alert, managed, live, or production
+  maturity.
+  D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
   `29575066749`/`29575066748`, protected-tree equality, and post-merge CI/security
@@ -759,9 +773,9 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Admission | `crates/forge-validate` | The validator is sovereign; fix artifacts, never weaken checks to green them |
 | Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction; support tiers and accessibility acceptance are owned by `docs/BROWSER-SUPPORT.md` |
 | API/data/platform | `packages/gateway`, `infra/migrations`, `contracts/documentation.json` | Validate writes, scope ownership, fail closed, preserve audit history; registered routes and TypeBox request schemas generate the versioned API/event/artifact reference without hand-edited drift; policy reads cross-check owner/job/model/scorecard/tensor/lineage/object bytes |
-| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only |
+| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only; D72 creates database-owned attempt/span identity and bounded lifecycle events without coupling telemetry delivery to authority |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
-| Deployment/operations | `infra/deployment`, `infra/observability`, `infra/docker`, `infra/compose.hardened.json`, `scripts/deployment-policy.mjs`, `scripts/hardened-runtime.mjs`, `scripts/hardened-runtime-registry.mjs`, `scripts/observability-policy.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion, D69 image/runtime, D70 digest-only registry publication, and D71 structured-event/correlation/redaction/cardinality authority; build once, exact artifacts, file-mounted secrets staged outside the checkout as `root:10999`/`0440` for the single-host profile (Compose service-level `uid`/`gid`/`mode` are unsupported here), private topology, least privilege, forward-only migrations, allowlisted telemetry only, no managed/live claim from contract, image publication, local logs, or CI evidence |
+| Deployment/operations | `infra/deployment`, `infra/observability`, `infra/docker`, `infra/compose.hardened.json`, `scripts/deployment-policy.mjs`, `scripts/hardened-runtime.mjs`, `scripts/hardened-runtime-registry.mjs`, `scripts/observability-policy.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion, D69 image/runtime, D70 digest-only registry publication, D71 Gateway event boundary, and D72 request/job/D38-attempt/worker correlation authority; build once, exact artifacts, file-mounted secrets staged outside the checkout as `root:10999`/`0440` for the single-host profile (Compose service-level `uid`/`gid`/`mode` are unsupported here), private topology, least privilege, forward-only migrations, allowlisted telemetry only, no managed/live claim from contract, image publication, database rows, local logs, or CI evidence |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
 

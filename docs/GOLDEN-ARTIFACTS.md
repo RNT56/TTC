@@ -72,7 +72,7 @@ and a new oracle family, not an edit.
 The registry is machine-owned inventory. Adding or removing an artifact family must
 update this document, registry validation tests, and the owning system documentation.
 
-The current inventory has **seventeen families**. D68's
+The current inventory has **twenty families**. D68's
 `deployment-policy-and-schema` family owns the non-secret deployment policy and
 manifest schema. Their environment, component, gate, ownership, configuration,
 secret-reference, promotion, and authority meanings are compatibility-governed;
@@ -88,6 +88,12 @@ never hand-edited. QA-007's
 accepted/refused outcomes, special non-finite sentinels, and the exact file set are
 machine-checked. Rust and Python consumers prove behavior; the structural checker
 alone cannot justify changing an outcome.
+
+D71/D72's `observability-policy-and-schema` family retains both the frozen v1
+Gateway-only policy/schema and current v2 job/D38-attempt/worker policy/schema. Event
+identity, correlation trust, parentage, lifecycle outcome, exclusion, byte bound,
+cardinality, and maturity-nonclaim changes require compatibility/security/privacy/
+operations review; captured logs or payloads are never an input to regeneration.
 
 P6-010's `sim-parity-baseline` is generated only by the live pinned-engine path.
 The orchestrator verifies exact MuJoCo provider, source revision, request SHA-256,

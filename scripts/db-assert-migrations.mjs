@@ -203,10 +203,59 @@ async function assertCurrentLedger(client) {
   const offline = await client.query(
     `INSERT INTO jobs (kind, status, provider, input)
      VALUES ('train.offline-bc', 'queued', 'local', '{}'::jsonb)
-     RETURNING id`,
+     RETURNING id, observability_request_id, observability_trace_id,
+               observability_parent_span_id`,
   );
   assert.equal(offline.rowCount, 1);
+  assert.equal(offline.rows[0].observability_request_id, null);
+  assert.match(offline.rows[0].observability_trace_id, /^(?!0{32}$)[a-f0-9]{32}$/);
+  assert.equal(offline.rows[0].observability_parent_span_id, null);
+  assert.ok(
+    (await client.query("SELECT to_regclass('job_observability_attempts') AS name")).rows[0].name,
+  );
+  const attempt = await client.query(
+    `INSERT INTO job_observability_attempts (
+       job_id, attempt, trace_id, span_id
+     ) VALUES ($1, 1, $2, $3)
+     RETURNING attempt_id, outcome, error_code, finished_at`,
+    [offline.rows[0].id, offline.rows[0].observability_trace_id, "e".repeat(16)],
+  );
+  assert.match(String(attempt.rows[0].attempt_id), /^[0-9a-f-]{36}$/);
+  assert.deepEqual(
+    {
+      outcome: attempt.rows[0].outcome,
+      errorCode: attempt.rows[0].error_code,
+      finishedAt: attempt.rows[0].finished_at,
+    },
+    { outcome: "running", errorCode: null, finishedAt: null },
+  );
+  await assert.rejects(
+    client.query(
+      `UPDATE jobs
+          SET observability_request_id = $2,
+              observability_parent_span_id = NULL
+        WHERE id = $1`,
+      [offline.rows[0].id, "00000000-0000-4000-8000-000000000001"],
+    ),
+    /check constraint/,
+  );
+  await assert.rejects(
+    client.query(
+      `UPDATE job_observability_attempts
+          SET outcome = 'succeeded', error_code = 'contradictory', finished_at = now()
+        WHERE job_id = $1 AND attempt = 1`,
+      [offline.rows[0].id],
+    ),
+    /check constraint/,
+  );
   await client.query("DELETE FROM jobs WHERE id = $1", [offline.rows[0].id]);
+  assert.equal(
+    Number((await client.query(
+      "SELECT count(*) AS n FROM job_observability_attempts WHERE job_id = $1",
+      [offline.rows[0].id],
+    )).rows[0].n),
+    0,
+  );
   assert.ok((await client.query("SELECT to_regclass('job_provider_calls') AS name")).rows[0].name);
   const modalJob = await client.query(
     `INSERT INTO jobs (
@@ -590,6 +639,18 @@ async function assertFixturePreserved(client, prefix, fixture) {
       archetype: null,
       class_key: null,
     });
+    const observability = (
+      await client.query(
+        `SELECT observability_request_id, observability_trace_id,
+                observability_parent_span_id
+           FROM jobs
+          WHERE id = $1`,
+        [ids.job],
+      )
+    ).rows[0];
+    assert.equal(observability.observability_request_id, null);
+    assert.match(observability.observability_trace_id, /^(?!0{32}$)[a-f0-9]{32}$/);
+    assert.equal(observability.observability_parent_span_id, null);
   }
   if (prefix >= 16) {
     const rows = (

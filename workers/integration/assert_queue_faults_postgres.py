@@ -62,17 +62,26 @@ def main() -> None:
     conn = primary._conn
     run_id = uuid4().hex
     job_ids: list[str] = []
+    job_correlation: dict[str, dict[str, str]] = {}
     scenarios: dict[str, Any] = {}
 
     def insert_job(label: str, *, max_attempts: int = 3, timeout_seconds: int = 30) -> str:
+        request_id = str(uuid4())
+        trace_id = uuid4().hex
+        parent_span_id = uuid4().hex[:16]
         with conn.transaction():
             row = conn.execute(
                 """
                 INSERT INTO jobs (
                   kind, status, provider, idempotency_key, input,
-                  max_attempts, timeout_seconds, available_at
+                  max_attempts, timeout_seconds, available_at,
+                  observability_request_id, observability_trace_id,
+                  observability_parent_span_id
                 )
-                VALUES ('commerce.vendor-refresh', 'queued', 'local', %s, %s::jsonb, %s, %s, now())
+                VALUES (
+                  'commerce.vendor-refresh', 'queued', 'local', %s, %s::jsonb,
+                  %s, %s, now(), %s, %s, %s
+                )
                 RETURNING id
                 """,
                 [
@@ -80,12 +89,20 @@ def main() -> None:
                     primary._jsonb({"componentIds": [f"cmp_{label}"]}),
                     max_attempts,
                     timeout_seconds,
+                    request_id,
+                    trace_id,
+                    parent_span_id,
                 ],
             ).fetchone()
         if row is None:
             raise AssertionError(f"{label} job was not inserted")
         job_id = str(row["id"])
         job_ids.append(job_id)
+        job_correlation[job_id] = {
+            "requestId": request_id,
+            "traceId": trace_id,
+            "parentSpanId": parent_span_id,
+        }
         return job_id
 
     def state(job_id: str) -> dict[str, Any]:
@@ -109,6 +126,39 @@ def main() -> None:
                 [job_id],
             ).fetchone()
         return int(row["count"] if row is not None else 0)
+
+    def attempt_rows(job_id: str) -> list[dict[str, Any]]:
+        with conn.transaction():
+            rows = conn.execute(
+                """
+                SELECT attempt, attempt_id::text AS attempt_id,
+                       request_id::text AS request_id, trace_id, span_id,
+                       parent_span_id, outcome, error_code,
+                       started_at, finished_at
+                  FROM job_observability_attempts
+                 WHERE job_id = %s
+                 ORDER BY attempt
+                """,
+                [job_id],
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def assert_correlation(job_id: str, rows: list[dict[str, Any]]) -> None:
+        expected = job_correlation[job_id]
+        if not rows:
+            raise AssertionError(f"job {job_id} has no D72 attempt correlation")
+        if len({row["attempt_id"] for row in rows}) != len(rows):
+            raise AssertionError(f"job {job_id} reused an attempt identity")
+        if len({row["span_id"] for row in rows}) != len(rows):
+            raise AssertionError(f"job {job_id} reused an attempt span")
+        for row in rows:
+            if (
+                row["request_id"] != expected["requestId"]
+                or row["trace_id"] != expected["traceId"]
+                or row["parent_span_id"] != expected["parentSpanId"]
+                or row["finished_at"] is None
+            ):
+                raise AssertionError(f"job {job_id} attempt correlation drifted: {row}")
 
     try:
         crash_id = insert_job("crash", timeout_seconds=1)
@@ -134,6 +184,10 @@ def main() -> None:
             raise AssertionError("current recovered attempt could not succeed")
         if offer_count(crash_id) != 1:
             raise AssertionError("crash recovery materialized a duplicate offer")
+        crash_attempts = attempt_rows(crash_id)
+        assert_correlation(crash_id, crash_attempts)
+        if [row["outcome"] for row in crash_attempts] != ["expired", "succeeded"]:
+            raise AssertionError(f"crash attempt outcomes drifted: {crash_attempts}")
         scenarios["workerCrashDuplicateTimeout"] = {
             "attempts": 2,
             "staleResultDiscarded": True,
@@ -169,6 +223,10 @@ def main() -> None:
             "boundedBackoff": True,
             "recovered": True,
         }
+        outage_attempts = attempt_rows(outage_id)
+        assert_correlation(outage_id, outage_attempts)
+        if [row["outcome"] for row in outage_attempts] != ["retry-scheduled", "succeeded"]:
+            raise AssertionError(f"outage attempt outcomes drifted: {outage_attempts}")
 
         rate_id = insert_job("rate", max_attempts=2)
         rate_handlers = HandlerRegistry()
@@ -194,6 +252,10 @@ def main() -> None:
             "attempts": 2,
             "terminalStatus": "failed",
         }
+        rate_attempts = attempt_rows(rate_id)
+        assert_correlation(rate_id, rate_attempts)
+        if [row["outcome"] for row in rate_attempts] != ["retry-scheduled", "failed"]:
+            raise AssertionError(f"rate-limit attempt outcomes drifted: {rate_attempts}")
 
         partial_id = insert_job("partial")
         partial_handlers = HandlerRegistry()
@@ -217,6 +279,10 @@ def main() -> None:
         if not run_once(primary, partial_handlers) or state(partial_id)["status"] != "succeeded":
             raise AssertionError("partial upload did not recover on a verified retry")
         scenarios["partialUploadRetry"] = {"partialRejected": True, "verifiedRetrySucceeded": True}
+        partial_attempts = attempt_rows(partial_id)
+        assert_correlation(partial_id, partial_attempts)
+        if [row["outcome"] for row in partial_attempts] != ["retry-scheduled", "succeeded"]:
+            raise AssertionError(f"partial-upload attempt outcomes drifted: {partial_attempts}")
 
         cancelled_id = insert_job("cancelled")
         cancelled = primary.claim_one(["commerce.vendor-refresh"])
@@ -233,9 +299,27 @@ def main() -> None:
                 """,
                 [cancelled_id],
             )
+            conn.execute(
+                """
+                UPDATE job_observability_attempts
+                   SET outcome = 'cancelled', error_code = 'job-cancelled', finished_at = now()
+                 WHERE job_id = %s AND attempt = %s AND outcome = 'running'
+                """,
+                [cancelled_id, cancelled.attempts],
+            )
         if primary.mark_succeeded(cancelled, _offer("cmp_cancelled")) or offer_count(cancelled_id) != 0:
             raise AssertionError("cancelled late output was materialized")
         scenarios["cancellation"] = {"lateResultDiscarded": True, "materialized": False}
+        cancelled_attempts = attempt_rows(cancelled_id)
+        assert_correlation(cancelled_id, cancelled_attempts)
+        if [row["outcome"] for row in cancelled_attempts] != ["cancelled"]:
+            raise AssertionError(f"cancellation attempt outcome drifted: {cancelled_attempts}")
+        scenarios["trustedCorrelation"] = {
+            "requestToJob": True,
+            "perAttemptUuidAndSpan": True,
+            "leaseTokenExcluded": True,
+            "terminalOutcomesPersisted": True,
+        }
 
         source_revision = os.environ.get("FORGE_SOURCE_REVISION") or _revision()
         evidence = {
@@ -254,7 +338,7 @@ def main() -> None:
         output = Path("artifacts/e2e/qa005-fault-acceptance.json")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print("qa005-queue-postgres: lease, retry, cancellation, outage, rate, and partial faults proven")
+        print("qa005-queue-postgres: lease faults and D72 request/job/attempt correlation proven")
     finally:
         if job_ids:
             with conn.transaction():

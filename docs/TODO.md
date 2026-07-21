@@ -355,6 +355,19 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   publication is now verified at immutable-registry maturity only; it grants no
   managed/live authority.
 - [~] OPS-003 — Implement structured logs, request/job correlation, metrics, traces, dashboards, alert routing, and redaction rules across gateway/workers/providers/Desktop. *(D71 first Gateway slice protected 2026-07-18: `forge-observability-event/1.0.0` and its machine policy define an exact 4 KiB allowlist, UTC/source/version binding, server-generated UUIDv4/W3C Gateway request roots, response correlation headers, sensitive-field exclusion, high-cardinality metric-label refusal, and explicit downstream maturity nonclaims. The Gateway emits one validated structured request-completion line in the executable entry path; route templates exclude raw query values, managed observations require an exact source revision, status/level/outcome contradictions fail, and sink failure cannot change the response. All 48 required local gates pass under Python 3.12.13 with four policy/adversarial tests, three Gateway observability tests, 24 compatibility surfaces, twenty golden families, 87 immutable Action references, 39 Studio tests, 84 Gateway tests with the real validator, 255 worker tests, generated 82-route/two-event/seventeen-worker docs, and the unchanged 200/97/two-Pareto/two-held recovery batch. PR #130 exact head `f161221` passed all twelve checks in CI `29646612330` and security `29646612337`; tree-identical protected squash `44bb3da` passed post-merge CI `29646886572` and security `29646886580`. This is protected contract/fixture maturity only. Worker/job/provider/Desktop propagation, pseudonymous actor/deployment correlation, metric/trace backends, dashboards, alert routing and acknowledgement, managed sandbox, live, production, and external-beta evidence remain open.)*
+  **D72 candidate (2026-07-21, unprotected):** event major 2 retains frozen v1 reads
+  and binds each trusted Gateway request to its persisted job, each atomic D38 claim
+  to a database UUIDv4 attempt/span row, and bounded Python start/completion output.
+  Migration 0028 and export 1.7 cover success, retry, terminal failure, owner
+  cancellation, expiry, and historical/direct-job roots without leases, idempotency
+  keys, payload/results, raw error/provider text, secrets, or fabricated request
+  continuity. All 48 local gates pass with 85 Gateway and all 258 fully enabled worker
+  tests; a fresh isolated database passes all 28 migrations, every 27 populated
+  predecessor, the D38 correlation fault/cancellation matrix, lifecycle assertions,
+  and all 12 production-browser flows. This remains `[~]`: PR/protected/post-merge
+  proof is pending, and provider/deployment/actor/Desktop propagation, backends,
+  metrics/traces, dashboards, alerts, managed, live, production, and external-beta
+  proof remain open.
 - [ ] OPS-004 — Define SLOs and error budgets for API, generation, queue latency, photoscan, training, object storage, auth, and provider handoffs.
 - [ ] OPS-005 — Implement Postgres/object backup, restore verification, retention, capacity, migration, and disaster-recovery runbooks.
 - [ ] OPS-006 — Define job quotas, concurrency, cancellation/refund, idempotency, dead-letter/reconciliation, cost attribution, and runaway-spend kill switches.

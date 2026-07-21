@@ -589,15 +589,19 @@ Redaction patterns are regression-tested, but structured allowlist logging is th
 primary control. Operators must verify proxy, platform, provider SDK, crash reporter,
 and tracing defaults separately; application tests cannot prove those external logs.
 
-D71 now makes that primary control executable for Gateway request completion.
-`forge-observability-event/1.0.0` admits only a 4 KiB UTC/source/version/request-
-template/status/duration/outcome shape. The server generates a new UUIDv4 request ID
-and W3C root trace and ignores client correlation claims. The serializer refuses
-unknown fields, raw queries, and unsupported actor/job/provider/deployment bindings;
-the executable entry point writes one validated JSON line, while sink failure cannot
-change the response. This is contract/fixture evidence only: proxy/APM transport,
-worker/job/provider/Desktop continuity, seeded-secret scans, dashboards, alerts, and
-live delivery remain unproven.
+D71 makes that primary control executable for Gateway request completion. D72 keeps
+the v1 reader frozen and uses `forge-observability-event/2.0.0` for trusted request-
+to-job and D38 attempt continuity. The server generates and persists the UUIDv4/W3C
+root; the database creates one UUIDv4 attempt ID and span per atomic claim; workers
+emit bounded start/completion lines; and terminal persistence carries only an outcome
+plus stable code. Historical/direct jobs get an independent trace root with null
+request/parent. Serializers and database constraints refuse unknown fields,
+unpaired authority, raw queries, lease/idempotency/payload/result data, raw errors,
+and unsupported actor/provider/deployment bindings. Sink failure cannot change
+response, lease, retry, cancellation, or materialization authority. This remains
+contract/fixture evidence: proxy/APM transport, provider/Desktop continuity,
+seeded-secret scans, retention/access operations, dashboards, alerts, and live
+delivery remain unproven.
 
 ## 14. Control and negative-test matrix
 
@@ -606,7 +610,7 @@ live delivery remain unproven.
 | Host-header/origin/CSRF confusion | pinned-origin config, forwarded-header stripping, unsafe cookie-origin tests, Auth.js CSRF enabled | deployed proxy/TLS/cookie inspection |
 | Dev/admin auth bypass | production startup negatives, dev-header refusal, absent/short owner-token failures | named roles and revocation drill |
 | Secret persistence/reflection | HTTP BYO header-only rejection/no env fallback/query audit plus ETL header-only body/command/error tests | provider/proxy/APM log inspection and separate BYO/service-key rotation drills |
-| Log/correlation injection or telemetry leakage | D71 exact 4 KiB event allowlist, server-generated request/trace roots, template-route/no-query producer, extension/sensitive-field/cardinality refusal, and sink-failure isolation | proxy/APM/provider/worker/Desktop continuity, seeded-secret scan, retention/access review, dashboards, and synthetic alert delivery |
+| Log/correlation injection or telemetry leakage | D71/D72 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation | proxy/APM/provider/Desktop continuity, seeded-secret scan, retention/access review, dashboards, and synthetic alert delivery |
 | JSON/parameter bombs | byte/depth/node/key/string/non-finite/cycle tests; direct job/object tests | load/concurrency/memory exercise |
 | SSRF/redirect/rebinding | private-range, allowlist, DNS, redirect, type, timeout/body tests | egress proxy/firewall connection-time proof |
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |

@@ -131,7 +131,41 @@ try {
     idempotencyKey: `p7013-modal-after-refund-${runId}`,
   });
   assert.equal(afterRefund.status, "queued", "cancellation must release the shared active slot");
+  const runningCorrelation = await db.query(
+    `UPDATE jobs
+        SET status = 'running',
+            attempts = 1,
+            lease_token = encode(gen_random_bytes(16), 'hex'),
+            lease_expires_at = now() + interval '5 minutes'
+      WHERE id = $1
+      RETURNING observability_request_id, observability_trace_id,
+                observability_parent_span_id`,
+    [afterRefund.id],
+  );
+  await db.query(
+    `INSERT INTO job_observability_attempts (
+       job_id, attempt, request_id, trace_id, span_id, parent_span_id
+     ) VALUES ($1, 1, $2, $3, $4, $5)`,
+    [
+      afterRefund.id,
+      runningCorrelation.rows[0].observability_request_id,
+      runningCorrelation.rows[0].observability_trace_id,
+      "f".repeat(16),
+      runningCorrelation.rows[0].observability_parent_span_id,
+    ],
+  );
   await cancelOwnedJob(db, users[1], afterRefund.id);
+  const cancelledAttempt = await db.query(
+    `SELECT outcome, error_code, finished_at IS NOT NULL AS finished
+       FROM job_observability_attempts
+      WHERE job_id = $1 AND attempt = 1`,
+    [afterRefund.id],
+  );
+  assert.deepEqual(cancelledAttempt.rows[0], {
+    outcome: "cancelled",
+    error_code: "owner-cancelled",
+    finished: true,
+  });
   await assert.rejects(
     createJob(db, users[0], {
       ...request,
@@ -157,6 +191,7 @@ try {
       refundCount: 1,
       balanceAfterRefund: 0,
       activeQuotaReleased: true,
+      runningAttemptClosed: true,
       dailyLaunchCreditsRetained: true,
     },
   };

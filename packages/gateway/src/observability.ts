@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-export const OBSERVABILITY_EVENT_VERSION = "1.0.0";
+export const OBSERVABILITY_EVENT_VERSION = "2.0.0";
 export const OBSERVABILITY_EVENT_SCHEMA = `forge-observability-event/${OBSERVABILITY_EVENT_VERSION}`;
 export const GATEWAY_OBSERVABILITY_SERVICE_VERSION = "0.2.0";
 
@@ -50,6 +50,7 @@ export interface GatewayRequestObservation {
     parentSpanId: null;
     actorDigest: null;
     jobId: null;
+    attemptId: null;
     providerCallId: null;
     deploymentId: null;
   };
@@ -153,6 +154,7 @@ export function createGatewayRequestObservation(input: {
       parentSpanId: null,
       actorDigest: null,
       jobId: null,
+      attemptId: null,
       providerCallId: null,
       deploymentId: null,
     },
@@ -216,6 +218,7 @@ export function validateGatewayRequestObservation(value: unknown): string[] {
     "parentSpanId",
     "actorDigest",
     "jobId",
+    "attemptId",
     "providerCallId",
     "deploymentId",
   ])) {
@@ -224,8 +227,8 @@ export function validateGatewayRequestObservation(value: unknown): string[] {
     if (typeof value.correlation.requestId !== "string" || !UUID_V4.test(value.correlation.requestId)) errors.push("requestId is invalid");
     if (typeof value.correlation.traceId !== "string" || !TRACE_ID.test(value.correlation.traceId)) errors.push("traceId is invalid");
     if (typeof value.correlation.spanId !== "string" || !SPAN_ID.test(value.correlation.spanId)) errors.push("spanId is invalid");
-    for (const field of ["parentSpanId", "actorDigest", "jobId", "providerCallId", "deploymentId"] as const) {
-      if (value.correlation[field] !== null) errors.push(`${field} is not implemented in this gateway-only slice`);
+    for (const field of ["parentSpanId", "actorDigest", "jobId", "attemptId", "providerCallId", "deploymentId"] as const) {
+      if (value.correlation[field] !== null) errors.push(`${field} is not implemented in gateway request events`);
     }
   }
   if (!exactKeys(value.attributes, ["method", "route", "statusCode", "statusClass", "outcome", "durationMs"])) {

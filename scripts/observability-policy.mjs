@@ -3,14 +3,15 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const OBSERVABILITY_POLICY_VERSION = "1.0.0";
-export const OBSERVABILITY_EVENT_VERSION = "1.0.0";
+export const OBSERVABILITY_POLICY_VERSION = "2.0.0";
+export const OBSERVABILITY_EVENT_VERSION = "2.0.0";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = resolve(MODULE_DIR, "..");
-const POLICY_PATH = join(REPOSITORY_ROOT, "infra/observability/observability-policy.v1.json");
-const SCHEMA_PATH = join(REPOSITORY_ROOT, "schema/forge-observability-event.schema.json");
+const POLICY_PATH = join(REPOSITORY_ROOT, "infra/observability/observability-policy.v2.json");
+const SCHEMA_PATH = join(REPOSITORY_ROOT, "schema/forge-observability-event.v2.schema.json");
 const RUNTIME_PATH = join(REPOSITORY_ROOT, "packages/gateway/src/observability.ts");
+const WORKER_RUNTIME_PATH = join(REPOSITORY_ROOT, "workers/forge_workers/observability.py");
 
 function loadJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -55,6 +56,7 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     "schemaVersion",
     "eventVersion",
     "eventSchema",
+    "legacyEventSchemas",
     "decision",
     "status",
     "maxEventBytes",
@@ -68,8 +70,13 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
   ]);
   add(errors, policy.schemaVersion === `forge-observability-policy/${OBSERVABILITY_POLICY_VERSION}`, "policy schemaVersion is invalid");
   add(errors, policy.eventVersion === OBSERVABILITY_EVENT_VERSION, "policy eventVersion is invalid");
-  add(errors, policy.eventSchema === "schema/forge-observability-event.schema.json", "policy eventSchema is invalid");
-  add(errors, policy.decision === "D71", "policy must cite D71");
+  add(errors, policy.eventSchema === "schema/forge-observability-event.v2.schema.json", "policy eventSchema is invalid");
+  add(
+    errors,
+    JSON.stringify(policy.legacyEventSchemas) === JSON.stringify(["schema/forge-observability-event.schema.json"]),
+    "legacyEventSchemas must retain the D71 v1 schema",
+  );
+  add(errors, policy.decision === "D72", "policy must cite D72");
   add(errors, policy.status === "contract-fixture", "policy cannot claim maturity above contract-fixture");
   add(errors, policy.maxEventBytes === 4096, "policy maxEventBytes must remain 4096");
 
@@ -89,15 +96,34 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     "traceId",
     "actorDigest",
     "jobId",
+    "attemptId",
     "providerCallId",
     "deploymentId",
   ]);
-  add(errors, policy.trust?.requestId === "server-generated-uuid-v4", "request identity trust is invalid");
-  add(errors, policy.trust?.traceId === "server-generated-w3c-root", "trace identity trust is invalid");
-  for (const name of ["actorDigest", "jobId", "providerCallId", "deploymentId"]) {
+  add(
+    errors,
+    policy.trust?.requestId === "server-generated-gateway-uuid-v4-or-null-for-non-request-jobs",
+    "request identity trust is invalid",
+  );
+  add(errors, policy.trust?.traceId === "server-generated-gateway-or-job-root", "trace identity trust is invalid");
+  add(errors, policy.trust?.jobId === "database-owned-job-id", "job identity trust is invalid");
+  add(
+    errors,
+    policy.trust?.attemptId === "database-generated-uuid-v4-per-d38-claim",
+    "attempt identity trust is invalid",
+  );
+  for (const name of ["actorDigest", "providerCallId", "deploymentId"]) {
     add(errors, policy.trust?.[name] === "not-implemented", `${name} must remain an explicit nonclaim`);
   }
-  add(errors, JSON.stringify(policy.eventNames) === JSON.stringify(["gateway.request.completed"]), "eventNames must contain only the implemented event");
+  add(
+    errors,
+    JSON.stringify(policy.eventNames) === JSON.stringify([
+      "gateway.request.completed",
+      "worker.job.attempt.completed",
+      "worker.job.attempt.started",
+    ]),
+    "eventNames must contain exactly the implemented events",
+  );
   exactSortedValues(errors, policy.requiredContext, "requiredContext", [
     "clock.source",
     "clock.timezone",
@@ -114,6 +140,10 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     "cookie",
     "errorMessage",
     "headers",
+    "idempotencyKey",
+    "jobInput",
+    "jobOutput",
+    "leaseToken",
     "modelBytes",
     "personalData",
     "presignedUrl",
@@ -131,12 +161,15 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     "eventName",
     "method",
     "outcome",
+    "provider",
     "route",
     "service",
     "statusClass",
+    "task",
   ]);
   exactSortedValues(errors, policy.cardinality?.forbiddenMetricLabels, "forbiddenMetricLabels", [
     "actorDigest",
+    "attemptId",
     "deploymentId",
     "jobId",
     "providerCallId",
@@ -147,8 +180,9 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
 
   exactKeys(errors, policy.maturity, "maturity", [
     "gatewayRequestEvents",
-    "workerPropagation",
     "jobPropagation",
+    "workerPropagation",
+    "persistentAttemptEvidence",
     "providerPropagation",
     "desktopEvents",
     "metricsBackend",
@@ -161,16 +195,32 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
     "production",
   ]);
   add(errors, policy.maturity?.gatewayRequestEvents === true, "gateway request events must be implemented");
+  add(errors, policy.maturity?.jobPropagation === true, "job propagation must be implemented");
+  add(errors, policy.maturity?.workerPropagation === true, "worker propagation must be implemented");
+  add(errors, policy.maturity?.persistentAttemptEvidence === true, "persistent attempt evidence must be implemented");
   for (const [name, value] of Object.entries(policy.maturity ?? {})) {
-    if (name !== "gatewayRequestEvents") add(errors, value === false, `${name} must remain false in the first slice`);
+    if (!["gatewayRequestEvents", "jobPropagation", "workerPropagation", "persistentAttemptEvidence"].includes(name)) {
+      add(errors, value === false, `${name} must remain false in the current slice`);
+    }
   }
 
   add(errors, schema?.properties?.schemaVersion?.const === `forge-observability-event/${OBSERVABILITY_EVENT_VERSION}`, "event schema marker is invalid");
   add(errors, schema?.additionalProperties === false, "event schema must deny top-level extensions");
-  for (const section of ["clock", "source", "correlation", "attributes"]) {
+  for (const section of ["clock", "source", "correlation"]) {
     add(errors, schema?.properties?.[section]?.additionalProperties === false, `${section} schema must deny extensions`);
   }
-  add(errors, schema?.properties?.eventName?.const === "gateway.request.completed", "event schema must admit only the implemented event");
+  for (const definition of ["gatewayRequestAttributes", "workerAttemptStartedAttributes", "workerAttemptCompletedAttributes"]) {
+    add(errors, schema?.$defs?.[definition]?.additionalProperties === false, `${definition} schema must deny extensions`);
+  }
+  add(
+    errors,
+    JSON.stringify(schema?.properties?.eventName?.enum) === JSON.stringify([
+      "gateway.request.completed",
+      "worker.job.attempt.started",
+      "worker.job.attempt.completed",
+    ]),
+    "event schema event names are invalid",
+  );
   add(errors, schema?.properties?.serviceVersion?.const === "0.2.0", "event schema service version is invalid");
   add(
     errors,
@@ -181,6 +231,10 @@ export function validateObservabilityPolicy(policy, schema = loadJson(SCHEMA_PAT
   add(errors, runtime.includes(`OBSERVABILITY_EVENT_VERSION = "${OBSERVABILITY_EVENT_VERSION}"`), "gateway runtime event version drifted");
   add(errors, runtime.includes('GATEWAY_OBSERVABILITY_SERVICE_VERSION = "0.2.0"'), "gateway runtime service version drifted");
   add(errors, runtime.includes("const MAX_EVENT_BYTES = 4_096"), "gateway runtime event size bound drifted");
+  const workerRuntime = readFileSync(WORKER_RUNTIME_PATH, "utf8");
+  add(errors, workerRuntime.includes(`OBSERVABILITY_EVENT_VERSION = "${OBSERVABILITY_EVENT_VERSION}"`), "worker runtime event version drifted");
+  add(errors, workerRuntime.includes('WORKER_OBSERVABILITY_SERVICE_VERSION = "0.2.0"'), "worker runtime service version drifted");
+  add(errors, workerRuntime.includes("MAX_OBSERVABILITY_EVENT_BYTES = 4_096"), "worker runtime event size bound drifted");
   return errors;
 }
 
@@ -199,7 +253,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       for (const error of errors) console.error(`observability-policy: ${error}`);
       process.exitCode = 1;
     } else {
-      console.log("observability-policy: D71 gateway contract/fixture is coherent; all downstream maturity claims remain false");
+      console.log("observability-policy: D72 gateway/job/worker contract/fixture is coherent; external backends and live claims remain false");
     }
   }
 }

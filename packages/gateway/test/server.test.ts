@@ -129,7 +129,9 @@ function parseRecordParam(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function platformMemoryDb(): GatewayDb {
+function platformMemoryDb(
+  onJobInserted: (row: Record<string, unknown>) => void = () => undefined,
+): GatewayDb {
   const now = "2026-06-14T00:00:00.000Z";
   const creditAccounts = new Map<string, number>();
   const creditLedgerKeys = new Set<string>();
@@ -446,10 +448,14 @@ function platformMemoryDb(): GatewayDb {
           output: queued ? null : parseJsonParam(params[5]),
           error: null,
           cost_credits: queued ? params[5] : params[6],
+          observability_request_id: params[8],
+          observability_trace_id: params[9],
+          observability_parent_span_id: params[10],
           created_at: now,
           inserted: true,
         };
         jobs.set(id, row);
+        onJobInserted(row);
         if (idempotencyKey) jobIdempotency.set(idempotencyKey, id);
         return { rows: [row as T], rowCount: 1 };
       }
@@ -2119,8 +2125,9 @@ test(
     let firstUploadInspection = true;
     const policyModelBytes = Buffer.from(HOVER_POLICY_FIXTURE_V2.modelBase64, "base64");
     let retainedPolicyObject: { bucket: string; objectKey: string; sha256: string } | null = null;
+    const persistedJobCorrelations = new Map<string, Record<string, unknown>>();
     const app = buildServer({
-      db: platformMemoryDb(),
+      db: platformMemoryDb((row) => persistedJobCorrelations.set(String(row.id), row)),
       inspectObject: async (_config, object) => {
         const first = object.objectKey.includes("ab".repeat(32));
         const inspection = {
@@ -2550,6 +2557,17 @@ test(
     assert.equal(job.statusCode, 201, job.body);
     const jobId = (job.json() as { job: { id: string; output: { artifactKind: string } } }).job.id;
     assert.equal((job.json() as { job: { output: { artifactKind: string } } }).job.output.artifactKind, "photoscan");
+    const requestId = String(job.headers["x-forge-request-id"]);
+    const traceMatch = String(job.headers.traceparent).match(/^00-([a-f0-9]{32})-([a-f0-9]{16})-00$/);
+    assert.ok(traceMatch);
+    assert.deepEqual(
+      {
+        requestId: persistedJobCorrelations.get(jobId)?.observability_request_id,
+        traceId: persistedJobCorrelations.get(jobId)?.observability_trace_id,
+        parentSpanId: persistedJobCorrelations.get(jobId)?.observability_parent_span_id,
+      },
+      { requestId, traceId: traceMatch[1], parentSpanId: traceMatch[2] },
+    );
 
     const duplicateJob = await app.inject({
       method: "POST",
