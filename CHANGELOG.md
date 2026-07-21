@@ -18,6 +18,27 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Protect job and worker correlation
+**Session:** Codex agent · branch `codex/ops003-job-worker-correlation-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Reconciled D72's request/job/D38-attempt/worker correlation slice with
+protected evidence. PR #135 exact head `4bb4721` passed all twelve required checks in
+CI `29859593049` and security `29859592862`; tree-identical protected squash
+`a17ff74` passed post-merge CI `29860284729` and security `29860284861`. The boundary
+is protected at contract/fixture maturity only. It grants no provider/deployment/
+actor/Desktop propagation, telemetry backend, metrics/traces, dashboard, alert,
+managed, live, production, or external-beta authority.
+**Changed:** Agent entry point; project state; task, phase, execution, and operations
+roadmaps; changelog.
+**Decisions:** none; D72 and R40 remain active unchanged.
+**Next:** Select the next dependency-complete OPS-003 slice: bounded provider and D68
+deployment correlation before any telemetry backend, then separately define backend
+custody/retention and finite-cardinality metrics/traces.
+**Blockers:** OPS-002 still lacks a real managed sandbox install/upgrade/rollback
+exercise. Provider calls, deployment observations, Desktop trust, external telemetry
+storage, dashboards, alert delivery/acknowledgement, and managed/live/production
+proof remain independent OPS-003 gates.
+
 ## 2026-07-21 — Bind trusted jobs to worker attempts
 **Session:** Codex agent · branch `codex/ops003-job-worker-correlation` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
