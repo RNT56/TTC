@@ -122,20 +122,23 @@ lifecycle assertions, and all 12 production-browser flows. PR #135 exact head
 propagation, telemetry backends, metrics/traces, dashboards, alerts, managed, live,
 production, and external-beta maturity remain later slices.
 
-D73 is an unprotected contract/fixture candidate. Event major 3 retains frozen v1/v2
-reads and adds only two exact authority paths: a managed Gateway/worker deployment ID
+D73 is protected at contract/fixture maturity through PR #140/`90cc58c`. Event major
+3 retains frozen v1/v2 reads and adds only two exact authority paths: a managed
+Gateway/worker deployment ID
 returned by successful verification of the active D68 manifest, and the provider-call
 ID already persisted for the same Modal `train.policy` job before completion. Local/
 CI deployment, worker start, other provider/job, actor, and Desktop fields remain
-null, and provider/deployment IDs remain forbidden metric labels. This does not
-advance the protected roadmap boundary until exact PR/protected-main/post-merge proof,
-and cannot close provider delivery, deployment health, telemetry backend, dashboard,
-alert, managed, live, production, or external-beta criteria.
+null, and provider/deployment IDs remain forbidden metric labels. PR #140 exact head
+`283b43a` passed all twelve checks in CI `29868001992` and security `29868001971`;
+tree-identical protected squash `90cc58c` passed post-merge CI `29868693418` and
+security `29868693478`. This cannot close provider delivery, deployment health,
+telemetry backend, dashboard, alert, managed, live, production, or external-beta
+criteria.
 All 48 local gates pass with four D73 policy tests, 24 compatibility surfaces, 85
 Gateway tests, 259 workers, Brief-25 25/25, and the unchanged 200/97/two-Pareto/two-
 held batch. A disposable isolated database passes 28 migrations, 27 populated
-predecessors, the provider-call handoff, and all 12 browser flows; this local result
-does not replace protection.
+predecessors, the provider-call handoff, and all 12 browser flows; these results
+support only the protected contract/fixture boundary.
 
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
