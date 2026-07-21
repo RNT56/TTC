@@ -370,20 +370,22 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   `29860284861`. This remains `[~]`: provider/deployment/actor/Desktop propagation,
   backends, metrics/traces, dashboards, alerts, managed, live, production, and
   external-beta proof remain open.
-  **D73 unprotected candidate (2026-07-21, contract/fixture):** event major 3 retains
+  **D73 protected slice (2026-07-21, contract/fixture):** event major 3 retains
   frozen v1/v2 reads. Managed Gateway/worker events derive a bounded deployment ID
   only from the successful exact active-D68 startup verifier; local/CI require null.
   A worker completion carries the provider-call ID only after the same Modal
   `train.policy` job persisted it transactionally under the current lease; started
   events and other provider/job families require null. Both IDs are forbidden metric
-  labels. This candidate requires exact local, PR, protected-main, post-merge, and
-  evidence-reconciliation proof before becoming protected. OPS-003 remains `[~]`:
+  labels. PR #140 exact head `283b43a` passed all twelve checks in CI
+  `29868001992` and security `29868001971`; tree-identical protected squash
+  `90cc58c` passed post-merge CI `29868693418` and security `29868693478`. OPS-003
+  remains `[~]`:
   other provider families, actor/Desktop, backends, metrics/traces, dashboards,
   alerts, provider delivery, deployment health, managed, live, production, and
   external-beta proof remain open.
-  The complete local candidate now passes all 48 gates with 85 Gateway and 259 worker
-  tests plus a disposable 28-migration/27-predecessor/12-browser-flow database matrix;
-  PR/protected-main/post-merge/evidence protection remains outstanding.
+  The complete slice passes all 48 local gates with 85 Gateway and 259 worker tests
+  plus a disposable 28-migration/27-predecessor/12-browser-flow database matrix; this
+  advances only protected contract/fixture maturity.
 - [ ] OPS-004 — Define SLOs and error budgets for API, generation, queue latency, photoscan, training, object storage, auth, and provider handoffs.
 - [ ] OPS-005 — Implement Postgres/object backup, restore verification, retention, capacity, migration, and disaster-recovery runbooks.
 - [ ] OPS-006 — Define job quotas, concurrency, cancellation/refund, idempotency, dead-letter/reconciliation, cost attribution, and runaway-spend kill switches.

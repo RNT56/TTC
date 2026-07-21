@@ -18,6 +18,29 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Protect provider and deployment observability
+**Session:** Codex agent · branch `codex/ops003-provider-deployment-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Reconciled D73's active-D68 deployment and persisted Modal `train.policy`
+call correlation with protected evidence. PR #140 exact head `283b43a` passed all
+twelve required checks in CI `29868001992` and security `29868001971`; its tree is
+byte-identical to protected squash `90cc58c`, whose post-merge CI `29868693418` and
+security `29868693478` pass. D73 is protected at contract/fixture maturity only:
+managed Gateway/worker deployment IDs still require the exact successful active-D68
+startup context, local/CI require null, and only the same persisted Modal training
+call may appear on that job's completion. No provider delivery, deployment health,
+other provider/job family, actor/Desktop continuity, telemetry backend, dashboard,
+alert, managed environment, live service, production, or external-beta claim follows.
+**Changed:** Canonical agent entry point; project state; task, phase, execution, and
+operations roadmaps; changelog.
+**Decisions:** none; D73 and R40 remain active unchanged.
+**Next:** Select the smallest dependency-complete OPS-003 backend-custody slice:
+define bounded transport, access, retention/deletion, delivery-failure behavior, and
+finite-cardinality metrics/traces without coupling telemetry delivery to authority.
+**Blockers:** OPS-002 still lacks a real managed sandbox install/upgrade/rollback
+exercise. External telemetry custody and every managed/live/production proof remain
+open.
+
 ## 2026-07-21 — Bind provider and deployment observability authority
 **Session:** Codex agent · branch `codex/ops003-provider-deployment-correlation` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

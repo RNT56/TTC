@@ -102,9 +102,9 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is evidence PR #139 at `a02f42b`, while the
-  D72/OPS-003 capability remains anchored at implementation
-  PR #135/`a17ff74`.
+  latest verified protected descendant is implementation PR #140 at `90cc58c`; the
+  D72/OPS-003 job/worker capability remains anchored at PR #135/`a17ff74`, and D73's
+  provider/deployment correlation is anchored at PR #140/`90cc58c`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -173,15 +173,17 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   `29864136319` and security `29864136746`; tree-identical protected squash
   `a02f42b` passed post-merge CI `29864776606` and security `29864776469`. D73's
   event-major-3 active-D68 deployment and persisted Modal `train.policy` call
-  correlation is currently an unprotected candidate; it grants no provider-delivery,
-  deployment-health, backend, managed, live, or production authority before or after
-  repository protection.
+  correlation is protected at contract/fixture maturity through PR #140 exact head
+  `283b43a`, all twelve checks in CI `29868001992` and security `29868001971`, tree-
+  identical protected squash `90cc58c`, and post-merge CI `29868693418` and security
+  `29868693478`. It grants no provider-delivery, deployment-health, other provider/job,
+  actor/Desktop, backend, managed, live, or production authority.
   All 48 local gates pass with four D73 policy tests, 24 compatibility surfaces, 85
   Gateway tests, all 259 fully enabled worker tests, Brief-25 25/25, and the unchanged
   200/97/two-Pareto/two-held batch. A disposable isolated Postgres/pgvector database
   passes all 28 migrations, 27 populated predecessors, the Modal provider-call
   persistence handoff, all remaining data assertions, and all 12 production-browser
-  flows. These local results do not advance the protected boundary.
+  flows. These results support only the protected D73 contract/fixture boundary.
   D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security

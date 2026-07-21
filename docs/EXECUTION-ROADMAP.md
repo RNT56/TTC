@@ -110,17 +110,18 @@ tree-identical protected squash `a17ff74`, and post-merge CI/security
 `29860284729`/`29860284861` pass. It cannot close provider/deployment/actor/Desktop
 propagation, a backend, metrics/traces, dashboards, alerts, managed, live, or
 production criteria.
-D73 is an unprotected event-major-3 candidate that retains frozen v1/v2 reads and
-adds only exact active-D68 deployment correlation plus the already persisted Modal
-`train.policy` call ID on that job's completion. Local/CI deployment, start events,
-other provider/job families, actor/Desktop, and all unbounded labels remain refused.
-Protect and reconcile this exact candidate before selecting backend custody; provider
-delivery, deployment health, backends, dashboards, alerts, managed, live, and
-production proof remain later acceptance lanes.
+D73 is protected at event-major-3 contract/fixture maturity through PR #140/
+`90cc58c`; it retains frozen v1/v2 reads and adds only exact active-D68 deployment
+correlation plus the already persisted Modal `train.policy` call ID on that job's
+completion. Local/CI deployment, start events, other provider/job families,
+actor/Desktop, and all unbounded labels remain refused. Exact head `283b43a`, all
+twelve PR checks in CI `29868001992` and security `29868001971`, tree-identical
+protected squash `90cc58c`, and post-merge CI/security `29868693418`/`29868693478`
+pass. Provider delivery, deployment health, backends, dashboards, alerts, managed,
+live, and production proof remain later acceptance lanes.
 All 48 local gates and a disposable 28-migration/27-predecessor/12-browser-flow
 database matrix pass, including the persisted Modal-call handoff and all 259 worker
-tests. This is complete local candidate evidence, not permission to skip exact PR,
-protected-main, post-merge, and evidence-reconciliation gates.
+tests. These results support only the protected repository contract/fixture boundary.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is
