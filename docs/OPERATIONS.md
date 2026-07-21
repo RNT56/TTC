@@ -2,7 +2,7 @@
 
 Owner: platform/release maintainers
 
-Decisions: D68, D69, D70, D71, D72, D73, D74
+Decisions: D68, D69, D70, D71, D72, D73, D74, D75
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
@@ -19,9 +19,13 @@ Fixture transport policy: [`infra/observability/observability-transport-policy.v
 
 Delivery-batch schema: [`schema/forge-observability-delivery-batch.schema.json`](../schema/forge-observability-delivery-batch.schema.json)
 
+Fixture signals policy: [`infra/observability/observability-signals-policy.v1.json`](../infra/observability/observability-signals-policy.v1.json)
+
+Signal-set schema: [`schema/forge-observability-signal-set.schema.json`](../schema/forge-observability-signal-set.schema.json)
+
 Frozen policies: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json), [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`, with evidence reconciled at `0388cf6`; D75 is an unprotected local finite-metric/deterministic-trace contract/fixture candidate; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -72,6 +76,23 @@ training/MJX, and the unchanged 200/97/two/two co-design batch. PR #142 exact he
 tree-identical protected squash `7abcb56` passed post-merge CI `29873512358` and
 security `29873512339`. This is protected repository contract/fixture evidence only
 and proves neither external delivery nor persistent custody.
+Evidence PR #143 exact head `b23b3a9` passed all twelve checks in CI `29874518707`
+and security `29874518705`; tree-identical protected squash `0388cf6` passed post-
+merge CI `29875062096` and security `29875062119`.
+
+The unprotected D75 candidate leaves event v3 and delivery batch v1 frozen and adds a
+separate signal-set major plus executable network-free local projector. Generated
+82-route/17-worker-family authority bounds labels; five fixed metric families exclude
+correlation/error/source identities; completion traces retain every failure, fixed-
+threshold slow spans, and deterministic 1/64 healthy samples. Starts are excluded,
+and one input batch yields at most 64 series/32 spans/262144 bytes in process memory.
+All 48 required local gates pass under Python 3.12.13 with 20 observability tests, 26
+compatibility surfaces, 22 golden families, generated contract docs, 39 Studio tests,
+85 Gateway tests, all 259 workers, and the unchanged deterministic recovery batch.
+Exact-head/protected/post-merge and evidence-reconciliation proof remain pending.
+This candidate proves no external collector/custody, persistent metrics/traces,
+dashboard, alert, managed, live, or
+production operation.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -483,7 +504,7 @@ corrected roll-forward, managed environment, or live service.
 
 ### OPS-003/004 measurement rules
 
-Current D71/D72/D73/D74 slice status:
+Current D71/D72/D73/D74/D75 slice status:
 
 1. **Gateway request contract/fixture — protected.** Versioned policy,
    schema, compatibility surface, golden family, and executable producer generate
@@ -521,18 +542,29 @@ Current D71/D72/D73/D74 slice status:
    availability and delivery-failure monitoring, deletion, owner-scoped export,
    residency, and enforced retention. All 48 local gates and exact PR/protected-main/
    post-merge gates pass; every external-custody criterion remains open.
-5. **Metrics/traces backends — open.** Export only reviewed finite-cardinality
-   dimensions; retain sampled slow/error trace continuity without payload capture;
-   define access, retention, deletion, availability, and delivery-failure behavior.
-6. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
+5. **Metric projection and trace sampling — unprotected D75 contract/fixture
+   candidate.** Signal-set major 1 accepts only D74 batch v1/event v3 and independently
+   revalidates input. Metric route/method pairs and worker tasks require the generated
+   82-route/17-family contract. Five exact counter/histogram families fix units,
+   labels, and buckets while forbidding correlation/error/source identities as
+   labels. Completion traces retain every failure, Gateway spans at or above 1000 ms,
+   worker spans at or above 60000 ms, and a deterministic SHA-256 1/64 healthy
+   baseline; starts are excluded. One memory-only/network-free projection is bounded
+   to 64 series, 32 spans, and 262144 bytes and cannot change product authority. All
+   48 local gates pass; exact PR/protected-main/post-merge and reconciliation
+   evidence remain pending.
+6. **Persistent metrics/traces backends — open.** Select and deploy reviewed storage;
+   define access, retention, deletion, residency, availability, delivery failure,
+   recovery, and query behavior without widening D75 labels or sampling semantics.
+7. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
    action, silence/expiry, separate delivery-failure route, synthetic delivery, and
    acknowledgement before claiming operational monitoring.
 
-The four repository-only contract slices may proceed while OPS-002's real managed-
+The five repository-only contract slices may proceed while OPS-002's real managed-
 sandbox exercise is waiting on an external target because they create no live
 exercise or backend. The D73 subset does not close the broader third slice, and
-slices 3–6 never close from schemas, database rows, loopback delivery, or local
-output. Every deployed
+slices 3–7 never close from schemas, database rows, loopback delivery, or local
+signal output. Every deployed
 exercise still requires the exact D68/D69/D70 sandbox authority plus retained private
 operations evidence.
 
@@ -548,6 +580,19 @@ Do not add credentials, a remote hostname, a query token, a retry loop, or a spo
 this command. A managed collector is a new reviewed slice with a secret/reference
 boundary, TLS/egress/DNS policy, lifecycle operations, availability objectives,
 failure telemetry, adversarial inspection, and retained sandbox evidence.
+
+The D75 projector can be exercised only as a local bounded transformation of one
+already validated D74 batch:
+
+```sh
+pnpm verify:observability
+node scripts/observability-signals.mjs project \
+  < /private/path/delivery-batch.json
+```
+
+Do not add a remote endpoint, credentials, persistence, dynamic labels/buckets, or
+unbounded sampling to this command. A signal-set JSON document is a contract fixture,
+not an installed metric/trace backend, dashboard, alert, or custody proof.
 
 - Correlation IDs are generated/validated at trusted boundaries and propagated to
   jobs/provider calls; never accept a client claim as audit identity.

@@ -11,8 +11,8 @@ at contract/fixture maturity, while credentialed GPU/provider proof remains gate
 (task coordinate/version authority), D42 (multirotor v2/v3 correction), D44 (ground
 trainer authority), D45 (offline source authority), D46 (Modal deployment authority),
 D47 (MJX decision authority), D71 (telemetry boundary), D72 (job/attempt
-correlation), D73 (provider/deployment correlation), and D74 (independent fixture
-delivery)
+correlation), D73 (provider/deployment correlation), D74 (independent fixture
+delivery), and D75 (finite signal projection)
 
 ## 1. Purpose
 
@@ -64,6 +64,15 @@ loopback port, but it is not part of claim/lease/materialization authority and i
 wired to an external collector. Remote authentication, durable queues, custody,
 retention/deletion, metrics/traces, dashboards, alerts, managed, live, and production
 operation remain separate OPS acceptance work.
+Under D75, the worker is still a producer only. The independent network-free local
+projector admits a worker task as a metric label only when it appears in the generated
+17-family worker contract, aggregates fixed start/completion/duration series, and
+samples completion traces for every failure, fixed-threshold slow outcome, or
+deterministic healthy baseline. Job/attempt/trace/provider-call/deployment/error/
+retry/source identities never become labels, worker starts never become trace spans,
+and projection remains outside claim/lease/retry/cancellation/materialization
+authority. A signal-set document proves no persistent backend, custody, dashboard,
+alert, managed, live, or production operation.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and

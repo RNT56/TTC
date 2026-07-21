@@ -98,6 +98,17 @@
       "acceptedEventVersions": ["3.0.0"],
       "versionRule": "accepted event majors, envelope fields, batch identity, byte/count limits, endpoint trust, retry/spool behavior, lifecycle, product-authority independence, and custody nonclaims are major-version semantics"
     },
+    "observabilitySignalSet": {
+      "current": "1.0.0",
+      "supportedMajors": [1],
+      "schema": "forge-observability-signal-set",
+      "versionField": "schemaVersion",
+      "schemaPath": "schema/forge-observability-signal-set.schema.json",
+      "policyPath": "infra/observability/observability-signals-policy.v1.json",
+      "acceptedDeliveryBatchVersions": ["1.0.0"],
+      "acceptedEventVersions": ["3.0.0"],
+      "versionRule": "input contract versions, generated route/task authority, metric names/kinds/units/labels/buckets, trace sampling/correlation semantics, output bounds, lifecycle, authority isolation, and backend nonclaims are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [1],

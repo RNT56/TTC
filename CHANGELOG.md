@@ -18,6 +18,39 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Project finite observability signals
+**Session:** Codex agent · branch `codex/ops003-observability-signals` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Reconciled D74 through evidence PR #143 exact head `b23b3a9`, all twelve
+checks in CI `29874518707` and security `29874518705`, tree-identical protected
+squash `0388cf6`, and post-merge CI/security `29875062096`/`29875062119`. Implemented
+the unprotected D75 repository-only signals candidate without changing frozen event
+v3 or delivery-batch v1. Signal-set v1 admits one validated delivery batch, projects
+five fixed metric families using generated 82-route/17-worker-task authority and
+exact finite labels, and samples completion traces for all failures, fixed slow
+thresholds, and a deterministic SHA-256 one-in-64 healthy baseline. Starts never
+become trace spans; correlation/provider/deployment and other high-cardinality
+identifiers remain forbidden metric labels. One projection is memory/stdout-only and
+bounded to 64 metric series, 32 trace spans, and 262144 serialized bytes. Focused
+policy, projection, authority, redaction, sampling, bounded-input, and nonclaim tests
+pass. All 48 required local gates pass under Python 3.12.13 with 20 observability
+tests, 26 compatibility surfaces, 22 golden families, generated 82-route/two-event/
+seventeen-worker docs, 39 Studio tests, 85 Gateway tests, all 259 workers, Brief-25
+25/25, native/WASM parity, packaging, training/MJX, and the unchanged 200/97/two-
+Pareto/two-held co-design batch. Every remote protection gate remains pending.
+**Changed:** Signals policy/schema/projector/tests; compatibility and golden
+registries; generated artifact reference; operations, security, risk, system,
+best-practice, state, phase, execution, task, agent-entry, and changelog documents.
+**Decisions:** Added D75 for repository-only metric/trace projection, finite label
+authority, deterministic sampling, independent signal-set versioning, bounds, and
+explicit backend/live nonclaims; next free regular decision ID is D76. R40 now also
+covers cardinality and sampling-policy drift.
+**Next:** Inspect and commit the exact locally verified candidate, then publish it for
+exact-head/protected/post-merge proof before advancing the protected boundary.
+**Blockers:** None for repository protection. External collector authentication,
+durable custody, telemetry backends, dashboards, alerts, managed infrastructure,
+live service, production, and external-beta evidence remain separate work.
+
 ## 2026-07-21 — Protect bounded observability delivery
 **Session:** Codex agent · branch `codex/ops003-observability-transport-evidence` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

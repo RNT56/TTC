@@ -135,7 +135,24 @@ worker tests. Exact head `c7b4035`, all twelve PR checks in CI `29872947817` and
 security `29872947795`, tree-identical protected squash `7abcb56`, and post-merge
 CI/security `29873512358`/`29873512339` pass. This advances no external collector,
 managed custody, metrics/traces, dashboard, alert, managed, live, production, or
-external-beta exit.
+external-beta exit. Evidence PR #143 exact head `b23b3a9`, all twelve checks in CI
+`29874518707` and security `29874518705`, tree-identical protected squash `0388cf6`,
+and post-merge CI/security `29875062096`/`29875062119` reconcile that boundary.
+
+D75 is the active dependency-safe repository slice. It introduces an independent
+signal-set v1 projection over one D74 batch: five fixed metric families with exact
+generated route/task authority and finite labels, plus completion-trace sampling for
+all failures, fixed slow thresholds, and a deterministic SHA-256 one-in-64 healthy
+baseline. Starts are never trace spans; correlation/provider/deployment identifiers
+remain forbidden as metric labels. The local projection is memory-only, stdout-only,
+and capped at 64 metric series, 32 trace spans, and 262144 bytes. All 48 required
+local gates pass under Python 3.12.13 with 20 observability tests, 26 compatibility
+surfaces, 22 golden families, 39 Studio tests, 85 Gateway tests, all 259 workers, and
+the unchanged deterministic recovery batch. Exact-head/protected/post-merge and
+evidence-reconciliation proof remain pending. This candidate does not advance
+external collector/authentication, durable custody, a metric/trace backend,
+dashboard, alert, managed, live, production, or
+external-beta acceptance.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
 product dependency path continues Wave 2 with credentialed catalog acceptance and the
 EXT-001 independent-builder path. QA-012's dependency-complete reliability lane is

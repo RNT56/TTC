@@ -613,6 +613,15 @@ authority. This remains contract/fixture evidence: authenticated external collec
 other provider/Desktop continuity, proxy/backend seeded-secret scans, access/audit,
 availability/failure monitoring, retention/deletion/export/residency operations,
 metrics/traces, dashboards, alerts, and live delivery remain unproven.
+D75 separately revalidates one D74 batch before projection. Metric route/method and
+task labels require the generated 82-route/17-worker-task authority, and five exact
+metric families forbid request/job/attempt/trace/span/provider-call/deployment/error/
+status-code/retry/source-revision labels. Completion trace output includes every
+failure, fixed-threshold slow spans, and only a deterministic 1/64 healthy baseline;
+starts are excluded. Input, output, series, spans, memory, and stderr are bounded; the
+projector has no network or persistence and cannot change product authority. A local
+signal set still proves no external collector/custody, backend, dashboard, alert,
+managed, live, or production monitoring.
 
 ## 14. Control and negative-test matrix
 
@@ -621,7 +630,7 @@ metrics/traces, dashboards, alerts, and live delivery remain unproven.
 | Host-header/origin/CSRF confusion | pinned-origin config, forwarded-header stripping, unsafe cookie-origin tests, Auth.js CSRF enabled | deployed proxy/TLS/cookie inspection |
 | Dev/admin auth bypass | production startup negatives, dev-header refusal, absent/short owner-token failures | named roles and revocation drill |
 | Secret persistence/reflection | HTTP BYO header-only rejection/no env fallback/query audit plus ETL header-only body/command/error tests | provider/proxy/APM log inspection and separate BYO/service-key rotation drills |
-| Log/correlation injection or telemetry leakage | D71/D72/D73 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, exact active-D68 deployment identity, persisted Modal `train.policy` call identity, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation; D74 separately revalidates v3 into 1..32-event/135168-byte memory-only batches and proves one credential-free loopback attempt with redirect/non-2xx/timeout refusal and no retry/spool/authority mutation | authenticated external collector with egress/DNS/TLS proof; other-provider/Desktop continuity; seeded-secret proxy/backend scan; access/audit, availability/failure, retention/deletion/export/residency operations; metrics/traces, dashboards, and synthetic alert delivery |
+| Log/correlation injection or telemetry leakage | D71/D72/D73 exact 4 KiB event majors, server-generated request roots, database job/attempt/span authority, exact active-D68 deployment identity, persisted Modal `train.policy` call identity, bounded terminal codes, template-route/no-query producers, extension/sensitive-field/cardinality refusal, and sink-failure isolation; D74 separately revalidates v3 into 1..32-event/135168-byte memory-only batches and proves one credential-free loopback attempt with redirect/non-2xx/timeout refusal and no retry/spool/authority mutation; D75 revalidates one batch into five generated-authority metric families plus bounded deterministic failure/slow/healthy completion-trace samples with no network/persistence | authenticated external collector with egress/DNS/TLS proof; other-provider/Desktop continuity; seeded-secret proxy/backend scan; access/audit, availability/failure, retention/deletion/export/residency operations; persistent metrics/traces, dashboards, and synthetic alert delivery |
 | JSON/parameter bombs | byte/depth/node/key/string/non-finite/cycle tests; direct job/object tests | load/concurrency/memory exercise |
 | SSRF/redirect/rebinding | private-range, allowlist, DNS, redirect, type, timeout/body tests | egress proxy/firewall connection-time proof |
 | Prompt/retrieval injection | data delimiters, untrusted-prefix ordering, provider non-invocation, validator gate | live adversarial provider evaluation |

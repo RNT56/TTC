@@ -31,6 +31,7 @@ package to adopt that same number.
 | hardened runtime publication | 1.0.0 | `forge-hardened-runtime-publication` binds protected source/tree, digest-only GHCR identities, registry manifest/config digests, SPDX/build/scan records, registry-attached GitHub provenance, independent pull/runtime verification, and explicit managed/live nonclaims; changing any meaning is major | major 1; publication proves immutable registry artifacts only and cannot prove a managed sandbox, rollback, live service, or production |
 | observability event | 3.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | majors 1, 2, and 3; v1 is the frozen Gateway-only reader, v2 adds persisted job/D38-attempt correlation and worker lifecycle events, and v3 adds active-D68 deployment correlation plus persisted Modal `train.policy` call correlation at contract/fixture maturity |
 | observability delivery batch | 1.0.0 | `forge-observability-delivery-batch` independently binds accepted event majors, envelope identity/time/count, byte/count/time limits, endpoint trust, redirect/retry/spool/failure/lifecycle behavior, product-authority isolation, and custody nonclaims; changing any meaning is major | major 1 accepts only frozen event 3.0.0; the executable adapter is loopback-only contract/fixture evidence and proves no external collector, managed custody, backend, dashboard, alert, live service, or production |
+| observability signal set | 1.0.0 | `forge-observability-signal-set` independently binds accepted delivery/event versions, generated route/task authority, metric names/kinds/units/labels/buckets, completion-trace selection and correlation, output bounds, lifecycle, product-authority isolation, and backend nonclaims; changing any meaning is major | major 1 accepts only delivery batch 1.0.0 over frozen event 3.0.0; the executable projector is memory-only/network-free contract/fixture evidence and proves no external collector, persistent backend, dashboard, alert, managed custody, live service, or production |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.7.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
@@ -109,6 +110,21 @@ Its nonzero failure cannot alter product authority. Access/audit, availability a
 delivery-failure monitoring, deletion proof, owner-scoped export review, residency,
 and enforced retention remain required for any later managed collector and are not
 implemented by this format.
+
+Observability signal set 1.0.0 is defined separately by
+[`forge-observability-signal-set.schema.json`](../schema/forge-observability-signal-set.schema.json)
+and
+[`observability-signals-policy.v1.json`](../infra/observability/observability-signals-policy.v1.json).
+D75 leaves event 3.0.0 and delivery batch 1.0.0 frozen. The local projector
+independently revalidates one delivery batch, admits metric route/method pairs and
+worker tasks only from the generated API/worker contract, aggregates five exact
+counter/histogram families, and forbids request/job/attempt/trace/provider/deployment/
+error/source identities as labels. Completion traces include every failure, every
+fixed-threshold slow span, and a deterministic 1/64 healthy baseline; starts are not
+trace spans. The process reads and writes one bounded memory-only JSON document with
+no network or persistence. This defines safe signal semantics but creates no external
+collector, managed custody, metric/trace backend, dashboard, alert, live service, or
+production operation.
 
 `GET /v1/account/export` emits user-data export 1.7.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but

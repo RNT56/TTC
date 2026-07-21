@@ -64,7 +64,9 @@ Read in this order for every non-trivial session:
    lives in `infra/observability/observability-policy.v3.json`; D74's independent
    delivery-batch/lifecycle/custody boundary lives in
    `infra/observability/observability-transport-policy.v1.json` and deliberately
-   leaves event major 3 frozen.
+   leaves event major 3 frozen; D75's independent metric-projection/trace-sampling
+   boundary lives in `infra/observability/observability-signals-policy.v1.json` and
+   leaves both upstream majors frozen.
 16. `docs/MIGRATIONS.md` before changing Postgres schema, migration SQL/runner,
    persisted-data compatibility, backup impact, or database recovery behavior.
 17. `docs/API-EVENT-ARTIFACT-REFERENCE.md`, `docs/API-MIGRATIONS.md`, and
@@ -105,11 +107,11 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is implementation PR #142 at `7abcb56`; the
+  latest verified protected descendant is evidence PR #143 at `0388cf6`; the
   D72/OPS-003 job/worker capability remains anchored at PR #135/`a17ff74`, and D73's
   provider/deployment correlation is anchored at PR #140/`90cc58c`, reconciled
   through PR #141/`363a8b4`; D74's bounded loopback delivery contract is anchored at
-  PR #142/`7abcb56`.
+  PR #142/`7abcb56`, reconciled through PR #143/`0388cf6`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -208,6 +210,23 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   managed custody, backend, dashboard, alert, managed, live, or production evidence
   exists; repository protection advances no claim beyond bounded contract/fixture
   delivery.
+  Evidence PR #143 exact head `b23b3a9` passed all twelve checks in CI
+  `29874518707` and security `29874518705`; tree-identical protected squash
+  `0388cf6` passed post-merge CI `29875062096` and security `29875062119`.
+  D75 is the current unprotected candidate: `forge-observability-signal-set/1.0.0`
+  accepts only delivery batch v1/event v3, derives five fixed finite-authority metric
+  families, samples every failure and fixed-threshold slow completion plus a
+  deterministic 1/64 healthy baseline, and emits one bounded memory-only/network-free
+  document. Request/job/attempt/trace/provider-call/deployment/error/source identities
+  remain forbidden metric labels, starts never become trace spans, and projection
+  cannot change product authority. All 48 required local gates pass under Python
+  3.12.13 with 20 observability tests, 26 compatibility surfaces, 22 golden families,
+  39 Studio tests, 85 Gateway tests, all 259 workers, Brief-25 25/25, native/WASM,
+  packaging, training/MJX, and the unchanged 200/97/two/two co-design batch. Exact-
+  head PR, protected-tree, and post-merge evidence remain pending. External
+  collection/custody, persistent metric or trace backends, dashboards, alerts,
+  managed, live, and production evidence remain false until their own acceptance
+  lanes pass.
   D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,
   reviewed merge/tree `0050bcb`/`f5a9a323`, PR CI/security
@@ -825,9 +844,9 @@ Do not repeat these facts without re-running or re-checking them. Update
 | Admission | `crates/forge-validate` | The validator is sovereign; fix artifacts, never weaken checks to green them |
 | Browser facade | `crates/forge-wasm`, `packages/studio` | Core truth in WASM; React/Three.js remain presentation and interaction; support tiers and accessibility acceptance are owned by `docs/BROWSER-SUPPORT.md` |
 | API/data/platform | `packages/gateway`, `infra/migrations`, `contracts/documentation.json` | Validate writes, scope ownership, fail closed, preserve audit history; registered routes and TypeBox request schemas generate the versioned API/event/artifact reference without hand-edited drift; policy reads cross-check owner/job/model/scorecard/tensor/lineage/object bytes |
-| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only; D72 creates database-owned attempt/span identity and bounded lifecycle events without coupling telemetry delivery to authority; D73 permits only the already persisted Modal `train.policy` call ID on that job's completion; D74 remains an independent consumer and never enters claim/materialization authority |
+| Compute | `workers` | Deterministic fixture oracle plus explicit live adapter; no public worker surface; D38 attempt leases fence retries and late output; D39 makes inline policy bytes transient and permits one exact job-bound durable policy only; D72 creates database-owned attempt/span identity and bounded lifecycle events without coupling telemetry delivery to authority; D73 permits only the already persisted Modal `train.policy` call ID on that job's completion; D74/D75 remain independent consumers and never enter claim/materialization authority |
 | Desktop/hardware | `packages/desktop` | D30/D12 lab gates, physical confirmation, no auto-arm, supervisor authority |
-| Deployment/operations | `infra/deployment`, `infra/observability`, `infra/docker`, `infra/compose.hardened.json`, `scripts/deployment-policy.mjs`, `scripts/hardened-runtime.mjs`, `scripts/hardened-runtime-registry.mjs`, `scripts/observability-policy.mjs`, `scripts/observability-transport.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion, D69 image/runtime, D70 digest-only registry publication, D71 Gateway event boundary, D72 request/job/D38-attempt/worker correlation, D73 exact active-manifest deployment plus persisted Modal training-call correlation authority, and D74 independent bounded loopback fixture delivery/custody requirements; build once, exact artifacts, file-mounted secrets staged outside the checkout as `root:10999`/`0440` for the single-host profile (Compose service-level `uid`/`gid`/`mode` are unsupported here), private topology, least privilege, forward-only migrations, allowlisted telemetry only, no managed/live claim from contract, image publication, database rows, local logs, loopback HTTP, or CI evidence |
+| Deployment/operations | `infra/deployment`, `infra/observability`, `infra/docker`, `infra/compose.hardened.json`, `scripts/deployment-policy.mjs`, `scripts/hardened-runtime.mjs`, `scripts/hardened-runtime-registry.mjs`, `scripts/observability-policy.mjs`, `scripts/observability-transport.mjs`, `scripts/observability-signals.mjs`, `docs/OPERATIONS.md` | D68 environment/manifest/promotion, D69 image/runtime, D70 digest-only registry publication, D71 Gateway event boundary, D72 request/job/D38-attempt/worker correlation, D73 exact active-manifest deployment plus persisted Modal training-call correlation authority, D74 independent bounded loopback fixture delivery/custody requirements, and D75 finite metric/trace projection; build once, exact artifacts, file-mounted secrets staged outside the checkout as `root:10999`/`0440` for the single-host profile (Compose service-level `uid`/`gid`/`mode` are unsupported here), private topology, least privilege, forward-only migrations, allowlisted telemetry only, no managed/live claim from contract, image publication, database rows, local logs, loopback HTTP, local signal sets, or CI evidence |
 | Catalog | `catalog` | Citations, immutable revisions, review state, license and export policy required |
 | Plans/status | `docs` | One fact, one owning document; status follows evidence |
 

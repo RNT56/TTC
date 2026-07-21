@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "forge-observability-signals-policy/1.0.0",
+  "signalSetVersion": "1.0.0",
+  "signalSetSchema": "schema/forge-observability-signal-set.schema.json",
+  "acceptedDeliveryBatchVersions": [
+    "1.0.0"
+  ],
+  "acceptedEventVersions": [
+    "3.0.0"
+  ],
+  "decision": "D75",
+  "status": "contract-fixture",
+  "inputAuthority": {
+    "gatewayRoutes": "contracts/documentation.json#gatewayApi.routes",
+    "workerTasks": "contracts/documentation.json#workerArtifacts.queueKind",
+    "documentedGatewayRoutes": 82,
+    "documentedWorkerTasks": 17,
+    "maxDeliveryBatchBytes": 135168,
+    "maxEventsPerBatch": 32
+  },
+  "metrics": {
+    "maxSeriesPerSignalSet": 64,
+    "series": [
+      {
+        "name": "forge_gateway_request_duration_ms",
+        "kind": "histogram",
+        "unit": "ms",
+        "labelKeys": [
+          "environment",
+          "method",
+          "route",
+          "statusClass"
+        ],
+        "bucketsMs": [
+          5,
+          10,
+          25,
+          50,
+          100,
+          250,
+          500,
+          1000,
+          2500,
+          5000,
+          10000,
+          30000,
+          60000,
+          300000,
+          3600000
+        ]
+      },
+      {
+        "name": "forge_gateway_requests_total",
+        "kind": "counter",
+        "unit": "1",
+        "labelKeys": [
+          "environment",
+          "method",
+          "route",
+          "statusClass"
+        ]
+      },
+      {
+        "name": "forge_worker_attempt_duration_ms",
+        "kind": "histogram",
+        "unit": "ms",
+        "labelKeys": [
+          "environment",
+          "outcome",
+          "provider",
+          "task"
+        ],
+        "bucketsMs": [
+          100,
+          500,
+          1000,
+          5000,
+          10000,
+          30000,
+          60000,
+          300000,
+          900000,
+          1800000,
+          3600000,
+          7200000,
+          14400000,
+          28800000
+        ]
+      },
+      {
+        "name": "forge_worker_attempts_completed_total",
+        "kind": "counter",
+        "unit": "1",
+        "labelKeys": [
+          "environment",
+          "outcome",
+          "provider",
+          "task"
+        ]
+      },
+      {
+        "name": "forge_worker_attempts_started_total",
+        "kind": "counter",
+        "unit": "1",
+        "labelKeys": [
+          "environment",
+          "provider",
+          "task"
+        ]
+      }
+    ],
+    "forbiddenLabelKeys": [
+      "actorDigest",
+      "attempt",
+      "attemptId",
+      "deploymentId",
+      "errorCode",
+      "jobId",
+      "providerCallId",
+      "requestId",
+      "retryAfterSeconds",
+      "sourceRevision",
+      "spanId",
+      "statusCode",
+      "traceId"
+    ]
+  },
+  "traces": {
+    "completionEventsOnly": true,
+    "maxSpansPerSignalSet": 32,
+    "gatewaySlowThresholdMs": 1000,
+    "workerSlowThresholdMs": 60000,
+    "baselineSampleDenominator": 64,
+    "baselineHash": "sha256-trace-id-colon-span-id-first-u16",
+    "failureOutcomes": [
+      "client-error",
+      "discarded",
+      "failed",
+      "retry-scheduled",
+      "server-error"
+    ],
+    "sampleReasons": [
+      "baseline",
+      "failure",
+      "slow"
+    ],
+    "allowedCorrelationKeys": [
+      "attemptId",
+      "deploymentId",
+      "jobId",
+      "parentSpanId",
+      "providerCallId",
+      "requestId",
+      "spanId",
+      "traceId"
+    ]
+  },
+  "lifecycle": {
+    "input": "one-validated-delivery-batch-json",
+    "output": "one-signal-set-json-on-stdout",
+    "buffer": "process-memory-only",
+    "persistentRetentionSeconds": 0,
+    "network": "none",
+    "productAuthority": "independent",
+    "maxSignalSetBytes": 262144
+  },
+  "denyFields": [
+    "authorization",
+    "body",
+    "cookie",
+    "errorMessage",
+    "headers",
+    "idempotencyKey",
+    "jobInput",
+    "jobOutput",
+    "leaseToken",
+    "modelBytes",
+    "personalData",
+    "presignedUrl",
+    "prompt",
+    "query",
+    "secretReference",
+    "telemetry",
+    "url"
+  ],
+  "maturity": {
+    "metricProjectionContract": true,
+    "traceSamplingContract": true,
+    "localProjectionFixture": true,
+    "externalCollector": false,
+    "authenticatedTransport": false,
+    "durableQueue": false,
+    "managedCustody": false,
+    "metricsBackend": false,
+    "traceBackend": false,
+    "dashboards": false,
+    "alertRouting": false,
+    "syntheticAlertDelivery": false,
+    "managedSandbox": false,
+    "live": false,
+    "production": false
+  }
+}

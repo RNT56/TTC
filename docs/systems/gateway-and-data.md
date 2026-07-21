@@ -425,6 +425,16 @@ Gateway response/job authority is untouched. Wiring a remote or authenticated
 collector into the runtime requires a later deployment, secret, network, custody,
 availability, lifecycle, and recovery decision.
 
+D75 also remains outside the Gateway. Its independent local projector revalidates one
+D74 batch and accepts Gateway metric route/method labels only when they match the
+generated route contract. It aggregates fixed counters/histograms and may emit a
+sampled completion trace carrying the already admitted v3 correlation and safe
+attributes. Request/job/attempt/trace/provider/deployment/error/source identities are
+never metric labels. Failure, fixed-threshold slow, and deterministic healthy-baseline
+selection is bounded and network/persistence-free; Gateway response/job authority is
+untouched. A local signal set is not a metrics/trace backend, managed custody,
+dashboard, alert, live service, or production evidence.
+
 Production trace/error tooling, authenticated external collection, proxy/provider
 secret-seeded inspection, access/audit, retention/deletion/export/residency,
 backends, dashboards, and alert delivery remain `OPS-*`. Docker Compose on one
