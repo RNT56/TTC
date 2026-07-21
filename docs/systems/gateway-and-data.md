@@ -417,7 +417,16 @@ bytes, digest, environment, protected source, status, and Gateway artifact/confi
 Local and CI events require null. The ID is correlation only, is forbidden as a
 metric label, and proves neither deployment health nor managed/live operation.
 
-Production trace/error tooling, proxy/provider secret-seeded inspection, retention,
+D74 does not change or embed transport into the Gateway. Its separate maintainer/CI
+fixture consumer may read validated v3 JSON lines, revalidate and batch at most 32 in
+memory, and make one bounded credential-free loopback POST. Invalid input, overflow,
+redirect, non-2xx, or timeout exits that consumer nonzero; there is no retry/spool and
+Gateway response/job authority is untouched. Wiring a remote or authenticated
+collector into the runtime requires a later deployment, secret, network, custody,
+availability, lifecycle, and recovery decision.
+
+Production trace/error tooling, authenticated external collection, proxy/provider
+secret-seeded inspection, access/audit, retention/deletion/export/residency,
 backends, dashboards, and alert delivery remain `OPS-*`. Docker Compose on one
 Hetzner-class VM (Gateway + Postgres + workers) + CDN for the Studio remains a
 proposed first deployment; GPU is burst-only. Backups require the D35/OPS-005 catalog,

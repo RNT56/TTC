@@ -118,6 +118,20 @@
       ],
       "versionRule": "event identity, trusted correlation, clock/source/version binding, field allowlist, redaction exclusions, and metric-cardinality rules are major-version semantics"
     },
+    "observabilityDeliveryBatch": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-observability-delivery-batch",
+      "versionField": "schemaVersion",
+      "schemaPath": "schema/forge-observability-delivery-batch.schema.json",
+      "policyPath": "infra/observability/observability-transport-policy.v1.json",
+      "acceptedEventVersions": [
+        "3.0.0"
+      ],
+      "versionRule": "accepted event majors, envelope fields, batch identity, byte/count limits, endpoint trust, retry/spool behavior, lifecycle, product-authority independence, and custody nonclaims are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [

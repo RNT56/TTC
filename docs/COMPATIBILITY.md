@@ -30,6 +30,7 @@ package to adopt that same number.
 | hardened runtime | 1.0.0 | `forge-hardened-runtime` binds reviewed base images, application targets and numeric identities, writable paths, TLS/private networking, file-mounted secrets, probes, least privilege, resource limits, graceful termination, and evidence nonclaims; changing any meaning is major | major 1; the checked profile is contract/fixture evidence until a protected artifact is installed and rolled back in a managed sandbox |
 | hardened runtime publication | 1.0.0 | `forge-hardened-runtime-publication` binds protected source/tree, digest-only GHCR identities, registry manifest/config digests, SPDX/build/scan records, registry-attached GitHub provenance, independent pull/runtime verification, and explicit managed/live nonclaims; changing any meaning is major | major 1; publication proves immutable registry artifacts only and cannot prove a managed sandbox, rollback, live service, or production |
 | observability event | 3.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | majors 1, 2, and 3; v1 is the frozen Gateway-only reader, v2 adds persisted job/D38-attempt correlation and worker lifecycle events, and v3 adds active-D68 deployment correlation plus persisted Modal `train.policy` call correlation at contract/fixture maturity |
+| observability delivery batch | 1.0.0 | `forge-observability-delivery-batch` independently binds accepted event majors, envelope identity/time/count, byte/count/time limits, endpoint trust, redirect/retry/spool/failure/lifecycle behavior, product-authority isolation, and custody nonclaims; changing any meaning is major | major 1 accepts only frozen event 3.0.0; the executable adapter is loopback-only contract/fixture evidence and proves no external collector, managed custody, backend, dashboard, alert, live service, or production |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.7.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
@@ -94,6 +95,20 @@ and authority contradictions are refused before serialization. The stdout JSON l
 and persistence rows prove neither provider delivery, deployment health, transport
 delivery, nor a metrics/trace backend, dashboard, alert, managed environment, live
 service, or production operation.
+
+Observability delivery batch 1.0.0 is defined separately by
+[`forge-observability-delivery-batch.schema.json`](../schema/forge-observability-delivery-batch.schema.json)
+and
+[`observability-transport-policy.v1.json`](../infra/observability/observability-transport-policy.v1.json).
+D74 deliberately leaves event 3.0.0 frozen. Its consumer revalidates only v3 JSON
+lines, groups one to 32 events under a 135168-byte ceiling, and creates an independent
+UUIDv4/UTC envelope. The first adapter makes one credential-free loopback HTTP POST,
+refuses userinfo/query/fragment/redirect/non-2xx, aborts within two seconds, never
+retries or durably spools, and discards its memory-only batch on success or failure.
+Its nonzero failure cannot alter product authority. Access/audit, availability and
+delivery-failure monitoring, deletion proof, owner-scoped export review, residency,
+and enforced retention remain required for any later managed collector and are not
+implemented by this format.
 
 `GET /v1/account/export` emits user-data export 1.7.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but
@@ -202,6 +217,15 @@ provider failure from their absence. Readers supporting only majors 1 or 2 must
 reject v3 events. Current readers retain both frozen schemas for historical lines;
 removing either correlation, broadening provider/job applicability, or changing its
 authority source requires another event major.
+
+D74 requires no database or event migration. A rollback removes only the independent
+fixture reader and delivery-batch producer; Gateway and worker event v3 stdout lines
+continue unchanged. Delivery-batch readers must reject an unsupported batch major or
+an event major not listed by that batch policy. Changing batch identity, accepted
+event versions, endpoint trust, limits, redirect/retry/spool/lifecycle behavior,
+authority isolation, or custody semantics requires compatibility review and normally
+a new batch major; changing a contained event still follows the independent event-
+major procedure.
 
 QA-007 is a patch-level strictness correction, not a format-version change. Valid
 ModelSpec patches, replay major 1 plus the deprecated `replay.v1` alias, EnvSpec

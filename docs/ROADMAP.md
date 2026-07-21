@@ -140,6 +140,22 @@ held batch. A disposable isolated database passes 28 migrations, 27 populated
 predecessors, the provider-call handoff, and all 12 browser flows; these results
 support only the protected contract/fixture boundary.
 
+D74 is the next unprotected OPS-003 contract/fixture candidate. It leaves event major
+3 frozen and adds independent delivery-batch major 1: only v3 is admitted; every
+4 KiB JSON line is revalidated; one memory-only batch holds at most 32 events/
+135168 bytes; and the executable fixture makes one credential-free exact-loopback
+POST under two seconds. Invalid/overflow input, remote or credentialed URL state,
+redirect, non-2xx, and timeout fail without retry/spool or product-authority change.
+The policy records access/audit, availability/failure monitoring, deletion, owner
+export, residency, and retention as mandatory later managed-custody work. Eleven
+focused D73/D74 tests pass. All 48 required local gates are green under Python 3.12.13
+with 25 compatibility surfaces, 21 golden families, 39 Studio tests, 85 Gateway tests,
+259 workers, Brief-25 25/25, parity, packaging, training/MJX, and the unchanged
+200/97/two/two batch. Exact PR/protected-main/post-merge evidence is pending.
+External/authenticated collection, durable delivery/custody, metrics/traces,
+other provider/Desktop continuity, dashboards, alerts, managed, live, production,
+and external-beta proof remain open, so OPS-003 remains in progress.
+
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
 clean revision-bound artifacts prove opaque expiring attempt leases, bounded outage/

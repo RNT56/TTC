@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "forge-observability-transport-policy/1.0.0",
+  "deliveryBatchVersion": "1.0.0",
+  "deliveryBatchSchema": "schema/forge-observability-delivery-batch.schema.json",
+  "acceptedEventVersions": [
+    "3.0.0"
+  ],
+  "decision": "D74",
+  "status": "contract-fixture",
+  "limits": {
+    "maxEventBytes": 4096,
+    "maxEventsPerBatch": 32,
+    "maxBatchBytes": 135168,
+    "requestTimeoutMs": 2000,
+    "automaticRetries": 0,
+    "durableSpoolBytes": 0
+  },
+  "endpoint": {
+    "method": "POST",
+    "scheme": "http",
+    "authority": "loopback-only",
+    "credentials": "forbidden",
+    "query": "forbidden",
+    "fragment": "forbidden",
+    "redirects": "refuse",
+    "contentType": "application/json"
+  },
+  "lifecycle": {
+    "input": "stdin-json-lines",
+    "buffer": "process-memory-only",
+    "success": "discard-after-2xx-response",
+    "failure": "discard-batch-and-exit-nonzero",
+    "invalidInput": "refuse-before-delivery",
+    "overflow": "refuse-before-delivery",
+    "partialAcknowledgement": "unsupported",
+    "persistentRetentionSeconds": 0,
+    "productAuthority": "independent"
+  },
+  "managedCustodyRequirements": [
+    "access-control-and-audit",
+    "availability-objective-and-failure-monitoring",
+    "deletion-execution-and-proof",
+    "owner-scoped-export-review",
+    "region-and-data-residency-review",
+    "retention-policy-and-enforcement"
+  ],
+  "maturity": {
+    "deliveryBatchContract": true,
+    "boundedFixtureTransport": true,
+    "externalCollector": false,
+    "authenticatedTransport": false,
+    "durableQueue": false,
+    "managedCustody": false,
+    "metricsBackend": false,
+    "traceBackend": false,
+    "dashboards": false,
+    "alertRouting": false,
+    "syntheticAlertDelivery": false,
+    "managedSandbox": false,
+    "live": false,
+    "production": false
+  }
+}
