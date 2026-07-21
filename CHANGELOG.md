@@ -18,6 +18,26 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Remediate the late fast-uri advisory
+**Session:** Codex agent · branch `codex/sec-fast-uri-advisory` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Remediated the high-severity `GHSA-4c8g-83qw-93j6` audit failure that
+appeared after D72 evidence reconciliation merged. PR #137 exact head `adcb92e`
+passed all twelve required checks in CI `29861234484` and security `29861234368`;
+tree-identical protected squash `434dc85` then passed post-merge CI `29861900858`,
+but security `29861900881` failed after the advisory was published/reviewed on
+2026-07-21. An exact compatible convergence pin moves all nine Fastify/AJV paths from
+`fast-uri` 3.1.2 to 3.1.4. The frozen install resolves one version, the low-threshold
+`pnpm audit --audit-level low` reports no known vulnerabilities, all 85 Gateway tests
+pass, and all 48 required local gates pass again.
+**Changed:** Workspace convergence policy application; reviewed lockfile; current
+evidence snapshot; changelog.
+**Decisions:** none; the existing temporary convergence-pin policy applies.
+**Next:** Protect this exact remediation through a reviewed PR and green post-merge
+CI/security, then reconcile the final protected evidence before continuing OPS-003.
+**Blockers:** protected `main` security remains red at `434dc85` until the patched
+dependency graph is merged and passes exact post-merge security.
+
 ## 2026-07-21 — Protect job and worker correlation
 **Session:** Codex agent · branch `codex/ops003-job-worker-correlation-evidence` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
