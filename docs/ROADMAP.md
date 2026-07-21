@@ -159,7 +159,8 @@ Evidence PR #143 exact head `b23b3a9`, all twelve checks in CI `29874518707` and
 security `29874518705`, tree-identical protected squash `0388cf6`, and post-merge
 CI/security `29875062096`/`29875062119` reconcile the same boundary.
 
-D75 is the current unprotected repository-only OPS-003 candidate. Signal-set v1
+D75 is protected at repository-only OPS-003 contract/fixture maturity through PR
+#144/`3899ce3`. Signal-set v1
 admits one D74 batch, projects five fixed metric families through generated
 82-route/17-worker-task authority, and permits only exact finite Gateway or worker
 label sets. It samples completion traces for every failure, fixed slow thresholds,
@@ -167,8 +168,10 @@ and a deterministic SHA-256 one-in-64 healthy baseline; starts are excluded. The
 projection is memory-only and bounded to 64 metric series, 32 spans, and 262144
 bytes. All 48 required local gates pass under Python 3.12.13 with 20 observability
 tests, 26 compatibility surfaces, 22 golden families, 39 Studio tests, 85 Gateway
-tests, all 259 workers, and the unchanged deterministic recovery batch. Exact-head,
-protected-tree, post-merge, and evidence-reconciliation gates are pending.
+tests, all 259 workers, and the unchanged deterministic recovery batch. Exact head
+`729aa6b` passed all twelve checks in CI `29877152636` and security `29877152523`;
+tree-identical protected squash `3899ce3` passed post-merge CI `29877635436` and
+security `29877635422`.
 External/authenticated collection, durable delivery/custody, metric/trace backends,
 other provider/Desktop continuity,
 dashboards, alerts, managed, live, production, and external-beta proof remain open,

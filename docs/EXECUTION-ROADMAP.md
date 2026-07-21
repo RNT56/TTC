@@ -139,7 +139,8 @@ external-beta exit. Evidence PR #143 exact head `b23b3a9`, all twelve checks in 
 `29874518707` and security `29874518705`, tree-identical protected squash `0388cf6`,
 and post-merge CI/security `29875062096`/`29875062119` reconcile that boundary.
 
-D75 is the active dependency-safe repository slice. It introduces an independent
+D75 is protected as a dependency-safe repository contract/fixture slice. It
+introduces an independent
 signal-set v1 projection over one D74 batch: five fixed metric families with exact
 generated route/task authority and finite labels, plus completion-trace sampling for
 all failures, fixed slow thresholds, and a deterministic SHA-256 one-in-64 healthy
@@ -148,8 +149,10 @@ remain forbidden as metric labels. The local projection is memory-only, stdout-o
 and capped at 64 metric series, 32 trace spans, and 262144 bytes. All 48 required
 local gates pass under Python 3.12.13 with 20 observability tests, 26 compatibility
 surfaces, 22 golden families, 39 Studio tests, 85 Gateway tests, all 259 workers, and
-the unchanged deterministic recovery batch. Exact-head/protected/post-merge and
-evidence-reconciliation proof remain pending. This candidate does not advance
+the unchanged deterministic recovery batch. PR #144 exact head `729aa6b` passed all
+twelve checks in CI `29877152636` and security `29877152523`; tree-identical
+protected squash `3899ce3` passed post-merge CI `29877635436` and security
+`29877635422`. This slice does not advance
 external collector/authentication, durable custody, a metric/trace backend,
 dashboard, alert, managed, live, production, or
 external-beta acceptance.

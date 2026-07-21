@@ -18,6 +18,30 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Protect finite observability signals
+**Session:** Codex agent · branch `codex/ops003-observability-signals-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Protected D75's repository-only finite metric and deterministic completion-
+trace projection without widening event v3, delivery-batch v1, product authority, or
+any external-custody claim. PR #144 exact head `729aa6b` passed all twelve required
+checks in CI `29877152636` and security `29877152523`; its tree
+`42ca9a93e5503dcbea5214bf10a2dde4bec96d8b` equals protected squash `3899ce3`.
+Protected-main CI `29877635436` and security `29877635422` then passed on that exact
+squash. Together with all 48 local gates, this proves signal-set v1's generated
+route/task authority, five finite metric families, deterministic all-failure/all-
+slow/one-in-64 healthy trace sampling, strict 64-series/32-span/262144-byte bounds,
+and memory/stdout-only authority isolation at protected contract/fixture maturity.
+**Changed:** Canonical agent entry point; current evidence snapshot; task, phase,
+execution, and operations roadmaps; changelog.
+**Decisions:** none; D75 and R40 remain active unchanged, and D76 remains the next
+free regular decision ID.
+**Next:** Select the smallest dependency-complete OPS-003 successor for persistent
+backend custody or dashboard/alert contracts without implying external deployment.
+**Blockers:** OPS-002 still lacks a real managed sandbox install/upgrade/rollback
+exercise. External/authenticated collection, durable custody, metric/trace storage,
+dashboards, alert delivery/acknowledgement, other provider/Desktop continuity,
+managed, live, production, and external-beta proof remain open.
+
 ## 2026-07-21 — Project finite observability signals
 **Session:** Codex agent · branch `codex/ops003-observability-signals` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
