@@ -107,18 +107,20 @@ production, and external-beta evidence remain open; this slice does not satisfy 
 OPS-002 managed-install prerequisite or close OPS-003.
 
 D71 evidence reconciliation is protected at `694ccc0` through PR #131; post-merge
-security `29647532626` and CI `29647532654` pass. D72 is the next unprotected
-contract/fixture candidate. It preserves the v1 Gateway reader, introduces event
-major 2, persists trusted request/trace/parent context on jobs, creates one database-
-owned UUIDv4 attempt/span row per D38 claim, emits bounded worker start/completion
-events, closes retry/cancellation/expiry/terminal paths, and extends owner export to
-1.7 without payload or secret content. All 48 local gates pass, including 85 Gateway
-and all 258 fully enabled worker tests; a fresh isolated database passes all 28
+security `29647532626` and CI `29647532654` pass. D72 is now protected at contract/
+fixture maturity. It preserves the v1 Gateway reader, introduces event major 2,
+persists trusted request/trace/parent context on jobs, creates one database-owned
+UUIDv4 attempt/span row per D38 claim, emits bounded worker start/completion events,
+closes retry/cancellation/expiry/terminal paths, and extends owner export to 1.7
+without payload or secret content. All 48 local gates pass, including 85 Gateway and
+all 258 fully enabled worker tests; a fresh isolated database passes all 28
 migrations, every 27 populated predecessor, D38 fault/cancellation correlation,
-lifecycle assertions, and all 12 production-browser flows. PR, protected-main, and
-post-merge proof remains required. Provider/deployment/actor/Desktop propagation,
-telemetry backends, metrics/traces, dashboards, alerts, managed, live, production,
-and external-beta maturity remain later slices.
+lifecycle assertions, and all 12 production-browser flows. PR #135 exact head
+`4bb4721` passed all twelve required checks in CI `29859593049` and security
+`29859592862`; tree-identical protected squash `a17ff74` passed post-merge CI
+`29860284729` and security `29860284861`. Provider/deployment/actor/Desktop
+propagation, telemetry backends, metrics/traces, dashboards, alerts, managed, live,
+production, and external-beta maturity remain later slices.
 
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the

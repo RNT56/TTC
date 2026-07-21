@@ -100,8 +100,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is D71/OPS-003 evidence PR #131 at `694ccc0`;
-  the implementation anchor remains PR #130 at `44bb3da`.
+  latest verified protected descendant is D72/OPS-003 implementation PR #135 at
+  `a17ff74`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -143,8 +143,8 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   checks in CI `29646612330` and security `29646612337`; tree-identical protected
   squash `44bb3da` passed post-merge CI `29646886572` and security `29646886580`.
   Evidence PR #131 exact head `aa918f4` and protected squash `694ccc0` then passed
-  post-merge security `29647532626` and CI `29647532654`. D72 is an unprotected
-  contract/fixture candidate that adds trusted request-to-job persistence, database-
+  post-merge security `29647532626` and CI `29647532654`. D72 is now protected at
+  contract/fixture maturity and adds trusted request-to-job persistence, database-
   owned D38 attempt spans/outcomes, bounded Python worker lifecycle events, and
   owner export 1.7. All 48 required local gates pass with four observability-policy
   tests, 24 compatibility surfaces, 85 Gateway tests against the real validator,
@@ -152,8 +152,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Brief-25 25/25, and the unchanged 200/97/two-Pareto/two-held recovery batch. An
   isolated Postgres/pgvector database also passes all 28 migrations, every 27
   populated predecessor, D38 fault/cancellation correlation, lifecycle assertions,
-  and all 12 production-browser flows. PR, protected-main, and post-merge evidence
-  remain pending. The candidate proves no provider/deployment/actor/Desktop
+  and all 12 production-browser flows. PR #135 exact head `4bb4721` passed all twelve
+  required checks in CI `29859593049` and security `29859592862`; tree-identical
+  protected squash `a17ff74` passed post-merge CI `29860284729` and security
+  `29860284861`. This slice proves no provider/deployment/actor/Desktop
   propagation, metric/trace backend, dashboard, alert, managed, live, or production
   maturity.
   D66 implementation PR

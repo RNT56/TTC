@@ -17,7 +17,7 @@ Current observability policy: [`infra/observability/observability-policy.v2.json
 
 Frozen v1 policy: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D71's Gateway-only contract/fixture is protected at `44bb3da`; D72's job/D38-attempt/worker extension is an unprotected contract/fixture candidate; no managed environment, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`; no managed environment, provider/deployment/Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -34,15 +34,17 @@ docs, and the unchanged 200/97/two-Pareto/two-held recovery batch. PR #130 exact
 post-merge CI/security `29646886572`/`29646886580` pass. This remains protected
 contract/fixture evidence only.
 
-The D72 job/worker candidate passes all 48 required local gates with four current
+The protected D72 job/worker slice passes all 48 required local gates with four current
 policy/adversarial tests, 24 compatibility surfaces, 85 Gateway tests against the real
 validator, all 258 worker tests in the complete pinned training/MJX/co-design
 environment, Brief-25 25/25, and the unchanged 200/97/two-Pareto/two-held recovery
 batch. A fresh isolated Postgres/pgvector database passes all 28 migrations, every 27
 populated predecessor, migration recovery/concurrency, D38 crash/outage/retry/
 cancellation/success correlation, owner export/deletion/lifecycle assertions, and all
-12 production-browser flows. This is unprotected repository contract/fixture evidence
-only; PR, protected-main, and post-merge proof remain pending.
+12 production-browser flows. PR #135 exact head `4bb4721` passed all twelve required
+checks in CI `29859593049` and security `29859592862`; tree-identical protected squash
+`a17ff74` passed post-merge CI `29860284729` and security `29860284861`. This remains
+repository contract/fixture evidence only.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -462,15 +464,15 @@ Current D71/D72 slice status:
    line. Only UTC/source/version/environment, template route, method, status,
    duration, outcome, and opaque correlation are admitted. Sink failure cannot
    change response authority.
-2. **Job and worker propagation — unprotected candidate.** Event major 2 binds the
+2. **Job and worker propagation — protected contract/fixture.** Event major 2 binds the
    trusted Gateway request to the owner-scoped persisted job and creates one database-
    owned UUIDv4 attempt ID/span per atomic D38 claim. Durable rows and bounded worker
    start/completion events cover success, retry, terminal failure, owner cancellation,
    lease expiry, and stale-result discard without accepting caller authority or
    storing leases, payload/results, raw errors, or provider content. User export 1.7
-   exposes only owner-scoped non-secret correlation/outcomes. All exact local branch
-   gates pass; this advances only contract/fixture maturity after PR, protected-main,
-   and post-merge evidence pass.
+   exposes only owner-scoped non-secret correlation/outcomes. All exact local, PR,
+   protected-main, and post-merge gates pass; this advances only contract/fixture
+   maturity.
 3. **Provider, deployment, and Desktop propagation — open.** Add authority-specific
    bounded IDs only after the provider-call, D68 manifest, and native Desktop trust
    boundaries can independently validate them.
@@ -483,9 +485,9 @@ Current D71/D72 slice status:
 
 The first two repository-only slices may proceed while OPS-002's real managed-sandbox
 exercise is waiting on an external target because they create no live exercise or
-backend. Slice 2 still requires protected evidence; slices 3–5 do not close from
-schemas, database rows, or local output, and every deployed exercise still requires
-the exact D68/D69/D70 sandbox authority plus retained private operations evidence.
+backend. Slices 3–5 do not close from schemas, database rows, or local output, and
+every deployed exercise still requires the exact D68/D69/D70 sandbox authority plus
+retained private operations evidence.
 
 - Correlation IDs are generated/validated at trusted boundaries and propagated to
   jobs/provider calls; never accept a client claim as audit identity.

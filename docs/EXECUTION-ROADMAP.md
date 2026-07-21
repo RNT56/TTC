@@ -100,12 +100,14 @@ identical protected squash `44bb3da`, and post-merge CI/security
 managed sandbox and every worker/job/provider/Desktop/backend/dashboard/alert/live
 criterion remain open.
 D71 evidence reconciliation is protected at `694ccc0` through PR #131; exact
-post-merge security `29647532626` and CI `29647532654` pass. D72 is the next
-unprotected contract/fixture slice: current major 2 retains v1 reads and adds trusted
-request-to-job persistence, database-owned D38 attempt spans/outcomes, bounded worker
+post-merge security `29647532626` and CI `29647532654` pass. D72 is protected at
+contract/fixture maturity: current major 2 retains v1 reads and adds trusted request-
+to-job persistence, database-owned D38 attempt spans/outcomes, bounded worker
 lifecycle lines, and owner export 1.7. All 48 local gates and the isolated 28-migration/
-27-populated-predecessor/12-browser-flow database matrix pass; PR, protected-main, and
-post-merge proof remain pending. It cannot close provider/deployment/actor/Desktop
+27-populated-predecessor/12-browser-flow database matrix pass. PR #135 exact head
+`4bb4721`, all twelve required checks in CI `29859593049` and security `29859592862`,
+tree-identical protected squash `a17ff74`, and post-merge CI/security
+`29860284729`/`29860284861` pass. It cannot close provider/deployment/actor/Desktop
 propagation, a backend, metrics/traces, dashboards, alerts, managed, live, or
 production criteria.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The
