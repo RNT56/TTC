@@ -64,6 +64,7 @@ const required = [
   "hardenedRuntimePublication",
   "observabilityEvent",
   "observabilityDeliveryBatch",
+  "observabilitySignalSet",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -123,6 +124,10 @@ const expected = {
   observabilityDeliveryBatch: typescriptConstant(
     "scripts/observability-transport.mjs",
     "OBSERVABILITY_DELIVERY_BATCH_VERSION",
+  ),
+  observabilitySignalSet: typescriptConstant(
+    "scripts/observability-signals.mjs",
+    "OBSERVABILITY_SIGNAL_SET_VERSION",
   ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
@@ -251,6 +256,30 @@ requireValue(
     && observabilityDeliveryBatchSchema.properties.events.items.$ref ===
       matrix.surfaces.observabilityEvent.schemaPath.replace("schema/", ""),
   "observability delivery batch must bind the current frozen event contract",
+);
+const observabilitySignalsPolicy = JSON.parse(
+  read(matrix.surfaces.observabilitySignalSet.policyPath),
+);
+const observabilitySignalSetSchema = JSON.parse(
+  read(matrix.surfaces.observabilitySignalSet.schemaPath),
+);
+requireValue(
+  observabilitySignalsPolicy.signalSetVersion ===
+    matrix.surfaces.observabilitySignalSet.current
+    && observabilitySignalSetSchema.properties.schemaVersion.const ===
+      `${matrix.surfaces.observabilitySignalSet.schema}/${matrix.surfaces.observabilitySignalSet.current}`,
+  "observability signals policy/schema does not match the compatibility surface",
+);
+requireValue(
+  JSON.stringify(observabilitySignalsPolicy.acceptedDeliveryBatchVersions) ===
+    JSON.stringify(matrix.surfaces.observabilitySignalSet.acceptedDeliveryBatchVersions)
+    && JSON.stringify(observabilitySignalsPolicy.acceptedEventVersions) ===
+      JSON.stringify(matrix.surfaces.observabilitySignalSet.acceptedEventVersions)
+    && observabilitySignalSetSchema.properties.source.properties.deliveryBatchSchemaVersion.const ===
+      `${matrix.surfaces.observabilityDeliveryBatch.schema}/${matrix.surfaces.observabilityDeliveryBatch.current}`
+    && observabilitySignalSetSchema.properties.source.properties.eventSchemaVersion.const ===
+      `${matrix.surfaces.observabilityEvent.schema}/${matrix.surfaces.observabilityEvent.current}`,
+  "observability signal set must bind the current delivery and frozen event contracts",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===

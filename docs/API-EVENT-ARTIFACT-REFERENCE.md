@@ -137,6 +137,7 @@ is no longer emitted, an example is invalid, or generated output is stale.
 | `hardenedRuntimePublication` | 1.0.0 | major 1 |
 | `observabilityEvent` | 3.0.0 | major 1, 2, 3 |
 | `observabilityDeliveryBatch` | 1.0.0 | major 1 |
+| `observabilitySignalSet` | 1.0.0 | major 1 |
 | `licenseExportManifest` | 1.0.0 | major 1 |
 | `userDataExport` | 1.7.0 | major 1 |
 | `consentLedger` | 1.0.0 | major 1 |

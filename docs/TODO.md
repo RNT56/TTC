@@ -400,10 +400,28 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   parity, packaging, training/MJX, and the unchanged 200/97/two/two batch. PR #142
   exact head `c7b4035` passed all twelve checks in CI `29872947817` and security
   `29872947795`; tree-identical protected squash `7abcb56` passed post-merge CI
-  `29873512358` and security `29873512339`. OPS-003 stays
-  `[~]`: external/authenticated transport, durable queue/custody, finite-cardinality
-  metrics and sampled traces, other provider/Desktop continuity, dashboards, alerts,
-  managed, live, production, and external-beta proof remain open.
+  `29873512358` and security `29873512339`. Evidence PR #143 exact head `b23b3a9`
+  passed all twelve checks in CI `29874518707` and security `29874518705`; its tree
+  equals protected squash `0388cf6`, whose post-merge CI `29875062096` and security
+  `29875062119` pass.
+  **D75 unprotected candidate (2026-07-21, repository contract/fixture):** independent
+  `forge-observability-signal-set/1.0.0` admits one D74 batch and projects five fixed
+  metric families with exact generated 82-route/17-worker-task authority. Gateway
+  labels are environment/method/route/status-class; worker labels are environment/
+  provider/task and, for completion, outcome. Correlation, provider/deployment,
+  attempt, revision, status-code, error, and retry identifiers remain forbidden
+  labels. Completion traces retain all failures, Gateway duration at least 1,000 ms,
+  worker duration at least 60,000 ms, and a deterministic SHA-256 one-in-64 healthy
+  baseline; worker starts are excluded. Projection is memory/stdout-only and bounded
+  to 64 metric series, 32 spans, and 262144 bytes. Focused local policy, projection,
+  authority, sampling, redaction, bounded-input, and nonclaim tests pass. All 48
+  required local gates pass under Python 3.12.13 with 20 observability tests, 26
+  compatibility surfaces, 22 golden families, 39 Studio tests, 85 Gateway tests, all
+  259 workers, and the unchanged deterministic recovery batch. Exact-head/protected/
+  post-merge and evidence-reconciliation proof remain pending. OPS-003 stays `[~]`:
+  external/authenticated transport, durable queue/custody, metric/trace
+  backends, other provider/Desktop continuity, dashboards, alerts, managed, live,
+  production, and external-beta proof remain open.
 - [ ] OPS-004 — Define SLOs and error budgets for API, generation, queue latency, photoscan, training, object storage, auth, and provider handoffs.
 - [ ] OPS-005 — Implement Postgres/object backup, restore verification, retention, capacity, migration, and disaster-recovery runbooks.
 - [ ] OPS-006 — Define job quotas, concurrency, cancellation/refund, idempotency, dead-letter/reconciliation, cost attribution, and runaway-spend kill switches.

@@ -131,6 +131,23 @@
       "compatibilityReview": true
     },
     {
+      "id": "observability-signals-contract",
+      "classification": "schema",
+      "paths": [
+        "infra/observability/observability-signals-policy.v1.json",
+        "schema/forge-observability-signal-set.schema.json"
+      ],
+      "owner": "platform, operations, privacy, and security maintainers",
+      "sourceOfTruth": "D75 finite-cardinality metric projection, deterministic completion-trace sampling, generated route/task authority, bounded lifecycle, and backend nonclaim semantics",
+      "regenerate": "Edit deliberately with compatibility, privacy, security, cardinality, sampling, and operations review plus a golden update record; never infer a telemetry backend or monitoring maturity from the local projector",
+      "verify": [
+        "pnpm verify:observability",
+        "pnpm verify:compatibility",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
       "id": "api-event-artifact-docs",
       "classification": "schema",
       "paths": [

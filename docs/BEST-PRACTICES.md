@@ -98,7 +98,8 @@ event lines, and persisted artifact formats independently; preserve old document
 read fixtures while their support window is active. Examples use synthetic IDs and
 fixture values, never secrets, signed URLs, raw user content, or claims of live proof.
 
-**Operational telemetry:** follow D71/D72/D73/D74 and the versioned observability policies. Generate
+**Operational telemetry:** follow D71/D72/D73/D74/D75 and the versioned observability
+policies. Generate
 request/trace authority at a trusted service boundary; never trust a client identifier
 as audit continuity. Emit only an exact bounded allowlist with UTC, source, version,
 environment, template route, status, duration, outcome, and opaque correlation. Raw
@@ -125,6 +126,17 @@ authentication/secret-reference custody, egress and DNS authority, access/audit,
 availability and delivery-failure monitoring, deletion, owner export, residency,
 retention, and recovery. A local JSON line, attempt row, or loopback HTTP 2xx is not a
 backend, dashboard, alert, managed-custody, managed, live, or production evidence.
+Derive metrics and traces only after independent event/batch validation. Metric label
+values need finite generated authority, not only a safe-looking regex: current Gateway
+route/method pairs and worker tasks come from `contracts/documentation.json`. Fix
+metric names, kinds, units, label sets, and histogram buckets in a compatibility-
+governed contract; never label by request, job, attempt, trace/span, provider-call,
+deployment, error, status-code, retry, or source-revision identity. Retain failure and
+slow completion traces under explicit thresholds and use a deterministic reviewable
+rule for any healthy baseline; starts are not completed spans. Bound input, output,
+series, span count, memory, and error reflection. D75's executable projector is
+network-free and persistence-free; a signal-set JSON document is still not a metric/
+trace backend, dashboard, alert, managed custody, live service, or production proof.
 
 **Executable policy artifacts:** keep category metadata separate from the exact
 scalar tensor contract. Version schema/layout/coordinate/rate semantics independently;

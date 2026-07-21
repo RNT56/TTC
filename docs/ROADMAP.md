@@ -155,9 +155,24 @@ with 25 compatibility surfaces, 21 golden families, 39 Studio tests, 85 Gateway 
 200/97/two/two batch. Exact head `c7b4035`, all twelve PR checks in CI
 `29872947817` and security `29872947795`, tree-identical protected squash `7abcb56`,
 and post-merge CI/security `29873512358`/`29873512339` pass.
-External/authenticated collection, durable delivery/custody, metrics/traces,
-other provider/Desktop continuity, dashboards, alerts, managed, live, production,
-and external-beta proof remain open, so OPS-003 remains in progress.
+Evidence PR #143 exact head `b23b3a9`, all twelve checks in CI `29874518707` and
+security `29874518705`, tree-identical protected squash `0388cf6`, and post-merge
+CI/security `29875062096`/`29875062119` reconcile the same boundary.
+
+D75 is the current unprotected repository-only OPS-003 candidate. Signal-set v1
+admits one D74 batch, projects five fixed metric families through generated
+82-route/17-worker-task authority, and permits only exact finite Gateway or worker
+label sets. It samples completion traces for every failure, fixed slow thresholds,
+and a deterministic SHA-256 one-in-64 healthy baseline; starts are excluded. The
+projection is memory-only and bounded to 64 metric series, 32 spans, and 262144
+bytes. All 48 required local gates pass under Python 3.12.13 with 20 observability
+tests, 26 compatibility surfaces, 22 golden families, 39 Studio tests, 85 Gateway
+tests, all 259 workers, and the unchanged deterministic recovery batch. Exact-head,
+protected-tree, post-merge, and evidence-reconciliation gates are pending.
+External/authenticated collection, durable delivery/custody, metric/trace backends,
+other provider/Desktop continuity,
+dashboards, alerts, managed, live, production, and external-beta proof remain open,
+so OPS-003 remains in progress.
 
 Protected QA-005 PR #46 closes deterministic isolated-Postgres fault acceptance under
 D38/migration 0021 at `7970005`. Exact PR and post-merge CI/security are green; the
