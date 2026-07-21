@@ -3,8 +3,8 @@
 Snapshot date: **2026-07-21**
 Repository: `RNT56/TTC`
 Runtime/security evidence anchor: `d952f60` (PR #31)
-Latest verified protected descendant: `a17ff74` (PR #135; D72 job/worker observability)
-Current verified implementation boundary: D72/OPS-003 protects trusted request/job/D38-attempt/worker correlation at contract/fixture maturity at `a17ff74`; D70 immutable registry publication remains verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with no managed sandbox installation
+Latest verified protected descendant: `8aac400` (PR #138; dependency-safe D72 descendant)
+Current verified implementation boundary: D72/OPS-003 protects trusted request/job/D38-attempt/worker correlation at contract/fixture maturity at `a17ff74`, with the restored dependency/security baseline verified at protected descendant `8aac400`; D70 immutable registry publication remains verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with no managed sandbox installation
 Latest verified protected runtime/parity anchor: `1de7974` (PR #62; real browser policy runtime)
 P7-003 controlled-training evidence anchor: `d1c4c38` (PR #64)
 P7-010 controlled-MJX-feasibility evidence anchor: `0614272` (PR #66)
@@ -55,6 +55,7 @@ D70/OPS-002 evidence-reconciliation anchor: `b5c358a` (PR #129)
 D71/OPS-003 Gateway observability anchor: `44bb3da` (PR #130)
 D71/OPS-003 evidence-reconciliation anchor: `694ccc0` (PR #131)
 D72/OPS-003 job/worker observability anchor: `a17ff74` (PR #135)
+D72/security-remediation anchor: `8aac400` (PR #138)
 P7-012 implementation anchor: `8e094c0` (PR #72)
 P7-012 consumer-hardware evidence anchor: `6bfa60f` (PR #73)
 QA-008 quality/governance evidence anchor: `2589503` (PR #36)
@@ -206,12 +207,15 @@ Evidence reconciliation PR #137 exact head `adcb92e` passed all twelve required
 checks in CI `29861234484` and security `29861234368`; its tree equals protected
 squash `434dc85`. Exact post-merge CI `29861900858` passes, but security
 `29861900881` failed after high-severity `GHSA-4c8g-83qw-93j6` entered the audit feed
-on 2026-07-21 for the locked `fast-uri` 3.1.2 runtime transitive. Therefore
-`434dc85` is not a verified protected descendant and `a17ff74` remains the evidence
-boundary. The dependency-safe successor pins every already-compatible Fastify/AJV
-edge to `fast-uri` 3.1.4; its frozen install, low-threshold audit, 85 Gateway tests,
-and all 48 required local gates pass. Protected PR and post-merge proof for that
-remediation remain pending.
+on 2026-07-21 for the locked `fast-uri` 3.1.2 runtime transitive. Remediation PR #138
+exact head `80e884e` converges every already-compatible Fastify/AJV edge on
+`fast-uri` 3.1.4; its frozen install, low-threshold audit, 85 Gateway tests, and all
+48 required local gates pass. All twelve exact-head PR checks pass in CI
+`29862758202` and security `29862758114`. Its tree equals protected squash
+`8aac400`, whose post-merge CI `29863425902` and security `29863425966` pass. The
+latest protected baseline is therefore restored without changing D72's
+contract/fixture capability boundary or granting provider, backend, managed, live,
+or production authority.
 
 The protected D68 implementation passed all 45 required local gates under Python
 3.12.13: eleven deployment-policy tests, 21 compatibility surfaces, seventeen golden families,
@@ -1330,7 +1334,7 @@ commands, and the agent entry point. Remaining known gaps are now explicit backl
 | Claim D69/OPS-002 hardened runtime | **Go only for protected contract/ephemeral-CI fixture maturity; no-go for managed sandbox, rollback, live, or production claims** | PR #125 final head `6818812`, protected tree-identical squash `290060d`, all 12 PR checks, post-merge CI/security `29639595976`/`29639595950`, hardened job `88067855121`, and independently downloaded protected artifact `8428228432` bind clean source, three builds/SBOMs/provenance records, zero fixed low-or-higher findings, staged-source/effective-group custody, TLS/private topology, health/readiness, graceful stop, and same-artifact restart. D69 evidence itself grants no registry, managed sandbox, upgrade, rollback, or corrected roll-forward authority; D70 separately closes only the immutable publication boundary |
 | Claim D70/OPS-002 registry publication | **Go for immutable registry publication only; no-go for managed sandbox, rollback, live, or production** | PR #127/`a1d72ad`, correction PR #128/`f1d8850`, evidence PR #129/`b5c358a`, exact PR/post-merge CI/security, successful run `29644408106`, downloaded artifact `8429638868`, independently reproduced manifest hashes, and fresh signer/source/ref attestation checks bind all three exact images, SBOMs, scans, provenance, pulled config IDs, and runtime smoke. Record `132dc5f4…fd72` keeps every managed/live claim false |
 | Claim D71/OPS-003 observability | **Go only for protected Gateway contract/fixture maturity; no-go for backend, dashboard, alert, managed, live, or production claims** | PR #130 exact head `f161221`, all twelve PR checks, tree-identical protected squash `44bb3da`, exact post-merge CI/security `29646886572`/`29646886580`, and all 48 required local gates protect server-generated request/trace roots, one bounded structured request event, exact redaction exclusions, cardinality policy, and sink isolation. Worker/job/provider/Desktop propagation and every external telemetry consumer remain false |
-| Claim D72 job/worker observability | **Go only for protected contract/fixture maturity; no-go for provider/Desktop/backend/dashboard/alert/managed/live/production claims** | PR #135 exact head `4bb4721`, all twelve required checks in CI `29859593049` and security `29859592862`, tree-identical protected squash `a17ff74`, post-merge CI/security `29860284729`/`29860284861`, all 48 local gates, and the isolated 28-migration/27-predecessor/12-browser-flow database matrix protect event major 2, migration 0028, trusted job correlation, per-claim D38 attempt spans/outcomes, bounded worker events, and export 1.7. This slice cannot by itself prove provider/deployment/actor/Desktop continuity, a telemetry backend, dashboard, alert, managed, live, or production operation |
+| Claim D72 job/worker observability | **Go only for protected contract/fixture maturity; no-go for provider/Desktop/backend/dashboard/alert/managed/live/production claims** | PR #135 exact head `4bb4721`, all twelve required checks in CI `29859593049` and security `29859592862`, tree-identical protected squash `a17ff74`, post-merge CI/security `29860284729`/`29860284861`, all 48 local gates, and the isolated 28-migration/27-predecessor/12-browser-flow database matrix protect event major 2, migration 0028, trusted job correlation, per-claim D38 attempt spans/outcomes, bounded worker events, and export 1.7. Evidence PR #137/`434dc85` exposed late advisory `GHSA-4c8g-83qw-93j6`; remediation PR #138 exact head `80e884e`, tree-identical protected squash `8aac400`, and post-merge CI/security `29863425902`/`29863425966` restore the dependency-safe protected descendant without advancing capability maturity. This slice cannot by itself prove provider/deployment/actor/Desktop continuity, a telemetry backend, dashboard, alert, managed, live, or production operation |
 | External hardware beta | **No-go** | no lab evidence or explicit rollout gate |
 | Public marketplace/policy sharing | **No-go** | dual-use/process/external proof incomplete |
 

@@ -18,6 +18,24 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Restore the protected security baseline
+**Session:** Codex agent · branch `codex/sec-fast-uri-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Protected and reconciled the `fast-uri` advisory remediation. PR #138 exact
+head `80e884e` passed all twelve required checks in CI `29862758202` and security
+`29862758114`; its tree is byte-identical to protected squash `8aac400`, whose exact
+post-merge CI `29863425902` and security `29863425966` pass. The dependency graph now
+converges every compatible Fastify/AJV edge on `fast-uri` 3.1.4, restoring the green
+protected baseline after the preserved PR #137 post-merge advisory failure. D72
+remains contract/fixture maturity only.
+**Changed:** Canonical agent entry point; current evidence snapshot; changelog.
+**Decisions:** none; the existing temporary convergence-pin policy remains active.
+**Next:** Select the smallest dependency-complete provider or D68 deployment
+correlation slice under OPS-003, keeping backend custody and live proof independent.
+**Blockers:** OPS-002 still lacks a real managed sandbox install/upgrade/rollback
+exercise. Provider, deployment, actor/Desktop, backend, dashboard, alert, managed,
+live, production, and external-beta evidence remain open.
+
 ## 2026-07-21 — Remediate the late fast-uri advisory
 **Session:** Codex agent · branch `codex/sec-fast-uri-advisory` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
