@@ -109,13 +109,14 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is evidence PR #145 at `61b5233`; the
+  latest verified protected descendant is PR #146 at `5bd25c8`; the
   D72/OPS-003 job/worker capability remains anchored at PR #135/`a17ff74`, and D73's
   provider/deployment correlation is anchored at PR #140/`90cc58c`, reconciled
   through PR #141/`363a8b4`; D74's bounded loopback delivery contract is anchored at
   PR #142/`7abcb56`, reconciled through PR #143/`0388cf6`; D75's finite metric and
   deterministic completion-trace projection is anchored at PR #144/`3899ce3` and
-  reconciled through PR #145/`61b5233`.
+  reconciled through PR #145/`61b5233`; D76's private local custody fixture is
+  anchored at PR #146/`5bd25c8`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -236,15 +237,19 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Evidence PR #145 exact head `f72a18f` passed all twelve checks in CI
   `29878662250` and security `29878662212`; tree-identical protected squash
   `61b5233` passed post-merge CI `29879631808` and security `29879631786`.
-  D76 is the current unprotected candidate: `forge-observability-custody-artifact/1.0.0`
+  D76 is protected at repository contract/fixture maturity:
+  `forge-observability-custody-artifact/1.0.0`
   accepts only signal-set v1, persists one UUID-bound object beneath an operator-
   supplied private root, revalidates exact mode/owner/length/SHA/schema/identity/
   counts before fixed queries, limits live records to 128, expires them after 24
   hours, leaves bounded deletion receipts, and audits corruption/orphan/incomplete
-  state without automatic repair. All 48 required local gates pass on the candidate,
+  state without automatic repair. All 48 required local gates pass,
   including 29 observability tests, 27 compatibility surfaces, 23 golden families,
-  85 Gateway tests, and 259 worker tests. The fixture has no network, credentials, product-
-  authority effect, external collector, managed custody, owner export, residency,
+  85 Gateway tests, and 259 worker tests. PR #146 exact head `7fe521e` passed all
+  twelve checks in CI `29881943772` and security `29881943750`; its tree equals
+  protected squash `5bd25c8`, whose post-merge CI `29882382627` and security
+  `29882382664` pass. The fixture has no network, credentials, product-authority
+  effect, external collector, managed custody, owner export, residency,
   HA, backup, telemetry backend, dashboard, alert, managed, live, or production claim.
   D66 implementation PR
   #119 at `5a162b0` remains the per-point-voltage format anchor. Exact head `7306a6e`,

@@ -18,6 +18,31 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Protect private observability custody
+**Session:** Codex agent · branch `codex/ops003-observability-custody-evidence` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Protected D76's repository-only private local-filesystem custody fixture
+without widening event v3, delivery-batch v1, signal-set v1, product authority, or
+any managed-backend claim. PR #146 exact head `7fe521e` passed all twelve required
+checks in CI `29881943772` and security `29881943750`; its tree
+`db0e70f4e7bd3b99a192fae6d0149a6d4b46816c` equals protected squash `5bd25c8`.
+Protected-main CI `29882382627` and security `29882382664` then passed on that exact
+squash. Together with all 48 local gates, this proves custody-artifact v1's owner-
+only local storage, exact integrity-checked reads, fixed queries, 128-live-record and
+24-hour limits, bounded deletion receipts, retention sweep, corruption audit, and
+authority isolation at protected contract/fixture maturity.
+**Changed:** Canonical agent entry point; project-state snapshot; task, phase,
+execution, and operations roadmaps; changelog.
+**Decisions:** none; D76 and R40 remain active unchanged, and D77 remains the next
+free regular decision ID.
+**Next:** Select the smallest dependency-complete OPS-003 successor for managed-
+backend prerequisites or dashboard/alert contracts without implying deployment.
+**Blockers:** OPS-002 still lacks a real managed sandbox install/upgrade/rollback
+exercise. Authenticated external collection, durable transport, managed custody,
+owner export, residency, HA, backup/recovery, managed metric/trace storage,
+dashboards, alert delivery/acknowledgement, other provider/Desktop continuity,
+managed, live, production, and external-beta proof remain open.
+
 ## 2026-07-21 — Bound private observability custody
 **Session:** Codex agent · branch `codex/ops003-observability-backend-contract` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
