@@ -420,7 +420,19 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   259 workers, and the unchanged deterministic recovery batch. PR #144 exact head
   `729aa6b` passed all twelve checks in CI `29877152636` and security `29877152523`;
   its tree equals protected squash `3899ce3`, whose post-merge CI `29877635436` and
-  security `29877635422` pass. OPS-003 stays `[~]`:
+  security `29877635422` pass. Evidence PR #145 exact head `f72a18f` passed all
+  twelve checks in CI `29878662250` and security `29878662212`; its tree equals
+  protected squash `61b5233`, whose post-merge CI `29879631808` and security
+  `29879631786` pass.
+  **D76 unprotected candidate (2026-07-21, repository contract/fixture):** independent
+  `forge-observability-custody-artifact/1.0.0` admits one D75 signal set beneath an
+  operator-created absolute `0700` root outside the checkout, writes one UUID-bound
+  `0600` object/record, and revalidates mode/owner/length/SHA/schema/identity/counts
+  before exact summary/metric/trace queries. It caps live records at 128, expires
+  after 24 hours, retains bounded deletion receipts, and detects corrupt, missing,
+  orphaned, symlinked, temporary, conflicting, or incomplete state without automatic
+  repair. All 48 required local gates pass; exact-head remote protection remains pending. OPS-003
+  stays `[~]`:
   external/authenticated transport, durable queue/custody, metric/trace
   backends, other provider/Desktop continuity, dashboards, alerts, managed, live,
   production, and external-beta proof remain open.

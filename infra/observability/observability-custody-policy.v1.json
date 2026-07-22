@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "forge-observability-custody-policy/1.0.0",
+  "custodyArtifactVersion": "1.0.0",
+  "custodyArtifactSchema": "schema/forge-observability-custody-artifact.schema.json",
+  "acceptedSignalSetVersions": [
+    "1.0.0"
+  ],
+  "acceptedDeliveryBatchVersions": [
+    "1.0.0"
+  ],
+  "acceptedEventVersions": [
+    "3.0.0"
+  ],
+  "decision": "D76",
+  "status": "contract-fixture",
+  "storage": {
+    "backend": "local-file-fixture",
+    "root": "operator-created-absolute-private-directory-outside-checkout",
+    "rootMode": "0700",
+    "directoryMode": "0700",
+    "objectMode": "0600",
+    "objectWrite": "exclusive-temp-fsync-atomic-rename",
+    "recordWrite": "exclusive-temp-fsync-atomic-rename",
+    "deduplication": "none",
+    "network": "none",
+    "credentials": "none",
+    "maxLiveRecords": 128,
+    "maxSignalSetBytes": 262144,
+    "maxArtifactBytes": 8192
+  },
+  "lifecycle": {
+    "dataClass": "operational-telemetry-fixture",
+    "retentionSeconds": 86400,
+    "deletionReasons": [
+      "manual",
+      "retention"
+    ],
+    "deletionOrder": [
+      "validate-record-and-object",
+      "prepare-deletion-receipt",
+      "unlink-object-and-fsync",
+      "publish-deletion-receipt-and-fsync",
+      "unlink-live-record-and-fsync"
+    ],
+    "automaticRepair": false,
+    "backup": "none",
+    "productAuthority": "independent"
+  },
+  "query": {
+    "lookup": "exact-server-generated-record-id",
+    "kinds": [
+      "metric-series",
+      "summary",
+      "trace-spans"
+    ],
+    "filters": "none",
+    "maxResponseBytes": 262144
+  },
+  "audit": {
+    "readBeforeQuery": true,
+    "verifySignalSetSchema": true,
+    "verifyObjectLength": true,
+    "verifyObjectSha256": true,
+    "detectMissingObjects": true,
+    "detectOrphanObjects": true,
+    "detectSymlinks": true,
+    "detectTemporaryFiles": true,
+    "detectIncompleteDeletion": true,
+    "mutatesStorage": false
+  },
+  "denyFields": [
+    "authorization",
+    "body",
+    "cookie",
+    "errorMessage",
+    "headers",
+    "idempotencyKey",
+    "jobInput",
+    "jobOutput",
+    "leaseToken",
+    "modelBytes",
+    "personalData",
+    "presignedUrl",
+    "prompt",
+    "query",
+    "secretReference",
+    "telemetry",
+    "url"
+  ],
+  "maturity": {
+    "storageContract": true,
+    "integrityContract": true,
+    "queryContract": true,
+    "retentionDeletionContract": true,
+    "localFilesystemFixture": true,
+    "authenticatedTransport": false,
+    "durableQueue": false,
+    "externalCollector": false,
+    "managedCustody": false,
+    "ownerScopedExport": false,
+    "geographicResidency": false,
+    "highAvailability": false,
+    "backupRecovery": false,
+    "metricsBackend": false,
+    "traceBackend": false,
+    "dashboards": false,
+    "alertRouting": false,
+    "syntheticAlertDelivery": false,
+    "managedSandbox": false,
+    "live": false,
+    "production": false
+  }
+}

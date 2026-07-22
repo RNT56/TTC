@@ -18,6 +18,39 @@ Entry format (see [`AGENTS.md`](AGENTS.md) for the rules):
 
 ---
 
+## 2026-07-21 — Bound private observability custody
+**Session:** Codex agent · branch `codex/ops003-observability-backend-contract` ·
+**Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]
+**Done:** Reconciled D75 through evidence PR #145 exact head `f72a18f`, all twelve
+checks in CI `29878662250` and security `29878662212`, tree-identical protected
+squash `61b5233`, and post-merge CI/security `29879631808`/`29879631786`.
+Implemented the unprotected D76 repository-only custody candidate without changing
+event v3, delivery-batch v1, or signal-set v1. Custody-artifact v1 and its network-
+free CLI accept one validated D75 signal set beneath an operator-created absolute
+private root outside the checkout, publish one UUID-bound `0600` object/record,
+revalidate exact mode/owner/length/SHA-256/schema/identity/counts before fixed queries,
+cap live records at 128, expire after 24 hours, retain bounded deletion receipts, and
+audit corrupt/missing/orphan/symlink/temporary/conflict/incomplete state without
+automatic repair. Twenty-nine focused observability tests and all 27 compatibility
+surfaces pass; generated 82-route/two-event/seventeen-worker documentation is current.
+All 48 required local gates pass, including 23 golden families, 85 Gateway tests, 259
+worker tests, native/WASM parity, release packaging, and the deterministic recovery
+batch. Exact-head remote protection remains pending.
+**Changed:** Custody policy/schema/CLI/tests; compatibility and golden registries;
+generated artifact reference; operations, lifecycle, security, risk, system, best-
+practice, state, phase, execution, task, agent-entry, decision, and changelog docs.
+**Decisions:** Added D76 for private local custody, exact integrity/query/lifecycle
+mechanics, independent versioning, bounded failure audit, and permanent external/
+managed/backend/live nonclaims; next free regular decision ID is D77. R40 now also
+covers local storage integrity and lifecycle corruption.
+**Next:** Publish the exact locally verified candidate for protected-main proof
+without advancing managed maturity.
+**Blockers:** None for repository protection. Authenticated external collection,
+durable transport, managed custody, owner export, residency, HA, backup/recovery,
+managed metric/trace storage, dashboards, alert delivery/acknowledgement, other
+provider/Desktop continuity, managed, live, production, and external-beta proof
+remain separate work.
+
 ## 2026-07-21 — Protect finite observability signals
 **Session:** Codex agent · branch `codex/ops003-observability-signals-evidence` ·
 **Phase:** OPS/QA/SEC · **TODO items:** OPS-003 [~]

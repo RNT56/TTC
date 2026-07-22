@@ -2,7 +2,8 @@
 
 **Status:** validation/BOM/review/generation/auth/model/share/job/platform and local user-data/consent lifecycle APIs live · **Phases:** P2 (validation service), grows through P12 ·
 **Package:** `packages/gateway` + `infra/` · **Plan refs:** §5, §6
-(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34, D38, D39, D46
+(v3.0) · **Decisions:** D2, D3, D16, D17, D27, D28, D30, D33, D34, D38, D39, D46,
+D71, D72, D73, D74, D75, D76
 
 ## 1. Purpose
 
@@ -434,6 +435,19 @@ never metric labels. Failure, fixed-threshold slow, and deterministic healthy-ba
 selection is bounded and network/persistence-free; Gateway response/job authority is
 untouched. A local signal set is not a metrics/trace backend, managed custody,
 dashboard, alert, live service, or production evidence.
+
+D76 remains outside the Gateway and product database. Its independent network-free
+fixture accepts one validated D75 signal set and stores it only beneath an operator-
+created absolute private directory outside the checkout. Each server-generated UUID
+record owns one `0600` object and binds exact signal-set identity, SHA-256, length,
+metric/trace counts, and 24-hour fixture expiry. Reads revalidate every binding before
+fixed summary/metric/trace views; deletion removes the object and leaves a bounded
+receipt; integrity audit detects corrupt, missing, orphaned, symlinked, temporary, or
+incomplete state without automatic repair. The 128-record local ceiling and failure
+path cannot affect Gateway responses, jobs, leases, retries, cancellation,
+materialization, or product database authority. This is not authenticated transport,
+external custody, owner export, residency, HA, backup, a metric/trace backend,
+dashboard, alert, managed, live, or production evidence.
 
 Production trace/error tooling, authenticated external collection, proxy/provider
 secret-seeded inspection, access/audit, retention/deletion/export/residency,

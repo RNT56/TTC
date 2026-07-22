@@ -32,6 +32,7 @@ package to adopt that same number.
 | observability event | 3.0.0 | `forge-observability-event` binds event identity, trusted correlation, UTC/source/service-version fields, exact safe attributes, sensitive-field exclusions, byte bounds, and metric-cardinality rules; changing any meaning is major | majors 1, 2, and 3; v1 is the frozen Gateway-only reader, v2 adds persisted job/D38-attempt correlation and worker lifecycle events, and v3 adds active-D68 deployment correlation plus persisted Modal `train.policy` call correlation at contract/fixture maturity |
 | observability delivery batch | 1.0.0 | `forge-observability-delivery-batch` independently binds accepted event majors, envelope identity/time/count, byte/count/time limits, endpoint trust, redirect/retry/spool/failure/lifecycle behavior, product-authority isolation, and custody nonclaims; changing any meaning is major | major 1 accepts only frozen event 3.0.0; the executable adapter is loopback-only contract/fixture evidence and proves no external collector, managed custody, backend, dashboard, alert, live service, or production |
 | observability signal set | 1.0.0 | `forge-observability-signal-set` independently binds accepted delivery/event versions, generated route/task authority, metric names/kinds/units/labels/buckets, completion-trace selection and correlation, output bounds, lifecycle, product-authority isolation, and backend nonclaims; changing any meaning is major | major 1 accepts only delivery batch 1.0.0 over frozen event 3.0.0; the executable projector is memory-only/network-free contract/fixture evidence and proves no external collector, persistent backend, dashboard, alert, managed custody, live service, or production |
+| observability custody artifact | 1.0.0 | `forge-observability-custody-artifact` independently binds accepted signal/upstream versions, private root/file authority, storage identity, count/byte/retention limits, stored/deleted meanings, integrity/query/audit behavior, product-authority isolation, and managed-backend nonclaims; changing any meaning is major | major 1 accepts only signal set 1.0.0 over frozen delivery batch 1.0.0/event 3.0.0; the executable consumer is a network-free private local-filesystem contract/fixture and proves no authenticated transport, external collector, managed custody, owner export, residency, HA, backup, telemetry backend, dashboard, alert, live service, or production |
 | file catalog row | 2.0.0 | missing marker means legacy 1.0.0; point/table voltage placement, grid identity, coordinate meaning, or authority requirements are major | majors 1 and 2; new producers emit 2, exact v1 single-voltage sweeps remain readable |
 | license export manifest | 1.0.0 | consumers must reject unsupported majors; asset dispositions, attribution entries, and assembly-policy meaning are governed | major 1 |
 | user-data export | 1.7.0 | additive datasets/fields are minor; removal, rename, or meaning/type changes are major; secret fields and retained policy/archive bytes are never part of the format | major 1 |
@@ -125,6 +126,22 @@ trace spans. The process reads and writes one bounded memory-only JSON document 
 no network or persistence. This defines safe signal semantics but creates no external
 collector, managed custody, metric/trace backend, dashboard, alert, live service, or
 production operation.
+
+Observability custody artifact 1.0.0 is defined separately by
+[`forge-observability-custody-artifact.schema.json`](../schema/forge-observability-custody-artifact.schema.json)
+and
+[`observability-custody-policy.v1.json`](../infra/observability/observability-custody-policy.v1.json).
+D76 leaves every upstream major frozen. The local fixture accepts one validated D75
+signal set, writes one UUID-bound private object and record under an operator-created
+absolute `0700` root outside the checkout, revalidates exact length/SHA-256/schema/
+identity/counts before fixed queries, limits live records to 128, expires them after
+24 hours, and leaves a bounded receipt after manual or retention deletion. Integrity
+audit detects corrupt, missing, orphaned, symlinked, temporary, conflicting, and
+incompletely deleted state without automatic repair. This defines local persistence,
+query, retention, deletion, and audit mechanics only; it creates no authentication,
+external collector, managed custody, owner-scoped export, geographic residency, HA,
+backup recovery, metric/trace backend, dashboard, alert, live service, or production
+operation.
 
 `GET /v1/account/export` emits user-data export 1.7.0. It includes explicit
 owner-scoped database datasets plus authenticated per-blob download endpoints, but
@@ -242,6 +259,17 @@ event versions, endpoint trust, limits, redirect/retry/spool/lifecycle behavior,
 authority isolation, or custody semantics requires compatibility review and normally
 a new batch major; changing a contained event still follows the independent event-
 major procedure.
+
+D76 requires no database, event, delivery-batch, or signal-set migration. A rollback
+removes only the independent local custody consumer; Gateway/worker producers and D75
+projection remain unchanged. Existing private custody roots are data, not rollback
+debris: keep them owner-only and use the D76 reader/audit/sweep/delete tooling to
+verify or remove them before retiring that tooling. Older code must neither ingest an
+unsupported custody-artifact major nor infer successful deletion, backup, export, or
+managed custody from an unread root. Changing accepted inputs, root/file authority,
+storage identity, limits, retention/deletion meaning, integrity/query/audit behavior,
+authority isolation, or backend nonclaims requires compatibility review and normally
+a new custody-artifact major.
 
 QA-007 is a patch-level strictness correction, not a format-version change. Valid
 ModelSpec patches, replay major 1 plus the deprecated `replay.v1` alias, EnvSpec

@@ -83,6 +83,14 @@ Owner export 1.7 exposes only the owner's job correlation and attempt rows. Thes
 rows neither create independent retention authority nor prove that an external
 telemetry transport, backend, dashboard, or alert received an event.
 
+D76's 24-hour `operational-telemetry-fixture` expiry applies only to the private local
+filesystem custody fixture. It does not add a product retention class, database row,
+backup copy, legal-hold authority, user-data export dataset, geographic-residency
+claim, or provider deletion promise. The fixture cannot map correlation to an owner,
+so owner-scoped export remains false. Any installed telemetry backend must receive a
+separate lifecycle decision that reconciles owner access/export, holds, deletion,
+backups/restores, residency, availability, and audit evidence with this document.
+
 ## 3. Authority and state machines
 
 ### 3.1 Legal holds

@@ -2,7 +2,7 @@
 
 Owner: platform/release maintainers
 
-Decisions: D68, D69, D70, D71, D72, D73, D74, D75
+Decisions: D68, D69, D70, D71, D72, D73, D74, D75, D76
 
 Machine policy: [`infra/deployment/deployment-policy.v1.json`](../infra/deployment/deployment-policy.v1.json)
 
@@ -23,9 +23,13 @@ Fixture signals policy: [`infra/observability/observability-signals-policy.v1.js
 
 Signal-set schema: [`schema/forge-observability-signal-set.schema.json`](../schema/forge-observability-signal-set.schema.json)
 
+Fixture custody policy: [`infra/observability/observability-custody-policy.v1.json`](../infra/observability/observability-custody-policy.v1.json)
+
+Custody-artifact schema: [`schema/forge-observability-custody-artifact.schema.json`](../schema/forge-observability-custody-artifact.schema.json)
+
 Frozen policies: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json), [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`, with evidence reconciled at `0388cf6`; D75's finite-metric/deterministic-trace projection is protected at contract/fixture maturity at `3899ce3`; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`, with evidence reconciled at `0388cf6`; D75's finite-metric/deterministic-trace projection is protected at contract/fixture maturity at `3899ce3`, with evidence reconciled at `61b5233`; D76 is an unprotected private local custody contract/fixture candidate; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, managed telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -92,9 +96,24 @@ compatibility surfaces, 22 golden families, generated contract docs, 39 Studio t
 PR #144 exact head `729aa6b` passed all twelve checks in CI `29877152636` and
 security `29877152523`; tree-identical protected squash `3899ce3` passed post-merge
 CI `29877635436` and security `29877635422`.
-This candidate proves no external collector/custody, persistent metrics/traces,
+Evidence PR #145 exact head `f72a18f` passed all twelve checks in CI `29878662250`
+and security `29878662212`; tree-identical protected squash `61b5233` passed post-
+merge CI `29879631808` and security `29879631786`.
+This protected slice proves no external collector/custody, persistent metrics/traces,
 dashboard, alert, managed, live, or
 production operation.
+
+The unprotected D76 candidate leaves every upstream major frozen and adds one custody-
+artifact major plus a dependency-free networkless filesystem fixture. It requires an
+operator-created absolute private root outside the checkout, writes one owner-only
+object/record per server UUID, revalidates exact mode/owner/length/SHA/schema/identity/
+counts before fixed queries, caps live records at 128, expires them after 24 hours,
+leaves bounded deletion receipts, and audits corruption, missing/orphan/symlink/
+temporary/conflicting/incomplete state without automatic repair. All 48 required
+local gates pass; exact-head remote protection remains pending. This candidate proves no
+authentication, external collector, managed custody, owner export, residency, HA,
+backup, managed metric/trace backend, dashboard, alert, managed, live, or production
+operation.
 
 This document owns OPS-001..010. It defines the supported operating shape and the
 ordered path from the current local/prod-like Compose profile to a controlled
@@ -506,7 +525,7 @@ corrected roll-forward, managed environment, or live service.
 
 ### OPS-003/004 measurement rules
 
-Current D71/D72/D73/D74/D75 slice status:
+Current D71/D72/D73/D74/D75/D76 slice status:
 
 1. **Gateway request contract/fixture — protected.** Versioned policy,
    schema, compatibility surface, golden family, and executable producer generate
@@ -555,18 +574,28 @@ Current D71/D72/D73/D74/D75 slice status:
    to 64 series, 32 spans, and 262144 bytes and cannot change product authority. All
    48 local gates, exact PR checks, protected-tree equality, and post-merge CI/security
    pass; persistent backends and operational monitoring remain separate gates.
-6. **Persistent metrics/traces backends — open.** Select and deploy reviewed storage;
+6. **Private persistence/query/lifecycle fixture — unprotected D76 candidate.**
+   Custody-artifact major 1 accepts only D75 signal-set v1. An operator-created
+   absolute owner-only root outside the checkout holds at most 128 UUID-bound live
+   objects/records. Exclusive temporary writes, fsync/rename, `0700` directories,
+   `0600` files, exact type/mode/owner/length/SHA/schema/identity/count validation,
+   fixed whole-summary/metric/trace queries, 24-hour expiry, bounded deletion
+   receipts, and non-mutating corrupt/missing/orphan/symlink/temporary/conflict/
+   incomplete-state audit are executable. All 48 required local gates pass; exact-head
+   remote protection remains pending. No external or managed backend criterion advances.
+7. **Persistent managed metrics/traces backends — open.** Select and deploy reviewed storage;
    define access, retention, deletion, residency, availability, delivery failure,
-   recovery, and query behavior without widening D75 labels or sampling semantics.
-7. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
+   owner export, backup/recovery, and query behavior without widening D75 labels or
+   sampling semantics or treating D76 local mechanics as deployed proof.
+8. **Dashboards and alerts — open.** Validate every query, owner, urgency, first
    action, silence/expiry, separate delivery-failure route, synthetic delivery, and
    acknowledgement before claiming operational monitoring.
 
-The five repository-only contract slices may proceed while OPS-002's real managed-
+The six repository-only contract slices may proceed while OPS-002's real managed-
 sandbox exercise is waiting on an external target because they create no live
 exercise or backend. The D73 subset does not close the broader third slice, and
-slices 3–7 never close from schemas, database rows, loopback delivery, or local
-signal output. Every deployed
+slices 3–8 never close from schemas, database rows, loopback delivery, local signal
+output, or local custody files. Every deployed
 exercise still requires the exact D68/D69/D70 sandbox authority plus retained private
 operations evidence.
 
@@ -595,6 +624,26 @@ node scripts/observability-signals.mjs project \
 Do not add a remote endpoint, credentials, persistence, dynamic labels/buckets, or
 unbounded sampling to this command. A signal-set JSON document is a contract fixture,
 not an installed metric/trace backend, dashboard, alert, or custody proof.
+
+The D76 fixture can be exercised only with an operator-created private temporary
+directory outside the checkout:
+
+```sh
+root="$(mktemp -d)"
+chmod 0700 "$root"
+node scripts/observability-custody.mjs store --root "$root" \
+  < /private/path/signal-set.json
+node scripts/observability-custody.mjs audit --root "$root"
+```
+
+Query requires the exact returned record UUID and one of `summary`, `metric-series`,
+or `trace-spans`; deletion requires an exact canonical timestamp and `manual` or
+`retention` reason. Do not point the fixture into the checkout, relax modes, add
+network/credentials/dynamic filters/deduplication/automatic repair, extend retention,
+or call restart-readable local files a managed backend. An installed backend remains
+a new reviewed deployment/custody slice with authentication, TLS/egress/DNS, named
+access and audit, owner export, residency, HA, backup/recovery, delivery-failure
+monitoring, lifecycle enforcement, and retained sandbox evidence.
 
 - Correlation IDs are generated/validated at trusted boundaries and propagated to
   jobs/provider calls; never accept a client claim as audit identity.

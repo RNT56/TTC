@@ -65,6 +65,7 @@ const required = [
   "observabilityEvent",
   "observabilityDeliveryBatch",
   "observabilitySignalSet",
+  "observabilityCustodyArtifact",
   "licenseExportManifest",
   "userDataExport",
   "consentLedger",
@@ -128,6 +129,10 @@ const expected = {
   observabilitySignalSet: typescriptConstant(
     "scripts/observability-signals.mjs",
     "OBSERVABILITY_SIGNAL_SET_VERSION",
+  ),
+  observabilityCustodyArtifact: typescriptConstant(
+    "scripts/observability-custody.mjs",
+    "OBSERVABILITY_CUSTODY_ARTIFACT_VERSION",
   ),
   userDataExport: typescriptConstant(
     "packages/gateway/src/accountData.ts",
@@ -280,6 +285,32 @@ requireValue(
     && observabilitySignalSetSchema.properties.source.properties.eventSchemaVersion.const ===
       `${matrix.surfaces.observabilityEvent.schema}/${matrix.surfaces.observabilityEvent.current}`,
   "observability signal set must bind the current delivery and frozen event contracts",
+);
+const observabilityCustodyPolicy = JSON.parse(
+  read(matrix.surfaces.observabilityCustodyArtifact.policyPath),
+);
+const observabilityCustodyArtifactSchema = JSON.parse(
+  read(matrix.surfaces.observabilityCustodyArtifact.schemaPath),
+);
+requireValue(
+  observabilityCustodyPolicy.custodyArtifactVersion ===
+    matrix.surfaces.observabilityCustodyArtifact.current
+    && observabilityCustodyArtifactSchema.$defs.storedRecord.properties.schemaVersion.const ===
+      `${matrix.surfaces.observabilityCustodyArtifact.schema}/${matrix.surfaces.observabilityCustodyArtifact.current}`
+    && observabilityCustodyArtifactSchema.$defs.deletionReceipt.properties.schemaVersion.const ===
+      `${matrix.surfaces.observabilityCustodyArtifact.schema}/${matrix.surfaces.observabilityCustodyArtifact.current}`,
+  "observability custody policy/schema does not match the compatibility surface",
+);
+requireValue(
+  JSON.stringify(observabilityCustodyPolicy.acceptedSignalSetVersions) ===
+    JSON.stringify(matrix.surfaces.observabilityCustodyArtifact.acceptedSignalSetVersions)
+    && JSON.stringify(observabilityCustodyPolicy.acceptedDeliveryBatchVersions) ===
+      JSON.stringify(matrix.surfaces.observabilityCustodyArtifact.acceptedDeliveryBatchVersions)
+    && JSON.stringify(observabilityCustodyPolicy.acceptedEventVersions) ===
+      JSON.stringify(matrix.surfaces.observabilityCustodyArtifact.acceptedEventVersions)
+    && observabilityCustodyArtifactSchema.$defs.storedSource.properties.signalSetSchemaVersion.const ===
+      `${matrix.surfaces.observabilitySignalSet.schema}/${matrix.surfaces.observabilitySignalSet.current}`,
+  "observability custody artifact must bind the current signal-set and frozen upstream contracts",
 );
 requireValue(
   matrix.surfaces.policyTensor.schema ===
