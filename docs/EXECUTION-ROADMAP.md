@@ -160,13 +160,17 @@ Evidence PR #145 exact head `f72a18f` passed all twelve checks in CI `2987866225
 and security `29878662212`; tree-identical protected squash `61b5233` passed post-
 merge CI `29879631808` and security `29879631786`.
 
-D76 is the active dependency-safe repository slice. It introduces an independent
-custody-artifact v1 over one D75 signal set and a network-free filesystem fixture:
+D76 is protected as a dependency-safe repository contract/fixture slice. It
+introduces an independent custody-artifact v1 over one D75 signal set and a network-
+free filesystem fixture:
 private root/file authority, exact object/record binding, fixed queries, 128-record
 and 24-hour limits, bounded deletion receipts, and non-mutating integrity audit.
 Focused policy, persistence, query, root/symlink, capacity, tamper/orphan, deletion,
 retention, restart, and non-reflection tests pass. All 48 required local gates pass;
-exact-head remote protection remains pending. This slice cannot advance authenticated transport, external collection,
+PR #146 exact head `7fe521e`, all twelve checks in CI `29881943772` and security
+`29881943750`, tree-identical protected squash `5bd25c8`, and post-merge CI/security
+`29882382627`/`29882382664` pass. This slice cannot advance authenticated transport,
+external collection,
 managed custody, owner export, residency, HA, backup, a managed metric/trace backend,
 dashboard, alert, managed, live, production, or external-beta acceptance.
 No credentialed provider-sourced reviewed row or real vendor operation is proven. The

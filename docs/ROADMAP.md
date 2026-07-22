@@ -176,14 +176,17 @@ Evidence PR #145 exact head `f72a18f`, all twelve checks in CI `29878662250` and
 security `29878662212`, tree-identical protected squash `61b5233`, and post-merge
 CI/security `29879631808`/`29879631786` reconcile that boundary.
 
-D76 is the current unprotected repository-only OPS-003 candidate. Custody-artifact
+D76 is protected at repository-only OPS-003 contract/fixture maturity through PR
+#146/`5bd25c8`. Custody-artifact
 v1 admits one D75 signal set beneath an operator-created absolute private root,
 publishes one UUID-bound `0600` object plus record, and revalidates exact mode/owner/
 length/SHA-256/schema/identity/counts before fixed summary, metric, or trace queries.
 It caps live records at 128, expires them after 24 hours, leaves bounded manual or
 retention deletion receipts, and audits corrupt, missing, orphaned, symlinked,
 temporary, conflicting, or incomplete state without automatic repair. Focused tests
-and all 48 required local gates pass. Exact-head remote protection remains pending.
+and all 48 required local gates pass. Exact head `7fe521e` passed all twelve checks
+in CI `29881943772` and security `29881943750`; tree-identical protected squash
+`5bd25c8` passed post-merge CI `29882382627` and security `29882382664`.
 External/authenticated collection, durable delivery/custody, metric/trace backends,
 other provider/Desktop continuity,
 dashboards, alerts, managed, live, production, and external-beta proof remain open,

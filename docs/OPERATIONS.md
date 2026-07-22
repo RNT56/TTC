@@ -29,7 +29,7 @@ Custody-artifact schema: [`schema/forge-observability-custody-artifact.schema.js
 
 Frozen policies: [`infra/observability/observability-policy.v1.json`](../infra/observability/observability-policy.v1.json), [`infra/observability/observability-policy.v2.json`](../infra/observability/observability-policy.v2.json)
 
-Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`, with evidence reconciled at `0388cf6`; D75's finite-metric/deterministic-trace projection is protected at contract/fixture maturity at `3899ce3`, with evidence reconciled at `61b5233`; D76 is an unprotected private local custody contract/fixture candidate; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, managed telemetry backend, dashboard, alert route, rollback, or live service is proven**
+Current maturity: **D68 is protected at contract/fixture maturity; D69 is protected at contract/ephemeral-CI fixture maturity; D70 immutable registry publication is verified from protected `f1d8850` through run `29644408106` and artifact `8429638868`, with evidence reconciled at protected `b5c358a`; D72's Gateway/job/D38-attempt/worker correlation is protected at contract/fixture maturity at `a17ff74`, with dependency-safe evidence through protected `a02f42b`; D73's active-D68 deployment and persisted Modal `train.policy` call correlation is protected at contract/fixture maturity at `90cc58c`; D74's bounded credential-free exact-loopback delivery is protected at contract/fixture maturity at `7abcb56`, with evidence reconciled at `0388cf6`; D75's finite-metric/deterministic-trace projection is protected at contract/fixture maturity at `3899ce3`, with evidence reconciled at `61b5233`; D76's private local custody is protected at contract/fixture maturity at `5bd25c8`; no external collector, authenticated transport, durable queue, managed custody, managed environment, provider delivery, deployment health, Desktop propagation, managed telemetry backend, dashboard, alert route, rollback, or live service is proven**
 
 The corrected D70 candidate passes all 47 local gates under Python 3.12.13 with seven
 focused registry tests; the pre-correction protected contract's full gate included
@@ -103,14 +103,16 @@ This protected slice proves no external collector/custody, persistent metrics/tr
 dashboard, alert, managed, live, or
 production operation.
 
-The unprotected D76 candidate leaves every upstream major frozen and adds one custody-
+The protected D76 slice leaves every upstream major frozen and adds one custody-
 artifact major plus a dependency-free networkless filesystem fixture. It requires an
 operator-created absolute private root outside the checkout, writes one owner-only
 object/record per server UUID, revalidates exact mode/owner/length/SHA/schema/identity/
 counts before fixed queries, caps live records at 128, expires them after 24 hours,
 leaves bounded deletion receipts, and audits corruption, missing/orphan/symlink/
 temporary/conflicting/incomplete state without automatic repair. All 48 required
-local gates pass; exact-head remote protection remains pending. This candidate proves no
+local gates pass. PR #146 exact head `7fe521e` passed all twelve checks in CI
+`29881943772` and security `29881943750`; tree-identical protected squash `5bd25c8`
+passed post-merge CI `29882382627` and security `29882382664`. This slice proves no
 authentication, external collector, managed custody, owner export, residency, HA,
 backup, managed metric/trace backend, dashboard, alert, managed, live, or production
 operation.
@@ -574,15 +576,16 @@ Current D71/D72/D73/D74/D75/D76 slice status:
    to 64 series, 32 spans, and 262144 bytes and cannot change product authority. All
    48 local gates, exact PR checks, protected-tree equality, and post-merge CI/security
    pass; persistent backends and operational monitoring remain separate gates.
-6. **Private persistence/query/lifecycle fixture — unprotected D76 candidate.**
+6. **Private persistence/query/lifecycle fixture — protected D76 contract/fixture.**
    Custody-artifact major 1 accepts only D75 signal-set v1. An operator-created
    absolute owner-only root outside the checkout holds at most 128 UUID-bound live
    objects/records. Exclusive temporary writes, fsync/rename, `0700` directories,
    `0600` files, exact type/mode/owner/length/SHA/schema/identity/count validation,
    fixed whole-summary/metric/trace queries, 24-hour expiry, bounded deletion
    receipts, and non-mutating corrupt/missing/orphan/symlink/temporary/conflict/
-   incomplete-state audit are executable. All 48 required local gates pass; exact-head
-   remote protection remains pending. No external or managed backend criterion advances.
+   incomplete-state audit are executable. All 48 local gates, exact PR checks,
+   protected-tree equality, and post-merge CI/security pass. No external or managed
+   backend criterion advances.
 7. **Persistent managed metrics/traces backends — open.** Select and deploy reviewed storage;
    define access, retention, deletion, residency, availability, delivery failure,
    owner export, backup/recovery, and query behavior without widening D75 labels or
