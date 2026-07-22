@@ -404,7 +404,7 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   passed all twelve checks in CI `29874518707` and security `29874518705`; its tree
   equals protected squash `0388cf6`, whose post-merge CI `29875062096` and security
   `29875062119` pass.
-  **D75 unprotected candidate (2026-07-21, repository contract/fixture):** independent
+  **D75 protected slice (2026-07-21, repository contract/fixture):** independent
   `forge-observability-signal-set/1.0.0` admits one D74 batch and projects five fixed
   metric families with exact generated 82-route/17-worker-task authority. Gateway
   labels are environment/method/route/status-class; worker labels are environment/
@@ -417,8 +417,10 @@ Record outcomes in [`DECISIONS.md`](DECISIONS.md) and mark the OD row resolved.
   authority, sampling, redaction, bounded-input, and nonclaim tests pass. All 48
   required local gates pass under Python 3.12.13 with 20 observability tests, 26
   compatibility surfaces, 22 golden families, 39 Studio tests, 85 Gateway tests, all
-  259 workers, and the unchanged deterministic recovery batch. Exact-head/protected/
-  post-merge and evidence-reconciliation proof remain pending. OPS-003 stays `[~]`:
+  259 workers, and the unchanged deterministic recovery batch. PR #144 exact head
+  `729aa6b` passed all twelve checks in CI `29877152636` and security `29877152523`;
+  its tree equals protected squash `3899ce3`, whose post-merge CI `29877635436` and
+  security `29877635422` pass. OPS-003 stays `[~]`:
   external/authenticated transport, durable queue/custody, metric/trace
   backends, other provider/Desktop continuity, dashboards, alerts, managed, live,
   production, and external-beta proof remain open.

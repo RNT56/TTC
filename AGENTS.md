@@ -107,11 +107,12 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
 
 - the SEC-006 contract/fixture runtime evidence remains anchored at protected PR #31
   and exact post-merge CI `29251978420`/security `29251978330` at `d952f60`; the
-  latest verified protected descendant is evidence PR #143 at `0388cf6`; the
+  latest verified protected descendant is PR #144 at `3899ce3`; the
   D72/OPS-003 job/worker capability remains anchored at PR #135/`a17ff74`, and D73's
   provider/deployment correlation is anchored at PR #140/`90cc58c`, reconciled
   through PR #141/`363a8b4`; D74's bounded loopback delivery contract is anchored at
-  PR #142/`7abcb56`, reconciled through PR #143/`0388cf6`.
+  PR #142/`7abcb56`, reconciled through PR #143/`0388cf6`; D75's finite metric and
+  deterministic completion-trace projection is anchored at PR #144/`3899ce3`.
   Exact implementation head `a028acd`, all 45 local gates, all 11 PR checks, PR
   CI/security `29634700980`/`29634700969`, protected implementation `401dac84` and
   post-merge CI/security `29634987939`/`29634987955`, then evidence head `5f9ff0b`,
@@ -213,7 +214,7 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   Evidence PR #143 exact head `b23b3a9` passed all twelve checks in CI
   `29874518707` and security `29874518705`; tree-identical protected squash
   `0388cf6` passed post-merge CI `29875062096` and security `29875062119`.
-  D75 is the current unprotected candidate: `forge-observability-signal-set/1.0.0`
+  D75 is protected at contract/fixture maturity: `forge-observability-signal-set/1.0.0`
   accepts only delivery batch v1/event v3, derives five fixed finite-authority metric
   families, samples every failure and fixed-threshold slow completion plus a
   deterministic 1/64 healthy baseline, and emits one bounded memory-only/network-free
@@ -222,8 +223,10 @@ As of the dated snapshot in `docs/PROJECT-STATE.md`:
   cannot change product authority. All 48 required local gates pass under Python
   3.12.13 with 20 observability tests, 26 compatibility surfaces, 22 golden families,
   39 Studio tests, 85 Gateway tests, all 259 workers, Brief-25 25/25, native/WASM,
-  packaging, training/MJX, and the unchanged 200/97/two/two co-design batch. Exact-
-  head PR, protected-tree, and post-merge evidence remain pending. External
+  packaging, training/MJX, and the unchanged 200/97/two/two co-design batch. PR #144
+  exact head `729aa6b` passed all twelve checks in CI `29877152636` and security
+  `29877152523`; tree-identical protected squash `3899ce3` passed post-merge CI
+  `29877635436` and security `29877635422`. External
   collection/custody, persistent metric or trace backends, dashboards, alerts,
   managed, live, and production evidence remain false until their own acceptance
   lanes pass.
