@@ -12,7 +12,7 @@ at contract/fixture maturity, while credentialed GPU/provider proof remains gate
 trainer authority), D45 (offline source authority), D46 (Modal deployment authority),
 D47 (MJX decision authority), D71 (telemetry boundary), D72 (job/attempt
 correlation), D73 (provider/deployment correlation), D74 (independent fixture
-delivery), and D75 (finite signal projection)
+delivery), D75 (finite signal projection), and D76 (private local custody fixture)
 
 ## 1. Purpose
 
@@ -73,6 +73,13 @@ retry/source identities never become labels, worker starts never become trace sp
 and projection remains outside claim/lease/retry/cancellation/materialization
 authority. A signal-set document proves no persistent backend, custody, dashboard,
 alert, managed, live, or production operation.
+Under D76, the worker remains a producer only. The independent local custody fixture
+consumes a validated D75 signal set after projection and never enters claim, lease,
+retry, cancellation, provider, materialization, or product-database authority. Its
+private files, exact queries, 24-hour retention, deletion receipts, and integrity
+audit prove only network-free repository fixture mechanics; workers do not gain a
+telemetry backend, external delivery, managed custody, owner export, residency, HA,
+backup, dashboard, alert, live, or production operation.
 Live adapters can be injected as JSON-stdin/stdout commands through
 `FORGE_PHOTOSCAN_CMD`, `FORGE_COLMAP_CMD`, `FORGE_SB3_TRAIN_CMD`,
 `FORGE_SYSID_FIT_CMD`, `FORGE_CODESIGN_CMD`, `FORGE_MUJOCO_PARITY_CMD`, and

@@ -149,6 +149,26 @@
       ],
       "versionRule": "input contract versions, generated route/task authority, metric names/kinds/units/labels/buckets, trace sampling/correlation semantics, output bounds, lifecycle, authority isolation, and backend nonclaims are major-version semantics"
     },
+    "observabilityCustodyArtifact": {
+      "current": "1.0.0",
+      "supportedMajors": [
+        1
+      ],
+      "schema": "forge-observability-custody-artifact",
+      "versionField": "schemaVersion",
+      "schemaPath": "schema/forge-observability-custody-artifact.schema.json",
+      "policyPath": "infra/observability/observability-custody-policy.v1.json",
+      "acceptedSignalSetVersions": [
+        "1.0.0"
+      ],
+      "acceptedDeliveryBatchVersions": [
+        "1.0.0"
+      ],
+      "acceptedEventVersions": [
+        "3.0.0"
+      ],
+      "versionRule": "accepted signal-set and upstream versions, storage identity and modes, count/byte/retention limits, record and deletion meanings, integrity/query/audit behavior, product-authority isolation, and managed-backend nonclaims are major-version semantics"
+    },
     "licenseExportManifest": {
       "current": "1.0.0",
       "supportedMajors": [

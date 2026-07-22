@@ -148,6 +148,23 @@
       "compatibilityReview": true
     },
     {
+      "id": "observability-custody-contract",
+      "classification": "schema",
+      "paths": [
+        "infra/observability/observability-custody-policy.v1.json",
+        "schema/forge-observability-custody-artifact.schema.json"
+      ],
+      "owner": "platform, operations, privacy, and security maintainers",
+      "sourceOfTruth": "D76 bounded private local-filesystem storage, integrity, exact query, retention deletion, audit, authority isolation, and managed-backend nonclaim semantics",
+      "regenerate": "Edit deliberately with compatibility, privacy, security, storage, lifecycle, recovery, and operations review plus a golden update record; never infer managed custody or backend maturity from the local filesystem fixture",
+      "verify": [
+        "pnpm verify:observability",
+        "pnpm verify:compatibility",
+        "pnpm verify"
+      ],
+      "compatibilityReview": true
+    },
+    {
       "id": "api-event-artifact-docs",
       "classification": "schema",
       "paths": [

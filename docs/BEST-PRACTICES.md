@@ -98,7 +98,7 @@ event lines, and persisted artifact formats independently; preserve old document
 read fixtures while their support window is active. Examples use synthetic IDs and
 fixture values, never secrets, signed URLs, raw user content, or claims of live proof.
 
-**Operational telemetry:** follow D71/D72/D73/D74/D75 and the versioned observability
+**Operational telemetry:** follow D71/D72/D73/D74/D75/D76 and the versioned observability
 policies. Generate
 request/trace authority at a trusted service boundary; never trust a client identifier
 as audit continuity. Emit only an exact bounded allowlist with UTC, source, version,
@@ -137,6 +137,17 @@ rule for any healthy baseline; starts are not completed spans. Bound input, outp
 series, span count, memory, and error reflection. D75's executable projector is
 network-free and persistence-free; a signal-set JSON document is still not a metric/
 trace backend, dashboard, alert, managed custody, live service, or production proof.
+Persist a signal set only through a separately versioned custody boundary. D76's
+fixture requires an existing absolute private root outside the checkout, owner-only
+directories/files, exclusive bounded writes, one object per server-generated record,
+exact SHA-256/length/schema/identity/count validation before every read, fixed whole-
+series/whole-span queries, a 128-record ceiling, 24-hour fixture retention, bounded
+deletion receipts, and non-mutating integrity audit. Refuse permissive roots,
+symlinks, missing/corrupt/orphan/temporary state, premature retention deletion,
+dynamic filters, automatic repair, and error reflection. A restart-readable local
+file still proves no authenticated transport, external collector, owner export,
+residency, HA, backup, managed custody, telemetry backend, dashboard, alert, live, or
+production operation.
 
 **Executable policy artifacts:** keep category metadata separate from the exact
 scalar tensor contract. Version schema/layout/coordinate/rate semantics independently;
